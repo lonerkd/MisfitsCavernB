@@ -22,6 +22,7 @@ import { cx } from '@/components/studio/ui';
 import s from '@/components/studio/studio.module.css';
 import page from './studio-page.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { Mark } from '@/components/brand/Mark';
 
 // Each tab's code loads when it's opened, so the Studio opens fast on a phone
 // (it used to ship every tab — the stripboard, money, post — up front).
@@ -134,7 +135,7 @@ export default function StudioPage() {
       <GrainOverlay />
       <header className={page.bar}>
         <div className={page.barLeft}>
-          <Link href="/" className={page.logo} aria-label="Misfits Cavern home">MC</Link>
+          <Link href="/" className={page.logo} aria-label="The Cavern home"><Mark size={22} title="" /></Link>
           <span className={page.divider} aria-hidden />
           <span className={cx(page.module, 'mc-hide-phone')}>Studio</span>
           {projects.length > 0 && (

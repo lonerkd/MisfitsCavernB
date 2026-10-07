@@ -139,7 +139,8 @@ describe('script access follows the project', () => {
   it('characters of a shared script are not editable by its readers', async () => {
     const { data: s } = await cast.sam.client.from('scripts')
       .insert({ title: 'Public read', content: 'x', created_by: cast.sam.id, shared: true }).select('id').single();
-    expect((await cast.riley.client.from('scripts').select('id').eq('id', s!.id)).data).toHaveLength(1);
+    // Shared means "readable by its link" (get_shared_script), never by id.
+    expect((await cast.riley.client.from('scripts').select('id').eq('id', s!.id)).data).toEqual([]);
     const { error } = await cast.riley.client.from('script_characters').insert({ script_id: s!.id, name: 'INTRUDER' });
     expect(error).not.toBeNull();
     expect((await cast.sam.client.from('script_characters').insert({ script_id: s!.id, name: 'MARA' })).error).toBeNull();

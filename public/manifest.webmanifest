@@ -1,7 +1,7 @@
 {
-  "name": "Misfits Cavern",
-  "short_name": "Misfits Cavern",
-  "description": "Screenplay editor and production suite for indie filmmakers.",
+  "name": "The Cavern",
+  "short_name": "Cavern",
+  "description": "The production suite for independent filmmakers, by Misfits Cavern.",
   "id": "/",
   "start_url": "/today",
   "scope": "/",
@@ -10,16 +10,75 @@
   "background_color": "#040710",
   "theme_color": "#040710",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ],
   "shortcuts": [
-    { "name": "Capture", "short_name": "Capture", "description": "A photo, clip, voice memo, note or link into a project", "url": "/today?capture=1", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
-    { "name": "Today", "url": "/today", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] },
-    { "name": "Lounge", "url": "/lounge", "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }] }
+    {
+      "name": "Capture",
+      "short_name": "Capture",
+      "description": "A photo, clip, voice memo, note or link into a project",
+      "url": "/today?capture=1",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Today",
+      "url": "/today",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Lounge",
+      "url": "/lounge",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ],
   "share_target": {
     "action": "/today",
     "method": "GET",
-    "params": { "title": "title", "text": "text", "url": "url" }
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
   }
 }

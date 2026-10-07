@@ -17,9 +17,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   (Organization › Usage: which line is over — likely egress or Realtime; the
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
-- **Count shared scripts in production** before 3.3 ships:
-  `select count(*) from scripts where shared` (SQL editor) — they're readable
-  without their link today.
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal.ts`; Peter Olowude,
@@ -29,11 +26,13 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   green PR merges itself instead of waiting for a session to notice.
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
-- **Old stashes on the Windows machine** (the one that made the island
+- **Stashes**: the cloud container's ("legal") is dropped — every line was
+  already on `main` (re-checked 2026-10-06). **Old stashes on the Windows machine** (the one that made the island
   branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites
   and were never reconciled. Look at each (`git stash show -p stash@{n}`);
   anything not on `main` goes into a branch, then drop them. (The cloud
   container's only stash, "legal", is fully on `main` — checked line by line.)
+- **Stale remote branches**: 17 of the 18 deleted 2026-10-06 (tips matched; restore with `git push origin <sha>:refs/heads/<name>` from the list in git history of this file). `claude/design-scales` stays — it now carries PR #137 (data access through `lib/`, the sign-in fix).
 
 ## 2. To verify
 
@@ -67,20 +66,6 @@ small ones — with the page's loading done the §10 way
 (`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
-
-### 3.3 Script share links: token-gated, and a way to share — S/M (security first)
-The anon policy `scripts."Shared scripts publicly viewable"` is
-`using (shared = true)` and the signed-in `scripts view` policy has the same
-arm, so every shared script is readable without its link — the token
-protects nothing. Replace both arms with a definer
-`get_shared_script(p_token)` (exact `share_token`, `shared = true`; returns
-title, content, updated_at, the author's public profile) like
-`get_shared_project`; `/s/[token]` reads through it, server-rendered with Open
-Graph metadata. Then finish the feature: a Share control in the editor
-(owner/shapers; on/off, copy link, revoke = new token). Persona tests: anon
-and an outsider can't list shared scripts, can read one by token, can't after
-revoke. Also: pitch-board blocks are public by design — label the board "This
-is public". Done when the tests pass and the editor can share and revoke.
 
 ### 3.4 Password recovery — S (launch blocker)
 No "forgot password" anywhere: no `resetPasswordForEmail`, no recovery page.
@@ -134,36 +119,21 @@ and the hooks `usePermission`, `usePageAccess`, `useActionAccess`,
 RLS matrix in `bible/11-rules.md`) and keep their tests' useful cases. Done
 when nothing describes permissions except RLS and that one hook.
 
-### 3.11 Share pages: previews and e2e — S/M
-`/p/[token]` and `/s/[token]` render on the client, so a pasted link shows no
-title or image (`/shared` has Open Graph). Server-render both with
-`generateMetadata` through the public client. Add e2e that opens `/s/[token]`
-(none today) and `/m/[id]` signed out. Done when both pages unfurl in a chat
-and the specs pass.
-
-### 3.12 Brand: the suite is **The Cavern** — M
-Owner decision (2026-10-06): the product is **The Cavern**; **Misfits Cavern**
-(with the s) is the company/media brand that makes it (`overview-and-goals.md`). ~30 places
-in `app/`, `components/`, `lib/` say "Misfits Cavern" (titles, metadata,
-landing copy, emails, legal pages, the manifest), plus the repo/package names
-and docs. Part of the restructure pass.
-Owner decisions (2026-10-06): keep "Welcome back, misfit."; landing hero
-"THE CAVERN" with "by Misfits Cavern" under it; the mark replaces "MC" —
-chosen: R13 — `brand/mark/` (the mark, a small cut, one colour, and the
-app/iPhone icons ready to wire in: `public/`, the manifest, `app/layout.tsx`
-icons and `appleWebApp`); repo not renamed (new repo at launch, 3.16).
-Done when the UI, metadata and docs say The Cavern, and the company appears
-only as the maker.
+### 3.11 Share pages: previews and e2e — S
+`/p/[token]` renders on the client, so a pasted link shows no title or image
+(`/shared` and `/s` have Open Graph). Server-render it with `generateMetadata`
+through the public client, as `/s` does. Add an e2e that opens `/m/[id]`
+signed out. Done when `/p` unfurls in a chat and the spec passes.
 
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:
 - **PWA first (M):** much is already there — `public/manifest.webmanifest`
   (standalone, starts at `/today`), `public/sw.js` (offline shell),
-  `appleWebApp` metadata, Pocket and the on-set offline cache. Missing for
-  iPhone: a 180×180 PNG `apple-touch-icon` and PNG manifest icons (iOS ignores
-  SVG), splash images, "Share → Add to Home Screen" coaching (iOS has no
-  install prompt), the name (The Cavern, 3.12), and **Web Push** (iOS 16.4+,
+  `appleWebApp` metadata, the R13 icons (180 px touch icon, 192/512 and
+  maskable manifest PNGs), the name, Pocket and the on-set offline cache.
+  Missing for iPhone: splash images, "Share → Add to Home Screen" coaching
+  (iOS has no install prompt), and **Web Push** (iOS 16.4+,
   installed web apps only; needs VAPID keys, a `push_subscriptions` table and
   a sender — an Edge Function — for call sheets, DMs and mentions). iOS
   ignores manifest shortcuts and `share_target`. No App Store review; ships

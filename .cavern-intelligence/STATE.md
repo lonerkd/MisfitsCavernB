@@ -6,22 +6,27 @@
 
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
-1. **Merged** 2026-10-06: #136 (bible, audit, restructure plan, the R13
-   mark, one source of rules, skills restored) and Dependabot #135. Start
-   from `git switch main && git pull`.
+1. **Merged** 2026-10-06/07: #136, #135, #138, #139, #140 (restructure
+   phases 1–2: The Cavern, the R13 mark and icons, the 3D landing hero) and
+   #141 (3.3, script share links) — all live. `20261006000000` is applied
+   to production (by the owner, in the SQL editor); production matches the
+   snapshot (1742 objects). This branch's PR: the drift fingerprint ignores
+   CRLF in function bodies (a Windows paste added them).
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
    Windows. Session context loads from `CLAUDE.md` (it `@`-imports
    `RULES.md` + `STATE.md`) — no hook.
-3. **Next PR — restructure phases 1–2** (`restructure-proposal.md`):
-   clean-up (two dead files, `types/`, `docs/` → archive) and the brand
-   (The Cavern everywhere, "by Misfits Cavern" where the maker is named,
-   R13 from `brand/mark/` into `public/`, the manifest and `app/layout.tsx`
-   — iPhone icon included). Then 3.3 (script share links, security) and
-   3.4 (password recovery).
-4. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
-   owner: the domain.
+3. **Next**: 3.4 (password recovery). Then restructure phase 3 (splash
+   images, Add to Home Screen coaching, Web Push — 3.13).
+4. **Branches and stashes**: 17 of the 18 stale remote branches are deleted
+   (2026-10-06, from the Windows machine); `claude/design-scales` stays — it
+   carries PR #137 (data access through `lib/`, the sign-in fix). On the
+   Windows machine, check `git stash list` — two old stashes were never
+   reconciled (BACKLOG §1).
+5. Decided: the internal `mc_` / `mc-` prefixes stay. Still open with the
+   owner: the domain. An installed iPhone app keeps its old icon until it
+   is removed and added to the Home Screen again (iOS caches it).
 
 ## Open work — start here
 
@@ -30,23 +35,20 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 1. **Owner, outside the code** (owner, 2026-10-06: "good for now" — not
    blocking the next PRs; revisit before launch): Supabase usage (grace period over — which
-   line?); count shared scripts in production (3.3); an email sender (SMTP);
+   line?); an email sender (SMTP);
    lawyer review of `/privacy` and `/terms`; leaked-password protection; the
    two old Windows stashes; optionally branch protection on `main`.
-2. **Restructure** — `restructure-proposal.md` (8 phases: clean-up, brand,
-   iPhone install, shell/primitives, route groups, one permission model,
-   thin pages, optional Studio routes). Decided: keep "Welcome back,
-   misfit."; landing "THE CAVERN / by Misfits Cavern"; no repo rename (new
-   repo at launch, 3.16). The mark is chosen: R13 (`brand/mark/`, icons
-   exported). Prefixes stay (decided). Still open: the domain. (Agent
-   leftovers removed.) No code has moved yet.
-3. **Security and launch blockers**: script share links token-gated (3.3) ·
-   password recovery (3.4).
+2. **Restructure** — `restructure-proposal.md`: phases 1–2 done (clean-up;
+   The Cavern with the R13 mark and icons). Next: 3 iPhone install (splash,
+   coaching, push), 4 shell/primitives, 5 route groups, 6 one permission
+   model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
+   at launch, 3.16). Still open: the domain.
+3. **Launch blocker**: password recovery (3.4).
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
 5. **Upgrades**: data access through `lib/` (3.2, L, under way: 62 calls
-   left; PR #137) · brand rename (3.12) ·
+   left; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
    dev-toolchain advisories (3.1, watch upstream).
@@ -101,74 +103,73 @@ No migration.
   bump changes only its own lines); `npm run stack:up` fails (POSIX `/tmp`
   path handed to Node) — run its steps by hand.
 
-## Earlier — The bible: the whole suite, top to bottom
+## Earlier — Script share links: the token is the only way in (3.3)
 
-No migration. Docs and two scripts only.
+Migration `20261006000000_script_share_links.sql` — applied to production
+2026-10-07 (owner, SQL editor); production matches the snapshot.
 
-- **`.cavern-intelligence/bible/`**: a front door (`README.md`: ecosystem
-  map, the threads that tie it together, how to refresh), eleven chapters
-  (shell; account; home, Today and projects; ScriptOS; Studio; Lounge and
-  sound; the network; public pages; admin; platform systems; rulesets — the
-  RLS permission matrix and phase gating), each with its screens, states,
-  rules, connections and known gaps.
-- **Generated**: `npm run bible` → `bible/inventory.md` (34 pages, 5 API
-  routes, what each touches, tables → routes, functions, specs → routes);
-  `npm run bible:shots` → 96 screenshots (desktop + phone) of every page on
-  the demo world (local stack only).
-- **Audit** (`bible/audit-2026-10-06.md`): shared scripts are readable
-  without their link (3.3, security); no password recovery (3.4); two phone
-  layout bugs (3.6); `jobs` double SELECT policy (3.9); an unused permission
-  model (3.10); share pages without previews (3.11); no admin catalogues or
-  moderation (3.14); no email (3.15). All in BACKLOG.
-- **Docs that had drifted, corrected**: `scriptos-engine.md` (no worker, no
-  `script_versions`: the real sync, conflict rule, offline queue and
-  revisions), `routing-and-surface.md` (`/shared`, `/api/links`, `/m`; the
-  data-layer claim), `database-and-security.md` (portfolios are public),
-  `conventions.md` §5 (the hooks the UI really uses), the definer count (24).
-- **`restructure-proposal.md`**: the plan for folders, logic and the brand,
-  for sign-off. Found two dead files (`hooks/useColorExtractor.ts`,
-  `components/ui/AmbientGradient.tsx`).
-- Dependabot #135 (4 updates, approved) is green; the merge needs the owner
-  (the session's merge was refused).
-- **Brand**: five rounds of the mark with the owner (`brand/concepts/`,
-  sheets by `node scripts/brand-sheet.mjs`); **R13 chosen** — Assiniboine
-  and Rundle make the M, lit by the crescent C. `brand/mark/` holds the
-  mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
-  makes the iPhone, manifest and favicon icons. Owner decisions in
-  `restructure-proposal.md`; launch-repository practice is 3.16.
-- **One source of rules**: `.cavern-intelligence/RULES.md` replaces
-  `AGENTS.md`'s hand-written rules, `CLAW.md`, `playbook.md` and
-  `sync-protocol.md` (all drifted). `CLAUDE.md`, `AGENTS.md` and
-  `.github/copilot-instructions.md` are generated from it by
-  `npm run sync-intel`; CI's `checks` job fails if they drift. The
-  SessionStart hook is gone (CLAUDE.md's imports replace it). `INDEX.md`
-  is the map: one home per fact.
-- **Skills restored**: `supabase` and `supabase-postgres-best-practices`
-  were dangling links since July (`65bb696` deleted their files); now real
-  folders in `.claude/skills/` with `skills-lock.json` (`tools-and-access.md` §4).
-- **Old agent tooling removed**: `.harnesskit/` and `progress/` (a September
-  harness; nothing referenced them).
-- Naming: The Cavern is the product, Misfits Cavern the company
-  (`overview-and-goals.md`); the rename is 3.12.
+- **The leak, closed**: the anon policy "Shared scripts publicly viewable"
+  (`using (shared = true)`) and the same arm in "scripts view" let anyone
+  list every shared script without its link. Both arms are gone; a link
+  resolves only through `get_shared_script(token)` (definer: the exact
+  token while `shared`; the words and the author's public profile). In
+  production 0 of 41 scripts were shared, so nothing was exposed.
+- **Who shares**: `internal.scripts_share_guard` (trigger) — only the
+  owner, or a project script's shapers, may change `shared` or
+  `share_token`; tokens under 24 characters are refused. A new token is a
+  revoke. Viewers still edit the words.
+- **`/s/[token]`** is server-rendered through the public client: link
+  previews (title, writer), never indexed, no cache — off or a new link
+  closes it at once.
+- **The editor's Share** (`components/editor/ShareScriptButton.tsx`,
+  `lib/scriptos/share.ts`): link on/off, copy, new link (confirmed);
+  shown to whoever the database lets share; every save checks its error.
+- **Pitch board** says "This is public" (blocks are readable by everyone
+  by design); its copy-link checks for failure.
+- Tests: `tests/integration/script-share.test.ts` (11, failed 9 before the
+  migration — the leak reproduced); `privacy.test.ts` updated (it asserted
+  the leak); `e2e/script-share.spec.ts` (on, read signed out, new link,
+  off); `lib/scriptos/share.test.ts`. Docs: `database-and-security.md` §C
+  and the §2.D allowlist, bible 04/08/11, BACKLOG 3.3 removed, 3.11
+  narrowed to `/p` and `/m`.
+- Verified: typecheck, lint, unit tests, integration (all files), build,
+  drift snapshot and types regenerated; e2e: script-share, accessibility,
+  route-smoke, legal, writing-loop.
 
-## Earlier — Lint pass 3: no hidden dependencies
+## Earlier — Restructure phases 1–2: clean-up and The Cavern
 
 No migration.
 
-- **`react-hooks/exhaustive-deps` has no disables left** (was 20). Each hid a
-  dependency; now an effect event (`useEffectEvent`) wraps the helper or
-  callback the effect calls (editor mount + project follow, jobs, project
-  hub, script sync's remote handler, voice presence, on-set offline seed,
-  phase reveal, the island's Caps Lock keys), or the effect depends on
-  extracted keys (Lounge crew, island project switch) or memoised values
-  (island apps, CutPlayer embed, split-pane refs, CastingBoard loader).
-  The editor's keydown handler is a plain function (its `useCallback` hid
-  stale helpers and memoised nothing).
-- **`usePillStage(descriptor)`** no longer takes a hand-kept deps list: it
-  republishes when the JSON of what it shows changes (6 pages updated).
-- **Every remaining disable carries a `-- reason`**: 22
-  `@next/next/no-img-element` (signed storage URLs, pasted links,
-  third-party thumbnails — `next/image` doesn't fit) and 2 justified
-  `set-state-in-effect`. Patterns in `conventions.md` §10.
-- Lint, typecheck, unit tests (472), build: clean.
-
+- **Brand**: the product is **The Cavern** everywhere it's named — titles
+  and metadata, the manifest (`name` The Cavern, `short_name` Cavern), the
+  service worker, share and press pages, Discord sender, Spotify player,
+  export filename, legal (`LEGAL.product` The Cavern, `LEGAL.maker` Misfits
+  Cavern; effective date moved to 6 October), README, package name
+  `the-cavern`, doc headings. Misfits Cavern stays only as the maker:
+  the landing tag reads "The Cavern", the hero is the mark in 3D
+  (`Mark3D`: three.js loaded after the page, lit by its own moon, turns
+  with the pointer or a drag; the flat mark is the fallback), "by Misfits
+  Cavern" under it (owner's call, revising "THE CAVERN" as a wordmark);
+  the footer reads "The Cavern · by Misfits Cavern ·
+  © 2026 Peter Olowude". "Welcome back, misfit." and the `mc_`/`mc-`
+  prefixes stay.
+- **The mark in the app**: `components/brand/Mark.tsx` (R13 in theme
+  tokens) replaces the "MC" text in the nav, Studio, projects, jobs,
+  Lounge and portfolio headers. `public/` gets the R13 icons
+  (`icon.svg`, `favicon-32.png`, `apple-touch-icon.png`, 192/512 and
+  maskable PNGs); `app/layout.tsx` declares them; the service worker cache
+  is `mc-shell-v3` so installed apps refresh.
+- **Clean-up**: deleted `hooks/useColorExtractor.ts` and
+  `components/ui/AmbientGradient.tsx` (unused); `types/screenplay.ts` →
+  `lib/scriptos/types.ts` (17 imports); `docs/` → `.cavern-intelligence/archive/`;
+  dead `tsconfig` aliases (`@/types`, `@/hooks`, `@/utils`, `@/styles`)
+  removed; CI's docs-only filter no longer lists `docs/`.
+- Docs: bible gaps closed (01, 03, 05, 08, 10), `restructure-proposal.md`
+  phases 1–2 marked done, `brand/README.md` says how the icons get into
+  `public/`; BACKLOG 3.12 done and removed, 3.13 narrowed.
+- The landing tagline was drawn at 45% opacity (2.3:1); now `--fg-dim` at
+  full opacity (the 4.5:1 floor) — axe caught it once the hero loaded later.
+- Verified: typecheck, lint, unit tests (479, 7 new for the 3D mark's
+  geometry), build, budget (36 pages; `/` 291 kB — three.js isn't in the
+  first load); the landing (at rest, hovered, dragged) and showcase looked
+  at on desktop and phone.

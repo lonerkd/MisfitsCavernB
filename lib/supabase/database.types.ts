@@ -3645,6 +3645,18 @@ export type Database = {
           visibility: string;
         }[];
       };
+      get_shared_script: {
+        Args: { p_token: string };
+        Returns: {
+          author_avatar_url: string;
+          author_role: string;
+          author_username: string;
+          content: string;
+          format: string;
+          title: string;
+          updated_at: string;
+        }[];
+      };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
       issue_call_sheet: {
         Args: { p_note?: string; p_sheet: string };

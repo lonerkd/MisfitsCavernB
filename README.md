@@ -1,6 +1,8 @@
-# Misfits Cavern
+# The Cavern
 
-Production suite for independent filmmakers: script, breakdown, schedule, call
+*by Misfits Cavern*
+
+The production suite for independent filmmakers: script, breakdown, schedule, call
 sheets, money, paperwork, the Lounge and the day on set as one connected
 system. Next.js 16 (App Router, React 19) · TypeScript · Tailwind · Supabase
 (Postgres + RLS + Auth + Realtime + Storage) · Vercel.
@@ -52,6 +54,5 @@ lib/webrtc/            Voice room mesh
 supabase/              Migrations (schema source of truth), fingerprint, local config
 tests/integration/     Database tests as owner, crew and outsider
 e2e/                   Playwright tests
-.cavern-intelligence/  The knowledge hub — start at INDEX.md; open work in BACKLOG.md
-docs/                  Design direction and dated audits (historical snapshots)
+.cavern-intelligence/  The knowledge hub — start at INDEX.md; open work in BACKLOG.md; old audits in archive/
 ```

@@ -95,8 +95,6 @@ budget, crew, script, custom text) → saved as the project's portfolio blocks
 
 ## Known gaps
 
-- Home's hero is the brand wordmark ("MISFITS CAVERN"), to become The
-  Cavern (3.12).
 - Festivals live in one jsonb column on `projects` (fine now; a table if
   they grow).
 - The activity feed shows only some kinds of change (BACKLOG 3.5, product

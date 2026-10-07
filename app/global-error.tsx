@@ -16,7 +16,7 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
       <body style={{ margin: 0, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#040710', color: '#e8e4d8', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', padding: 24, textAlign: 'center' }}>
         <main style={{ maxWidth: 440 }}>
           <p style={{ fontSize: 12, letterSpacing: 3, textTransform: 'uppercase', color: 'var(--accent)', margin: '0 0 12px' }}>Something broke</p>
-          <h1 style={{ fontSize: 22, margin: '0 0 12px', fontWeight: 600 }}>Misfits Cavern couldn’t load.</h1>
+          <h1 style={{ fontSize: 22, margin: '0 0 12px', fontWeight: 600 }}>The Cavern couldn’t load.</h1>
           <p style={{ fontSize: 14, lineHeight: 1.5, color: '#a9a495', margin: '0 0 20px' }}>
             It’s been reported. Reload to try again — your work is saved as you go.
           </p>

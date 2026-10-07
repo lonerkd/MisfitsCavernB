@@ -121,8 +121,7 @@ reduced motion).
 
 ## Known gaps
 
-- The home hero, the `MC` mark in Studio and the window titles still say
-  Misfits Cavern (rename, BACKLOG 3.12).
-- iPhone install works as a home-screen web app but lacks a PNG touch icon,
-  splash screens and push (BACKLOG 3.13; iOS ignores `share_target` and
-  manifest shortcuts).
+- iPhone install works as a home-screen web app with the R13 icons (180 px
+  touch icon, 192/512 and maskable manifest icons) but lacks splash screens,
+  Add to Home Screen coaching and push (BACKLOG 3.13; iOS ignores
+  `share_target` and manifest shortcuts).

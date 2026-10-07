@@ -50,7 +50,7 @@ export default function ShowcasePage() {
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
           <ArrowLeft size={18} color="var(--fg)" />
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
-            MISFITS CAVERN
+            THE CAVERN
           </div>
         </Link>
       </nav>
@@ -153,7 +153,7 @@ export default function ShowcasePage() {
               }}
             >
               <p style={{ marginBottom: 20 }}>
-                Every element of Misfits Cavern is crafted with precision. From the grain texture overlay that adds cinematic depth,
+                Every element of The Cavern is crafted with precision. From the grain texture overlay that adds cinematic depth,
                 to the particle systems that respond to your interactions.
               </p>
 

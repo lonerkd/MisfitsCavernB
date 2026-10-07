@@ -1,6 +1,6 @@
 
 
-import type { ScriptLine, Scene, Character } from '@/types/screenplay';
+import type { ScriptLine, Scene, Character } from '@/lib/scriptos/types';
 
 export interface LintIssue {
   line: number;

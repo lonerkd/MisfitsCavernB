@@ -48,7 +48,7 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 | Runtime | eighths of a page per scene (`timing.ts`), table-read time when known | `scenes.est_duration` |
 | Stash | snippets beside the script | `script_stash` |
 | Export | PDF (with title page), FDX, Fountain, text | — |
-| Share | `scripts.shared` → `/s/<token>` read-only (§8) | `scripts.share_token` |
+| Share | the header's **Share** (owner, or a project's shapers): link on/off, copy, new link (closes the old) → `/s/<token>` read-only (§8), read through `get_shared_script` | `scripts.shared`, `scripts.share_token` (guarded by `scripts_share_guard`) |
 | Writing loop | words typed (not pasted) → `log_writing`; streaks, sprints, badges | `writing_days` |
 
 ## Co-writing and offline (how it really works)

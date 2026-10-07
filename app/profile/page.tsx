@@ -78,7 +78,7 @@ export default function ProfilePage() {
   };
 
   const handleSignOut = async () => {
-    if (!await confirm({ message: 'Sign out of Misfits Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
+    if (!await confirm({ message: 'Sign out of The Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
     await supabase.auth.signOut();
     router.replace('/auth');
   };

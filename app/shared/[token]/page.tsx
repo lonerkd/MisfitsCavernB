@@ -57,15 +57,15 @@ async function origin() {
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
   const data = await load(token);
-  if (!data) return { title: 'Misfits Cavern', robots: { index: false } };
+  if (!data) return { title: 'The Cavern', robots: { index: false } };
   const { project, lookbook } = data;
   const lead = lookbook.media.find((m) => m.kind === 'image');
   const leadSrc = lead ? srcOf(lead) : null;
   const base = await origin();
   const image = leadSrc ? (leadSrc.startsWith('/') ? `${base}${leadSrc}` : leadSrc) : undefined;
-  const description = project.description || `A project by ${project.creator_username ?? 'a Misfits Cavern filmmaker'}.`;
+  const description = project.description || `A project by ${project.creator_username ?? 'a filmmaker on The Cavern'}.`;
   return {
-    title: `${project.title} — Misfits Cavern`,
+    title: `${project.title} — The Cavern`,
     description,
     // Link-shared projects are unlisted: keep them out of search engines.
     robots: { index: project.visibility === 'public', follow: false },
@@ -121,7 +121,7 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
         <GrainOverlay />
         <div className={s.wordmark}>CAVERN</div>
         <p className={s.eyebrow}>This project isn’t shared, or the link is wrong.</p>
-        <Link href="/" className={s.back}>← Misfits Cavern</Link>
+        <Link href="/" className={s.back}>← The Cavern</Link>
       </div>
     );
   }
@@ -138,7 +138,7 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
       <GrainOverlay />
       <div className={s.glow} aria-hidden />
       <header className={s.hero}>
-        <div className={s.eyebrow}>{project.visibility === 'public' ? 'Public project' : 'Shared with you'} · Misfits Cavern</div>
+        <div className={s.eyebrow}>{project.visibility === 'public' ? 'Public project' : 'Shared with you'} · The Cavern</div>
         <h1 className={s.title}>{project.title}</h1>
         {project.creator_username && <div className={s.byline}>by {project.creator_username}</div>}
         {project.description && <p className={s.logline}>{project.description}</p>}
@@ -193,7 +193,7 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
       )}
 
       <footer className={s.footer}>
-        <span>Made in Misfits Cavern — the production suite for indie filmmakers.</span>
+        <span>Made in The Cavern — the production suite for indie filmmakers, by Misfits Cavern.</span>
         <Link href="/auth" className={s.cta}>Join the Cavern</Link>
       </footer>
     </div>

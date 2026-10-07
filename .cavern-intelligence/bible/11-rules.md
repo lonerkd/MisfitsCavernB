@@ -24,7 +24,8 @@ the owner sees it.
 | Post a job for the project | ✓ | ✓ | ✓ | — | — | — |
 | Respond to applicants | the poster | | | | | |
 | Lounge channel | by audience (§6) | | | | | |
-| Shared links (`/shared`, `/m`, `/p`) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Share a script by link (on/off, new link) | ✓ (own scripts) | ✓ | ✓ | — | — | — |
+| Shared links (`/shared`, `/s`, `/m`, `/p`) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ¹ Money and paperwork are shapers only; a person reads paperwork that names
 them. Timesheets: everyone their own; shapers approve.

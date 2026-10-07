@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, ArrowUpRight, Clock, Archive, ArchiveRestore, Search } from 'lucide-react';
 import Link from 'next/link';
+import { Mark } from '@/components/brand/Mark';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
@@ -524,14 +525,13 @@ export default function ProjectsPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{
-            fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6,
-            color: 'var(--fg-dim)', textDecoration: 'none',
+            display: 'inline-flex', opacity: 0.7, textDecoration: 'none',
             transition: 'opacity 0.2s',
           }}
             onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
             onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
           >
-            MC
+            <Mark size={22} title="The Cavern home" />
           </Link>
 
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />

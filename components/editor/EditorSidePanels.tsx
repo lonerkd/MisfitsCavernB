@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
 import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
-import type { ScriptLine } from '@/types/screenplay';
+import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
 

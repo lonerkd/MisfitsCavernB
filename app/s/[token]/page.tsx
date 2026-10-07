@@ -1,19 +1,48 @@
-'use client';
+// A shared script (/s/<token>): read-only, for anyone holding the link.
+// Server-rendered so link previews show the title and the writer. It reads
+// only through get_shared_script — the exact token, while sharing is on — so
+// turning sharing off or making a new link closes this one at once (nothing
+// is cached). Nobody can list shared scripts or read one by id.
 
-import React, { useState, useEffect, use } from 'react';
+import type React from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
+import { publicClient } from '@/lib/supabase/public';
 import { parseScript } from '@/lib/scriptos/parser';
-import type { ScriptLine } from '@/types/screenplay';
-import type { PublicProfile } from '@/lib/supabase/profiles';
+import type { ScriptLine } from '@/lib/scriptos/types';
+
+export const dynamic = 'force-dynamic';
 
 interface SharedScript {
-  id: string;
   title: string;
   content: string;
-  updated_at: string;
-  created_by: string | null;
-  profile: PublicProfile | null;
+  format: string | null;
+  updated_at: string | null;
+  author_username: string | null;
+  author_avatar_url: string | null;
+  author_role: string | null;
+}
+
+async function load(token: string): Promise<SharedScript | null> {
+  const db = publicClient();
+  if (!db || !token) return null;
+  const { data } = await db.rpc('get_shared_script', { p_token: token });
+  return data?.[0] ?? null;
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const { token } = await params;
+  const script = await load(token);
+  if (!script) return { title: 'The Cavern', robots: { index: false } };
+  const description = `A script by ${script.author_username ?? 'a writer on The Cavern'}.`;
+  return {
+    title: `${script.title} — The Cavern`,
+    description,
+    // Shared by link: unlisted, never indexed.
+    robots: { index: false, follow: false },
+    openGraph: { title: script.title, description, type: 'article' },
+    twitter: { card: 'summary', title: script.title, description },
+  };
 }
 
 const PRINT_COLORS: Record<string, string> = {
@@ -55,59 +84,12 @@ function ScriptLineView({ line, index }: { line: ScriptLine; index: number }) {
   return <div style={base}>{line.text}</div>;
 }
 
-export default function PublicScriptPage(props: { params: Promise<{ token: string }> }) {
-  const params = use(props.params);
-  const [script, setScript] = useState<SharedScript | null>(null);
-  const [lines, setLines] = useState<ScriptLine[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+export default async function PublicScriptPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params;
+  const script = await load(token);
+  const lines: ScriptLine[] = script ? parseScript(script.content).lines : [];
 
-  useEffect(() => {
-    const fetchScript = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('scripts')
-        .select('id, title, content, updated_at, shared, created_by')
-        .eq('share_token', params.token)
-        .eq('shared', true)
-        .single();
-
-      if (error || !data) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-
-      let profile: PublicProfile | null = null;
-      if (data.created_by) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('username, role, avatar_url')
-          .eq('id', data.created_by)
-          .single();
-        profile = profileData ? { username: profileData.username, role: profileData.role ?? undefined, avatar_url: profileData.avatar_url ?? undefined } : null;
-      }
-
-      setScript({ ...data, content: data.content ?? '', updated_at: data.updated_at ?? '', profile });
-      setLines(parseScript(data.content || '').lines);
-      setLoading(false);
-    };
-
-    fetchScript();
-  }, [params.token]);
-
-  if (loading) {
-    return (
-      <div data-theme="default" style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)', animation: 'pulse 1.6s ease-in-out infinite' }}>
-          LOADING
-        </div>
-        <style>{`@keyframes pulse { 0%,100%{opacity:.15} 50%{opacity:.5} }`}</style>
-      </div>
-    );
-  }
-
-  if (notFound || !script) {
+  if (!script) {
     return (
       <div data-theme="default" style={{
         minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)',
@@ -139,9 +121,9 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
       }}>
         <div>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 2, color: '#fff' }}>{script.title}</div>
-          {script.profile && (
+          {script.author_username && (
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
-              by {script.profile.username}{script.profile.role ? ` · ${script.profile.role}` : ''}
+              by {script.author_username}{script.author_role ? ` · ${script.author_role}` : ''}
             </div>
           )}
         </div>
@@ -173,7 +155,7 @@ export default function PublicScriptPage(props: { params: Promise<{ token: strin
         <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
           <Link href="/auth" style={{ color: 'rgba(var(--ink-rgb), 0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(var(--ink-rgb), 0.2)' }}>
-            MISFITS CAVERN
+            THE CAVERN
           </Link>
         </span>
       </footer>

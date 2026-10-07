@@ -1,6 +1,6 @@
 
 
-import type { ScriptLine, Scene } from '@/types/screenplay';
+import type { ScriptLine, Scene } from '@/lib/scriptos/types';
 
 export interface CharacterStats {
   name: string;

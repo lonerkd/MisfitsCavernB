@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
   const storedUrl = discordWebhookUrlSchema.safeParse(data.webhook_url);
   if (!storedUrl.success) return NextResponse.json({ ok: true, bridged: false });
 
-  let senderName = 'Misfits Cavern';
+  let senderName = 'The Cavern';
   const { data: profile } = await supabaseAdmin.from('profiles').select('username').eq('id', user.id).maybeSingle();
   if (profile?.username) senderName = profile.username;
 
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: (senderName || 'Misfits Cavern').slice(0, 80),
+        username: (senderName || 'The Cavern').slice(0, 80),
         content: content.slice(0, 2000),
       }),
     });

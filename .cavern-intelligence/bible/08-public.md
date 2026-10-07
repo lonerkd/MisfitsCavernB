@@ -23,11 +23,11 @@ policy on an explicit "published" flag. Security model:
 
 | Route | Rendered | What it shows | Gate |
 |---|---|---|---|
-| `/` | client | the brand hero, "Script to Screen — one integrated studio", pipeline, live platform totals and ticker, module tiles with real recent work, footer (© Peter Olowude · Misfits Cavern Productions, Privacy, Terms) | `get_platform_stats`, `get_recent_work` (samples excluded) |
+| `/` | client | the hero (a "The Cavern" tag, the R13 mark in 3D — the moon lights the mountains and they turn with the pointer or a drag — then "by Misfits Cavern"), "Script to Screen — one integrated studio", pipeline, live platform totals and ticker, module tiles with real recent work, footer (The Cavern · by Misfits Cavern · © Peter Olowude, Privacy, Terms) | `get_platform_stats`, `get_recent_work` (samples excluded) |
 | `/shared/[token]` | **server**, `force-dynamic`, Open Graph metadata | a project's lookbook: title, logline, creator, published items under their scenes, cast & crew and laurels (press kit) — never notes or unpublished items | `get_shared_project`, `get_shared_lookbook`, `get_press_kit`: exact token + visibility link/public |
 | `/m/[id]` | route handler | a published file: 302 to a fresh signed URL (5 min images, 1 h video/audio), `no-store` | `get_published_media` + storage "shared read" policy |
 | `/p/[token]` | client | a portfolio piece as a press kit: media, blocks from the pitch board, credits | `portfolio_projects` / `portfolio_blocks` / `portfolio_media` are readable by everyone (all portfolio work is public by design) |
-| `/s/[token]` | client | a screenplay, read-only, formatted, with its author | anon policy `scripts.shared = true` — see the gap below |
+| `/s/[token]` | server | a screenplay, read-only, formatted, with its author; link previews (title, writer); never indexed | `get_shared_script(token)` — the exact token while sharing is on; nobody can list shared scripts or read one by id |
 | `/privacy`, `/terms` | static | the policies; operator, province, contact and effective date from `lib/legal.ts` | — |
 
 Framing: every page sends `frame-ancestors 'self'` except the share pages
@@ -48,20 +48,7 @@ token can't be probed) · empty (nothing published yet).
 
 ## Known gaps
 
-- **Shared scripts can be listed without their link.** The anon policy
-  reads every row with `shared = true`, so the token isn't a secret: anyone
-  with the public API key can fetch all shared scripts. Fix: drop the anon
-  policy (and the `shared = true` arm of the signed-in one) and read through
-  a definer `get_shared_script(token)`, as `/shared` does. Nothing in the app
-  turns `shared` on today (no share button in the editor), so the exposure is
-  whatever rows were shared earlier — count them in production first.
-  BACKLOG 3.3 (security).
-- `/s` has no way in from the app: the editor has no "share script" control
-  (the feature is half there — finish it, per "No Mocks"; 3.3).
-- `/p` and `/s` render on the client: no link previews when pasted into a
-  chat (`/shared` has them). Server-render both (3.11).
-- No e2e opens `/s/[token]`; `/m/[id]` and the API routes are covered only
-  by integration tests (3.11).
-- The landing page is the brand ("MISFITS CAVERN"); product naming → The
-  Cavern (3.12). `/showcase` copy still says "Every element of Misfits
-  Cavern…".
+- `/p` renders on the client: no link previews when pasted into a chat
+  (`/shared` and `/s` have them). Server-render it (3.11).
+- `/m/[id]` and the API routes are covered only by integration tests (3.11).
+  (`/s` has `e2e/script-share.spec.ts`: on, read signed out, new link, off.)

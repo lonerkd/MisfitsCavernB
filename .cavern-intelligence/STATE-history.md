@@ -1,6 +1,77 @@
-# Misfits Cavern — State History
+# The Cavern — State History
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
+
+## Earlier — The bible: the whole suite, top to bottom
+
+No migration. Docs and two scripts only.
+
+- **`.cavern-intelligence/bible/`**: a front door (`README.md`: ecosystem
+  map, the threads that tie it together, how to refresh), eleven chapters
+  (shell; account; home, Today and projects; ScriptOS; Studio; Lounge and
+  sound; the network; public pages; admin; platform systems; rulesets — the
+  RLS permission matrix and phase gating), each with its screens, states,
+  rules, connections and known gaps.
+- **Generated**: `npm run bible` → `bible/inventory.md` (34 pages, 5 API
+  routes, what each touches, tables → routes, functions, specs → routes);
+  `npm run bible:shots` → 96 screenshots (desktop + phone) of every page on
+  the demo world (local stack only).
+- **Audit** (`bible/audit-2026-10-06.md`): shared scripts are readable
+  without their link (3.3, security); no password recovery (3.4); two phone
+  layout bugs (3.6); `jobs` double SELECT policy (3.9); an unused permission
+  model (3.10); share pages without previews (3.11); no admin catalogues or
+  moderation (3.14); no email (3.15). All in BACKLOG.
+- **Docs that had drifted, corrected**: `scriptos-engine.md` (no worker, no
+  `script_versions`: the real sync, conflict rule, offline queue and
+  revisions), `routing-and-surface.md` (`/shared`, `/api/links`, `/m`; the
+  data-layer claim), `database-and-security.md` (portfolios are public),
+  `conventions.md` §5 (the hooks the UI really uses), the definer count (24).
+- **`restructure-proposal.md`**: the plan for folders, logic and the brand,
+  for sign-off. Found two dead files (`hooks/useColorExtractor.ts`,
+  `components/ui/AmbientGradient.tsx`).
+- Dependabot #135 (4 updates, approved) is green; the merge needs the owner
+  (the session's merge was refused).
+- **Brand**: five rounds of the mark with the owner (`brand/concepts/`,
+  sheets by `node scripts/brand-sheet.mjs`); **R13 chosen** — Assiniboine
+  and Rundle make the M, lit by the crescent C. `brand/mark/` holds the
+  mark, a small cut and a one-colour version; `node scripts/brand-export.mjs`
+  makes the iPhone, manifest and favicon icons. Owner decisions in
+  `restructure-proposal.md`; launch-repository practice is 3.16.
+- **One source of rules**: `.cavern-intelligence/RULES.md` replaces
+  `AGENTS.md`'s hand-written rules, `CLAW.md`, `playbook.md` and
+  `sync-protocol.md` (all drifted). `CLAUDE.md`, `AGENTS.md` and
+  `.github/copilot-instructions.md` are generated from it by
+  `npm run sync-intel`; CI's `checks` job fails if they drift. The
+  SessionStart hook is gone (CLAUDE.md's imports replace it). `INDEX.md`
+  is the map: one home per fact.
+- **Skills restored**: `supabase` and `supabase-postgres-best-practices`
+  were dangling links since July (`65bb696` deleted their files); now real
+  folders in `.claude/skills/` with `skills-lock.json` (`tools-and-access.md` §4).
+- **Old agent tooling removed**: `.harnesskit/` and `progress/` (a September
+  harness; nothing referenced them).
+- Naming: The Cavern is the product, Misfits Cavern the company
+  (`overview-and-goals.md`); the rename is 3.12.
+
+## Earlier — Lint pass 3: no hidden dependencies
+
+No migration.
+
+- **`react-hooks/exhaustive-deps` has no disables left** (was 20). Each hid a
+  dependency; now an effect event (`useEffectEvent`) wraps the helper or
+  callback the effect calls (editor mount + project follow, jobs, project
+  hub, script sync's remote handler, voice presence, on-set offline seed,
+  phase reveal, the island's Caps Lock keys), or the effect depends on
+  extracted keys (Lounge crew, island project switch) or memoised values
+  (island apps, CutPlayer embed, split-pane refs, CastingBoard loader).
+  The editor's keydown handler is a plain function (its `useCallback` hid
+  stale helpers and memoised nothing).
+- **`usePillStage(descriptor)`** no longer takes a hand-kept deps list: it
+  republishes when the JSON of what it shows changes (6 pages updated).
+- **Every remaining disable carries a `-- reason`**: 22
+  `@next/next/no-img-element` (signed storage URLs, pasted links,
+  third-party thumbnails — `next/image` doesn't fit) and 2 justified
+  `set-state-in-effect`. Patterns in `conventions.md` §10.
+- Lint, typecheck, unit tests (472), build: clean.
 
 ## Earlier — `has_discord_webhook` is gated
 
