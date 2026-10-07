@@ -7,7 +7,7 @@ import { Mark } from '@/components/brand/Mark';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/GrainOverlay';
-import { supabase } from '@/lib/supabase/client';
+import { setProjectStatus } from '@/lib/supabase/projects';
 import { getProjectCardFacts, getUserProjects } from '@/lib/supabase/projects';
 import { fetchProjectsSignals, setProjectArchived } from '@/lib/supabase/progress';
 import type { ProjectSignals } from '@/lib/os/progress';
@@ -491,8 +491,7 @@ export default function ProjectsPage() {
     try {
       const dbStatus = PHASE_STATUS[targetPhase];
 
-      const { error } = await supabase.from('projects').update({ status: dbStatus }).eq('id', projectId);
-      if (error) throw error;
+      await setProjectStatus(projectId, dbStatus);
       toast(`Project moved to ${targetPhase}`, 'success');
 
       if (targetProj) {

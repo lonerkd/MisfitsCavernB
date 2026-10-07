@@ -149,3 +149,9 @@ export async function deleteProject(projectId: string) {
   return true;
 }
 
+
+/** Moves a project to another stage (its status column). */
+export async function setProjectStatus(projectId: string, status: string): Promise<void> {
+  const { error } = await supabase.from('projects').update({ status }).eq('id', projectId);
+  if (error) throw error;
+}

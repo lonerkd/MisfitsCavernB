@@ -80,3 +80,11 @@ export function audioRefUrl(uri: string): string {
   if (/^https?:\/\//i.test(uri)) return uri;
   return supabase.storage.from('sfx_library').getPublicUrl(uri).data.publicUrl;
 }
+
+/** A project's saved Spotify references (newest first), for the player. */
+export async function listSpotifyRefs(projectId: string, limit = 20): Promise<{ id: string; title: string | null; uri: string }[]> {
+  const { data, error } = await supabase.from('project_audio_references').select('id, title, uri').eq('project_id', projectId)
+    .eq('reference_type', 'spotify').order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}

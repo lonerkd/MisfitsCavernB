@@ -196,3 +196,10 @@ export async function respondToApplication(applicationId: string, status: 'accep
   if (error) throw new Error(error.message || 'Could not update the application');
   return data as unknown as ApplicationResponse;
 }
+
+/** The newest open postings' titles and roles (the public home page). */
+export async function listOpenJobTitles(limit = 4): Promise<{ title: string; role: string }[]> {
+  const { data, error } = await supabase.from('jobs').select('title, role').eq('status', 'open').order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { ArrowRight, BookOpen, Settings2 } from 'lucide-react';
 import { useToast } from '@/components/Toast';
 import { accentVars } from '@/components/progress/Bricks';
-import { supabase } from '@/lib/supabase/client';
+import { getMyCraftOn } from '@/lib/supabase/crew-management';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { placeHref, type ProjectSignals } from '@/lib/os/progress';
 import {
@@ -79,8 +79,8 @@ export function GuidePanel({ projectId, signals, isOwner, format, structure, acc
   useEffect(() => {
     if (isOwner || !userId) return;
     let alive = true;
-    supabase.from('project_crew').select('craft').eq('project_id', projectId).eq('user_id', userId).maybeSingle()
-      .then(({ data }) => { if (alive) setCraft(data?.craft ?? null); });
+    // Without it, the guide falls back to the owner's view of the work.
+    getMyCraftOn(projectId, userId).then((c) => { if (alive) setCraft(c); }, () => { if (alive) setCraft(null); });
     return () => { alive = false; };
   }, [isOwner, projectId, userId]);
 

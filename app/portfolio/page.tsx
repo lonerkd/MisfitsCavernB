@@ -9,7 +9,7 @@ import GrainOverlay from '@/components/GrainOverlay';
 import SectionLabel from '@/components/SectionLabel';
 import AnimatedSection from '@/components/AnimatedSection';
 import { getPortfolioProjects } from '@/lib/supabase/portfolio';
-import { supabase } from '@/lib/supabase/client';
+import { listReleases } from '@/lib/supabase/campaigns';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/context/PillContext';
@@ -267,10 +267,8 @@ export default function PortfolioPage() {
       try {
         const user = await awaitOSUser();
         if (!user) return;
-        const [projRes, campRes] = await Promise.all([
-          supabase.from('projects').select('id,title,festival_submissions'),
-          supabase.from('campaigns').select('id,title,platform,budget,project_id'),
-        ]);
+        const releases = await listReleases();
+        const projRes = { data: releases.projects }, campRes = { data: releases.campaigns };
         const titleById = new Map((projRes.data || []).map((p: any) => [p.id, p.title]));
         const fests: FestivalEntry[] = [];
         (projRes.data || []).forEach((p: any) => {

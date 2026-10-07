@@ -182,3 +182,10 @@ export async function getProjectTeam(projectId: string, ownerId: string | null |
       .map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew'), avatar: c.profiles?.avatar_url })),
   ];
 }
+
+/** This person's craft on a project they're crew on; null when none (or not crew). */
+export async function getMyCraftOn(projectId: string, userId: string): Promise<string | null> {
+  const { data, error } = await supabase.from('project_crew').select('craft').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return data?.craft ?? null;
+}

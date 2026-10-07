@@ -116,4 +116,31 @@ test.describe('Production Management (local Supabase)', () => {
     await expect(jo.getByRole('switch', { name: 'toggle Lounge' })).toHaveCount(0);
     await expect(jo.getByText('⚠')).toHaveCount(0);
   });
+
+  test('Studio › Promos: a campaign is added, moved on and removed', async ({ browser }) => {
+    test.setTimeout(120_000);
+
+    const sam = await signIn(browser, owner);
+    await sam.goto('/studio');
+    const picker = sam.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await sam.goto('/studio?tab=promos');
+    // Promos opens in Delivery; the owner can open it early.
+    await sam.getByRole('button', { name: /open it now/i }).click();
+    await sam.getByRole('button', { name: 'New campaign' }).click();
+    await sam.getByLabel('Campaign title').fill(`Premiere ${TAG}`);
+    await sam.getByLabel('Platform').fill('Harbour Film Festival');
+    await sam.getByLabel('Budget in dollars').fill('1200');
+    await sam.getByRole('button', { name: 'Add', exact: true }).click();
+    await expect.poll(async () => (await admin.from('campaigns').select('title, budget').eq('project_id', projectId)).data)
+      .toEqual([{ title: `Premiere ${TAG}`, budget: 1200 }]);
+
+    await sam.getByRole('radiogroup', { name: `Stage of Premiere ${TAG}` }).getByRole('radio', { name: 'Live' }).click();
+    await expect.poll(async () => (await admin.from('campaigns').select('status').eq('project_id', projectId).single()).data?.status).toBe('live');
+
+    await sam.getByRole('button', { name: `Delete Premiere ${TAG}` }).click();
+    await sam.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect.poll(async () => (await admin.from('campaigns').select('id').eq('project_id', projectId)).data?.length).toBe(0);
+  });
 });

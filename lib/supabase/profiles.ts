@@ -163,3 +163,9 @@ export async function findPeopleByName(text: string, limit = 8): Promise<{ id: s
   if (error) throw error;
   return data ?? [];
 }
+
+/** Sets the signed-in person's craft (profiles.role). */
+export async function setMyCraft(userId: string, craft: string | null): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ role: craft }).eq('id', userId);
+  if (error) throw error;
+}

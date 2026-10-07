@@ -60,3 +60,11 @@ export async function updateScriptCharacter(id: string, userId: string, patch: T
   if (error) throw error;
   return data;
 }
+
+/** The script this person edited last (title and text), or null. */
+export async function latestScriptEditedBy(userId: string): Promise<{ title: string; content: string | null } | null> {
+  const { data, error } = await supabase.from('scripts').select('title,content').eq('last_edited_by', userId)
+    .order('updated_at', { ascending: false }).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
