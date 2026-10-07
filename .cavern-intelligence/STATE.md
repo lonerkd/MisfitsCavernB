@@ -47,8 +47,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
-5. **Upgrades**: data access through `lib/` (3.2, L, under way: 35 calls
-   left; PR #137) ·
+5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
+   left, after 3.4; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
    dev-toolchain advisories (3.1, watch upstream).
@@ -71,23 +71,29 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
   users (24 more) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
-## Latest Session — Data access through `lib/` begins; stale branches gone (PR #137)
+## Latest Session — Data access through `lib/`, and lint keeps it there (PR #137)
 
 No migration.
 
-- **BACKLOG 3.2: 35 direct `.from()` calls left** (counted the new way,
-  multi-line calls included — BACKLOG 3.2). Moved: project page
-  (`lib/supabase/project-hub.ts`), Lounge, Soundtrack (`audio.ts`), call
-  sheet (`studio.getCallSheetView`), Today (`today.ts`), pitch board, jobs
-  (`jobs.ts`), profile, crew, crew member and Settings › Export
-  (`profiles.ts`). Found on the way:
+- **BACKLOG 3.2 is down to one file.** Every page and component now
+  queries through `lib/supabase/*` (new: `project-hub`, `scripts`,
+  `campaigns`, `audio`, `media`, `today`, `client-errors`; the call sheet
+  through `studio.getCallSheetView`), and `eslint.config.mjs` fails
+  `supabase.from()` in `app/` and `components/`. The one exception is the
+  auth callback, left until the password-recovery work lands. Server
+  routes keep their own clients. Found on the way:
+  - **The editor started a second, empty screenplay** for a project when
+    looking up its script failed — tested by failing the request in the
+    browser (`e2e/editor-project-script.spec.ts`, fails on the old code).
   - **A task added while the project page's panel loaded vanished** (saved,
     but the late load put back the old list). A load a write overtook is
     now fetched again.
   - **The pitch board made a second board** when looking up the existing
     one failed; that failure now stops it.
-  - **Uploaded sound effects saved to a project never played** (Play
-    wrapped their URL in a second storage URL).
+  - **Uploaded sound effects saved to a project never played**, in
+    Soundtrack or the editor (Play wrapped their URL in a second storage URL).
+  - Promos: a failed campaign save or delete said nothing useful; tested
+    (add, move to Live, delete) in `e2e/project-manager.spec.ts`.
   - Lounge member rights ignored failed saves; the call sheet hung on its
     skeleton when a load threw; an outsider's call-sheet link is tested
     ("not found", nothing shown).

@@ -55,22 +55,18 @@ fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
 changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
 
-### 3.2 Data access through `lib/` — L (incremental)
-`conventions.md` §1 says components never call `supabase.from()` directly;
-**35 calls** in `app/` and `components/` still do (2026-10-07). Done: the
-project page, Lounge, Soundtrack, call sheet, Today, pitch board, jobs,
-profile, crew, crew member and Settings › Export. Count with
-`grep -rnE "\.from\(['\"]" app components | grep -v "storage\|Array\.from" | wc -l`
-— the older `supabase\s*\.from\(` count missed calls split across lines
-(`supabase\n  .from(...)`), so "110" was an undercount. Left, by file: the
-home page (4), PromosTab (4), useScriptCharacters (3), the editor (3), the
-auth callback (3), the Discord notify route (3, server), PitchDeck (2),
-CommandPalette (2), portfolio (2), admin errors (2), then single calls in
-PostTab, Continue, GuidePanel, GlobalAudioWidget, welcome, projects and
-`/p/[token]` — with the page's loading done the §10 way
-(`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule
-on `supabase.from` in `app/` and `components/` so it stays done. Done when
-the rule is on with no exceptions.
+### 3.2 Data access through `lib/` — S (one file left)
+Every page and component reads and writes through `lib/supabase/*`, and
+`eslint.config.mjs` now fails `supabase.from(...)` in `app/` and
+`components/` (2026-10-07, PR #137). **Left: `app/auth/callback/page.tsx`**
+(3 calls: the profile it makes on first sign-in), excepted in the lint
+config until the password-recovery work (3.4), which edits the auth pages
+too, has landed — then move them to `lib/supabase/profiles.ts` and drop
+the exception. Done when the rule has no exceptions.
+
+Not covered by the rule, on purpose: `app/api/discord/notify/route.ts` uses
+its own per-request server clients (`supabaseAdmin`, one acting as the
+caller) and was reviewed for auth and SSRF; server routes stay as they are.
 
 ### 3.4 Password recovery — S (launch blocker)
 No "forgot password" anywhere: no `resetPasswordForEmail`, no recovery page.
