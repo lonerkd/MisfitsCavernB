@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video, Globe } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
@@ -271,7 +271,11 @@ export default function PitchBoardPage() {
         {shareToken && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button
-              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/p/${shareToken}`); toast('Share link copied', 'success'); }}
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/p/${shareToken}`)
+                  .then(() => toast('Share link copied', 'success'))
+                  .catch(() => toast('Couldn’t copy — use Preview and copy the address.', 'error'));
+              }}
               style={btnStyle(accent, false)}
             >
               <Copy size={12} /> Copy link
@@ -282,6 +286,17 @@ export default function PitchBoardPage() {
           </div>
         )}
       </header>
+
+      {/* Portfolio pieces and their blocks are public by design (anyone, signed
+          in or not, can read them) — say so where blocks are added. */}
+      <div role="note" style={{
+        display: 'flex', alignItems: 'center', gap: 8, padding: '8px 24px',
+        background: 'rgba(232, 67, 26, 0.08)', borderBottom: '1px solid rgba(232, 67, 26, 0.18)',
+        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-muted)',
+      }}>
+        <Globe size={12} aria-hidden style={{ color: 'var(--accent)', flexShrink: 0 }} />
+        This is public: anyone can see what you put on this board, including budget and crew blocks.
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) 1fr', gap: 0, alignItems: 'stretch', minHeight: 'calc(100vh - 60px)' }}>
         <aside style={{ borderRight: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 16, overflowY: 'auto' }}>

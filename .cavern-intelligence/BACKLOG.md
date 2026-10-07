@@ -17,9 +17,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   (Organization › Usage: which line is over — likely egress or Realtime; the
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
-- **Count shared scripts in production** before 3.3 ships:
-  `select count(*) from scripts where shared` (SQL editor) — they're readable
-  without their link today.
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal.ts`; Peter Olowude,
@@ -92,20 +89,6 @@ call sheet, soundtrack, …), with the page's loading done the §10 way
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
 
-### 3.3 Script share links: token-gated, and a way to share — S/M (security first)
-The anon policy `scripts."Shared scripts publicly viewable"` is
-`using (shared = true)` and the signed-in `scripts view` policy has the same
-arm, so every shared script is readable without its link — the token
-protects nothing. Replace both arms with a definer
-`get_shared_script(p_token)` (exact `share_token`, `shared = true`; returns
-title, content, updated_at, the author's public profile) like
-`get_shared_project`; `/s/[token]` reads through it, server-rendered with Open
-Graph metadata. Then finish the feature: a Share control in the editor
-(owner/shapers; on/off, copy link, revoke = new token). Persona tests: anon
-and an outsider can't list shared scripts, can read one by token, can't after
-revoke. Also: pitch-board blocks are public by design — label the board "This
-is public". Done when the tests pass and the editor can share and revoke.
-
 ### 3.4 Password recovery — S (launch blocker)
 No "forgot password" anywhere: no `resetPasswordForEmail`, no recovery page.
 Add "Forgot password?" on `/auth` (sends the reset email; same answer whether
@@ -158,12 +141,11 @@ and the hooks `usePermission`, `usePageAccess`, `useActionAccess`,
 RLS matrix in `bible/11-rules.md`) and keep their tests' useful cases. Done
 when nothing describes permissions except RLS and that one hook.
 
-### 3.11 Share pages: previews and e2e — S/M
-`/p/[token]` and `/s/[token]` render on the client, so a pasted link shows no
-title or image (`/shared` has Open Graph). Server-render both with
-`generateMetadata` through the public client. Add e2e that opens `/s/[token]`
-(none today) and `/m/[id]` signed out. Done when both pages unfurl in a chat
-and the specs pass.
+### 3.11 Share pages: previews and e2e — S
+`/p/[token]` renders on the client, so a pasted link shows no title or image
+(`/shared` and `/s` have Open Graph). Server-render it with `generateMetadata`
+through the public client, as `/s` does. Add an e2e that opens `/m/[id]`
+signed out. Done when `/p` unfurls in a chat and the spec passes.
 
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
