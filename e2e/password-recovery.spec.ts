@@ -79,12 +79,12 @@ test.describe('password recovery', () => {
     await page.locator('input[name="password"]').fill('password123');
     await page.locator('input[name="confirm"]').fill('password123');
     await page.getByRole('button', { name: /set new password/i }).click();
-    await expect(page.getByRole('alert')).toContainText(/most-common/i);
+    await expect(page.locator('main').getByRole('alert')).toContainText(/most-common/i);
 
     await page.locator('input[name="password"]').fill(NEW_PASSWORD);
     await page.locator('input[name="confirm"]').fill(`${NEW_PASSWORD}x`);
     await page.getByRole('button', { name: /set new password/i }).click();
-    await expect(page.getByRole('alert')).toContainText(/match/i);
+    await expect(page.locator('main').getByRole('alert')).toContainText(/match/i);
 
     await page.locator('input[name="confirm"]').fill(NEW_PASSWORD);
     await page.getByRole('button', { name: /set new password/i }).click();
@@ -119,7 +119,7 @@ test.describe('password recovery', () => {
 
   test('an expired or foreign link says so and offers a new one', async ({ page }) => {
     await page.goto('/auth/reset?error=access_denied&error_code=otp_expired');
-    await expect(page.getByRole('alert')).toContainText(/expired/i);
+    await expect(page.locator('main').getByRole('alert')).toContainText(/expired/i);
     await page.getByRole('link', { name: /send me a new link/i }).click();
     await expect(page.getByRole('button', { name: /send reset link/i })).toBeVisible();
   });

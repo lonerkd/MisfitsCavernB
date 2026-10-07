@@ -17,7 +17,7 @@
    `supabase-postgres-best-practices`) — no symlinks, so they load on
    Windows. Session context loads from `CLAUDE.md` (it `@`-imports
    `RULES.md` + `STATE.md`) — no hook.
-3. **Next**: 3.4 (password recovery). Then restructure phase 3 (splash
+3. **Next**: restructure phase 3 (splash
    images, Add to Home Screen coaching, Web Push — 3.13).
 4. **Branches and stashes**: delete the 18 stale remote branches with the
    one-liner in BACKLOG §1 (all verified; the cloud proxy can't delete
@@ -43,15 +43,14 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    coaching, push), 4 shell/primitives, 5 route groups, 6 one permission
    model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
    at launch, 3.16). Still open: the domain.
-3. **Launch blocker**: password recovery (3.4).
-4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
+3. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
-5. **Upgrades**: data access through `lib/` (3.2, L) ·
+4. **Upgrades**: data access through `lib/` (3.2, L) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
    dev-toolchain advisories (3.1, watch upstream).
-6. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
+5. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
 
 ## Known issues
@@ -70,7 +69,17 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
   users (24 more) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
-## Latest Session — Script share links: the token is the only way in (3.3)
+## Latest Session — Password recovery (3.4)
+
+No migration.
+
+- **Forgot password** on `/auth` (link under the password box, or `/auth?forgot=1`): sends the reset email and gives the same answer whether or not the address has an account. Only a rate limit or a dead connection is shown.
+- **`/auth/reset`**: the email link signs the person in with a recovery session; they choose a new password (common-password, email-based and leaked-password checks, confirmation) via `updateUser`. An expired, used or foreign-browser link says so and offers a new one. Logic in `lib/auth/recovery.ts` (tested).
+- `supabase/config.toml` allows `/auth/reset` on any local port. **Owner**: add the production URL to Auth › URL Configuration (BACKLOG §1).
+- Test: `e2e/password-recovery.spec.ts` reads the email from the local mail catcher (request → email → new password → old one refused → new one signs in), plus unknown address, bad email, expired link.
+- Process: my first e2e runs used the shared folder's `.env.local` and created two throwaway accounts (`e2e.recover.*@example.com`) in production; they are left for the owner to delete. Run e2e from a worktree with the local stack's keys (`supabase status -o env`).
+
+## Earlier — Script share links: the token is the only way in (3.3)
 
 Migration `20261006000000_script_share_links.sql` — applied to production
 2026-10-07 (owner, SQL editor); production matches the snapshot.

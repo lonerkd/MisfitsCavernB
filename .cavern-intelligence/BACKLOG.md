@@ -19,6 +19,7 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   move to Pro (also brings daily backups).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
+- **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal.ts`; Peter Olowude,
   Alberta, Canada).
 - **Optional — branch protection on `main`** with `checks`, `database` and
@@ -88,13 +89,6 @@ call sheet, soundtrack, …), with the page's loading done the §10 way
 (`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
-
-### 3.4 Password recovery — S (launch blocker)
-No "forgot password" anywhere: no `resetPasswordForEmail`, no recovery page.
-Add "Forgot password?" on `/auth` (sends the reset email; same answer whether
-or not the address exists) and a recovery landing that sets a new password
-(strength meter, leaked check) via `updateUser`. e2e on the local stack
-(the local mail catcher). Done when a user can reset a forgotten password end to end.
 
 ### 3.6 Phone layout fixes from the screens — S
 From `bible/screens/` (390 wide): the editor footer's label overlaps the
