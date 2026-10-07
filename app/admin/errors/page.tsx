@@ -7,7 +7,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, RotateCw, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { clearClientErrors, listClientErrors } from '@/lib/supabase/client-errors';
 import { ProtectedPage } from '@/lib/os';
 import { useToast } from '@/components/Toast';
 import { useLoad } from '@/lib/hooks/useLoad';
@@ -33,9 +33,7 @@ export default function AdminErrorsPage() {
   const [range, setRange] = useState<Range>(7);
   const { data, error: loadError, reload: load } = useLoad(String(range), async () => {
     const since = new Date(Date.now() - range * 86_400_000).toISOString();
-    const { data: found, error: e } = await supabase.from('client_errors').select('*').gte('created_at', since).order('created_at', { ascending: false }).limit(1000);
-    if (e) throw e;
-    return found as Row[];
+    return listClientErrors(since);
   });
   const rows = data ?? null;
   const error = loadError ? (loadError as { message?: string }).message ?? 'Could not load errors' : null;
@@ -54,8 +52,8 @@ export default function AdminErrorsPage() {
 
   const clear = async (g: Group) => {
     if (!(await confirm({ title: 'Clear this error?', message: `Removes its ${g.count} report${g.count === 1 ? '' : 's'} from the log — do it once it's fixed.`, confirmLabel: 'Clear' }))) return;
-    const { error: e } = await supabase.from('client_errors').delete().in('id', g.ids);
-    if (e) { toast(e.message, 'error'); return; }
+    try { await clearClientErrors(g.ids); }
+    catch (e) { toast((e as { message?: string })?.message || 'Could not clear it', 'error'); return; }
     toast('Cleared', 'success');
     load();
   };

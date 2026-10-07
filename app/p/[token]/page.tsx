@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import { Film } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getPublicPortfolio } from '@/lib/supabase/portfolio';
 import EmptyState from '@/components/EmptyState';
 import type { PublicProfile } from '@/lib/supabase/profiles';
 import type { PortfolioBlock } from '@/lib/supabase/portfolio';
@@ -42,14 +42,8 @@ export default function PublicPortfolioPage(props: { params: Promise<{ token: st
     const fetchProject = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('portfolio_projects')
-          .select('*, portfolio_media(*), portfolio_blocks(*), profiles(username, role, avatar_url)')
-          .eq('share_token', params.token)
-          .order('position', { foreignTable: 'portfolio_blocks' })
-          .single();
-
-        if (error || !data) {
+        const data = await getPublicPortfolio(params.token);
+        if (!data) {
           setNotFound(true);
         } else {
           setProject(data as Project);

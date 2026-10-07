@@ -153,3 +153,14 @@ export async function getPitchMaterial(projectId: string): Promise<PitchMaterial
     scriptContent: scr.data?.[0]?.content ?? null,
   };
 }
+
+/** A published portfolio by its share link, with its media, ordered blocks and author; null when the link leads nowhere. */
+export async function getPublicPortfolio(token: string) {
+  const { data, error } = await supabase.from('portfolio_projects')
+    .select('*, portfolio_media(*), portfolio_blocks(*), profiles(username, role, avatar_url)')
+    .eq('share_token', token)
+    .order('position', { foreignTable: 'portfolio_blocks' })
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
