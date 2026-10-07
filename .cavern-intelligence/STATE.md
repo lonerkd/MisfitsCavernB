@@ -6,11 +6,12 @@
 
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
-1. **Merged** 2026-10-06: #136, #135, #138, #139, #140 (restructure phases
-   1–2: The Cavern, the R13 mark and icons, the 3D landing hero; live). This
-   branch's PR: 3.3, script share links. **After it merges, apply
-   `20261006000000_script_share_links.sql` to production** (Supabase SQL
-   editor or MCP `apply_migration`), then run *Production schema drift*.
+1. **Merged** 2026-10-06/07: #136, #135, #138, #139, #140 (restructure
+   phases 1–2: The Cavern, the R13 mark and icons, the 3D landing hero) and
+   #141 (3.3, script share links) — all live. `20261006000000` is applied
+   to production (by the owner, in the SQL editor); production matches the
+   snapshot (1742 objects). This branch's PR: the drift fingerprint ignores
+   CRLF in function bodies (a Windows paste added them).
 2. **Local setup check**: `npm ci`; `.claude/skills/` has three real
    skills (`run-misfits-cavern`, `supabase`,
    `supabase-postgres-best-practices`) — no symlinks, so they load on
@@ -71,8 +72,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 ## Latest Session — Script share links: the token is the only way in (3.3)
 
-Migration `20261006000000_script_share_links.sql` — **apply to production
-after merge**.
+Migration `20261006000000_script_share_links.sql` — applied to production
+2026-10-07 (owner, SQL editor); production matches the snapshot.
 
 - **The leak, closed**: the anon policy "Shared scripts publicly viewable"
   (`using (shared = true)`) and the same arm in "scripts view" let anyone

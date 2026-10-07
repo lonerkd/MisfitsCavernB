@@ -159,6 +159,11 @@ is changed *only* by applying those files — never by ad-hoc SQL.
 6. **PR:** CI's `database` job rebuilds from scratch and fails on schema drift,
    stale types, or any persona test.
 7. **After merge:** apply the same migration file to production, then run the
-   *Production schema drift* workflow — it must be green.
+   *Production schema drift* workflow — it must be green. From a session, MCP
+   `apply_migration` (name: the file's part after the timestamp); if it times
+   out, check production before retrying — a timed-out call may not have run.
+   By hand: paste the file into the dashboard's SQL editor. Pasting from
+   Windows stores function bodies with CRLF line endings; the fingerprint
+   drops carriage returns, so that isn't drift.
 
 **No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.

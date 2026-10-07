@@ -39,7 +39,10 @@ lines as (
   from pg_policies
   where schemaname = 'public' or (schemaname = 'storage' and tablename = 'objects')
   union all
-  select 'function ' || fn.nspname || '.' || fn.proname || '(' || fn.args || ') body=' || md5(pg_get_functiondef(fn.oid))
+  -- Carriage returns are dropped: a migration pasted into the dashboard's SQL
+  -- editor from Windows stores its function bodies with CRLF line endings —
+  -- the same function, but a different hash.
+  select 'function ' || fn.nspname || '.' || fn.proname || '(' || fn.args || ') body=' || md5(replace(pg_get_functiondef(fn.oid), chr(13), ''))
   from fn
   union all
   select 'grant function ' || fn.nspname || '.' || fn.proname || '(' || fn.args || ') '
