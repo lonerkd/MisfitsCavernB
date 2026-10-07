@@ -171,3 +171,176 @@ commit messages; semantic-version releases with tags and a `CHANGELOG.md`;
 scan and a dependency licence report (SBOM). Owner: branch protection and
 signed commits. Done when each is in place and CI enforces the commit and
 coverage rules.
+
+---
+
+## 4. Wishlist (owner, 2026-10-07) — ideas, not yet scoped
+
+The owner's feature list, grouped by area and checked against the code that
+day. **Built** = already in the suite (where, so nobody rebuilds it).
+Everything else is an idea: before one is started it gets a scoped 3.x entry
+(size, data, RLS, "done when"). The house rules still apply — nothing ships
+as a mock: anything that needs an outside service (voices, translation, a
+Discord bot, Pinterest/Google import, AI suggestions) waits until that
+service is chosen and paid for.
+
+### 4.1 The island: live activities
+The island already has modes (`lib/island/mode.ts`: rest, context, live,
+open, caps, dot) and `emit()`s brief events (saved, synced, joined).
+**Built**: the resting pill, notifications (bell + `live` events), search
+(`/` in the caps deck, ⌘K), animated state changes (framer-motion, reduced
+motion respected), the editor's sync events.
+**To add** — a *live activity* layer that holds the island while something
+runs, one at a time by priority, each with its controls:
+- call active (Lounge voice room: who's in, mute, leave) — `lib/webrtc/voice.ts`
+- recording (Capture's voice memo / clip — `MediaRecorder` in `Capture.tsx`)
+- uploading, with a progress bar (Library, Capture outbox, SFX) — needs
+  upload progress events (Storage over XHR/TUS)
+- music playing (now-playing mini player — `GlobalAudioWidget` / Spotify)
+- timer running (writing sprint — `WritingLoop`; On set's day clock)
+- network / sync status (offline, "saved on device, will sync", outbox count)
+- a temporary notification (exists as `live`; add a hold time and an action)
+
+### 4.2 Discord
+**Built**: Discord sign-in (`app/auth`, `signInWithOAuth({ provider:
+'discord' })`; name and avatar from the identity in `app/auth/callback`);
+posting a channel's messages to a Discord webhook (`/api/discord/notify`,
+`/test`).
+**To add**: the person's Discord servers and real server stats (the `guilds`
+OAuth scope and the Discord API); presence/status on profiles; Discord roles
+→ suite roles (product call: which side is the source of truth); rich embeds
+when a script, pitch or call sheet is shared to Discord; an announcements bot
+(a hosted bot — infrastructure decision).
+
+### 4.3 Translation and localisation
+Nothing built. Translate a script into 50+ languages (a translation
+service), side by side with the original, formatting kept (translate
+dialogue and action, never element types); translation memory and a
+per-project glossary; translator comments, review/approval and credits;
+version sync (flag lines whose original changed); export bilingual scripts
+and subtitles (SRT/VTT from dialogue — table-read timings help); notes on
+cultural context. Also the suite's own interface in other languages (i18n) —
+not on the list, but a translator audience needs it.
+
+### 4.4 Learning
+**Built**: in-app guides by workflow and experience (`lib/guides`,
+`GuidePanel`, `GuideSetup`); the writing loop's streaks, sprints and badges
+(`lib/writing`).
+**To add**: a video tutorials library, interactive lessons, exercises with
+feedback, analysis of famous scripts (rights), technique breakdowns, genre
+courses, mentor matching (from crew profiles and crafts), group workshops
+and live Q&A (on Lounge voice), certificates, progress tracking and skill
+badges beyond writing, community challenges, a daily writing prompt, reading
+lists, industry news, masterclasses. Mostly content, not code — needs an
+owner decision on who makes it.
+
+### 4.5 Mood boards
+**Built**: the Studio Library (uploads incl. audio and video, YouTube/Vimeo
+links, Pinterest boards via `/api/links`, Openverse search with credit,
+boards); a look-board per character (`character_media`); scene references
+(`scene_media`, the editor's Refs panel); tags; publishing per item
+(`media.shared`); the pitch deck's full-screen presenting.
+**To add**: boards as objects of their own (unlimited; templates: character,
+location, tone, colour), drag-and-drop arranging, colour palette
+extraction, annotating images, search within a board, board-level
+permissions, PDF export, slideshow; Google Images import (licensing —
+prefer Openverse); AI mood suggestions (service).
+
+### 4.6 Budget and money
+**Built**: budget lines and actuals (project page, Studio › Money), vendors,
+expenses committed/paid with receipts from the library, timesheets,
+breakdown costs and per-category rates → "Push to budget" (`Breakdown · …`
+lines).
+**To add**: budget templates (micro, low, indie, studio) and above/below the
+line; per-scene cost (roll up the breakdown's costs per scene); cast and crew
+day rates × days (Day out of days exists); location costs from Locations;
+equipment rental; invoices; cash-flow projection; currencies (none today —
+every amount is plain dollars) and tax jurisdictions; cost alerts; financial
+reports; export to Excel/CSV and Movie Magic Budgeting.
+
+### 4.7 Editor: navigation and power editing
+**Built**: scene list and outline (jump to a scene), ⌘K, the stash
+(snippets beside the script), autocomplete for characters and headings.
+**To add**: go to scene number / page number / a character's scenes;
+multi-cursor and block selection; quick actions on a selection (tag mode's
+selection menu is a start); macros; snippet expansion (stash → a typed
+trigger); context-aware commands; command history and repeat.
+
+### 4.8 Characters
+**Built**: the character bible (description, backstory, motivation, arc,
+notes — `script_characters`, `script_metadata.character_bible`), a
+look-board per character, casting with each character's scene footprint,
+dialogue and scene counts (editor › Stats).
+**To add**: richer cards (goals, fears, flaws), an arc timeline, a
+relationship map, voice samples taken from their lines, a backstory
+timeline, appearances per scene, comparing two characters, templates
+(protagonist, antagonist, mentor), consistency warnings (a name spelled two
+ways, a dead character speaking), a character bible PDF, wardrobe from the
+breakdown's wardrobe elements.
+
+### 4.9 Script formats, import and export
+**Built**: import PDF, FDX, Fountain, text; export PDF (title page,
+watermark), FDX, Fountain, text; dual dialogue; scene numbers; revision
+colours (blue … cherry, `REVISION_COLORS`) with locked drafts; MORE/CONT'D
+on export; formats by project type.
+**To add**: FDX round-trip fidelity tests; Movie Magic Screenwriter, Celtx
+and Highland import; RTF, ePub and HTML export; intercut, montage, series of
+shots and flashback/dream formatting; subtitled lines in another language;
+A/B pages, locked pages with asterisks, manual scene numbers; act breaks for
+TV; custom element styles; headers/footers with dynamic content.
+
+### 4.10 Breakdown and scheduling
+**Built**: tagging (with suggestions from past projects), categories and
+rates, per-scene sheets, page eighths, scene duration, Day/Night and
+INT/EXT, stripboard with auto-schedule and company moves, Day out of days,
+call sheets, readiness, printable sheets, push to budget.
+**To add**: suggested props, vehicles, wardrobe, VFX/SFX, stunts and animals
+from action lines (to accept — never tagged automatically); a one-liner;
+location and props reports; proper PDF breakdown reports; export to Movie
+Magic Scheduling and Gorilla.
+
+### 4.11 World building and locations
+**Built**: Locations (status, permit, address, contact, cost, notes; scenes
+link by name); scene references.
+**To add**: location mood boards (4.5), a map view, time period, world rules
+and lore, technology level, magic system, currency/language/culture notes,
+where each location appears, weather and season, day/night cycle, a
+continuity checker, a world timeline, a world bible PDF, a shareable world
+database.
+
+### 4.12 Comparing versions
+**Built**: locked revisions with coloured changed pages and a diff view
+(`lib/scriptos/revisions.ts`).
+**To add**: side by side for any two versions or an imported script; inline
+diff colours; change statistics and filters (dialogue / action / scenes);
+next/previous change; scene-reorder and character-rename detection;
+page-number change tracking; accept/reject per change in a review mode; a
+change-report PDF; three-way merge and branches (with the CRDT idea in the
+bible's ScriptOS known gaps).
+
+### 4.13 Offline and installable
+**Built**: the editor saves to IndexedDB first and syncs (retry, on
+reconnect, tombstones for offline deletes), a conflict prompt (keep mine /
+take theirs), sync state in its header; On set works offline; Capture's
+outbox; a service worker; an installable web app (iPhone polish is 3.13).
+**To add**: an app-wide offline indicator (4.1), sync status per document in
+lists, "sync now", downloading a whole project for offline, an offline queue
+for actions beyond scripts, bandwidth-aware sync, a line-by-line conflict
+view.
+
+### 4.14 Table read with AI voices
+**Built**: the browser's voices, one per character, the script highlighted
+as it reads, scene timings saved.
+**To add** (a voice service): 50+ voices, emotion from parentheticals,
+ambience from scene headings, optional sound effects for action, MP3/WAV
+export, pacing, an actor-reference voice (consent and rights first), more
+languages, listening together live (Lounge voice exists), bookmarks and
+loops, notes during playback, comparing reads, scoring from the Soundtrack.
+
+### 4.15 Casting
+**Built**: casting per character with its scene footprint
+(`character_castings`, Studio › Cast & crew); casting calls posted as jobs
+(accepting an applicant casts them); each character's look-board.
+**To add**: drag crew onto roles, side-by-side candidates (photos, reels),
+notes per candidate per role, audition scheduling, decision history, a
+casting sheet PDF.

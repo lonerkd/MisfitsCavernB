@@ -1,6 +1,6 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-07T07:14:38.822Z",
+  "last_synchronized": "2026-10-07T07:41:33.690Z",
   "stats": {
     "totalFiles": 595,
     "totalSize": 4280425,
@@ -540,7 +540,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-07T06:06:02.009Z"
+      "last_modified": "2026-10-07T07:14:38.827Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -550,7 +550,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-07T06:06:02.008Z"
+      "last_modified": "2026-10-07T07:14:38.826Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -855,7 +855,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-07T06:06:02.008Z"
+      "last_modified": "2026-10-07T07:14:38.827Z"
     },
     {
       "path": "components/AnimatedSection.tsx",

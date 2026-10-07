@@ -54,6 +54,11 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    dev-toolchain advisories (3.1, watch upstream).
 6. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
+7. **Wishlist** (owner, 2026-10-07): BACKLOG §4 — island live activities,
+   Discord, translation, learning, mood boards, money, editor power tools,
+   characters, formats, breakdown, world building, version compare, offline,
+   AI table read, casting. Each says what's already built; scope one into
+   §3 before starting it.
 
 ## Known issues
 
