@@ -9,7 +9,7 @@ in the same module first.
 ## 1. Data access — always through `lib/supabase/*.ts`
 
 New code: components and pages don't call `supabase.from(...)` directly — add
-the query to the table's typed access module. (Older pages still do, ~62
+the query to the table's typed access module. (Older pages still do, ~35
 calls; moving them is BACKLOG 3.2.) The modules:
 
 ```

@@ -47,7 +47,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
-5. **Upgrades**: data access through `lib/` (3.2, L, under way: 62 calls
+5. **Upgrades**: data access through `lib/` (3.2, L, under way: 35 calls
    left; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
@@ -75,9 +75,22 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 No migration.
 
-- **BACKLOG 3.2: 110 → 62 direct `supabase.from()` calls.** Project page (`lib/supabase/project-hub.ts`); jobs board and
-  posting page (`lib/supabase/jobs.ts`); profile, crew directory, crew
-  member and Settings › Export (`lib/supabase/profiles.ts`). Found on the way:
+- **BACKLOG 3.2: 35 direct `.from()` calls left** (counted the new way,
+  multi-line calls included — BACKLOG 3.2). Moved: project page
+  (`lib/supabase/project-hub.ts`), Lounge, Soundtrack (`audio.ts`), call
+  sheet (`studio.getCallSheetView`), Today (`today.ts`), pitch board, jobs
+  (`jobs.ts`), profile, crew, crew member and Settings › Export
+  (`profiles.ts`). Found on the way:
+  - **A task added while the project page's panel loaded vanished** (saved,
+    but the late load put back the old list). A load a write overtook is
+    now fetched again.
+  - **The pitch board made a second board** when looking up the existing
+    one failed; that failure now stops it.
+  - **Uploaded sound effects saved to a project never played** (Play
+    wrapped their URL in a second storage URL).
+  - Lounge member rights ignored failed saves; the call sheet hung on its
+    skeleton when a load threw; an outsider's call-sheet link is tested
+    ("not found", nothing shown).
   - **Settings › Export could download an incomplete file** (each failed
     query became an empty list); it now fails with a message.
   - My Jobs counted applicants with one query per posting; now one.
@@ -88,7 +101,12 @@ No migration.
   during hydration left text in the box but not in state, and typing the
   next field blanked it. Every change and the submit now read all fields
   from the form. The cause of the remaining e2e sign-in flakes; test in
-  `e2e/auth-validation.spec.ts` fails on the old code.
+  `e2e/auth-validation.spec.ts` fails on the old code. **Heads-up**: the
+  password-recovery work (3.4, another session) also edits
+  `app/auth/page.tsx` — whichever lands second merges the two.
+- **Sessions share the Windows checkout**: another session switched it to
+  its own branch mid-task. Branch work for #137 now happens in a worktree
+  (`../MisfitsCavernB-design-scales`, served on :3100).
 - The overview and production manager on the project page turned failed
   queries into zeros; they now say so. Test: `e2e/project-manager.spec.ts`
   (owner and crew, survives a reload).

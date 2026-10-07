@@ -57,12 +57,17 @@ release; take the plain fix then. Done when `npm audit` reports 0.
 
 ### 3.2 Data access through `lib/` — L (incremental)
 `conventions.md` §1 says components never call `supabase.from()` directly;
-**62 calls** in `app/` and `components/` still do (110 on 2026-10-03; the project page, jobs,
-profile, crew, crew member and Settings › Export are done). Count with
-`grep -rE "supabase\s*\.from\(" app components | wc -l`. Move them into the
-typed modules a page at a time — left, by count: lounge
-(12), soundtrack (10), call sheet (8), today (6), pitch (6), then the
-small ones — with the page's loading done the §10 way
+**35 calls** in `app/` and `components/` still do (2026-10-07). Done: the
+project page, Lounge, Soundtrack, call sheet, Today, pitch board, jobs,
+profile, crew, crew member and Settings › Export. Count with
+`grep -rnE "\.from\(['\"]" app components | grep -v "storage\|Array\.from" | wc -l`
+— the older `supabase\s*\.from\(` count missed calls split across lines
+(`supabase\n  .from(...)`), so "110" was an undercount. Left, by file: the
+home page (4), PromosTab (4), useScriptCharacters (3), the editor (3), the
+auth callback (3), the Discord notify route (3, server), PitchDeck (2),
+CommandPalette (2), portfolio (2), admin errors (2), then single calls in
+PostTab, Continue, GuidePanel, GlobalAudioWidget, welcome, projects and
+`/p/[token]` — with the page's loading done the §10 way
 (`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule
 on `supabase.from` in `app/` and `components/` so it stays done. Done when
 the rule is on with no exceptions.
