@@ -116,7 +116,8 @@ export default function CrewPage() {
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
         {activeProject && (
-          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+          // A long project name ellipsizes in its tab instead of pushing the switch off a phone screen.
+          <div style={{ display: 'inline-flex', maxWidth: '100%', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             {([
               { id: 'all' as const, label: 'ALL TALENT' },
               { id: 'project' as const, label: `${activeProject.title.toUpperCase()} CREW` },
@@ -124,8 +125,10 @@ export default function CrewPage() {
               <button
                 key={t.id}
                 onClick={() => setMode(t.id)}
+                title={t.label}
                 style={{
                   padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  minWidth: 0, flexShrink: t.id === 'all' ? 0 : 1, overflow: 'hidden', textOverflow: 'ellipsis',
                   fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',

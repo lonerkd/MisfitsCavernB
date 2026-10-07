@@ -68,9 +68,10 @@
 .pipRead { background: transparent; border: 1px solid var(--border-2); }
 
 /* Projects */
-.projects { display: grid; grid-template-columns: 1fr; gap: 10px; }
-@media (min-width: 520px) { .projects { grid-template-columns: 1fr 1fr; } }
-.project { border-radius: 14px; border: 1px solid var(--border); background: var(--sunken); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+/* minmax(0, …): a long project name ellipsizes instead of widening the card past the screen. */
+.projects { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+@media (min-width: 520px) { .projects { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.project { min-width: 0; border-radius: 14px; border: 1px solid var(--border); background: var(--sunken); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 .projectHead { display: flex; align-items: center; gap: 10px; min-width: 0; text-decoration: none; color: var(--fg-strong); }
 .projectTitle { font-size: 16px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .phase { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--fg-dim); }

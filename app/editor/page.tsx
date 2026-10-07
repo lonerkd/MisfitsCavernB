@@ -1523,20 +1523,23 @@ export default function EditorPage() {
         </AnimatePresence>
       </EditorErrorBoundary>
 
-      <div style={{
+      <div data-testid="editor-status" style={{
         height: 26,
+        overflow: 'hidden',
         background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 20px',
+        padding: '0 clamp(12px, 4vw, 20px)',
         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-          <span style={{ color: 'var(--fg-muted)' }}>{currentScript?.title || 'Untitled'}</span>
+        {/* One line at every width: the title gives way (ellipsis), the counts don't wrap. */}
+        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 20px)', alignItems: 'center', minWidth: 0, flex: 1, whiteSpace: 'nowrap' }}>
+          <span title={currentScript?.title || 'Untitled'} style={{ color: 'var(--fg-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentScript?.title || 'Untitled'}</span>
           <span style={{
+            flexShrink: 0,
             padding: '1px 7px', borderRadius: 4,
             background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(var(--ink-rgb), 0.04)',
             color: revisionMode ? 'var(--violet)' : 'var(--fg-dim)',
@@ -1551,9 +1554,9 @@ export default function EditorPage() {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 20px)', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 12 }}>
           <span>{pageEst} pg</span>
-          <span>{scenesList.length} sc</span>
+          <span className="mc-hide-phone">{scenesList.length} sc</span>
           <span>{wordCount.toLocaleString()} wds</span>
           {collaborators.length > 0 && (
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
