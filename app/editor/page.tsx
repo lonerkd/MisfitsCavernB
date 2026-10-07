@@ -27,7 +27,8 @@ import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/context/SpotifyContext';
-import { supabase } from '@/lib/supabase/client';
+import { audioRefUrl, listAudioRefs } from '@/lib/supabase/audio';
+import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { useOSGate } from '@/lib/os';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
@@ -85,11 +86,8 @@ export default function EditorPage() {
 
   useEffect(() => {
     if (activeProject?.id) {
-      supabase.from('project_audio_references')
-        .select('*')
-        .eq('project_id', activeProject.id)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => setProjectAudioRefs(data || []));
+      // The writing-room soundtrack is a nicety: without it the editor works the same.
+      listAudioRefs(activeProject.id).then(setProjectAudioRefs, () => setProjectAudioRefs([]));
     }
   }, [activeProject?.id]);
 
@@ -102,7 +100,7 @@ export default function EditorPage() {
   const playAudioRef = useCallback((ref: any) => {
     if (ref.reference_type === 'spotify') playUri(ref.uri);
     else if (ref.reference_type === 'custom_upload') {
-      const url = supabase.storage.from('sfx_library').getPublicUrl(ref.uri).data.publicUrl;
+      const url = audioRefUrl(ref.uri);
       new Audio(url).play();
     }
   }, [playUri]);
@@ -303,23 +301,22 @@ export default function EditorPage() {
 
   /** Open a project's most recent script (creating one if it has none). */
   const openProjectScript = useCallback(async (project: { id: string; title: string; type?: string; settings?: { defaultScriptFormat?: string } }, isCancelled: () => boolean = () => false) => {
-    const { data } = await supabase
-      .from('scripts')
-      .select('id')
-      .eq('project_id', project.id)
-      .order('updated_at', { ascending: false })
-      .limit(1);
-    let id = data?.[0]?.id;
+    // A failed lookup is not "this project has no script": creating one then
+    // would give the project a second, empty screenplay.
+    let id: string | null;
+    try { id = await latestScriptId(project.id); }
+    catch (e) {
+      console.error('Could not look up the project’s script:', e);
+      toastRef.current('Couldn’t open this project’s script — check your connection and try again.', 'error');
+      return false;
+    }
     if (!id) {
-      const uid = (await awaitOSUser())?.id;
+      const uid = (await awaitOSUser())?.id ?? null;
       const format = findFormat(await loadFormats().catch(() => []), project.type);
-      const ins = await supabase
-        .from('scripts')
-        .insert({ project_id: project.id, title: project.title, content: '', format: defaultScriptFormat(format, project.settings?.defaultScriptFormat), status: 'draft', created_by: uid, last_edited_by: uid })
-        .select('id,title')
-        .single();
-      id = ins.data?.id;
-      if (ins.data && uid) logAuditAction(uid, 'script_created', 'script', ins.data.id, { title: ins.data.title, project_id: project.id });
+      const created = await createProjectScript({ projectId: project.id, title: project.title, format: defaultScriptFormat(format, project.settings?.defaultScriptFormat), userId: uid })
+        .catch((e) => { console.error('Could not start the project’s script:', e); return null; });
+      id = created?.id ?? null;
+      if (created && uid) logAuditAction(uid, 'script_created', 'script', created.id, { title: created.title, project_id: project.id });
     }
     if (isCancelled() || !id || currentScriptRef.current?.id === id) return false;
     // getScript prefers unsynced local edits — never open a stale server copy.
