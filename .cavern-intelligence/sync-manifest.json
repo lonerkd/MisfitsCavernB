@@ -1,9 +1,9 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-07T07:41:33.690Z",
+  "last_synchronized": "2026-10-07T15:45:03.532Z",
   "stats": {
     "totalFiles": 595,
-    "totalSize": 4280425,
+    "totalSize": 4283263,
     "byExtension": {
       ".json": 9,
       ".md": 46,
@@ -540,7 +540,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-07T07:14:38.827Z"
+      "last_modified": "2026-10-07T07:41:33.695Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -550,7 +550,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-07T07:14:38.826Z"
+      "last_modified": "2026-10-07T07:41:33.695Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -634,8 +634,8 @@
     },
     {
       "path": "app/crew/page.tsx",
-      "size": 14747,
-      "last_modified": "2026-10-07T03:14:09.945Z"
+      "size": 15018,
+      "last_modified": "2026-10-07T15:16:50.210Z"
     },
     {
       "path": "app/crew/[id]/page.tsx",
@@ -654,8 +654,8 @@
     },
     {
       "path": "app/editor/page.tsx",
-      "size": 84478,
-      "last_modified": "2026-10-07T06:23:02.855Z"
+      "size": 84945,
+      "last_modified": "2026-10-07T15:12:20.770Z"
     },
     {
       "path": "app/error.tsx",
@@ -704,8 +704,8 @@
     },
     {
       "path": "app/lounge/page.tsx",
-      "size": 98046,
-      "last_modified": "2026-10-07T03:14:09.984Z"
+      "size": 98369,
+      "last_modified": "2026-10-07T15:11:08.848Z"
     },
     {
       "path": "app/m/[id]/route.ts",
@@ -855,7 +855,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-07T07:14:38.827Z"
+      "last_modified": "2026-10-07T07:41:33.695Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -979,8 +979,8 @@
     },
     {
       "path": "components/editor/EditorHeader.tsx",
-      "size": 17030,
-      "last_modified": "2026-10-07T03:14:10.065Z"
+      "size": 17461,
+      "last_modified": "2026-10-07T15:22:38.290Z"
     },
     {
       "path": "components/editor/EditorLeftNav.tsx",
@@ -1539,8 +1539,8 @@
     },
     {
       "path": "e2e/mobile.spec.ts",
-      "size": 11973,
-      "last_modified": "2026-10-07T03:14:10.168Z"
+      "size": 13319,
+      "last_modified": "2026-10-07T15:37:10.490Z"
     },
     {
       "path": "e2e/money.spec.ts",

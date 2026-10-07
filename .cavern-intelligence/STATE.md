@@ -44,7 +44,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
    at launch, 3.16). Still open: the domain.
 3. **Launch blocker**: password recovery (3.4).
-4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
+4. **Small fixes**: one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
 5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
@@ -87,6 +87,12 @@ No migration.
   `supabase.from()` in `app/` and `components/`. The one exception is the
   auth callback, left until the password-recovery work lands. Server
   routes keep their own clients. Found on the way:
+  - **Phone layout (BACKLOG 3.6, done)**: with a long project or script
+    name, the Lounge header ran off the screen, the editor's status bar
+    wrapped onto three lines, a Today card and the Crew switch grew past the
+    screen, and Export's menu was clipped under the script. All fixed;
+    `e2e/mobile.spec.ts` now sweeps with long names (the old short name hid
+    every one) and covers `/editor`, its status bar and Export.
   - **The editor started a second, empty screenplay** for a project when
     looking up its script failed — tested by failing the request in the
     browser (`e2e/editor-project-script.spec.ts`, fails on the old code).

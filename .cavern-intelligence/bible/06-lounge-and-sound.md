@@ -83,9 +83,6 @@ fetch.
 
 ## Known gaps
 
-- Phone: the Lounge header is cut off and a dark strip shows on the right —
-  something is wider than the screen (screens; BACKLOG 3.6).
 - Voice is mesh: beyond ~8 speakers it needs an SFU.
-- Soundtrack writes to tables straight from the page (BACKLOG 3.2).
 - Lounge DMs and messages aren't end-to-end encrypted (fine for a crew tool;
   say so in the privacy policy — it does).

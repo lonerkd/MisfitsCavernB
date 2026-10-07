@@ -85,7 +85,6 @@ syncing / synced · conflict · error boundary (`EditorErrorBoundary`).
 
 ## Known gaps
 
-- Phone: the footer's label overlaps the title (screens; BACKLOG 3.6).
 - Co-writing is last-writer-wins with a conflict prompt; two people typing
   in different scenes at once can still trip it. A CRDT (Yjs) would merge —
   a large change, not yet scheduled.

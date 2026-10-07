@@ -75,13 +75,6 @@ or not the address exists) and a recovery landing that sets a new password
 (strength meter, leaked check) via `updateUser`. e2e on the local stack
 (the local mail catcher). Done when a user can reset a forgotten password end to end.
 
-### 3.6 Phone layout fixes from the screens — S
-From `bible/screens/` (390 wide): the editor footer's label overlaps the
-script title (`editor--phone`); the Lounge header is cut off and a dark strip
-shows down the right — something is wider than the screen (`lounge--phone`).
-Fix both; add the two routes to `e2e/mobile.spec.ts`'s no-sideways-scroll
-check. Done when the retaken shots are clean and the spec passes.
-
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
 projects, scenes and wraps; not for media uploads, crew invites/role
