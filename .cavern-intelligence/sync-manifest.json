@@ -1,14 +1,14 @@
 {
   "project": "Misfits Cavern",
-  "last_synchronized": "2026-10-06T17:01:37.329Z",
+  "last_synchronized": "2026-10-07T01:18:53.616Z",
   "stats": {
-    "totalFiles": 587,
-    "totalSize": 4279895,
+    "totalFiles": 589,
+    "totalSize": 4293375,
     "byExtension": {
       ".json": 13,
       ".md": 52,
       ".tsx": 170,
-      ".ts": 302,
+      ".ts": 304,
       ".js": 7,
       ".sql": 43
     }
@@ -66,6 +66,7 @@
         "lib/supabase/profile-columns.ts",
         "lib/supabase/profiles.ts",
         "lib/supabase/progress.ts",
+        "lib/supabase/project-hub.ts",
         "lib/supabase/projects.ts",
         "lib/supabase/public.ts",
         "lib/supabase/stats.ts",
@@ -530,8 +531,8 @@
     },
     {
       "path": ".github/copilot-instructions.md",
-      "size": 703,
-      "last_modified": "2026-10-06T17:00:46.515Z"
+      "size": 691,
+      "last_modified": "2026-10-06T17:01:37.333Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -555,8 +556,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 6201,
-      "last_modified": "2026-10-06T17:00:46.516Z"
+      "size": 6196,
+      "last_modified": "2026-10-06T17:01:37.332Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -620,8 +621,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 17095,
-      "last_modified": "2026-10-06T15:43:49.903Z"
+      "size": 17553,
+      "last_modified": "2026-10-07T01:08:28.698Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -780,8 +781,8 @@
     },
     {
       "path": "app/projects/[id]/page.tsx",
-      "size": 70596,
-      "last_modified": "2026-10-06T15:43:49.913Z"
+      "size": 65036,
+      "last_modified": "2026-10-07T00:57:57.528Z"
     },
     {
       "path": "app/projects/[id]/pitch/page.tsx",
@@ -860,8 +861,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "size": 768,
-      "last_modified": "2026-10-06T17:00:46.516Z"
+      "size": 751,
+      "last_modified": "2026-10-06T17:01:37.332Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -1460,8 +1461,8 @@
     },
     {
       "path": "e2e/auth-validation.spec.ts",
-      "size": 1472,
-      "last_modified": "2026-09-15T00:00:09.980Z"
+      "size": 2285,
+      "last_modified": "2026-10-07T01:08:49.439Z"
     },
     {
       "path": "e2e/availability.spec.ts",
@@ -1587,6 +1588,11 @@
       "path": "e2e/phases.spec.ts",
       "size": 5746,
       "last_modified": "2026-09-29T21:33:48.102Z"
+    },
+    {
+      "path": "e2e/project-manager.spec.ts",
+      "size": 6817,
+      "last_modified": "2026-10-07T01:15:59.420Z"
     },
     {
       "path": "e2e/readiness.spec.ts",
@@ -2592,6 +2598,11 @@
       "path": "lib/supabase/progress.ts",
       "size": 4731,
       "last_modified": "2026-09-29T21:33:48.166Z"
+    },
+    {
+      "path": "lib/supabase/project-hub.ts",
+      "size": 10986,
+      "last_modified": "2026-10-07T00:56:41.962Z"
     },
     {
       "path": "lib/supabase/projects.ts",

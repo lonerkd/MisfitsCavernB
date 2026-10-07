@@ -58,10 +58,10 @@ release; take the plain fix then. Done when `npm audit` reports 0.
 
 ### 3.2 Data access through `lib/` — L (incremental)
 `conventions.md` §1 says components never call `supabase.from()` directly;
-**94 calls** in `app/` and `components/` still do (110 on 2026-10-03; jobs,
+**62 calls** in `app/` and `components/` still do (110 on 2026-10-03; the project page, jobs,
 profile, crew, crew member and Settings › Export are done). Count with
 `grep -rE "supabase\s*\.from\(" app components | wc -l`. Move them into the
-typed modules a page at a time — left, by count: projects/[id] (32), lounge
+typed modules a page at a time — left, by count: lounge
 (12), soundtrack (10), call sheet (8), today (6), pitch (6), then the
 small ones — with the page's loading done the §10 way
 (`useLoad` or a tagged state). Finish with a `no-restricted-syntax` lint rule

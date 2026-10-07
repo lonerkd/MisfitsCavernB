@@ -45,7 +45,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 4. **Small fixes**: phone editor footer and Lounge width (3.6) · one SELECT
    policy on `jobs` (3.9) · remove the unused permission model (3.10) · share
    page previews + e2e (3.11).
-5. **Upgrades**: data access through `lib/` (3.2, L, under way: 94 calls
+5. **Upgrades**: data access through `lib/` (3.2, L, under way: 62 calls
    left; PR #137) · brand rename (3.12) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
    activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
@@ -73,7 +73,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 No migration.
 
-- **BACKLOG 3.2: 110 → 94 direct `supabase.from()` calls.** Jobs board and
+- **BACKLOG 3.2: 110 → 62 direct `supabase.from()` calls.** Project page (`lib/supabase/project-hub.ts`); jobs board and
   posting page (`lib/supabase/jobs.ts`); profile, crew directory, crew
   member and Settings › Export (`lib/supabase/profiles.ts`). Found on the way:
   - **Settings › Export could download an incomplete file** (each failed
@@ -82,6 +82,14 @@ No migration.
   - Silent load failures on these pages now show a toast or message.
   - Unused helpers removed, among them `searchJobs` (typed text straight
     into a PostgREST `or()` filter).
+- **Sign-in lost the email under load** (`app/auth`): an input event lost
+  during hydration left text in the box but not in state, and typing the
+  next field blanked it. Every change and the submit now read all fields
+  from the form. The cause of the remaining e2e sign-in flakes; test in
+  `e2e/auth-validation.spec.ts` fails on the old code.
+- The overview and production manager on the project page turned failed
+  queries into zeros; they now say so. Test: `e2e/project-manager.spec.ts`
+  (owner and crew, survives a reload).
 - **17 stale remote branches deleted** (owner's command; each tip matched
   the audited one first). `claude/design-scales` kept — it carries #137.
   Not in the audit, left alone: `claude/state-assessment-testing-r0tf3y`.
