@@ -82,13 +82,6 @@ changes, script revisions, call sheets issued or documents. Decide what the
 feed should show (and to whom), then add the calls. Done when each chosen
 event appears in the feed for the right audience (persona-tested).
 
-### 3.7 Emphasis in the writing surface — M
-Fountain emphasis (`*italic*`, `**bold**`, `_underline_`) is honoured in
-export (`lib/scriptos/export.ts`, `fountain-export.ts`) but shows as raw
-markers while writing (`components/editor/WriteView.tsx`). Render it in the
-write surface without breaking caret/selection. Done when the editor e2e
-types emphasis and sees it styled, and export is unchanged.
-
 ### 3.8 Story beat → script — M/L
 "Push beat to ScriptOS" was removed: it created a new script per beat. The
 safe version appends a beat to the project's script with a server-side merge

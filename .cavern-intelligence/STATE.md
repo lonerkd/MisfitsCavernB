@@ -50,7 +50,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
    left, after 3.4; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
-   activity feed (3.5, product call) · emphasis (3.7) · beat → script (3.8) ·
+   activity feed (3.5, product call) · beat → script (3.8) ·
    dev-toolchain advisories (3.1, watch upstream).
 6. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
@@ -87,6 +87,12 @@ No migration.
   `supabase.from()` in `app/` and `components/`. The one exception is the
   auth callback, left until the password-recovery work lands. Server
   routes keep their own clients. Found on the way:
+  - **Emphasis while writing (BACKLOG 3.7, done)**: `*italic*`, `**bold**`,
+    `***both***`, `_underline_` (nested, `*` literal) are drawn styled in
+    the write surface with dimmed markers (`lib/scriptos/emphasis.ts`, unit
+    tests). The markers stay in the text and Courier Prime is monospaced in
+    every face, so the caret never drifts — `e2e/emphasis.spec.ts` checks
+    the styled line is as wide as the plain one. Source and export unchanged.
   - **One SELECT policy on `jobs` (BACKLOG 3.9)**: migration
     `20261007010000_jobs_one_select_policy` merges the two read policies
     (same meaning); `tests/integration/hiring.test.ts` checks who reads open

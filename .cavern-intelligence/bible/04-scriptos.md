@@ -20,7 +20,9 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
   FDX, Fountain, text — `lib/scriptos/import.ts`, `pdfImport.ts`), title
   page, the scene list.
 - **Centre** (`EditorCenterViews`, `WriteView`, `PreviewView`): the page.
-  Write = screenplay-formatted typing (Tab cycles element, autocomplete for
+  Write = screenplay-formatted typing (Fountain emphasis — `*italic*`,
+  `**bold**`, `_underline_` — drawn styled with the markers dimmed,
+  `lib/scriptos/emphasis.ts`; Tab cycles element, autocomplete for
   characters and headings, `(` auto-closes, Enter formats a heading);
   Preview = paginated; Board = scene cards; Outline = beats; Stats = length,
   runtime, characters, words.
@@ -88,5 +90,4 @@ syncing / synced · conflict · error boundary (`EditorErrorBoundary`).
 - Co-writing is last-writer-wins with a conflict prompt; two people typing
   in different scenes at once can still trip it. A CRDT (Yjs) would merge —
   a large change, not yet scheduled.
-- Emphasis (bold / italic / underline) in the writing surface (BACKLOG 3.7).
 - Story beat → script (BACKLOG 3.8).

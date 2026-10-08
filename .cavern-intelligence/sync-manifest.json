@@ -1,14 +1,14 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-08T01:13:37.745Z",
+  "last_synchronized": "2026-10-08T01:22:38.460Z",
   "stats": {
-    "totalFiles": 595,
-    "totalSize": 4272659,
+    "totalFiles": 598,
+    "totalSize": 4284940,
     "byExtension": {
       ".json": 9,
       ".md": 46,
       ".tsx": 174,
-      ".ts": 314,
+      ".ts": 317,
       ".js": 7,
       ".sql": 45
     }
@@ -23,6 +23,8 @@
         "lib/scriptos/bible.ts",
         "lib/scriptos/blocks.ts",
         "lib/scriptos/characters.ts",
+        "lib/scriptos/emphasis.test.ts",
+        "lib/scriptos/emphasis.ts",
         "lib/scriptos/export.ts",
         "lib/scriptos/fountain-export.ts",
         "lib/scriptos/fountain-roundtrip.test.ts",
@@ -542,7 +544,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-07T15:45:03.537Z"
+      "last_modified": "2026-10-08T01:13:37.750Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -552,7 +554,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-07T15:45:03.536Z"
+      "last_modified": "2026-10-08T01:13:37.750Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -862,7 +864,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-07T15:45:03.537Z"
+      "last_modified": "2026-10-08T01:13:37.750Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -1046,8 +1048,8 @@
     },
     {
       "path": "components/editor/WriteView.tsx",
-      "size": 20830,
-      "last_modified": "2026-10-07T03:14:10.073Z"
+      "size": 22034,
+      "last_modified": "2026-10-08T01:19:07.941Z"
     },
     {
       "path": "components/editor/WritingLoop.tsx",
@@ -1488,6 +1490,11 @@
       "path": "e2e/editor-project-script.spec.ts",
       "size": 3686,
       "last_modified": "2026-10-07T06:21:04.258Z"
+    },
+    {
+      "path": "e2e/emphasis.spec.ts",
+      "size": 4603,
+      "last_modified": "2026-10-08T01:19:07.942Z"
     },
     {
       "path": "e2e/errors.spec.ts",
@@ -2153,6 +2160,16 @@
       "path": "lib/scriptos/characters.ts",
       "size": 2954,
       "last_modified": "2026-10-07T03:14:10.251Z"
+    },
+    {
+      "path": "lib/scriptos/emphasis.test.ts",
+      "size": 2127,
+      "last_modified": "2026-10-08T01:15:06.391Z"
+    },
+    {
+      "path": "lib/scriptos/emphasis.ts",
+      "size": 4347,
+      "last_modified": "2026-10-08T01:14:56.844Z"
     },
     {
       "path": "lib/scriptos/export.ts",
