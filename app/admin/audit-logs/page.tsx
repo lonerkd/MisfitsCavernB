@@ -93,7 +93,7 @@ export default function AuditLogsPage() {
   const totalPages = Math.ceil(totalLogs / pageSize);
 
   return (
-    <ProtectedPage requiredPermission="manage_users">
+    <ProtectedPage require="admin">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <header
           style={{

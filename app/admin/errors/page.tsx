@@ -59,7 +59,7 @@ export default function AdminErrorsPage() {
   };
 
   return (
-    <ProtectedPage requiredPermission="manage_users">
+    <ProtectedPage require="admin">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', paddingBottom: 'calc(var(--taskbar-height, 94px) + 24px)' }}>
         <header style={{ height: 60, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', display: 'flex' }}><ArrowLeft size={20} /></Link>

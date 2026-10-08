@@ -87,8 +87,9 @@ Rules:
   page's own `isOwner`, `useCanShape(projectId)` (owner, lead, contributor —
   mirrors `internal.can_shape_project`). Gate
   destructive controls on these so they don't render enabled and then fail
-  at RLS. `lib/os/permissions.ts` / `access-matrix.ts` are an older
-  global-role model nothing reads, nor `useProjectAccess` (BACKLOG 3.10) — don't build on them.
+  at RLS. A whole page that's admin-only or sign-in-only wraps itself in
+  `ProtectedPage require="admin" | "signed-in"` (`lib/os/guards.tsx`). There
+  is no role or permission list in the client — don't add one.
 
 ---
 

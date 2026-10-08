@@ -103,16 +103,6 @@ the same meaning (`internal.job_listed` + the poster + applicants via
 `internal.applied_to`); migration + fingerprint + the hiring/sample-data
 persona tests unchanged. Done when the advisor no longer lists `jobs`.
 
-### 3.10 Remove the unused permission model — S (restructure)
-`lib/os/permissions.ts` and `access-matrix.ts` (global roles admin /
-project_creator / crew_member / guest; every non-admin is `project_creator`)
-and the hooks `usePermission`, `usePageAccess`, `useActionAccess`,
-`useProjectAccess` have no callers in `app/` or `components/` (only
-`lib/os/actions.ts` calls `hasPermission`). The UI uses `isOwner` /
-`useCanShape`. Delete them (or rebuild one `useProjectRole` that mirrors the
-RLS matrix in `bible/11-rules.md`) and keep their tests' useful cases. Done
-when nothing describes permissions except RLS and that one hook.
-
 ### 3.11 Share pages: previews and e2e — S
 `/p/[token]` renders on the client, so a pasted link shows no title or image
 (`/shared` and `/s` have Open Graph). Server-render it with `generateMetadata`

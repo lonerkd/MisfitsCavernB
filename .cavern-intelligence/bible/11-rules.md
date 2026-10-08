@@ -38,12 +38,12 @@ Proved by the persona tests in `tests/integration/` on every PR. A leak to
 Riley is P0.
 
 **The client side.** The UI hides what the database would refuse using
-`isOwner` and `useCanShape` (`lib/brief`). `lib/os/permissions.ts` and
-`lib/os/access-matrix.ts` describe an older global-role model
-(`admin` / `project_creator` / `crew_member` / `guest`; every non-admin is a
-`project_creator`) that no page reads (`usePermission`, `usePageAccess`,
-`useActionAccess`, `useProjectAccess` have no callers). `conventions.md` §5 still points at it.
-Restructure: delete it, or rebuild it to mirror the table above (3.10).
+`isOwner` and `useCanShape` (`lib/brief`, mirrors `can_shape_project`).
+The admin pages are gated by `ProtectedPage require="admin"` (`lib/os/guards.tsx`,
+from `get_my_account`'s `is_admin`); admin data is refused by RLS and the
+admin RPCs to everyone else anyway. There is no other permission model —
+the old global roles (`lib/os/permissions.ts`, `access-matrix.ts`) were
+removed on 2026-10-07.
 
 ## How a project grows (phase gating)
 

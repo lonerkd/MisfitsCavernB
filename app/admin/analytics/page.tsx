@@ -56,7 +56,7 @@ export default function AdminAnalyticsPage() {
   const loadError = error ? (error as { message?: string }).message || 'Could not load analytics' : null;
 
   return (
-    <ProtectedPage requiredPermission="manage_users">
+    <ProtectedPage require="admin">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <header style={{
           position: 'fixed',

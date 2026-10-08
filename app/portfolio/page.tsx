@@ -335,7 +335,7 @@ export default function PortfolioPage() {
   );
 
   return (
-    <ProtectedPage requiredPermission="manage_portfolio">
+    <ProtectedPage require="signed-in">
       <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 

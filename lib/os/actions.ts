@@ -1,7 +1,5 @@
 import { supabase, type Database } from '@/lib/supabase/client';
-import { hasPermission, getProjectPermissions, type ProjectRole } from './permissions';
 import { logAuditAction } from '@/lib/supabase/audit';
-import type { Permission, AccessContext, UserRole } from '@/lib/context/types';
 import { osState } from './store';
 import { resetOS, refreshActiveProject, osAdoptSession, ACTIVE_PROJECT_KEY } from './boot';
 import { fetchProjectDetails } from './queries';
@@ -85,79 +83,4 @@ export async function osUpdateProject(id: string, updates: Partial<Project>) {
     osNotify('Failed to update project. Please try again.', 'error');
     await refreshActiveProject(id);
   }
-}
-
-// ── Project access ───────────────────────────────────────────────
-export async function osLoadProjectAccess(projectId: string) {
-  const { session, setSession } = osState();
-  if (!session.userId) return;
-
-  try {
-    const { data: project } = await supabase
-      .from('projects')
-      .select('id, creator_id')
-      .eq('id', projectId)
-      .single();
-
-    if (!project) return;
-
-    let projectRole: ProjectRole = 'viewer';
-
-    if (project.creator_id === session.userId) {
-      projectRole = 'owner';
-    } else {
-      const { data: crewMember } = await supabase
-        .from('project_crew')
-        .select('role, status')
-        .eq('project_id', projectId)
-        .eq('user_id', session.userId)
-        .single();
-
-      if (crewMember && crewMember.status === 'confirmed') {
-        projectRole = crewMember.role === 'lead' ? 'lead' : 'contributor';
-      }
-    }
-
-    const projectPermissions = getProjectPermissions(projectRole);
-
-    setSession({
-      projectAccess: {
-        ...osState().session.projectAccess,
-        [projectId]: {
-          projectId,
-          userRole: projectRole,
-          permissions: projectPermissions,
-          canEdit: projectRole === 'owner' || projectRole === 'lead',
-          canDelete: projectRole === 'owner',
-          canManageCrew: projectRole === 'owner' || projectRole === 'lead',
-          canViewScripts: true,
-          canEditScripts: projectRole !== 'viewer',
-          canCreateScripts: projectRole !== 'viewer',
-        },
-      },
-    });
-  } catch (error) {
-    console.error('Error loading project access:', error);
-  }
-}
-
-// ── Permission checks ────────────────────────────────────────────
-export function osCanPerformAction(action: Permission, context?: AccessContext): boolean {
-  const { session } = osState();
-  if (!hasPermission(session.userRole, action)) return false;
-  if (context?.projectId) {
-    const access = session.projectAccess[context.projectId];
-    if (access) return access.permissions.includes(action);
-  }
-  return true;
-}
-
-export function osCheckProjectAccess(projectId: string, permission: Permission): boolean {
-  const access = osState().session.projectAccess[projectId];
-  if (!access) return false;
-  return access.permissions.includes(permission);
-}
-
-export function osHasRole(role: UserRole): boolean {
-  return osState().session.userRole === role;
 }
