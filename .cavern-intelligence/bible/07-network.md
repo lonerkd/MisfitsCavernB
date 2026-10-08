@@ -69,8 +69,8 @@ non-sample projects (`get_public_showcase`, 24), signed out.
 - Job posts linked to a project need `can_shape_project`; only the poster
   responds to applications; hiring never changes an existing member's role.
 - Applicants can read jobs they applied to (`internal.applied_to`).
-- `jobs` has two permissive SELECT policies (performance advisor WARN) —
-  merge into one (BACKLOG 3.9).
+- One SELECT policy on `jobs` ("Jobs readable": the poster, listed open
+  postings, an applicant's own) — `20261007010000_jobs_one_select_policy`.
 
 ## Connections
 

@@ -96,13 +96,6 @@ that can't clobber unsynced editor edits (`lib/scriptos/sync.ts` has the
 outbox). Done when a beat lands in the open script for a co-writer without
 losing either side's edits (two-session test).
 
-### 3.9 One SELECT policy on `jobs` — S
-The performance advisor flags `multiple_permissive_policies` on `jobs` (two
-permissive SELECT policies run on every read). Merge them into one policy with
-the same meaning (`internal.job_listed` + the poster + applicants via
-`internal.applied_to`); migration + fingerprint + the hiring/sample-data
-persona tests unchanged. Done when the advisor no longer lists `jobs`.
-
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:

@@ -44,7 +44,9 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
    at launch, 3.16). Still open: the domain.
 3. **Launch blocker**: password recovery (3.4).
-4. **Small fixes**: one SELECT policy on `jobs` (3.9 — a migration).
+4. **To apply to production (owner)**: `20261007010000_jobs_one_select_policy.sql`
+   (BACKLOG 3.9 — merged locally, tested; production needs it applied, then
+   `npm run db:drift -- --target` should match the snapshot).
 5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
    left, after 3.4; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
@@ -85,6 +87,16 @@ No migration.
   `supabase.from()` in `app/` and `components/`. The one exception is the
   auth callback, left until the password-recovery work lands. Server
   routes keep their own clients. Found on the way:
+  - **One SELECT policy on `jobs` (BACKLOG 3.9)**: migration
+    `20261007010000_jobs_one_select_policy` merges the two read policies
+    (same meaning); `tests/integration/hiring.test.ts` checks who reads open
+    and closed postings (anon, outsider, poster, applicant). Whole
+    integration suite: 301 pass. **Not yet applied to production.**
+    Integration tests now start on Windows (the setup ran `npx` without a shell).
+  - **Sign-in, again**: a lost input event followed by any re-render still
+    blanked the email (the controlled field wrote its empty state back). The
+    fields are uncontrolled now (read from the form on submit); a second
+    test in `e2e/auth-validation.spec.ts` fails on the old code.
   - **Share links unfurl (BACKLOG 3.11, done)**: `/p/<token>` is now a
     server page (`generateMetadata` through the public client: title,
     description or role · year · author, a picture; never indexed) around

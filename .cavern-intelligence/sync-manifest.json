@@ -1,16 +1,16 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-07T15:45:03.532Z",
+  "last_synchronized": "2026-10-08T01:13:37.745Z",
   "stats": {
     "totalFiles": 595,
-    "totalSize": 4283263,
+    "totalSize": 4272659,
     "byExtension": {
       ".json": 9,
       ".md": 46,
-      ".tsx": 172,
-      ".ts": 317,
+      ".tsx": 174,
+      ".ts": 314,
       ".js": 7,
-      ".sql": 44
+      ".sql": 45
     }
   },
   "modules": {
@@ -129,6 +129,7 @@
         "app/m/[id]/route.ts",
         "app/not-found.tsx",
         "app/p/[token]/page.tsx",
+        "app/p/[token]/PortfolioView.tsx",
         "app/page.tsx",
         "app/portfolio/loading.tsx",
         "app/portfolio/manage/page.tsx",
@@ -322,7 +323,8 @@
         "supabase/migrations/20260929090000_account_deletion.sql",
         "supabase/migrations/20260930010000_advisor_fixes.sql",
         "supabase/migrations/20261004010000_discord_webhook_gate.sql",
-        "supabase/migrations/20261006000000_script_share_links.sql"
+        "supabase/migrations/20261006000000_script_share_links.sql",
+        "supabase/migrations/20261007010000_jobs_one_select_policy.sql"
       ]
     }
   },
@@ -540,7 +542,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-07T07:41:33.695Z"
+      "last_modified": "2026-10-07T15:45:03.537Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -550,17 +552,17 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-07T07:41:33.695Z"
+      "last_modified": "2026-10-07T15:45:03.536Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
-      "size": 9505,
-      "last_modified": "2026-10-07T03:14:09.921Z"
+      "size": 9487,
+      "last_modified": "2026-10-08T00:21:38.952Z"
     },
     {
       "path": "app/admin/audit-logs/page.tsx",
-      "size": 16886,
-      "last_modified": "2026-10-07T03:14:09.923Z"
+      "size": 16868,
+      "last_modified": "2026-10-08T00:21:38.954Z"
     },
     {
       "path": "app/admin/error.tsx",
@@ -569,18 +571,18 @@
     },
     {
       "path": "app/admin/errors/page.tsx",
-      "size": 8644,
-      "last_modified": "2026-10-07T07:01:42.755Z"
+      "size": 8626,
+      "last_modified": "2026-10-08T00:21:38.954Z"
     },
     {
       "path": "app/admin/page.tsx",
-      "size": 8049,
-      "last_modified": "2026-10-07T03:14:09.926Z"
+      "size": 8031,
+      "last_modified": "2026-10-08T00:21:38.955Z"
     },
     {
       "path": "app/admin/users/page.tsx",
-      "size": 10282,
-      "last_modified": "2026-10-07T03:14:09.928Z"
+      "size": 10195,
+      "last_modified": "2026-10-08T00:21:50.956Z"
     },
     {
       "path": "app/api/discord/notify/route.ts",
@@ -614,8 +616,8 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 17959,
-      "last_modified": "2026-10-07T03:14:09.937Z"
+      "size": 18337,
+      "last_modified": "2026-10-08T01:08:54.741Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -719,8 +721,13 @@
     },
     {
       "path": "app/p/[token]/page.tsx",
-      "size": 27688,
-      "last_modified": "2026-10-07T07:01:45.826Z"
+      "size": 2569,
+      "last_modified": "2026-10-08T00:37:29.163Z"
+    },
+    {
+      "path": "app/p/[token]/PortfolioView.tsx",
+      "size": 27692,
+      "last_modified": "2026-10-08T00:37:08.517Z"
     },
     {
       "path": "app/page.tsx",
@@ -739,8 +746,8 @@
     },
     {
       "path": "app/portfolio/page.tsx",
-      "size": 24715,
-      "last_modified": "2026-10-07T06:28:38.917Z"
+      "size": 24697,
+      "last_modified": "2026-10-08T00:21:38.956Z"
     },
     {
       "path": "app/privacy/page.tsx",
@@ -855,7 +862,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-07T07:41:33.695Z"
+      "last_modified": "2026-10-07T15:45:03.537Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -1434,8 +1441,8 @@
     },
     {
       "path": "e2e/auth-validation.spec.ts",
-      "size": 2285,
-      "last_modified": "2026-10-07T03:14:10.151Z"
+      "size": 3198,
+      "last_modified": "2026-10-08T01:09:17.073Z"
     },
     {
       "path": "e2e/availability.spec.ts",
@@ -1598,6 +1605,11 @@
       "last_modified": "2026-10-07T03:14:10.174Z"
     },
     {
+      "path": "e2e/share-pages.spec.ts",
+      "size": 5086,
+      "last_modified": "2026-10-08T00:43:32.220Z"
+    },
+    {
       "path": "e2e/shot-designer.spec.ts",
       "size": 5789,
       "last_modified": "2026-10-07T03:14:10.175Z"
@@ -1755,11 +1767,6 @@
     {
       "path": "lib/context/SpotifyContext.tsx",
       "size": 7776,
-      "last_modified": "2026-10-07T03:14:10.198Z"
-    },
-    {
-      "path": "lib/context/types.ts",
-      "size": 1885,
       "last_modified": "2026-10-07T03:14:10.198Z"
     },
     {
@@ -1978,19 +1985,9 @@
       "last_modified": "2026-10-07T03:14:10.228Z"
     },
     {
-      "path": "lib/os/access-matrix.test.ts",
-      "size": 3440,
-      "last_modified": "2026-10-07T03:14:10.230Z"
-    },
-    {
-      "path": "lib/os/access-matrix.ts",
-      "size": 9574,
-      "last_modified": "2026-10-07T03:14:10.231Z"
-    },
-    {
       "path": "lib/os/actions.ts",
-      "size": 6328,
-      "last_modified": "2026-10-07T03:14:10.233Z"
+      "size": 3529,
+      "last_modified": "2026-10-08T00:21:17.553Z"
     },
     {
       "path": "lib/os/board.test.ts",
@@ -2009,18 +2006,23 @@
     },
     {
       "path": "lib/os/boot.ts",
-      "size": 11834,
-      "last_modified": "2026-10-07T03:14:10.235Z"
+      "size": 11680,
+      "last_modified": "2026-10-07T15:53:08.256Z"
+    },
+    {
+      "path": "lib/os/guards.test.tsx",
+      "size": 2126,
+      "last_modified": "2026-10-08T00:23:32.417Z"
     },
     {
       "path": "lib/os/guards.tsx",
-      "size": 2547,
-      "last_modified": "2026-10-07T03:14:10.235Z"
+      "size": 1686,
+      "last_modified": "2026-10-08T00:21:26.105Z"
     },
     {
       "path": "lib/os/hooks.ts",
-      "size": 4587,
-      "last_modified": "2026-10-07T03:14:10.236Z"
+      "size": 2643,
+      "last_modified": "2026-10-08T00:21:17.554Z"
     },
     {
       "path": "lib/os/identity.ts",
@@ -2029,8 +2031,8 @@
     },
     {
       "path": "lib/os/index.ts",
-      "size": 2147,
-      "last_modified": "2026-10-07T03:14:10.236Z"
+      "size": 1670,
+      "last_modified": "2026-10-08T00:21:38.951Z"
     },
     {
       "path": "lib/os/notify.ts",
@@ -2041,11 +2043,6 @@
       "path": "lib/os/OSProvider.tsx",
       "size": 418,
       "last_modified": "2026-10-07T03:14:10.229Z"
-    },
-    {
-      "path": "lib/os/permissions.ts",
-      "size": 3037,
-      "last_modified": "2026-10-07T03:14:10.237Z"
     },
     {
       "path": "lib/os/phases.test.ts",
@@ -2079,8 +2076,8 @@
     },
     {
       "path": "lib/os/store.ts",
-      "size": 1091,
-      "last_modified": "2026-10-07T03:14:10.241Z"
+      "size": 962,
+      "last_modified": "2026-10-07T15:53:08.256Z"
     },
     {
       "path": "lib/os/sync.ts",
@@ -2089,8 +2086,8 @@
     },
     {
       "path": "lib/os/types.ts",
-      "size": 2487,
-      "last_modified": "2026-10-07T03:14:10.243Z"
+      "size": 2689,
+      "last_modified": "2026-10-07T15:53:08.256Z"
     },
     {
       "path": "lib/os/uiPrefs.ts",
@@ -3028,6 +3025,11 @@
       "last_modified": "2026-10-07T03:14:10.396Z"
     },
     {
+      "path": "supabase/migrations/20261007010000_jobs_one_select_policy.sql",
+      "size": 1286,
+      "last_modified": "2026-10-08T01:00:19.185Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1705,
       "last_modified": "2026-10-07T03:14:10.398Z"
@@ -3134,8 +3136,8 @@
     },
     {
       "path": "tests/integration/hiring.test.ts",
-      "size": 5505,
-      "last_modified": "2026-10-07T03:14:10.412Z"
+      "size": 6747,
+      "last_modified": "2026-10-08T01:05:07.093Z"
     },
     {
       "path": "tests/integration/locations.test.ts",
@@ -3244,8 +3246,8 @@
     },
     {
       "path": "tests/integration/support/global-setup.ts",
-      "size": 1163,
-      "last_modified": "2026-10-07T03:14:10.427Z"
+      "size": 1230,
+      "last_modified": "2026-10-08T01:04:32.902Z"
     },
     {
       "path": "tests/integration/support/personas.ts",
