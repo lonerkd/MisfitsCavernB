@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execSync } from 'node:child_process';
 
 // Integration tests run against a real local Supabase stack built from
 // supabase/migrations (`npx supabase start` / `npx supabase db reset`).
@@ -9,7 +9,8 @@ export default function setup() {
 
   let status: Record<string, string>;
   try {
-    const out = execFileSync('npx', ['supabase', 'status', '-o', 'json'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    // Through the shell: on Windows `npx` is a .cmd, which Node won't run without one.
+    const out = execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
     status = JSON.parse(out.slice(out.indexOf('{')));
   } catch {
     throw new Error(

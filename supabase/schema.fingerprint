@@ -1087,7 +1087,7 @@ function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba7
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
-grant function internal.applied_to(p_job uuid) authenticated,postgres
+grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -1489,10 +1489,9 @@ policy public.guide_progress "guide_progress update own" PERMISSIVE UPDATE to au
 policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
 policy public.job_applications "job_applications read" PERMISSIVE SELECT to authenticated using ((applicant_id = ( SELECT auth.uid() AS uid)) OR (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))) check -
-policy public.jobs "Applicants view jobs they applied to" PERMISSIVE SELECT to authenticated using internal.applied_to(id) check -
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
-policy public.jobs "Jobs publicly readable" PERMISSIVE SELECT to public using ((created_by = ( SELECT auth.uid() AS uid)) OR ((status = 'open'::text) AND internal.job_listed(created_by, project_id))) check -
+policy public.jobs "Jobs readable" PERMISSIVE SELECT to public using ((created_by = ( SELECT auth.uid() AS uid)) OR ((status = 'open'::text) AND internal.job_listed(created_by, project_id)) OR internal.applied_to(id)) check -
 policy public.lounge_reads "lounge_reads own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
