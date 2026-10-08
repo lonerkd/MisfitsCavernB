@@ -1,4 +1,5 @@
 import { supabase, type Database } from '@/lib/supabase/client';
+import { forgetThisDevicePush } from '@/lib/push/client';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
 import { resetOS, refreshActiveProject, osAdoptSession, ACTIVE_PROJECT_KEY } from './boot';
@@ -41,6 +42,7 @@ export async function osSignUp(email: string, password: string, username: string
 
 export async function osSignOut() {
   const loggedOutUserId = osState().session.userId;
+  await forgetThisDevicePush();
   const { error } = await supabase.auth.signOut();
   if (error) {
     osState().setSession({ error: error.message || 'Sign out failed' });

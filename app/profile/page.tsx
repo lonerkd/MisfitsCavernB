@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getMyWork, getProfile, saveMyProfile } from '@/lib/supabase/profiles';
+import { forgetThisDevicePush } from '@/lib/push/client';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import Avatar from '@/components/Avatar';
 import { useConfirm } from '@/components/Confirm';
@@ -79,6 +80,7 @@ export default function ProfilePage() {
 
   const handleSignOut = async () => {
     if (!await confirm({ message: 'Sign out of The Cavern?', confirmLabel: 'SIGN OUT', danger: false })) return;
+    await forgetThisDevicePush();
     await supabase.auth.signOut();
     router.replace('/auth');
   };

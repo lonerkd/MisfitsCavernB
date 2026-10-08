@@ -11,24 +11,14 @@ export interface Notification {
   created_at: string;
 }
 
-export interface NotificationPrefs { replies: boolean; jobs: boolean; product: boolean; leak_check: boolean }
-export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = { replies: true, jobs: true, product: false, leak_check: true };
-
-const TYPE_PREF: Record<string, keyof NotificationPrefs> = {
-  reply: 'replies', comment: 'replies', job: 'jobs', application: 'jobs', product: 'product',
-};
-
-export function typeEnabled(type: string, prefs: NotificationPrefs = DEFAULT_NOTIFICATION_PREFS): boolean {
-  const key = TYPE_PREF[type];
-  if (!key) return true;
-  return prefs[key] !== false;
-}
+export { DEFAULT_NOTIFICATION_PREFS, typeEnabled, type NotificationPrefs } from '@/lib/notifications/prefs';
+import { readPrefs, typeEnabled, type NotificationPrefs } from '@/lib/notifications/prefs';
 
 export async function getNotificationPrefs(userId: string): Promise<NotificationPrefs> {
   // Private column: only readable by its owner, through get_my_account().
   void userId;
   const { data } = await supabase.rpc('get_my_account');
-  return { ...DEFAULT_NOTIFICATION_PREFS, ...((data?.[0]?.notification_prefs as Partial<NotificationPrefs>) || {}) };
+  return readPrefs(data?.[0]?.notification_prefs);
 }
 
 export async function saveNotificationPrefs(userId: string, patch: Partial<NotificationPrefs>) {

@@ -55,6 +55,20 @@ export const discordNotifyBodySchema = z.object({
   content: messageContentSchema,
 });
 
+// What the database posts to /api/push/dispatch (internal.push_notification).
+export const pushDispatchBodySchema = z.object({
+  notification_id: uuidSchema,
+});
+
+// A browser's push subscription (PushSubscription.toJSON()), as Settings saves it.
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.url({ protocol: /^https?$/ }).max(2000),
+  keys: z.object({
+    p256dh: z.string().min(40).max(200),
+    auth: z.string().min(10).max(100),
+  }),
+});
+
 export const referenceSearchQuerySchema = z.object({
   q: z.string().trim().max(200, 'Search terms cannot exceed 200 characters.').default(''),
   page: z.coerce

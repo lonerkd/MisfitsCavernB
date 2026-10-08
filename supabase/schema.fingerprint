@@ -431,6 +431,14 @@ column projects.status text default 'concept'::text
 column projects.title text not null
 column projects.updated_at timestamp with time zone default now()
 column projects.visibility text default 'team'::text not null
+column push_subscriptions.auth text not null
+column push_subscriptions.created_at timestamp with time zone default now() not null
+column push_subscriptions.endpoint text not null
+column push_subscriptions.id uuid default gen_random_uuid() not null
+column push_subscriptions.last_used_at timestamp with time zone
+column push_subscriptions.p256dh text not null
+column push_subscriptions.user_agent text
+column push_subscriptions.user_id uuid not null
 column scene_elements.created_at timestamp with time zone default now() not null
 column scene_elements.created_by uuid default auth.uid()
 column scene_elements.element_id uuid not null
@@ -892,6 +900,13 @@ constraint projects.projects_pkey PRIMARY KEY (id)
 constraint projects.projects_project_type_fkey FOREIGN KEY (project_type) REFERENCES project_formats(name) ON UPDATE CASCADE
 constraint projects.projects_share_token_key UNIQUE (share_token)
 constraint projects.projects_visibility_check CHECK ((visibility = ANY (ARRAY['private'::text, 'team'::text, 'link'::text, 'public'::text])))
+constraint push_subscriptions.push_subscriptions_auth_check CHECK (((length(auth) >= 10) AND (length(auth) <= 100)))
+constraint push_subscriptions.push_subscriptions_endpoint_check CHECK (((endpoint ~ '^https?://'::text) AND (length(endpoint) <= 2000)))
+constraint push_subscriptions.push_subscriptions_endpoint_key UNIQUE (endpoint)
+constraint push_subscriptions.push_subscriptions_p256dh_check CHECK (((length(p256dh) >= 40) AND (length(p256dh) <= 200)))
+constraint push_subscriptions.push_subscriptions_pkey PRIMARY KEY (id)
+constraint push_subscriptions.push_subscriptions_user_agent_check CHECK (((user_agent IS NULL) OR (length(user_agent) <= 500)))
+constraint push_subscriptions.push_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint scene_elements.scene_elements_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scene_elements.scene_elements_element_fkey FOREIGN KEY (element_id, project_id) REFERENCES breakdown_elements(id, project_id) ON DELETE CASCADE
 constraint scene_elements.scene_elements_pkey PRIMARY KEY (scene_id, element_id)
@@ -1033,6 +1048,7 @@ function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb177
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
+function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
@@ -1118,6 +1134,7 @@ grant function internal.project_documents_sync_permit() postgres
 grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
+grant function internal.push_notification() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.sync_budget_actual(p_line uuid) postgres
@@ -1302,6 +1319,7 @@ index CREATE INDEX project_locations_created_by_fkey_idx ON public.project_locat
 index CREATE INDEX project_locations_project_idx ON public.project_locations USING btree (project_id)
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
+index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_fkey_idx ON public.scene_elements USING btree (element_id, project_id)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
@@ -1410,6 +1428,8 @@ index CREATE UNIQUE INDEX project_locations_pkey ON public.project_locations USI
 index CREATE UNIQUE INDEX project_tasks_pkey ON public.project_tasks USING btree (id)
 index CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)
 index CREATE UNIQUE INDEX projects_share_token_key ON public.projects USING btree (share_token)
+index CREATE UNIQUE INDEX push_subscriptions_endpoint_key ON public.push_subscriptions USING btree (endpoint)
+index CREATE UNIQUE INDEX push_subscriptions_pkey ON public.push_subscriptions USING btree (id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
@@ -1556,6 +1576,9 @@ policy public.projects "Authenticated users create projects" PERMISSIVE INSERT t
 policy public.projects "Creators delete projects" PERMISSIVE DELETE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
 policy public.projects "Creators update projects" PERMISSIVE UPDATE to authenticated using (creator_id = ( SELECT auth.uid() AS uid)) check -
 policy public.projects "Project members can view" PERMISSIVE SELECT to authenticated using ((creator_id = ( SELECT auth.uid() AS uid)) OR ((visibility <> 'private'::text) AND internal.is_project_member(id))) check -
+policy public.push_subscriptions "push_subscriptions add own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.push_subscriptions "push_subscriptions read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.push_subscriptions "push_subscriptions remove own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.scene_elements "scene_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.scene_media "scene_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
@@ -1694,6 +1717,7 @@ rls project_formats enabled=true forced=false
 rls project_locations enabled=true forced=false
 rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
+rls push_subscriptions enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
 rls scenes enabled=true forced=false
@@ -1724,6 +1748,7 @@ trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
+trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()

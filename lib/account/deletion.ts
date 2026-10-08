@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { forgetThisDevicePush } from '@/lib/push/client';
 
 // Leaving the suite (supabase/migrations/20260929090000_account_deletion.sql).
 // The database decides what goes and what stays; files can only be removed
@@ -59,5 +60,6 @@ export async function deleteMyAccount(userId: string, confirm: string): Promise<
   const { error } = await supabase.rpc('delete_my_account', { p_confirm: confirm.trim() });
   if (error) throw new Error(error.message);
   // The session belongs to an account that no longer exists.
+  await forgetThisDevicePush();
   await supabase.auth.signOut({ scope: 'local' });
 }
