@@ -45,7 +45,7 @@ Production, `?view=`; the project is the active one (`mc_active_project`) or
 
 | View | What it does |
 |---|---|
-| **Story** | beat board; character bible with a look-board per character (`character_media`) |
+| **Story** | beat board — **Add to script** appends a beat to the project's script as a Fountain section + synopsis (`lib/scriptos/beats.ts`, `append_to_script`; open editors get it live and keep their own typing); character bible with a look-board per character (`character_media`) |
 | **Breakdown** | elements by category or per-scene sheets; status, cost, owner; **Categories & rates** (data, not code); **Push to budget** (`Breakdown · <category>` lines); printable sheets |
 | **Readiness** | can we shoot it? each scene checked against cast, breakdown, shots, a dated day, references; grouped by shoot day; "what unblocks the most"; every blocker links to its fix |
 | **Schedule** | stripboard (INT/EXT × DAY/NIGHT colours), drag or Alt+←/→ between days, pages vs day length, company moves, auto-schedule, Day out of days, print; **call sheets** per day: calls, wrap, address, weather, per-person calls; **issue** (versioned, notifies) and reminders |

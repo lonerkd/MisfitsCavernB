@@ -1,16 +1,16 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-08T01:22:38.460Z",
+  "last_synchronized": "2026-10-08T02:01:50.449Z",
   "stats": {
-    "totalFiles": 598,
-    "totalSize": 4284940,
+    "totalFiles": 602,
+    "totalSize": 4295885,
     "byExtension": {
       ".json": 9,
       ".md": 46,
       ".tsx": 174,
-      ".ts": 317,
+      ".ts": 320,
       ".js": 7,
-      ".sql": 45
+      ".sql": 46
     }
   },
   "modules": {
@@ -20,6 +20,8 @@
       "files": [
         "lib/scriptos/analyze.test.ts",
         "lib/scriptos/analyze.ts",
+        "lib/scriptos/beats.test.ts",
+        "lib/scriptos/beats.ts",
         "lib/scriptos/bible.ts",
         "lib/scriptos/blocks.ts",
         "lib/scriptos/characters.ts",
@@ -326,7 +328,8 @@
         "supabase/migrations/20260930010000_advisor_fixes.sql",
         "supabase/migrations/20261004010000_discord_webhook_gate.sql",
         "supabase/migrations/20261006000000_script_share_links.sql",
-        "supabase/migrations/20261007010000_jobs_one_select_policy.sql"
+        "supabase/migrations/20261007010000_jobs_one_select_policy.sql",
+        "supabase/migrations/20261007020000_append_to_script.sql"
       ]
     }
   },
@@ -544,7 +547,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-08T01:13:37.750Z"
+      "last_modified": "2026-10-08T01:22:38.466Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -554,7 +557,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-08T01:13:37.750Z"
+      "last_modified": "2026-10-08T01:22:38.465Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -864,7 +867,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-08T01:13:37.750Z"
+      "last_modified": "2026-10-08T01:22:38.465Z"
     },
     {
       "path": "components/AnimatedSection.tsx",
@@ -1208,8 +1211,8 @@
     },
     {
       "path": "components/studio/CrewBoards.tsx",
-      "size": 13023,
-      "last_modified": "2026-10-07T03:14:10.106Z"
+      "size": 13178,
+      "last_modified": "2026-10-08T01:55:13.202Z"
     },
     {
       "path": "components/studio/media/AddMedia.tsx",
@@ -1323,8 +1326,8 @@
     },
     {
       "path": "components/studio/production/StoryView.tsx",
-      "size": 4098,
-      "last_modified": "2026-10-07T03:14:10.128Z"
+      "size": 5125,
+      "last_modified": "2026-10-08T01:54:28.036Z"
     },
     {
       "path": "components/studio/production/StripboardView.tsx",
@@ -1450,6 +1453,11 @@
       "path": "e2e/availability.spec.ts",
       "size": 5554,
       "last_modified": "2026-10-07T03:14:10.151Z"
+    },
+    {
+      "path": "e2e/beat-to-script.spec.ts",
+      "size": 6845,
+      "last_modified": "2026-10-08T01:56:13.865Z"
     },
     {
       "path": "e2e/breakdown.spec.ts",
@@ -2147,6 +2155,16 @@
       "last_modified": "2026-10-07T03:14:10.250Z"
     },
     {
+      "path": "lib/scriptos/beats.test.ts",
+      "size": 1427,
+      "last_modified": "2026-10-08T01:29:58.430Z"
+    },
+    {
+      "path": "lib/scriptos/beats.ts",
+      "size": 3301,
+      "last_modified": "2026-10-08T01:27:53.340Z"
+    },
+    {
       "path": "lib/scriptos/bible.ts",
       "size": 4781,
       "last_modified": "2026-10-07T03:14:10.251Z"
@@ -2258,8 +2276,8 @@
     },
     {
       "path": "lib/scriptos/sync.ts",
-      "size": 5804,
-      "last_modified": "2026-10-07T03:14:10.264Z"
+      "size": 6364,
+      "last_modified": "2026-10-08T01:27:53.340Z"
     },
     {
       "path": "lib/scriptos/tableRead.ts",
@@ -2598,8 +2616,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 122103,
-      "last_modified": "2026-10-07T03:14:10.308Z"
+      "size": 118258,
+      "last_modified": "2026-10-08T01:26:04.387Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -3045,6 +3063,11 @@
       "path": "supabase/migrations/20261007010000_jobs_one_select_policy.sql",
       "size": 1286,
       "last_modified": "2026-10-08T01:00:19.185Z"
+    },
+    {
+      "path": "supabase/migrations/20261007020000_append_to_script.sql",
+      "size": 1475,
+      "last_modified": "2026-10-08T01:25:24.054Z"
     },
     {
       "path": "tailwind.config.js",

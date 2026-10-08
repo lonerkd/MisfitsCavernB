@@ -45,12 +45,13 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    at launch, 3.16). Still open: the domain.
 3. **Launch blocker**: password recovery (3.4).
 4. **To apply to production (owner)**: `20261007010000_jobs_one_select_policy.sql`
-   (BACKLOG 3.9 — merged locally, tested; production needs it applied, then
-   `npm run db:drift -- --target` should match the snapshot).
+   (3.9) and `20261007020000_append_to_script.sql` (3.8) — tested locally;
+   apply both, then `npm run db:drift -- --target` should match the snapshot.
+   The beat board's **Add to script** needs the second.
 5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
    left, after 3.4; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
-   activity feed (3.5, product call) · beat → script (3.8) ·
+   activity feed (3.5, product call) ·
    dev-toolchain advisories (3.1, watch upstream).
 6. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
@@ -87,6 +88,16 @@ No migration.
   `supabase.from()` in `app/` and `components/`. The one exception is the
   auth callback, left until the password-recovery work lands. Server
   routes keep their own clients. Found on the way:
+  - **Story beat → script (BACKLOG 3.8, done)**: the beat board's **Add to
+    script** appends a beat to the project's script (starting one if none)
+    as a Fountain section + synopsis — notes that don't print. The server
+    appends in one statement (`append_to_script`, invoker, RLS decides) and
+    an `append` broadcast makes open editors add it to their own copy, so a
+    co-writer's unsaved typing is kept. The beat records its `script_id`
+    ("In the script ↗"). `e2e/beat-to-script.spec.ts`: two sessions, the
+    writer's saves held while the beat lands — both kept, once each; an
+    outsider and anon can't append. Limit: an editor that's offline when the
+    beat lands still overwrites it on reconnect (whole-document sync).
   - **Emphasis while writing (BACKLOG 3.7, done)**: `*italic*`, `**bold**`,
     `***both***`, `_underline_` (nested, `*` literal) are drawn styled in
     the write surface with dimmed markers (`lib/scriptos/emphasis.ts`, unit

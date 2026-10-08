@@ -90,4 +90,3 @@ syncing / synced · conflict · error boundary (`EditorErrorBoundary`).
 - Co-writing is last-writer-wins with a conflict prompt; two people typing
   in different scenes at once can still trip it. A CRDT (Yjs) would merge —
   a large change, not yet scheduled.
-- Story beat → script (BACKLOG 3.8).

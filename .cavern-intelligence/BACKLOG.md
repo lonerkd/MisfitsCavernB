@@ -82,13 +82,6 @@ changes, script revisions, call sheets issued or documents. Decide what the
 feed should show (and to whom), then add the calls. Done when each chosen
 event appears in the feed for the right audience (persona-tested).
 
-### 3.8 Story beat → script — M/L
-"Push beat to ScriptOS" was removed: it created a new script per beat. The
-safe version appends a beat to the project's script with a server-side merge
-that can't clobber unsynced editor edits (`lib/scriptos/sync.ts` has the
-outbox). Done when a beat lands in the open script for a co-writer without
-losing either side's edits (two-session test).
-
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:
