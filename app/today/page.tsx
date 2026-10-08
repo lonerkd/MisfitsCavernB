@@ -20,6 +20,7 @@ import { getLoungeUnread, type LoungeUnread } from '@/lib/supabase/messages';
 import { clock, dayLabel, daysUntil, dueLabel, greeting, localDay, mapsHref, nextShootDays, openTasks, urgency } from '@/lib/today/core';
 import { readable } from '@/lib/color';
 import { ContinueOffer } from '@/components/mobile/Continue';
+import { InstallHint } from '@/components/mobile/InstallHint';
 import t from './today.module.css';
 
 type Sheet = TodaySheet;
@@ -124,6 +125,7 @@ export default function TodayPage() {
       </header>
 
       <ContinueOffer inline className={t.wide} />
+      <InstallHint className={t.wide} />
 
       <section className={`${t.card} ${t.wide}`} aria-labelledby="today-set">
         <div className={t.cardHead}><h2 id="today-set" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> On set</h2></div>
