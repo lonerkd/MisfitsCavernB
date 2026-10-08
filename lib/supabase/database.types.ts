@@ -3526,6 +3526,10 @@ export type Database = {
           completed_projects: number;
         }[];
       };
+      append_to_script: {
+        Args: { p_script: string; p_text: string };
+        Returns: number;
+      };
       breakdown_memory: {
         Args: { p_exclude?: string };
         Returns: {

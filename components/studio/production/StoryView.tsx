@@ -8,6 +8,7 @@ import { useConfirm } from '@/components/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { createProjectBeat, deleteProjectBeat } from '@/lib/supabase/studio';
+import { pushBeatToScript } from '@/lib/scriptos/beats';
 import { BeatCard } from '../CrewBoards';
 import { CharacterBible } from '../CharacterBible';
 import { useStudio } from '../StudioContext';
@@ -42,6 +43,24 @@ export function StoryView() {
     }
   };
 
+  // Adds the beat to the end of the project's script (a section + synopsis
+  // the writer turns into scenes); safe with the script open elsewhere.
+  const [pushing, setPushing] = useState<string | null>(null);
+  const push = async (beat: { id: string; title: string | null; content: string | null }) => {
+    if (pushing) return;
+    setPushing(beat.id);
+    try {
+      await pushBeatToScript(beat, { id: project.id, title: project.title, type: project.project_type ?? undefined, settings: project.settings ?? undefined }, userId);
+      logActivity(`added the beat "${beat.title ?? 'Untitled'}" to the script`, 'project', project.id);
+      await refreshProject(project.id);
+      toast('Added to the end of the script', 'success');
+    } catch (err) {
+      toast((err as { message?: string })?.message || 'Could not add it to the script', 'error');
+    } finally {
+      setPushing(null);
+    }
+  };
+
   const remove = async (id: string) => {
     if (!(await confirm({ title: 'Delete this beat?', message: 'It will be removed for everyone on the project.', confirmLabel: 'Delete', danger: true }))) return;
     try {
@@ -73,7 +92,7 @@ export function StoryView() {
         )}
         {beats.length ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
-            {beats.map((beat, i) => <BeatCard key={beat.id} beat={beat} index={i} onDelete={remove} />)}
+            {beats.map((beat, i) => <BeatCard key={beat.id} beat={beat} index={i} onDelete={remove} onPush={push} pushing={pushing === beat.id} />)}
           </div>
         ) : (
           <EmptyState icon={<BookOpen size={26} />} title="No beats yet" subtitle="Break the story into beats — they feed the pitch deck." />

@@ -74,6 +74,16 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           lastRemoteRef.current = remote;
           if (remote !== local) applyRemote(remote);
         })
+        // Text added to the end of the script elsewhere (a story beat from the
+        // Studio — lib/scriptos/beats.ts). The server already has it; add it
+        // to this copy too, so unsaved typing here is kept and the next save
+        // carries both.
+        .on('broadcast', { event: 'append' }, (payload) => {
+          const text = payload.payload?.text;
+          if (typeof text !== 'string' || !text) return;
+          lastRemoteRef.current = lastRemoteRef.current + text;
+          applyRemote(localRef.current + text);
+        })
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
           const others: Collaborator[] = Object.keys(state)
