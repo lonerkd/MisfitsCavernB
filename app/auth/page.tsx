@@ -269,12 +269,17 @@ export default function AuthPage() {
           {/* method="post" + a submit button disabled until hydration: before the
               JS loads, a native submit would otherwise GET /auth?email=…&password=…,
               putting the password in the URL and browser history. */}
+          {/* The fields are uncontrolled (defaultValue, read from the form on
+              submit): React never writes their text, so nothing typed or
+              autofilled can be blanked by a re-render while the page hydrates.
+              `form` mirrors them for the checks and restores the username when
+              Sign up remounts it. */}
           <form ref={formRef} method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"
               type="email"
-              value={form.email}
+              defaultValue={form.email}
               onChange={handleChange}
             />
 
@@ -292,7 +297,7 @@ export default function AuthPage() {
                     label="Username"
                     autoComplete="username"
                     type="text"
-                    value={form.username}
+                    defaultValue={form.username}
                     onChange={handleChange}
                   />
                 </motion.div>
@@ -304,7 +309,7 @@ export default function AuthPage() {
               label="Password"
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               type="password"
-              value={form.password}
+              defaultValue={form.password}
               onChange={handleChange}
             />
 
