@@ -103,12 +103,6 @@ the same meaning (`internal.job_listed` + the poster + applicants via
 `internal.applied_to`); migration + fingerprint + the hiring/sample-data
 persona tests unchanged. Done when the advisor no longer lists `jobs`.
 
-### 3.11 Share pages: previews and e2e — S
-`/p/[token]` renders on the client, so a pasted link shows no title or image
-(`/shared` and `/s` have Open Graph). Server-render it with `generateMetadata`
-through the public client, as `/s` does. Add an e2e that opens `/m/[id]`
-signed out. Done when `/p` unfurls in a chat and the spec passes.
-
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:

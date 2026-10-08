@@ -44,9 +44,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    model, 7 thin pages, 8 optional Studio routes. No repo rename (new repo
    at launch, 3.16). Still open: the domain.
 3. **Launch blocker**: password recovery (3.4).
-4. **Small fixes**: one SELECT
-   policy on `jobs` (3.9) · share
-   page previews + e2e (3.11).
+4. **Small fixes**: one SELECT policy on `jobs` (3.9 — a migration).
 5. **Upgrades**: data access through `lib/` (3.2: only the auth callback
    left, after 3.4; PR #137) ·
    iPhone app (3.13) · admin catalogues + moderation (3.14) · email (3.15) ·
@@ -87,6 +85,12 @@ No migration.
   `supabase.from()` in `app/` and `components/`. The one exception is the
   auth callback, left until the password-recovery work lands. Server
   routes keep their own clients. Found on the way:
+  - **Share links unfurl (BACKLOG 3.11, done)**: `/p/<token>` is now a
+    server page (`generateMetadata` through the public client: title,
+    description or role · year · author, a picture; never indexed) around
+    the client view (`PortfolioView`). `e2e/share-pages.spec.ts` checks the
+    server HTML and, signed out, that `/m/<id>` serves a published upload
+    and stops when it's unpublished or the project goes private.
   - **One permission model (BACKLOG 3.10, done)**: the client's old global
     roles (`lib/os/permissions.ts`, `access-matrix.ts`, four unused hooks,
     project-access loading) are gone. The session carries `isAdmin`; pages
