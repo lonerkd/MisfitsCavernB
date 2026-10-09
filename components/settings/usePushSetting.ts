@@ -1,9 +1,13 @@
 'use client';
 
 // Settings › Notifications › Push on this device: where push stands here and
-// a way to switch it. (lib/push/client.ts does the work.)
+// a way to switch it. (lib/push/client.ts does the work — imported on demand,
+// so it stays out of the page's first-load JS. Bundle budget.)
 import { useEffect, useState } from 'react';
-import { disablePush, enablePush, pushState, type PushState } from '@/lib/push/client';
+import type { PushState } from '@/lib/push/client';
+
+// The client module, loaded when the hook first needs it.
+const pushClient = () => import('@/lib/push/client');
 
 export const PUSH_HINT: Record<PushState | 'checking', string> = {
   checking: 'Checking this device…',
@@ -21,7 +25,9 @@ export function usePushSetting(userId: string | null, onError: (message: string)
 
   useEffect(() => {
     let alive = true;
-    pushState().then((s) => { if (alive) setState(s); }, () => { if (alive) setState('unsupported'); });
+    pushClient()
+      .then((m) => m.pushState())
+      .then((s) => { if (alive) setState(s); }, () => { if (alive) setState('unsupported'); });
     return () => { alive = false; };
   }, []);
 
@@ -29,6 +35,7 @@ export function usePushSetting(userId: string | null, onError: (message: string)
     if (!userId || busy) return;
     setBusy(true);
     try {
+      const { disablePush, enablePush } = await pushClient();
       setState(on ? await enablePush(userId) : await disablePush());
     } catch (e) {
       onError((e as { message?: string })?.message || 'Could not change push on this device');

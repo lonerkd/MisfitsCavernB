@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { collectMyData } from '@/lib/supabase/profiles';
-import { forgetThisDevicePush } from '@/lib/push/client';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
@@ -180,10 +179,12 @@ export default function SettingsPage() {
     flash(error ? error.message : 'Password updated.', !error);
   };
 
-  const signOut = async () => { await forgetThisDevicePush(); await supabase.auth.signOut(); router.replace('/auth'); };
+  // Dynamic import: push code stays out of every page's first-load JS (bundle budget).
+  const forgetPush = () => import('@/lib/push/client').then((m) => m.forgetThisDevicePush());
+  const signOut = async () => { await forgetPush(); await supabase.auth.signOut(); router.replace('/auth'); };
   const signOutEverywhere = async () => {
     setBusy('global');
-    await forgetThisDevicePush();
+    await forgetPush();
     await supabase.auth.signOut({ scope: 'global' });
     router.replace('/auth');
   };

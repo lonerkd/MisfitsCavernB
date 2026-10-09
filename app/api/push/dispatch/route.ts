@@ -3,7 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
 import { dispatchNotification } from '@/lib/push/dispatch';
-import { parseJsonBody, pushDispatchBodySchema } from '@/lib/validation';
+import { parseJsonBody } from '@/lib/validation';
+import { pushDispatchBodySchema } from '@/lib/validation/push';
 import { LEGAL } from '@/lib/legal';
 
 // The database posts here after a notification is written, when push is

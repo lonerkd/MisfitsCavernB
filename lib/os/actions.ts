@@ -1,5 +1,4 @@
 import { supabase, type Database } from '@/lib/supabase/client';
-import { forgetThisDevicePush } from '@/lib/push/client';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
 import { resetOS, refreshActiveProject, osAdoptSession, ACTIVE_PROJECT_KEY } from './boot';
@@ -42,6 +41,8 @@ export async function osSignUp(email: string, password: string, username: string
 
 export async function osSignOut() {
   const loggedOutUserId = osState().session.userId;
+  // Dynamic import: push code stays out of every page's first-load JS (bundle budget).
+  const { forgetThisDevicePush } = await import('@/lib/push/client');
   await forgetThisDevicePush();
   const { error } = await supabase.auth.signOut();
   if (error) {

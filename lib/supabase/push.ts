@@ -1,7 +1,7 @@
 // This device's Web Push subscription, as the database holds it
 // (push_subscriptions: each person reads, adds and removes only their own).
 import { supabase } from './client';
-import { pushSubscriptionSchema } from '@/lib/validation';
+import { pushSubscriptionSchema } from '@/lib/validation/push';
 
 /** Saves a browser subscription for this person (replacing an earlier one for the same endpoint). */
 export async function saveSubscription(userId: string, sub: PushSubscriptionJSON): Promise<void> {
