@@ -53,7 +53,17 @@ jobs:
       - run: node scripts/sync-intel.js --check
       - run: npm run typecheck
       - run: npm run lint
-      - run: npm run test
+      # With the coverage report: thresholds live in vitest.config.ts, so this
+      # step both runs the tests and fails if coverage drops below them
+      # (BACKLOG 3.16 — "CI enforces the commit and coverage rules").
+      - run: npm run test:coverage
+      - name: Coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
       - run: npm run build
       # First-load JS per page stays within performance-budget.json.
       - run: npm run budget
