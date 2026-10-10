@@ -1,0 +1,34 @@
+name: PR title
+
+# This repository merges by squash, so the PR title becomes the commit message
+# history shows on main (plus its PR number). BACKLOG 3.16 asks for
+# conventional commits — this is where they are enforced, because the PR title
+# is the commit message. Dependabot already titles this way.
+#
+# The title says what kind of change it is: feat, fix, docs, style, refactor,
+# perf, test, build, ci, chore, revert — with an optional scope, and a summary
+# in the imperative mood.
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  conventional:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The title is a conventional commit
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9 ,/-]+\))?!?: .+'
+          if ! printf '%s' "$TITLE" | grep -qE "$pattern"; then
+            {
+              echo "::error::The PR title is the commit message this squash-merge leaves on main — make it a conventional commit."
+              echo "Got:      $TITLE"
+              echo 'Expected: <type>[optional scope]: <summary>'
+              echo 'Types:    feat fix docs style refactor perf test build ci chore revert'
+              echo 'Example:  fix(editor): the status bar wrapped onto three lines'
+            } >&2
+            exit 1
+          fi

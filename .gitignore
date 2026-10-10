@@ -21,3 +21,6 @@ scripts/demo/world.sql
 .review-*.md
 .review-state.json
 screenshot.mjs
+
+# Coverage report (npm run test:coverage)
+coverage/

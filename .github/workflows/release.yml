@@ -1,0 +1,29 @@
+name: Release
+
+# A pushed `v*` tag is a release (BACKLOG 3.16): the tag must be the version
+# in package.json, and the GitHub release carries the notes. Bump version →
+# commit → tag → push the tag; CHANGELOG.md is moved from Unreleased to that
+# version in the same commit.
+
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - name: The tag is package.json's version
+        run: |
+          VERSION=$(jq -r .version package.json)
+          if [ "v$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::package.json says $VERSION but the tag is $GITHUB_REF_NAME. Bump package.json, commit, then tag that commit."
+            exit 1
+          fi
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes
