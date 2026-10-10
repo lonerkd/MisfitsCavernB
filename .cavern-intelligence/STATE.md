@@ -66,8 +66,9 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    (3.1, watch upstream).
 4. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
-5. **Wishlist** (owner, 2026-10-07): BACKLOG §4 — scope one into §3 before
-   starting it.
+5. **Wishlist** (owner, 2026-10-07): ranked and scoped in
+   `wishlist-ranking.md` — start with the island's live activities (slice 1:
+   the engine, network/sync, timers), then money, version compare, interchange.
 
 ## Known issues
 
