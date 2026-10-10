@@ -9,18 +9,17 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Check, MapPin, Printer } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
 import { useOSGate, useProject } from '@/lib/os';
 import { useToast } from '@/components/Toast';
 import { useCanShape } from '@/lib/brief';
 import {
   callFor, hhmm, issueState, snapshotOf, studio, toSnapshot,
-  type CallSheet, type CallSheetCall, type CallSheetSnapshot,
+  type CallSheet, type CallSheetCall, type CallSheetPerson, type CallSheetScene, type CallSheetSnapshot,
 } from '@/lib/studio';
 import c from './call.module.css';
 
-interface SceneLite { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null }
-interface Person { id: string; username: string; craft: string | null }
+type SceneLite = CallSheetScene;
+type Person = CallSheetPerson;
 
 const longDate = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : null);
 
@@ -37,43 +36,28 @@ export default function CallSheetPage() {
   const [people, setPeople] = useState<Map<string, Person>>(new Map());
   const [castAs, setCastAs] = useState<string[]>([]);
   const [acked, setAcked] = useState<number | null>(null);
-  const [state, setState] = useState<'loading' | 'ready' | 'missing'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     const uid = user?.id;
     if (!uid) return;
     let alive = true;
-    const load = async () => {
-      const { data: s } = await supabase.from('call_sheets').select('*').eq('id', id).maybeSingle();
+    studio.getCallSheetView(id, uid).then((v) => {
       if (!alive) return;
-      if (!s) { setState('missing'); return; }
-      const [p, cl, sc, crew, cast, ack] = await Promise.all([
-        supabase.from('projects').select('id, title, creator_id').eq('id', s.project_id).single(),
-        supabase.from('call_sheet_calls').select('*').eq('call_sheet_id', s.id),
-        supabase.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
-          .eq('project_id', s.project_id).eq('shoot_day', s.shoot_day).is('removed_at', null).order('scene_number'),
-        supabase.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', s.project_id),
-        supabase.from('character_castings').select('character_name').eq('project_id', s.project_id).eq('crew_user_id', uid),
-        supabase.from('call_sheet_acks').select('version').eq('call_sheet_id', s.id).eq('user_id', uid).maybeSingle(),
-      ]);
-      const map = new Map<string, Person>();
-      for (const m of crew.data ?? []) map.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
-      if (p.data && !map.has(p.data.creator_id)) {
-        const { data: owner } = await supabase.from('profiles').select('id, username').eq('id', p.data.creator_id).maybeSingle();
-        if (owner) map.set(owner.id, { id: owner.id, username: owner.username, craft: 'Producer' });
-      }
-      if (!alive) return;
-      setSheet(s);
-      setCalls(cl.data ?? []);
-      setProject(p.data ?? null);
-      setScenes((sc.data ?? []) as SceneLite[]);
-      setPeople(map);
-      setCastAs((cast.data ?? []).map((r) => r.character_name));
-      setAcked(ack.data?.version ?? null);
+      if (!v) { setState('missing'); return; }
+      setSheet(v.sheet);
+      setCalls(v.calls);
+      setProject(v.project);
+      setScenes(v.scenes);
+      setPeople(v.people);
+      setCastAs(v.castAs);
+      setAcked(v.acked);
       setState('ready');
-    };
-    void load();
+    }, (e) => {
+      console.error('Failed to load the call sheet:', e);
+      if (alive) setState('error');
+    });
     return () => { alive = false; };
   }, [id, user?.id]);
 
@@ -108,6 +92,17 @@ export default function CallSheetPage() {
   if (state === 'loading') {
     return <main className={c.page}><div className={c.frame}><div className="skeleton" style={{ height: 180, borderRadius: 14 }} /></div></main>;
   }
+  if (state === 'error') {
+    return (
+      <main className={c.page}>
+        <div className={c.frame}>
+          <h1 className={c.title}>Couldn’t load the call sheet</h1>
+          <p className={c.lead} role="alert">Check your connection and reload the page. <Link href="/projects">Your projects</Link></p>
+        </div>
+      </main>
+    );
+  }
+
   if (state === 'missing' || !sheet || !snap) {
     return (
       <main className={c.page}>

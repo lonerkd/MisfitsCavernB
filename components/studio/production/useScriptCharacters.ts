@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import { addScriptCharacter, listScriptCharacters, updateScriptCharacter } from '@/lib/supabase/scripts';
 import { parseScript } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -33,12 +33,11 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
     if (!scriptId) return Promise.resolve();
     return Promise.all([
       fetchScriptContent(scriptId),
-      supabase.from('script_characters').select('*').eq('script_id', scriptId),
+      listScriptCharacters(scriptId),
     ]).then(([text, saved]) => {
-      if (saved.error) throw saved.error;
-      const byName = new Map(saved.data.map((r) => [r.name, r]));
+      const byName = new Map(saved.map((r) => [r.name, r]));
       const parsed = parseScript(text).characters.map((c) => c.name).filter(Boolean);
-      const names = Array.from(new Set([...parsed, ...saved.data.map((r) => r.name)]));
+      const names = Array.from(new Set([...parsed, ...saved.map((r) => r.name)]));
       setChars(names.map((name, i) => {
         const row = byName.get(name) ?? null;
         return { name, row, color: row?.color || CHARACTER_PALETTE[i % CHARACTER_PALETTE.length] };
@@ -53,25 +52,14 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
   const ensureRow = useCallback(async (c: ScriptCharacter): Promise<SavedCharacter> => {
     if (c.row) return c.row;
     if (!scriptId) throw new Error('No script selected');
-    const { data, error } = await supabase
-      .from('script_characters')
-      .insert({ script_id: scriptId, name: c.name, color: c.color, updated_by: userId })
-      .select('*')
-      .single();
-    if (error) throw error;
+    const data = await addScriptCharacter({ scriptId, name: c.name, color: c.color, userId });
     setChars((prev) => prev.map((x) => (x.name === c.name ? { ...x, row: data } : x)));
     return data;
   }, [scriptId, userId]);
 
   const save = useCallback(async (c: ScriptCharacter, patch: Pick<SavedCharacter, 'full_name' | 'age' | 'arc' | 'description'>) => {
     const row = await ensureRow(c);
-    const { data, error } = await supabase
-      .from('script_characters')
-      .update({ ...patch, updated_by: userId, updated_at: new Date().toISOString() })
-      .eq('id', row.id)
-      .select('*')
-      .single();
-    if (error) throw error;
+    const data = await updateScriptCharacter(row.id, userId, patch);
     setChars((prev) => prev.map((x) => (x.name === c.name ? { ...x, row: data } : x)));
   }, [ensureRow, userId]);
 

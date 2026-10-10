@@ -96,3 +96,34 @@ self.addEventListener('fetch', (event) => {
 
   // Same-origin API routes (/api/*): network-only, not cached.
 });
+
+// ── Push (lib/push, /api/push/dispatch) ────────────────────────────────
+// A notification sent while The Cavern is closed: show it; a tap opens its
+// page in the app (focusing an open window when there is one).
+self.addEventListener('push', (event) => {
+  let n = {};
+  try { n = event.data ? event.data.json() : {}; } catch { n = { title: event.data ? event.data.text() : '' }; }
+  const title = n.title || 'The Cavern';
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: n.body || '',
+      tag: n.tag || undefined,
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
+      data: { link: typeof n.link === 'string' && n.link.startsWith('/') && !n.link.startsWith('//') ? n.link : '/today' },
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = (event.notification.data && event.notification.data.link) || '/today';
+  const target = new URL(link, self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {
+      const open = wins.find((w) => new URL(w.url).origin === self.location.origin);
+      if (open) return open.focus().then((w) => (w && 'navigate' in w ? w.navigate(target) : undefined));
+      return self.clients.openWindow(target);
+    }),
+  );
+});

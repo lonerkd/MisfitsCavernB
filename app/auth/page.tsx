@@ -25,6 +25,16 @@ interface Field {
   show?: boolean;
 }
 
+/** What the form's fields hold right now; a field that isn't on screen (username, signing in) is left out. */
+function readFields(form: HTMLFormElement | null): Partial<Record<'email' | 'username' | 'password', string>> {
+  const out: Partial<Record<'email' | 'username' | 'password', string>> = {};
+  for (const name of ['email', 'username', 'password'] as const) {
+    const el = form?.elements.namedItem(name);
+    if (el instanceof HTMLInputElement) out[name] = el.value;
+  }
+  return out;
+}
+
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -38,9 +48,7 @@ export default function AuthPage() {
   useEffect(() => {
     // Keep what was typed (or autofilled) before the page became interactive:
     // the fields are controlled, so the first re-render would blank them.
-    const field = (name: string) => (formRef.current?.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
-    const email = field('email');
-    const password = field('password');
+    const { email, password } = readFields(formRef.current);
     if (email || password) setForm((prev) => ({ ...prev, email: email || prev.email, password: password || prev.password }));
     setHydrated(true);
   }, []);
@@ -63,13 +71,20 @@ export default function AuthPage() {
     if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/projects' ? '/welcome' : redirectTo);
   }, [status, redirectTo, router]);
 
+  // Every change (and the submit) takes all the fields from the form itself, not
+  // just the one that changed: an input event can be lost while the page
+  // hydrates, and the next re-render would then blank that field (an email
+  // that arrived without its event was wiped as soon as the password was typed).
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const fields = readFields(e.target.form);
+    setForm(prev => ({ ...prev, ...fields, [e.target.name]: e.target.value }));
     if (error) setError('');
   }, [error]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const typed = { ...form, ...readFields(e.currentTarget) };
+    setForm(typed);
     setError('');
     // The validator (zod) loads on submit, not with the page — it is most of
     // the sign-in page's weight otherwise.
@@ -77,22 +92,22 @@ export default function AuthPage() {
 
     if (mode === 'signup') {
       const parsed = signUpSchema.safeParse({
-        email: form.email.trim(),
-        password: form.password,
-        username: form.username.trim(),
+        email: typed.email.trim(),
+        password: typed.password,
+        username: typed.username.trim(),
       });
       if (!parsed.success) { setError(firstIssue(parsed.error)); return; }
     } else {
       const parsed = signInSchema.safeParse({
-        email: form.email.trim(),
-        password: form.password,
+        email: typed.email.trim(),
+        password: typed.password,
       });
       if (!parsed.success) { setError(firstIssue(parsed.error)); return; }
     }
     if (mode === 'signup') {
-      const weak = checkPasswordWeakness(form.password, form.email, form.username);
+      const weak = checkPasswordWeakness(typed.password, typed.email, typed.username);
       if (weak) { setError(weak); return; }
-      const count = await checkHibpBreach(form.password);
+      const count = await checkHibpBreach(typed.password);
       if (count > 0) { setError(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose a unique password.`); setLoading(false); return; }
     }
 
@@ -101,11 +116,11 @@ export default function AuthPage() {
     try {
 
       if (mode === 'signin') {
-        await withTimeout(signIn(form.email, form.password), 30000, 'Sign-in timed out.');
+        await withTimeout(signIn(typed.email, typed.password), 30000, 'Sign-in timed out.');
         toast('Welcome back.', 'success');
       } else {
         isNewAccount.current = true;
-        const created = await withTimeout(signUp(form.email, form.password, form.username), 30000, 'Sign-up timed out.');
+        const created = await withTimeout(signUp(typed.email, typed.password, typed.username), 30000, 'Sign-up timed out.');
         // Email-confirmation deployments return a user but no session: stay put
         // and tell them what to do rather than bouncing into a gated page.
         if (created && !created.session) {
@@ -254,12 +269,17 @@ export default function AuthPage() {
           {/* method="post" + a submit button disabled until hydration: before the
               JS loads, a native submit would otherwise GET /auth?email=…&password=…,
               putting the password in the URL and browser history. */}
+          {/* The fields are uncontrolled (defaultValue, read from the form on
+              submit): React never writes their text, so nothing typed or
+              autofilled can be blanked by a re-render while the page hydrates.
+              `form` mirrors them for the checks and restores the username when
+              Sign up remounts it. */}
           <form ref={formRef} method="post" onSubmit={handleSubmit}>
             <Input
               name="email"
               label="Email"
               type="email"
-              value={form.email}
+              defaultValue={form.email}
               onChange={handleChange}
             />
 
@@ -277,7 +297,7 @@ export default function AuthPage() {
                     label="Username"
                     autoComplete="username"
                     type="text"
-                    value={form.username}
+                    defaultValue={form.username}
                     onChange={handleChange}
                   />
                 </motion.div>
@@ -289,7 +309,7 @@ export default function AuthPage() {
               label="Password"
               autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
               type="password"
-              value={form.password}
+              defaultValue={form.password}
               onChange={handleChange}
             />
 

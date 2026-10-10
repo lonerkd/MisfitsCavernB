@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { getPermissionsForRole } from './permissions';
 import type { OSState, OSSession, OSProjectState } from './types';
 
 interface OSStore extends OSState {
@@ -13,9 +12,7 @@ const anonSession = (): OSSession => ({
   user: null,
   userId: null,
   email: null,
-  userRole: 'guest',
-  permissions: getPermissionsForRole('guest'),
-  projectAccess: {},
+  isAdmin: false,
   error: null,
 });
 

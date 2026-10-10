@@ -31,6 +31,7 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
   let admin: SupabaseClient;
   const owner = { id: '', email: `cs-owner.${TAG}@journey.test`, name: `csowner${TAG}` };
   const crew = { id: '', email: `cs-crew.${TAG}@journey.test`, name: `cscrew${TAG}` };
+  const outsider = { id: '', email: `cs-out.${TAG}@journey.test`, name: `csout${TAG}` };
   let projectId: string;
 
   const signIn = async (browser: Browser, who: typeof owner) => {
@@ -46,7 +47,7 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
   test.beforeAll(async () => {
     const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
     admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    for (const who of [owner, crew]) {
+    for (const who of [owner, crew, outsider]) {
       const { data } = await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } });
       who.id = data.user!.id;
     }
@@ -59,7 +60,7 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    for (const who of [owner, crew]) await admin.auth.admin.deleteUser(who.id);
+    for (const who of [owner, crew, outsider]) if (who.id) await admin.auth.admin.deleteUser(who.id);
   });
 
   test('issue → the crew’s own call → “Got it” → the owner sees it → a revision', async ({ browser }) => {
@@ -120,5 +121,11 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     await jordan.reload();
     await expect(jordan.getByText('A revision (v2) went out since you confirmed v1.')).toBeVisible({ timeout: 20_000 });
     await expect(jordan.getByText('40 Pier St')).toBeVisible();
+
+    // Someone not on the production gets "not found" and nothing of the sheet.
+    const riley = await signIn(browser, outsider);
+    await riley.goto(`/call/${sheet.id}`);
+    await expect(riley.getByRole('heading', { name: 'Call sheet not found' })).toBeVisible({ timeout: 20_000 });
+    await expect(riley.getByText('40 Pier St')).toHaveCount(0);
   });
 });

@@ -20,6 +20,17 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
+export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null }
+export interface CallSheetPerson { id: string; username: string; craft: string | null }
+export interface CallSheetView {
+  sheet: CallSheet;
+  calls: CallSheetCall[];
+  project: { id: string; title: string; creator_id: string } | null;
+  scenes: CallSheetScene[];
+  people: Map<string, CallSheetPerson>;
+  castAs: string[];
+  acked: number | null;
+}
 export type ProjectLocation = Tables<'project_locations'>;
 export type Vendor = Tables<'vendors'>;
 export type Expense = Tables<'expenses'>;
@@ -420,6 +431,44 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /**
+   * Everything the crew's call sheet page shows, for the person viewing it:
+   * the sheet, its calls, the day's scenes, who's who (crew and the owner),
+   * the roles they're cast in and the version they last confirmed. Null when
+   * the sheet doesn't exist or they aren't on the production (RLS).
+   */
+  async function getCallSheetView(sheetId: string, userId: string): Promise<CallSheetView | null> {
+    const { data: sheet, error } = await db.from('call_sheets').select('*').eq('id', sheetId).maybeSingle();
+    if (error) fail(error, 'Could not load the call sheet');
+    if (!sheet) return null;
+    const [p, cl, sc, crew, cast, ack] = await Promise.all([
+      db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
+      db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
+      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
+        .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
+      db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
+      db.from('character_castings').select('character_name').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
+      db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
+    ]);
+    for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
+    const people = new Map<string, CallSheetPerson>();
+    for (const m of crew.data ?? []) people.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
+    if (p.data && !people.has(p.data.creator_id)) {
+      const { data: owner, error: ownerError } = await db.from('profiles').select('id, username').eq('id', p.data.creator_id).maybeSingle();
+      if (ownerError) fail(ownerError, 'Could not load the call sheet');
+      if (owner) people.set(owner.id, { id: owner.id, username: owner.username, craft: 'Producer' });
+    }
+    return {
+      sheet,
+      calls: cl.data ?? [],
+      project: p.data ?? null,
+      scenes: (sc.data ?? []) as CallSheetScene[],
+      people,
+      castAs: (cast.data ?? []).map((r) => r.character_name),
+      acked: ack.data?.version ?? null,
+    };
+  }
+
   // ── Locations ────────────────────────────────────────────────────────────
 
   async function listLocations(projectId: string): Promise<ProjectLocation[]> {
@@ -775,7 +824,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

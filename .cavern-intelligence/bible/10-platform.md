@@ -27,8 +27,8 @@ project (`mc_active_project`), the project-scoped realtime channel, and the
 project list. Hooks: `useSession`, `useCurrentUser`, `useOSGate`,
 `useProject`. `progress.ts` + `phases.ts` are the phase
 engine (§11); `board.ts` sorts the projects board; `uiPrefs.ts` reads and
-writes `ui_prefs`. `permissions.ts` / `access-matrix.ts` are an older role
-model that nothing in the UI reads (§11).
+writes `ui_prefs`. `guards.tsx` is the one page gate (`ProtectedPage`:
+signed-in or admin, from the session's `isAdmin`); everything else is RLS (§11).
 
 ## Security (RLS)
 

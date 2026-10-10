@@ -7,6 +7,9 @@
 // apple-touch-icon (180, the full mark), icon-192 / icon-512 (manifest),
 // icon-maskable-512 (Android's safe zone), favicon-32 / -16 and favicon.svg
 // (the small cut). Opaque squares — iOS rounds the corners itself.
+//
+// Also the iPhone launch screens, straight into public/splash/ (one per
+// screen in lib/pwa/splash-devices.json): the mark centred on night ink.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import sharp from 'sharp';
 
@@ -35,4 +38,17 @@ await png(onGround('the-cavern-mark', 512, 0.62), 'icon-maskable-512');
 await png(onGround('the-cavern-mark-small', 32, 0.94, 6), 'favicon-32');
 await png(onGround('the-cavern-mark-small', 16, 0.98, 3), 'favicon-16');
 writeFileSync(`${out}/favicon.svg`, onGround('the-cavern-mark-small', 64, 0.94, 12) + '\n');
+// Launch screens: the mark at a third of the short side, a little above centre.
+const splashDir = 'public/splash';
+mkdirSync(splashDir, { recursive: true });
+const devices = JSON.parse(readFileSync('lib/pwa/splash-devices.json', 'utf8'));
+const mark = readFileSync(`${dir}/the-cavern-mark.svg`, 'utf8');
+const markBox = mark.match(/viewBox="([^"]+)"/)[1];
+const markInner = mark.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, '').replace(/<title>.*?<\/title>/, '');
+for (const d of devices) {
+  const w = d.width * d.ratio, h = d.height * d.ratio, side = Math.round(w / 3);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" fill="${INK}"/><svg x="${(w - side) / 2}" y="${Math.round(h * 0.42 - side / 2)}" width="${side}" height="${side}" viewBox="${markBox}">${markInner}</svg></svg>`;
+  await sharp(Buffer.from(svg)).png({ compressionLevel: 9, palette: true }).toFile(`${splashDir}/splash-${w}x${h}.png`);
+}
+console.log(`public/splash: ${devices.length} launch screens`);
 console.log(`${out}: apple-touch-icon, icon-192, icon-512, icon-maskable-512, favicon-32, favicon-16, favicon.svg`);

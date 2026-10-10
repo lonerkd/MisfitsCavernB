@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { ArrowRight, Laptop, Smartphone, X } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getScriptMeta } from '@/lib/supabase/scripts';
 import { useProject, useSession } from '@/lib/os';
 import { loadUiPrefs, saveUiPrefs, useUiPrefs } from '@/lib/os/uiPrefs';
 import { ago, placeFor, resumeOffer, worthSaving, type Device, type Place } from '@/lib/pocket/places';
@@ -45,7 +45,7 @@ export function PlaceTracker() {
       if (location.pathname === '/editor') {
         const id = search.get('script');
         if (!id) return;
-        const { data } = await supabase.from('scripts').select('title, project_id').eq('id', id).maybeSingle();
+        const data = await getScriptMeta(id).catch(() => null);
         proj = data?.project_id ? { id: data.project_id, title: data.title || 'Untitled' } : null;
       }
       const place = placeFor(location.pathname, search, proj);

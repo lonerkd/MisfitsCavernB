@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import { startupImages } from '@/lib/pwa/splash';
 import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -69,7 +70,8 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
   },
-  appleWebApp: { capable: true, title: 'The Cavern', statusBarStyle: 'black-translucent' },
+  // Launch screens: one per iPhone screen (lib/pwa/splash.ts, public/splash/).
+  appleWebApp: { capable: true, title: 'The Cavern', statusBarStyle: 'black-translucent', startupImage: startupImages() },
 };
 
 export const viewport: Viewport = {

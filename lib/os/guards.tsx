@@ -1,61 +1,22 @@
 'use client';
 
+// A page's gate in the UI. What anyone may read or change is decided by RLS
+// in the database (bible/11-rules.md); this only decides what to show: the
+// admin pages to admins, signed-in pages to people who are signed in. The
+// UI's per-project check is useCanShape (lib/brief), which mirrors RLS.
+
 import React from 'react';
-import type { Permission, AccessContext } from '@/lib/context/types';
 import { useOSStore } from './store';
-import { osCanPerformAction } from './actions';
 
-interface ActionButtonProps {
-  permission: Permission;
-  context?: AccessContext;
-  children: React.ReactNode;
-  onClick?: () => void;
-  style?: React.CSSProperties;
-  className?: string;
-  title?: string;
-  disabledTooltip?: string;
-}
-
-export function ActionButton({
-  permission, context, children, onClick, style, className, title, disabledTooltip,
-}: ActionButtonProps) {
-  useOSStore((s) => s.session);
-  const allowed = osCanPerformAction(permission, context);
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={!allowed}
-      style={style}
-      className={className}
-      title={allowed ? title : disabledTooltip || 'You do not have permission to perform this action'}
-    >
-      {children}
-    </button>
-  );
-}
-
-interface IfAccessProps {
-  permission: Permission;
-  context?: AccessContext;
-  children: React.ReactNode;
-  fallback?: React.ReactNode;
-}
-
-export function IfAccess({ permission, context, children, fallback }: IfAccessProps) {
-  useOSStore((s) => s.session);
-  const allowed = osCanPerformAction(permission, context);
-  return <>{allowed ? children : fallback}</>;
-}
+export type PageRequirement = 'signed-in' | 'admin';
 
 interface ProtectedPageProps {
-  requiredPermission: Permission;
-  context?: AccessContext;
+  require: PageRequirement;
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }
 
-export function ProtectedPage({ requiredPermission, context, children, fallback }: ProtectedPageProps) {
+export function ProtectedPage({ require, children, fallback }: ProtectedPageProps) {
   const session = useOSStore((s) => s.session);
 
   if (session.status === 'resolving') {
@@ -66,7 +27,9 @@ export function ProtectedPage({ requiredPermission, context, children, fallback 
     );
   }
 
-  if (!osCanPerformAction(requiredPermission, context)) {
+  const signedIn = session.status === 'authed';
+  const allowed = require === 'admin' ? signedIn && session.isAdmin : signedIn;
+  if (!allowed) {
     return (
       fallback || (
         <div style={{
@@ -74,7 +37,9 @@ export function ProtectedPage({ requiredPermission, context, children, fallback 
           minHeight: '100vh', fontFamily: 'var(--mono)', color: 'var(--fg)',
         }}>
           <h1 style={{ fontSize: '2rem', letterSpacing: 2, marginBottom: 16 }}>ACCESS DENIED</h1>
-          <p style={{ fontSize: 11, opacity: 0.6 }}>You do not have permission to access this page.</p>
+          <p style={{ fontSize: 11, opacity: 0.6 }}>
+            {require === 'admin' ? 'This page is for admins.' : 'Sign in to see this page.'}
+          </p>
         </div>
       )
     );

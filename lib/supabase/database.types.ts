@@ -2402,6 +2402,39 @@ export type Database = {
           },
         ];
       };
+      push_subscriptions: {
+        Row: {
+          auth: string;
+          created_at: string;
+          endpoint: string;
+          id: string;
+          last_used_at: string | null;
+          p256dh: string;
+          user_agent: string | null;
+          user_id: string;
+        };
+        Insert: {
+          auth: string;
+          created_at?: string;
+          endpoint: string;
+          id?: string;
+          last_used_at?: string | null;
+          p256dh: string;
+          user_agent?: string | null;
+          user_id: string;
+        };
+        Update: {
+          auth?: string;
+          created_at?: string;
+          endpoint?: string;
+          id?: string;
+          last_used_at?: string | null;
+          p256dh?: string;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       scene_elements: {
         Row: {
           created_at: string;
@@ -3525,6 +3558,10 @@ export type Database = {
           avg_project_days: number;
           completed_projects: number;
         }[];
+      };
+      append_to_script: {
+        Args: { p_script: string; p_text: string };
+        Returns: number;
       };
       breakdown_memory: {
         Args: { p_exclude?: string };

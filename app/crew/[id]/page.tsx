@@ -1,16 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useEffectEvent } from 'react';
 import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
+import { getPortfolioProjects } from '@/lib/supabase/portfolio';
 import EmptyState from '@/components/EmptyState';
 import { addCreditToPortfolio, getPersonCredits, groupByProject, type ProjectCredits } from '@/lib/credits';
 import { useToast } from '@/components/Toast';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
-import type { Profile } from '@/lib/supabase/profiles';
+import { getProfile, type Profile } from '@/lib/supabase/profiles';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
 const portfolioThumb = (m?: { thumbnail_url?: string | null; url: string } | null) =>
@@ -54,32 +53,27 @@ export default function CrewMemberPage() {
     awaitOSUser().then((user) => setViewerId(user?.id ?? null));
   }, []);
 
+  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
+
   useEffect(() => {
     if (!id) return;
 
     const load = async () => {
       setLoading(true);
       try {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select(PUBLIC_PROFILE_COLUMNS)
-          .eq('id', id)
-          .single();
-
-        if (profileError || !profileData) {
+        const profileData = await getProfile(id);
+        if (!profileData) {
           setNotFound(true);
           return;
         }
 
-        setProfile(profileData as Profile);
+        setProfile(profileData);
 
-        const { data: projectData } = await supabase
-          .from('portfolio_projects')
-          .select('*, portfolio_media(*)')
-          .eq('user_id', id)
-          .order('created_at', { ascending: false });
-
-        setProjects((projectData as PortfolioProject[]) || []);
+        const projectData = await getPortfolioProjects(id).catch(() => {
+          reportError('Could not load their portfolio.');
+          return [];
+        });
+        setProjects((projectData as unknown as PortfolioProject[]) || []);
 
         getPersonCredits(id).then((rows) => setCredits(groupByProject(rows))).catch(() => setCredits([]));
       } catch (err) {

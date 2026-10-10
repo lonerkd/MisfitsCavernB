@@ -31,7 +31,7 @@ The bones are sound, and moving them would cost more than it gives:
 | `components/` root is a pile | 22 files mixing the app shell (island, palette, cursor, bell, service worker, error reporter, audio widget) with UI primitives (Avatar, Toast, Confirm, EmptyState…) |
 | `lib/` root is a pile | 17 loose files (`crafts` + `crafts-core`, `formats` + `formats-core`, `themes`, `search`, `legal`, `onboarding`, `color`, `password-strength`, `useEscapeKey`, `api-rate-limit`); one-file folders (`lib/types`, `lib/storage`); providers split between `lib/context` and `lib/os` |
 | Giant pages | `editor` 1610 lines, `lounge` 1530, `projects/[id]` 1255, `/` 878, `jobs` 858, `p/[token]` 779, `projects` 756 |
-| Two permission models | RLS (real) vs `lib/os/permissions.ts` + `access-matrix.ts` (unused) — BACKLOG 3.10 |
+| ~~Two permission models~~ (fixed 2026-10-07) | RLS is the model; the client keeps one page gate (`ProtectedPage`) and `useCanShape` |
 | Data access in pages | 30 files call `supabase.from` directly — BACKLOG 3.2 |
 | ~~Mixed brand~~ (fixed, phase 2) | "Misfits Cavern", "MISFITS CAVERN", "MC", "Enter Cavern" in 30 files, the manifest, the service worker, the package name |
 
