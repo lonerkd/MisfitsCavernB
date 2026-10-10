@@ -148,9 +148,9 @@ REVOKE ALL ON FUNCTION internal.scenes_link_place_and_day() FROM PUBLIC, anon, a
 CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes
   FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day();
 
--- A call sheet belongs to its day, and they share one date: a new call sheet
--- with no date takes the day's; a date set (or cleared) on the call sheet is
--- the day's date too.
+-- A call sheet belongs to its day, and they share one date: the day's first
+-- call sheet takes the day's date if it's given none; a date set (or cleared)
+-- on the call sheet is the day's date too.
 CREATE FUNCTION internal.call_sheets_link_day()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -170,7 +170,12 @@ begin
     end if;
   end if;
   if tg_op = 'INSERT' and new.shoot_date is null then
-    select shoot_date into new.shoot_date from public.shoot_days where id = new.shoot_day_id;
+    -- The day's first call sheet takes the day's date. An upsert of a sheet
+    -- that already exists passes through here too, on its way to the UPDATE:
+    -- there a missing date means 'not given' or 'cleared', never 'take the day's'.
+    if not exists (select 1 from public.call_sheets where project_id = new.project_id and shoot_day = new.shoot_day) then
+      select shoot_date into new.shoot_date from public.shoot_days where id = new.shoot_day_id;
+    end if;
   elsif tg_op = 'INSERT' or new.shoot_date is distinct from old.shoot_date then
     update public.shoot_days set shoot_date = new.shoot_date
     where id = new.shoot_day_id and shoot_date is distinct from new.shoot_date;

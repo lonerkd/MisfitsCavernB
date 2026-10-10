@@ -1046,7 +1046,7 @@ function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_u
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
 function internal.call_sheet_snapshot(p_sheet uuid) body=33e74d687d15ef5b7fcfcc0600f450fd
 function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
-function internal.call_sheets_link_day() body=f3a3e397d0519a47630c9a142e515358
+function internal.call_sheets_link_day() body=3c1981592353a6cfe1288e3d9addeeac
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d

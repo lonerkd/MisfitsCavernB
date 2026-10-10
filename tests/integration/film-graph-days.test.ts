@@ -198,3 +198,28 @@ describe('through the Studio data layer', () => {
     expect(cleared).toMatchObject({ latitude: null, longitude: null, timezone: null, status: 'confirmed' });
   });
 });
+
+describe('clearing a date', () => {
+  it('a date cleared on the call sheet (as the app saves it) clears, on the sheet and on the day', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    await sam.saveCallSheet(projectId, 20, { shoot_date: '2026-12-10' });
+    expect((await dayRow(20))!.shoot_date).toBe('2026-12-10');
+    const cleared = await sam.saveCallSheet(projectId, 20, { shoot_date: null });
+    expect(cleared.shoot_date).toBeNull();
+    expect((await dayRow(20))!.shoot_date).toBeNull();
+  });
+
+  it('saving something else on the call sheet leaves the date alone', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    await sam.saveCallSheet(projectId, 21, { shoot_date: '2026-12-11' });
+    const saved = await sam.saveCallSheet(projectId, 21, { weather: 'Clear' });
+    expect(saved.shoot_date).toBe('2026-12-11');
+    expect((await dayRow(21))!.shoot_date).toBe('2026-12-11');
+  });
+
+  it('a first save with no date takes the day’s, and returns it', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    await sam.setShootDayDate(projectId, 22, '2026-12-12');
+    expect((await sam.saveCallSheet(projectId, 22, { weather: 'Snow' })).shoot_date).toBe('2026-12-12');
+  });
+});
