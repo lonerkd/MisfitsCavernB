@@ -1,6 +1,7 @@
 import { supabase } from './client';
 import { logActivity } from './activity';
 import type { TablesInsert } from './database.types';
+import type { Session } from '@supabase/supabase-js';
 
 export interface Profile {
   id: string;
@@ -168,4 +169,53 @@ export async function findPeopleByName(text: string, limit = 8): Promise<{ id: s
 export async function setMyCraft(userId: string, craft: string | null): Promise<void> {
   const { error } = await supabase.from('profiles').update({ role: craft }).eq('id', userId);
   if (error) throw error;
+}
+
+interface DiscordIdentityData {
+  id?: string;
+  username?: string;
+  global_name?: string;
+  full_name?: string;
+  avatar_url?: string;
+  picture?: string;
+}
+
+/** The profile a new account starts with, from its sign-in identity (Discord's name and avatar first). */
+export function buildProfileFields(session: Session) {
+  const user = session.user;
+  const discordIdentity = user.identities?.find(i => i.provider === 'discord');
+  const discordData = discordIdentity?.identity_data as DiscordIdentityData | undefined;
+
+  return {
+    id: user.id,
+    username: discordData?.global_name || discordData?.full_name ||
+      user.user_metadata?.full_name || user.user_metadata?.name ||
+      discordData?.username || user.email?.split('@')[0] || 'user',
+    avatar_url: discordData?.avatar_url || discordData?.picture || user.user_metadata?.avatar_url || null,
+    discord_id: discordData?.id || null,
+    discord_username: discordData?.username || null,
+    discord_avatar: discordData?.avatar_url || discordData?.picture || null,
+    status: 'OPEN' as const,
+  };
+}
+
+/** Makes the profile on first sign-in; on a later one, adds Discord details it was missing. */
+export async function ensureProfile(session: Session): Promise<void> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, discord_username')
+    .eq('id', session.user.id)
+    .single();
+
+  const fields = buildProfileFields(session);
+
+  if (!profile) {
+    await supabase.from('profiles').insert(fields);
+  } else if (fields.discord_id && !profile.discord_username) {
+    await supabase.from('profiles').update({
+      discord_id: fields.discord_id,
+      discord_username: fields.discord_username,
+      discord_avatar: fields.discord_avatar,
+    }).eq('id', session.user.id);
+  }
 }

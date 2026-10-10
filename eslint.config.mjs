@@ -30,9 +30,6 @@ const config = [
   { rules: { 'no-restricted-syntax': ['error', ...DESIGN_SCALES] } },
   {
     files: ['app/**/*.{ts,tsx}', 'components/**/*.{ts,tsx}'],
-    // The auth callback moves once the password-recovery work (which also
-    // edits it) has landed — BACKLOG 3.2.
-    ignores: ['app/auth/callback/page.tsx'],
     rules: { 'no-restricted-syntax': ['error', ...DESIGN_SCALES, DATA_THROUGH_LIB] },
   },
 ];

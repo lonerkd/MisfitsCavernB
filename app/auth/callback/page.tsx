@@ -3,55 +3,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import { ensureProfile } from '@/lib/supabase/profiles';
 import type { Session } from '@supabase/supabase-js';
-
-interface DiscordIdentityData {
-  id?: string;
-  username?: string;
-  global_name?: string;
-  full_name?: string;
-  avatar_url?: string;
-  picture?: string;
-}
-
-function buildProfileFields(session: Session) {
-  const user = session.user;
-  const discordIdentity = user.identities?.find(i => i.provider === 'discord');
-  const discordData = discordIdentity?.identity_data as DiscordIdentityData | undefined;
-
-  return {
-    id: user.id,
-    username: discordData?.global_name || discordData?.full_name ||
-      user.user_metadata?.full_name || user.user_metadata?.name ||
-      discordData?.username || user.email?.split('@')[0] || 'user',
-    avatar_url: discordData?.avatar_url || discordData?.picture || user.user_metadata?.avatar_url || null,
-    discord_id: discordData?.id || null,
-    discord_username: discordData?.username || null,
-    discord_avatar: discordData?.avatar_url || discordData?.picture || null,
-    status: 'OPEN' as const,
-  };
-}
-
-async function ensureProfile(session: Session) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id, discord_username')
-    .eq('id', session.user.id)
-    .single();
-
-  const fields = buildProfileFields(session);
-
-  if (!profile) {
-    await supabase.from('profiles').insert(fields);
-  } else if (fields.discord_id && !profile.discord_username) {
-
-    await supabase.from('profiles').update({
-      discord_id: fields.discord_id,
-      discord_username: fields.discord_username,
-      discord_avatar: fields.discord_avatar,
-    }).eq('id', session.user.id);
-  }
-}
 
 /** A brand-new account: its first sign-in is its creation. */
 function isFirstSignIn(session: Session): boolean {
