@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/context/SpotifyContext';
@@ -8,7 +8,7 @@ import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, contextAwareSearch } from '@/lib/spotify/search';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject } from '@/lib/os';
-import { supabase } from '@/lib/supabase/client';
+import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/Toast';
@@ -18,6 +18,7 @@ export default function SoundtrackPage() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
+  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
 
   const [activeTab, setActiveTab] = useState<'moods'|'sfx'|'project'|'search'>('moods');
 
@@ -38,31 +39,34 @@ export default function SoundtrackPage() {
     if (activeTab !== 'moods' || !activeProject?.id) return;
     const projectId = activeProject.id;
     let on = true;
-    supabase.from('scripts').select('title, content').eq('project_id', activeProject.id).order('updated_at', { ascending: false }).limit(1)
-      .then(({ data }) => {
+    getLatestScript(projectId).then(
+      (script) => { if (on) setMoods({ projectId, title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] }); },
+      () => {
         if (!on) return;
-        const script = data?.[0];
-        setMoods({ projectId, title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] });
-      });
+        setMoods({ projectId, title: null, groups: [] });
+        reportError('Could not read the script’s moods.');
+      },
+    );
     return () => { on = false; };
   }, [activeTab, activeProject?.id]);
 
   const [projectRefs, setProjectRefs] = useState<any[]>([]);
   const [refsFor, setRefsFor] = useState<string | null>(null);
 
-  const fetchSfxAssets = useCallback(() => supabase.from('sfx_assets').select('*').order('created_at', { ascending: false })
-    .then(({ data, error }) => { if (data && !error) setSfxAssets(data); }), []);
+  const fetchSfxAssets = useCallback(() => listSfx().then(
+    (rows) => setSfxAssets(rows),
+    () => toast('Could not load the sound effects.', 'error'),
+  ), [toast]);
 
   const refsProjectId = activeProject?.id;
   const loadingRefs = !!refsProjectId && refsFor !== refsProjectId;
   const fetchProjectRefs = useCallback(() => {
     if (!refsProjectId) return Promise.resolve();
-    return supabase.from('project_audio_references').select('*').eq('project_id', refsProjectId).order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        if (data && !error) setProjectRefs(data);
-        setRefsFor(refsProjectId);
-      });
-  }, [refsProjectId]);
+    return listAudioRefs(refsProjectId).then(
+      (rows) => setProjectRefs(rows),
+      () => toast('Could not load the project’s audio references.', 'error'),
+    ).finally(() => setRefsFor(refsProjectId));
+  }, [refsProjectId, toast]);
 
   useEffect(() => {
     if (activeTab === 'sfx') fetchSfxAssets();
@@ -104,13 +108,7 @@ export default function SoundtrackPage() {
     setIsSearching(true);
     try {
 
-      const { data: scripts } = await supabase
-        .from('scripts')
-        .select('content')
-        .eq('project_id', activeProject.id)
-        .order('updated_at', { ascending: false })
-        .limit(1);
-      const content = scripts?.[0]?.content;
+      const content = (await getLatestScript(activeProject.id))?.content;
       if (!content || !content.trim()) {
         toast('This project has no script content yet to read mood from', 'error');
         return;
@@ -137,20 +135,7 @@ export default function SoundtrackPage() {
       if (!file.type.startsWith('audio/')) throw new Error('SFX must be an audio file');
       if (file.size > 20 * 1024 * 1024) throw new Error('SFX files are limited to 20 MB');
       // Uploads go in the uploader's own folder (storage policy).
-      const fileName = `${userData.user.id}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
-      const { error: uploadError } = await supabase.storage.from('sfx_library').upload(fileName, file);
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrl } = supabase.storage.from('sfx_library').getPublicUrl(fileName);
-
-      const { error: dbError } = await supabase.from('sfx_assets').insert({
-        title: file.name,
-        audio_url: publicUrl.publicUrl,
-        user_id: userData.user.id,
-        project_id: activeProject.id,
-        tags: ['Cavern Created']
-      });
-      if (dbError) throw dbError;
+      await uploadSfx(file, userData.user.id, activeProject.id);
 
       toast('SFX Uploaded successfully', 'success');
       fetchSfxAssets();
@@ -169,16 +154,14 @@ export default function SoundtrackPage() {
     }
     try {
       const userData = { user: await awaitOSUser() };
-      const { error } = await supabase.from('project_audio_references').insert({
-        project_id: activeProject.id,
-        added_by: userData.user?.id,
-        reference_type: type,
-
+      await addAudioRef({
+        projectId: activeProject.id,
+        userId: userData.user?.id ?? null,
+        type,
         uri: type === 'spotify' ? item.uri : item.audio_url,
         title: type === 'spotify' ? item.name : item.title,
-        description: type === 'spotify' ? (item.artists?.[0]?.name || (item.type === 'playlist' ? 'Spotify playlist' : 'Spotify')) : (item.tags?.[0] || 'Custom SFX')
+        description: type === 'spotify' ? (item.artists?.[0]?.name || (item.type === 'playlist' ? 'Spotify playlist' : 'Spotify')) : (item.tags?.[0] || 'Custom SFX'),
       });
-      if (error) throw error;
       toast('Saved to Project Audio Bible', 'success');
     } catch (err: any) {
       toast('Failed to save to project: ' + err.message, 'error');
@@ -186,11 +169,14 @@ export default function SoundtrackPage() {
   };
 
   const deleteProjectRef = async (id: string) => {
-    const { error } = await supabase.from('project_audio_references').delete().eq('id', id);
-    if (!error) {
-      toast('Reference removed', 'success');
-      fetchProjectRefs();
+    try {
+      await deleteAudioRef(id);
+    } catch (err) {
+      toast('Could not remove the reference: ' + ((err as { message?: string })?.message ?? 'unknown error'), 'error');
+      return;
     }
+    toast('Reference removed', 'success');
+    fetchProjectRefs();
   };
 
   if (!isAuthenticated) {
@@ -377,7 +363,7 @@ export default function SoundtrackPage() {
                               onClick={() => {
                                 if (ref.reference_type === 'spotify') playUri(ref.uri);
                                 else if (ref.reference_type === 'custom_upload') {
-                                  const url = supabase.storage.from('sfx_library').getPublicUrl(ref.uri).data.publicUrl;
+                                  const url = audioRefUrl(ref.uri);
                                   new Audio(url).play();
                                 }
                               }}

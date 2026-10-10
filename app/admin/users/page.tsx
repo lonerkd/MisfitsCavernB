@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
-import { ActionButton, IfAccess } from '@/lib/os';
 import { useToast } from '@/components/Toast';
 
 interface UserRow {
@@ -45,7 +44,7 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <ProtectedPage requiredPermission="manage_users">
+    <ProtectedPage require="admin">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <header style={{
           position: 'fixed',
@@ -207,8 +206,9 @@ export default function AdminUsersPage() {
                       </td>
                       <td style={{ padding: 16 }}>
                         <div style={{ display: 'flex', gap: 8 }}>
-                          <ActionButton
-                            permission="manage_users"
+                          <button
+                            type="button"
+                            aria-label={user.is_admin ? 'Remove admin' : 'Make admin'}
                             onClick={() => toggleAdminRole(user.id, user.is_admin || false)}
                             style={{
                               display: 'flex',
@@ -223,10 +223,9 @@ export default function AdminUsersPage() {
                               fontFamily: 'var(--mono)',
                             }}
                             title={user.is_admin ? 'Remove admin' : 'Make admin'}
-                            disabledTooltip="Only admins can manage user roles"
                           >
                             <Shield size={10} />
-                          </ActionButton>
+                          </button>
                         </div>
                       </td>
                     </tr>

@@ -3,6 +3,10 @@
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
+import { listOpenJobTitles } from '@/lib/supabase/jobs';
+import { latestScriptEditedBy } from '@/lib/supabase/scripts';
+import { listRecentMediaTitles } from '@/lib/supabase/media';
+import { listRecentChannelMessages } from '@/lib/supabase/messages';
 import { tickerItems } from '@/lib/home/ticker';
 import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
@@ -460,13 +464,13 @@ export default function Home() {
     (async () => {
       const [platformStats, jobsRes, worksRes] = await Promise.all([
         getPlatformStats(),
-        supabase.from('jobs').select('title, role').eq('status', 'open').order('created_at', { ascending: false }).limit(4),
+        listOpenJobTitles(4).catch(() => []),
         supabase.rpc('get_recent_work', { p_limit: 3 }),
       ]);
       setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
       const published = worksRes.data ?? [];
       setWorks(published.map((w) => ({ title: w.title, year: w.year, category: w.category, accent: w.accent_color })));
-      setTicker(tickerItems(platformStats, jobsRes.data ?? [], published));
+      setTicker(tickerItems(platformStats, jobsRes, published));
     })().catch((err) => console.error('Home stats load failed:', err));
 
     awaitOSUser().then(async (user) => {
@@ -474,16 +478,15 @@ export default function Home() {
       if (!user) return;
 
       try {
-        const [scriptRes, assetRes, msgRes] = await Promise.all([
-          supabase.from('scripts').select('title,content').eq('last_edited_by', user.id).order('updated_at', { ascending: false }).limit(1),
-          supabase.from('media').select('title').order('created_at', { ascending: false }).limit(6),
-
-          supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)').not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(4),
+        // The landing page's live preview: each part shows what loaded.
+        const [script, recentMedia, recentMessages] = await Promise.all([
+          latestScriptEditedBy(user.id).catch(() => null),
+          listRecentMediaTitles(6).catch(() => []),
+          listRecentChannelMessages(4).catch(() => []),
         ]);
-        const script = scriptRes.data?.[0];
         const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
-        const assets = (assetRes.data || []).map((a: any, i: number) => ({ label: a.title || 'Reference', color: palette[i % palette.length] }));
-        const messages = (msgRes.data || []).slice().reverse().map((m: any) => ({ from: m.profiles?.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
+        const assets = recentMedia.map((a, i) => ({ label: a.title || 'Reference', color: palette[i % palette.length] }));
+        const messages = recentMessages.slice().reverse().map((m) => ({ from: m.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
         setLive({
           scriptLines,
           assets,

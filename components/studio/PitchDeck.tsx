@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SectionLabel from '@/components/SectionLabel';
-import { supabase } from '@/lib/supabase/client';
+import { listScriptCharacters } from '@/lib/supabase/scripts';
+import { fetchScriptContent } from '@/lib/studio';
 import { useEffect } from 'react';
 import { parseScript } from '@/lib/scriptos/parser';
 import { List as Info } from 'lucide-react';
@@ -22,12 +23,9 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
     let alive = true;
     (async () => {
       if (!scriptId) { setCharacters([]); return; }
-      const [{ data: script }, { data: saved }] = await Promise.all([
-        supabase.from('scripts').select('content').eq('id', scriptId).single(),
-        supabase.from('script_characters').select('name,full_name').eq('script_id', scriptId),
-      ]);
-      let names = (saved || []).map((r) => r.full_name || r.name);
-      if (names.length === 0 && script?.content) names = parseScript(script.content).characters.map((c) => c.name).filter(Boolean);
+      const [content, saved] = await Promise.all([fetchScriptContent(scriptId), listScriptCharacters(scriptId)]);
+      let names = saved.map((r) => r.full_name || r.name);
+      if (names.length === 0 && content) names = parseScript(content).characters.map((c) => c.name).filter(Boolean);
       if (alive) setCharacters(names.slice(0, 12));
     })().catch(() => { if (alive) setCharacters([]); });
     return () => { alive = false; };

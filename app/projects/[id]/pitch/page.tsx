@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video, Globe } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { getProjectRow } from '@/lib/supabase/project-hub';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
@@ -14,6 +14,8 @@ import { awaitOSUser } from '@/lib/os';
 import { textOn } from '@/lib/color';
 import {
   createPortfolioProject,
+  findPitchBoard,
+  getPitchMaterial,
   getPortfolioBlocks,
   addPortfolioBlock,
   updatePortfolioBlock,
@@ -90,22 +92,16 @@ export default function PitchBoardPage() {
         if (!user) { setFatal('Sign in to build a pitch board.'); setLoading(false); return; }
         setUserId(user.id);
 
-        const { data: proj, error: projErr } = await supabase
-          .from('projects').select('title, description, accent_color, project_type').eq('id', projectId).single();
-        if (projErr || !proj) { setFatal('Project not found.'); setLoading(false); return; }
+        const proj = await getProjectRow(projectId);
         if (!alive) return;
-        setProject(proj);
+        if (!proj) { setFatal('Project not found.'); setLoading(false); return; }
+        setProject({ title: proj.title, description: proj.description, accent_color: proj.accent_color, project_type: proj.project_type });
 
-        const { data: existing } = await supabase
-          .from('portfolio_projects')
-          .select('id, share_token')
-          .eq('source_project_id', projectId)
-          .eq('user_id', user.id)
-          .limit(1);
+        const existing = await findPitchBoard(projectId, user.id);
 
         let pid: string; let token: string;
-        if (existing && existing.length > 0) {
-          pid = existing[0].id; token = existing[0].share_token ?? '';
+        if (existing) {
+          pid = existing.id; token = existing.share_token ?? '';
         } else {
           const created = await createPortfolioProject({
             user_id: user.id,
@@ -136,25 +132,19 @@ export default function PitchBoardPage() {
           setBlocks(existingBlocks);
         }
 
-        const [c, s, b, cr, scr] = await Promise.all([
-          supabase.from('media').select('id, title, storage_path, external_url, shared').eq('project_id', projectId).eq('kind', 'image').order('created_at'),
-          supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).is('removed_at', null).order('scene_number'),
-          supabase.from('budget_items').select('category, amount').eq('project_id', projectId).order('created_at'),
-          getProjectCrew(projectId),
-          supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false }).limit(1),
-        ]);
+        const [material, cr] = await Promise.all([getPitchMaterial(projectId), getProjectCrew(projectId)]);
         if (!alive) return;
         // A public pitch board needs URLs that keep working: linked images as-is,
         // uploads through the /m/<id> permalink — which serves only published ones.
-        setConcepts((c.data || []).flatMap((m) => {
+        setConcepts(material.images.flatMap((m) => {
           const url = m.storage_path ? (m.shared ? `${window.location.origin}/m/${m.id}` : null) : m.external_url;
           return url ? [{ id: m.id, title: m.title || null, image_url: url }] : [];
         }));
-        setUnpublishedUploads((c.data || []).filter((m) => m.storage_path && !m.shared).length);
-        setScenes((s.data as any) || []);
-        setBudget(((b.data as any) || []).map((x: any) => ({ category: x.category, amount: Number(x.amount || 0) })));
+        setUnpublishedUploads(material.images.filter((m) => m.storage_path && !m.shared).length);
+        setScenes(material.scenes as any);
+        setBudget(material.budget);
         setCrew((cr || []).map((m: any) => ({ user_id: m.user_id, username: m.username, role: m.role, avatar_url: m.avatar_url })));
-        const content = (scr.data as any)?.[0]?.content;
+        const content = material.scriptContent;
         if (content && content.trim()) {
           try {
             const parsed = parseScript(content);

@@ -42,5 +42,3 @@ every admin read goes through a function or policy that checks
   Needed before the network opens to strangers (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
   only place (and its grace-period banner is open: STATE).
-- The access matrix in `lib/os/access-matrix.ts` lists admin pages but
-  nothing reads it (§11, 3.10).

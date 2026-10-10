@@ -29,4 +29,31 @@ test.describe('Auth Validation', () => {
 
     await expect(page.getByText('Password must be at least 6 characters.')).not.toBeVisible();
   });
+
+  // An input event can be lost while the page hydrates; the field must keep
+  // its text when the next field is typed (it used to be blanked, which is why
+  // e2e sign-ins flaked under load).
+  test('an email whose input event was lost survives typing the password', async ({ page }) => {
+    await page.goto('/auth');
+    await expect(page.getByRole('button', { name: /^sign in$/i }).last()).toBeEnabled();
+    await page.locator('input[name="email"]').evaluate((el: HTMLInputElement) => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, 'lost-event@example.com');
+    });
+    await page.locator('input[name="password"]').fill('a-long-enough-password');
+    await expect(page.locator('input[name="email"]')).toHaveValue('lost-event@example.com');
+  });
+
+  // The same lost event, followed by a re-render before anything else is
+  // typed (here, switching to Sign up and back; under load it was the session
+  // or the address settling). A controlled field wrote its empty state back.
+  test('an email whose input event was lost survives a re-render', async ({ page }) => {
+    await page.goto('/auth');
+    await expect(page.getByRole('button', { name: /^sign in$/i }).last()).toBeEnabled();
+    await page.locator('input[name="email"]').evaluate((el: HTMLInputElement) => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(el, 'lost-event@example.com');
+    });
+    await page.getByRole('button', { name: /^sign up$/i }).first().click();
+    await page.getByRole('button', { name: /^sign in$/i }).first().click();
+    await expect(page.locator('input[name="email"]')).toHaveValue('lost-event@example.com');
+  });
 });

@@ -7,6 +7,8 @@ import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User,
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { supabase } from '@/lib/supabase/client';
+import { listScriptsBy } from '@/lib/supabase/scripts';
+import { listMediaBy } from '@/lib/supabase/media';
 import { awaitOSUser } from '@/lib/os';
 import { HIT_KINDS, hitTarget, searchSuite, searchable, type HitKind, type SearchHit } from '@/lib/search';
 import { useOnChange } from '@/lib/hooks/useOnChange';
@@ -98,14 +100,13 @@ export default function CommandPalette() {
         const user = await awaitOSUser();
         if (!user) return;
 
-        const [scriptsRes, assetsRes] = await Promise.all([
-          supabase.from('scripts').select('id, title, project_id').eq('created_by', user.id).limit(20),
-
-          supabase.from('media').select('id, title, project_id').eq('created_by', user.id).order('created_at', { ascending: false }).limit(20)
+        // Search still works on pages and commands if these don't load.
+        const [mine, media] = await Promise.all([
+          listScriptsBy(user.id, 20).catch(() => null),
+          listMediaBy(user.id, 20).catch(() => null),
         ]);
-
-        if (scriptsRes.data) setScripts(scriptsRes.data);
-        if (assetsRes.data) setAssets(assetsRes.data);
+        if (mine) setScripts(mine);
+        if (media) setAssets(media);
       };
       fetchData();
     }
@@ -125,7 +126,7 @@ export default function CommandPalette() {
       { id: 'nav-profile', label: 'Edit Profile', icon: <User size={15} />, run: go('/profile'), group: 'Account' },
       { id: 'nav-settings', label: 'Open Settings', icon: <Settings size={15} />, run: go('/settings'), group: 'Account', keywords: 'preferences password email' },
       { id: 'act-shortcuts', label: 'Keyboard shortcuts', icon: <Keyboard size={15} />, group: 'Account', keywords: 'help keys hotkeys', run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new Event('mc-open-shortcuts')), 60); } },
-      { id: 'act-signout', label: 'Sign out', icon: <LogOut size={15} />, group: 'Account', keywords: 'log out logout', run: async () => { setOpen(false); await supabase.auth.signOut(); router.replace('/auth'); } },
+      { id: 'act-signout', label: 'Sign out', icon: <LogOut size={15} />, group: 'Account', keywords: 'log out logout', run: async () => { setOpen(false); const { forgetThisDevicePush } = await import('@/lib/push/client'); await forgetThisDevicePush(); await supabase.auth.signOut(); router.replace('/auth'); } },
     ];
     const proj: Command[] = projects.map(p => ({
       id: `proj-${p.id}`,

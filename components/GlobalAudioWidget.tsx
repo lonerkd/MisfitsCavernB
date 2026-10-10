@@ -9,7 +9,7 @@ import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { parseSpotifyRef, spotifyEmbedSrc, type SpotifyRef } from '@/lib/spotify/refs';
 import { myPlaylists } from '@/lib/spotify/search';
 import { useProject } from '@/lib/os';
-import { supabase } from '@/lib/supabase/client';
+import { listSpotifyRefs } from '@/lib/supabase/audio';
 
 const formatMs = (ms: number) => {
   const totalSeconds = Math.floor(ms / 1000);
@@ -32,14 +32,12 @@ function useListeningSources(enabled: boolean) {
     let on = true;
     (async () => {
       const [refs, mine] = await Promise.all([
-        activeProject?.id
-          ? supabase.from('project_audio_references').select('id, title, uri').eq('project_id', activeProject.id).eq('reference_type', 'spotify').order('created_at', { ascending: false }).limit(20)
-          : Promise.resolve({ data: [] as Array<{ id: string; title: string | null; uri: string }> }),
+        activeProject?.id ? listSpotifyRefs(activeProject.id, 20).catch(() => []) : Promise.resolve([]),
         myPlaylists().catch(() => []),
       ]);
       if (!on) return;
       const list: Source[] = [];
-      for (const r of refs.data ?? []) {
+      for (const r of refs) {
         const ref = parseSpotifyRef(r.uri);
         if (ref) list.push({ key: `p:${r.id}`, name: r.title || 'Project reference', from: activeProject?.title ?? 'This project', ref });
       }

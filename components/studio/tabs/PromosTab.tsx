@@ -6,7 +6,7 @@ import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import { useProject } from '@/lib/os';
-import { supabase } from '@/lib/supabase/client';
+import { addCampaign, deleteCampaign, listUsedPlatforms, updateCampaign } from '@/lib/supabase/campaigns';
 import { logActivity } from '@/lib/supabase/activity';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
@@ -24,10 +24,8 @@ function useUsedPlatforms(current: string[]) {
   const [used, setUsed] = useState<string[]>([]);
   useEffect(() => {
     let on = true;
-    supabase.from('campaigns').select('platform').limit(500).then(({ data }) => {
-      if (!on || !data) return;
-      setUsed(data.map((r) => r.platform));
-    });
+    // Suggestions only: without them the platform field is still free text.
+    listUsedPlatforms().then((p) => { if (on) setUsed(p); }, () => {});
     return () => { on = false; };
   }, []);
   return useMemo(() => {
@@ -63,36 +61,35 @@ export function PromosTab() {
     if (!title || !platform || busy) return;
     setBusy(true);
     try {
-      const { error } = await supabase.from('campaigns').insert({
-        project_id: project.id,
+      await addCampaign({
+        projectId: project.id,
+        userId,
         title,
         platform,
-        created_by: userId,
-        target_demographic: form.audience.trim() || null,
+        audience: form.audience.trim() || null,
         budget: Math.max(0, Number(form.budget) || 0),
       });
-      if (error) throw new Error(error.message);
       logActivity(`planned the campaign "${title}"`, 'project', project.id);
       await refreshProject(project.id);
       setForm({ title: '', platform: '', audience: '', budget: '' });
       setAdding(false);
     } catch (err) {
-      toast(err instanceof Error ? err.message : 'Could not add the campaign', 'error');
+      toast((err as { message?: string })?.message || 'Could not add the campaign', 'error');
     } finally {
       setBusy(false);
     }
   };
 
   const save = async (id: string, patch: { status?: Stage; spend?: number }) => {
-    const { error } = await supabase.from('campaigns').update(patch).eq('id', id);
-    if (error) { toast(error.message, 'error'); return; }
+    try { await updateCampaign(id, patch); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not save the campaign', 'error'); return; }
     await refreshProject(project.id);
   };
 
   const remove = async (id: string, title: string) => {
     if (!(await confirm({ title: 'Delete campaign?', message: `“${title}” will be removed for everyone.`, confirmLabel: 'Delete', danger: true }))) return;
-    const { error } = await supabase.from('campaigns').delete().eq('id', id);
-    if (error) { toast(error.message, 'error'); return; }
+    try { await deleteCampaign(id); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not delete the campaign', 'error'); return; }
     await refreshProject(project.id);
   };
 

@@ -173,3 +173,11 @@ export async function searchLounge(query: string, channelUuid?: string | null): 
   if (error) throw new Error(error.message || 'Search failed');
   return (data ?? []) as LoungeHit[];
 }
+
+/** The newest channel messages this person can read, newest first, with each sender's name. */
+export async function listRecentChannelMessages(limit = 4): Promise<{ content: string; sender_id: string | null; username: string | null }[]> {
+  const { data, error } = await supabase.from('messages').select('content,sender_id,profiles!messages_sender_id_fkey(username)')
+    .not('channel_uuid', 'is', null).order('created_at', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return (data ?? []).map((m) => ({ content: m.content, sender_id: m.sender_id, username: (m.profiles as { username?: string } | null)?.username ?? null }));
+}

@@ -97,11 +97,30 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await sheet.getByRole('button', { name: 'Close' }).click();
     await expect(sheet).toBeHidden();
 
-    for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio?tab=overview', '/studio?tab=production&view=schedule', '/lounge', '/jobs', '/crew', '/settings']) {
+    // A long project name is what pushed the Lounge header off the screen and
+    // wrapped the editor's status bar onto three lines: check with one.
+    const longTitle = `Tidewater ${TAG} — the long way round the headland`;
+    await admin.from('projects').update({ title: longTitle }).eq('id', projectId);
+    const scriptId = (await admin.from('scripts').insert({ title: longTitle, content: 'INT. PIER - NIGHT\n\n', project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
+    await page.reload();
+    for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio?tab=overview', '/studio?tab=production&view=schedule', '/lounge', '/jobs', '/crew', '/settings', `/editor?script=${scriptId}`]) {
       await page.goto(path);
       await page.waitForTimeout(1500);
       expect(await overflow(page), path).toEqual([]);
     }
+    // The editor's status bar is one line: its contents fit its height.
+    const status = page.getByTestId('editor-status');
+    await expect(status).toBeVisible();
+    expect(await status.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && [...el.querySelectorAll('span')].every((s) => s.getBoundingClientRect().height <= el.clientHeight))).toBe(true);
+    // Export opens a menu you can use on a phone (it was clipped by the
+    // sideways-scrolling header, under the script).
+    const exportBtn = page.getByRole('button', { name: 'Export', exact: true });
+    await exportBtn.scrollIntoViewIfNeeded();
+    await exportBtn.click();
+    await page.getByRole('menu', { name: 'Export' }).getByRole('button', { name: '.PDF' }).click({ trial: true });
+    await page.keyboard.press('Escape');
+    await admin.from('scripts').delete().eq('id', scriptId);
+    await admin.from('projects').update({ title: `Tidewater ${TAG}` }).eq('id', projectId);
     await ctx.close();
   });
 

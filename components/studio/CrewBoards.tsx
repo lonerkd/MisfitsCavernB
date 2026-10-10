@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/Toast';
@@ -10,9 +11,9 @@ import { useEscapeKey } from '@/lib/useEscapeKey';
 import Avatar from '@/components/Avatar';
 import { usePillZone } from '@/lib/context/PillContext';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
-import { List as Share2, Trash2, Search } from 'lucide-react';
+import { Trash2, Search } from 'lucide-react';
 
-export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void }) {
+export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void; pushing?: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -36,17 +37,6 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
     >
       <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 8 }}>
-        {onPush && (
-          <button aria-label="Push to ScriptOS"
-            onClick={() => onPush(beat)}
-            style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}
-            title="Push to ScriptOS"
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
-            onMouseLeave={e => e.currentTarget.style.color = '#444'}
-          >
-            <Share2 size={12} />
-          </button>
-        )}
         {onDelete && (
           <button aria-label="Delete Beat"
             onClick={() => onDelete(beat.id)}
@@ -65,7 +55,17 @@ export function BeatCard({ beat, index, onDelete, onPush }: { beat: any; index: 
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-muted)' }}>{beat.content}</div>
       </div>
-      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)', marginTop: 12, fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 12 }}>
+        <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)', fontFamily: 'var(--mono)' }}>SEQ: {index + 1}</div>
+        {beat.script_id ? (
+          <Link href={`/editor?script=${beat.script_id}`} style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--ok)', textDecoration: 'none' }}>In the script ↗</Link>
+        ) : onPush ? (
+          <button type="button" onClick={() => onPush(beat)} disabled={pushing} title="Add this beat to the end of the project's script, as a note to write it up"
+            style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'none', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '3px 8px', color: 'var(--fg-muted)', cursor: pushing ? 'wait' : 'pointer' }}>
+            {pushing ? 'Adding…' : 'Add to script'}
+          </button>
+        ) : null}
+      </div>
     </motion.div>
   );
 }
