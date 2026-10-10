@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Calendar, Minus, Plus, Printer, Wand2 } from 'lucide-react';
+import Link from 'next/link';
+import { AlertTriangle, Calendar, Minus, Plus, Printer, Sun, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
-import { studio, useCallSheets, type SceneRow } from '@/lib/studio';
+import { studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import { lightNoteText } from '@/lib/film/days';
+import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
 import { buildBoard, castOf, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
@@ -36,6 +39,8 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const { toast } = useToast();
   const confirm = useConfirm();
   const sheets = useCallSheets(project.id);
+  const shootDays = useShootDays(project.id);
+  const places = useProjectLocations(project.id);
   const settings = (project.settings ?? {}) as ProjectSettings;
   const [capacity, setCapacity] = useState(settings.dayLengthEighths ?? DEFAULT_DAY_CAPACITY_EIGHTHS);
   const [view, setView] = useState<'board' | 'dood'>('board');
@@ -48,7 +53,12 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const list = scenes.rows;
   const board = useMemo(() => buildBoard(list, capacity), [list, capacity]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
-  const dateOf = useMemo(() => new Map(sheets.rows.filter((c) => c.shoot_date).map((c) => [c.shoot_day, c.shoot_date as string])), [sheets.rows]);
+  // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
+  const film = useMemo(
+    () => new Map(filmDays({ scenes: list, days: shootDays.rows, places: places.rows, sheets: sheets.rows, viewerZone: deviceZone() }).map((d) => [d.number, d])),
+    [list, shootDays.rows, places.rows, sheets.rows],
+  );
+  const dateOf = useMemo(() => new Map(Array.from(film.values()).filter((d) => d.date).map((d) => [d.number, d.date as string])), [film]);
   const wrapped = list.filter((sc) => sc.status === 'wrapped').length;
   const totalEighths = list.reduce((n, sc) => n + eighthsOf(sc.est_duration), 0);
 
@@ -63,6 +73,17 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
     } catch (e) {
       scenes.upsertLocal({ ...before, updated_at: new Date().toISOString() });
       toast(e instanceof Error ? e.message : 'Could not move the scene', 'error');
+    }
+  };
+
+  const setDate = async (day: number, value: string) => {
+    const next = value || null;
+    if ((dateOf.get(day) ?? null) === next) return;
+    try {
+      shootDays.upsertLocal(await studio.setShootDayDate(project.id, day, next));
+      setAnnounce(next ? `Day ${day} is ${new Date(`${next}T00:00`).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}.` : `Day ${day} has no date.`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save the date', 'error');
     }
   };
 
@@ -170,12 +191,29 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
             {board.map((d) => {
               const date = dateOf.get(d.day);
               const fill = Math.min(100, Math.round((d.eighths / capacity) * 100));
+              const fd = film.get(d.day);
+              const light = fd?.light;
+              const polar = fd?.notes.find((n) => n.kind === 'polar');
+              const km = fd?.moves.reduce((n, m) => n + m.km, 0) ?? 0;
               return (
                 <section key={d.day} aria-labelledby={`day-${d.day}`} className={cx(b.day, d.over && b.dayOver, dropDay === d.day && b.dayDrop)} data-day={d.day} onDragOver={onDayDragOver} onDragLeave={onDayDragLeave} onDrop={onDayDrop}>
                   <div className={b.dayHead}>
                     <h3 id={`day-${d.day}`} className={b.dayName}>Day {d.day}</h3>
-                    <span className={b.dayDate}>{date ? new Date(`${date}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : 'No date yet'}</span>
+                    <input type="date" className={b.dayDateInput} aria-label={`Day ${d.day} date`} key={`${d.day}:${date ?? ''}`} defaultValue={date ?? ''}
+                      onChange={(e) => { if (e.target.value || !e.target.validity.badInput) void setDate(d.day, e.target.value); }} />
                   </div>
+                  {light && !polar && (
+                    <div className={b.light} title={`Sunrise to sunset at ${fd?.lightAt?.name} (${light.zone})`}>
+                      <Sun size={11} aria-hidden /> <span className="sr-only">Light: </span>{light.sunrise} – {light.sunset} · magic hour {light.goldenStarts} · {fd?.lightAt?.name}{light.zone !== deviceZone() ? ` (${light.zone})` : ''}
+                    </div>
+                  )}
+                  {fd?.notes.map((n) => (n.kind === 'no-date' || n.kind === 'polar' ? (
+                    <div key={n.kind} className={b.dayDate}>{lightNoteText(n)}</div>
+                  ) : n.kind === 'no-place' ? (
+                    <Link key={n.kind} href="/studio?tab=production&view=locations" className={b.lightLink}>{lightNoteText(n)}</Link>
+                  ) : (
+                    <div key={n.kind} className={b.move}><AlertTriangle size={11} aria-hidden /> {lightNoteText(n)}</div>
+                  )))}
                   <div className={b.meter} role="meter" aria-label={`Day ${d.day} pages`} aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={Math.min(d.eighths, capacity)} aria-valuetext={`${pages(d.eighths)} of ${pages(capacity)} pages`}>
                     <div className={cx(b.meterFill, d.over && b.meterOver)} style={{ width: `${fill}%` }} />
                   </div>
@@ -184,7 +222,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
                   </div>
                   {d.locations.length > 1 && (
-                    <div className={b.move} title={d.locations.join(' → ')}><AlertTriangle size={11} aria-hidden /> {d.locations.length} locations — company move</div>
+                    <div className={b.move} title={d.locations.join(' → ')}><AlertTriangle size={11} aria-hidden /> {d.locations.length} locations — company move{km > 0 ? ` · ${km} km` : ''}</div>
                   )}
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>

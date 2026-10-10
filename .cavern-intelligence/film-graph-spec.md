@@ -1,7 +1,10 @@
 # The film graph — one connected core
 
-**Status: proposed 2026-10-10. Owner chose the direction; this is the design to
-approve before any of it is built.**
+**Status: approved by the owner 2026-10-10. Step 1 (days and places → daylight)
+is built — migration `20261010010000`, `lib/film/`, ADR 0005. Next: step 2
+(people in scenes → sides).** Not yet in step 1, deliberately: `scenes.day_order`
+(nothing orders scenes within a day yet) and `shoot_day_id` on timesheets and
+expenses (they arrive with money, step 5).
 
 Owner, 2026-10-10: *"A new normalized and global — an ecosystem, an OS,
 whatever you want to call it. Everything must be connected."* And before

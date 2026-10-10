@@ -50,9 +50,8 @@
 The suite becomes one connected core — **the film graph**: scenes, characters,
 locations, shoot days, story days, elements, shots and people as real linked
 rows, plus a universal layer so anything attaches to anything. Design:
-[film-graph-spec.md](film-graph-spec.md) (proposed; build starts on the
-owner's approval, step 1 = days and places → daylight on the schedule and
-call sheet). This comes before the wishlist ranking.
+[film-graph-spec.md](film-graph-spec.md) (approved; step 1 — days and places → daylight — is built; next is step 2,
+people in scenes → sides). This comes before the wishlist ranking.
 
 ## Open work — start here
 
@@ -123,6 +122,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 **Then (restructure phase 5):** `app/(public)` (share pages `/s`, `/p`, `/shared`, legal) and `app/(suite)` (everything else, with the session/presence/island/tab-bar providers in its layout). The root layout keeps only fonts, theme, toasts and confirms; root `error`/`loading`/`not-found` carry their own `<main>`. No URL changes. Production migrations 20261007010000, 20261007020000 and 20261008010000 are applied (checked 2026-10-10: one `jobs` SELECT policy, `append_to_script`, `push_subscriptions` exist).
 
 **Then (restructure phase 7, 1 of 6 — project hub):** `app/(suite)/projects/[id]/page.tsx` 1,226 → 452 lines; the department windows and previews are `components/projects/hub/DeptWindow.tsx`, the production manager `ProductionManager.tsx`, the view-model `types.ts`. Moves only. Left for phase 7: editor, Lounge, landing, jobs, press kit.
+
+**Then (film graph, step 1 — days and places → daylight):** migration `20261010010000` (**apply to production after merge**): `shoot_days`, `scenes.location_id` / `shoot_day_id`, `call_sheets.shoot_day_id`, coordinates and time zone on locations, with triggers keeping them in step with the old columns. `lib/film/` (sun times computed locally, coordinates from pasted text or map links, the assembled day with light warnings and company-move distances). Locations: "I'm here now" / paste coordinates, light per shoot day. Stripboard: a date on each day, the light, warnings. Call sheet: the light, on screen and in print. Every script location now has a record from the start. Plan and rulings: `plans/2026-10-10-film-graph-1-days-and-places.md`. **Queued by the owner:** the island on phones, replacing the tab bar.
 
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
