@@ -1,6 +1,6 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-10T02:23:57.375Z",
+  "last_synchronized": "2026-10-10T07:50:57.386Z",
   "stats": {
     "totalFiles": 631,
     "totalSize": 4313627,
@@ -558,7 +558,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-10T01:58:41.943Z"
+      "last_modified": "2026-10-10T02:23:57.376Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -568,7 +568,7 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-10T01:58:41.939Z"
+      "last_modified": "2026-10-10T02:23:57.376Z"
     },
     {
       "path": "CHANGELOG.md",
@@ -578,7 +578,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-10T01:58:41.943Z"
+      "last_modified": "2026-10-10T02:23:57.376Z"
     },
     {
       "path": "README.md",
