@@ -96,7 +96,8 @@ test.describe('Scene readiness (local Supabase)', () => {
 
     // Every location confirmed (Production › Locations).
     const places = Array.from(new Set((await admin.from('scenes').select('location').eq('project_id', projectId).is('removed_at', null)).data!.map((r) => String(r.location).toUpperCase())));
-    await admin.from('project_locations').insert(places.map((name) => ({ project_id: projectId, name, status: 'confirmed', permit: 'not_needed' })));
+    // Each place already has a record (made with its scenes); lock them down.
+    await admin.from('project_locations').upsert(places.map((name) => ({ project_id: projectId, name, status: 'confirmed', permit: 'not_needed' })), { onConflict: 'project_id,name' });
     await expect(todo.getByText(/^Lock down /)).toHaveCount(0, { timeout: 20_000 });
     await admin.from('breakdown_elements').update({ status: 'ready' }).eq('id', lantern.id);
     await expect(todo.getByText('Nothing blocking — every scene left to shoot is ready.')).toBeVisible({ timeout: 20_000 });

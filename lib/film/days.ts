@@ -155,3 +155,9 @@ export function lightNoteText(n: LightNote): string {
     case 'night-needs-dark': return `${count(n.scenes, 'night exterior', 'night exteriors')}, but it isn’t dark until ${n.dark} and wrap is ${n.wrap}.`;
   }
 }
+
+/** The call sheet's light line; "" when there's none to give (no place, no date, or no sunrise that day). */
+export function lightLine(light: DayLight | null | undefined): string {
+  if (!light || !light.sunrise || !light.sunset) return '';
+  return `Sunrise ${light.sunrise} · Magic hour ${light.goldenStarts} · Sunset ${light.sunset} (${light.zone})`;
+}

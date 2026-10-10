@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDays, lightNoteText, type DayPlace, type DayRecord, type DayScene } from './days';
+import { buildDays, lightLine, lightNoteText, type DayPlace, type DayRecord, type DayScene } from './days';
 
 const HARBOR: DayPlace = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' };
 const WAREHOUSE: DayPlace = { id: 'warehouse', name: 'WAREHOUSE', latitude: null, longitude: null, timezone: null };
@@ -137,5 +137,18 @@ describe('lightNoteText', () => {
       .toBe('Every scene is an exterior in daylight, but the call is 07:00 and the sun rises at 08:37.');
     expect(lightNoteText({ kind: 'night-needs-dark', scenes: 3, dark: '22:40', wrap: '19:00' }))
       .toBe('3 night exteriors, but it isn’t dark until 22:40 and wrap is 19:00.');
+  });
+});
+
+describe('lightLine', () => {
+  const light = { dawn: '08:00', sunrise: '08:37', goldenEnds: '09:40', goldenStarts: '15:44', sunset: '16:32', dusk: '17:09', zone: 'America/Edmonton', daylightMinutes: 475 };
+
+  it('is the call sheet’s line: sunrise, magic hour, sunset, and whose clock', () => {
+    expect(lightLine(light)).toBe('Sunrise 08:37 · Magic hour 15:44 · Sunset 16:32 (America/Edmonton)');
+  });
+
+  it('is nothing when there is no light to give, or no sunrise that day', () => {
+    expect(lightLine(null)).toBe('');
+    expect(lightLine({ ...light, sunrise: '', sunset: '', goldenStarts: '' })).toBe('');
   });
 });

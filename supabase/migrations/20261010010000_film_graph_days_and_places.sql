@@ -200,3 +200,19 @@ REVOKE ALL ON FUNCTION internal.shoot_days_date_to_call_sheet() FROM PUBLIC, ano
 CREATE TRIGGER shoot_days_date_to_call_sheet AFTER UPDATE OF shoot_date ON public.shoot_days
   FOR EACH ROW WHEN (pg_trigger_depth() < 1 AND new.shoot_date IS DISTINCT FROM old.shoot_date)
   EXECUTE FUNCTION internal.shoot_days_date_to_call_sheet();
+
+-- A record made (or made again) for a name scenes already use picks them up.
+CREATE FUNCTION internal.project_locations_link_scenes()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  update public.scenes set location_id = new.id
+  where project_id = new.project_id and location_id is null and upper(btrim(coalesce(location, ''))) = new.name;
+  return null;
+end;
+$function$;
+REVOKE ALL ON FUNCTION internal.project_locations_link_scenes() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.project_locations
+  FOR EACH ROW EXECUTE FUNCTION internal.project_locations_link_scenes();

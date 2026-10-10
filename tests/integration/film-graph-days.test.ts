@@ -66,6 +66,17 @@ describe('a scene’s place', () => {
     expect((await scene(s.id)).location_id).toBeNull();
   });
 
+  it('a record added (or added back) for a name scenes already use picks those scenes up', async () => {
+    const a = await addScene({ location: 'Bridge' });
+    const b = await addScene({ location: 'BRIDGE' });
+    const first = (await scene(a.id)).location_id!;
+    await cast.sam.client.from('project_locations').delete().eq('id', first);
+    expect((await scene(b.id)).location_id).toBeNull();
+    const back = (await cast.jordan.client.from('project_locations').insert({ project_id: projectId, name: 'BRIDGE' }).select('id').single()).data!;
+    expect((await scene(a.id)).location_id).toBe(back.id);
+    expect((await scene(b.id)).location_id).toBe(back.id);
+  });
+
   it('can’t point at another project’s location', async () => {
     const theirs = (await cast.sam.client.from('project_locations').insert({ project_id: otherProjectId, name: 'ELSEWHERE' }).select('id').single()).data!;
     const s = await addScene({ location: null });

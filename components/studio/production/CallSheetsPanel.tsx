@@ -2,14 +2,16 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Check, ExternalLink, FileText, Printer, Send } from 'lucide-react';
+import { Check, ExternalLink, FileText, Printer, Send, Sun } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
 import {
-  issueState, locationKey, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls, useProjectLocations,
+  issueState, locationKey, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
+import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
+import { deviceZone, filmDays } from '@/lib/film/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
@@ -38,6 +40,12 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const calls = useCallSheetCalls(project.id);
   const acks = useCallSheetAcks(project.id);
   const locations = useProjectLocations(project.id);
+  const shootDays = useShootDays(project.id);
+  // Each day's light, from where it shoots and its date (the film graph).
+  const film = useMemo(
+    () => new Map(filmDays({ scenes, days: shootDays.rows, places: locations.rows, sheets: sheets.rows, viewerZone: deviceZone() }).map((d) => [d.number, d])),
+    [scenes, shootDays.rows, locations.rows, sheets.rows],
+  );
   const addressOf = useMemo(() => new Map(locations.rows.filter((l) => l.address).map((l) => [locationKey(l.name), l.address as string])), [locations.rows]);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
@@ -65,7 +73,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       table{border-collapse:collapse;width:100%;font-size:12px}td{padding:4px;border-bottom:1px solid #eee}</style></head><body>
       <h1>${esc(project.title).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}${sheet?.shoot_date ? ` · ${esc(new Date(sheet.shoot_date + 'T00:00').toDateString())}` : ''}</h2>
       <div class="row"><div class="col">${line('GENERAL CALL', hhmm(sheet?.general_call))}${line('SHOOTING CALL', hhmm(sheet?.shooting_call))}${line('EST. WRAP', hhmm(sheet?.estimated_wrap))}</div>
-      <div class="col">${line('LOCATION', sheet?.location_address)}${line('WEATHER', sheet?.weather)}</div></div>
+      <div class="col">${line('LOCATION', sheet?.location_address)}${line('WEATHER', sheet?.weather)}${line('LIGHT', lightLine(film.get(day)?.light))}</div></div>
+      ${(film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => `<div>${esc(lightNoteText(n))}</div>`).join('')}
       ${sheet?.notes ? `<h3>NOTES</h3><div>${esc(sheet.notes).replace(/\n/g, '<br>')}</div>` : ''}
       <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
       ${d.dayScenes.map((sc) => `<div class="sc"><span class="num">${sc.scene_number}.</span> ${esc(sc.heading ?? sc.title)}</div>`).join('')}
@@ -105,7 +114,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
               )}
               {open && (
                 <DayEditor
-                  day={day} sheet={sheet} facts={d} crew={crew} state={state}
+                  day={day} sheet={sheet} facts={d} crew={crew} state={state} film={film.get(day)}
                   addresses={d.locations.map((name) => ({ name, address: addressOf.get(locationKey(name)) })).filter((x): x is { name: string; address: string } => !!x.address)}
                   acks={acks.rows.filter((a) => a.call_sheet_id === sheet?.id)}
                   onIssued={(row) => sheets.upsertLocal(row)}
@@ -205,7 +214,9 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
   );
 }
 
-function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, onIssued, onSheet, onCall, onPrint }: {
+function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint }: {
+  /** The day as the film graph has it: its light and what in the plan fights it. */
+  film: FilmDay | undefined;
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
   /** The day's locations that have an address on record (Production › Locations). */
   addresses: { name: string; address: string }[];
@@ -282,6 +293,14 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, onI
         {textField('location_address', 'Location address')}
         {textField('weather', 'Weather')}
       </div>
+      {film && (film.light || film.notes.length > 0) && (
+        <div role="group" aria-label={`Day ${day} light`} className={s.stack} style={{ gap: 4 }}>
+          {lightLine(film.light) && <p className={s.hint} style={{ margin: 0, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}><Sun size={11} aria-hidden /> {lightLine(film.light)} · {film.lightAt?.name}</p>}
+          {film.notes.map((n) => (
+            <p key={n.kind} className={s.hint} style={{ margin: 0, color: n.kind === 'no-date' || n.kind === 'no-place' || n.kind === 'polar' ? undefined : 'var(--warn)' }}>{lightNoteText(n)}</p>
+          ))}
+        </div>
+      )}
       {addresses.filter((a) => a.address !== sheet?.location_address).map((a) => (
         <p key={a.name} className={s.hint} style={{ margin: 0 }}>
           {a.name} is at {a.address}.{' '}

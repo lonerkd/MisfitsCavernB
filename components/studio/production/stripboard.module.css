@@ -24,6 +24,11 @@
 .dayHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .dayName { font-family: var(--display); font-size: 1.35rem; letter-spacing: 2px; color: var(--fg); line-height: 1; margin: 0; font-weight: 400; }
 .dayDate { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
+.dayDateInput { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 1px 2px; color-scheme: dark light; max-width: 132px; }
+.dayDateInput:hover, .dayDateInput:focus-visible { border-color: var(--border-2); color: var(--fg); }
+.light { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-muted); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.lightLink { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); text-decoration: underline; text-underline-offset: 2px; }
+.lightLink:hover { color: var(--fg); }
 .meter { height: 5px; border-radius: 4px; background: rgba(var(--fg-rgb), 0.08); overflow: hidden; }
 .meterFill { height: 100%; border-radius: 4px; background: #818cf8; transition: width 0.3s; }
 .meterOver { background: #f87171; }

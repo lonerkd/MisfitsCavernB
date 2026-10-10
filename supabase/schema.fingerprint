@@ -1069,6 +1069,7 @@ function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
 function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb17726137b5
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
+function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
@@ -1158,6 +1159,7 @@ grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
 grant function internal.project_documents_sync_permit() postgres
 grant function internal.project_documents_touch() postgres
+grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.push_notification() postgres
@@ -1795,6 +1797,7 @@ trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR 
 trigger CREATE TRIGGER project_brief_guard BEFORE INSERT OR UPDATE ON public.project_brief FOR EACH ROW EXECUTE FUNCTION internal.project_brief_guard()
 trigger CREATE TRIGGER project_documents_sync_permit AFTER INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_sync_permit()
 trigger CREATE TRIGGER project_documents_touch BEFORE INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_touch()
+trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_link_scenes()
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
