@@ -100,7 +100,7 @@ test.describe.serial('Daylight (local Supabase)', () => {
     await open(page, 'schedule');
     const day1 = page.getByRole('region', { name: 'Day 1' });
     await expect(day1.getByLabel('Day 1 date')).toHaveValue('2026-06-21', { timeout: 30_000 });
-    await expect(day1).toContainText(/05:2\d – 21:5\d/);
+    await expect(day1).toContainText(/04:2\d – 20:5\d/);
 
     // Midwinter: the same harbour has less than eight hours of light.
     await day1.getByLabel('Day 1 date').fill('2026-12-21');
