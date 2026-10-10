@@ -92,6 +92,7 @@ column call_sheets.project_id uuid not null
 column call_sheets.reminded_at timestamp with time zone
 column call_sheets.shoot_date date
 column call_sheets.shoot_day integer not null
+column call_sheets.shoot_day_id uuid
 column call_sheets.shooting_call time without time zone
 column call_sheets.updated_at timestamp with time zone default now()
 column call_sheets.updated_by uuid default auth.uid()
@@ -400,11 +401,14 @@ column project_locations.cost numeric(12,2)
 column project_locations.created_at timestamp with time zone default now() not null
 column project_locations.created_by uuid default auth.uid()
 column project_locations.id uuid default gen_random_uuid() not null
+column project_locations.latitude numeric(9,6)
+column project_locations.longitude numeric(9,6)
 column project_locations.name text not null
 column project_locations.notes text
 column project_locations.permit text default 'unknown'::text not null
 column project_locations.project_id uuid not null
 column project_locations.status text default 'scouting'::text not null
+column project_locations.timezone text
 column project_locations.updated_at timestamp with time zone default now() not null
 column project_tasks.assigned_to uuid
 column project_tasks.completed boolean default false
@@ -458,6 +462,7 @@ column scenes.est_duration text
 column scenes.heading text
 column scenes.id uuid default uuid_generate_v4() not null
 column scenes.location text
+column scenes.location_id uuid
 column scenes.note text
 column scenes.ordinal integer
 column scenes.project_id uuid not null
@@ -467,6 +472,7 @@ column scenes.removed_at timestamp with time zone
 column scenes.scene_number integer not null
 column scenes.script_id uuid
 column scenes.shoot_day integer default 1
+column scenes.shoot_day_id uuid
 column scenes.status text default 'planned'::text not null
 column scenes.time_of_day text default 'DAY'::text
 column scenes.title text not null
@@ -550,6 +556,12 @@ column sfx_assets.project_id uuid not null
 column sfx_assets.tags text[]
 column sfx_assets.title text not null
 column sfx_assets.user_id uuid not null
+column shoot_days.created_at timestamp with time zone default now() not null
+column shoot_days.day_number integer not null
+column shoot_days.id uuid default gen_random_uuid() not null
+column shoot_days.project_id uuid not null
+column shoot_days.shoot_date date
+column shoot_days.updated_at timestamp with time zone default now() not null
 column shots.angle text
 column shots.created_at timestamp with time zone default now()
 column shots.created_by uuid default auth.uid()
@@ -680,6 +692,7 @@ constraint call_sheets.call_sheets_issued_by_fkey FOREIGN KEY (issued_by) REFERE
 constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
+constraint call_sheets.call_sheets_shoot_day_fkey FOREIGN KEY (shoot_day_id, project_id) REFERENCES shoot_days(id, project_id) ON DELETE SET NULL (shoot_day_id)
 constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
 constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint campaigns.campaigns_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
@@ -882,6 +895,7 @@ constraint project_formats.project_formats_phase_labels_check CHECK (((jsonb_typ
 constraint project_formats.project_formats_pkey PRIMARY KEY (name)
 constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
 constraint project_formats.project_formats_skip_phases_check CHECK ((skip_phases <@ ARRAY['pre-production'::text, 'production'::text, 'post-production'::text]))
+constraint project_locations.project_locations_coordinates_check CHECK ((((latitude IS NULL) = (longitude IS NULL)) AND ((latitude IS NULL) OR (((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)) AND ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))))
 constraint project_locations.project_locations_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
 constraint project_locations.project_locations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_locations.project_locations_id_project_key UNIQUE (id, project_id)
@@ -892,6 +906,7 @@ constraint project_locations.project_locations_pkey PRIMARY KEY (id)
 constraint project_locations.project_locations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint project_locations.project_locations_status_check CHECK ((status = ANY (ARRAY['scouting'::text, 'option'::text, 'confirmed'::text])))
 constraint project_locations.project_locations_text_len CHECK (((char_length(address) <= 500) AND (char_length(contact) <= 300) AND (char_length(notes) <= 5000)))
+constraint project_locations.project_locations_timezone_check CHECK (((timezone IS NULL) OR ((char_length(timezone) >= 1) AND (char_length(timezone) <= 64))))
 constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
 constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -919,11 +934,13 @@ constraint scene_media.scene_media_scene_fkey FOREIGN KEY (scene_id, project_id)
 constraint scenes.scenes_color_check CHECK (((color IS NULL) OR (color ~ '^#[0-9a-fA-F]{6}$'::text)))
 constraint scenes.scenes_heading_check CHECK ((char_length(heading) <= 300))
 constraint scenes.scenes_id_project_key UNIQUE (id, project_id)
+constraint scenes.scenes_location_fkey FOREIGN KEY (location_id, project_id) REFERENCES project_locations(id, project_id) ON DELETE SET NULL (location_id)
 constraint scenes.scenes_note_check CHECK ((char_length(note) <= 5000))
 constraint scenes.scenes_pkey PRIMARY KEY (id)
 constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint scenes.scenes_read_seconds_check CHECK (((read_seconds IS NULL) OR ((read_seconds > (0)::numeric) AND (read_seconds <= (36000)::numeric))))
 constraint scenes.scenes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint scenes.scenes_shoot_day_fkey FOREIGN KEY (shoot_day_id, project_id) REFERENCES shoot_days(id, project_id) ON DELETE SET NULL (shoot_day_id)
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
@@ -966,6 +983,11 @@ constraint set_log.set_log_take_check CHECK (((take IS NULL) OR ((take >= 1) AND
 constraint sfx_assets.sfx_assets_pkey PRIMARY KEY (id)
 constraint sfx_assets.sfx_assets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint sfx_assets.sfx_assets_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint shoot_days.shoot_days_id_project_key UNIQUE (id, project_id)
+constraint shoot_days.shoot_days_number_key UNIQUE (project_id, day_number)
+constraint shoot_days.shoot_days_number_positive CHECK ((day_number >= 1))
+constraint shoot_days.shoot_days_pkey PRIMARY KEY (id)
+constraint shoot_days.shoot_days_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint shots.shots_camera_len CHECK (((char_length(COALESCE(shot_size, ''::text)) <= 12) AND (char_length(COALESCE(angle, ''::text)) <= 40) AND (char_length(COALESCE(movement, ''::text)) <= 40) AND (char_length(COALESCE(lens, ''::text)) <= 40)))
 constraint shots.shots_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint shots.shots_description_len CHECK ((char_length(description) <= 2000))
@@ -1024,6 +1046,7 @@ function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_u
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
 function internal.call_sheet_snapshot(p_sheet uuid) body=33e74d687d15ef5b7fcfcc0600f450fd
 function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
+function internal.call_sheets_link_day() body=f3a3e397d0519a47630c9a142e515358
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
@@ -1049,8 +1072,10 @@ function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d9
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
+function internal.shoot_days_date_to_call_sheet() body=e4538e1cc3c6d9d0b9db85fb0895308e
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=94eebb05bb53f6f692a20c77ad4d51a1
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
@@ -1110,6 +1135,7 @@ grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uui
 grant function internal.call_sheet_recipients(p_project uuid) postgres
 grant function internal.call_sheet_snapshot(p_sheet uuid) postgres
 grant function internal.call_sheets_issue_guard() postgres
+grant function internal.call_sheets_link_day() postgres
 grant function internal.caller_is_admin() authenticated,postgres,service_role
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
@@ -1135,8 +1161,10 @@ grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.push_notification() postgres
+grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
+grant function internal.shoot_days_date_to_call_sheet() postgres
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
@@ -1330,7 +1358,9 @@ index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree 
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
+index CREATE INDEX scenes_location_idx ON public.scenes USING btree (location_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
+index CREATE INDEX scenes_shoot_day_idx ON public.scenes USING btree (shoot_day_id)
 index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
 index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
@@ -1380,6 +1410,7 @@ index CREATE UNIQUE INDEX call_sheet_calls_pkey ON public.call_sheet_calls USING
 index CREATE UNIQUE INDEX call_sheets_id_project_key ON public.call_sheets USING btree (id, project_id)
 index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id)
 index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
+index CREATE UNIQUE INDEX call_sheets_shoot_day_key ON public.call_sheets USING btree (shoot_day_id) WHERE (shoot_day_id IS NOT NULL)
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
 index CREATE UNIQUE INDEX channel_members_channel_id_user_id_key ON public.channel_members USING btree (channel_id, user_id)
 index CREATE UNIQUE INDEX channel_members_pkey ON public.channel_members USING btree (id)
@@ -1444,6 +1475,9 @@ index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
 index CREATE UNIQUE INDEX set_log_pkey ON public.set_log USING btree (id)
 index CREATE UNIQUE INDEX sfx_assets_pkey ON public.sfx_assets USING btree (id)
+index CREATE UNIQUE INDEX shoot_days_id_project_key ON public.shoot_days USING btree (id, project_id)
+index CREATE UNIQUE INDEX shoot_days_number_key ON public.shoot_days USING btree (project_id, day_number)
+index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
 index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
@@ -1612,6 +1646,7 @@ policy public.sfx_assets "sfx_assets delete own" PERMISSIVE DELETE to authentica
 policy public.sfx_assets "sfx_assets insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_access_project(project_id)))
 policy public.sfx_assets "sfx_assets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
 policy public.sfx_assets "sfx_assets update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.shoot_days "shoot_days access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
@@ -1670,6 +1705,7 @@ realtime public.scene_media
 realtime public.scenes
 realtime public.script_stash
 realtime public.set_log
+realtime public.shoot_days
 realtime public.shots
 realtime public.timeline_items
 realtime public.timesheets
@@ -1729,6 +1765,7 @@ rls script_stash enabled=true forced=false
 rls scripts enabled=true forced=false
 rls set_log enabled=true forced=false
 rls sfx_assets enabled=true forced=false
+rls shoot_days enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
 rls timeline_items enabled=true forced=false
@@ -1742,6 +1779,7 @@ schema public
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
+trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
@@ -1760,9 +1798,12 @@ trigger CREATE TRIGGER project_documents_touch BEFORE INSERT OR UPDATE ON public
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.scripts_share_guard()
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER shoot_days_date_to_call_sheet AFTER UPDATE OF shoot_date ON public.shoot_days FOR EACH ROW WHEN (((pg_trigger_depth() < 1) AND (new.shoot_date IS DISTINCT FROM old.shoot_date))) EXECUTE FUNCTION internal.shoot_days_date_to_call_sheet()
+trigger CREATE TRIGGER shoot_days_updated_at BEFORE UPDATE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
 trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()
