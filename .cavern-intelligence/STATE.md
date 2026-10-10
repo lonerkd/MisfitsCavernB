@@ -4,6 +4,10 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
+## Latest Session — Data-access rule has no exceptions (3.2)
+
+No migrations. The auth callback's profile code moved to `lib/supabase/profiles.ts` (`ensureProfile`, `buildProfileFields`, unit-tested); the lint exception is gone, so `supabase.from(...)` is now banned in `app/` and `components/` everywhere. Backlog 3.2 removed.
+
 ## Latest Session — Launch-grade repository practice (3.16)
 
 Branch `claude/repo-practice` (off `main`). No migration, no app code —

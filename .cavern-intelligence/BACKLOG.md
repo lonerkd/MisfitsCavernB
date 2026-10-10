@@ -56,20 +56,6 @@ fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
 changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
 
-### 3.2 Data access through `lib/` — S (one file left)
-Every page and component reads and writes through `lib/supabase/*`, and
-`eslint.config.mjs` now fails `supabase.from(...)` in `app/` and
-`components/` (2026-10-07, PR #137). **Left: `app/auth/callback/page.tsx`**
-(3 calls: the profile it makes on first sign-in), excepted in the lint
-config until the password-recovery work (3.4), which edits the auth pages
-too, has landed — then move them to `lib/supabase/profiles.ts` and drop
-the exception. Done when the rule has no exceptions.
-
-Not covered by the rule, on purpose: `app/api/discord/notify/route.ts` uses
-its own per-request server clients (`supabaseAdmin`, one acting as the
-caller) and was reviewed for auth and SSRF; server routes stay as they are.
-
-
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
 projects, scenes and wraps; not for media uploads, crew invites/role
