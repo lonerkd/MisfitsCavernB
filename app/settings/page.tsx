@@ -5,7 +5,7 @@ import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, M
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
-import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
+import { collectMyData } from '@/lib/supabase/profiles';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/MotionPreference';
@@ -14,6 +14,7 @@ import { ThemePicker } from '@/components/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 import DeleteAccount from '@/components/settings/DeleteAccount';
+import { PUSH_HINT, usePushSetting } from '@/components/settings/usePushSetting';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
 
 const PREF_KEYS = {
@@ -133,6 +134,7 @@ export default function SettingsPage() {
   }, [router]);
 
   const flash = (text: string, ok = true) => { setMsg({ text, ok }); setTimeout(() => setMsg(null), 3500); };
+  const push = usePushSetting(user?.id ?? null, (m) => flash(m, false));
 
   // Account prefs live in the DB: show the change, put it back if the save fails.
   const savePrefs = (patch: Partial<NotificationPrefs>, apply: (v: boolean) => void, v: boolean) => {
@@ -177,9 +179,12 @@ export default function SettingsPage() {
     flash(error ? error.message : 'Password updated.', !error);
   };
 
-  const signOut = async () => { await supabase.auth.signOut(); router.replace('/auth'); };
+  // Dynamic import: push code stays out of every page's first-load JS (bundle budget).
+  const forgetPush = () => import('@/lib/push/client').then((m) => m.forgetThisDevicePush());
+  const signOut = async () => { await forgetPush(); await supabase.auth.signOut(); router.replace('/auth'); };
   const signOutEverywhere = async () => {
     setBusy('global');
+    await forgetPush();
     await supabase.auth.signOut({ scope: 'global' });
     router.replace('/auth');
   };
@@ -188,20 +193,10 @@ export default function SettingsPage() {
     if (!user) return;
     setBusy('export');
     try {
-      const [profile, account, projects, scripts, jobs] = await Promise.all([
-        supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('id', user.id).single(),
-        supabase.rpc('get_my_account'),
-        supabase.from('projects').select('*').eq('creator_id', user.id),
-        supabase.from('scripts').select('*').eq('last_edited_by', user.id),
-        supabase.from('jobs').select('*').eq('created_by', user.id),
-      ]);
       const payload = {
         exported_at: new Date().toISOString(),
         account: { id: user.id, email: user.email, created_at: user.created_at },
-        profile: profile.data ? { ...profile.data, ...(account.data?.[0] ?? {}) } : null,
-        projects: projects.data ?? [],
-        scripts: scripts.data ?? [],
-        jobs: jobs.data ?? [],
+        ...(await collectMyData(user.id)),
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -305,6 +300,7 @@ export default function SettingsPage() {
         </Section>
 
         <Section icon={<Bell size={15} />} title="Notifications">
+          <Row label="Push on this device" hint={PUSH_HINT[push.state]} control={push.switchable ? <Toggle on={push.state === 'on'} onChange={(v) => void push.toggle(v)} /> : null} />
           <Row label="Comment replies" hint="When someone replies to your notes or reviews." control={<Toggle on={notifyReplies} onChange={v => setNotifyPref('replies', v)} />} />
           <Row label="Job & casting alerts" hint="New roles matching your profile." control={<Toggle on={notifyJobs} onChange={v => setNotifyPref('jobs', v)} />} />
           <Row label="Product updates" hint="Occasional news about new tools and features." control={<Toggle on={notifyProduct} onChange={v => setNotifyPref('product', v)} />} />

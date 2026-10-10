@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
   Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
@@ -50,6 +51,8 @@ import type { EditorCtx } from './editorCtx';
 
 export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
   const { tools, activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
+  // Where the Export menu opens (set from the button when it's pressed).
+  const [menuAt, setMenuAt] = useState<{ top: number; right: number } | null>(null);
   return (
         <header className="mc-editor-header" style={{
           position: 'sticky', top: 0,
@@ -206,7 +209,14 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
 
             <div style={{ position: 'relative' }}>
               <button
-                onClick={() => setShowFormatMenu(!showFormatMenu)}
+                onClick={(e) => {
+                  // The menu is drawn on <body> under this button: inside the header it was
+                  // clipped on a phone, where the header scrolls sideways.
+                  const r = e.currentTarget.getBoundingClientRect();
+                  setMenuAt({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) });
+                  setShowFormatMenu(!showFormatMenu);
+                }}
+                aria-expanded={showFormatMenu}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
                   padding: '8px 18px',
@@ -222,12 +232,12 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 <Download size={12} /> Export <ChevronDown size={11} />
               </button>
 
-              {showFormatMenu && (
-                <div style={{
-                  position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+              {showFormatMenu && menuAt && createPortal(
+                <div role="menu" aria-label="Export" style={{
+                  position: 'fixed', top: menuAt.top, right: menuAt.right,
                   background: 'var(--surface)', backdropFilter: 'blur(20px)',
                   border: '1px solid rgba(var(--ink-rgb), 0.09)',
-                  borderRadius: 14, padding: 6, minWidth: 164, zIndex: 200,
+                  borderRadius: 14, padding: 6, minWidth: 164, zIndex: 1000,
                   boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
                 }}>
                   {['fountain', 'fdx', 'pdf', 'txt'].map(fmt => (
@@ -255,7 +265,8 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
                     Normalize formatting
                   </button>
-                </div>
+                </div>,
+                document.body,
               )}
             </div>
 

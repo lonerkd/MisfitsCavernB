@@ -1,5 +1,4 @@
 import type { ProjectSettings } from '@/lib/types/settings';
-import type { UserProfile, UserRole, Permission, ProjectAccess } from '@/lib/context/types';
 
 export interface Beat {
   id: string;
@@ -89,9 +88,8 @@ export interface OSSession {
   user: UserProfile | null;
   userId: string | null;
   email: string | null;
-  userRole: UserRole;
-  permissions: Permission[];
-  projectAccess: Record<string, ProjectAccess>;
+  /** From the private account row (get_my_account); only the admin pages read it. Every other permission is RLS, mirrored in the UI by useCanShape. */
+  isAdmin: boolean;
   error: string | null;
 }
 
@@ -106,4 +104,17 @@ export interface OSState {
   project: OSProjectState;
 }
 
-export type { UserProfile, UserRole, Permission, ProjectAccess, AccessContext } from '@/lib/context/types';
+/** The signed-in person's public profile, as the OS holds it. */
+export interface UserProfile {
+  id: string;
+  email: string;
+  username: string;
+  avatar_url?: string;
+  bio?: string;
+  role: string;
+  location?: string;
+  status: 'OPEN' | 'BUSY';
+  is_admin?: boolean;
+  created_at: string;
+  updated_at: string;
+}

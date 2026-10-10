@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent, useMemo } from 'react';
+import React, { useState, useEffect, useEffectEvent, useMemo, useRef } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -13,8 +13,8 @@ import {
 import GrainOverlay from '@/components/GrainOverlay';
 import { useConfirm } from '@/components/Confirm';
 import { useToast } from '@/components/Toast';
-import { supabase } from '@/lib/supabase/client';
-import type { Json } from '@/lib/supabase/database.types';
+import * as hub from '@/lib/supabase/project-hub';
+import { getProductionData, getProjectOverview, getProjectRow, type BudgetRow, type CrewRow, type FestivalRow, type MilestoneRow, type PortfolioRow, type ProjectOverview, type TaskRow, type TimelineRow } from '@/lib/supabase/project-hub';
 import { breakdown, costByCategory } from '@/lib/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
@@ -238,7 +238,6 @@ function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
 
 // ─── Timeline preview ────────────────────────────────────────────────────────
 
-interface MilestoneRow { id: string; title: string; end_date: string | null; status: string | null }
 
 function TimelinePreview({ deadline, milestones }: { deadline: string; milestones: MilestoneRow[] }) {
   const dl = deadline ? new Date(deadline).getTime() : NaN;
@@ -307,14 +306,14 @@ export default function ProjectHubPage() {
 
   // The session follows the project being viewed (once it has loaded).
   const followProject = useEffectEvent((pid: string) => { if (activeProject?.id !== pid) refreshProject(pid); });
+  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
 
   useEffect(() => {
     let active = true;
     (async () => {
-      supabase.from('projects').select('*').eq('id', id).single().then(async ({ data, error }) => {
+      getProjectRow(id).catch((e) => { console.error('Failed to load project:', e); return null; }).then(async (row) => {
         if (!active) return;
-        if (error || !data) { router.push('/projects'); return; }
-        const row = data;
+        if (!row) { router.push('/projects'); return; }
         const phase = mapStatusToPhase(row.status ?? undefined);
         const me = (await awaitOSUser()) || null;
         const token = row.share_token || '';
@@ -334,7 +333,7 @@ export default function ProjectHubPage() {
           isOwner: me?.id === row.creator_id,
         });
         setLoading(false);
-        followProject(data.id);
+        followProject(row.id);
       });
     })();
     return () => { active = false; };
@@ -354,41 +353,33 @@ export default function ProjectHubPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const [sc, cr, tk, bd, tl, scn, cn, pf, pr, cp] = await Promise.all([
-        supabase.from('scripts').select('id').eq('project_id', id),
-        supabase.from('project_crew').select('id, user_id, role, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', id),
-        supabase.from('project_tasks').select('completed').eq('project_id', id),
-        supabase.from('budget_items').select('amount').eq('project_id', id),
-        supabase.from('timeline_items').select('id, title, end_date, status').eq('project_id', id),
-        supabase.from('scenes').select('est_duration').eq('project_id', id).is('removed_at', null),
-        supabase.from('media').select('id', { count: 'exact', head: true }).eq('project_id', id),
-        supabase.from('portfolio_projects').select('id, title').eq('source_project_id', id),
-        supabase.from('projects').select('festival_submissions').eq('id', id).single(),
-        supabase.from('campaigns').select('id', { count: 'exact', head: true }).eq('project_id', id),
-      ]);
+      let o: ProjectOverview;
+      try { o = await getProjectOverview(id); }
+      catch (e) {
+        console.error('Failed to load the project overview:', e);
+        if (active) reportError('Could not load this project’s numbers.');
+        return;
+      }
       if (!active) return;
-      const tasks = tk.data || [];
-      // Page count from the scene index: each scene's length in eighths.
-      const eighths = (scn.data || []).reduce((n, row) => n + (Number(String(row.est_duration || '').match(/(\d+)\s*\/\s*8/)?.[1]) || 0), 0);
-      const festivals = (Array.isArray(pr.data?.festival_submissions) ? pr.data!.festival_submissions : []) as { status?: string }[];
+      const { eighths, festivals } = o;
       setCounts({
-        scripts: sc.data?.length || 0,
+        scripts: o.scripts,
         // Short scripts in tenths (3/8 pg → 0.4), longer ones in whole pages.
         pages: eighths < 80 ? Math.round(eighths / 0.8) / 10 : Math.round(eighths / 8),
-        crew: cr.data?.length || 0,
-        tasks: tasks.length,
-        tasksDone: tasks.filter(t => t.completed).length,
-        budget: (bd.data || []).reduce((n, x) => n + Number(x.amount || 0), 0),
-        timeline: tl.data?.length || 0,
-        scenes: scn.data?.length || 0,
-        concepts: cn.count || 0,
+        crew: o.crew.length,
+        tasks: o.tasks,
+        tasksDone: o.tasksDone,
+        budget: o.budget,
+        timeline: o.milestones.length,
+        scenes: o.scenes,
+        concepts: o.concepts,
         festivalsSubmitted: festivals.filter(f => f.status === 'submitted' || f.status === 'accepted').length,
         festivalsAccepted: festivals.filter(f => f.status === 'accepted').length,
-        campaigns: cp.count || 0,
+        campaigns: o.campaigns,
       });
-      setMilestones(tl.data || []);
-      setPortfolioPieces(pf.data || []);
-      setCrewTeam((cr.data || []).map(c => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew') })));
+      setMilestones(o.milestones);
+      setPortfolioPieces(o.portfolio);
+      setCrewTeam(o.crew);
     })();
     return () => { active = false; };
   }, [id]);
@@ -723,12 +714,6 @@ export default function ProjectHubPage() {
 
 // ─── Production Manager (live Supabase CRUD: tasks, budget, timeline, crew) ────
 
-interface TaskRow { id: string; title: string; completed: boolean; assigned_to: string | null; due_date: string | null }
-interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
-interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
-interface CrewRow { id: string; user_id: string; role: string; craft: string | null; profiles?: { username: string } | null }
-interface PortfolioRow { id: string; title: string; share_token: string }
-interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
 
 const SCRIPT_FORMATS: ScriptFormat[] = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'];
 const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
@@ -738,25 +723,10 @@ const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
 
 const MINI_INPUT: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', colorScheme: 'dark' };
 
-// Crew work tasks, budget and milestones with the owner; the crew list, festivals
-// and project settings live on the project row, which only its owner can change.
-/** Everything the project page shows, in one round (lib/supabase calls in parallel). */
+/** Everything the production manager shows, and which budget lines are already posted as jobs. */
 async function fetchProjectPage(projectId: string) {
-  const [t, b, tl, c, pf, proj] = await Promise.all([
-    supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
-    supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
-    supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
-    supabase.from('project_crew').select('id,user_id,role,craft,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
-    supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
-    supabase.from('projects').select('settings,festival_submissions,creator_id').eq('id', projectId).single(),
-  ]);
-  const posted = await getBudgetItemIdsWithJobs(projectId);
-  let owner: { id: string; username: string } | null | undefined;
-  if (proj.data?.creator_id) {
-    const { data } = await supabase.from('profiles').select('id,username').eq('id', proj.data.creator_id).maybeSingle();
-    owner = data ? { id: data.id, username: data.username } : null;
-  }
-  return { t, b, tl, c, pf, proj, posted, owner };
+  const [data, posted] = await Promise.all([getProductionData(projectId), getBudgetItemIdsWithJobs(projectId)]);
+  return { ...data, posted };
 }
 
 function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
@@ -778,17 +748,28 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
   const [festivals, setFestivals] = useState<FestivalRow[]>([]);
 
-  const load = React.useCallback(() => fetchProjectPage(projectId).then(({ t, b, tl, c, pf, proj, posted, owner }) => {
-    setTasks((t.data as TaskRow[]) || []);
-    setBudget((b.data as BudgetRow[]) || []);
-    setTimeline((tl.data as TimelineRow[]) || []);
-    setCrew((c.data as unknown as CrewRow[]) || []);
-    setPortfolio((pf.data as PortfolioRow[]) || []);
-    setPostedBudgetIds(posted);
-    if (proj.data?.settings) setSettings(proj.data.settings as unknown as ProjectSettings);
-    setFestivals((proj.data?.festival_submissions as unknown as FestivalRow[]) || []);
-    if (owner !== undefined) setOwner(owner);
-  }, (e: any) => setErr(e.message)), [projectId]);
+  // Every write bumps this. A load that a write overtook would put back the
+  // list from before it (a task added while the panel was still loading
+  // vanished), so such a load is dropped and asked again.
+  const writes = useRef(0);
+  const load = React.useCallback((): Promise<void> => {
+    const run = (): Promise<void> => {
+      const at = writes.current;
+      return fetchProjectPage(projectId).then((d) => {
+        if (writes.current !== at) return run();
+        setTasks(d.tasks);
+        setBudget(d.budget);
+        setTimeline(d.timeline);
+        setCrew(d.crew);
+        setPortfolio(d.portfolio);
+        setPostedBudgetIds(d.posted);
+        if (d.settings) setSettings(d.settings);
+        setFestivals(d.festivals);
+        setOwner(d.owner);
+      }, (e: { message?: string }) => setErr(e?.message || 'Could not load the production details.'));
+    };
+    return run();
+  }, [projectId]);
 
   useEffect(() => {
     awaitOSUser().then((user) => setUserId(user?.id ?? null));
@@ -799,21 +780,24 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const progressKey = `${tasks.map(t => (t.completed ? 1 : 0)).join('')}|${budget.length}|${crew.length}|${festivals.map(f => f.status).join(',')}`;
   useEffect(() => { announceProgressChange(projectId); }, [projectId, progressKey]);
 
+  // A write's failure, shown above the panel (null when it worked).
+  const attempt = async (write: () => Promise<unknown>): Promise<boolean> => {
+    writes.current += 1;
+    try { await write(); return true; }
+    catch (e) { setErr((e as { message?: string })?.message || 'That did not save.'); return false; }
+  };
+
   const addTask = async (title: string) => {
-    const { data, error } = await supabase.from('project_tasks')
-      .insert({ project_id: projectId, title }).select('id,title,completed,assigned_to,due_date').single();
-    if (error) return setErr(error.message);
-    setTasks(p => [...p, data as TaskRow]);
+    let row: TaskRow | undefined;
+    if (await attempt(async () => { row = await hub.addTask(projectId, title); })) setTasks(p => [...p, row!]);
   };
   const toggleTask = async (t: TaskRow) => {
     setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !t.completed } : x));
-    const { error } = await supabase.from('project_tasks').update({ completed: !t.completed }).eq('id', t.id);
-    if (error) { setErr(error.message); setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x)); }
+    if (!await attempt(() => hub.updateTask(t.id, { completed: !t.completed }))) setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x));
   };
   const setTaskField = async (t: TaskRow, patch: Partial<Pick<TaskRow, 'assigned_to' | 'due_date'>>) => {
     setTasks(p => p.map(x => x.id === t.id ? { ...x, ...patch } : x));
-    const { error } = await supabase.from('project_tasks').update(patch).eq('id', t.id);
-    if (error) { setErr(error.message); setTasks(p => p.map(x => x.id === t.id ? t : x)); return; }
+    if (!await attempt(() => hub.updateTask(t.id, patch))) { setTasks(p => p.map(x => x.id === t.id ? t : x)); return; }
     if (patch.assigned_to && patch.assigned_to !== t.assigned_to) {
       notify(patch.assigned_to, { type: 'task', title: `You were assigned “${t.title}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
     }
@@ -822,27 +806,24 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     if (!await confirm('Delete this task? This cannot be undone.')) return;
     const prev = tasks;
     setTasks(p => p.filter(x => x.id !== id));
-    const { error } = await supabase.from('project_tasks').delete().eq('id', id);
-    if (error) { setErr(error.message); setTasks(prev); }
+    if (!await attempt(() => hub.deleteTask(id))) setTasks(prev);
   };
 
   const addBudget = async (category: string, amount: number) => {
-    const { data, error } = await supabase.from('budget_items')
-      .insert({ project_id: projectId, category, amount, created_by: userId }).select('id,category,amount').single();
-    if (error) return setErr(error.message);
-    setBudget(p => [...p, data as BudgetRow]);
+    let row: BudgetRow | undefined;
+    if (await attempt(async () => { row = await hub.addBudgetItem(projectId, userId, category, amount); })) setBudget(p => [...p, row!]);
   };
   const delBudget = async (id: string) => {
     if (!await confirm('Delete this budget line? This cannot be undone.')) return;
     const prev = budget;
     setBudget(p => p.filter(x => x.id !== id));
-    const { error } = await supabase.from('budget_items').delete().eq('id', id);
-    if (error) { setErr(error.message); setBudget(prev); }
+    if (!await attempt(() => hub.deleteBudgetItem(id))) setBudget(prev);
   };
 
   const postJobFromBudget = async (b: BudgetRow) => {
     if (!userId || postedBudgetIds.has(b.id)) return;
     setPostingBudgetId(b.id);
+    writes.current += 1;
     try {
       // The job's craft: the one this budget line is about (a job needs one from the crafts list).
       const craft = suggestCraft(b.category, await loadCrafts());
@@ -858,8 +839,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const setActual = async (id: string, actual: number | null) => {
     const before = budget.find(x => x.id === id)?.actual_cost ?? null;
     setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
-    const { error } = await supabase.from('budget_items').update({ actual_cost: actual }).eq('id', id);
-    if (error) { setErr(error.message); setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: before } : x)); }
+    if (!await attempt(() => hub.setBudgetActual(id, actual))) setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: before } : x));
   };
 
   // The budget's breakdown lines come from the breakdown itself: each
@@ -882,26 +862,20 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   };
 
   const addTimeline = async (title: string, start: string, end: string) => {
-    const { data, error } = await supabase.from('timeline_items')
-      .insert({ project_id: projectId, title, start_date: start || null, end_date: end || null, created_by: userId })
-      .select('id,title,start_date,end_date').single();
-    if (error) return setErr(error.message);
-    setTimeline(p => [...p, data as TimelineRow]);
+    let row: TimelineRow | undefined;
+    if (await attempt(async () => { row = await hub.addMilestone(projectId, userId, title, start, end); })) setTimeline(p => [...p, row!]);
   };
   const delTimeline = async (id: string) => {
     if (!await confirm('Delete this milestone? This cannot be undone.')) return;
     const prev = timeline;
     setTimeline(p => p.filter(x => x.id !== id));
-    const { error } = await supabase.from('timeline_items').delete().eq('id', id);
-    if (error) { setErr(error.message); setTimeline(prev); }
+    if (!await attempt(() => hub.deleteMilestone(id))) setTimeline(prev);
   };
 
   const addCrew = async (username: string, craft: string | null) => {
-    const { data: prof, error: pErr } = await supabase.from('profiles').select('id,username').eq('username', username.trim()).single();
-    if (pErr || !prof) return setErr(`No user "${username}"`);
-    const { error } = await supabase.from('project_crew')
-      .insert({ project_id: projectId, user_id: prof.id, craft });
-    if (error) return setErr(error.message);
+    let result: 'added' | 'no-user' = 'no-user';
+    if (!await attempt(async () => { result = await hub.addCrewByUsername(projectId, username, craft); })) return;
+    if (result === 'no-user') return setErr(`No user "${username}"`);
     setErr(null);
     load();
   };
@@ -909,15 +883,13 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
     if (!await confirm('Remove this crew member from the project?')) return;
     const prev = crew;
     setCrew(p => p.filter(x => x.id !== id));
-    const { error } = await supabase.from('project_crew').delete().eq('id', id);
-    if (error) { setErr(error.message); setCrew(prev); }
+    if (!await attempt(() => hub.removeCrewRow(id))) setCrew(prev);
   };
 
   const saveSettings = async (next: ProjectSettings) => {
     const prev = settings;
     setSettings(next);
-    const { error } = await supabase.from('projects').update({ settings: next as unknown as Json }).eq('id', projectId);
-    if (error) { setErr(error.message); setSettings(prev); }
+    if (!await attempt(() => hub.saveProjectSettings(projectId, next))) setSettings(prev);
   };
   const setDefaultFormat = (format: ScriptFormat | '') => {
     saveSettings({ ...settings, defaultScriptFormat: format || undefined });
@@ -930,8 +902,7 @@ function ProductionManager({ projectId, projectTitle, accent, isOwner }: { proje
   const saveFestivals = async (next: FestivalRow[]) => {
     const prev = festivals;
     setFestivals(next);
-    const { error } = await supabase.from('projects').update({ festival_submissions: next as unknown as Json }).eq('id', projectId);
-    if (error) { setErr(error.message); setFestivals(prev); }
+    if (!await attempt(() => hub.saveFestivals(projectId, next))) setFestivals(prev);
   };
   const addFestival = (name: string, deadline: string) => {
     if (!name.trim()) return;

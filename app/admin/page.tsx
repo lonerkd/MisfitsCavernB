@@ -21,7 +21,7 @@ export default function AdminDashboard() {
   };
 
   return (
-    <ProtectedPage requiredPermission="manage_users">
+    <ProtectedPage require="admin">
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <header style={{
           position: 'fixed',

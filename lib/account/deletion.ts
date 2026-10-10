@@ -59,5 +59,8 @@ export async function deleteMyAccount(userId: string, confirm: string): Promise<
   const { error } = await supabase.rpc('delete_my_account', { p_confirm: confirm.trim() });
   if (error) throw new Error(error.message);
   // The session belongs to an account that no longer exists.
+  // Dynamic import: push code stays out of every page's first-load JS (bundle budget).
+  const { forgetThisDevicePush } = await import('@/lib/push/client');
+  await forgetThisDevicePush();
   await supabase.auth.signOut({ scope: 'local' });
 }

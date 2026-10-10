@@ -5,8 +5,7 @@ import { CheckCircle2, Circle, FileText, Film, ListChecks, Plus, Trash2, X } fro
 import EmptyState from '@/components/EmptyState';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
-import { supabase } from '@/lib/supabase/client';
-import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { getProjectTeam } from '@/lib/supabase/crew-management';
 import {
   studio, usePostItems, useSignedUrls, classifyUrl,
   POST_DEPARTMENTS, POST_DEPT_LABEL, POST_STATUSES, STANDARD_POST,
@@ -30,18 +29,11 @@ function useProjectPeople(projectId: string, ownerId: string | undefined) {
   const [people, setPeople] = useState<Array<{ id: string; username: string }>>([]);
   useEffect(() => {
     let on = true;
-    (async () => {
-      const [crew, owner] = await Promise.all([
-        getProjectCrew(projectId),
-        ownerId ? supabase.from('profiles').select('id, username').eq('id', ownerId).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
-      if (!on) return;
-      const list = [...(owner.data ? [{ id: owner.data.id, username: owner.data.username }] : [])];
-      for (const c of crew as Array<{ user_id: string; profiles?: { username?: string } | null }>) {
-        if (!list.some((p) => p.id === c.user_id)) list.push({ id: c.user_id, username: c.profiles?.username || 'Crew' });
-      }
-      setPeople(list);
-    })().catch(() => {});
+    // The assignee list; without it, post work can still be added unassigned.
+    getProjectTeam(projectId, ownerId).then(
+      (team) => { if (on) setPeople(team.map((m) => ({ id: m.id, username: m.name }))); },
+      (e) => console.error('Could not load the people on this project:', e),
+    );
     return () => { on = false; };
   }, [projectId, ownerId]);
   return people;

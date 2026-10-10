@@ -116,3 +116,51 @@ export async function reorderPortfolioBlocks(orderedIds: string[]): Promise<void
     )
   );
 }
+
+/**
+ * This person's pitch board for a project, if they made one. Throws when the
+ * lookup fails, so a failed lookup is never mistaken for "none yet" (which
+ * would create a second board).
+ */
+export async function findPitchBoard(projectId: string, userId: string): Promise<{ id: string; share_token: string | null } | null> {
+  const { data, error } = await supabase.from('portfolio_projects').select('id, share_token')
+    .eq('source_project_id', projectId).eq('user_id', userId).limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+export interface PitchMaterial {
+  images: { id: string; title: string | null; storage_path: string | null; external_url: string | null; shared: boolean | null }[];
+  scenes: { id: string; scene_number: number; title: string; location: string | null; time_of_day: string | null }[];
+  budget: { category: string; amount: number }[];
+  /** The latest script's text, if there is one. */
+  scriptContent: string | null;
+}
+
+/** What a pitch board can be built from: the project's images, scenes, budget and script. */
+export async function getPitchMaterial(projectId: string): Promise<PitchMaterial> {
+  const [c, s, b, scr] = await Promise.all([
+    supabase.from('media').select('id, title, storage_path, external_url, shared').eq('project_id', projectId).eq('kind', 'image').order('created_at'),
+    supabase.from('scenes').select('id, scene_number, title, location, time_of_day').eq('project_id', projectId).is('removed_at', null).order('scene_number'),
+    supabase.from('budget_items').select('category, amount').eq('project_id', projectId).order('created_at'),
+    supabase.from('scripts').select('content').eq('project_id', projectId).order('updated_at', { ascending: false }).limit(1),
+  ]);
+  for (const r of [c, s, b, scr]) if (r.error) throw r.error;
+  return {
+    images: c.data ?? [],
+    scenes: (s.data ?? []) as PitchMaterial['scenes'],
+    budget: (b.data ?? []).map((x) => ({ category: x.category, amount: Number(x.amount || 0) })),
+    scriptContent: scr.data?.[0]?.content ?? null,
+  };
+}
+
+/** A published portfolio by its share link, with its media, ordered blocks and author; null when the link leads nowhere. */
+export async function getPublicPortfolio(token: string) {
+  const { data, error } = await supabase.from('portfolio_projects')
+    .select('*, portfolio_media(*), portfolio_blocks(*), profiles(username, role, avatar_url)')
+    .eq('share_token', token)
+    .order('position', { foreignTable: 'portfolio_blocks' })
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}

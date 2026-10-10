@@ -35,6 +35,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
+import { emphasisSegments } from '@/lib/scriptos/emphasis';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
@@ -60,6 +61,33 @@ function markStyle(m: Mark): React.CSSProperties {
   return m.kind === 'tag'
     ? { background: `${m.color}33`, boxShadow: `inset 0 -2px 0 ${c}`, borderRadius: 4 }
     : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: c, textDecorationThickness: 2, textUnderlineOffset: 4 };
+}
+
+/**
+ * A line with its Fountain emphasis drawn (bold, italic, underline; the * and _
+ * markers dimmed). Same characters as the textarea above it, and the script
+ * font is monospaced in every face, so the caret stays on its letter.
+ */
+function EmphasisLine({ text }: { text: string }) {
+  const segs = emphasisSegments(text);
+  if (segs.length === 1 && !segs[0].bold && !segs[0].italic && !segs[0].underline && !segs[0].marker) return <>{text}</>;
+  return (
+    <span data-emphasis-line>
+      {segs.map((s, i) => (
+        <span
+          key={i}
+          data-emphasis={s.marker ? 'marker' : [s.bold && 'bold', s.italic && 'italic', s.underline && 'underline'].filter(Boolean).join(' ') || undefined}
+          style={{
+            fontWeight: s.bold ? 700 : undefined,
+            fontStyle: s.italic ? 'italic' : undefined,
+            textDecoration: s.underline && !s.marker ? 'underline' : undefined,
+            textUnderlineOffset: s.underline ? 3 : undefined,
+            opacity: s.marker ? 0.35 : undefined,
+          }}
+        >{s.text}</span>
+      ))}
+    </span>
+  );
 }
 
 export function WriteView({ ctx }: { ctx: EditorCtx }) {
@@ -153,7 +181,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                         ? segments(lineText, bd.view.marks.get(i)).map((seg, si) => seg.mark
                           ? <span key={si} style={markStyle(seg.mark)}>{seg.text}</span>
                           : <React.Fragment key={si}>{seg.text}</React.Fragment>)
-                        : lineText}
+                        : <EmphasisLine text={lineText} />}
                       {lineAnnotations.map((a: any, ai: number) => {
                         const meta = ANNOTATION_META[a.type as keyof typeof ANNOTATION_META];
                         return (

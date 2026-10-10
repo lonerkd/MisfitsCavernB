@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { adminClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
+import { adminClient, anonClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject } from './support/project';
 
 // The hiring loop as personas: Sam posts a casting call and a crew role on
@@ -41,6 +41,30 @@ describe('posting', () => {
     const { error } = await cast.sam.client.from('jobs')
       .insert({ created_by: cast.sam.id, title: 'MAYA', role: 'Actor', character_name: 'MAYA' });
     expect(error).not.toBeNull();
+  });
+});
+
+// One SELECT policy decides this (20261007010000_jobs_one_select_policy).
+describe('who reads a posting', () => {
+  it('open: everyone, signed in or not; closed: the poster and its applicants only', async () => {
+    const openId = await post({ title: 'Gaffer, second unit', role: 'Gaffer' });
+    const closedId = await post({ title: 'Boom op, night shoot', role: 'Boom operator' });
+    await apply(casey, closedId);
+    await adminClient().from('jobs').update({ status: 'closed' }).eq('id', closedId);
+
+    const sees = async (client: typeof cast.sam.client, id: string) =>
+      ((await client.from('jobs').select('id').eq('id', id)).data ?? []).length === 1;
+    const anon = anonClient();
+
+    expect(await sees(anon, openId)).toBe(true);
+    expect(await sees(cast.riley.client, openId)).toBe(true);
+
+    expect(await sees(cast.sam.client, closedId)).toBe(true);    // the poster
+    expect(await sees(casey.client, closedId)).toBe(true);       // an applicant
+    expect(await sees(cast.riley.client, closedId)).toBe(false); // an outsider
+    expect(await sees(anon, closedId)).toBe(false);              // signed out
+    // An anonymous read of the board still works (the policy runs for anon).
+    expect((await anon.from('jobs').select('id').eq('status', 'open').limit(5)).error).toBeNull();
   });
 });
 

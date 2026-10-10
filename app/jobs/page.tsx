@@ -10,13 +10,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import GrainOverlay from '@/components/GrainOverlay';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { supabase } from '@/lib/supabase/client';
 import { useToast } from '@/components/Toast';
 import { useConfirm } from '@/components/Confirm';
 import EmptyState from '@/components/EmptyState';
 import { usePillStage } from '@/lib/context/PillContext';
 import { useProject } from '@/lib/os';
-import type { JobWithRelations as Job } from '@/lib/supabase/jobs';
+import { applyToJob, closeJob, listJobsPostedBy, listMyApplications, listOpenJobs, postJob, type JobWithRelations as Job, type MyApplication } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
 import { notify } from '@/lib/supabase/notifications';
@@ -49,23 +48,25 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
   const handleSubmit = async () => {
     if (!form.title || !form.role) return;
     setSubmitting(true);
-    const { data, error } = await supabase.from('jobs').insert({
-      title: form.title,
-      description: form.description,
-      role: form.role,
-      rate: form.rate ? parseFloat(form.rate) : null,
-      project_id: projectId,
-      character_name: character,
-      created_by: userId,
-      status: 'open',
-    }).select('id').single();
-    setSubmitting(false);
-    if (error) {
-      toast('Failed to post job: ' + error.message, 'error');
+    let id: string;
+    try {
+      id = await postJob({
+        title: form.title,
+        description: form.description,
+        role: form.role,
+        rate: form.rate ? parseFloat(form.rate) : null,
+        projectId,
+        character,
+        userId,
+      });
+    } catch (error) {
+      toast('Failed to post job: ' + ((error as { message?: string })?.message ?? 'unknown error'), 'error');
       return;
+    } finally {
+      setSubmitting(false);
     }
-    if (data) logAuditAction(userId, 'job_created', 'job', data.id, { title: form.title, role: form.role });
-    if (data) logActivity(`opened the position "${form.title}"`, 'job', data.id);
+    logAuditAction(userId, 'job_created', 'job', id, { title: form.title, role: form.role });
+    logActivity(`opened the position "${form.title}"`, 'job', id);
     onCreated(); onClose();
   };
 
@@ -426,19 +427,10 @@ export default function JobsPage() {
   const prefillCharacter = searchParams.get('character') || '';
   // job id → my application's status
   const [applied, setApplied] = useState<Record<string, string>>({});
-  const [myApps, setMyApps] = useState<{ status: string; applied_at: string | null; jobs: { id: string; title: string; role: string; status: string | null; projects: { title: string } | null } | null }[]>([]);
+  const [myApps, setMyApps] = useState<MyApplication[]>([]);
   // Arriving with a role to post (from casting or a project) opens the form.
   useOnChange(prefillTitle || prefillRole ? `${prefillTitle}\u0000${prefillRole}` : '', (k) => { if (k) setShowPost(true); });
 
-  const fetchJobs = async () => {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
-      .eq('status', 'open')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data as unknown as Job[]) || [];
-  };
   const showJobs = (rows: Promise<Job[]>) => rows
     .then((r) => setJobs(r))
     .catch((error: any) => {
@@ -450,34 +442,22 @@ export default function JobsPage() {
   const loadJobs = () => {
     setLoading(true);
     setLoadError(null);
-    return showJobs(fetchJobs());
+    return showJobs(listOpenJobs());
   };
 
-  const loadMyJobs = async (userId: string) => {
-    const { data } = await supabase
-      .from('jobs')
-      .select('*, projects(title), profiles!jobs_created_by_fkey(username)')
-      .eq('created_by', userId)
-      .order('created_at', { ascending: false });
-    if (!data) return;
-    const withCounts = await Promise.all(data.map(async job => {
-      const { count } = await supabase.from('job_applications').select('id', { count: 'exact', head: true }).eq('job_id', job.id);
-      return { ...job, application_count: count || 0 };
-    }));
-    setMyJobs(withCounts as unknown as Job[]);
-  };
+  const loadMyJobs = (userId: string) => listJobsPostedBy(userId)
+    .then((rows) => setMyJobs(rows))
+    .catch(() => toast('Could not load your postings.', 'error'));
 
-  const loadMyApplications = async (userId: string) => {
-    const { data } = await supabase.from('job_applications')
-      .select('status, applied_at, jobs(id, title, role, status, projects(title))')
-      .eq('applicant_id', userId).order('applied_at', { ascending: false });
-    const rows = (data ?? []) as unknown as typeof myApps;
-    setMyApps(rows);
-    setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
-  };
+  const loadMyApplications = (userId: string) => listMyApplications(userId)
+    .then((rows) => {
+      setMyApps(rows);
+      setApplied(Object.fromEntries(rows.filter((r) => r.jobs).map((r) => [r.jobs!.id, r.status])));
+    })
+    .catch(() => toast('Could not load your applications.', 'error'));
 
   const loadMine = useEffectEvent((userId: string) => { loadMyJobs(userId); void loadMyApplications(userId); });
-  const loadBoard = useEffectEvent(() => { void showJobs(fetchJobs()); });
+  const loadBoard = useEffectEvent(() => { void showJobs(listOpenJobs()); });
   useEffect(() => {
     awaitOSUser().then((user) => {
       setUser(user);
@@ -489,9 +469,10 @@ export default function JobsPage() {
   /** Applies with an optional note and tells the poster. */
   const handleApply = async (jobId: string, note: string): Promise<boolean> => {
     if (!user) { router.push('/auth'); return false; }
-    const { error } = await supabase.from('job_applications').insert({ job_id: jobId, applicant_id: user.id, cover_note: note.trim() || null });
-    if (error && error.code !== '23505') { toast('Failed to submit application.', 'error'); return false; }
-    if (error) toast('You already applied to this job.', 'info');
+    let result: 'sent' | 'duplicate';
+    try { result = await applyToJob(jobId, user.id, note); }
+    catch { toast('Failed to submit application.', 'error'); return false; }
+    if (result === 'duplicate') toast('You already applied to this job.', 'info');
     else {
       toast('Application sent.', 'success');
       const job = jobs.find((j) => j.id === jobId);
@@ -503,8 +484,8 @@ export default function JobsPage() {
 
   const handleCloseJob = async (jobId: string) => {
     if (!await confirm('Close this job posting? It will stop accepting applications.')) return;
-    const { error } = await supabase.from('jobs').update({ status: 'closed' }).eq('id', jobId);
-    if (error) { toast(error.message || 'Could not close job', 'error'); return; }
+    try { await closeJob(jobId); }
+    catch (error) { toast((error as { message?: string })?.message || 'Could not close job', 'error'); return; }
     if (user) logAuditAction(user.id, 'job_closed', 'job', jobId);
     toast('Job closed', 'success');
     if (user) loadMyJobs(user.id);

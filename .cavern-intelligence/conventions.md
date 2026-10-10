@@ -8,19 +8,27 @@ in the same module first.
 
 ## 1. Data access — always through `lib/supabase/*.ts`
 
-New code: components and pages don't call `supabase.from(...)` directly — add
-the query to the table's typed access module. (Older pages still do, ~110
-calls; moving them is BACKLOG 3.2.) The modules:
+Components and pages don't call `supabase.from(...)` — add the query to the
+table's typed access module. Lint enforces it (`eslint.config.mjs`,
+`DATA_THROUGH_LIB`; the auth callback is the one exception left, BACKLOG 3.2).
+Auth, Realtime channels and Storage stay on the client. The Studio's tables go
+through `lib/studio` (`createStudioApi`). The modules:
 
 ```
 lib/supabase/
   client.ts          ← createBrowserClient<Database> (cookie-backed @supabase/ssr)
   database.types.ts  ← GENERATED. regen via Supabase MCP generate_typescript_types
-  projects.ts crew-management.ts scripts.ts channels.ts messages.ts
-  studio.ts breakdown.ts casting.ts portfolio.ts jobs.ts profiles.ts
-  notifications.ts activity.ts audit.ts stats.ts annotations.ts
+  projects.ts project-hub.ts crew-management.ts scripts.ts channels.ts
+  messages.ts jobs.ts profiles.ts portfolio.ts campaigns.ts audio.ts media.ts
+  today.ts client-errors.ts notifications.ts activity.ts audit.ts stats.ts
+  annotations.ts progress.ts public.ts
   withTimeout.ts
 ```
+
+A function throws on a failed query; the caller decides what the person sees
+(a toast, an error line, or — for something optional — a comment saying what
+happens without it). Never turn a failed lookup into "none": the editor and
+the pitch board each created a duplicate that way.
 
 Rules:
 - Add a new query as an exported function in the matching module, typed against
@@ -79,8 +87,9 @@ Rules:
   page's own `isOwner`, `useCanShape(projectId)` (owner, lead, contributor —
   mirrors `internal.can_shape_project`). Gate
   destructive controls on these so they don't render enabled and then fail
-  at RLS. `lib/os/permissions.ts` / `access-matrix.ts` are an older
-  global-role model nothing reads, nor `useProjectAccess` (BACKLOG 3.10) — don't build on them.
+  at RLS. A whole page that's admin-only or sign-in-only wraps itself in
+  `ProtectedPage require="admin" | "signed-in"` (`lib/os/guards.tsx`). There
+  is no role or permission list in the client — don't add one.
 
 ---
 

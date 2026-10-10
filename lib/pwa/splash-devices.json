@@ -1,0 +1,13 @@
+[
+  { "name": "iPhone 16 Pro Max", "width": 440, "height": 956, "ratio": 3 },
+  { "name": "iPhone 16 Pro", "width": 402, "height": 874, "ratio": 3 },
+  { "name": "iPhone 16 Plus, 15 Pro Max, 15 Plus, 14 Pro Max", "width": 430, "height": 932, "ratio": 3 },
+  { "name": "iPhone 16, 15 Pro, 15, 14 Pro", "width": 393, "height": 852, "ratio": 3 },
+  { "name": "iPhone 14 Plus, 13 Pro Max, 12 Pro Max", "width": 428, "height": 926, "ratio": 3 },
+  { "name": "iPhone 14, 13 Pro, 13, 12 Pro, 12", "width": 390, "height": 844, "ratio": 3 },
+  { "name": "iPhone 13 mini, 12 mini, 11 Pro, XS, X", "width": 375, "height": 812, "ratio": 3 },
+  { "name": "iPhone 11 Pro Max, XS Max", "width": 414, "height": 896, "ratio": 3 },
+  { "name": "iPhone 11, XR", "width": 414, "height": 896, "ratio": 2 },
+  { "name": "iPhone 8 Plus", "width": 414, "height": 736, "ratio": 3 },
+  { "name": "iPhone SE (2nd, 3rd), 8", "width": 375, "height": 667, "ratio": 2 }
+]

@@ -3,14 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
-import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import EmptyState from '@/components/EmptyState';
 import Avatar from '@/components/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProject } from '@/lib/os';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
-import type { Profile } from '@/lib/supabase/profiles';
+import { listDirectory, type Profile } from '@/lib/supabase/profiles';
 import { awaitOSUser } from '@/lib/os';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { useLoad } from '@/lib/hooks/useLoad';
@@ -59,26 +57,7 @@ export default function CrewPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  const loadCrew = async (): Promise<Profile[]> => {
-    let query = supabase.from('profiles').select(PUBLIC_PROFILE_COLUMNS).eq('is_sample', false).order('created_at', { ascending: false });
-
-    if (debouncedSearch) {
-      const clean = debouncedSearch.replace(/[(),.:\\]/g, ' ').trim();
-      if (clean) query = query.or(`username.ilike.%${clean}%,bio.ilike.%${clean}%`);
-    }
-
-    if (roleFilter && roleFilter !== 'All') {
-      query = query.eq('role', roleFilter);
-    }
-
-    if (availFilter !== 'all') {
-      query = query.eq('status', availFilter);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return (data as unknown as Profile[]) || [];
-  };
+  const loadCrew = () => listDirectory({ search: debouncedSearch, role: roleFilter, availability: availFilter });
 
   // The directory, or the active project's crew — whichever is showing.
   const projectId = mode === 'project' ? activeProject?.id ?? null : null;
@@ -137,7 +116,8 @@ export default function CrewPage() {
 
       <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
         {activeProject && (
-          <div style={{ display: 'inline-flex', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+          // A long project name ellipsizes in its tab instead of pushing the switch off a phone screen.
+          <div style={{ display: 'inline-flex', maxWidth: '100%', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             {([
               { id: 'all' as const, label: 'ALL TALENT' },
               { id: 'project' as const, label: `${activeProject.title.toUpperCase()} CREW` },
@@ -145,8 +125,10 @@ export default function CrewPage() {
               <button
                 key={t.id}
                 onClick={() => setMode(t.id)}
+                title={t.label}
                 style={{
                   padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                  minWidth: 0, flexShrink: t.id === 'all' ? 0 : 1, overflow: 'hidden', textOverflow: 'ellipsis',
                   fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',

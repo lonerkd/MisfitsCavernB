@@ -1,6 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
-import { determineUserRole, getPermissionsForRole } from './permissions';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
 import { fetchProjectDetails } from './queries';
@@ -87,14 +86,12 @@ function minimalProfile(userId: string, email: string | null): UserProfile {
 }
 
 function setAuthed(userId: string, email: string | null, profile: any) {
-  const userRole = determineUserRole(profile);
   osState().setSession({
     status: 'authed',
     user: profile,
     userId,
     email,
-    userRole,
-    permissions: getPermissionsForRole(userRole),
+    isAdmin: !!profile?.is_admin,
     error: null,
   });
 }

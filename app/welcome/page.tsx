@@ -11,7 +11,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, Briefcase, Clapperboard, Film, MessagesSquare } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { setMyCraft } from '@/lib/supabase/profiles';
 import { useOSGate, useProject, awaitOSUser, useCurrentUser } from '@/lib/os';
 import { useToast } from '@/components/Toast';
 import { Button } from '@/components/ui/Button';
@@ -85,7 +85,7 @@ export default function WelcomePage() {
     if (!user) { toast('Sign in first', 'error'); return; }
     if (craft !== (me?.role ?? null)) {
       setSavingCraft(true);
-      const { error } = await supabase.from('profiles').update({ role: craft }).eq('id', user.id);
+      const error = await setMyCraft(user.id, craft).then(() => null, (e: unknown) => e);
       setSavingCraft(false);
       if (error) { toast('Could not save your craft — you can set it on your profile later', 'error'); }
     }

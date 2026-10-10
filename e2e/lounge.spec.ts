@@ -110,4 +110,44 @@ test.describe('Lounge (local Supabase)', () => {
     await expect(page.locator('[id^="msg-"]', { hasText: 'Bring warm layers tonight' })).toBeInViewport();
     await expect(await axeViolations(page)).toEqual([]);
   });
+
+  // The side panels and the member tools: what was added to the project shows
+  // in the feed, the crew list names the crew, a private channel's owner finds
+  // someone by name, adds them and lets them manage it, and a ?dm= link opens
+  // the conversation.
+  test('feed, crew, private-channel members, a direct-message link', async ({ page }) => {
+    test.setTimeout(120_000);
+    const room = `room-${TAG}`;
+    const roomId = (await admin.from('channels').insert({ project_id: projectId, name: room, created_by: owner.id, is_private: true }).select('id').single()).data!.id;
+    await admin.from('budget_items').insert({ project_id: projectId, category: `Ferry hire ${TAG}`, amount: 300, created_by: owner.id });
+
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', owner.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+
+    await page.goto('/lounge');
+    const picker = page.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await expect(page.getByText(`Budget — Ferry hire ${TAG}`)).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(`lcrew${TAG}`).filter({ visible: true }).first()).toBeVisible();
+
+    // The private room: find the crew member by name, add them, let them manage.
+    await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
+    await page.getByTitle('Manage channel').click();
+    await page.getByLabel('Add member').fill(`lcrew${TAG}`);
+    await page.getByRole('button', { name: new RegExp(`lcrew${TAG}`) }).last().click();
+    await expect.poll(async () => (await admin.from('channel_members').select('can_manage').eq('channel_id', roomId).eq('user_id', crew.id)).data)
+      .toEqual([{ can_manage: false }]);
+    await page.getByTitle('Can manage').last().click();
+    await expect.poll(async () => (await admin.from('channel_members').select('can_manage').eq('channel_id', roomId).eq('user_id', crew.id).single()).data?.can_manage)
+      .toBe(true);
+    await page.getByRole('button', { name: 'Close manage channel' }).click();
+
+    // A link straight into a conversation with them.
+    await page.goto(`/lounge?dm=${crew.id}`);
+    await expect(page.getByPlaceholder(`Message @lcrew${TAG}...`)).toBeVisible({ timeout: 20_000 });
+  });
 });
