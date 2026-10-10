@@ -112,6 +112,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 
 **Then (restructure phase 5):** `app/(public)` (share pages `/s`, `/p`, `/shared`, legal) and `app/(suite)` (everything else, with the session/presence/island/tab-bar providers in its layout). The root layout keeps only fonts, theme, toasts and confirms; root `error`/`loading`/`not-found` carry their own `<main>`. No URL changes. Production migrations 20261007010000, 20261007020000 and 20261008010000 are applied (checked 2026-10-10: one `jobs` SELECT policy, `append_to_script`, `push_subscriptions` exist).
 
+**Then (restructure phase 7, 1 of 6 — project hub):** `app/(suite)/projects/[id]/page.tsx` 1,226 → 452 lines; the department windows and previews are `components/projects/hub/DeptWindow.tsx`, the production manager `ProductionManager.tsx`, the view-model `types.ts`. Moves only. Left for phase 7: editor, Lounge, landing, jobs, press kit.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel
