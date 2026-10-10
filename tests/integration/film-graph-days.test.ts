@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { anonClient, createCast, destroyCast, type Cast } from './support/personas';
 import { createCrewedProject } from './support/project';
+import { createStudioApi } from '@/lib/studio/api';
 
 // The film graph, step 1: a scene's place and day are real linked rows, kept
 // in step with the heading's text and the day number that older code still
@@ -154,5 +155,35 @@ describe('who can touch days', () => {
 
   it('refuses a day numbered below one', async () => {
     expect((await cast.sam.client.from('shoot_days').insert({ project_id: projectId, day_number: 0 })).error).not.toBeNull();
+  });
+});
+
+describe('through the Studio data layer', () => {
+  it('sets, changes and clears a day’s date, making the day if it wasn’t there', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    const made = await sam.setShootDayDate(projectId, 14, '2026-12-01');
+    expect(made).toMatchObject({ day_number: 14, shoot_date: '2026-12-01' });
+    const jordan = createStudioApi(cast.jordan.client);
+    expect(await jordan.setShootDayDate(projectId, 14, '2026-12-02')).toMatchObject({ id: made.id, shoot_date: '2026-12-02' });
+    expect((await sam.setShootDayDate(projectId, 14, null)).shoot_date).toBeNull();
+    const listed = await sam.listShootDays(projectId);
+    expect(listed.map((d) => d.day_number)).toEqual([...listed.map((d) => d.day_number)].sort((a, b) => a - b));
+    expect(listed.some((d) => d.id === made.id)).toBe(true);
+  });
+
+  it('an outsider can’t set a date or list the days', async () => {
+    const riley = createStudioApi(cast.riley.client);
+    await expect(riley.setShootDayDate(projectId, 15, '2026-12-01')).rejects.toThrow();
+    expect(await riley.listShootDays(projectId)).toEqual([]);
+  });
+
+  it('a location keeps its coordinates when something else about it changes', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    const placed = await sam.saveLocation(projectId, 'Quarry', { latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' });
+    expect(placed).toMatchObject({ name: 'QUARRY', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' });
+    const later = await sam.saveLocation(projectId, 'QUARRY', { status: 'confirmed' });
+    expect(later).toMatchObject({ id: placed.id, status: 'confirmed', latitude: 51.0447, longitude: -114.0719 });
+    const cleared = await sam.saveLocation(projectId, 'QUARRY', { latitude: null, longitude: null, timezone: null });
+    expect(cleared).toMatchObject({ latitude: null, longitude: null, timezone: null, status: 'confirmed' });
   });
 });
