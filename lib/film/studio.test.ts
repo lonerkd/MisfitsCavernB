@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { filmDays, placeLight } from './studio';
 
-const HARBOR = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' };
+const HARBOR = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Phoenix' };
 const CAVE = { id: 'cave', name: 'CAVE', latitude: null, longitude: null, timezone: null };
 
 const scene = (n: number, location: string | null, shoot_day: number | null, extra: Record<string, unknown> = {}) => ({
@@ -24,7 +24,7 @@ describe('filmDays', () => {
     });
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({ number: 3, date: '2026-06-21' });
-    expect(out[0].light?.sunrise.startsWith('05:')).toBe(true);
+    expect(out[0].light?.sunrise.startsWith('04:')).toBe(true);
   });
 
   it('prefers the day’s own date over its call sheet’s', () => {
@@ -61,8 +61,8 @@ describe('filmDays', () => {
 describe('placeLight', () => {
   it('gives a place’s light on a date, in its zone', () => {
     const l = placeLight(HARBOR, '2026-06-21', 'UTC')!;
-    expect(l.zone).toBe('America/Edmonton');
-    expect(l.sunrise.startsWith('05:')).toBe(true);
+    expect(l.zone).toBe('America/Phoenix');
+    expect(l.sunrise.startsWith('04:')).toBe(true);
     expect(l.polar).toBeNull();
   });
 

@@ -78,18 +78,20 @@ test.describe.serial('Daylight (local Supabase)', () => {
     await where.fill('https://www.google.com/maps/@51.0447,-114.0719,15z');
     await where.press('Enter');
     await expect(page.getByText('51.0447, -114.0719')).toBeVisible();
-    await page.getByLabel('HARBOR time zone').selectOption('America/Edmonton');
+    // Arizona's clock never changes, so the times below don't depend on a machine's time zone rules.
+    // Arizona's clock never changes, so the times here don't depend on a machine's time zone rules.
+    await page.getByLabel('HARBOR time zone').selectOption('America/Phoenix');
     await expect.poll(async () => (await admin.from('project_locations').select('latitude, longitude, timezone').eq('project_id', projectId).eq('name', 'HARBOR').single()).data)
-      .toEqual({ latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' });
+      .toEqual({ latitude: 51.0447, longitude: -114.0719, timezone: 'America/Phoenix' });
 
     const light = page.getByRole('list', { name: 'HARBOR light on its shoot days' });
     await expect(light).toContainText('Day 1');
-    await expect(light).toContainText(/sunrise 05:2\d/);
-    await expect(light).toContainText(/sunset 21:5\d/);
+    await expect(light).toContainText(/sunrise 04:2\d/);
+    await expect(light).toContainText(/sunset 20:5\d/);
 
     await page.reload();
     await page.getByRole('button', { name: /^HARBOR/ }).click();
-    await expect(page.getByRole('list', { name: 'HARBOR light on its shoot days' })).toContainText(/sunrise 05:2\d/);
+    await expect(page.getByRole('list', { name: 'HARBOR light on its shoot days' })).toContainText(/sunrise 04:2\d/);
     expect(await axeViolations(page)).toEqual([]);
   });
 
@@ -120,6 +122,6 @@ test.describe.serial('Daylight (local Supabase)', () => {
     const sheet = page.getByRole('group', { name: 'Day 1 light' });
     await expect(sheet).toContainText(/Sunrise 08:3\d/, { timeout: 30_000 });
     await expect(sheet).toContainText(/Sunset 16:3\d/);
-    await expect(sheet).toContainText('America/Edmonton');
+    await expect(sheet).toContainText('America/Phoenix');
   });
 });

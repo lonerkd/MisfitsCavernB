@@ -3,7 +3,8 @@ import { formatInZone, isCoordinate, sunTimes } from './daylight';
 
 const CALGARY = [51.0447, -114.0719] as const;
 const TROMSO = [69.6492, 18.9553] as const;
-const EDMONTON = 'America/Edmonton';
+// Arizona's clock never changes, so these don't depend on which year's time zone rules a machine has.
+const STEADY = 'America/Phoenix';
 
 const mins = (d: Date | null, tz: string) => {
   const [h, m] = formatInZone(d, tz).split(':').map(Number);
@@ -17,8 +18,8 @@ const near = (actual: number, hhmm: string, tol = 4) => {
 describe('sunTimes', () => {
   it('Calgary, midsummer', () => {
     const t = sunTimes('2026-06-21', ...CALGARY);
-    near(mins(t.sunrise, EDMONTON), '05:21');
-    near(mins(t.sunset, EDMONTON), '21:54');
+    near(mins(t.sunrise, STEADY), '04:21');
+    near(mins(t.sunset, STEADY), '20:54');
     expect(t.polar).toBeNull();
     expect(t.daylightMinutes).toBeGreaterThan(985);
     expect(t.daylightMinutes).toBeLessThan(1000);
@@ -26,8 +27,8 @@ describe('sunTimes', () => {
 
   it('Calgary, midwinter', () => {
     const t = sunTimes('2026-12-21', ...CALGARY);
-    near(mins(t.sunrise, EDMONTON), '08:37');
-    near(mins(t.sunset, EDMONTON), '16:32');
+    near(mins(t.sunrise, STEADY), '08:37');
+    near(mins(t.sunset, STEADY), '16:32');
   });
 
   it('the equator at the equinox is about twelve hours', () => {
@@ -56,14 +57,14 @@ describe('sunTimes', () => {
     const t = sunTimes('2026-12-21', -33.8688, 151.2093);
     expect(new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney' }).format(t.sunrise!)).toBe('2026-12-21');
     const c = sunTimes('2026-06-21', ...CALGARY);
-    expect(new Intl.DateTimeFormat('en-CA', { timeZone: EDMONTON }).format(c.sunset!)).toBe('2026-06-21');
+    expect(new Intl.DateTimeFormat('en-CA', { timeZone: STEADY }).format(c.sunset!)).toBe('2026-06-21');
   });
 });
 
 describe('formatInZone', () => {
   it('formats in the place’s zone, and nothing for null', () => {
-    expect(formatInZone(new Date('2026-06-21T11:21:00Z'), EDMONTON)).toBe('05:21');
-    expect(formatInZone(null, EDMONTON)).toBe('');
+    expect(formatInZone(new Date('2026-06-21T11:21:00Z'), STEADY)).toBe('04:21');
+    expect(formatInZone(null, STEADY)).toBe('');
   });
 
   it('falls back to UTC for a zone it doesn’t know', () => {

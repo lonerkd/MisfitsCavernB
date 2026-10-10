@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { buildDays, lightLine, lightNoteText, type DayPlace, type DayRecord, type DayScene } from './days';
 
-const HARBOR: DayPlace = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Edmonton' };
+const HARBOR: DayPlace = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Phoenix' };
 const WAREHOUSE: DayPlace = { id: 'warehouse', name: 'WAREHOUSE', latitude: null, longitude: null, timezone: null };
-const BANFF: DayPlace = { id: 'banff', name: 'BANFF', latitude: 51.1784, longitude: -115.5708, timezone: 'America/Edmonton' };
+const BANFF: DayPlace = { id: 'banff', name: 'BANFF', latitude: 51.1784, longitude: -115.5708, timezone: 'America/Phoenix' };
 const TROMSO: DayPlace = { id: 'tromso', name: 'FJORD', latitude: 69.6492, longitude: 18.9553, timezone: 'Europe/Oslo' };
 const PLACES = [HARBOR, WAREHOUSE, BANFF, TROMSO];
 
@@ -31,9 +31,9 @@ describe('buildDays', () => {
     const [d] = buildDays([day(1, '2026-06-21')],
       [scene('d1', 'INT. WAREHOUSE - DAY', WAREHOUSE), scene('d1', 'EXT. HARBOR - DAY', HARBOR), scene('d1', 'EXT. BANFF - DAY', BANFF)], PLACES, {}, 'Europe/London');
     expect(d.lightAt?.name).toBe('HARBOR');
-    expect(d.light?.zone).toBe('America/Edmonton');
-    expect(Math.abs(minutes(d.light!.sunrise) - minutes('05:21'))).toBeLessThanOrEqual(4);
-    expect(Math.abs(minutes(d.light!.sunset) - minutes('21:54'))).toBeLessThanOrEqual(4);
+    expect(d.light?.zone).toBe('America/Phoenix');
+    expect(Math.abs(minutes(d.light!.sunrise) - minutes('04:21'))).toBeLessThanOrEqual(4);
+    expect(Math.abs(minutes(d.light!.sunset) - minutes('20:54'))).toBeLessThanOrEqual(4);
     expect(d.light!.goldenStarts < d.light!.sunset).toBe(true);
     expect(d.notes).toEqual([]);
   });
@@ -141,10 +141,10 @@ describe('lightNoteText', () => {
 });
 
 describe('lightLine', () => {
-  const light = { dawn: '08:00', sunrise: '08:37', goldenEnds: '09:40', goldenStarts: '15:44', sunset: '16:32', dusk: '17:09', zone: 'America/Edmonton', daylightMinutes: 475 };
+  const light = { dawn: '08:00', sunrise: '08:37', goldenEnds: '09:40', goldenStarts: '15:44', sunset: '16:32', dusk: '17:09', zone: 'America/Phoenix', daylightMinutes: 475 };
 
   it('is the call sheet’s line: sunrise, magic hour, sunset, and whose clock', () => {
-    expect(lightLine(light)).toBe('Sunrise 08:37 · Magic hour 15:44 · Sunset 16:32 (America/Edmonton)');
+    expect(lightLine(light)).toBe('Sunrise 08:37 · Magic hour 15:44 · Sunset 16:32 (America/Phoenix)');
   });
 
   it('is nothing when there is no light to give, or no sunrise that day', () => {
