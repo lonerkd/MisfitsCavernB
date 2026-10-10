@@ -62,7 +62,7 @@ signalling, presence (who's online, where).
 
 ## Errors and observability
 
-- `app/error.tsx`, `app/global-error.tsx`, `app/auth/error.tsx`,
+- `app/error.tsx`, `app/global-error.tsx`, `app/(suite)/auth/error.tsx`,
   `EditorErrorBoundary`, `not-found.tsx`.
 - `ErrorReporter` + `lib/errors/report.ts` send crashes and uncaught errors
   to `report_client_error` (rate-limited, trimmed, 30 days) → Admin › Errors.

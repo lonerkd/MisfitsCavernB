@@ -6,12 +6,6 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/Confirm';
-import { OSProvider } from '@/lib/os';
-import { PresenceProvider } from '@/lib/os/PresenceContext';
-import { PillProvider } from '@/lib/os/PillContext';
-import { SpotifyProvider } from '@/lib/os/SpotifyContext';
-
-import ClientShell from '@/components/shell/ClientShell';
 import MotionPreference from '@/components/ui/MotionPreference';
 import { EARLY_THEME_SCRIPT } from '@/lib/themes/themes';
 
@@ -95,16 +89,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <MotionPreference>
         <ToastProvider>
           <ConfirmProvider>
-            <OSProvider>
-              <PresenceProvider>
-                  <PillProvider>
-                  <SpotifyProvider>
-                    <ClientShell />
-                    <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
-                  </SpotifyProvider>
-                  </PillProvider>
-              </PresenceProvider>
-            </OSProvider>
+            {/* The signed-in suite (app/(suite)/layout.tsx) adds the session,
+                the island and the tab bar; public pages (app/(public)) add
+                only <main>, so a share link doesn't load the suite. */}
+            {children}
           </ConfirmProvider>
         </ToastProvider>
         </MotionPreference>
