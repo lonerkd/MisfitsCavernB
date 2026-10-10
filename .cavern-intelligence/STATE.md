@@ -45,6 +45,15 @@
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
 
+## Direction (owner, 2026-10-10)
+
+The suite becomes one connected core — **the film graph**: scenes, characters,
+locations, shoot days, story days, elements, shots and people as real linked
+rows, plus a universal layer so anything attaches to anything. Design:
+[film-graph-spec.md](film-graph-spec.md) (proposed; build starts on the
+owner's approval, step 1 = days and places → daylight on the schedule and
+call sheet). This comes before the wishlist ranking.
+
 ## Open work — start here
 
 Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
