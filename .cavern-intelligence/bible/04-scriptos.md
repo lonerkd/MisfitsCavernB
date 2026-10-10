@@ -1,6 +1,6 @@
 # 4 · ScriptOS — the script editor
 
-`/editor` (`app/editor/page.tsx`, 1611 lines, 123 files in its graph — the
+`/editor` (`app/(suite)/editor/page.tsx`, 1611 lines, 123 files in its graph — the
 largest surface). Where the story is written, and where most of the suite's
 data starts: scene headings become scenes, tags become the breakdown,
 characters become casting, margin notes become shots, beats and tasks.

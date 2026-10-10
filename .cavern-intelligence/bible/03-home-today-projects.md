@@ -28,7 +28,7 @@ bell and the account.
 
 ## `/today` — the working home on a phone
 
-`app/today`, `lib/today/core.ts` (unit-tested). The phone's first tab; fine on
+`app/(suite)/today`, `lib/today/core.ts` (unit-tested). The phone's first tab; fine on
 a desk. Everything is read from what the suite already holds:
 - **On set** — the next three shoot days the person is on: date, *their*
   call time, crew call, weather, address → maps, the call sheet. Crew see
@@ -55,7 +55,7 @@ Empty state: "Start your first".
 
 ## `/projects/[id]` — the project hub
 
-One page per production (`app/projects/[id]/page.tsx`, 1256 lines):
+One page per production (`app/(suite)/projects/[id]/page.tsx`, 1256 lines):
 - **Header**: title, format, the five-phase track, tasks done, visibility.
 - **Logline** — edited in place; leads the pitch deck and share page.
 - **Phase card**: phase *n* of 5 with its milestones (read from the data,

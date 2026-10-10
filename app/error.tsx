@@ -12,7 +12,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   }, [error]);
 
   return (
-    <div style={{
+    <main id="main-content" tabIndex={-1} style={{
       minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg)', color: 'var(--fg)', padding: 24, textAlign: 'center', gap: 18,
     }}>
@@ -51,6 +51,6 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           Go Home
         </Link>
       </div>
-    </div>
+    </main>
   );
 }

@@ -14,7 +14,7 @@ and for the film. Engineering detail:
 
 ## `/lounge`
 
-`app/lounge/page.tsx` (1531 lines), `components/lounge/LoungePanels.tsx`,
+`app/(suite)/lounge/page.tsx` (1531 lines), `components/lounge/LoungePanels.tsx`,
 `lib/lounge/audience.ts`, `lib/webrtc/voice.ts`.
 
 - **Left**: the active project's channels grouped by audience, community
@@ -61,7 +61,7 @@ fetch.
 
 ## `/soundtrack`
 
-`app/soundtrack/page.tsx`, `lib/spotify/*`, `GlobalAudioWidget`:
+`app/(suite)/soundtrack/page.tsx`, `lib/spotify/*`, `GlobalAudioWidget`:
 - **Moods from the script** (`lib/spotify/moods.ts`): each scene scored
   against what it describes (a chase, grief, a kiss…); scenes that share a
   mood are grouped ("Dread · scenes 3, 7, 12"), each a Spotify search.

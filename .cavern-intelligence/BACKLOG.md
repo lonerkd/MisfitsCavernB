@@ -170,8 +170,8 @@ runs, one at a time by priority, each with its controls:
 - a temporary notification (exists as `live`; add a hold time and an action)
 
 ### 4.2 Discord
-**Built**: Discord sign-in (`app/auth`, `signInWithOAuth({ provider:
-'discord' })`; name and avatar from the identity in `app/auth/callback`);
+**Built**: Discord sign-in (`app/(suite)/auth`, `signInWithOAuth({ provider:
+'discord' })`; name and avatar from the identity in `app/(suite)/auth/callback`);
 posting a channel's messages to a Discord webhook (`/api/discord/notify`,
 `/test`).
 **To add**: the person's Discord servers and real server stats (the `guilds`

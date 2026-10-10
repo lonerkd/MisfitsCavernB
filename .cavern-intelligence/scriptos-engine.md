@@ -27,7 +27,7 @@
   in the last second) and both your text and theirs differ by more than five
   characters from the last shared version, nothing is applied: the editor
   shows **KEEP MINE / TAKE THEIRS** (`resolveConflict`, banner at the foot of
-  `app/editor/page.tsx`). Otherwise it's whole-document last-writer-wins —
+  `app/(suite)/editor/page.tsx`). Otherwise it's whole-document last-writer-wins —
   no character merge (a CRDT would be the next step).
 
 ---

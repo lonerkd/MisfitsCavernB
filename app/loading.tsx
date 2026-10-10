@@ -1,6 +1,6 @@
 export default function Loading() {
   return (
-    <div style={{
+    <main id="main-content" tabIndex={-1} style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg)',
     }}>
@@ -10,6 +10,6 @@ export default function Loading() {
         animation: 'spin 0.8s linear infinite',
       }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
+    </main>
   );
 }

@@ -29,19 +29,19 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 
 | Route | Tier | Module | Key files |
 |---|---|---|---|
-| `/` | public | Landing | `app/page.tsx`, `components/PhotoScatter`, `ParticleBackground` |
-| `/auth` | public | Auth | `app/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/account/password-strength.ts` |
+| `/` | public | Landing | `app/(suite)/page.tsx`, `components/PhotoScatter`, `ParticleBackground` |
+| `/auth` | public | Auth | `app/(suite)/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/account/password-strength.ts` |
 | `/auth/callback` | public | Auth | OAuth code exchange |
 | `/auth/spotify-callback` | protected* | Soundtrack | `lib/spotify/*`, `SpotifyContext` |
-| `/today` | protected | Today | `app/today`, `lib/today/core.ts` — the working home on a phone (first tab), fine on a desk (dock): the coming days on set with your call and the way there (maps), your tasks by urgency (tick off here), Lounge unread by channel/person (deep links), updates, your projects with Script/Studio/Schedule jumps. Crew see issued days; the owner sees drafts too. |
+| `/today` | protected | Today | `app/(suite)/today`, `lib/today/core.ts` — the working home on a phone (first tab), fine on a desk (dock): the coming days on set with your call and the way there (maps), your tasks by urgency (tick off here), Lounge unread by channel/person (deep links), updates, your projects with Script/Studio/Schedule jumps. Crew see issued days; the owner sees drafts too. |
 | `/projects` | protected | Projects hub | `lib/supabase/projects.ts` |
 | `/projects/[id]` | protected | Project hub | project dashboard; links to editor/studio/pitch |
 | `/projects/[id]/pitch` | protected | Pitch board | portfolio publish flow |
 | `/editor` | protected | **ScriptOS** | `lib/scriptos/*`, `components/editor/*` — see `scriptos-engine.md` |
 | `/studio` | protected | The Studio | `lib/supabase/studio.ts`, `breakdown.ts`, `casting.ts`, `components/canvas/*` — see `studio-and-preproduction.md` |
-| `/split` | protected | Split screen | `app/split`, `lib/split/*`, `components/split/PaneShell` — two surfaces in same-origin frames; panes hide the suite chrome (`useInPane`) and talk via the split page (`postToSplit` / `useSplitMessages`): the script's caret scene ↔ Studio. Ctrl+\\, taskbar, ⌘K. |
-| `/welcome` | protected | Onboarding | `app/welcome`, `lib/onboarding/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
-| `/call/[id]` | protected | Crew call sheet | `app/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
+| `/split` | protected | Split screen | `app/(suite)/split`, `lib/split/*`, `components/split/PaneShell` — two surfaces in same-origin frames; panes hide the suite chrome (`useInPane`) and talk via the split page (`postToSplit` / `useSplitMessages`): the script's caret scene ↔ Studio. Ctrl+\\, taskbar, ⌘K. |
+| `/welcome` | protected | Onboarding | `app/(suite)/welcome`, `lib/onboarding/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
+| `/call/[id]` | protected | Crew call sheet | `app/(suite)/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
 | `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md`. `?channel=<id>` / `?dm=<user>` open a conversation (notifications link there). |
 | `/jobs`, `/jobs/[id]` | protected | Jobs board | `lib/supabase/jobs.ts` |
@@ -50,7 +50,7 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 | `/profile` | protected | Profile | `lib/supabase/profiles.ts`, `stats.ts` |
 | `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle, data export, **Delete account** (`components/settings/DeleteAccount.tsx`, `lib/account/deletion.ts`: hand shared projects over, then delete) |
 | `/showcase` | public | Showcase | public filmmaker directory |
-| `/privacy`, `/terms` | public | Legal | `app/privacy`, `app/terms`, `components/legal/LegalPage`, `lib/legal/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
+| `/privacy`, `/terms` | public | Legal | `app/(public)/privacy`, `app/(public)/terms`, `components/legal/LegalPage`, `lib/legal/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
 | `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` (not on the token — BACKLOG 3.3; no control in the app sets `shared` yet) |
 | `/shared/[token]` | **public** | Project lookbook | server-rendered (`force-dynamic`, Open Graph metadata); `get_shared_project` / `get_shared_lookbook` / `get_press_kit` — exact token, visibility link/public |
@@ -147,7 +147,7 @@ Chrome lives in two places, and nothing else mounts itself globally:
   (`viewport-fit=cover`, `env(safe-area-inset-*)`), `.mc-phone-only` /
   `.mc-hide-phone` helpers; controls sized for touch under
   `(pointer: coarse)`. `e2e/mobile.spec.ts` guards it.
-- The landing page (`app/page.tsx`) additionally renders `Navigation`.
+- The landing page (`app/(suite)/page.tsx`) additionally renders `Navigation`.
 - `GrainOverlay` is rendered per-page, not globally.
 
 ---

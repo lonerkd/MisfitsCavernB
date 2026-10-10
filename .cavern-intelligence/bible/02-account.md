@@ -25,7 +25,7 @@ account. Data: `profiles` (column-restricted), `ui_prefs`, `notification_prefs`
 - `/auth/callback` exchanges the OAuth code; a first sign-in goes to
   `/welcome`. `/auth/spotify-callback` finishes the Spotify connect (§6).
 - States: idle · submitting · error (inline, validation from
-  `lib/validation`) · signed in (redirects away) · `app/auth/error.tsx` for a
+  `lib/validation`) · signed in (redirects away) · `app/(suite)/auth/error.tsx` for a
   crash.
 - **No "forgot password"** — there is no recovery flow (no
   `resetPasswordForEmail`, no recovery landing). Someone who forgets a
