@@ -142,7 +142,9 @@ the `LICENSE` wording.
 
 ---
 
-## 4. Wishlist (owner, 2026-10-07) — ideas, not yet scoped
+## 4. Wishlist (owner, 2026-10-07) — ranked and scoped in [wishlist-ranking.md](wishlist-ranking.md)
+
+**Order (2026-10-10, owner: most impressive and impactful first):** island live activities (4.1) → money (4.6) → comparing versions (4.12) → industry interchange (4.9/4.10) → characters (4.8) → mood boards (4.5) → editor navigation (4.7) → casting (4.15) → offline (4.13) → world building (4.11); blocked on an outside service or decision: AI voices (4.14), translation (4.3), Discord (4.2), learning (4.4). Slices, schema and "done when" for each are in the ranking file; a slice moves into §3 when it starts.
 
 The owner's feature list, grouped by area and checked against the code that
 day. **Built** = already in the suite (where, so nobody rebuilds it).
