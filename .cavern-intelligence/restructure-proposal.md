@@ -1,7 +1,7 @@
 # Restructure proposal — folders, logic, branding
 
-**Status: phases 1–2 done (2026-10-06, the clean-up and the brand).
-Owner decisions 1–5 made (below); the domain is open. Next: phase 3.**
+**Status: phases 1–2 done (2026-10-06, the clean-up and the brand); phase 4 done (2026-10-10).
+Owner decisions 1–5 made (below); the domain is open. Next: phase 5 (route groups).**
 Written 2026-10-06 from the bible and its audit (`bible/`). Each phase is one
 PR that leaves CI green; phases can be approved one at a time.
 
@@ -72,7 +72,7 @@ share pages), and the suite layout owns the island and tab bar.
 | 1 | ✓ **Clean-up** (done) | S | delete the 2 dead files; `types/screenplay.ts` → `lib/scriptos/types.ts`; `docs/` → `.cavern-intelligence/archive/` | none — no behaviour |
 | 2 | ✓ **Brand: The Cavern** (done) | M | every product string, metadata, manifest (`name` "The Cavern", `short_name` "Cavern"), service worker texts, legal pages (`product`: The Cavern; maker: Misfits Cavern), Discord sender, Spotify player name, export filename, package name `the-cavern`, README / AGENTS / docs. Footer and legal say "The Cavern — by Misfits Cavern". Needs the mark (decision 1) | low; e2e text assertions updated |
 | 3 | **iPhone install** (3.13, PWA part) | M | ~~PNG icons~~ (done in phase 2), splash images, Add to Home Screen coaching on phones, then Web Push (subscriptions table, VAPID, an Edge Function sender) | low → medium (push is new infra) |
-| 4 | **Shell and primitives** | M | `components/` root → `components/shell/` and `components/ui/`; `lib/context` → `lib/os`; loose `lib/*.ts` → domain folders and `lib/hooks`, `lib/util`. `git mv` (history kept) + a codemod for imports | low — moves only; typecheck catches every missed import |
+| 4 | ✓ **Shell and primitives** (done) | M | `components/` root → `components/shell/` and `components/ui/`; `lib/context` → `lib/os`; loose `lib/*.ts` → domain folders and `lib/hooks`, `lib/util`. `git mv` (history kept) + a codemod for imports | low — moves only; typecheck catches every missed import |
 | 5 | **Route groups** | S/M | `app/(public)` and `app/(suite)` with their own layouts | medium — provider order; full e2e |
 | 6 | **One permission model** (3.10) | S | delete the unused model; one `useProjectRole(projectId)` → owner / lead / contributor / viewer / none, mirroring RLS | low |
 | 7 | **Thin pages** | M each | split editor, Lounge, project hub, landing, jobs, press kit into `components/<domain>/` parts; data into `lib/` as they go (3.2) | medium — one page per PR, e2e per page |

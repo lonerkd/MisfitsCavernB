@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { checkRateLimit, getClientIp } from '@/lib/util/api-rate-limit';
 import { referenceSearchQuerySchema } from '@/lib/validation';
 
 export async function GET(req: NextRequest) {

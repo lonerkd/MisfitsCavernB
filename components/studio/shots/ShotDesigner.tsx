@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Camera, FileText, GripVertical, ImagePlus, Plus, X } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { studio, mediaSrc, useSignedUrls, type Media, type SceneRow, type Shot, type ShotNote, type ShotPatch } from '@/lib/studio';
 import { ANGLES, MOVEMENTS, SHOT_SIZES, describeCamera, sizeOf } from '@/lib/studio/framing';
 import { useStudio } from '../StudioContext';

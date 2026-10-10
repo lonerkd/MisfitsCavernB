@@ -17,7 +17,7 @@ account. Data: `profiles` (column-restricted), `ui_prefs`, `notification_prefs`
 
 - Two modes on one card ("Welcome back, misfit." / "Join the cavern."):
   email + password, or **Discord** (OAuth → `/auth/callback`). Sign-up takes
-  a username, shows password strength (`lib/password-strength.ts`) and links
+  a username, shows password strength (`lib/account/password-strength.ts`) and links
   the Terms and Privacy Policy.
 - `?redirect=<path>` (set by `proxy.ts` for gated pages) is honoured if it's
   a site path (not `//…`, not `/auth…`); otherwise `/projects`. A **new
@@ -43,7 +43,7 @@ later where it lives:
 4. If making: the project — title, format (`project_formats`), where it's at
    (sets its starting phase) and the format's first few brief questions.
 5. Ends in a real place: the tool for the project's first step, the Jobs
-   board, the Lounge or the portfolio (`lib/onboarding.ts`).
+   board, the Lounge or the portfolio (`lib/onboarding/onboarding.ts`).
 
 ## `/profile` — your own profile
 

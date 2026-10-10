@@ -2,8 +2,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { Check, Copy, ExternalLink, Globe, Lock, Users, Link2 } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import { refreshActiveProject } from '@/lib/os';
 import { PROJECT_VISIBILITY, updateProjectVisibility, type ProjectVisibility } from '@/lib/supabase/projects';
 import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';

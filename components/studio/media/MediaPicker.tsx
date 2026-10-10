@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Link2 } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import type { LiveRows, Media } from '@/lib/studio';
 import { Modal, ErrorBar } from '../ui';
 import { MediaFilters, MediaGrid, GridSkeleton, useMediaFilters } from './MediaGrid';

@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Textarea } from '@/components/ui/Textarea';
 import { notify } from '@/lib/supabase/notifications';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { applyToJob, getJob, hasApplied, listApplications, respondToApplication, type JobApplication as Application, type JobWithRelations as Job } from '@/lib/supabase/jobs';
-import Avatar from '@/components/Avatar';
+import Avatar from '@/components/ui/Avatar';
 import { awaitOSUser } from '@/lib/os';
 import { Mark } from '@/components/brand/Mark';
 

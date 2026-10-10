@@ -4,16 +4,16 @@ import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
-import { ToastProvider } from '@/components/Toast';
-import { ConfirmProvider } from '@/components/Confirm';
+import { ToastProvider } from '@/components/ui/Toast';
+import { ConfirmProvider } from '@/components/ui/Confirm';
 import { OSProvider } from '@/lib/os';
-import { PresenceProvider } from '@/lib/context/PresenceContext';
-import { PillProvider } from '@/lib/context/PillContext';
-import { SpotifyProvider } from '@/lib/context/SpotifyContext';
+import { PresenceProvider } from '@/lib/os/PresenceContext';
+import { PillProvider } from '@/lib/os/PillContext';
+import { SpotifyProvider } from '@/lib/os/SpotifyContext';
 
-import ClientShell from '@/components/ClientShell';
-import MotionPreference from '@/components/MotionPreference';
-import { EARLY_THEME_SCRIPT } from '@/lib/themes';
+import ClientShell from '@/components/shell/ClientShell';
+import MotionPreference from '@/components/ui/MotionPreference';
+import { EARLY_THEME_SCRIPT } from '@/lib/themes/themes';
 
 // The suite's typefaces ship with it (app/fonts, SIL Open Font License), so a
 // build never depends on reaching Google Fonts — the one thing that failed CI.

@@ -13,18 +13,18 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
-import { usePill } from '@/lib/context/PillContext';
+import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
-import s from './island/island.module.css';
+import s from '../island/island.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
-const GlobalAudioWidget = dynamic(() => import('@/components/GlobalAudioWidget'), { ssr: false });
+const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
   { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: 'var(--accent)' },

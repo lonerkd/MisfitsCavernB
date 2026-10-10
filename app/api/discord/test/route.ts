@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { checkRateLimit, getClientIp } from '@/lib/util/api-rate-limit';
 import { discordTestBodySchema, parseJsonBody } from '@/lib/validation';
 
 // Validates a candidate Discord webhook URL before it's ever saved to

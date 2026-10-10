@@ -2,9 +2,9 @@
 
 import React, { useState } from 'react';
 import { BookOpen, Plus } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { createProjectBeat, deleteProjectBeat } from '@/lib/supabase/studio';

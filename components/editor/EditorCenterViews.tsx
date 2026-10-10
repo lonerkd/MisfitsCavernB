@@ -9,8 +9,8 @@ import type { CharacterStats } from '@/lib/scriptos/characters';
 import type { LintIssue } from '@/lib/scriptos/validator';
 import { TYPE_COLORS } from './editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
-import { usePillZone } from '@/lib/context/PillContext';
-import { usePresence } from '@/lib/context/PresenceContext';
+import { usePillZone } from '@/lib/os/PillContext';
+import { usePresence } from '@/lib/os/PresenceContext';
 
 // ── BOARD: drag-and-drop scene cards ────────────────────────────────────────
 export function BoardView({

@@ -5,13 +5,13 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video, Globe } from 'lucide-react';
 import { getProjectRow } from '@/lib/supabase/project-hub';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { parseScript } from '@/lib/scriptos/parser';
 import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
-import { textOn } from '@/lib/color';
+import { textOn } from '@/lib/util/color';
 import {
   createPortfolioProject,
   findPitchBoard,

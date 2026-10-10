@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Clapperboard, FileText, PenLine, Plus, RefreshCw, X } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
 import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNote } from '@/lib/studio';
 import { useStudio } from '../StudioContext';

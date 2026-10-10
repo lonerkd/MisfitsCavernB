@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { useToast } from '@/components/Toast';
-import { useEscapeKey } from '@/lib/useEscapeKey';
-import Avatar from '@/components/Avatar';
-import { usePillZone } from '@/lib/context/PillContext';
+import { useToast } from '@/components/ui/Toast';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
+import Avatar from '@/components/ui/Avatar';
+import { usePillZone } from '@/lib/os/PillContext';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { Trash2, Search } from 'lucide-react';
 

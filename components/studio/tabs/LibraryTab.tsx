@@ -2,7 +2,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Archive, Link2, Search, StickyNote } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import type { Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, ErrorBar } from '../ui';

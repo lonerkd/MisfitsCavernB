@@ -7,7 +7,7 @@
 
 import { useEffect } from 'react';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
-import { THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme } from '@/lib/themes';
+import { THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme } from '@/lib/themes/themes';
 
 export default function ThemeInitializer() {
   const { prefs, loaded } = useUiPrefs();

@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase/client';
 import { listScriptsBy } from '@/lib/supabase/scripts';
 import { listMediaBy } from '@/lib/supabase/media';
 import { awaitOSUser } from '@/lib/os';
-import { HIT_KINDS, hitTarget, searchSuite, searchable, type HitKind, type SearchHit } from '@/lib/search';
+import { HIT_KINDS, hitTarget, searchSuite, searchable, type HitKind, type SearchHit } from '@/lib/search/search';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const HIT_ICON: Record<HitKind, React.ReactNode> = {

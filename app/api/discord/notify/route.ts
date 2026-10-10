@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { checkRateLimit, getClientIp } from '@/lib/util/api-rate-limit';
 import { discordNotifyBodySchema, discordWebhookUrlSchema, parseJsonBody } from '@/lib/validation';
 
 function getSupabaseAdmin() {

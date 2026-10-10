@@ -1,4 +1,4 @@
-import { checkPasswordWeakness } from '@/lib/password-strength';
+import { checkPasswordWeakness } from '@/lib/account/password-strength';
 
 /** Where the reset email sends the person: the page that sets a new password. */
 export const RECOVERY_PATH = '/auth/reset';

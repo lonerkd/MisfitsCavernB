@@ -2,8 +2,8 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Calendar, Minus, Plus, Printer, Wand2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
@@ -11,7 +11,7 @@ import { studio, useCallSheets, type SceneRow } from '@/lib/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
 import { buildBoard, castOf, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';

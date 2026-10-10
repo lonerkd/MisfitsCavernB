@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
 
-const css = readFileSync(join(__dirname, '..', 'app', 'globals.css'), 'utf8');
+const css = readFileSync(join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8');
 const block = (id: string) => {
   const m = css.match(new RegExp(`\\[data-theme="${id}"\\]\\s*\\{([^}]*)\\}`));
   return m ? m[1] : null;

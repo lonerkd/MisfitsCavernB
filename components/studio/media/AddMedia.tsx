@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AlertCircle, Link2, RotateCw, Upload, X } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { ACCEPTED_UPLOAD_TYPES, studio, type Media } from '@/lib/studio';
 import { lookupLink } from '@/lib/integrations/lookup';
 import type { Pin } from '@/lib/integrations/links';

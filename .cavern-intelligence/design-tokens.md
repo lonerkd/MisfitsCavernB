@@ -162,8 +162,8 @@ Defined in `app/globals.css`. See `archive/DESIGN_DIRECTION_2026-09.md`.
 
 ## Themes
 
-Settings › Appearance (`components/ThemePicker.tsx`) picks the look of the
-whole suite. Presets live in `lib/themes.ts` (`THEMES`) and as CSS token
+Settings › Appearance (`components/ui/ThemePicker.tsx`) picks the look of the
+whole suite. Presets live in `lib/themes/themes.ts` (`THEMES`) and as CSS token
 blocks on `[data-theme="<id>"]` in `app/globals.css`:
 
 | Theme | Mode | Look |
@@ -215,7 +215,7 @@ route — signed out, signed in, admin, mobile — against a local stack in the 
 
 - **Text colour**: never below 4.5:1. Use `--fg`, `--fg-muted` (0.72) or
   `--fg-dim` (0.58) — never `opacity` on text, never `rgba(…, 0.3)` text.
-  Accents used as text go through `readable()` (`lib/color.ts`, theme-aware);
+  Accents used as text go through `readable()` (`lib/util/color.ts`, theme-aware);
   labels on a filled accent use `var(--on-accent)` or `textOn(hex)`.
 - **Accent** is `#e8431a` (5:1 as text and behind dark text). Studio indigo:
   `--studio` `#4f46e5` for fills, `--studio-text` `#818cf8` for text.

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Briefcase, UserPlus, Users } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useCanShape } from '@/lib/brief';
 import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';

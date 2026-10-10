@@ -9,9 +9,9 @@ import Link from 'next/link';
 import { ArrowLeft, RotateCw, Trash2 } from 'lucide-react';
 import { clearClientErrors, listClientErrors } from '@/lib/supabase/client-errors';
 import { ProtectedPage } from '@/lib/os';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { useLoad } from '@/lib/hooks/useLoad';
-import { useConfirm } from '@/components/Confirm';
+import { useConfirm } from '@/components/ui/Confirm';
 import type { Tables } from '@/lib/supabase/database.types';
 
 type Row = Tables<'client_errors'>;

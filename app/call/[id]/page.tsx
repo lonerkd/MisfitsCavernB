@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Check, MapPin, Printer } from 'lucide-react';
 import { useOSGate, useProject } from '@/lib/os';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import {
   callFor, hhmm, issueState, snapshotOf, studio, toSnapshot,

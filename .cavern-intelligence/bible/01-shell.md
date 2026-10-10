@@ -19,7 +19,7 @@ it gets out of the way when they're writing.
 
 ## Parts
 
-**Mounted once** (`app/layout.tsx` → `components/ClientShell.tsx`): providers
+**Mounted once** (`app/layout.tsx` → `components/shell/ClientShell.tsx`): providers
 `Toast → Confirm → OS → Presence → Pill → Spotify`; then `CustomCursor`,
 `CommandPalette`, `ShortcutsOverlay`, `ThemeInitializer`, the island
 (`EcosystemTaskbar`, with `NotificationBell`), `MobileTabBar`,
@@ -29,7 +29,7 @@ it gets out of the way when they're writing.
 ### The island (desktop and tablet)
 
 One floating surface at the foot of the screen
-(`components/EcosystemTaskbar.tsx`, `lib/island/*`). Its **mode** is a pure
+(`components/shell/EcosystemTaskbar.tsx`, `lib/island/*`). Its **mode** is a pure
 function (`lib/island/mode.ts`, unit-tested) and is on `nav[data-island]`:
 
 | State | When | Shows |
@@ -55,7 +55,7 @@ editor, split, auth and public pages; slides away while a field has focus.
 
 ### ⌘K command palette
 
-`components/CommandPalette.tsx`. Navigation and actions filtered as you type,
+`components/shell/CommandPalette.tsx`. Navigation and actions filtered as you type,
 and `search_suite` results grouped by kind (project, script incl. its text,
 scene, character, media, location, document, task, post note, job, person),
 each opening where it lives. `?` opens the shortcuts overlay
@@ -80,7 +80,7 @@ replies, jobs, product, leak check). Who may notify whom: §10.
 
 ### Themes
 
-`lib/themes.ts`: **Cavern** (house: vanilla on night ink, sinopia red),
+`lib/themes/themes.ts`: **Cavern** (house: vanilla on night ink, sinopia red),
 Terminal, Blueprint, Mono, Paper, Editorial, Glass, Neon, Slate, Lagoon,
 Forest, Vampire, System, or Custom (background + accent; contrast is computed
 so text stays AA). Stored per account (`ui_prefs.theme`), applied before

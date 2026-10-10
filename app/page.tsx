@@ -14,13 +14,13 @@ import {
   ArrowRight, PenTool, Layers, Users, Film,
   Briefcase, ChevronRight,
 } from 'lucide-react';
-import GrainOverlay from '@/components/GrainOverlay';
-import Navigation from '@/components/Navigation';
-import AnimatedSection from '@/components/AnimatedSection';
+import GrainOverlay from '@/components/ui/GrainOverlay';
+import Navigation from '@/components/shell/Navigation';
+import AnimatedSection from '@/components/ui/AnimatedSection';
 import { Button } from '@/components/ui/Button';
 import { Mark3D } from '@/components/brand/Mark3D';
 import { useProject } from '@/lib/os';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { awaitOSUser } from '@/lib/os';
 
 /* ─── Viewfinder corner brackets ─────────────────────────────────────────── */

@@ -5,14 +5,14 @@ import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-re
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
-import EmptyState from '@/components/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { awaitOSUser } from '@/lib/os';
-import { useFormats } from '@/lib/formats';
+import { useFormats } from '@/lib/formats/formats';
 
 
 interface MediaItem { id: string; title: string; media_type: string; url: string; }

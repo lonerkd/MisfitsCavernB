@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, ImagePlus, X } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
 import { studio, useProjectMedia, useSceneMedia, useSignedUrls, mediaSrc, sceneMediaKey, type Media, type SceneRow, type SyncState } from '@/lib/studio';
 import { MediaPicker } from '@/components/studio/media/MediaPicker';

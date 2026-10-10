@@ -6,7 +6,7 @@
 
 import React, { useRef } from 'react';
 import { Clapperboard, Film, Globe, Megaphone, Mic, Music, Sparkles, Tv, Video, type LucideIcon } from 'lucide-react';
-import { type ProjectFormat, findFormat, formatPhases, useFormats } from '@/lib/formats';
+import { type ProjectFormat, findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
 import { SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import styles from './formatPicker.module.css';
 

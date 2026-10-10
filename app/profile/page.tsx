@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { getMyWork, getProfile, saveMyProfile } from '@/lib/supabase/profiles';
 import { withTimeout } from '@/lib/supabase/withTimeout';
-import Avatar from '@/components/Avatar';
-import { useConfirm } from '@/components/Confirm';
+import Avatar from '@/components/ui/Avatar';
+import { useConfirm } from '@/components/ui/Confirm';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { AwayEditor } from '@/components/availability/AwayEditor';
 

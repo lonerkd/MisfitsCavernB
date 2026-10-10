@@ -7,8 +7,8 @@
 
 import React, { useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Copy, Download, FileText, X } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
 import { studio, useTranscriptLines, paperEdit, paperRuntime, paperEditText, moveSelect, formatStamp } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';

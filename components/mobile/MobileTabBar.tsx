@@ -17,9 +17,9 @@ import {
   User, Settings, Bell, Plus, type LucideIcon,
 } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
-import { usePill } from '@/lib/context/PillContext';
+import { usePill } from '@/lib/os/PillContext';
 import { getLoungeUnread } from '@/lib/supabase/messages';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture';
 import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import type { BreakdownCategory } from '@/lib/breakdown';
 import b from './breakdown.module.css';
 

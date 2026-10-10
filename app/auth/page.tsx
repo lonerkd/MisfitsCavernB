@@ -8,11 +8,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Loader } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import GrainOverlay from '@/components/GrainOverlay';
-import { useToast } from '@/components/Toast';
+import GrainOverlay from '@/components/ui/GrainOverlay';
+import { useToast } from '@/components/ui/Toast';
 import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
-import { checkPasswordWeakness, checkHibpBreach } from '@/lib/password-strength';
+import { checkPasswordWeakness, checkHibpBreach } from '@/lib/account/password-strength';
 import { RECOVERY_PATH, recoveryErrorMessage } from '@/lib/auth/recovery';
 import { supabase } from '@/lib/supabase/client';
 

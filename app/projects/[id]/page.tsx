@@ -10,23 +10,23 @@ import {
   ChevronRight, Clock, Calendar, FileText, Image, Video,
   Music, Plus, ExternalLink, Circle,
 } from 'lucide-react';
-import GrainOverlay from '@/components/GrainOverlay';
-import { useConfirm } from '@/components/Confirm';
-import { useToast } from '@/components/Toast';
+import GrainOverlay from '@/components/ui/GrainOverlay';
+import { useConfirm } from '@/components/ui/Confirm';
+import { useToast } from '@/components/ui/Toast';
 import * as hub from '@/lib/supabase/project-hub';
 import { getProductionData, getProjectOverview, getProjectRow, type BudgetRow, type CrewRow, type FestivalRow, type MilestoneRow, type PortfolioRow, type ProjectOverview, type TaskRow, type TimelineRow } from '@/lib/supabase/project-hub';
 import { breakdown, costByCategory } from '@/lib/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { notify } from '@/lib/supabase/notifications';
-import { usePillZone } from '@/lib/context/PillContext';
+import { usePillZone } from '@/lib/os/PillContext';
 import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
-import { findFormat, formatPhases, useFormats } from '@/lib/formats';
+import { findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules, SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import type { ScriptFormat } from '@/lib/scriptos/parser';
 import { awaitOSUser } from '@/lib/os';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { useProjectBrief, useCanShape } from '@/lib/brief';
@@ -36,7 +36,7 @@ import { GuidePanel } from '@/components/guides/GuidePanel';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
-import { loadCrafts, suggestCraft } from '@/lib/crafts';
+import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 
 
 // ─── Types ──────────────────────────────────────────────────────────────────

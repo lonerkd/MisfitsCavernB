@@ -14,11 +14,11 @@ import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, Messag
 import { getTodayWork, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES } from '@/lib/os';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { fetchNotifications, markRead, type Notification } from '@/lib/supabase/notifications';
 import { getLoungeUnread, type LoungeUnread } from '@/lib/supabase/messages';
 import { clock, dayLabel, daysUntil, dueLabel, greeting, localDay, mapsHref, nextShootDays, openTasks, urgency } from '@/lib/today/core';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { ContinueOffer } from '@/components/mobile/Continue';
 import { InstallHint } from '@/components/mobile/InstallHint';
 import t from './today.module.css';

@@ -1,6 +1,6 @@
 'use client';
 
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';

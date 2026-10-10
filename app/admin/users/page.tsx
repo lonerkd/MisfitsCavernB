@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 
 interface UserRow {
   id: string;

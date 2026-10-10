@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { checkRateLimit, getClientIp } from '@/lib/api-rate-limit';
+import { checkRateLimit, getClientIp } from '@/lib/util/api-rate-limit';
 import { oembedEndpoint, pinterestBoardFeed, readOembed, readPinterestRss } from '@/lib/integrations/links';
 
 // What a pasted link is, from public sources (lib/integrations/links): a

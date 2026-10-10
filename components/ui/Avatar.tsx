@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { textOn } from '@/lib/color';
+import { textOn } from '@/lib/util/color';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
 export default function Avatar({ src, name, size = 40, radius, accent = 'var(--accent)', style }: {
