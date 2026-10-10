@@ -2,6 +2,77 @@
 
 Archive of past sessions, moved out of STATE.md to keep session context small. Read on demand.
 
+## Earlier — Script share links: the token is the only way in (3.3)
+
+Migration `20261006000000_script_share_links.sql` — applied to production
+2026-10-07 (owner, SQL editor); production matches the snapshot.
+
+- **The leak, closed**: the anon policy "Shared scripts publicly viewable"
+  (`using (shared = true)`) and the same arm in "scripts view" let anyone
+  list every shared script without its link. Both arms are gone; a link
+  resolves only through `get_shared_script(token)` (definer: the exact
+  token while `shared`; the words and the author's public profile). In
+  production 0 of 41 scripts were shared, so nothing was exposed.
+- **Who shares**: `internal.scripts_share_guard` (trigger) — only the
+  owner, or a project script's shapers, may change `shared` or
+  `share_token`; tokens under 24 characters are refused. A new token is a
+  revoke. Viewers still edit the words.
+- **`/s/[token]`** is server-rendered through the public client: link
+  previews (title, writer), never indexed, no cache — off or a new link
+  closes it at once.
+- **The editor's Share** (`components/editor/ShareScriptButton.tsx`,
+  `lib/scriptos/share.ts`): link on/off, copy, new link (confirmed);
+  shown to whoever the database lets share; every save checks its error.
+- **Pitch board** says "This is public" (blocks are readable by everyone
+  by design); its copy-link checks for failure.
+- Tests: `tests/integration/script-share.test.ts` (11, failed 9 before the
+  migration — the leak reproduced); `privacy.test.ts` updated (it asserted
+  the leak); `e2e/script-share.spec.ts` (on, read signed out, new link,
+  off); `lib/scriptos/share.test.ts`. Docs: `database-and-security.md` §C
+  and the §2.D allowlist, bible 04/08/11, BACKLOG 3.3 removed, 3.11
+  narrowed to `/p` and `/m`.
+- Verified: typecheck, lint, unit tests, integration (all files), build,
+  drift snapshot and types regenerated; e2e: script-share, accessibility,
+  route-smoke, legal, writing-loop.
+
+## Earlier — Restructure phases 1–2: clean-up and The Cavern
+
+No migration.
+
+- **Brand**: the product is **The Cavern** everywhere it's named — titles
+  and metadata, the manifest (`name` The Cavern, `short_name` Cavern), the
+  service worker, share and press pages, Discord sender, Spotify player,
+  export filename, legal (`LEGAL.product` The Cavern, `LEGAL.maker` Misfits
+  Cavern; effective date moved to 6 October), README, package name
+  `the-cavern`, doc headings. Misfits Cavern stays only as the maker:
+  the landing tag reads "The Cavern", the hero is the mark in 3D
+  (`Mark3D`: three.js loaded after the page, lit by its own moon, turns
+  with the pointer or a drag; the flat mark is the fallback), "by Misfits
+  Cavern" under it (owner's call, revising "THE CAVERN" as a wordmark);
+  the footer reads "The Cavern · by Misfits Cavern ·
+  © 2026 Peter Olowude". "Welcome back, misfit." and the `mc_`/`mc-`
+  prefixes stay.
+- **The mark in the app**: `components/brand/Mark.tsx` (R13 in theme
+  tokens) replaces the "MC" text in the nav, Studio, projects, jobs,
+  Lounge and portfolio headers. `public/` gets the R13 icons
+  (`icon.svg`, `favicon-32.png`, `apple-touch-icon.png`, 192/512 and
+  maskable PNGs); `app/layout.tsx` declares them; the service worker cache
+  is `mc-shell-v3` so installed apps refresh.
+- **Clean-up**: deleted `hooks/useColorExtractor.ts` and
+  `components/ui/AmbientGradient.tsx` (unused); `types/screenplay.ts` →
+  `lib/scriptos/types.ts` (17 imports); `docs/` → `.cavern-intelligence/archive/`;
+  dead `tsconfig` aliases (`@/types`, `@/hooks`, `@/utils`, `@/styles`)
+  removed; CI's docs-only filter no longer lists `docs/`.
+- Docs: bible gaps closed (01, 03, 05, 08, 10), `restructure-proposal.md`
+  phases 1–2 marked done, `brand/README.md` says how the icons get into
+  `public/`; BACKLOG 3.12 done and removed, 3.13 narrowed.
+- The landing tagline was drawn at 45% opacity (2.3:1); now `--fg-dim` at
+  full opacity (the 4.5:1 floor) — axe caught it once the hero loaded later.
+- Verified: typecheck, lint, unit tests (479, 7 new for the 3D mark's
+  geometry), build, budget (36 pages; `/` 291 kB — three.js isn't in the
+  first load); the landing (at rest, hovered, dragged) and showcase looked
+  at on desktop and phone.
+
 ## Earlier — The bible: the whole suite, top to bottom
 
 No migration. Docs and two scripts only.

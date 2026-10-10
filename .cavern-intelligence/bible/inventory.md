@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**34 pages · 6 API routes · 63 tables · 49 database functions · 48 e2e specs**
+**35 pages · 6 API routes · 63 tables · 49 database functions · 49 e2e specs**
 
 ## Routes
 
@@ -19,7 +19,8 @@
 | `/api/push/dispatch` (api) | open (page checks) | `app/api/push/dispatch/route.ts` (54) | 6 files · components: — · lib: legal, notifications, push, validation | push |
 | `/api/references/search` (api) | open (page checks) | `app/api/references/search/route.ts` (61) | 3 files · components: — · lib: api-rate-limit, validation | **none** |
 | `/auth/callback` | public | `app/auth/callback/page.tsx` (121) | 3 files · components: — · lib: supabase | **none** |
-| `/auth` | public | `app/auth/page.tsx` (412) | 34 files · components: GrainOverlay, Toast, ui · lib: hooks, os, password-strength, push, scriptos, supabase, types, validation | accessibility, account-deletion, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, credits, cut-notes, documents, editor-project-script, emphasis, errors, guides, hiring, install, island, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, phases, project-manager, readiness, real-data, route-smoke, script-share, search, shot-designer, split, studio-journey, table-read, themes, transcripts, writing-loop, your-data |
+| `/auth` | public | `app/auth/page.tsx` (477) | 35 files · components: GrainOverlay, Toast, ui · lib: auth, hooks, os, password-strength, push, scriptos, supabase, types, validation | accessibility, account-deletion, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, credits, cut-notes, documents, editor-project-script, emphasis, errors, guides, hiring, install, island, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, password-recovery, phases, project-manager, readiness, real-data, route-smoke, script-share, search, shot-designer, split, studio-journey, table-read, themes, transcripts, writing-loop, your-data |
+| `/auth/reset` | public | `app/auth/reset/page.tsx` (152) | 9 files · components: GrainOverlay, Toast, ui · lib: auth, password-strength, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/auth/spotify-callback/page.tsx` (77) | 32 files · components: Toast, ui · lib: hooks, os, push, scriptos, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/call/[id]/page.tsx` (220) | 41 files · components: Toast · lib: brief, os, push, scriptos, studio, supabase, types, validation | call-sheets, push |
 | `/crew/[id]` | signed in | `app/crew/[id]/page.tsx` (382) | 39 files · components: Avatar, EmptyState, Toast · lib: color, credits, hooks, os, push, scriptos, studio, supabase, types, validation | accessibility, credits |
@@ -110,6 +111,10 @@
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
 - **Functions:** `get_my_account`
 - **Realtime:** `project`, `projects:list`
+
+### `/auth/reset`
+
+- **Tables:** —
 
 ### `/auth/spotify-callback`
 
@@ -430,6 +435,7 @@
 | `on-set.spec.ts` | `/auth`, `/studio` |
 | `onboarding.spec.ts` | `/auth`, `/editor`, `/jobs`, `/projects`, `/welcome` |
 | `onset-offline.spec.ts` | `/auth`, `/studio` |
+| `password-recovery.spec.ts` | `/auth`, `/auth/reset` |
 | `phases.spec.ts` | `/auth`, `/editor`, `/projects/*`, `/settings`, `/studio` |
 | `project-manager.spec.ts` | `/auth`, `/projects/*`, `/projects/*/pitch`, `/studio` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |

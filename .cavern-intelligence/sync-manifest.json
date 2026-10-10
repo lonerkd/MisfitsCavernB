@@ -1,15 +1,15 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-10T01:58:41.940Z",
+  "last_synchronized": "2026-10-10T02:23:57.375Z",
   "stats": {
     "totalFiles": 631,
-    "totalSize": 4370783,
+    "totalSize": 4313627,
     "byExtension": {
-      ".json": 12,
+      ".json": 11,
       ".md": 53,
-      ".tsx": 175,
-      ".ts": 334,
-      ".js": 10,
+      ".tsx": 176,
+      ".ts": 337,
+      ".js": 7,
       ".sql": 47
     }
   },
@@ -114,6 +114,7 @@
         "app/auth/callback/page.tsx",
         "app/auth/error.tsx",
         "app/auth/page.tsx",
+        "app/auth/reset/page.tsx",
         "app/auth/spotify-callback/page.tsx",
         "app/call/[id]/page.tsx",
         "app/crew/[id]/page.tsx",
@@ -557,27 +558,27 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-10T01:50:59.343Z"
+      "last_modified": "2026-10-10T01:58:41.943Z"
     },
     {
       "path": ".github/pull_request_template.md",
       "size": 770,
-      "last_modified": "2026-10-10T01:50:13.379Z"
+      "last_modified": "2026-10-10T02:23:03.148Z"
     },
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-10T01:50:59.343Z"
+      "last_modified": "2026-10-10T01:58:41.939Z"
     },
     {
       "path": "CHANGELOG.md",
       "size": 2766,
-      "last_modified": "2026-10-10T01:50:13.379Z"
+      "last_modified": "2026-10-10T02:23:03.148Z"
     },
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-10T01:50:59.343Z"
+      "last_modified": "2026-10-10T01:58:41.943Z"
     },
     {
       "path": "README.md",
@@ -587,32 +588,32 @@
     {
       "path": "SECURITY.md",
       "size": 1925,
-      "last_modified": "2026-10-10T01:50:13.379Z"
+      "last_modified": "2026-10-10T02:23:03.148Z"
     },
     {
       "path": "adr/0001-supabase-rls-security-boundary.md",
       "size": 1586,
-      "last_modified": "2026-10-10T01:50:13.379Z"
+      "last_modified": "2026-10-10T02:23:03.148Z"
     },
     {
       "path": "adr/0002-data-access-through-lib.md",
       "size": 1497,
-      "last_modified": "2026-10-10T01:50:13.381Z"
+      "last_modified": "2026-10-10T02:23:03.151Z"
     },
     {
       "path": "adr/0003-pwa-before-app-store.md",
       "size": 1494,
-      "last_modified": "2026-10-10T01:50:13.381Z"
+      "last_modified": "2026-10-10T02:23:03.151Z"
     },
     {
       "path": "adr/0004-push-dispatch-from-the-database.md",
       "size": 1911,
-      "last_modified": "2026-10-10T01:50:13.381Z"
+      "last_modified": "2026-10-10T02:23:03.151Z"
     },
     {
       "path": "adr/README.md",
       "size": 1441,
-      "last_modified": "2026-10-10T01:50:13.381Z"
+      "last_modified": "2026-10-10T02:23:03.151Z"
     },
     {
       "path": "app/admin/analytics/page.tsx",
@@ -681,8 +682,13 @@
     },
     {
       "path": "app/auth/page.tsx",
-      "size": 17926,
-      "last_modified": "2026-10-10T01:50:13.502Z"
+      "size": 21373,
+      "last_modified": "2026-10-10T02:23:03.072Z"
+    },
+    {
+      "path": "app/auth/reset/page.tsx",
+      "size": 6963,
+      "last_modified": "2026-10-10T02:23:03.076Z"
     },
     {
       "path": "app/auth/spotify-callback/page.tsx",
@@ -1495,26 +1501,6 @@
       "last_modified": "2026-09-29T05:16:04.879Z"
     },
     {
-      "path": "coverage/block-navigation.js",
-      "size": 2336,
-      "last_modified": "2026-10-10T01:58:30.602Z"
-    },
-    {
-      "path": "coverage/coverage-summary.json",
-      "size": 42560,
-      "last_modified": "2026-10-10T01:58:30.595Z"
-    },
-    {
-      "path": "coverage/prettify.js",
-      "size": 26708,
-      "last_modified": "2026-10-10T01:58:30.603Z"
-    },
-    {
-      "path": "coverage/sorter.js",
-      "size": 5744,
-      "last_modified": "2026-10-10T01:58:30.602Z"
-    },
-    {
       "path": "e2e/accessibility.spec.ts",
       "size": 6668,
       "last_modified": "2026-09-28T07:51:38.227Z"
@@ -1675,6 +1661,11 @@
       "last_modified": "2026-09-29T03:23:00.064Z"
     },
     {
+      "path": "e2e/password-recovery.spec.ts",
+      "size": 6399,
+      "last_modified": "2026-10-10T02:23:03.076Z"
+    },
+    {
       "path": "e2e/phases.spec.ts",
       "size": 5645,
       "last_modified": "2026-09-28T06:50:38.123Z"
@@ -1773,6 +1764,16 @@
       "path": "lib/api-rate-limit.ts",
       "size": 1429,
       "last_modified": "2026-09-24T20:05:03.636Z"
+    },
+    {
+      "path": "lib/auth/recovery.test.ts",
+      "size": 1402,
+      "last_modified": "2026-10-10T02:23:03.076Z"
+    },
+    {
+      "path": "lib/auth/recovery.ts",
+      "size": 1981,
+      "last_modified": "2026-10-10T02:23:03.078Z"
     },
     {
       "path": "lib/availability/core.test.ts",
@@ -2917,12 +2918,12 @@
     {
       "path": "package-lock.json",
       "size": 363075,
-      "last_modified": "2026-10-10T01:50:13.516Z"
+      "last_modified": "2026-10-10T02:23:03.464Z"
     },
     {
       "path": "package.json",
       "size": 2632,
-      "last_modified": "2026-10-10T01:50:13.517Z"
+      "last_modified": "2026-10-10T02:23:03.572Z"
     },
     {
       "path": "performance-budget.json",
@@ -3487,7 +3488,7 @@
     {
       "path": "vitest.config.ts",
       "size": 1819,
-      "last_modified": "2026-10-10T01:58:16.681Z"
+      "last_modified": "2026-10-10T02:23:03.572Z"
     },
     {
       "path": "vitest.integration.config.ts",
