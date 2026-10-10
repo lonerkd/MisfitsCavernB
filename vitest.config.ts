@@ -30,17 +30,16 @@ export default defineConfig({
       // may never drop below these numbers (BACKLOG 3.16). Raise them when
       // the tests grow — never lower them to make a build pass.
       // Baselines: 2026-10-08 on main (lib/ scope) — statements 49.88, branches
-      // 49.72, functions 52.29, lines 49.37. Re-measured 2026-10-10 after #137
-      // moved data access into lib/supabase/* (new code, tested end to end but
-      // not by unit tests): statements 47.96, branches 47.03, functions 49.81,
-      // lines 47.67. Floored to whole numbers, so only a real drop fails. A
-      // re-measure against new code, not a lowering: BACKLOG 3.17 writes the
-      // missing unit tests and raises these back to 49 / 49 / 51 / 49.
+      // 49.72, functions 52.29, lines 49.37. #137 moved data access into
+      // lib/supabase/*, which dipped coverage to 47.96 / 47.03 / 49.81 / 47.67
+      // until its unit tests (BACKLOG 3.17) were written. Re-measured 2026-10-10
+      // with them: 50.48 / 50.65 / 52.58 / 50.43. Floored to whole numbers, so
+      // only a real drop fails.
       thresholds: {
-        statements: 47,
-        branches: 47,
-        functions: 49,
-        lines: 47,
+        statements: 50,
+        branches: 50,
+        functions: 52,
+        lines: 50,
       },
     },
   },
