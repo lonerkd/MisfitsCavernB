@@ -4,6 +4,27 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
+## Latest Session — Launch-grade repository practice (3.16)
+
+Branch `claude/repo-practice` (off `main`). No migration, no app code —
+files and workflows only.
+
+- **Files:** `LICENSE` (proprietary; lawyer confirms wording),
+  `SECURITY.md`, `CHANGELOG.md` (baseline summarising everything to
+  2026-10-08 + the release process), `adr/` (four decisions + template),
+  `.gitleaksignore`.
+- **CI:** `pr-title.yml` enforces conventional PR titles (the squash commit);
+  the `checks` job now runs `npm run test:coverage` with thresholds in
+  `vitest.config.ts` (baseline 2026-10-08: statements 49.88, branches 49.72,
+  functions 52.29, lines 49.37 over `lib/`; floors re-measured to 47 / 47 / 49 /
+  47 on 2026-10-10 after #137's `lib/` code — BACKLOG 3.17 raises them back) and uploads the report;
+  `secret-scan.yml` (gitleaks over the whole history — three historical
+  findings reviewed: two R2/S3-compatible docs phrases, one expired localhost
+  session JWT); `sbom.yml` (SPDX + licence summary artifacts);
+  `release.yml` (a `v*` tag must match `package.json`).
+- **Owner:** branch protection requiring `pr-title`/`checks`/`database`,
+  signed commits, the first `v*` tag, the lawyer's OK on `LICENSE`.
+
 ## Resume here (handoff, 2026-10-06 — cloud → local)
 
 1. **Merged** 2026-10-06/07: #136, #135, #138, #139, #140 (restructure

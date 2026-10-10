@@ -1,0 +1,52 @@
+name: SBOM and licences
+
+# A dependency inventory (SPDX) and a licence summary, for due diligence
+# (BACKLOG 3.16): what exactly ships, under which licences. Uploaded as
+# artifacts on every main push and weekly — not on every PR, where npm ci
+# would slow the gate down for little new information.
+#
+# Both views are produced: the whole dependency tree (including dev tooling),
+# and production only (what actually reaches the server and browser).
+
+on:
+  schedule:
+    - cron: '23 5 * * 1' # Mondays
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sbom:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: SPDX SBOMs
+        run: |
+          npm sbom --sbom-format spdx > sbom.full.spdx.json
+          npm sbom --sbom-format spdx --omit dev > sbom.production.spdx.json
+      - name: Licence summary
+        run: |
+          summary() {
+            jq -r '[.packages[] | (.licenseConcluded // .licenseDeclared // "NOASSERTION") | if type == "object" then .expression // tostring else . end] | group_by(.) | map({ licence: .[0], count: length }) | sort_by(-.count) | .[] | "| \(.count) | \(.licence) |"' "$1"
+          }
+          {
+            echo '## Dependency licences (production)'
+            echo
+            echo '| Packages | Licence |'
+            echo '| --- | --- |'
+            summary sbom.production.spdx.json
+          } >> "$GITHUB_STEP_SUMMARY"
+          summary sbom.production.spdx.json > licence-summary.txt
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom
+          path: |
+            sbom.full.spdx.json
+            sbom.production.spdx.json
+            licence-summary.txt
+          retention-days: 90

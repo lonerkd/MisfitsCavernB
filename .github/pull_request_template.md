@@ -14,6 +14,8 @@ and what you ran locally. -->
 
 ## Checklist
 
+- [ ] PR title is a conventional commit (`feat: …`, `fix(editor): …`,
+      `docs: …`) — it becomes the commit message on main
 - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run test` pass
 - [ ] RLS changes tested as owner, crew and outsider
 - [ ] Feedback via `useToast()`, confirmations via `useConfirm()`

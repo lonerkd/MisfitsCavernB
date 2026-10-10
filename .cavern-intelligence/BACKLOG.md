@@ -123,6 +123,49 @@ scan and a dependency licence report (SBOM). Owner: branch protection and
 signed commits. Done when each is in place and CI enforces the commit and
 coverage rules.
 
+**In place (2026-10-08, `claude/repo-practice`):**
+- `LICENSE` (proprietary — lawyer confirms the exact wording), `SECURITY.md`
+  (private reporting through the Security tab or the privacy contact),
+  `CODEOWNERS` (already existed).
+- `CHANGELOG.md` — Keep a Changelog, a baseline entry for everything up to
+  2026-10-08, and the release process (bump `package.json`, move
+  Unreleased → version, tag `vX.Y.Z`); `release.yml` refuses a tag that
+  isn't the version in `package.json`.
+- `adr/` — four records (RLS as the security boundary, data access through
+  `lib/`, PWA before the App Store, push dispatched from the database) with
+  an index and template.
+- Conventional commits: `pr-title.yml` fails any PR whose title isn't one —
+  the title is the commit a squash-merge leaves on main (the PR template
+  says so too).
+- Coverage: `npm run test:coverage`, scoped to `lib/`, with thresholds in
+  `vitest.config.ts` (floors 47 / 47 / 49 / 47 — the 2026-10-08 baseline of
+  49 / 49 / 51 / 49, re-measured 2026-10-10 after #137's new `lib/` code; see
+  3.17); the `checks` job runs it and uploads the report — CI enforces both rules the done-state asks for.
+- Full-history secret scan: `secret-scan.yml` (gitleaks over every
+  reachable commit; weekly + main + PRs). Three historical findings, all
+  reviewed: two are the R2/S3-compatible docs phrase,
+  one an expired localhost session JWT (committed 2026-07-05, removed) —
+  accepted in `.gitleaksignore`, reasons in the PR.
+- SBOM: `sbom.yml` — SPDX (full and production-only) plus a licence
+  summary, uploaded as artifacts on main pushes and weekly.
+
+**Owner:** branch protection on `main` with `pr-title`, `checks` and
+`database` required; signed commits; the first `v*` tag; the lawyer's OK on
+the `LICENSE` wording.
+
+
+### 3.17 Unit tests for the `lib/supabase/*` modules #137 added — M
+#137 moved every page's data access into `lib/supabase/*` (`project-hub`,
+`scripts`, `campaigns`, `audio`, `media`, `today`, `client-errors`, …). They
+are covered end to end (persona and e2e tests) but not by unit tests, which
+is what `npm run test:coverage` counts: `lib/` fell from 49.9 / 49.7 / 52.3 /
+49.4 % (statements / branches / functions / lines) to 48.0 / 47.0 / 49.8 /
+47.7, and the floors in `vitest.config.ts` were re-measured to 47 / 47 / 49 /
+47. Write the unit tests (mock only the Supabase client at its edge; the
+planning and mapping logic is the part worth testing), then raise the floors
+back to 49 / 49 / 51 / 49 or higher. Done when the floors are back at or
+above the 2026-10-08 baseline.
+
 ---
 
 ## 4. Wishlist (owner, 2026-10-07) — ideas, not yet scoped
