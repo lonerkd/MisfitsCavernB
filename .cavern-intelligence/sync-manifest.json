@@ -1,15 +1,15 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-10T01:50:59.342Z",
+  "last_synchronized": "2026-10-10T01:58:41.940Z",
   "stats": {
-    "totalFiles": 627,
-    "totalSize": 4293102,
+    "totalFiles": 631,
+    "totalSize": 4370783,
     "byExtension": {
-      ".json": 11,
+      ".json": 12,
       ".md": 53,
       ".tsx": 175,
       ".ts": 334,
-      ".js": 7,
+      ".js": 10,
       ".sql": 47
     }
   },
@@ -557,7 +557,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-10T01:44:07.599Z"
+      "last_modified": "2026-10-10T01:50:59.343Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -567,7 +567,7 @@
     {
       "path": "AGENTS.md",
       "size": 6087,
-      "last_modified": "2026-10-10T01:44:07.599Z"
+      "last_modified": "2026-10-10T01:50:59.343Z"
     },
     {
       "path": "CHANGELOG.md",
@@ -577,7 +577,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-10T01:44:07.599Z"
+      "last_modified": "2026-10-10T01:50:59.343Z"
     },
     {
       "path": "README.md",
@@ -1493,6 +1493,26 @@
       "path": "components/ui/Textarea.tsx",
       "size": 4764,
       "last_modified": "2026-09-29T05:16:04.879Z"
+    },
+    {
+      "path": "coverage/block-navigation.js",
+      "size": 2336,
+      "last_modified": "2026-10-10T01:58:30.602Z"
+    },
+    {
+      "path": "coverage/coverage-summary.json",
+      "size": 42560,
+      "last_modified": "2026-10-10T01:58:30.595Z"
+    },
+    {
+      "path": "coverage/prettify.js",
+      "size": 26708,
+      "last_modified": "2026-10-10T01:58:30.603Z"
+    },
+    {
+      "path": "coverage/sorter.js",
+      "size": 5744,
+      "last_modified": "2026-10-10T01:58:30.602Z"
     },
     {
       "path": "e2e/accessibility.spec.ts",
@@ -3466,8 +3486,8 @@
     },
     {
       "path": "vitest.config.ts",
-      "size": 1486,
-      "last_modified": "2026-10-10T01:50:13.415Z"
+      "size": 1819,
+      "last_modified": "2026-10-10T01:58:16.681Z"
     },
     {
       "path": "vitest.integration.config.ts",

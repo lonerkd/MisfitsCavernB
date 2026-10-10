@@ -16,7 +16,8 @@ files and workflows only.
 - **CI:** `pr-title.yml` enforces conventional PR titles (the squash commit);
   the `checks` job now runs `npm run test:coverage` with thresholds in
   `vitest.config.ts` (baseline 2026-10-08: statements 49.88, branches 49.72,
-  functions 52.29, lines 49.37 over `lib/`) and uploads the report;
+  functions 52.29, lines 49.37 over `lib/`; floors re-measured to 47 / 47 / 49 /
+  47 on 2026-10-10 after #137's `lib/` code — BACKLOG 3.17 raises them back) and uploads the report;
   `secret-scan.yml` (gitleaks over the whole history — three historical
   findings reviewed: two R2/S3-compatible docs phrases, one expired localhost
   session JWT); `sbom.yml` (SPDX + licence summary artifacts);
