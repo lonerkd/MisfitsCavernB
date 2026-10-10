@@ -4,13 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import GrainOverlay from '@/components/GrainOverlay';
-import AnimatedSection from '@/components/AnimatedSection';
-import PhotoGallery from '@/components/PhotoGallery';
+import GrainOverlay from '@/components/ui/GrainOverlay';
+import AnimatedSection from '@/components/ui/AnimatedSection';
+import PhotoGallery from '@/components/ui/PhotoGallery';
 import { supabase } from '@/lib/supabase/client';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
-const ParticleBackground = dynamic(() => import('@/components/ParticleBackground'), { ssr: false });
+const ParticleBackground = dynamic(() => import('@/components/ui/ParticleBackground'), { ssr: false });
 
 export default function ShowcasePage() {
 

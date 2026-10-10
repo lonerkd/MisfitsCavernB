@@ -9,7 +9,7 @@ import p from './progress.module.css';
 
 /**
  * The moment a project reaches a new phase: its tools snap into place.
- * Framer's MotionConfig (components/MotionPreference) turns the motion off
+ * Framer's MotionConfig (components/ui/MotionPreference) turns the motion off
  * for people who asked for less.
  */
 export function UnlockReveal({ phaseLabel, tools, projectId, style, onClose, onNavigate }: {

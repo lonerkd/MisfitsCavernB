@@ -2,11 +2,11 @@
 
 import { useCallback, useState, type CSSProperties } from 'react';
 import { Link2, Copy, RefreshCw } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { useCurrentUser } from '@/lib/os';
 import { useCanShape } from '@/lib/brief';
-import { useEscapeKey } from '@/lib/useEscapeKey';
+import { useEscapeKey } from '@/lib/hooks/useEscapeKey';
 import { getScriptShare, setScriptShared, rotateScriptShareToken, scriptShareUrl, type ScriptShare } from '@/lib/scriptos/share';
 import type { StoredScript } from '@/lib/scriptos/storage';
 

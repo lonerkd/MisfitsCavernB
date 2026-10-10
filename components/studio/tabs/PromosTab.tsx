@@ -2,9 +2,9 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { Megaphone, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { addCampaign, deleteCampaign, listUsedPlatforms, updateCampaign } from '@/lib/supabase/campaigns';
 import { logActivity } from '@/lib/supabase/activity';

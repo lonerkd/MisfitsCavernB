@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { setProjectLogline } from '@/lib/supabase/progress';
 import p from './progress.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';

@@ -4,10 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Film } from 'lucide-react';
 import { getPublicPortfolio } from '@/lib/supabase/portfolio';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import type { PublicProfile } from '@/lib/supabase/profiles';
 import type { PortfolioBlock } from '@/lib/supabase/portfolio';
-import Avatar from '@/components/Avatar';
+import Avatar from '@/components/ui/Avatar';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
 interface MediaItem {

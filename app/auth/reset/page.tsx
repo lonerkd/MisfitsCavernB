@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import GrainOverlay from '@/components/GrainOverlay';
-import { useToast } from '@/components/Toast';
+import GrainOverlay from '@/components/ui/GrainOverlay';
+import { useToast } from '@/components/ui/Toast';
 import { supabase } from '@/lib/supabase/client';
-import { checkHibpBreach } from '@/lib/password-strength';
+import { checkHibpBreach } from '@/lib/account/password-strength';
 import { checkNewPassword, recoveryErrorMessage } from '@/lib/auth/recovery';
 
 /**

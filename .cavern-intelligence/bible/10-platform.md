@@ -90,7 +90,7 @@ no push.
 | Google Maps | directions from call sheets and Today | links only |
 | Browser speech | table read; transcript dictation | `lib/scriptos/tableRead.ts` |
 
-API routes are rate-limited (`lib/api-rate-limit.ts`) and validate input
+API routes are rate-limited (`lib/util/api-rate-limit.ts`) and validate input
 (`lib/validation`).
 
 ## Install (phone)

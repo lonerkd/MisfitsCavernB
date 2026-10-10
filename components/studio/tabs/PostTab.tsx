@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CheckCircle2, Circle, FileText, Film, ListChecks, Plus, Trash2, X } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { getProjectTeam } from '@/lib/supabase/crew-management';
 import {
   studio, usePostItems, useSignedUrls, classifyUrl,

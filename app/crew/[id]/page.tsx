@@ -5,16 +5,16 @@ import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getPortfolioProjects } from '@/lib/supabase/portfolio';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import { addCreditToPortfolio, getPersonCredits, groupByProject, type ProjectCredits } from '@/lib/credits';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { getProfile, type Profile } from '@/lib/supabase/profiles';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
 const portfolioThumb = (m?: { thumbnail_url?: string | null; url: string } | null) =>
   !m ? null : m.thumbnail_url || videoEmbed(m.url)?.thumbnail || (/\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(m.url) ? m.url : null);
-import Avatar from '@/components/Avatar';
+import Avatar from '@/components/ui/Avatar';
 import { awaitOSUser } from '@/lib/os';
 
 interface MediaItem {

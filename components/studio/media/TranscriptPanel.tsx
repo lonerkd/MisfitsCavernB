@@ -8,8 +8,8 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ClipboardPaste, Copy, Mic, MicOff, Plus, Star, Trash2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import {
   studio, useTranscriptLines, parseTranscript, parseStamp, formatStamp, paperEdit,
   type Media, type TranscriptLine,

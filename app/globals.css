@@ -793,7 +793,7 @@ section { padding: 90px 18px; }
 }
 
 /* ═══════════════════════════════
-   THEMES — chosen in Settings › Appearance (lib/themes.ts). Set on <html>
+   THEMES — chosen in Settings › Appearance (lib/themes/themes.ts). Set on <html>
    (or any element, e.g. a public page that keeps the house look).
    ═══════════════════════════════ */
 [data-theme="default"] {

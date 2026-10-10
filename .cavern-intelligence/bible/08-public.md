@@ -28,7 +28,7 @@ policy on an explicit "published" flag. Security model:
 | `/m/[id]` | route handler | a published file: 302 to a fresh signed URL (5 min images, 1 h video/audio), `no-store` | `get_published_media` + storage "shared read" policy |
 | `/p/[token]` | server metadata (link preview) + client view | a portfolio piece as a press kit: media, blocks from the pitch board, credits | `portfolio_projects` / `portfolio_blocks` / `portfolio_media` are readable by everyone (all portfolio work is public by design) |
 | `/s/[token]` | server | a screenplay, read-only, formatted, with its author; link previews (title, writer); never indexed | `get_shared_script(token)` — the exact token while sharing is on; nobody can list shared scripts or read one by id |
-| `/privacy`, `/terms` | static | the policies; operator, province, contact and effective date from `lib/legal.ts` | — |
+| `/privacy`, `/terms` | static | the policies; operator, province, contact and effective date from `lib/legal/legal.ts` | — |
 
 Framing: every page sends `frame-ancestors 'self'` except the share pages
 and `/m`, which anyone may embed.

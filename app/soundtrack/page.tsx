@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
-import { useSpotify } from '@/lib/context/SpotifyContext';
+import { useSpotify } from '@/lib/os/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, contextAwareSearch } from '@/lib/spotify/search';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
@@ -11,7 +11,7 @@ import { useProject } from '@/lib/os';
 import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { awaitOSUser } from '@/lib/os';
 
 export default function SoundtrackPage() {

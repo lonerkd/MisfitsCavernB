@@ -2,8 +2,8 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileCheck2, FileUp, Lightbulb, Plus, Trash2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { useCanShape } from '@/lib/brief';
 import {
   DOC_KINDS, STATUS_LABEL, docState, paperworkGaps, studio, useCastings, useDocuments, useProjectLocations,

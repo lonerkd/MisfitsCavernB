@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LEGAL } from '@/lib/legal';
+import { LEGAL } from '@/lib/legal/legal';
 
 // The frame both legal pages share: a readable column, the date they took
 // effect, and a way to the other page and back into the suite.

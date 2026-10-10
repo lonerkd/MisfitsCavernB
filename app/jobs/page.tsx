@@ -7,21 +7,21 @@ import { Search, Plus, DollarSign, Briefcase, X, ChevronRight } from 'lucide-rea
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import GrainOverlay from '@/components/GrainOverlay';
+import GrainOverlay from '@/components/ui/GrainOverlay';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
-import EmptyState from '@/components/EmptyState';
-import { usePillStage } from '@/lib/context/PillContext';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import { usePillStage } from '@/lib/os/PillContext';
 import { useProject } from '@/lib/os';
 import { applyToJob, closeJob, listJobsPostedBy, listMyApplications, listOpenJobs, postJob, type JobWithRelations as Job, type MyApplication } from '@/lib/supabase/jobs';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { logActivity } from '@/lib/supabase/activity';
 import { notify } from '@/lib/supabase/notifications';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { awaitOSUser } from '@/lib/os';
-import { useCrafts, type Craft } from '@/lib/crafts';
+import { useCrafts, type Craft } from '@/lib/crafts/crafts';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { Mark } from '@/components/brand/Mark';
 

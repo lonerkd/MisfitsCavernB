@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, ArrowRight, CircleDashed, HelpCircle, Lightbulb } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { accentVars } from '@/components/progress/Bricks';
 import { PHASES, type Phase } from '@/lib/os/phases';
 import {

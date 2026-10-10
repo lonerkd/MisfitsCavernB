@@ -7,9 +7,9 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { type ProjectFormat, toProjectFormat } from './formats-core';
+import { type ProjectFormat, toProjectFormat } from './core';
 
-export * from './formats-core';
+export * from './core';
 
 let cache: Promise<ProjectFormat[]> | null = null;
 

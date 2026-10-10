@@ -10,7 +10,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { updateProjectBeat } from '@/lib/supabase/studio';
-import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats';
+import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 
 export const APPEND_EVENT = 'append';
 

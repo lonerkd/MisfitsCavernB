@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Search, User } from 'lucide-react';
 import Link from 'next/link';
-import EmptyState from '@/components/EmptyState';
-import Avatar from '@/components/Avatar';
+import EmptyState from '@/components/ui/EmptyState';
+import Avatar from '@/components/ui/Avatar';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useProject } from '@/lib/os';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';

@@ -3,7 +3,7 @@
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { Calendar, PenLine } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
+import EmptyState from '@/components/ui/EmptyState';
 import { useBreakdown } from '@/lib/breakdown';
 import { StripboardView } from './StripboardView';
 import { CallSheetsPanel } from './CallSheetsPanel';

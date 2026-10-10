@@ -9,7 +9,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, BookOpen, Settings2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { accentVars } from '@/components/progress/Bricks';
 import { getMyCraftOn } from '@/lib/supabase/crew-management';
 import { useUiPrefs } from '@/lib/os/uiPrefs';

@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, MapPin, PenLine, Plus, Trash2 } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
-import EmptyState from '@/components/EmptyState';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
 import {
   LOCATION_STATUS, PERMIT_STATE, locationReadiness, locationRows, mapHref, studio, useProjectLocations,
   type LocationPatch, type LocationRow, type ProjectLocation,

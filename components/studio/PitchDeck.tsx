@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import SectionLabel from '@/components/SectionLabel';
+import SectionLabel from '@/components/ui/SectionLabel';
 import { listScriptCharacters } from '@/lib/supabase/scripts';
 import { fetchScriptContent } from '@/lib/studio';
 import { useEffect } from 'react';

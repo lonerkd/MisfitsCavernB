@@ -8,9 +8,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
-import type { Craft } from './crafts-core';
+import type { Craft } from './core';
 
-export * from './crafts-core';
+export * from './core';
 
 let cache: Promise<Craft[]> | null = null;
 

@@ -108,6 +108,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 `lib/supabase/profiles.ts` (unit-tested); the lint exception is gone, so
 `supabase.from(...)` is banned in `app/` and `components/` with no exceptions.
 
+**Then (restructure phase 4):** `components/` root split into `components/shell/` (the app shell: island, palette, bell, cursor, providers' mount…) and `components/ui/` (primitives); `lib/context` → `lib/os`; loose `lib/*.ts` into `lib/crafts`, `formats`, `themes`, `search`, `legal`, `onboarding`, `account`, `hooks`, `util`. Moves only (`git mv` + import codemod); no behaviour change.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

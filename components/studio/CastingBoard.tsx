@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useToast } from '@/components/Toast';
-import Avatar from '@/components/Avatar';
+import { useToast } from '@/components/ui/Toast';
+import Avatar from '@/components/ui/Avatar';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { logActivity } from '@/lib/supabase/activity';
 import { useCharacterMedia, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
@@ -11,7 +11,7 @@ import { List as Users } from 'lucide-react';
 import { useStudio } from './StudioContext';
 import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
 type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };

@@ -10,7 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import { ExternalLink, FileText } from 'lucide-react';
-import GrainOverlay from '@/components/GrainOverlay';
+import GrainOverlay from '@/components/ui/GrainOverlay';
 import { publicClient } from '@/lib/supabase/public';
 import { createStudioApi, type Lookbook, type LookbookMedia } from '@/lib/studio/api';
 import { videoEmbed } from '@/lib/studio/media-kind';

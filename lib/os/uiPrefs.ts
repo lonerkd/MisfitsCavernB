@@ -12,7 +12,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { toGuideProfile, type GuideProfile } from '@/lib/guides/profile';
-import { toThemeChoice, type ThemeChoice } from '@/lib/themes';
+import { toThemeChoice, type ThemeChoice } from '@/lib/themes/themes';
 import { toPlaces, type Places } from '@/lib/pocket/places';
 import type { Json } from '@/lib/supabase/database.types';
 

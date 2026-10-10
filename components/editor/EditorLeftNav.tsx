@@ -4,7 +4,7 @@ import React from 'react';
 import { Plus, FileUp, Book } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import type { StoredScript } from '@/lib/scriptos/storage';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 
 export interface EditorLeftNavProps {
   scripts: StoredScript[];

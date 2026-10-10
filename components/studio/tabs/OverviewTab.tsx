@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Activity as ActivityIcon, DollarSign } from 'lucide-react';
-import Avatar from '@/components/Avatar';
+import Avatar from '@/components/ui/Avatar';
 import { supabase } from '@/lib/supabase/client';
 import { getProjectActivities, type Activity } from '@/lib/supabase/activity';
 import { PhasePanel } from '@/components/progress/PhasePanel';

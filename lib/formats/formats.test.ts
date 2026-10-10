@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { defaultScriptFormat, findFormat, formatPhases, toProjectFormat } from './formats-core';
+import { defaultScriptFormat, findFormat, formatPhases, toProjectFormat } from './core';
 
 const row = (patch: Record<string, unknown> = {}) => toProjectFormat({
   name: 'Music Video', blurb: '', icon: 'music', script_format: 'treatment',

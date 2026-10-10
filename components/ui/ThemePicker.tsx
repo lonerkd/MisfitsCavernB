@@ -8,9 +8,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Check, Monitor } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { saveUiPrefs } from '@/lib/os/uiPrefs';
-import { THEMES, THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme, type ThemeChoice } from '@/lib/themes';
+import { THEMES, THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
 import t from './themePicker.module.css';
 
 function Preview({ swatch }: { swatch: [string, string, string] }) {

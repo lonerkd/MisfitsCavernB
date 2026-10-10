@@ -30,7 +30,7 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 | Route | Tier | Module | Key files |
 |---|---|---|---|
 | `/` | public | Landing | `app/page.tsx`, `components/PhotoScatter`, `ParticleBackground` |
-| `/auth` | public | Auth | `app/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/password-strength.ts` |
+| `/auth` | public | Auth | `app/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/account/password-strength.ts` |
 | `/auth/callback` | public | Auth | OAuth code exchange |
 | `/auth/spotify-callback` | protected* | Soundtrack | `lib/spotify/*`, `SpotifyContext` |
 | `/today` | protected | Today | `app/today`, `lib/today/core.ts` — the working home on a phone (first tab), fine on a desk (dock): the coming days on set with your call and the way there (maps), your tasks by urgency (tick off here), Lounge unread by channel/person (deep links), updates, your projects with Script/Studio/Schedule jumps. Crew see issued days; the owner sees drafts too. |
@@ -40,7 +40,7 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 | `/editor` | protected | **ScriptOS** | `lib/scriptos/*`, `components/editor/*` — see `scriptos-engine.md` |
 | `/studio` | protected | The Studio | `lib/supabase/studio.ts`, `breakdown.ts`, `casting.ts`, `components/canvas/*` — see `studio-and-preproduction.md` |
 | `/split` | protected | Split screen | `app/split`, `lib/split/*`, `components/split/PaneShell` — two surfaces in same-origin frames; panes hide the suite chrome (`useInPane`) and talk via the split page (`postToSplit` / `useSplitMessages`): the script's caret scene ↔ Studio. Ctrl+\\, taskbar, ⌘K. |
-| `/welcome` | protected | Onboarding | `app/welcome`, `lib/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
+| `/welcome` | protected | Onboarding | `app/welcome`, `lib/onboarding/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
 | `/call/[id]` | protected | Crew call sheet | `app/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
 | `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md`. `?channel=<id>` / `?dm=<user>` open a conversation (notifications link there). |
@@ -50,7 +50,7 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 | `/profile` | protected | Profile | `lib/supabase/profiles.ts`, `stats.ts` |
 | `/settings` | protected | Settings | `profiles.notification_prefs`, leaked-password toggle, data export, **Delete account** (`components/settings/DeleteAccount.tsx`, `lib/account/deletion.ts`: hand shared projects over, then delete) |
 | `/showcase` | public | Showcase | public filmmaker directory |
-| `/privacy`, `/terms` | public | Legal | `app/privacy`, `app/terms`, `components/legal/LegalPage`, `lib/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
+| `/privacy`, `/terms` | public | Legal | `app/privacy`, `app/terms`, `components/legal/LegalPage`, `lib/legal/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
 | `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` (not on the token — BACKLOG 3.3; no control in the app sets `shared` yet) |
 | `/shared/[token]` | **public** | Project lookbook | server-rendered (`force-dynamic`, Open Graph metadata); `get_shared_project` / `get_shared_lookbook` / `get_press_kit` — exact token, visibility link/public |
@@ -99,7 +99,7 @@ Mounted for the whole app, in order (`app/layout.tsx`):
 - **SpotifyProvider** — soundtrack widget state.
 
 Chrome lives in two places, and nothing else mounts itself globally:
-- `components/ClientShell.tsx` (root layout) renders `CustomCursor`,
+- `components/shell/ClientShell.tsx` (root layout) renders `CustomCursor`,
   `CommandPalette` (⌘K), `ShortcutsOverlay`, `ThemeInitializer`,
   `EcosystemTaskbar` (the island — see below; embeds `NotificationBell`) and
   `MobileTabBar`. CSS decides which navigation shows: at ≤760px the island
@@ -108,7 +108,7 @@ Chrome lives in two places, and nothing else mounts itself globally:
   project, and the page's island actions as "On this page"). The tab bar
   hides on the editor (full-screen writing), split, auth and public pages, and
   slides away while a field has focus (the keyboard needs the room).
-- **The island** (`components/EcosystemTaskbar.tsx`, `components/island/island.module.css`,
+- **The island** (`components/shell/EcosystemTaskbar.tsx`, `components/island/island.module.css`,
   `lib/island/*`): one floating surface at the foot of the screen whose shape
   follows what the person is doing (`lib/island/mode.ts`, unit-tested) —
   `rest` (a pill: where you are + the page's lead number), `context` (the

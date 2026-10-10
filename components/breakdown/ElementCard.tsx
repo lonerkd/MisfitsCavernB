@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from 'react';
 import { Trash2, X } from 'lucide-react';
-import { useConfirm } from '@/components/Confirm';
-import { useToast } from '@/components/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import { useToast } from '@/components/ui/Toast';
 import { breakdown, ELEMENT_STATUSES, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
-import { readable } from '@/lib/color';
+import { readable } from '@/lib/util/color';
 import { CategoryChips, catStyle } from './CategoryChips';
 import b from './breakdown.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';

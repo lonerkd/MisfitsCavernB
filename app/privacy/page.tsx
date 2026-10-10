@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalPage, Mail } from '@/components/legal/LegalPage';
-import { LEGAL } from '@/lib/legal';
+import { LEGAL } from '@/lib/legal/legal';
 
 export const metadata: Metadata = {
   title: `Privacy Policy — ${LEGAL.product}`,

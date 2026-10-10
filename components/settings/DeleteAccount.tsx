@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, ArrowRightLeft } from 'lucide-react';
-import { useToast } from '@/components/Toast';
-import { useConfirm } from '@/components/Confirm';
+import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import { getDeletionPlan, transferProject, deleteMyAccount, type DeletionPlan, type SharedProject } from '@/lib/account/deletion';
 
 const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 };

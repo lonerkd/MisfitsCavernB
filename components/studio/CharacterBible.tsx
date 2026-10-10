@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Pencil, Plus, Users, X } from 'lucide-react';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { studio, useCharacterMedia, useSignedUrls, mediaSrc, characterMediaKey, type Media } from '@/lib/studio';
 import { useStudio } from './StudioContext';
 import { useScriptCharacters, type ScriptCharacter } from './production/useScriptCharacters';

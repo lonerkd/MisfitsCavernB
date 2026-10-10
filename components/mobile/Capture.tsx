@@ -11,7 +11,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Camera, Video, Mic, StickyNote, Link2, Upload, X, Square, CloudOff, RotateCw, Trash2, Check } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
-import { useToast } from '@/components/Toast';
+import { useToast } from '@/components/ui/Toast';
 import { ACCEPTED_UPLOAD_TYPES, uploadProblem } from '@/lib/studio/media-kind';
 import type { TranscriptLineDraft } from '@/lib/studio/transcript';
 import { baseType, describe, dictationLine, pickAudioType, recClock, voiceMemoName, type Capture } from '@/lib/pocket/capture';

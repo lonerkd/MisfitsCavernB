@@ -2,8 +2,8 @@
 
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { byDepartment, searchCrafts, useCrafts } from '@/lib/crafts';
-import { readable } from '@/lib/color';
+import { byDepartment, searchCrafts, useCrafts } from '@/lib/crafts/crafts';
+import { readable } from '@/lib/util/color';
 import p from './craftPicker.module.css';
 
 /**

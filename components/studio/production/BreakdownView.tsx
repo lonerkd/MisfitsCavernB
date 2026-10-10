@@ -3,9 +3,9 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, DollarSign, PenLine, Plus, Printer, Settings2, Tags, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/EmptyState';
-import { useConfirm } from '@/components/Confirm';
-import { useToast } from '@/components/Toast';
+import EmptyState from '@/components/ui/EmptyState';
+import { useConfirm } from '@/components/ui/Confirm';
+import { useToast } from '@/components/ui/Toast';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
 import { catStyle } from '@/components/breakdown/CategoryChips';
 import { breakdown, costByCategory, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';

@@ -62,7 +62,7 @@ Rules:
 ## 3. Feedback & confirmation (non-negotiable)
 
 - All notifications: `useToast()` / `<Toast />`.
-- All confirmations: `useConfirm()` from `components/Confirm.tsx`.
+- All confirmations: `useConfirm()` from `components/ui/Confirm.tsx`.
 - **Never** `alert()`, `confirm()`, or `window.*` dialogs. There are zero
   exceptions — a native dialog breaks the cohesive-system rule.
 
