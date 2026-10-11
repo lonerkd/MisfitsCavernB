@@ -86,7 +86,7 @@ pitch boards and portfolios.
   day length (`settings.dayLengthEighths`, owner-set), company moves (more
   than one location), cast called; status dot planned → shot → wrapped;
   auto-schedule (`packShootDays`) at the day length; Day out of days;
-  print. Call sheets (saved per shoot day: date, calls, wrap, address,
+  print. **Sides** (the call sheet's Sides button; `lib/film/sides.ts`, `sides-print.ts`): one printed page per called actor with lines that day — the day's scenes in shooting order, the actor's own cue and speeches highlighted, from the script's saved text. Call sheets (saved per shoot day: date, calls, wrap, address,
   weather, notes, per-person call times — `call_sheets`, `call_sheet_calls`);
   the board shows each day's call-sheet date.
 - **Shot list**: per scene in Scenes (`shots`); also created by "Shot" margin

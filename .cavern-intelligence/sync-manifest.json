@@ -1,14 +1,14 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-11T23:42:05.529Z",
+  "last_synchronized": "2026-10-11T23:51:37.906Z",
   "stats": {
-    "totalFiles": 671,
-    "totalSize": 4578127,
+    "totalFiles": 674,
+    "totalSize": 4588135,
     "byExtension": {
       ".json": 13,
       ".md": 55,
       ".tsx": 185,
-      ".ts": 362,
+      ".ts": 365,
       ".js": 7,
       ".sql": 49
     }
@@ -574,8 +574,8 @@
     },
     {
       "path": ".github/copilot-instructions.md",
-      "size": 703,
-      "last_modified": "2026-10-10T10:48:50.047Z"
+      "size": 691,
+      "last_modified": "2026-10-11T23:42:05.536Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -629,8 +629,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 6201,
-      "last_modified": "2026-10-10T10:48:50.048Z"
+      "size": 6196,
+      "last_modified": "2026-10-11T23:42:05.535Z"
     },
     {
       "path": "app/(public)/layout.tsx",
@@ -964,8 +964,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "size": 768,
-      "last_modified": "2026-10-10T10:48:50.048Z"
+      "size": 751,
+      "last_modified": "2026-10-11T23:42:05.535Z"
     },
     {
       "path": "components/availability/AwayEditor.tsx",
@@ -1389,8 +1389,8 @@
     },
     {
       "path": "components/studio/production/CallSheetsPanel.tsx",
-      "size": 22192,
-      "last_modified": "2026-10-11T14:20:27.084Z"
+      "size": 23821,
+      "last_modified": "2026-10-11T23:49:54.726Z"
     },
     {
       "path": "components/studio/production/CrewView.tsx",
@@ -2006,6 +2006,21 @@
       "path": "lib/film/days.ts",
       "size": 8364,
       "last_modified": "2026-10-11T14:20:27.090Z"
+    },
+    {
+      "path": "lib/film/sides-print.ts",
+      "size": 2205,
+      "last_modified": "2026-10-11T23:49:30.706Z"
+    },
+    {
+      "path": "lib/film/sides.test.ts",
+      "size": 3754,
+      "last_modified": "2026-10-11T23:50:00.436Z"
+    },
+    {
+      "path": "lib/film/sides.ts",
+      "size": 2454,
+      "last_modified": "2026-10-11T23:49:08.354Z"
     },
     {
       "path": "lib/film/sky.test.ts",

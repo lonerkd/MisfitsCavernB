@@ -140,6 +140,8 @@ information. Recorded in design-language.md; it is next.
 
 **Then (film graph, step 2 — people in scenes, #164):** migration `20261011010000` — `characters`, `scene_characters`, `character_castings.character_id`, and triggers keeping them in step with `cast_list` / `character_name`. **Applied to production by paste on 2026-10-11** (the connector's `apply_migration` hung). Verified: tables, column, 3 triggers, RLS, backfill (15 characters, 27 links); Production schema drift passed. Pasted migrations leave no row in `supabase_migrations.schema_migrations`.
 
+**Then (film graph step 2 — sides):** each day's call sheet has a **Sides** button: one printed page per called actor who speaks that day (their scenes in shooting order, own cue and speeches highlighted). Pure `lib/film/sides.ts` + `sides-print.ts`, unit-tested (8 tests); no schema change. Not yet: the app still reads `cast_list` text, not `scene_characters`; `call_sheet_calls.character_id`; e2e for the Sides button (needs the local stack). Next: step 3 (story time → continuity).
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel
