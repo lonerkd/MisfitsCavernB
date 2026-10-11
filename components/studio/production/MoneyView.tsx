@@ -63,7 +63,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               ))}
             </div>
             {lines.length === 0 ? (
-              <p className={s.hint}>No budget lines yet — set the budget on the project page (or estimate it from the script), then track spend against it here.</p>
+              <p className={s.hint}>No budget lines yet. Set the budget on the project page.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <caption className="sr-only">Each budget line: planned, committed, paid, left</caption>
@@ -182,7 +182,7 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
         <button type="submit" className={s.btnPrimary} disabled={busy || !form.description.trim() || form.amount === ''}><Plus size={12} /> Add spend</button>
       </form>
       {rows.length === 0 ? (
-        <p className={s.hint}>Nothing spent yet. Add a purchase order when you commit to a rental or a location, and mark it paid when the money goes out.</p>
+        <p className={s.hint}>Nothing spent yet.</p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((x) => (
@@ -251,7 +251,7 @@ function HoursSection({ rows, canShape, userId, nameOf, onChange, onError }: {
         <button type="submit" className={s.btnPrimary} disabled={!(Number(hours) > 0)}><Plus size={12} /> Log my hours</button>
       </form>
       {rows.length === 0 ? (
-        <p className={s.hint}>{canShape ? 'No hours logged yet. The crew log theirs here; you approve them and set the rate.' : 'No hours logged yet. Log each day you work; the owner approves them.'}</p>
+        <p className={s.hint}>{canShape ? 'No hours yet.' : 'No hours yet.'}</p>
       ) : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {rows.map((t) => {

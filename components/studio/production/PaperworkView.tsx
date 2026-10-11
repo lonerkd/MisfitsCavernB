@@ -100,7 +100,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
       )}
 
       {docs.rows.length === 0 ? (
-        <p className={s.hint}>{canShape ? 'No paperwork yet. Add what the production needs above, or any document — attach the PDF or a photo when you have it.' : 'Nothing for you here yet. When the production sends you a contract or release, it shows up here.'}</p>
+        <p className={s.hint}>{canShape ? 'No paperwork yet.' : 'Nothing for you yet.'}</p>
       ) : byKind.map((g) => (
         <section key={g.id} aria-labelledby={`paper-${g.id}`} className={s.stack} style={{ gap: 6 }}>
           <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{g.plural} · {g.rows.length}</h3>
