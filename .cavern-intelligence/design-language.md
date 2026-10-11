@@ -87,8 +87,10 @@ offer guides; moving that into the interface itself is the next work.
 
 `components/film/` (`Sky`, `Paper`, `TimeBox`, `Stamp`; geometry in `lib/film/sky.ts`), and on them the **call sheet** (the day's sky, then paper: ruled Call / Shoot / Wrap boxes, a stamp, strips, calls) and the **stripboard** (each day with its own sky and date, strips in the paper board's colours, black strips for company moves).
 
+**The island on a phone** is one pill (project, page, unread) with Capture beside it, replacing the tab bar.
+
 ## Not yet done (in order)
 
-1. The island on a phone replacing the tab bar.
+1. Live activities in the island (a call, a recording, an upload, music, a timer, sync state): the pill's resting text is the slot they take over.
 2. The rest of the suite, screen by screen, to the word budget (breakdown, readiness, locations, on set, money, the project hub…).
 3. Role- and phase-aware first screens ("my day").
