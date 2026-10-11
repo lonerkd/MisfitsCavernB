@@ -25,6 +25,7 @@ import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture
 import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -171,6 +172,8 @@ export default function MobileTabBar() {
   const waiting = useOutbox().length;
   const [unread, setUnread] = useState(0);
   const authed = status === 'authed';
+  // Only on a phone: on a desk the page would otherwise hold a hidden copy of the project's name.
+  const phone = useMediaQuery('(max-width: 760px)');
   const { activeProject } = useProject();
   const { activeDescriptor } = usePill();
 
@@ -202,7 +205,7 @@ export default function MobileTabBar() {
     return () => { live = false; window.removeEventListener('focus', load); clearInterval(t); };
   }, [authed, pathname]);
 
-  if (!authed || hiddenOn(pathname)) return null;
+  if (!authed || !phone || hiddenOn(pathname)) return null;
 
   const place = activeDescriptor?.title || islandRoute(pathname, !!activeProject).title;
 
