@@ -175,3 +175,6 @@
 
 .condition { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(var(--ink-rgb), 0.08); color: var(--fg); white-space: nowrap; }
 .condition[data-kind='offline'] { background: var(--limit, #b3261e); color: #fff; }
+.onset { display: inline-flex; align-items: center; gap: 2px; font-size: 11px; border-radius: 999px; background: var(--island-accent); }
+.onsetLink { padding: 2px 4px 2px 10px; color: var(--on-accent, #fff); text-decoration: none; white-space: nowrap; }
+.onsetAway { border: 0; background: none; color: var(--on-accent, #fff); cursor: pointer; padding: 0 8px 0 2px; font-size: 13px; }

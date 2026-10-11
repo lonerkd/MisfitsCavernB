@@ -112,3 +112,7 @@ Screen by screen, to the rules above. Each pass is a PR; a pass ends when its sc
 6. Live activities in the phone pill (a call, a recording, an upload, sync state).
 7. Role- and phase-aware first screens ("my day").
 
+
+## On set (decided 2026-10-11)
+
+The island takes over by itself on a shoot day: a chip reading "On set · Day N" that opens the on-set tools, with a × to step out for that day (kept per device). Offline is the same on desk and phone: "Offline · N waiting", then "Sending N" when the connection is back. Both come from `lib/island/` (`condition.ts`, `onset.ts`).

@@ -19,6 +19,8 @@ import {
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { islandRoute } from '@/lib/island/routes';
+import { ON_SET_HREF } from '@/lib/island/onset';
+import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { getLoungeUnread } from '@/lib/supabase/messages';
 import { readable } from '@/lib/util/color';
@@ -207,6 +209,7 @@ export default function MobileTabBar() {
   }, [authed, pathname]);
 
   const condition = useIslandCondition();
+  const onSet = useOnSet();
   if (!authed || !phone || hiddenOn(pathname)) return null;
 
   const route = islandRoute(pathname, !!activeProject);
@@ -228,6 +231,12 @@ export default function MobileTabBar() {
           </span>
           {unread > 0 && <span className={m.pillUnread} aria-hidden>{unread > 99 ? '99+' : unread}</span>}
         </button>
+        {onSet && (
+          <span className={m.pillOnset}>
+            <Link href={ON_SET_HREF} className={m.pillOnsetLink}>{onSet.label}</Link>
+            <button type="button" className={m.pillOnsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
+          </span>
+        )}
         <button type="button" className={m.pillCapture} aria-haspopup="dialog" aria-expanded={capturing} aria-label="Capture" onClick={() => { setStart(null); setCapturing(true); }}>
           <Plus size={22} aria-hidden />
           {waiting > 0 && <span className={m.pillWaiting} aria-label={`${waiting} waiting to send`}>{waiting}</span>}
