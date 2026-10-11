@@ -1,7 +1,7 @@
 # The film graph — one connected core
 
 **Status: approved by the owner 2026-10-10. Step 1 (days and places → daylight)
-is built — migration `20261010010000`, `lib/film/`, ADR 0005. Next: step 2
+is built — migration `20261010010000`, `lib/film/`, ADR 0005. Step 2 (people in scenes): the schema is built — migration `20261011010000` (`characters`, `scene_characters`, casting by id); sides are next, then step 2
 (people in scenes → sides).** Not yet in step 1, deliberately: `scenes.day_order`
 (nothing orders scenes within a day yet) and `shoot_day_id` on timesheets and
 expenses (they arrive with money, step 5).
