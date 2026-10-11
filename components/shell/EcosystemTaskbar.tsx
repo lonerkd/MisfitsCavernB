@@ -16,6 +16,7 @@ import { useProject } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
+import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
@@ -282,6 +283,7 @@ export default function EcosystemTaskbar() {
 
   // ── What it has to offer here ────────────────────────────────────────────
   const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
+  const condition = useIslandCondition();
   const pathApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
   const app = pathApp ?? APPS.find(a => a.id === route.app);
   const Glyph = app?.icon ?? Compass;
@@ -545,6 +547,7 @@ export default function EcosystemTaskbar() {
               {/* One slot each, so what's under the pointer survives the change of shape. */}
               {mode === 'rest' && <span className={s.glyph}><Glyph size={15} strokeWidth={1.6} aria-hidden /></span>}
               {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}
+              {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}
               {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
             </button>
 

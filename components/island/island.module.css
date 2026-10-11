@@ -172,3 +172,6 @@
 .slot[data-open='true']::after { display: none; }
 
 @media (max-width: 760px) { .dock { display: none; } }
+
+.condition { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(var(--ink-rgb), 0.08); color: var(--fg); white-space: nowrap; }
+.condition[data-kind='offline'] { background: var(--limit, #b3261e); color: #fff; }
