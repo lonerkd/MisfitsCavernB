@@ -31,7 +31,6 @@ import { useProjectBrief, loadChannelPresets, suggestChannels, type ChannelPrese
 import { mapStatusToPhase } from '@/lib/os/phases';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useSearchParam } from '@/lib/hooks/useSearchParam';
-import { Mark } from '@/components/brand/Mark';
 
 interface Message {
   id: string;
@@ -1052,7 +1051,7 @@ export default function LoungePage() {
         padding: '0 clamp(16px, 4vw, 28px)',
         height: 62,
         gap: 12,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
         zIndex: 100,
         background: 'var(--surface)',
         backdropFilter: 'blur(24px)',
@@ -1060,17 +1059,6 @@ export default function LoungePage() {
         boxShadow: '0 1px 0 rgba(16,185,129,0.08) inset',
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 3vw, 20px)', flexShrink: 0 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            ><Mark size={22} title="The Cavern home" /></div>
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--ok)', textTransform: 'var(--caps)' }}>Lounge</div>
-        </div>
-
         {/* The picker takes what room is left and cuts a long name short — the header never runs off a phone screen. */}
         <div style={{ display: 'flex', gap: 14, alignItems: 'center', minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(var(--ink-rgb), 0.03)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(var(--ink-rgb), 0.06)', minWidth: 0, maxWidth: 'min(320px, 100%)' }}>

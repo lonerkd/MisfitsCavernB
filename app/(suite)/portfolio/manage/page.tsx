@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-react';
+import { Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
@@ -135,23 +135,15 @@ export default function ManagePortfolioPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100,
-      }}>
-        <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>MANAGE PORTFOLIO</h1>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        <h1 className="sr-only">Manage portfolio</h1>
         <button onClick={() => setShowNew(v => !v)}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer' }}>
           <Plus size={12} /> NEW PROJECT
         </button>
       </header>
 
-      <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '8px auto 0', padding: '40px 24px 80px' }}>
         {showNew && (
           <div style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />
