@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Sun, FolderOpen, Search, MessageSquare, X, FileText, LayoutGrid, Briefcase, Users, Film, Music,
-  User, Settings, Bell, Plus, type LucideIcon,
+  User, Settings, Bell, Plus, ChevronLeft, type LucideIcon,
 } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
@@ -207,11 +207,15 @@ export default function MobileTabBar() {
 
   if (!authed || !phone || hiddenOn(pathname)) return null;
 
-  const place = activeDescriptor?.title || islandRoute(pathname, !!activeProject).title;
+  const route = islandRoute(pathname, !!activeProject);
+  const place = activeDescriptor?.title || route.title;
 
   return (
     <>
       <nav className={`${m.pill} ${keyboard ? m.hidden : ''}`} aria-label="Suite" data-mobile-tabbar>
+        {route.back && (
+          <Link href={route.back.href} className={m.pillBack} aria-label={`Back to ${route.back.label}`}><ChevronLeft size={20} aria-hidden /></Link>
+        )}
         <button type="button" className={m.pillMain} aria-expanded={more} aria-haspopup="dialog" onClick={() => setMore(true)}
           aria-label={`Menu. ${activeProject?.title ? `${activeProject.title}, ` : ''}${place}${unread ? `, ${unread} unread` : ''}`}>
           <span className={m.pillDot} style={{ background: activeProject?.accent_color || 'var(--accent)' }} aria-hidden />

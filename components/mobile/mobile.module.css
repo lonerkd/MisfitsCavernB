@@ -23,6 +23,12 @@
 }
 .pillMain:active { background: rgba(var(--ink-rgb), 0.06); }
 .pillMain:focus-visible, .pillCapture:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.pillBack {
+  flex: none; width: 44px; min-height: 48px; display: grid; place-items: center; border-radius: 999px;
+  color: var(--fg-dim); -webkit-tap-highlight-color: transparent;
+}
+.pillBack:active { background: rgba(var(--ink-rgb), 0.06); }
+.pillBack:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
 .pillDot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
 .pillText { min-width: 0; display: flex; align-items: baseline; gap: 8px; font-size: var(--text-base); }
 .pillText b { font-weight: 800; letter-spacing: -0.01em; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
