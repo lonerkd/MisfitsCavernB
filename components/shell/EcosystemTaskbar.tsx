@@ -80,7 +80,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       }}
     >
       <div style={{
-        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5,
+        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
         textTransform: 'var(--caps)', color: 'var(--fg-dim)',
         padding: '4px 8px 8px',
         borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
@@ -90,7 +90,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
         Projects
         <Link href="/projects" prefetch={false} onClick={onClose} style={{
           color: 'rgba(232, 67, 26,0.7)', textDecoration: 'none', fontSize: 11,
-          letterSpacing: 1.5,
+          letterSpacing: 'var(--caps-track)',
           transition: 'color 0.2s',
         }}
           onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = 'var(--accent)')}
@@ -101,7 +101,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
       </div>
 
       {projects.length === 0 && (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', padding: '10px 8px', letterSpacing: 1 }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', padding: '10px 8px', letterSpacing: 'var(--caps-track)' }}>
           No projects yet.
         </div>
       )}
@@ -125,14 +125,14 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
           >
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: '-0.02em', color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}
               </div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
                 {proj.status || 'project'}
               </div>
             </div>
-            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: color, flexShrink: 0 }}>ACTIVE</div>}
+            {isActive && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: color, flexShrink: 0 }}>ACTIVE</div>}
             <button
               onClick={(e) => { e.stopPropagation(); setActiveProject(proj); onClose(); router.push(`/projects/${proj.id}`); }}
               aria-label="open hub"

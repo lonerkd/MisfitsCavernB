@@ -153,7 +153,7 @@ export default function Navigation() {
               href="/profile"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                   textTransform: 'var(--caps)', padding: '7px 12px',
                   background: 'rgba(var(--ink-rgb), 0.05)',
                   border: '1px solid rgba(var(--ink-rgb), 0.08)',
@@ -173,7 +173,7 @@ export default function Navigation() {
               <button
                 onClick={handleSignOut}
                 style={{
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                   textTransform: 'var(--caps)', padding: '8px 14px',
                   background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.10)',
                   color: 'var(--fg-dim)', borderRadius: 9999, cursor: 'pointer',
@@ -262,7 +262,7 @@ export default function Navigation() {
                     display: 'block',
                     fontFamily: 'var(--display)',
                     fontSize: '1.8rem',
-                    letterSpacing: 3,
+                    letterSpacing: '-0.02em',
                     color: pathname.startsWith(link.href) ? 'var(--accent)' : 'var(--fg)',
                     textDecoration: 'none',
                     padding: '13px 0',
@@ -301,7 +301,7 @@ export default function Navigation() {
                     style={{
                       padding: '14px', background: 'transparent',
                       border: '1px solid rgba(var(--ink-rgb), 0.10)', color: 'var(--fg-dim)',
-                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3,
+                      fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                       textTransform: 'var(--caps)', fontWeight: 600, borderRadius: 9999,
                       cursor: 'pointer',
                     }}

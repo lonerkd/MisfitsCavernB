@@ -126,7 +126,7 @@ export default function ProjectHubPage() {
   if (loading || !project) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>LOADING</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>LOADING</div>
       </div>
     );
   }
@@ -197,51 +197,22 @@ export default function ProjectHubPage() {
           </Link>
           <div style={{ width: 1, height: 20, background: 'rgba(var(--ink-rgb), 0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
+            <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: project.color }}>{project.type}</span>
           </div>
         </div>
 
-        <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
-          {typePhases.map((phase, i) => {
-            const isDone   = i < typePhaseIdx;
-            const isActive = i === typePhaseIdx;
-            const isFuture = i > typePhaseIdx;
-            return (
-              <React.Fragment key={phase.id}>
-                <div style={{
-                  padding: '5px 12px', borderRadius: 9999,
-                  fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
-                  background: isActive ? `${project.color}18` : 'transparent',
-                  color: isActive ? project.color : isDone ? 'var(--fg-muted)' : 'var(--fg-dim)',
-                  border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
-                  transition: 'all 0.3s', whiteSpace: 'nowrap',
-                }}>
-                  {isDone && <span style={{ marginRight: 4 }}>✓</span>}
-                  {phase.abbr}
-                </div>
-                {i < typePhases.length - 1 && (
-                  <div style={{
-                    width: 16, height: 1,
-                    background: isDone ? `${project.color}60` : 'rgba(var(--ink-rgb), 0.08)',
-                    transition: 'background 0.4s',
-                  }} />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
-            <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 1.5 }}>
+            <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)' }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
               {onlineCount} online
             </div>
           )}
           {counts.tasks > 0 && (
           <div title="Tasks completed" className="mc-hide-phone" style={{
-            fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1.5,
+            fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)',
             padding: '5px 10px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)',
           }}>
             {counts.tasksDone}/{counts.tasks} tasks done
@@ -255,7 +226,7 @@ export default function ProjectHubPage() {
                 aria-label="Project visibility"
                 title="Who can see this project"
                 style={{
-                  fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.2, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)',
                   background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
                   borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none',
                 }}
@@ -269,7 +240,7 @@ export default function ProjectHubPage() {
                   onClick={copyShareLink}
                   title="Copy the share link — anyone with it can view this project"
                   style={{
-                    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.2, color: 'var(--jobs-text)',
+                    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)',
                     background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
                     borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
                   }}
@@ -288,8 +259,7 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginBottom: 6 }}>Production Hub</div>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, letterSpacing: 2, lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.6rem, 7vw, 4.4rem)', fontWeight: 900, letterSpacing: '-0.045em', lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <LoglineEditor
             projectId={id}
             value={project.description}

@@ -58,7 +58,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               ] as Array<[string, number, string | undefined]>).map(([label, v, hint]) => (
                 <div key={label} className={s.panel} style={{ padding: 12 }} title={hint}>
                   <div className={s.hint}>{label}</div>
-                  <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 1, color: label === 'Left' && v < 0 ? 'var(--danger)' : undefined }}>{money(v)}</div>
+                  <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: '-0.02em', color: label === 'Left' && v < 0 ? 'var(--danger)' : undefined }}>{money(v)}</div>
                 </div>
               ))}
             </div>

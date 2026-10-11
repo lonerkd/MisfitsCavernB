@@ -16,10 +16,10 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg)', color: 'var(--fg)', padding: 24, textAlign: 'center', gap: 18,
     }}>
-      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--accent)', textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--accent)', textTransform: 'var(--caps)' }}>
         Something broke
       </span>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, margin: 0, maxWidth: 'var(--w-form)' }}>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 'var(--caps-track)', margin: 0, maxWidth: 'var(--w-form)' }}>
         This page hit an unexpected error.
       </h1>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 440 }}>
@@ -34,8 +34,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           onClick={() => window.location.reload()}
           style={{
             padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
-            border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
-            textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+            border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
+            textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer',
           }}
         >
           Try Again
@@ -45,7 +45,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           style={{
             padding: '10px 22px', borderRadius: 9999, background: 'transparent', color: 'var(--fg)',
             border: '1px solid rgba(var(--fg-rgb), 0.15)', fontFamily: 'var(--mono)', fontSize: 11,
-            letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer', textDecoration: 'none',
+            letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer', textDecoration: 'none',
           }}
         >
           Go Home

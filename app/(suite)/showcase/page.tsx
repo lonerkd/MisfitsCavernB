@@ -49,7 +49,7 @@ export default function ShowcasePage() {
       >
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
           <ArrowLeft size={18} color="var(--fg)" />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 6, color: 'var(--fg)' }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: '-0.02em', color: 'var(--fg)' }}>
             THE CAVERN
           </div>
         </Link>
@@ -137,7 +137,7 @@ export default function ShowcasePage() {
               style={{
                 fontFamily: 'var(--display)',
                 fontSize: 'clamp(2rem, 6vw, 3.5rem)',
-                letterSpacing: 2,
+                letterSpacing: '-0.02em',
                 marginBottom: 20
               }}
             >

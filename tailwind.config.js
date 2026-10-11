@@ -17,9 +17,12 @@ module.exports = {
         }
       },
       fontFamily: {
-        'display': ['Bebas Neue', 'sans-serif'],
-        'mono': ['DM Mono', 'monospace'],
-        'serif': ['Cormorant Garamond', 'serif'],
+        // The interface face (design-language.md): these utilities follow the same tokens as the rest of the suite.
+        'display': ['var(--display)'],
+        'mono': ['var(--mono)'],
+        'serif': ['var(--serif)'],
+        'sans': ['var(--ui)'],
+        'code': ['var(--code)'],
       },
       animation: {
         'slide-up': 'slideUp 1s ease-out',

@@ -18,7 +18,7 @@ type Row = Tables<'client_errors'>;
 type Range = 1 | 7 | 30;
 interface Group { key: string; message: string; path: string | null; kinds: Set<string>; count: number; users: Set<string>; last: string; first: string; sample: Row; ids: number[] }
 
-const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 };
+const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' };
 
 function ago(iso: string) {
   const m = Math.round((Date.now() - Date.parse(iso)) / 60000);
@@ -63,11 +63,11 @@ export default function AdminErrorsPage() {
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', paddingBottom: 'calc(var(--taskbar-height, 94px) + 24px)' }}>
         <header style={{ height: 60, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', padding: '0 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
           <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', display: 'flex' }}><ArrowLeft size={20} /></Link>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>ERRORS</h1>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>ERRORS</h1>
         </header>
 
         <main style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '28px 24px' }}>
-          <p style={{ ...mono, color: 'var(--fg-muted)', margin: '0 0 18px', lineHeight: 1.6, letterSpacing: 0.5 }}>
+          <p style={{ ...mono, color: 'var(--fg-muted)', margin: '0 0 18px', lineHeight: 1.6, letterSpacing: '-0.02em' }}>
             Crashes and uncaught errors people hit, reported by the app itself. Grouped by message and page; kept 30 days.
           </p>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 20, flexWrap: 'wrap' }}>

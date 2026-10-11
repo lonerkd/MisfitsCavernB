@@ -53,10 +53,10 @@ export default function AuthCallback() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.8rem, 5vw, 2.6rem)', letterSpacing: 6, marginBottom: 24 }}>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(1.8rem, 5vw, 2.6rem)', letterSpacing: '-0.02em', marginBottom: 24 }}>
           MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
         </div>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>AUTHENTICATING...</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>AUTHENTICATING...</div>
         <div style={{ marginTop: 24, width: 120, height: 2, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, margin: '24px auto 0', overflow: 'hidden' }}>
           <div style={{ width: '40%', height: '100%', background: 'var(--accent)', borderRadius: 4, animation: 'authSlide 1.2s ease-in-out infinite' }} />
         </div>

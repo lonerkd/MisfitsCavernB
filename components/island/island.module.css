@@ -76,7 +76,7 @@
 .glyph { display: inline-flex; flex-shrink: 0; color: var(--island-accent); }
 .glyph svg { width: calc(15px * var(--island-scale)); height: calc(15px * var(--island-scale)); }
 .title {
-  font-family: var(--display); font-size: var(--island-title); letter-spacing: 1px; color: var(--fg);
+  font-family: var(--display); font-size: var(--island-title); letter-spacing: -0.02em; color: var(--fg);
   max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .lead, .label {
@@ -85,16 +85,16 @@
 .lead { display: inline-flex; gap: 6px; color: var(--island-accent); }
 .lead small { font-size: inherit; color: var(--fg-muted); }
 .lead::before { content: '·'; margin-right: 3px; color: var(--fg-muted); }
-.label { color: var(--fg); letter-spacing: 1.5px; }
+.label { color: var(--fg); letter-spacing: var(--caps-track); }
 
-.crumbs { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-family: var(--mono); font-size: var(--island-text); letter-spacing: 0.8px; color: var(--fg-muted); white-space: nowrap; }
+.crumbs { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-family: var(--mono); font-size: var(--island-text); letter-spacing: var(--caps-track); color: var(--fg-muted); white-space: nowrap; }
 .crumbs b { font-weight: 400; color: var(--island-accent); max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── The page's own controls ─────────────────────────── */
 .inline { display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: 6px 14px; padding: 0 16px 0 2px; min-width: 0; }
 .field { display: inline-flex; flex-direction: column; line-height: 1.15; white-space: nowrap; font-family: var(--mono); font-size: var(--island-text); }
 .field small { font-size: inherit; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); }
-.field span { letter-spacing: 0.5px; color: var(--fg); }
+.field span { letter-spacing: var(--caps-track); color: var(--fg); }
 .rule { width: 1px; height: calc(22px * var(--island-scale)); flex-shrink: 0; margin: 0 4px; background: rgba(var(--ink-rgb), 0.09); }
 
 .toggle, .chip {

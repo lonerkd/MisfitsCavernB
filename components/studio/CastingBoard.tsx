@@ -101,7 +101,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   border: `1px solid ${active ? `${c.color}55` : 'rgba(var(--ink-rgb), 0.06)'}`,
                   borderLeft: `3px solid ${c.color}`, borderRadius: 8, cursor: 'pointer',
                 }}>
-                  <span style={{ flex: 1, fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, color: active ? readable(c.color) : 'var(--fg)' }}>{c.name}</span>
+                  <span style={{ flex: 1, fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: '-0.02em', color: active ? readable(c.color) : 'var(--fg)' }}>{c.name}</span>
                   {cast ? (
                     <span title={`Cast: ${cast.username || 'crew'}`} style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
                   ) : (
@@ -118,7 +118,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
             const fp = footprint(sel.name);
             return (
               <div style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${sel.color}33`, borderRadius: 14, padding: 24 }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: '-0.02em', color: sel.color, marginBottom: 20 }}>{sel.name}</div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
                 {cast ? (

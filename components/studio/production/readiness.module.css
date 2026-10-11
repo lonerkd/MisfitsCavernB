@@ -29,7 +29,7 @@
 .next { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
 .nextReady { border-color: rgba(52, 199, 123, 0.35); }
 .nextBlocked { border-color: rgba(245, 165, 36, 0.4); }
-.nextTitle { font-family: var(--display); font-size: 1.6rem; letter-spacing: 1px; color: var(--fg); display: flex; align-items: baseline; gap: 10px; }
+.nextTitle { font-family: var(--display); font-size: 1.6rem; letter-spacing: -0.02em; color: var(--fg); display: flex; align-items: baseline; gap: 10px; }
 .nextLine { margin: 0; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }
 .nextList { margin: 2px 0 4px; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--fg-muted); }
 .nextList strong { color: var(--fg); font-weight: 500; }
@@ -42,8 +42,8 @@
 
 .day { display: flex; flex-direction: column; gap: 6px; }
 .dayHead { margin: 6px 0 0; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg); }
-.dayDate { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: none; color: var(--fg-muted); }
-.dayCount { font-size: 11px; letter-spacing: 0.5px; text-transform: none; color: var(--fg-muted); }
+.dayDate { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: none; color: var(--fg-muted); }
+.dayCount { font-size: 11px; letter-spacing: var(--caps-track); text-transform: none; color: var(--fg-muted); }
 
 .rows { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .row { border-radius: 8px; border: 1px solid rgba(var(--fg-rgb), 0.08); background: rgba(var(--fg-rgb), 0.02); border-left-width: 3px; }

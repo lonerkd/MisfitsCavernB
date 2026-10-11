@@ -42,7 +42,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
             style={{ width: 560, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 28 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', textTransform: 'var(--caps)', marginBottom: 6 }}>New Production</div>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: '-0.02em', marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Input
                 autoFocus
@@ -190,7 +190,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
         <div style={{
           fontFamily: 'var(--display)',
           fontSize: '1.25rem',
-          letterSpacing: 2,
+          letterSpacing: '-0.02em',
           color: 'var(--fg)',
           marginBottom: 8,
           lineHeight: 1.2,
@@ -214,7 +214,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
 
         {r && pct !== null && (
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-muted)', marginBottom: 5 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 5 }}>
             <span>{r.phaseLabel}</span>
             <span>{r.done === r.total ? 'Ready for the next phase' : `${r.done} of ${r.total} done`}</span>
           </div>
@@ -298,7 +298,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           {phase.abbr}
         </div>
         <div style={{
-          fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1,
+          fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
           color: 'var(--fg-dim)',
           paddingLeft: 4,
         }}>
@@ -306,7 +306,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
         </div>
         <div style={{
           marginLeft: 'auto',
-          fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1,
+          fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
           color: 'var(--fg-dim)',
           background: 'rgba(var(--ink-rgb), 0.04)',
           border: '1px solid rgba(var(--ink-rgb), 0.06)',
@@ -349,18 +349,6 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           ))}
         </AnimatePresence>
 
-        {projects.length === 0 && (
-          <div style={{
-            height: 80, borderRadius: 14,
-            border: '1px dashed rgba(var(--ink-rgb), 0.05)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
-            color: 'var(--fg-dim)',
-            textTransform: 'var(--caps)',
-          }}>
-            No projects
-          </div>
-        )}
       </div>
     </div>
   );
@@ -536,7 +524,7 @@ export default function ProjectsPage() {
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
 
           <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
-            Production Board
+            Projects
           </div>
         </div>
 
@@ -547,7 +535,7 @@ export default function ProjectsPage() {
               { label: 'Active', value: inFlight },
             ].map(({ label, value }) => (
               <div key={label} style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, lineHeight: 1 }}>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
                   {value}
                 </div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
@@ -565,8 +553,8 @@ export default function ProjectsPage() {
               display: 'flex', alignItems: 'center', gap: 6,
               background: 'var(--accent)', color: 'var(--on-accent)',
               border: 'none', borderRadius: 9999,
-              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-              textTransform: 'var(--caps)', fontWeight: 600,
+              fontFamily: 'var(--ui)', fontSize: 'var(--text-sm)', letterSpacing: 0,
+              fontWeight: 700,
               padding: '8px 16px', cursor: 'pointer',
               transition: 'transform 0.2s, box-shadow 0.3s',
             }}
@@ -585,59 +573,9 @@ export default function ProjectsPage() {
         </div>
       </div>
 
-      <div style={{
-        position: 'fixed', top: 58, left: 0, width: '100%', height: 32,
-        display: 'flex', alignItems: 'center',
-        background: 'var(--surface)',
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.03)',
-        zIndex: 199,
-        padding: '0 24px',
-        gap: 0,
-      }}>
-        {PHASES.map((phase, i) => {
-          const count = byPhase[phase.id].length;
-          const color = PHASE_COLORS[phase.id];
-          return (
-            <React.Fragment key={phase.id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 12px' }}>
-                <div style={{
-                  width: 5, height: 5, borderRadius: '50%',
-                  background: count > 0 ? color : 'var(--fg-dim)',
-                  boxShadow: count > 0 ? `0 0 6px ${color}` : 'none',
-                  transition: 'background 0.3s, box-shadow 0.3s',
-                }} />
-                <span style={{
-                  fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-                  textTransform: 'var(--caps)',
-                  color: count > 0 ? readable(color) : 'var(--fg-dim)',
-                  transition: 'color 0.3s',
-                }}>
-                  {phase.abbr}
-                </span>
-                {count > 0 && (
-                  <span style={{
-                    fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', letterSpacing: 0.5,
-                    color: 'var(--fg-dim)',
-                  }}>
-                    {count}
-                  </span>
-                )}
-              </div>
-              {i < PHASES.length - 1 && (
-                <div style={{
-                  flex: 1, height: 1,
-                  background: `linear-gradient(90deg, ${PHASE_COLORS[phase.id]}33, ${PHASE_COLORS[PHASES[i + 1].id]}33)`,
-                  maxWidth: 60,
-                }} />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
 
       <div style={{
-        paddingTop: 90 + 32,
+        paddingTop: 58 + 24,
         paddingBottom: 'calc(var(--taskbar-height, 94px) + 20px)',
         paddingLeft: 24,
         paddingRight: 24,
@@ -657,7 +595,7 @@ export default function ProjectsPage() {
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
             style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>Welcome to the cavern</div>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 1, margin: 0, fontWeight: 400 }}>Start your first<br />production</h2>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: '-0.02em', lineHeight: 1, margin: 0, fontWeight: 400 }}>Start your first<br />production</h2>
             <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.6 }}>
               One project ties your screenplay, schedule, budget, concept board, characters and pitch together. Create one to begin — everything flows from it.
             </p>

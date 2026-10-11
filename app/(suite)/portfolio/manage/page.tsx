@@ -143,10 +143,10 @@ export default function ManagePortfolioPage() {
       }}>
         <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>MANAGE PORTFOLIO</h1>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>MANAGE PORTFOLIO</h1>
         </Link>
         <button onClick={() => setShowNew(v => !v)}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer' }}>
           <Plus size={12} /> NEW PROJECT
         </button>
       </header>
@@ -183,7 +183,7 @@ export default function ManagePortfolioPage() {
         ) : projects.length === 0 && !showNew ? (
           <EmptyState icon={<Film size={28} />} title="No portfolio projects yet"
             subtitle="Add a short, a reel or a music video, with a link."
-            action={<button type="button" onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>Add your first piece</button>} />
+            action={<button type="button" onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', fontWeight: 600 }}>Add your first piece</button>} />
         ) : (
         <div style={{ display: 'grid', gap: 20 }}>
           {projects.map(project => {
@@ -233,7 +233,7 @@ export default function ManagePortfolioPage() {
                   </select>
                   <input type="text" placeholder="Title (optional)" value={form.title} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, title: e.target.value } }))} style={{ ...fieldStyle, flex: 1 }} />
                   <input type="url" placeholder="Media URL" value={form.url} onChange={e => setMediaForm(prev => ({ ...prev, [project.id]: { ...form, url: e.target.value } }))} style={{ ...fieldStyle, flex: 2 }} />
-                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
+                  <button onClick={() => addMedia(project.id)} style={{ padding: '0 16px', background: 'rgba(232, 67, 26,0.1)', border: '1px solid var(--accent)', color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ ADD</button>
                 </div>
               </div>
             );

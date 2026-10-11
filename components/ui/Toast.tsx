@@ -75,7 +75,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 boxShadow: '0 12px 32px rgba(0,0,0,0.5)',
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 1,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg)',
                 pointerEvents: 'auto',
                 maxWidth: 320,

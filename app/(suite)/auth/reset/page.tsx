@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
 
       <main style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 7vw, 3rem)', fontWeight: 400, letterSpacing: 6, lineHeight: 1, margin: '0 0 10px' }}>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 7vw, 3rem)', fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1, margin: '0 0 10px' }}>
             NEW <span style={{ color: 'var(--accent)' }}>PASSWORD</span>
           </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
@@ -114,7 +114,7 @@ export default function ResetPasswordPage() {
 
         <div style={{ background: 'var(--glass)', border: '1px solid rgba(var(--ink-rgb), 0.06)', backdropFilter: 'blur(20px)', padding: '40px 36px', borderRadius: 'var(--radius-sm)' }}>
           {phase === 'checking' && (
-            <p role="status" style={{ margin: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>
+            <p role="status" style={{ margin: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
               CHECKING YOUR LINK…
             </p>
           )}
@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
               <p style={{ margin: '0 0 20px', fontSize: 14, lineHeight: 1.6, color: 'var(--fg)' }}>
                 This reset link has expired, was already used, or was opened in a different browser than the one you asked from.
               </p>
-              <Link href="/auth?forgot=1" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textDecoration: 'underline' }}>
+              <Link href="/auth?forgot=1" style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textDecoration: 'underline' }}>
                 Send me a new link
               </Link>
             </div>
@@ -135,7 +135,7 @@ export default function ResetPasswordPage() {
               <Input name="password" label="New password" type="password" autoComplete="new-password" />
               <Input name="confirm" label="Confirm new password" type="password" autoComplete="new-password" />
               {error && (
-                <div role="alert" style={{ padding: '10px 14px', background: 'rgba(232, 67, 26,0.08)', border: '1px solid rgba(232, 67, 26,0.2)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', marginBottom: 20, letterSpacing: 0.5 }}>
+                <div role="alert" style={{ padding: '10px 14px', background: 'rgba(232, 67, 26,0.08)', border: '1px solid rgba(232, 67, 26,0.2)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', marginBottom: 20, letterSpacing: 'var(--caps-track)' }}>
                   {error}
                 </div>
               )}

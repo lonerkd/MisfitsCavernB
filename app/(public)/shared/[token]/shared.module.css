@@ -30,7 +30,7 @@
 .title {
   font-family: var(--display);
   font-size: clamp(2.8rem, 9vw, 5.5rem);
-  letter-spacing: 3px;
+  letter-spacing: -0.02em;
   line-height: 0.95;
   margin: 0;
 }
@@ -78,7 +78,7 @@
 .sceneNum {
   font-family: var(--display);
   font-size: 1.8rem;
-  letter-spacing: 1px;
+  letter-spacing: -0.02em;
   color: var(--share-accent);
   line-height: 1;
 }
@@ -114,7 +114,7 @@
   padding: 10px 14px 12px;
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--caps-track);
   color: var(--fg-muted);
 }
 
@@ -125,7 +125,7 @@
   padding-top: 24px;
   border-top: 1px solid var(--border);
   display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--fg-dim);
+  font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); color: var(--fg-dim);
 }
 .cta {
   font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps);
@@ -135,8 +135,8 @@
   min-height: 100vh; background: var(--bg); color: var(--fg);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 40px; text-align: center;
 }
-.wordmark { font-family: var(--display); font-size: 2.5rem; letter-spacing: 4px; }
-.back { font-family: var(--mono); font-size: 11px; letter-spacing: 2px; color: var(--accent); text-decoration: none; margin-top: 12px; }
+.wordmark { font-family: var(--display); font-size: 2.5rem; letter-spacing: -0.02em; }
+.back { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); color: var(--accent); text-decoration: none; margin-top: 12px; }
 
 /* Press kit: laurels under the logline, cast & crew by department. */
 .laurels { list-style: none; margin: 28px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }

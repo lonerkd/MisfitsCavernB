@@ -59,8 +59,8 @@ export function LoglineEditor({ projectId, value, isOwner, onSaved }: {
         aria-describedby={`logline-meta-${projectId}`}
       />
       <div id={`logline-meta-${projectId}`} className={p.loglineMeta}>
-        <span>{saving ? 'Saving…' : 'Enter to save · leads the pitch deck and share page'}</span>
-        <span>{draft.length}/{MAX}</span>
+        <span>{saving ? 'Saving…' : 'Enter to save'}</span>
+        {draft.length > MAX - 60 && <span>{draft.length}/{MAX}</span>}
       </div>
     </div>
   );

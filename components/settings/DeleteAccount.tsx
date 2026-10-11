@@ -8,7 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { getDeletionPlan, transferProject, deleteMyAccount, type DeletionPlan, type SharedProject } from '@/lib/account/deletion';
 
-const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1 };
+const mono: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' };
 const dangerBtn: React.CSSProperties = {
   ...mono, padding: '8px 14px', background: 'transparent', color: 'var(--danger)', borderRadius: 8, cursor: 'pointer',
   border: '1px solid color-mix(in srgb, var(--danger) 35%, transparent)', display: 'inline-flex', alignItems: 'center', gap: 6,

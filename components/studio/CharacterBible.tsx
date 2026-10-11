@@ -63,7 +63,7 @@ export function CharacterBible() {
 
   return (
     <div className={s.panel}>
-      <div className={s.panelTitle}><Users size={14} /> Character bible · {chars.length} <span className={s.dim} style={{ letterSpacing: 0.5, textTransform: 'none' }}>from the screenplay</span></div>
+      <div className={s.panelTitle}><Users size={14} /> Character bible · {chars.length} <span className={s.dim} style={{ letterSpacing: 'var(--caps-track)', textTransform: 'none' }}>from the screenplay</span></div>
       {status === 'loading' && <p className={s.hint}>Loading…</p>}
       {status === 'error' && <p className={s.hint}>Couldn’t read the script’s characters.</p>}
       {status === 'ready' && chars.length === 0 && <p className={s.hint}>Characters appear here once they speak in the screenplay.</p>}
@@ -74,7 +74,7 @@ export function CharacterBible() {
           return (
             <div key={c.name} style={{ background: 'var(--sunken)', border: `1px solid ${c.color}33`, borderLeft: `3px solid ${c.color}`, borderRadius: 8, padding: 14 }}>
               <div className={s.row} style={{ justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 1, color: c.color }}>{c.name}</span>
+                <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em', color: c.color }}>{c.name}</span>
                 {!isEditing && <button type="button" className={s.iconBtn} onClick={() => startEdit(c)} aria-label={`Edit ${c.name}`}><Pencil size={12} /></button>}
               </div>
               {isEditing && draft ? (

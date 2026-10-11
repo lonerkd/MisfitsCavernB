@@ -47,7 +47,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 
         <motion.label
           htmlFor={inputId}
-          className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${icon ? 'left-10' : 'left-4'} ${
+          className={`absolute top-1/2 -translate-y-1/2 pointer-events-none transition-colors duration-300 font-mono tracking-[var(--caps-track)] [text-transform:var(--caps)] ${icon ? 'left-10' : 'left-4'} ${
             isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
@@ -111,7 +111,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             role="alert"
             initial={{ opacity: 0, y: -4 }}
             animate={{ opacity: 1, y: 0 }}
-            className="absolute -bottom-5 left-1 text-[0.65rem] font-mono text-red-500/90 tracking-widest uppercase"
+            className="absolute -bottom-5 left-1 text-[0.65rem] font-mono text-red-500/90 tracking-[var(--caps-track)] [text-transform:var(--caps)]"
           >
             {error}
           </motion.p>

@@ -52,19 +52,19 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
   const slides = [
     { label: 'Logline & Title', bg: undefined as string | undefined, render: (big: boolean) => (
       <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '5rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>{project.title}</h3>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '5rem' : '2rem', letterSpacing: '-0.02em', margin: '16px 0' }}>{project.title}</h3>
         <p style={{ fontFamily: 'var(--serif)', fontSize: big ? '1.4rem' : '0.85rem', color: 'var(--fg-muted)', maxWidth: 'var(--w-reading)', margin: '0 auto', lineHeight: 1.6 }}>{project.description || 'Add a logline in the project summary.'}</p>
       </>
     ) },
     { label: 'The Visual World', bg: visual, render: (big: boolean) => (
       <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>THE VISUAL WORLD</h3>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '2rem', letterSpacing: '-0.02em', margin: '16px 0' }}>THE VISUAL WORLD</h3>
         <div style={{ fontSize: big ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'var(--caps)' }}>{concepts.length > 0 ? `${concepts.length} concept references` : 'Add images in the Library'}</div>
       </>
     ) },
     { label: 'The Characters', bg: undefined, render: (big: boolean) => (
       <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>THE CHARACTERS</h3>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: '-0.02em', margin: '14px 0' }}>THE CHARACTERS</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 'var(--w-reading)', margin: '0 auto' }}>
           {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: big ? 14 : 9.5, padding: big ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 9999 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Develop the Character Bible to populate the cast.</span>}
         </div>
@@ -72,7 +72,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
     ) },
     { label: 'Story Engine', bg: undefined, render: (big: boolean) => (
       <>
-        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: 4, margin: '14px 0' }}>STORY ENGINE</h3>
+        <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: '-0.02em', margin: '14px 0' }}>STORY ENGINE</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 600, margin: '0 auto' }}>
           {beats.length > 0 ? beats.slice(0, 5).map((b) => <div key={b.id} style={{ fontFamily: 'var(--mono)', fontSize: big ? 13 : 10, color: '#ddd' }}>{b.title}</div>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Add story beats in Production → Story.</span>}
         </div>
@@ -85,7 +85,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: 16, marginBottom: 40 }}>
         <div>
           <SectionLabel text="Investor Relations" />
-          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: 2 }}>Pitch Deck</h2>
+          <h2 style={{ fontFamily: 'var(--display)', fontSize: '2.5rem', letterSpacing: '-0.02em' }}>Pitch Deck</h2>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button className="link-btn" onClick={printDeck}>⎙ Export PDF</button>
@@ -116,7 +116,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       <AnimatePresence>
         {present && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: '#050505', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>✕ EXIT</button>
+            <button onClick={() => setPresent(false)} aria-label="exit" style={{ position: 'fixed', top: 24, right: 28, background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>✕ EXIT</button>
             <div style={{ width: '80vw', maxWidth: 'var(--w-content)', aspectRatio: '16/9', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center', textAlign: 'center', padding: 48 }}>
               {/* eslint-disable-next-line @next/next/no-img-element -- a signed storage URL or a linked image on any host */}
               {slides[idx].bg && (<><img src={slides[idx].bg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }} /><div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)' }} /></>)}
@@ -124,7 +124,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
             </div>
             <button onClick={() => setIdx(i => Math.max(0, i - 1))} disabled={idx === 0} aria-label="prev" style={{ position: 'fixed', left: 28, top: '50%', background: 'none', border: 'none', color: idx === 0 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>‹</button>
             <button onClick={() => setIdx(i => Math.min(slides.length - 1, i + 1))} disabled={idx === slides.length - 1} aria-label="next" style={{ position: 'fixed', right: 28, top: '50%', background: 'none', border: 'none', color: idx === slides.length - 1 ? '#333' : '#fff', cursor: 'pointer', fontSize: 32 }}>›</button>
-            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 2 }}>{idx + 1} / {slides.length}</div>
+            <div style={{ position: 'fixed', bottom: 28, left: 0, right: 0, textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{idx + 1} / {slides.length}</div>
           </motion.div>
         )}
       </AnimatePresence>,

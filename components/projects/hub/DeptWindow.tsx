@@ -92,7 +92,7 @@ export function DeptWindow({ title, tag, color: rawColor, href, stats, preview, 
             whileHover={{ scale: 1.06, x: 2 }}
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               textTransform: 'var(--caps)', color: ink,
               padding: '6px 12px', borderRadius: 9999,
               background: `${color}12`, border: `1px solid ${color}28`,
@@ -123,7 +123,7 @@ export function ScriptPreview({ pages, scripts, scenes }: { pages: number; scrip
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1 }}>No script yet — open ScriptOS to start.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>No script yet — open ScriptOS to start.</div>
       )}
     </div>
   );
@@ -145,7 +145,7 @@ export function AssetPreview({ concepts, scenes }: { concepts: number; scenes: n
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1 }}>No assets yet — add them in Studio.</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>No assets yet — add them in Studio.</div>
       )}
     </div>
   );
@@ -169,7 +169,7 @@ export function CrewPreview({ team }: { team: ProjectHubViewModel['team'] }) {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{member.name}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1 }}>{member.role}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{member.role}</div>
           </div>
           {member.online && (
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', flexShrink: 0, boxShadow: '0 0 6px #10b981' }} />

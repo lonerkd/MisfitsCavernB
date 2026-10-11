@@ -23,7 +23,7 @@
   padding: 12px; display: flex; flex-direction: column; gap: 6px;
 }
 .catHead { display: flex; align-items: center; gap: 8px; }
-.catName { font-family: var(--mono); font-size: 11px; color: var(--c); letter-spacing: 0.5px; margin: 0; font-weight: 600; flex: 1; }
+.catName { font-family: var(--mono); font-size: 11px; color: var(--c); letter-spacing: var(--caps-track); margin: 0; font-weight: 600; flex: 1; }
 .catMeta { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
 .rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -46,7 +46,7 @@
 .sheets { display: flex; flex-direction: column; gap: 12px; }
 .sheet { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--panel); }
 .sheetHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-.sheetNum { font-family: var(--display); font-size: 1.5rem; letter-spacing: 1px; color: var(--fg); line-height: 1; }
+.sheetNum { font-family: var(--display); font-size: 1.5rem; letter-spacing: -0.02em; color: var(--fg); line-height: 1; }
 .sheetHeading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: var(--caps); }
 .sheetMeta { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }

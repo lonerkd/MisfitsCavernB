@@ -34,7 +34,7 @@ export default function AdminError({
           style={{
             fontFamily: 'var(--display)',
             fontSize: '1.5rem',
-            letterSpacing: 4,
+            letterSpacing: '-0.02em',
             marginBottom: 12,
           }}
         >

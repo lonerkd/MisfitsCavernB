@@ -197,7 +197,7 @@ export default function SoundtrackPage() {
       <header className="mb-12 flex items-end justify-between">
         <div>
           <h1 className="mc-title text-4xl tracking-wide">Soundtrack & Audio</h1>
-          <p className="mc-text text-[var(--fg-dim)] uppercase tracking-widest text-xs mt-2">Manage cinematic moods, SFX, and project references</p>
+          <p className="mc-text text-[var(--fg-dim)] [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs mt-2">Manage cinematic moods, SFX, and project references</p>
         </div>
       </header>
 
@@ -206,7 +206,7 @@ export default function SoundtrackPage() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`mc-text uppercase tracking-widest text-xs px-4 py-2 rounded-full transition-colors ${
+            className={`mc-text [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs px-4 py-2 rounded-full transition-colors ${
               activeTab === tab ? 'bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-strong)]' : 'text-[var(--fg-dim)] hover:text-[var(--fg-muted)]'
             }`}
           >

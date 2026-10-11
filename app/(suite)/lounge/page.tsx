@@ -152,14 +152,14 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       }}
     >
       {msg.pinned && (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--warn)', marginBottom: 4 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', marginBottom: 4 }}>
           <Pin size={9} aria-hidden /> PINNED
         </span>
       )}
       {!isMe && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
           <Avatar src={msg.avatar_url} name={msg.user} size={20} />
-          <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: 2, color: 'var(--accent)' }}>
+          <span style={{ fontFamily: 'var(--display)', fontSize: 13, letterSpacing: '-0.02em', color: 'var(--accent)' }}>
             {msg.user}
           </span>
           <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)' }}>
@@ -232,7 +232,7 @@ function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount =
       </div>
 
       {replyCount > 0 && onOpenThread && (
-        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, padding: '3px 10px', cursor: 'pointer', color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 0.5, alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
+        <button onClick={() => onOpenThread(msg)} style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 9999, padding: '3px 10px', cursor: 'pointer', color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', alignSelf: isMe ? 'flex-end' : 'flex-start' }}>
           <MessageSquare size={10} /> {replyCount} {replyCount === 1 ? 'reply' : 'replies'}
         </button>
       )}
@@ -270,7 +270,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: 40 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: '-0.02em' }}>
         <Volume2 size={24} color="var(--accent)" /> {channel.name}
       </div>
       {everyone.length > 0 ? (
@@ -288,10 +288,10 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
         </button>
         {joined && (
@@ -300,7 +300,7 @@ function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: 
           </button>
         )}
       </div>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: micError ? 'var(--warn)' : 'var(--fg-dim)', letterSpacing: 1, maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: micError ? 'var(--warn)' : 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
         {micError || (joined ? 'Live — peer-to-peer audio with your crew. Green ring = speaking.' : 'Join to talk with everyone in this room.')}
       </div>
     </div>
@@ -326,7 +326,7 @@ function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
       <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onMouseDown={e => e.stopPropagation()}
         style={{ width: 440, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 26 }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', marginBottom: 6 }}>{projectTitle}</div>
-        <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: 2, margin: '0 0 20px' }}>New channel</h2>
+        <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', letterSpacing: '-0.02em', margin: '0 0 20px' }}>New channel</h2>
 
         <div style={{ marginBottom: 16 }}>
           <label style={label}>Type</label>
@@ -507,7 +507,7 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', marginBottom: 6 }}>Manage channel</div>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 1, margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: '-0.02em', margin: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
               {channel.is_private ? <Lock size={15} /> : <Hash size={15} />}{channel.name}
             </h2>
           </div>
@@ -587,8 +587,8 @@ function ManageChannelModal({ channel, meId, onClose, onChanged }: { channel: Ch
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(var(--ink-rgb), 0.1)', color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{(m.profiles?.username || '?').charAt(0).toUpperCase()}</div>
                 <span style={{ fontSize: 13, color: 'var(--fg-strong)' }}>{m.profiles?.username || 'unknown'}{m.user_id === meId && <span style={{ color: 'var(--fg-dim)', fontSize: 11 }}> (you)</span>}</span>
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: m.can_post ? 'var(--ok)' : 'var(--fg-dim)' }}>POST</button>
-                  <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: m.can_manage ? 'var(--warn)' : 'var(--fg-dim)' }}>MANAGE</button>
+                  <button onClick={() => toggle(m, 'can_post')} disabled={busy} title="Can post" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_post ? 'rgba(16,185,129,0.14)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${m.can_post ? 'rgba(16,185,129,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: m.can_post ? 'var(--ok)' : 'var(--fg-dim)' }}>POST</button>
+                  <button onClick={() => toggle(m, 'can_manage')} disabled={busy} title="Can manage" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', padding: '4px 7px', borderRadius: 4, cursor: 'pointer', background: m.can_manage ? 'rgba(245,158,11,0.14)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${m.can_manage ? 'rgba(245,158,11,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: m.can_manage ? 'var(--warn)' : 'var(--fg-dim)' }}>MANAGE</button>
                   <button aria-label="Remove" onClick={() => doRemove(m)} disabled={busy} title="Remove" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-dim)', display: 'flex' }}><X size={13} /></button>
                 </div>
               </div>
@@ -1062,7 +1062,7 @@ export default function LoungePage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(10px, 3vw, 20px)', flexShrink: 0 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             ><Mark size={22} title="The Cavern home" /></div>
@@ -1096,7 +1096,7 @@ export default function LoungePage() {
             borderRadius: 'var(--radius-full)',
           }}>
             <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-muted)' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)' }}>
               {onlineCrew} of {crewList.length} online
             </span>
           </div>
@@ -1188,7 +1188,7 @@ export default function LoungePage() {
                <button type="button" className="mc-phone-only mc-lounge-back" onClick={() => setPane('list')} aria-label="Back to channels and people"><ChevronLeft size={20} aria-hidden /></button>
                {dmTarget ? (
                  <>
-                   <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
+                   <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)' }}>@{dmTarget.name}</span>
                    {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
                  </>
@@ -1196,8 +1196,8 @@ export default function LoungePage() {
                  <>
                    {activeChannel.is_private && <Lock size={12} color="var(--fg-dim)" />}
                    <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)' }}>{activeChannel.type === 'voice' ? '🔊 ' : activeChannel.type === 'guide' ? '' : '#'}{activeChannel.name}</span>
-                   {activeChannel.type === 'guide' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--info)', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(0,153,255,0.12)', padding: '2px 6px', borderRadius: 9999 }}>GUIDE</span>}
-                   {activeChannel.post_policy === 'managers' && activeChannel.type !== 'guide' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--warn)', fontFamily: 'var(--mono)', letterSpacing: 1, background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 9999 }}>ANNOUNCE</span>}
+                   {activeChannel.type === 'guide' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--info)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(0,153,255,0.12)', padding: '2px 6px', borderRadius: 9999 }}>GUIDE</span>}
+                   {activeChannel.post_policy === 'managers' && activeChannel.type !== 'guide' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--warn)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 9999 }}>ANNOUNCE</span>}
                  </>
                ) : (
                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-dim)' }}>No channels</span>
@@ -1207,22 +1207,22 @@ export default function LoungePage() {
              </div>
              <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>
                 {dmTarget ? (
-                  <button className="mc-hide-phone" onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-muted)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>← CHANNELS</button>
+                  <button className="mc-hide-phone" onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-muted)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>← CHANNELS</button>
                 ) : (
                   <><Users size={13} color="var(--fg-dim)" /> {crewList.length}</>
                 )}
                 <button type="button" onClick={() => { setShowPinned(false); setShowSearch(true); }} aria-label="Search messages" title="Search"
-                  style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+                  style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
                   <Search size={12} /> <span className="mc-hide-phone">SEARCH</span>
                 </button>
                 {!dmTarget && activeChannel && activeChannel.type !== 'voice' && (
                   <button type="button" onClick={() => { setShowSearch(false); setShowPinned(true); }} aria-label={`Pinned messages in #${activeChannel.name}`} title="Pinned"
-                    style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+                    style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
                     <Pin size={12} /> <span className="mc-hide-phone">PINNED</span>{messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''}
                   </button>
                 )}
                 {!dmTarget && activeChannel && canManageActive && (
-                  <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+                  <button onClick={() => setShowManage(true)} title="Manage channel" style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
                     <SettingsIcon size={12} /> <span className="mc-hide-phone">MANAGE</span>
                   </button>
                 )}
@@ -1255,7 +1255,7 @@ export default function LoungePage() {
                     return start ? (
                       <div style={{ marginTop: 14 }}>
                         <button type="button" onClick={() => openChannel(start)}
-                          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600 }}>
+                          style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', fontWeight: 600 }}>
                           Open #start-here
                         </button>
                       </div>
@@ -1278,7 +1278,7 @@ export default function LoungePage() {
           }}>
             <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', height: 14, marginBottom: 4 }}>
               {typingUsers.length > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 0.5 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)' }}>
                   <span style={{ display: 'inline-flex', gap: 2 }}>
                     {[0, 1, 2].map(i => (
                       <motion.span key={i} animate={{ opacity: [0.2, 1, 0.2] }} transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }} style={{ width: 3, height: 3, borderRadius: '50%', background: 'var(--lounge-color)', display: 'inline-block' }} />
@@ -1339,7 +1339,7 @@ export default function LoungePage() {
                   color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
                   borderRadius: 'var(--radius-sm)',
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                   textTransform: 'var(--caps)',
                   transition: 'background 0.3s, color 0.3s',
                   alignSelf: 'flex-end',
@@ -1413,7 +1413,7 @@ export default function LoungePage() {
                     <div style={{ fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', fontFamily: 'var(--mono)' }}>Live</div>
                   )}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-subtle)', marginTop: 2 }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-subtle)', marginTop: 2 }}>
                   <span>{member.role}</span>
                 </div>
               </div>
@@ -1434,7 +1434,7 @@ export default function LoungePage() {
             </div>
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px' }}>
               <div style={{ paddingBottom: 14, marginBottom: 14, borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: 12, letterSpacing: 1, color: 'var(--accent)', marginBottom: 4 }}>{threadParent.user}</div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: 12, letterSpacing: '-0.02em', color: 'var(--accent)', marginBottom: 4 }}>{threadParent.user}</div>
                 <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(var(--fg-rgb), 0.85)' }}>{threadParent.text}</div>
               </div>
               {threadReplies.length === 0 ? (

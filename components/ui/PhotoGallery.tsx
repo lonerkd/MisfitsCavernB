@@ -14,7 +14,7 @@ export default function PhotoGallery({ photos = [] }: { photos?: Photo[] }) {
   if (photos.length === 0) {
     return (
       <div style={{ width: '100%', height: 360, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, background: 'rgba(var(--ink-rgb), 0.01)' }}>
-        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
           Nothing featured yet.<br />
           <span style={{ fontSize: 11, color: 'var(--fg-dim)' }}>Make a project Public in Studio → Share and its published references appear here.</span>
         </div>
@@ -37,7 +37,7 @@ export default function PhotoGallery({ photos = [] }: { photos?: Photo[] }) {
               referrerPolicy="no-referrer"
               style={{ display: 'block', width: '100%', aspectRatio: '3 / 2', objectFit: 'cover' }}
             />
-            <figcaption style={{ padding: '10px 12px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+            <figcaption style={{ padding: '10px 12px', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
               {photo.title}
               {photo.caption && photo.caption !== photo.title && <div style={{ fontSize: 11, marginTop: 3, color: 'var(--fg-dim)' }}>{photo.caption}</div>}
             </figcaption>

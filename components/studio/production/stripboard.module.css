@@ -26,7 +26,7 @@
 .dayDrop { border-color: var(--studio); background: var(--studio-dim); }
 .dayNew { border-style: dashed; background: transparent; min-height: 160px; justify-content: center; align-items: center; text-align: center; }
 .dayHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.dayName { font-family: var(--display); font-size: 1.35rem; letter-spacing: 2px; color: var(--fg); line-height: 1; margin: 0; font-weight: 400; }
+.dayName { font-family: var(--display); font-size: 1.35rem; letter-spacing: -0.02em; color: var(--fg); line-height: 1; margin: 0; font-weight: 400; }
 .dayDate { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .dayDateInput { font: 600 var(--text-xs)/1 var(--ui); color: #fff; background: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 4px; padding: 3px 4px; color-scheme: dark; max-width: 118px; }
 .dayDateInput:hover, .dayDateInput:focus-visible { border-color: #fff; }
@@ -79,7 +79,7 @@
 
 .dood { overflow-x: auto; }
 .doodTable { border-collapse: collapse; font-family: var(--mono); font-size: 11px; }
-.doodTable th { font-weight: 400; color: var(--fg-dim); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1px; padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-2); }
+.doodTable th { font-weight: 400; color: var(--fg-dim); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border-2); }
 .doodTable th:first-child, .doodTable td:first-child { text-align: left; padding-right: 14px; color: var(--fg); white-space: nowrap; }
 .doodTable td { padding: 5px 6px; text-align: center; border-bottom: 1px dashed var(--border); color: var(--fg-muted); }
 .code_S, .code_SF { color: var(--ok); font-weight: 700; }

@@ -96,14 +96,14 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         gap: 24, fontFamily: 'var(--mono)',
       }}>
-        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: 6, color: 'var(--accent)', lineHeight: 1 }}>404</div>
-        <p style={{ fontSize: 13, letterSpacing: 2, color: 'var(--fg-dim)' }}>SCRIPT NOT FOUND</p>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 10vw, 7rem)', letterSpacing: '-0.02em', color: 'var(--accent)', lineHeight: 1 }}>404</div>
+        <p style={{ fontSize: 13, letterSpacing: '-0.02em', color: 'var(--fg-dim)' }}>SCRIPT NOT FOUND</p>
         <p style={{ fontSize: 11, maxWidth: 320, textAlign: 'center', lineHeight: 1.7, color: 'var(--fg-dim)' }}>
           This link may have expired, or the author has turned off public sharing.
         </p>
         <Link href="/" style={{
           marginTop: 8, padding: '10px 28px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)',
-          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none',
+          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textDecoration: 'none',
         }}>
           BACK TO HOME
         </Link>
@@ -120,15 +120,15 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
         padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 2, color: '#fff' }}>{script.title}</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#fff' }}>{script.title}</div>
           {script.author_username && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', marginTop: 2 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginTop: 2 }}>
               by {script.author_username}{script.author_role ? ` · ${script.author_role}` : ''}
             </div>
           )}
         </div>
         <Link href="/auth" style={{
-          fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--accent)', textDecoration: 'none',
+          fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--accent)', textDecoration: 'none',
         }}>
           CREATE YOUR OWN →
         </Link>
@@ -152,7 +152,7 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
       </div>
 
       <footer style={{ textAlign: 'center', paddingBottom: 28 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)' }}>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
           POWERED BY{' '}
           <Link href="/auth" style={{ color: 'rgba(var(--ink-rgb), 0.6)', textDecoration: 'none', borderBottom: '1px solid rgba(var(--ink-rgb), 0.2)' }}>
             THE CAVERN
