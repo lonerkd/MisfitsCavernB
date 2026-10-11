@@ -15,7 +15,6 @@ import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/os/PillContext';
 import { awaitOSUser } from '@/lib/os';
 import { videoEmbed } from '@/lib/studio/media-kind';
-import { Mark } from '@/components/brand/Mark';
 
 interface Video {
   id: string;
@@ -338,31 +337,6 @@ export default function PortfolioPage() {
     <ProtectedPage require="signed-in">
       <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
-
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, width: '100%',
-        padding: '0 32px', height: 62,
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        zIndex: 100,
-        background: 'var(--glass)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        boxShadow: '0 1px 0 rgba(245,158,11,0.08) inset',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            ><Mark size={22} title="The Cavern home" /></div>
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', textTransform: 'var(--caps)' }}>Portfolio</div>
-        </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
-          {videosList.length} Projects
-        </span>
-      </nav>
 
       <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>

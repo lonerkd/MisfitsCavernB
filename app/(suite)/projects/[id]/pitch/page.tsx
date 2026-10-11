@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video, Globe } from 'lucide-react';
+import { ExternalLink, Copy, Plus, Trash2, GripVertical, Image as ImageIcon, Film, DollarSign, Users, FileText, Type, Video, Globe } from 'lucide-react';
 import { getProjectRow } from '@/lib/supabase/project-hub';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -247,17 +247,8 @@ export default function PitchBoardPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
       <h1 className="sr-only">Pitch board</h1>
-      <header style={{
-        position: 'sticky', top: 0, zIndex: 50, height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px',
-      }}>
-        <Link href={`/projects/${projectId}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={18} />
-          <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>PITCH BOARD</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>· {project?.title}</span>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        <h1 className="sr-only">Pitch board</h1>
         {shareToken && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button
