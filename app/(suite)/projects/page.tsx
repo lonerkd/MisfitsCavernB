@@ -647,7 +647,7 @@ export default function ProjectsPage() {
             <div style={{ maxWidth: 'var(--w-form)' }}>
               <EmptyState icon={<Archive size={26} />}
                 title={query.trim() ? 'No archived project matches' : 'Nothing archived'}
-                subtitle={query.trim() ? 'Try other words, or clear the search.' : 'Archive a project from its card when it’s wrapped or on hold — it leaves the board and pickers, and nothing in it changes.'}
+                subtitle={query.trim() ? 'Try other words, or clear the search.' : 'Archive a wrapped or paused project from its card.'}
                 action={<Button variant="outline" size="sm" onClick={() => { setShowArchived(false); setQuery(''); }}>Back to the board</Button>} />
             </div>
           ) : (
@@ -658,7 +658,7 @@ export default function ProjectsPage() {
         ) : query.trim() && shown.length === 0 ? (
           <div style={{ maxWidth: 'var(--w-form)' }}>
             <EmptyState icon={<Search size={26} />} title={`No project matches “${query.trim()}”`}
-              subtitle={archived.some((p) => matches(p, query.trim())) ? 'An archived project does — look under Archived.' : 'Search looks at titles, loglines, formats and people.'}
+              subtitle={archived.some((p) => matches(p, query.trim())) ? 'An archived project does — look under Archived.' : 'Try other words.'}
               action={<Button variant="outline" size="sm" onClick={() => setQuery('')}>Clear search</Button>} />
           </div>
         ) : (

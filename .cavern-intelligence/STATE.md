@@ -131,6 +131,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 
 **Then (the island on a phone):** one pill at the foot replaces the five-tab bar — project and page and an unread count, with Capture beside it. It opens the Everything sheet (Today / Projects / Lounge first, then the page's controls, search, tools, projects). Behaviour kept: hidden on the editor/auth/public pages, away while typing, share-to-capture, the outbox count. Next: live activities in the pill, then the rest of the suite on the language.
 
+**Then (suite-wide pass 1, the shared pieces):** every Studio page header lost its eyebrow and description; the "New here" banner is one line; hub tiles show a name and an icon (blurb as a tooltip); empty states are an icon, a title and one short line; ~25 empty-state lines rewritten. The remaining passes are listed in design-language.md.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

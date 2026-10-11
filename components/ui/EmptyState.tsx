@@ -15,28 +15,16 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{
-        textAlign: 'center',
-        padding: '56px 24px',
-        borderRadius: 14,
-        background: 'rgba(var(--ink-rgb), 0.015)',
-        border: '1px solid rgba(var(--ink-rgb), 0.05)',
-      }}
+      style={{ textAlign: 'center', padding: '48px 24px' }}
     >
-      <div
-        aria-hidden="true"
-        style={{
-          width: 64, height: 64, margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--fg-dim)', border: '1px solid var(--border-2)', borderRadius: 14, background: 'var(--bg-2)',
-        }}
-      >
+      <div aria-hidden="true" style={{ margin: '0 auto 14px', display: 'flex', justifyContent: 'center', color: 'var(--fg-dim)' }}>
         {icon}
       </div>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
+      <p style={{ fontFamily: 'var(--ui)', fontSize: 16, fontWeight: 700, letterSpacing: '-0.01em', color: 'var(--fg)', margin: 0 }}>
         {title}
       </p>
       {subtitle && (
-        <p style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginTop: 8 }}>
+        <p style={{ fontSize: 13, color: 'var(--fg-muted)', margin: '6px auto 0', maxWidth: '40ch', textWrap: 'balance' }}>
           {subtitle}
         </p>
       )}

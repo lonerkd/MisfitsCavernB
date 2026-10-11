@@ -80,9 +80,7 @@ export function ShareTab() {
     <section aria-labelledby="share-title" className={s.stack} style={{ gap: 28 }}>
       <SectionHeader
         id="share-title"
-        eyebrow="Share"
         title="Share & Pitch"
-        subtitle="Send a lookbook to cast, crew or funders. Viewers see the title, logline and the references you choose — grouped by scene. Notes and everything else stay private."
       />
 
       <div className={s.panel}>
@@ -135,7 +133,7 @@ export function ShareTab() {
           )}
         </div>
         {media.rows.length === 0 ? (
-          <EmptyState icon={<Globe size={24} />} title="Nothing to share yet" subtitle="Add references in the Library, link them to scenes, then choose what goes in the lookbook here."
+          <EmptyState icon={<Globe size={24} />} title="Nothing to share yet" subtitle="Add references in the Library first."
             action={<button type="button" className={s.btnPrimary} onClick={() => goTo('library')}>Open the Library</button>} />
         ) : (
           <div className={s.stack} style={{ gap: 6 }}>

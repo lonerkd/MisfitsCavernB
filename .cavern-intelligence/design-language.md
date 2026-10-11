@@ -89,8 +89,15 @@ offer guides; moving that into the interface itself is the next work.
 
 **The island on a phone** is one pill (project, page, unread) with Capture beside it, replacing the tab bar.
 
-## Not yet done (in order)
+## The suite-wide pass
 
-1. Live activities in the island (a call, a recording, an upload, music, a timer, sync state): the pill's resting text is the slot they take over.
-2. The rest of the suite, screen by screen, to the word budget (breakdown, readiness, locations, on set, money, the project hub…).
-3. Role- and phase-aware first screens ("my day").
+Screen by screen, to the rules above. Each pass is a PR; a pass ends when its screens read at a glance.
+
+1. **Done — the shared pieces** (every Studio tab, the hub, every empty state): page headers are a title and the numbers that matter (no eyebrow, no description); the "New here" banner is one line (the tool and what it is; why it arrived is a tooltip); hub tiles are a name and an icon (the blurb is a tooltip); empty states are an icon, a title and one short line that invites an action.
+2. **Next — the project board and hub**: the board's columns and cards, the hub's milestones and toolkit.
+3. Jobs, Crew and the profile; the Lounge.
+4. Settings, Portfolio, Soundtrack, the editor's chrome (not the script).
+5. Money, Paperwork, Breakdown and Readiness on Paper (forms) and Sky where a day or a place is involved.
+6. Live activities in the phone pill (a call, a recording, an upload, sync state).
+7. Role- and phase-aware first screens ("my day").
+

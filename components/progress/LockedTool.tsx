@@ -25,7 +25,7 @@ export function LockedTool({ tool, accent, onOpen, onShowPhase }: { tool: ToolSt
       <h2 id={`locked-${tool.id}`} className={p.lockedTitle}>{tool.label}</h2>
       <p className={p.lockedText}>
         <Lock size={10} aria-hidden style={{ verticalAlign: '-1px', marginRight: 4 }} />
-        Opens in {tool.phaseLabel}. {tool.blurb} It joins the project when you get there — or as soon as you start using it.
+        Opens in {tool.phaseLabel}.
       </p>
       <div className={p.lockedActions}>
         <button type="button" className={p.primary} onClick={onOpen}>Open it now</button>

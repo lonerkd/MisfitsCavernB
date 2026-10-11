@@ -53,7 +53,7 @@ export function LocationsView() {
   if (scenes.status !== 'loading' && rows.length === 0) {
     return (
       <EmptyState icon={<MapPin size={26} />} title="No locations yet"
-        subtitle="Scene headings name them (INT. HARBOR - NIGHT → HARBOR) — write the script and every location shows up here, ready for an address, a contact and a permit."
+        subtitle="Every location in the script shows up here."
         action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Open the script</Link> : undefined} />
     );
   }

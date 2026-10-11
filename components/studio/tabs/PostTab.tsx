@@ -55,7 +55,7 @@ export function PostTab() {
   });
   return (
     <section aria-labelledby="post-title">
-      <SectionHeader id="post-title" eyebrow="Post-production" title="Post" subtitle="Build the story from your transcripts, review each cut with timecoded notes, then take every department and deliverable to done." />
+      <SectionHeader id="post-title" title="Post" />
       <div className={s.chips} role="tablist" aria-label="Post views" style={{ marginBottom: 24 }}>
         <button type="button" role="tab" aria-selected={view === 'review'} className={cx(s.chip, view === 'review' && s.chipOn)} onClick={() => setView('review')}><Film size={12} /> Cut review</button>
         <button type="button" role="tab" aria-selected={view === 'paper'} className={cx(s.chip, view === 'paper' && s.chipOn)} onClick={() => setView('paper')}><FileText size={12} /> Paper edit</button>
@@ -154,7 +154,7 @@ function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } 
 
       <div className={s.stack}>
         {!cut ? (
-          <EmptyState icon={<Film size={26} />} title="No cuts yet" subtitle="Add the first cut — a private YouTube/Vimeo/Drive link or a video from the library — and the team can leave timecoded notes on it." />
+          <EmptyState icon={<Film size={26} />} title="No cuts yet" subtitle="Add a cut to leave timecoded notes on it." />
         ) : (
           <>
             <div className={s.cutWithScript}>
@@ -349,7 +349,7 @@ function PipelineView() {
       <EmptyState
         icon={<ListChecks size={26} />}
         title="No post pipeline yet"
-        subtitle="Start from the standard stages (edit, sound, music, colour, VFX, titles) and deliverables (masters, stems, subtitles, cue sheet, trailer, key art, EPK, screener) — rename, add or remove anything."
+        subtitle="Start from the standard stages and deliverables."
         action={<button type="button" className={s.btnPrimary} onClick={() => void seed()} disabled={seeding}><Plus size={12} /> {seeding ? 'Setting up…' : 'Set up the standard pipeline'}</button>}
       />
     );

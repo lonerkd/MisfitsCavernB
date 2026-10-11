@@ -731,7 +731,7 @@ export default function JobsPage() {
                 <EmptyState
                   icon={<Briefcase size={28} />}
                   title="No open positions"
-                  subtitle="Be the first to post a role for your production"
+                  subtitle="Post the first role."
                   action={user && (
                     <button onClick={() => setShowPost(true)} style={{
                       padding: '10px 22px', borderRadius: 9999,

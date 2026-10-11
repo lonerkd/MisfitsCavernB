@@ -53,9 +53,8 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
     <section aria-labelledby="overview-title" className={s.stack} style={{ gap: 28 }}>
       <SectionHeader
         id="overview-title"
-        eyebrow="Overview"
         title={project.title}
-        subtitle={project.description || 'No logline yet — the owner adds it on the project page; it leads your share link and pitch deck.'}
+        subtitle={project.description || undefined}
       />
       {progressState && (
         <PhasePanel projectId={project.id} state={progressState} isOwner={isOwner} accent={project.accent_color} onNavigate={onNavigate} />

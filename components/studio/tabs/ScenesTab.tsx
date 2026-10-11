@@ -61,11 +61,11 @@ export function ScenesTab() {
   if (scriptsStatus === 'ready' && scripts.length === 0) {
     return (
       <section>
-        <SectionHeader eyebrow="Scenes" title="Scene References" />
+        <SectionHeader title="Scene References" />
         <EmptyState
           icon={<Clapperboard size={28} />}
           title="No screenplay in this project yet"
-          subtitle="Write it in ScriptOS — every scene heading appears here automatically, ready for reference photos, clips and notes."
+          subtitle="Write it in the script — scenes appear here."
           action={<Link href="/editor" className={s.btnPrimary}><PenLine size={12} /> Open ScriptOS</Link>}
         />
       </section>
@@ -76,9 +76,7 @@ export function ScenesTab() {
     <section aria-labelledby="scenes-title">
       <SectionHeader
         id="scenes-title"
-        eyebrow="Scenes"
         title="Scene References"
-        subtitle="Every scene in the screenplay, with its references, storyboard and notes. Rewrite freely — they stay with their scene."
         actions={
           <>
             {scripts.length > 1 && (
@@ -114,7 +112,7 @@ export function ScenesTab() {
         <EmptyState
           icon={<Clapperboard size={28} />}
           title="This script has no scene headings yet"
-          subtitle="Scenes start with INT. or EXT. — add one in ScriptOS and it shows up here."
+          subtitle="Start a scene with INT. or EXT."
           action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Write a scene</Link> : undefined}
         />
       ) : (

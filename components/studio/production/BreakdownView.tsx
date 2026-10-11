@@ -120,7 +120,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
         <EmptyState
           icon={<Tags size={26} />}
           title="Nothing broken down yet"
-          subtitle="Tag props, wardrobe, effects and everything the shoot needs right in the script — select words in tag mode (Ctrl+Shift+B). They land here, ready to source and price."
+          subtitle="Tag what each scene needs in the script (Ctrl+Shift+B)."
           action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Break down the script</Link> : undefined}
         />
       ) : (
