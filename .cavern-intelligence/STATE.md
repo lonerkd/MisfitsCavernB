@@ -133,6 +133,12 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 
 **Then (suite-wide pass 1, the shared pieces):** every Studio page header lost its eyebrow and description; the "New here" banner is one line; hub tiles show a name and an icon (blurb as a tooltip); empty states are an icon, a title and one short line; ~25 empty-state lines rewritten. The remaining passes are listed in design-language.md.
 
+**Then (pass 2, the board and the hub):** the board lost its phase strip and empty-column boxes; the hub lost its stepper and eyebrow;
+the logline is a line of text; only the next milestone explains itself; Tailwind's `font-mono` and `uppercase` utilities and the files directly
+under `app/` now follow the tokens; about 360 spots of tracked spacing on non-capital text went through `--caps-track`.
+**Owner direction:** the top bar is folded into the island, one island on desk and phone with offline and on-set modes, and no duplicated
+information. Recorded in design-language.md; it is next.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

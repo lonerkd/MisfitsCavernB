@@ -89,12 +89,23 @@ offer guides; moving that into the interface itself is the next work.
 
 **The island on a phone** is one pill (project, page, unread) with Capture beside it, replacing the tab bar.
 
+## One island, everywhere (owner, 2026-10-11)
+
+The top bar goes. The back button, the page title, the logo and the project switcher are all **part of the island**, structured in and around it, and the phone and the desk are **the same island**: one design, scaled, not two. What differs is the mode, not the layout:
+
+- **Normal**: the island as designed. Where you are, the next places, Capture.
+- **Offline**: the island says so and what is waiting to sync. Everything that works offline stays reachable; what can't says why.
+- **On set / remote set**: the day's controls first (the clock, the shot, continuity, Capture), big and one-handed; the rest a tap away.
+
+And **no duplicated information**: a fact is shown once, in the place that owns it. A project's name isn't in a bar *and* a heading *and* a pill; a phase isn't in a stepper *and* a panel; a count isn't beside a title *and* in the body. When the island carries it, the page doesn't.
+
 ## The suite-wide pass
 
 Screen by screen, to the rules above. Each pass is a PR; a pass ends when its screens read at a glance.
 
 1. **Done — the shared pieces** (every Studio tab, the hub, every empty state): page headers are a title and the numbers that matter (no eyebrow, no description); the "New here" banner is one line (the tool and what it is; why it arrived is a tooltip); hub tiles are a name and an icon (the blurb is a tooltip); empty states are an icon, a title and one short line that invites an action.
-2. **Next — the project board and hub**: the board's columns and cards, the hub's milestones and toolkit.
+2. **Done: the project board and hub.** The board lost its phase strip and empty-column boxes; the hub lost its header stepper and eyebrow, the logline reads as a line of text, only the next milestone explains itself. Tracked spacing on non-capital text is gone suite-wide (it goes through `--caps-track`).
+2b. **Next: the island absorbs the top bar** (above): one island on desk and phone, the offline and on-set modes, and the duplicates removed as each page loses its bar.
 3. Jobs, Crew and the profile; the Lounge.
 4. Settings, Portfolio, Soundtrack, the editor's chrome (not the script).
 5. Money, Paperwork, Breakdown and Readiness on Paper (forms) and Sky where a day or a place is involved.

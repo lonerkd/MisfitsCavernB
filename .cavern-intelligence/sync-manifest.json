@@ -1,6 +1,6 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-11T20:08:36.374Z",
+  "last_synchronized": "2026-10-11T20:09:54.679Z",
   "stats": {
     "totalFiles": 660,
     "totalSize": 4548207,
@@ -569,7 +569,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 703,
-      "last_modified": "2026-10-11T16:17:57.475Z"
+      "last_modified": "2026-10-11T20:08:36.470Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -609,7 +609,7 @@
     {
       "path": "AGENTS.md",
       "size": 6201,
-      "last_modified": "2026-10-11T16:17:57.480Z"
+      "last_modified": "2026-10-11T20:08:36.470Z"
     },
     {
       "path": "app/(public)/layout.tsx",
@@ -944,7 +944,7 @@
     {
       "path": "CLAUDE.md",
       "size": 768,
-      "last_modified": "2026-10-11T16:17:57.481Z"
+      "last_modified": "2026-10-11T20:08:36.471Z"
     },
     {
       "path": "components/availability/AwayEditor.tsx",
