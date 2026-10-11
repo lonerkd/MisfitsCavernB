@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid } from 'lucide-react';
+import { User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -217,16 +217,8 @@ export default function SettingsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', padding: '0 24px',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100,
-      }}>
-        <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>SETTINGS</h1>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        <h1 className="sr-only">Settings</h1>
         {msg && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: msg.ok ? 'var(--ok)' : 'var(--danger)' }}>
             {msg.ok && <Check size={12} />} {msg.text}
@@ -234,7 +226,7 @@ export default function SettingsPage() {
         )}
       </header>
 
-      <div style={{ maxWidth: 'var(--w-form)', margin: '60px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
+      <div style={{ maxWidth: 'var(--w-form)', margin: '8px auto 0', padding: '20px 24px calc(var(--taskbar-height, 94px) + 20px)' }}>
 
         <Section icon={<User size={15} />} title="Account">
           <Row label="Email address" hint="Changing this sends a confirmation link to the new address." control={

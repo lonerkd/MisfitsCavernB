@@ -23,7 +23,6 @@ import { readable } from '@/lib/util/color';
 import { awaitOSUser } from '@/lib/os';
 import { useCrafts, type Craft } from '@/lib/crafts/crafts';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
-import { Mark } from '@/components/brand/Mark';
 
 // Crafts (and their colours) come from public.crafts — see lib/crafts.
 const craftColor = (byName: Map<string, Craft>, role: string) => byName.get(role)?.color ?? '#737373';
@@ -524,26 +523,7 @@ export default function JobsPage() {
       <h1 className="sr-only">Jobs</h1>
       <GrainOverlay />
 
-      <nav className="mc-jobs-top" style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 28px', zIndex: 200,
-        background: 'var(--surface)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            ><Mark size={22} title="The Cavern home" /></div>
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)' }}>Jobs</div>
-        </div>
-
+      <nav className="mc-jobs-top" aria-label="Jobs" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '12px 28px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {user && (
             <div style={{
@@ -609,11 +589,11 @@ export default function JobsPage() {
         </div>
       </nav>
 
-      <div className="mc-jobs-body" style={{ paddingTop: 58, display: 'flex', minHeight: 'calc(100vh - 58px)' }}>
+      <div className="mc-jobs-body" style={{ paddingTop: 0, display: 'flex', minHeight: '100vh' }}>
 
         <div className="mc-jobs-filter" style={{
           width: 220, flexShrink: 0, borderRight: '1px solid rgba(var(--ink-rgb), 0.04)',
-          padding: '32px 20px', position: 'sticky', top: 58,
+          padding: '32px 20px', position: 'sticky', top: 12,
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'var(--surface-2)',
         }}>
