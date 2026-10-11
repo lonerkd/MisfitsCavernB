@@ -4,7 +4,6 @@ import React, { useState, useEffect, useEffectEvent } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft } from 'lucide-react';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
@@ -175,34 +174,8 @@ export default function ProjectHubPage() {
         background: `radial-gradient(ellipse at 50% -20%, ${project.color}0a 0%, transparent 65%)`,
       }} />
 
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-        style={{
-          position: 'sticky', top: 0, zIndex: 100,
-          background: 'var(--surface)', backdropFilter: 'blur(24px)',
-          borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
-          padding: '0 28px', height: 58,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        }}
-        className="mc-project-top"
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0 }}>
-          <Link href="/projects" aria-label="Back to projects" className="mc-touch" style={{ color: 'var(--fg-dim)', display: 'flex', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--fg)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--fg-dim)'}
-          >
-            <ArrowLeft size={16} />
-          </Link>
-          <div style={{ width: 1, height: 20, background: 'rgba(var(--ink-rgb), 0.07)' }} />
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
-            <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', fontWeight: 800, letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: project.color }}>{project.type}</span>
-          </div>
-        </div>
-
-
+      {/* Back, title and project live in the island; what's left here is this project's own tools. */}
+      <div className="mc-project-top" style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-end', padding: '16px 28px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {onlineCount > 0 && (
             <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)' }}>
@@ -249,7 +222,7 @@ export default function ProjectHubPage() {
             </div>
           )}
         </div>
-      </motion.header>
+      </div>
 
       <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
 

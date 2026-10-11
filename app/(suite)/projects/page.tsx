@@ -501,52 +501,8 @@ export default function ProjectsPage() {
       <GrainOverlay />
       <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
-      <div style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px',
-        background: 'var(--surface)',
-        backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        zIndex: 200,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/" style={{
-            display: 'inline-flex', opacity: 0.7, textDecoration: 'none',
-            transition: 'opacity 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-            onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}
-          >
-            <Mark size={22} title="The Cavern home" />
-          </Link>
-
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
-            Projects
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ display: 'flex', gap: 12 }}>
-            {[
-              { label: 'Total', value: total },
-              { label: 'Active', value: inFlight },
-            ].map(({ label, value }) => (
-              <div key={label} style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                  {value}
-                </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
-                  {label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-
+      {/* The top bar is the island's now: back, place and project live there. What stays is the one action. */}
+      <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-end', padding: '20px 24px 0' }}>
           <button
             onClick={handleNewProject}
             style={{
@@ -570,12 +526,9 @@ export default function ProjectsPage() {
             <Plus size={11} strokeWidth={2.5} />
             New Project
           </button>
-        </div>
       </div>
-
-
       <div style={{
-        paddingTop: 58 + 24,
+        paddingTop: 16,
         paddingBottom: 'calc(var(--taskbar-height, 94px) + 20px)',
         paddingLeft: 24,
         paddingRight: 24,

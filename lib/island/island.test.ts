@@ -103,3 +103,21 @@ describe('island size', () => {
     expect(islandReserve(50)).toBe(islandReserve(ISLAND_SCALE_MAX));
   });
 });
+
+describe('islandRoute back target', () => {
+  it('has no back on the top-level places', () => {
+    expect(islandRoute('/projects', false).back).toBeNull();
+    expect(islandRoute('/today', false).back).toBeNull();
+  });
+  it('goes up one level from a project and its tools', () => {
+    expect(islandRoute('/projects/p1', true).back).toEqual({ label: 'Projects', href: '/projects' });
+    expect(islandRoute('/projects/p1/pitch', true).back).toEqual({ label: 'Project', href: '/projects/p1' });
+    expect(islandRoute('/studio/p1', true).back).toEqual({ label: 'Project', href: '/projects/p1' });
+    expect(islandRoute('/editor/p1', true).back).toEqual({ label: 'Project', href: '/projects/p1' });
+  });
+  it('goes back to the list from a detail page', () => {
+    expect(islandRoute('/crew/c1', false).back).toEqual({ label: 'Crew', href: '/crew' });
+    expect(islandRoute('/jobs/j1', false).back).toEqual({ label: 'Jobs board', href: '/jobs' });
+    expect(islandRoute('/portfolio/manage', false).back).toEqual({ label: 'Portfolio', href: '/portfolio' });
+  });
+});

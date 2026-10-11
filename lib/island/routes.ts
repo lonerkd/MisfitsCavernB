@@ -18,6 +18,8 @@ export interface IslandRoute {
   app: IslandApp | null;
   /** Where people usually go next from here. */
   links: IslandLink[];
+  /** One level up — where the back chevron goes. Null on top-level places. */
+  back: { label: string; href: string } | null;
 }
 
 const link = (id: string, label: string, href: string): IslandLink => ({ id, label, href });
@@ -33,6 +35,28 @@ const PORTFOLIO = link('go-portfolio', 'Portfolio', '/portfolio');
 
 /** The island's fallback for `pathname`. `hasProject`: a project is open, so its tools are worth offering. */
 export function islandRoute(pathname: string, hasProject = false): IslandRoute {
+  return { ...describe(pathname, hasProject), back: backTarget(pathname) };
+}
+
+/** The parent of `pathname`, or null for a top-level place. */
+function backTarget(pathname: string): IslandRoute['back'] {
+  const [first = '', second = '', third = ''] = pathname.split('/').filter(Boolean);
+  const project = second ? { label: 'Project', href: `/projects/${second}` } : null;
+  switch (first) {
+    case 'projects':
+      if (!second) return null;
+      return third ? project : { label: 'Projects', href: '/projects' };
+    case 'studio': case 'editor': case 'lounge': case 'soundtrack':
+      return project ?? { label: 'Projects', href: '/projects' };
+    case 'crew': return second ? { label: 'Crew', href: '/crew' } : null;
+    case 'jobs': return second ? { label: 'Jobs board', href: '/jobs' } : null;
+    case 'portfolio': return second ? { label: 'Portfolio', href: '/portfolio' } : null;
+    case 'admin': return second ? { label: 'Admin', href: '/admin' } : null;
+    default: return null;
+  }
+}
+
+function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back'> {
   const [first = '', second = '', third = ''] = pathname.split('/').filter(Boolean);
   const tools = hasProject ? [SCRIPT, STUDIO, LOUNGE] : [];
 
