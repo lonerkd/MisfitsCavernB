@@ -139,6 +139,7 @@ column channels.post_policy text default 'viewers'::text not null
 column channels.project_id uuid
 column channels.topic text
 column channels.type text default 'text'::text not null
+column character_castings.character_id uuid
 column character_castings.character_name text not null
 column character_castings.created_at timestamp with time zone default now()
 column character_castings.created_by uuid
@@ -151,6 +152,10 @@ column character_media.created_by uuid default auth.uid()
 column character_media.media_id uuid not null
 column character_media.position integer default 0 not null
 column character_media.project_id uuid not null
+column characters.created_at timestamp with time zone default now() not null
+column characters.id uuid default gen_random_uuid() not null
+column characters.name text not null
+column characters.project_id uuid not null
 column client_errors.created_at timestamp with time zone default now() not null
 column client_errors.digest text
 column client_errors.id bigint not null
@@ -443,6 +448,10 @@ column push_subscriptions.last_used_at timestamp with time zone
 column push_subscriptions.p256dh text not null
 column push_subscriptions.user_agent text
 column push_subscriptions.user_id uuid not null
+column scene_characters.character_id uuid not null
+column scene_characters.created_at timestamp with time zone default now() not null
+column scene_characters.project_id uuid not null
+column scene_characters.scene_id uuid not null
 column scene_elements.created_at timestamp with time zone default now() not null
 column scene_elements.created_by uuid default auth.uid()
 column scene_elements.element_id uuid not null
@@ -719,6 +728,7 @@ constraint channels.channels_pkey PRIMARY KEY (id)
 constraint channels.channels_post_policy_check CHECK ((post_policy = ANY (ARRAY['viewers'::text, 'members'::text, 'managers'::text])))
 constraint channels.channels_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint channels.channels_type_check CHECK ((type = ANY (ARRAY['text'::text, 'voice'::text, 'guide'::text])))
+constraint character_castings.character_castings_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE SET NULL (character_id)
 constraint character_castings.character_castings_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_castings.character_castings_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint character_castings.character_castings_pkey PRIMARY KEY (id)
@@ -728,6 +738,11 @@ constraint character_media.character_media_character_fkey FOREIGN KEY (character
 constraint character_media.character_media_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint character_media.character_media_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint character_media.character_media_pkey PRIMARY KEY (character_id, media_id)
+constraint characters.characters_id_project_key UNIQUE (id, project_id)
+constraint characters.characters_name_check CHECK ((((char_length(name) >= 1) AND (char_length(name) <= 200)) AND (name = upper(btrim(name)))))
+constraint characters.characters_name_key UNIQUE (project_id, name)
+constraint characters.characters_pkey PRIMARY KEY (id)
+constraint characters.characters_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint client_errors.client_errors_digest_check CHECK ((char_length(digest) <= 100))
 constraint client_errors.client_errors_kind_check CHECK ((kind = ANY (ARRAY['render'::text, 'window'::text, 'promise'::text])))
 constraint client_errors.client_errors_message_check CHECK (((char_length(message) >= 1) AND (char_length(message) <= 1000)))
@@ -922,6 +937,9 @@ constraint push_subscriptions.push_subscriptions_p256dh_check CHECK (((length(p2
 constraint push_subscriptions.push_subscriptions_pkey PRIMARY KEY (id)
 constraint push_subscriptions.push_subscriptions_user_agent_check CHECK (((user_agent IS NULL) OR (length(user_agent) <= 500)))
 constraint push_subscriptions.push_subscriptions_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint scene_characters.scene_characters_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE CASCADE
+constraint scene_characters.scene_characters_pkey PRIMARY KEY (scene_id, character_id)
+constraint scene_characters.scene_characters_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint scene_elements.scene_elements_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scene_elements.scene_elements_element_fkey FOREIGN KEY (element_id, project_id) REFERENCES breakdown_elements(id, project_id) ON DELETE CASCADE
 constraint scene_elements.scene_elements_pkey PRIMARY KEY (scene_id, element_id)
@@ -1054,7 +1072,9 @@ function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
 function internal.can_read_paper(object_name text) body=8529ddfa5adc4aa553d5367ca6622a49
 function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851cf7
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
+function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
+function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
@@ -1073,6 +1093,7 @@ function internal.project_locations_link_scenes() body=186aef8f6705ead04c7816209
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
@@ -1144,7 +1165,9 @@ grant function internal.can_notify(target uuid) authenticated,postgres,service_r
 grant function internal.can_read_paper(object_name text) authenticated,postgres
 grant function internal.can_shape_project(pid uuid) authenticated,postgres
 grant function internal.can_view_channel(cid uuid) authenticated,postgres,service_role
+grant function internal.castings_link_character() postgres
 grant function internal.channels_default_audience() postgres
+grant function internal.characters_rename() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
@@ -1163,6 +1186,7 @@ grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.push_notification() postgres
+grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
@@ -1236,6 +1260,7 @@ index CREATE INDEX call_sheets_issued_by_fkey_idx ON public.call_sheets USING bt
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
+index CREATE INDEX character_castings_character_idx ON public.character_castings USING btree (character_id)
 index CREATE INDEX character_castings_created_by_fkey_idx ON public.character_castings USING btree (created_by)
 index CREATE INDEX character_media_created_by_fkey_idx ON public.character_media USING btree (created_by)
 index CREATE INDEX character_media_media_fkey_idx ON public.character_media USING btree (media_id, project_id)
@@ -1350,6 +1375,8 @@ index CREATE INDEX project_locations_project_idx ON public.project_locations USI
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
+index CREATE INDEX scene_characters_character_idx ON public.scene_characters USING btree (character_id)
+index CREATE INDEX scene_characters_project_idx ON public.scene_characters USING btree (project_id)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_fkey_idx ON public.scene_elements USING btree (element_id, project_id)
 index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
@@ -1421,6 +1448,9 @@ index CREATE UNIQUE INDEX channels_pkey ON public.channels USING btree (id)
 index CREATE UNIQUE INDEX character_castings_pkey ON public.character_castings USING btree (id)
 index CREATE UNIQUE INDEX character_castings_project_id_character_name_key ON public.character_castings USING btree (project_id, character_name)
 index CREATE UNIQUE INDEX character_media_pkey ON public.character_media USING btree (character_id, media_id)
+index CREATE UNIQUE INDEX characters_id_project_key ON public.characters USING btree (id, project_id)
+index CREATE UNIQUE INDEX characters_name_key ON public.characters USING btree (project_id, name)
+index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
@@ -1463,6 +1493,7 @@ index CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)
 index CREATE UNIQUE INDEX projects_share_token_key ON public.projects USING btree (share_token)
 index CREATE UNIQUE INDEX push_subscriptions_endpoint_key ON public.push_subscriptions USING btree (endpoint)
 index CREATE UNIQUE INDEX push_subscriptions_pkey ON public.push_subscriptions USING btree (id)
+index CREATE UNIQUE INDEX scene_characters_pkey ON public.scene_characters USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
@@ -1530,6 +1561,7 @@ policy public.character_castings "castings update" PERMISSIVE UPDATE to authenti
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.characters "characters access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.client_errors "client_errors: admins clear" PERMISSIVE DELETE to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
 policy public.client_errors "client_errors: admins read" PERMISSIVE SELECT to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
 policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
@@ -1615,6 +1647,7 @@ policy public.projects "Project members can view" PERMISSIVE SELECT to authentic
 policy public.push_subscriptions "push_subscriptions add own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.push_subscriptions "push_subscriptions read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.push_subscriptions "push_subscriptions remove own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.scene_characters "scene_characters access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_elements "scene_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.scene_media "scene_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
@@ -1690,6 +1723,7 @@ realtime public.call_sheets
 realtime public.campaigns
 realtime public.character_castings
 realtime public.character_media
+realtime public.characters
 realtime public.expenses
 realtime public.media
 realtime public.messages
@@ -1702,6 +1736,7 @@ realtime public.project_crew
 realtime public.project_documents
 realtime public.project_locations
 realtime public.projects
+realtime public.scene_characters
 realtime public.scene_elements
 realtime public.scene_media
 realtime public.scenes
@@ -1728,6 +1763,7 @@ rls channel_presets enabled=true forced=false
 rls channels enabled=true forced=false
 rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
+rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
 rls crafts enabled=true forced=false
 rls discord_integrations enabled=true forced=false
@@ -1756,6 +1792,7 @@ rls project_locations enabled=true forced=false
 rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
 rls push_subscriptions enabled=true forced=false
+rls scene_characters enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
 rls scenes enabled=true forced=false
@@ -1783,7 +1820,9 @@ trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_it
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
+trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
@@ -1801,6 +1840,7 @@ trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.proj
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.scripts_share_guard()
