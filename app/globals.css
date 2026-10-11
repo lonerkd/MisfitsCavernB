@@ -352,7 +352,7 @@ p {
 }
 .mc-title {
   font-family: var(--display);
-  letter-spacing: 2px;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   color: var(--fg);
 }
@@ -465,8 +465,8 @@ p {
   color: var(--on-accent);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   text-decoration: none;
   font-weight: 600;
   border-radius: var(--r-full);
@@ -490,8 +490,8 @@ p {
   color: var(--fg);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   text-decoration: none;
   border-radius: var(--r-full);
   cursor: pointer;
@@ -507,8 +507,8 @@ p {
 .link-btn {
   font-size: max(9px, var(--mc-min-font, 0px));
   font-family: var(--mono);
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   color: var(--fg);
   text-decoration: none;
   border: 1px solid var(--border-2);
@@ -530,8 +530,8 @@ p {
 .cta-btn {
   font-size: 11px;
   font-family: var(--mono);
-  letter-spacing: 4px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   color: var(--fg);
   text-decoration: none;
   border: 1px solid var(--border-2);
@@ -580,7 +580,7 @@ p {
   color: var(--fg);
   font-family: var(--mono);
   font-size: 12px;
-  letter-spacing: 1px;
+  letter-spacing: var(--caps-track);
   outline: none;
   border-radius: var(--r-sm);
   transition: border-color 0.3s, box-shadow 0.3s;
@@ -638,11 +638,11 @@ section { padding: 90px 18px; }
   align-items: center;
   gap: 5px;
   font-size: max(9px, var(--mc-min-font, 0px));
-  letter-spacing: 2px;
+  letter-spacing: var(--caps-track);
   padding: 4px 10px;
   border-radius: var(--r-xs);
   font-family: var(--mono);
-  text-transform: uppercase;
+  text-transform: var(--caps);
   border: 1px solid currentColor;
 }
 
@@ -698,7 +698,7 @@ section { padding: 90px 18px; }
   font-size: 11px;
   line-height: 1.8;
   color: rgba(233, 235, 239, 0.75);
-  letter-spacing: 0.02em;
+  letter-spacing: var(--caps-track);
   pointer-events: none;
   user-select: none;
 }
@@ -706,7 +706,7 @@ section { padding: 90px 18px; }
 .screenplay-scene-hdr {
   color: rgba(233, 235, 239, 0.95);
   font-weight: bold;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--caps-track);
   font-size: 11px;
 }
 
@@ -808,8 +808,8 @@ section { padding: 90px 18px; }
   border-radius: var(--r-full);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   text-decoration: none;
   cursor: pointer;
   border: 1px solid rgba(233, 235, 239, 0.12);
@@ -988,7 +988,7 @@ section { padding: 90px 18px; }
   position: fixed; top: 8px; left: 8px; z-index: 100000;
   padding: 10px 14px; border-radius: 8px;
   background: var(--accent); color: var(--on-accent);
-  font-family: var(--mono); font-size: 12px; letter-spacing: 1px; text-decoration: none;
+  font-family: var(--mono); font-size: 12px; letter-spacing: var(--caps-track); text-decoration: none;
   transform: translateY(-200%); transition: transform 0.15s;
 }
 .skip-link:focus { transform: translateY(0); outline: 2px solid var(--fg); outline-offset: 2px; }
@@ -1004,13 +1004,13 @@ section { padding: 90px 18px; }
 /* ── Legal pages (app/privacy, app/terms) ─────────────────────────────── */
 .mc-legal { min-height: 100vh; background: var(--bg); color: var(--fg); padding: 32px 16px 80px; }
 .mc-legal-nav { max-width: 680px; margin: 0 auto 40px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.mc-legal-nav a { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted); text-decoration: none; }
+.mc-legal-nav a { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); text-decoration: none; }
 .mc-legal-nav a:hover, .mc-legal-nav a:focus-visible { color: var(--accent); }
 .mc-legal article { max-width: 680px; margin: 0 auto; font-family: var(--read); font-size: 17px; line-height: 1.65; color: var(--fg-muted); }
 .mc-legal article li { font-family: inherit; font-size: inherit; letter-spacing: normal; }
-.mc-legal h1 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3rem); letter-spacing: 3px; color: var(--fg); margin: 0 0 8px; font-weight: 400; }
-.mc-legal-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--fg-dim); margin: 0 0 32px; }
-.mc-legal h2 { font-family: var(--mono); font-size: 12px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg); margin: 36px 0 10px; font-weight: 600; }
+.mc-legal h1 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -0.02em; color: var(--fg); margin: 0 0 8px; font-weight: 400; }
+.mc-legal-meta { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); color: var(--fg-dim); margin: 0 0 32px; }
+.mc-legal h2 { font-family: var(--mono); font-size: 12px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg); margin: 36px 0 10px; font-weight: 600; }
 .mc-legal p, .mc-legal ul { margin: 0 0 14px; }
 .mc-legal ul { padding-left: 20px; list-style: disc; }
 .mc-legal li::marker { color: var(--fg-dim); }

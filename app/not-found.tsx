@@ -6,10 +6,10 @@ export default function NotFound() {
       minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
       background: 'var(--bg)', color: 'var(--fg)', padding: 24, textAlign: 'center', gap: 18,
     }}>
-      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--accent)', textTransform: 'uppercase' }}>
+      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--accent)', textTransform: 'var(--caps)' }}>
         404
       </span>
-      <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2, margin: 0, maxWidth: 'var(--w-form)' }}>
+      <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 'var(--caps-track)', margin: 0, maxWidth: 'var(--w-form)' }}>
         This page doesn&apos;t exist.
       </h1>
       <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 440 }}>
@@ -19,8 +19,8 @@ export default function NotFound() {
         href="/"
         style={{
           padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
-          border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
-          textTransform: 'uppercase', fontWeight: 600, textDecoration: 'none', marginTop: 8,
+          border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
+          textTransform: 'var(--caps)', fontWeight: 600, textDecoration: 'none', marginTop: 8,
         }}
       >
         Go Home

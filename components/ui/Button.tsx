@@ -61,7 +61,7 @@ export function Button({
   };
 
   const getBaseClasses = () => {
-    let classes = 'relative overflow-hidden inline-flex items-center justify-center font-mono uppercase tracking-widest transition-colors duration-300 ';
+    let classes = 'relative overflow-hidden inline-flex items-center justify-center font-mono [text-transform:var(--caps)] tracking-[var(--caps-track)] transition-colors duration-300 ';
 
     if (variant === 'icon') {
       classes += size === 'sm' ? 'w-8 h-8 rounded-md ' : size === 'md' ? 'w-10 h-10 rounded-md ' : 'w-12 h-12 rounded-lg ';

@@ -59,7 +59,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
       <div className={`relative mb-6 ${className}`}>
         <motion.label
           htmlFor={textareaId}
-          className={`absolute left-4 top-4 pointer-events-none transition-colors duration-300 font-mono tracking-widest uppercase ${
+          className={`absolute left-4 top-4 pointer-events-none transition-colors duration-300 font-mono tracking-[var(--caps-track)] [text-transform:var(--caps)] ${
             isActive ? 'text-[var(--accent)]' : 'text-[var(--fg-muted)]'
           }`}
           initial={false}
@@ -95,7 +95,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           placeholder={isActive ? props.placeholder : undefined}
         />
 
-        <div className="absolute -bottom-6 left-1 right-1 flex justify-between items-center text-[0.65rem] font-mono tracking-widest uppercase">
+        <div className="absolute -bottom-6 left-1 right-1 flex justify-between items-center text-[0.65rem] font-mono tracking-[var(--caps-track)] [text-transform:var(--caps)]">
           <div className="flex-1">
             <AnimatePresence>
               {error && (
