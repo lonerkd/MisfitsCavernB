@@ -450,6 +450,7 @@ export type Database = {
           reminded_at: string | null;
           shoot_date: string | null;
           shoot_day: number;
+          shoot_day_id: string | null;
           shooting_call: string | null;
           updated_at: string | null;
           updated_by: string | null;
@@ -470,6 +471,7 @@ export type Database = {
           reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day: number;
+          shoot_day_id?: string | null;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
@@ -490,6 +492,7 @@ export type Database = {
           reminded_at?: string | null;
           shoot_date?: string | null;
           shoot_day?: number;
+          shoot_day_id?: string | null;
           shooting_call?: string | null;
           updated_at?: string | null;
           updated_by?: string | null;
@@ -510,6 +513,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "projects";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "call_sheets_shoot_day_fkey";
+            columns: ["shoot_day_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "shoot_days";
+            referencedColumns: ["id", "project_id"];
           },
           {
             foreignKeyName: "call_sheets_updated_by_fkey";
@@ -2227,11 +2237,14 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
+          latitude: number | null;
+          longitude: number | null;
           name: string;
           notes: string | null;
           permit: string;
           project_id: string;
           status: string;
+          timezone: string | null;
           updated_at: string;
         };
         Insert: {
@@ -2241,11 +2254,14 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          latitude?: number | null;
+          longitude?: number | null;
           name: string;
           notes?: string | null;
           permit?: string;
           project_id: string;
           status?: string;
+          timezone?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -2255,11 +2271,14 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          latitude?: number | null;
+          longitude?: number | null;
           name?: string;
           notes?: string | null;
           permit?: string;
           project_id?: string;
           status?: string;
+          timezone?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -2542,6 +2561,7 @@ export type Database = {
           heading: string | null;
           id: string;
           location: string | null;
+          location_id: string | null;
           note: string | null;
           ordinal: number | null;
           project_id: string;
@@ -2551,6 +2571,7 @@ export type Database = {
           scene_number: number;
           script_id: string | null;
           shoot_day: number | null;
+          shoot_day_id: string | null;
           status: string;
           time_of_day: string | null;
           title: string;
@@ -2564,6 +2585,7 @@ export type Database = {
           heading?: string | null;
           id?: string;
           location?: string | null;
+          location_id?: string | null;
           note?: string | null;
           ordinal?: number | null;
           project_id: string;
@@ -2573,6 +2595,7 @@ export type Database = {
           scene_number: number;
           script_id?: string | null;
           shoot_day?: number | null;
+          shoot_day_id?: string | null;
           status?: string;
           time_of_day?: string | null;
           title: string;
@@ -2586,6 +2609,7 @@ export type Database = {
           heading?: string | null;
           id?: string;
           location?: string | null;
+          location_id?: string | null;
           note?: string | null;
           ordinal?: number | null;
           project_id?: string;
@@ -2595,12 +2619,20 @@ export type Database = {
           scene_number?: number;
           script_id?: string | null;
           shoot_day?: number | null;
+          shoot_day_id?: string | null;
           status?: string;
           time_of_day?: string | null;
           title?: string;
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "scenes_location_fkey";
+            columns: ["location_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "project_locations";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "scenes_project_id_fkey";
             columns: ["project_id"];
@@ -2614,6 +2646,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "scripts";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scenes_shoot_day_fkey";
+            columns: ["shoot_day_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "shoot_days";
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };
@@ -3077,6 +3116,41 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      shoot_days: {
+        Row: {
+          created_at: string;
+          day_number: number;
+          id: string;
+          project_id: string;
+          shoot_date: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          day_number: number;
+          id?: string;
+          project_id: string;
+          shoot_date?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          day_number?: number;
+          id?: string;
+          project_id?: string;
+          shoot_date?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "shoot_days_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
             referencedColumns: ["id"];
           },
         ];
@@ -3711,6 +3785,7 @@ export type Database = {
           reminded_at: string | null;
           shoot_date: string | null;
           shoot_day: number;
+          shoot_day_id: string | null;
           shooting_call: string | null;
           updated_at: string | null;
           updated_by: string | null;

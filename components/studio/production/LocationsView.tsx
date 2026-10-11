@@ -7,9 +7,11 @@ import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import EmptyState from '@/components/ui/EmptyState';
 import {
-  LOCATION_STATUS, PERMIT_STATE, locationReadiness, locationRows, mapHref, studio, useProjectLocations,
-  type LocationPatch, type LocationRow, type ProjectLocation,
+  LOCATION_STATUS, PERMIT_STATE, locationReadiness, locationRows, mapHref, studio, useProjectLocations, useShootDays,
+  type LocationPatch, type LocationRow, type ProjectLocation, type ShootDay,
 } from '@/lib/studio';
+import { deviceZone, placeLight } from '@/lib/film/studio';
+import { PlacePicker } from './PlacePicker';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
@@ -19,11 +21,13 @@ import s from '../studio.module.css';
  * is, who to call, whether it's confirmed, the permit, the cost. Scenes link
  * by the heading's location name, so the list follows the script. The
  * readiness board blocks scenes at a location that isn't locked down, and the
- * call sheet offers its address.
+ * call sheet offers its address. Told where it is (coordinates), it shows the
+ * light on each day it shoots.
  */
 export function LocationsView() {
   const { project, scenes, scriptId } = useStudio();
   const records = useProjectLocations(project.id);
+  const days = useShootDays(project.id);
   const [open, setOpen] = useState<string | null>(null);
   const [adding, setAdding] = useState('');
   const { toast } = useToast();
@@ -62,7 +66,7 @@ export function LocationsView() {
       {records.status === 'error' && <p className={s.hint} style={{ color: 'var(--danger)' }}>{records.error}</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.map((row) => (
-          <LocationItem key={row.name} row={row} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
+          <LocationItem key={row.name} row={row} days={days.rows} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
             onSaved={(r) => records.upsertLocal(r)} onRemoved={(id) => records.removeLocal(id)} />
         ))}
       </ul>
@@ -75,8 +79,8 @@ export function LocationsView() {
   );
 }
 
-function LocationItem({ row, expanded, onToggle, onSaved, onRemoved }: {
-  row: LocationRow; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
+function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
+  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -100,6 +104,13 @@ function LocationItem({ row, expanded, onToggle, onSaved, onRemoved }: {
   };
 
   const status = LOCATION_STATUS.find((x) => x.id === rec?.status);
+  // The light on each dated day this place shoots; nothing until it has coordinates.
+  const zone = deviceZone();
+  const lit = row.days
+    .map((n) => ({ n, date: days.find((d) => d.day_number === n)?.shoot_date ?? null }))
+    .map((d) => ({ ...d, light: placeLight(rec, d.date, zone) }))
+    .filter((d): d is typeof d & { date: string; light: NonNullable<typeof d.light> } => !!d.light);
+  const undated = row.days.filter((n) => !days.find((d) => d.day_number === n)?.shoot_date);
   const summary = [
     row.scenes.length ? `${row.scenes.length} scene${row.scenes.length === 1 ? '' : 's'}` : 'not in the script',
     row.days.length ? `day${row.days.length === 1 ? '' : 's'} ${row.days.join(', ')}` : null,
@@ -147,6 +158,23 @@ function LocationItem({ row, expanded, onToggle, onSaved, onRemoved }: {
                 onBlur={(e) => { const v = e.target.value.trim(); const n = v ? Number(v) : null; if (n !== (rec?.cost ?? null) && (n === null || Number.isFinite(n))) void save({ cost: n }); }} />
             </label>
           </div>
+          <PlacePicker name={row.name} value={{ latitude: rec?.latitude ?? null, longitude: rec?.longitude ?? null, timezone: rec?.timezone ?? null }} onChange={(next) => save(next)} />
+          {rec?.latitude != null && (lit.length > 0 ? (
+            <ul aria-label={`${row.name} light on its shoot days`} style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {lit.map((d) => (
+                <li key={d.n} className={s.hint}>
+                  <span style={{ color: 'var(--fg)' }}>Day {d.n} · {new Date(`${d.date}T00:00`).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' })}</span>
+                  {' — '}
+                  {d.light.polar === 'day' ? 'the sun doesn’t set' : d.light.polar === 'night' ? 'the sun doesn’t rise' : `sunrise ${d.light.sunrise} · magic hour from ${d.light.goldenStarts} · sunset ${d.light.sunset}`}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className={s.hint} style={{ margin: 0 }}>{row.days.length ? 'Give its shoot days a date on the schedule to see the light.' : 'Its light shows here once its scenes are on a dated shoot day.'}</p>
+          ))}
+          {rec?.latitude != null && lit.length > 0 && undated.length > 0 && (
+            <p className={s.hint} style={{ margin: 0 }}>No date yet for day{undated.length === 1 ? '' : 's'} {undated.join(', ')}.</p>
+          )}
           <label className={s.stack} style={{ gap: 4 }}>
             <span className={s.hint}>Notes (access, parking, power, noise, hours)</span>
             <textarea className={s.textarea} rows={2} defaultValue={rec?.notes ?? ''} key={`n:${rec?.notes}`} maxLength={5000} onBlur={(e) => text('notes', e.target.value)} />

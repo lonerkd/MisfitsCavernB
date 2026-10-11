@@ -27,6 +27,10 @@ export interface LocationRecord {
   permit: string;
   cost: number | null;
   notes: string | null;
+  /** Where it is, when someone has said: both or neither. */
+  latitude?: number | null;
+  longitude?: number | null;
+  timezone?: string | null;
 }
 
 export interface SceneAtLocation {

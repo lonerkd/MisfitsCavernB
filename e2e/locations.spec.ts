@@ -71,8 +71,9 @@ test.describe('Locations (local Supabase)', () => {
     await page.getByLabel('Address').blur();
     await page.getByRole('radiogroup', { name: 'CAVE status' }).getByRole('radio', { name: 'Confirmed' }).click();
     await page.getByLabel('CAVE permit').selectOption('not_needed');
-    await expect.poll(async () => (await admin.from('project_locations').select('name, address, status, permit').eq('project_id', projectId)).data)
-      .toEqual([{ name: 'CAVE', address: '1 Cave Rd', status: 'confirmed', permit: 'not_needed' }]);
+    await expect.poll(async () => (await admin.from('project_locations').select('name, address, status, permit').eq('project_id', projectId).order('name')).data)
+      // Every place the script names has a record (the film graph); only CAVE has been filled in.
+      .toEqual([{ name: 'CAVE', address: '1 Cave Rd', status: 'confirmed', permit: 'not_needed' }, { name: 'RIDGE', address: null, status: 'scouting', permit: 'unknown' }]);
     await expect(page.getByText('1 of 2 locked down')).toBeVisible();
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: 'test-results/locations.png', fullPage: true });

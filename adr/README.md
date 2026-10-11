@@ -20,6 +20,7 @@ rewritten to look different from how it happened.
 | [0002](0002-data-access-through-lib.md) | All data access through `lib/`, enforced by lint | Accepted |
 | [0003](0003-pwa-before-app-store.md) | Installable PWA first, App Store wrapper later | Accepted |
 | [0004](0004-push-dispatch-from-the-database.md) | Web Push dispatched by the database via `pg_net` | Accepted |
+| [0005](0005-the-film-graph.md) | The film graph: one connected core, reached one tool at a time | Accepted |
 
 ## Template
 

@@ -41,7 +41,9 @@ export type ProjectDocument = Tables<'project_documents'>;
 export type TranscriptLine = Tables<'transcript_lines'>;
 export type TranscriptPatch = Partial<Pick<TranscriptLine, 'start_ms' | 'end_ms' | 'speaker' | 'text'>>;
 export type DocumentFields = Partial<Pick<ProjectDocument, 'kind' | 'title' | 'status' | 'person_id' | 'vendor_id' | 'location_id' | 'party' | 'expires_on' | 'notes'>>;
-export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes'>>;
+export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes' | 'latitude' | 'longitude' | 'timezone'>>;
+/** One row per project and day number: the day the schedule, the call sheet and the set log share. */
+export type ShootDay = Tables<'shoot_days'>;
 export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
@@ -491,6 +493,23 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not remove the location');
   }
 
+  // ── Shoot days ───────────────────────────────────────────────────────────
+
+  async function listShootDays(projectId: string): Promise<ShootDay[]> {
+    const { data, error } = await db.from('shoot_days').select('*').eq('project_id', projectId).order('day_number');
+    if (error) fail(error, 'Could not load the shoot days');
+    return data;
+  }
+
+  /** Sets (or clears) a day's date, making the day if nothing is scheduled on it yet. Its call sheet takes the same date. */
+  async function setShootDayDate(projectId: string, dayNumber: number, date: string | null): Promise<ShootDay> {
+    const { data, error } = await db.from('shoot_days')
+      .upsert({ project_id: projectId, day_number: dayNumber, shoot_date: date }, { onConflict: 'project_id,day_number' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save the date');
+    return data;
+  }
+
   // ── Money ────────────────────────────────────────────────────────────────
 
   async function listBudgetLines(projectId: string): Promise<BudgetItem[]> {
@@ -824,7 +843,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
