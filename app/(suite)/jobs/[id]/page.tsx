@@ -16,9 +16,9 @@ const statusBadgeStyle = (status: string): React.CSSProperties => {
   const base: React.CSSProperties = {
     fontFamily: 'var(--mono)',
     fontSize: 'max(9px, var(--mc-min-font, 0px))',
-    letterSpacing: 2,
+    letterSpacing: 'var(--caps-track)',
     padding: '3px 8px',
-    textTransform: 'uppercase' as const,
+    textTransform: 'var(--caps)' as const,
     border: '1px solid',
   };
   switch (status) {
@@ -199,7 +199,7 @@ export default function JobDetailPage() {
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
           <Link href="/jobs" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
             >Jobs</div>
@@ -223,7 +223,7 @@ export default function JobDetailPage() {
           <div style={{ marginBottom: 14 }}>
             <span style={{
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3,
-              color: 'var(--accent)', textTransform: 'uppercase',
+              color: 'var(--accent)', textTransform: 'var(--caps)',
               borderBottom: '1px solid var(--accent)', paddingBottom: 2,
             }}>
               {job.role}

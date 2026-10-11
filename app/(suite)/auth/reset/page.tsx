@@ -97,7 +97,7 @@ export default function ResetPasswordPage() {
     <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, position: 'relative' }}>
       <GrainOverlay />
       <div style={{ position: 'absolute', top: 28, left: 32 }}>
-        <Link href="/auth" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-muted)', textDecoration: 'none' }}>
+        <Link href="/auth" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)', textDecoration: 'none' }}>
           <ArrowLeft size={13} /> Sign in
         </Link>
       </div>

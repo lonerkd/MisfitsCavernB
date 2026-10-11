@@ -95,7 +95,7 @@ export default function ShortcutsOverlay() {
             <div style={{ display: 'grid', gap: 20 }}>
               {GROUPS.map(g => (
                 <div key={g.title}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
                   <div style={{ display: 'grid', gap: 4 }}>
                     {g.items.map(([keys, desc]) => (
                       <div key={desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>

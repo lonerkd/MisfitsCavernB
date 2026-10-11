@@ -57,7 +57,7 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
     <section style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, color: 'var(--accent)' }}>
         {icon}
-        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', margin: 0, color: 'var(--fg-muted)' }}>{title}</h2>
+        <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', margin: 0, color: 'var(--fg-muted)' }}>{title}</h2>
       </div>
       <div style={{ background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, overflow: 'hidden' }}>
         {children}

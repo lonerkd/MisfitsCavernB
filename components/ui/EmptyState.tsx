@@ -32,7 +32,7 @@ export default function EmptyState({ icon, title, subtitle, action }: EmptyState
       >
         {icon}
       </div>
-      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
         {title}
       </p>
       {subtitle && (

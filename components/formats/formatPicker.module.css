@@ -1,7 +1,7 @@
 /* The format picker: format cards, and the selected format's journey. */
 
 .wrap { display: flex; flex-direction: column; gap: 8px; }
-.label { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; color: var(--fg-muted); text-transform: uppercase; }
+.label { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); color: var(--fg-muted); text-transform: var(--caps); }
 .loading { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); padding: 6px 0; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; }

@@ -492,7 +492,7 @@ export function PortfolioView({ token }: { token: string }) {
 
 function DeckBlock({ block }: { block: PortfolioBlock }) {
   const label: React.CSSProperties = {
-    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'uppercase',
+    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginBottom: 8, textTransform: 'var(--caps)',
   };
   const wrap: React.CSSProperties = {
     padding: 'clamp(16px, 3vw, 24px)', borderRadius: 14,

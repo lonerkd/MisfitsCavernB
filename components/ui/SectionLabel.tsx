@@ -30,8 +30,8 @@ export default function SectionLabel({ text, center = false }: SectionLabelProps
         transition={{ duration: 0.7, delay: 0.2 }}
         style={{
           fontSize: 11,
-          letterSpacing: 6,
-          textTransform: 'uppercase',
+          letterSpacing: 'var(--caps-track)',
+          textTransform: 'var(--caps)',
           color: 'var(--accent)',
           fontFamily: 'var(--mono)',
           whiteSpace: 'nowrap',

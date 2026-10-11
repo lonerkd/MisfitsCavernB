@@ -230,7 +230,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
 
   return (
     <div style={{ marginTop: 40 }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 14 }}>Production Management</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginBottom: 14 }}>Production Management</div>
       {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
@@ -353,7 +353,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
                 disabled={!isOwner}
                 onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
                 aria-label={`${f.name} submission status`}
-                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', textTransform: 'uppercase' }}
+                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)' }}
               >
                 {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -411,7 +411,7 @@ function Panel({ title, accent, headerRight, children }: { title: string; accent
   return (
     <div style={{ background: 'var(--glass)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, padding: 16 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: accent }}>{title}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: accent }}>{title}</span>
         {headerRight && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 700, color: 'var(--fg)' }}>{headerRight}</span>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>{children}</div>

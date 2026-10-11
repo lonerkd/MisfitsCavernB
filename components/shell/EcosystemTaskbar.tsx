@@ -81,7 +81,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
     >
       <div style={{
         fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2.5,
-        textTransform: 'uppercase', color: 'var(--fg-dim)',
+        textTransform: 'var(--caps)', color: 'var(--fg-dim)',
         padding: '4px 8px 8px',
         borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)',
         marginBottom: 6,
@@ -128,7 +128,7 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
               <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: 1, color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {proj.title}
               </div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
                 {proj.status || 'project'}
               </div>
             </div>

@@ -41,7 +41,7 @@ function NewProjectModal({ open, onClose, onCreate }: { open: boolean; onClose: 
           style={{ position: 'fixed', inset: 0, zIndex: 'var(--z-modal)', background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
           <motion.div initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}
             style={{ width: 560, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, padding: 28 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>New Production</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', textTransform: 'var(--caps)', marginBottom: 6 }}>New Production</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, marginBottom: 20 }}>Start a project</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <Input
@@ -173,7 +173,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
             }}>
               <span style={{ color: readable(phase), display: 'flex' }}><FormatIcon icon={icon} size={13} /></span>
             </div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: readable(phase), textTransform: 'uppercase' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: readable(phase), textTransform: 'var(--caps)' }}>
               {project.type}
             </div>
           </div>
@@ -294,7 +294,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
           boxShadow: `0 0 8px ${color}`,
           flexShrink: 0,
         }} />
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2.5, color: readable(color), textTransform: 'uppercase' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: readable(color), textTransform: 'var(--caps)' }}>
           {phase.abbr}
         </div>
         <div style={{
@@ -356,7 +356,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
             color: 'var(--fg-dim)',
-            textTransform: 'uppercase',
+            textTransform: 'var(--caps)',
           }}>
             No projects
           </div>
@@ -535,7 +535,7 @@ export default function ProjectsPage() {
 
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
             Production Board
           </div>
         </div>
@@ -550,7 +550,7 @@ export default function ProjectsPage() {
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', letterSpacing: 1, lineHeight: 1 }}>
                   {value}
                 </div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
                   {label}
                 </div>
               </div>
@@ -566,7 +566,7 @@ export default function ProjectsPage() {
               background: 'var(--accent)', color: 'var(--on-accent)',
               border: 'none', borderRadius: 9999,
               fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-              textTransform: 'uppercase', fontWeight: 600,
+              textTransform: 'var(--caps)', fontWeight: 600,
               padding: '8px 16px', cursor: 'pointer',
               transition: 'transform 0.2s, box-shadow 0.3s',
             }}
@@ -609,7 +609,7 @@ export default function ProjectsPage() {
                 }} />
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-                  textTransform: 'uppercase',
+                  textTransform: 'var(--caps)',
                   color: count > 0 ? readable(color) : 'var(--fg-dim)',
                   transition: 'color 0.3s',
                 }}>
@@ -656,7 +656,7 @@ export default function ProjectsPage() {
         ) : loaded && user && projectsList.length === 0 ? (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
             style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 20 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 4, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>Welcome to the cavern</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>Welcome to the cavern</div>
             <h2 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.4rem, 6vw, 4rem)', letterSpacing: 2, lineHeight: 1, margin: 0, fontWeight: 400 }}>Start your first<br />production</h2>
             <p style={{ fontFamily: 'var(--serif)', fontSize: '1.05rem', color: 'var(--fg-muted)', maxWidth: 460, lineHeight: 1.6 }}>
               One project ties your screenplay, schedule, budget, concept board, characters and pitch together. Create one to begin — everything flows from it.
@@ -683,7 +683,7 @@ export default function ProjectsPage() {
               style={{ width: '100%', padding: '7px 10px 7px 28px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'rgba(var(--ink-rgb), 0.03)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11 }}
             />
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-muted)' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)' }}>
             Sort
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}
               style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'var(--bg-3)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'none', letterSpacing: 0 }}>
@@ -695,7 +695,7 @@ export default function ProjectsPage() {
               display: 'flex', alignItems: 'center', gap: 6, padding: '6px 11px', borderRadius: 9999, cursor: 'pointer',
               border: `1px solid ${showArchived ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.1)'}`,
               background: showArchived ? 'rgba(232,67,26,0.12)' : 'transparent', color: showArchived ? 'var(--fg)' : 'var(--fg-muted)',
-              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase',
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
             }}>
             <Archive size={11} aria-hidden /> Archived{archived.length ? ` (${archived.length})` : ''}
           </button>

@@ -12,12 +12,23 @@
   --z-modal: 99990;
 
   /* Typefaces — backed by next/font CSS variables (self-hosted) */
-  --display: var(--font-display), 'Bebas Neue', sans-serif;
-  --mono: var(--font-mono), 'DM Mono', monospace;
-  --serif: var(--font-serif), 'Cormorant Garamond', serif;
+  /* Titles are the interface face at weight 800–900, tight and in sentence case
+     (design-language.md). Bebas Neue stays for the logotype only: --wordmark. */
+  --display: var(--ui);
+  --wordmark: var(--font-display), 'Bebas Neue', sans-serif;
+  /* The interface face: Hanken Grotesk, with tabular figures where digits line up
+     (design-language.md). `--mono` is the role the whole suite already uses for
+     interface text, so it now resolves to this face; real monospace is `--code`. */
+  --ui: var(--font-ui), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --code: var(--font-mono), 'DM Mono', monospace;
+  --mono: var(--ui);
+  /* Long-form reading (the legal pages) keeps Cormorant; interface paragraphs
+     use the interface face. */
+  --read: var(--font-serif), 'Cormorant Garamond', serif;
+  --serif: var(--ui);
   /* Screenplay face — the industry-standard 12pt Courier, for script surfaces only */
   --script: var(--font-script), 'Courier Prime', 'Courier New', monospace;
-  --sans: var(--mono);
+  --sans: var(--ui);
 
   /* Type scale (1.2 ratio, 14px UI base). 11px is the floor for text, for
      uppercase tracked labels only. Nothing smaller than --text-2xs. */
@@ -54,12 +65,19 @@
   --bg-4:  #0a131e;
   --glass: rgba(4, 7, 13, 0.78);
 
-  /* Foreground — Vanilla */
-  --fg:       #e0ddae;
-  --fg-muted: rgba(224, 221, 174, 0.72);
-  --fg-dim:   rgba(224, 221, 174, 0.58);
+  /* Foreground — a cool neutral. Cream is not a text colour: it is the paper
+     (--paper) and the title colour (--cream), see design-language.md. */
+  --fg:       #e9ebef;
+  --fg-muted: rgba(233, 235, 239, 0.74);
+  --fg-dim:   rgba(233, 235, 239, 0.58);
   --fg-subtle: var(--fg-dim);
-  --fg-ghost: rgba(224, 221, 174, 0.12);
+  --fg-ghost: rgba(233, 235, 239, 0.12);
+  --cream:    #e0ddae;
+
+  /* Interface labels are sentence case; tracked capitals are for a theme that
+     wants them (Terminal). The screenplay's own capitals are format and unaffected. */
+  --caps: none;
+  --caps-track: 0.01em;
 
   /* Accent — Sinopia */
   --accent:       #e8431a;
@@ -71,9 +89,22 @@
   --secondary-dim: rgba(51, 100, 103, 0.25);
 
   /* Borders */
-  --border:       rgba(224, 221, 174, 0.07);
-  --border-2:     rgba(224, 221, 174, 0.12);
+  --border:       rgba(233, 235, 239, 0.08);
+  --border-2:     rgba(233, 235, 239, 0.14);
   --border-accent: rgba(232, 67, 26, 0.32);
+
+  /* The language (design-language.md). Paper is a surface for the forms people
+     work in; the limit is the one red that means "past a limit"; the strip
+     colours are a paper stripboard's. */
+  --paper:       #ece8d5;
+  --on-paper:    #14161b;
+  --paper-faint: rgba(20, 22, 27, 0.52);
+  --paper-rule:  rgba(20, 22, 27, 0.85);
+  --limit:       #e8431a;
+  --strip-ext-day:   #f3cf55;
+  --strip-int-day:   #f6f3e6;
+  --strip-int-night: #a9c0f5;
+  --strip-ext-night: #93dcae;
 
   /* Module accent colors (used sparingly as glows) */
   --script-color:    #e8431a;
@@ -116,7 +147,7 @@
 
   /* Theme-aware building blocks. Overlays and hairlines are ink at an alpha
      (white on dark themes, black on light), so they read on any background. */
-  --fg-rgb: 224, 221, 174;
+  --fg-rgb: 233, 235, 239;
   --ink-rgb: 255, 255, 255;
   --fg-strong: #ffffff;
   --surface: rgba(10, 14, 26, 0.92);
@@ -146,7 +177,8 @@ body {
   overflow-x: hidden;
   background: var(--bg);
   color: var(--fg);
-  font-family: var(--mono);
+  font-family: var(--ui);
+  font-variant-numeric: tabular-nums;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -164,9 +196,8 @@ body.custom-cursor-active * {
    page never scrolls sideways. Small print has a floor on a phone: every
    size under 10px is written max(Npx, var(--mc-min-font)) — the desk keeps
    its fine print, a phone held at arm's length on set gets 11px. */
-:root { --mc-min-font: 0px; }
+:root { --mc-min-font: 11px; }
 @media (max-width: 760px) {
-  :root { --mc-min-font: 11px; }
   .mc-dock { display: none !important; }
   html, body { overflow-x: clip; }
   .main-content-container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
@@ -299,8 +330,9 @@ body.reduce-motion *::after {
 ═══════════════════════════════ */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--display);
-  letter-spacing: 2px;
-  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 h1 { font-size: clamp(3.5rem, 14vw, 11rem); }
@@ -350,7 +382,7 @@ p {
   background: rgba(4, 7, 13, 0.92);
   backdrop-filter: blur(32px) saturate(1.6);
   -webkit-backdrop-filter: blur(32px) saturate(1.6);
-  border: 1px solid rgba(224, 221, 174, 0.06);
+  border: 1px solid rgba(233, 235, 239, 0.06);
 }
 
 /* ═══════════════════════════════
@@ -453,8 +485,8 @@ p {
   align-items: center;
   gap: 8px;
   padding: 13px 28px;
-  border: 1px solid rgba(224, 221, 174, 0.12);
-  background: rgba(224, 221, 174, 0.02);
+  border: 1px solid rgba(233, 235, 239, 0.12);
+  background: rgba(233, 235, 239, 0.02);
   color: var(--fg);
   font-family: var(--mono);
   font-size: 11px;
@@ -467,8 +499,8 @@ p {
 }
 
 .btn-ghost:hover {
-  border-color: rgba(224, 221, 174, 0.25);
-  background: rgba(224, 221, 174, 0.04);
+  border-color: rgba(233, 235, 239, 0.25);
+  background: rgba(233, 235, 239, 0.04);
   transform: translateY(-2px);
 }
 
@@ -543,7 +575,7 @@ p {
 .input-field {
   width: 100%;
   background: transparent;
-  border: 1px solid rgba(224, 221, 174, 0.1);
+  border: 1px solid rgba(233, 235, 239, 0.1);
   padding: 14px 16px;
   color: var(--fg);
   font-family: var(--mono);
@@ -665,14 +697,14 @@ section { padding: 90px 18px; }
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   line-height: 1.8;
-  color: rgba(224, 221, 174, 0.75);
+  color: rgba(233, 235, 239, 0.75);
   letter-spacing: 0.02em;
   pointer-events: none;
   user-select: none;
 }
 
 .screenplay-scene-hdr {
-  color: rgba(224, 221, 174, 0.95);
+  color: rgba(233, 235, 239, 0.95);
   font-weight: bold;
   letter-spacing: 0.08em;
   font-size: 11px;
@@ -680,14 +712,14 @@ section { padding: 90px 18px; }
 
 .screenplay-char {
   padding-left: 40%;
-  color: rgba(224, 221, 174, 0.85);
+  color: rgba(233, 235, 239, 0.85);
   font-size: 11px;
   font-weight: bold;
 }
 
 .screenplay-dialog {
   padding: 0 20% 0 28%;
-  color: rgba(224, 221, 174, 0.7);
+  color: rgba(233, 235, 239, 0.7);
   font-size: 11px;
 }
 
@@ -780,10 +812,10 @@ section { padding: 90px 18px; }
   text-transform: uppercase;
   text-decoration: none;
   cursor: pointer;
-  border: 1px solid rgba(224, 221, 174, 0.12);
+  border: 1px solid rgba(233, 235, 239, 0.12);
   background: radial-gradient(
     circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
-    rgba(224, 221, 174, 0.04) 0%,
+    rgba(233, 235, 239, 0.04) 0%,
     transparent 70%
   );
   color: var(--fg);
@@ -798,16 +830,18 @@ section { padding: 90px 18px; }
    ═══════════════════════════════ */
 [data-theme="default"] {
   --bg: #040710; --bg-2: #050a14; --bg-3: #070d18; --bg-4: #0a131e; --glass: rgba(4, 7, 13, 0.78);
-  --fg: #e0ddae; --fg-muted: rgba(224, 221, 174, 0.72); --fg-dim: rgba(224, 221, 174, 0.58); --fg-ghost: rgba(224, 221, 174, 0.12);
+  --fg: #e9ebef; --fg-muted: rgba(233, 235, 239, 0.74); --fg-dim: rgba(233, 235, 239, 0.58); --fg-ghost: rgba(233, 235, 239, 0.12); --cream: #e0ddae;
   --accent: #e8431a; --accent-dim: rgba(232, 67, 26, 0.18); --accent-glow: rgba(232, 67, 26, 0.10);
   --secondary: #336467; --secondary-dim: rgba(51, 100, 103, 0.25);
-  --border: rgba(224, 221, 174, 0.07); --border-2: rgba(224, 221, 174, 0.12); --border-accent: rgba(232, 67, 26, 0.32);
-  --fg-rgb: 224, 221, 174; --ink-rgb: 255, 255, 255; --fg-strong: #ffffff; --surface: rgba(10, 14, 26, 0.92); --surface-2: rgba(6, 9, 18, 0.92); --on-accent: #060606;
+  --border: rgba(233, 235, 239, 0.08); --border-2: rgba(233, 235, 239, 0.14); --border-accent: rgba(232, 67, 26, 0.32);
+  --fg-rgb: 233, 235, 239; --ink-rgb: 255, 255, 255; --fg-strong: #ffffff; --surface: rgba(10, 14, 26, 0.92); --surface-2: rgba(6, 9, 18, 0.92); --on-accent: #060606;
   color-scheme: dark;
 }
 
 [data-theme="terminal"] {
   --display: var(--font-mono), 'DM Mono', monospace; --serif: var(--font-mono), 'DM Mono', monospace;
+  --ui: var(--code); --mono: var(--code); --sans: var(--code);
+  --caps: uppercase; --caps-track: 0.12em;
   --bg: #030a05; --bg-2: #051008; --bg-3: #07160b; --bg-4: #0a1d0f; --glass: rgba(3, 10, 5, 0.82);
   --fg: #8dfc9b; --fg-muted: rgba(141, 252, 155, 0.76); --fg-dim: rgba(141, 252, 155, 0.6); --fg-ghost: rgba(141, 252, 155, 0.14);
   --accent: #3dff6e; --accent-dim: rgba(61, 255, 110, 0.18); --accent-glow: rgba(61, 255, 110, 0.1);
@@ -972,7 +1006,7 @@ section { padding: 90px 18px; }
 .mc-legal-nav { max-width: 680px; margin: 0 auto 40px; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .mc-legal-nav a { font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-muted); text-decoration: none; }
 .mc-legal-nav a:hover, .mc-legal-nav a:focus-visible { color: var(--accent); }
-.mc-legal article { max-width: 680px; margin: 0 auto; font-family: var(--serif); font-size: 17px; line-height: 1.65; color: var(--fg-muted); }
+.mc-legal article { max-width: 680px; margin: 0 auto; font-family: var(--read); font-size: 17px; line-height: 1.65; color: var(--fg-muted); }
 .mc-legal article li { font-family: inherit; font-size: inherit; letter-spacing: normal; }
 .mc-legal h1 { font-family: var(--display); font-size: clamp(2rem, 6vw, 3rem); letter-spacing: 3px; color: var(--fg); margin: 0 0 8px; font-weight: 400; }
 .mc-legal-meta { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; color: var(--fg-dim); margin: 0 0 32px; }

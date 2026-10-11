@@ -217,7 +217,7 @@ export default function ManagePortfolioPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {project.portfolio_media.map(media => (
                     <div key={media.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 8, background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-                      <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{media.media_type}</span>
+                      <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>{media.media_type}</span>
                       <span style={{ flex: 1, fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{media.title || media.url}</span>
                       <button onClick={() => removeMedia(project.id, media.id)} aria-label={`Remove ${media.title || 'media'}`} title="Remove" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.3 }}><Trash2 size={12} /></button>
                     </div>

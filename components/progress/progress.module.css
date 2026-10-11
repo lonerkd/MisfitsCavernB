@@ -27,7 +27,7 @@
 }
 
 .head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; position: relative; }
-.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 3px; text-transform: uppercase; color: var(--fg-dim); }
+.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
 .phaseName { font-family: var(--display); font-size: clamp(1.6rem, 3.4vw, 2.3rem); letter-spacing: 2px; line-height: 1; color: var(--fg); margin: 4px 0 0; font-weight: 400; }
 .summary { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin-top: 6px; }
 .headText { flex: 1; min-width: 180px; }
@@ -46,7 +46,7 @@
   display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
   height: 30px; padding: 0 12px; border-radius: 9999px;
   border: 1px solid var(--line); background: transparent; cursor: pointer;
-  font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2px; text-transform: uppercase;
+  font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps);
   color: var(--fg-dim); transition: color 0.2s, border-color 0.2s, background 0.2s;
 }
 .railBtn:hover { color: var(--fg); border-color: rgba(var(--fg-rgb), 0.25); }
@@ -61,7 +61,7 @@
 /* ── Milestones ──────────────────────────────────────── */
 .cols { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 22px; margin-top: 18px; position: relative; }
 @media (max-width: 860px) { .cols { grid-template-columns: minmax(0, 1fr); } }
-.sectionTitle { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 2.5px; text-transform: uppercase; color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.sectionTitle { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); margin: 0 0 10px; font-weight: 400; display: flex; align-items: center; gap: 8px; justify-content: space-between; }
 .sectionHeading { font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; margin: 0; }
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .milestone {
@@ -80,7 +80,7 @@
 .bar { height: 3px; border-radius: 4px; background: rgba(var(--fg-rgb), 0.08); margin-top: 7px; overflow: hidden; }
 .barFill { height: 100%; background: var(--pa); border-radius: 4px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
 .go {
-  font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps);
   color: var(--pa); background: transparent; border: 1px solid var(--pa-line); border-radius: 9999px;
   padding: 4px 10px; cursor: pointer; text-decoration: none; white-space: nowrap; align-self: center;
 }
@@ -91,7 +91,7 @@
 .primary {
   display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 18px; border-radius: 9999px;
   border: 1px solid var(--pa); background: var(--pa); color: var(--pa-ink, #fff); cursor: pointer;
-  font-family: var(--mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+  font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps);
   transition: transform 0.2s, box-shadow 0.2s;
 }
 .primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px var(--pa-dim); }
@@ -100,7 +100,7 @@
 .ghost {
   display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: 9999px;
   border: 1px solid var(--line); background: transparent; color: var(--fg-muted); cursor: pointer;
-  font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase;
+  font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps);
 }
 .ghost:hover { color: var(--fg); border-color: rgba(var(--fg-rgb), 0.25); }
 .note { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
@@ -127,7 +127,7 @@
 .brickIcon { color: var(--pa); display: flex; }
 .brickLabel { font-family: var(--mono); font-size: 11px; color: var(--fg); }
 .brickBlurb { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); line-height: 1.4; }
-.brickTag { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: max(7.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--ok); }
+.brickTag { position: absolute; top: 8px; right: 8px; font-family: var(--mono); font-size: max(7.5px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--ok); }
 .brickLocked { cursor: default; border-style: dashed; background: transparent; }
 .brickLocked::before { opacity: 0; }
 .brickLocked:hover { transform: none; border-color: var(--line); background: transparent; }
@@ -174,7 +174,7 @@
   background: linear-gradient(180deg, #0b1122, #060a15); border: 1px solid var(--pa-line, rgba(232, 67, 26, 0.4));
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 80px var(--pa-dim, rgba(232, 67, 26, 0.15));
 }
-.revealEyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 4px; text-transform: uppercase; color: var(--pa); }
+.revealEyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--pa); }
 .revealTitle { font-family: var(--display); font-size: clamp(2.2rem, 7vw, 3.2rem); letter-spacing: 3px; line-height: 1; margin: 8px 0 6px; font-weight: 400; color: var(--fg); }
 .revealText { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin: 0 0 20px; }
 .revealBricks { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 22px; text-align: left; }

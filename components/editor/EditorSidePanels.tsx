@@ -163,12 +163,12 @@ export function EditorRightPanels({
                           borderRadius: 8,
                           padding: '12px 14px',
                         }}>
-                          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: readable(color), marginBottom: 8 }}>
+                          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: readable(color), marginBottom: 8 }}>
                             Now Writing · Scene {currentSceneIdx + 1}
                           </div>
                           <div style={{
                             fontFamily: 'var(--mono)', fontSize: 13, color: 'var(--fg)',
-                            textTransform: 'uppercase', marginBottom: 10,
+                            textTransform: 'var(--caps)', marginBottom: 10,
                             whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                           }}>
                             {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
@@ -301,7 +301,7 @@ export function EditorRightPanels({
                               {lintIssues.slice(0, 30).map((issue, idx) => (
                                 <div key={idx} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '8px 10px', borderLeft: `2px solid ${issue.type === 'error' ? '#ef4444' : issue.type === 'warning' ? '#eab308' : '#3b82f6'}` }}>
                                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                                    <span style={{ fontSize: 11, color: issue.type === 'error' ? 'var(--danger)' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'uppercase', fontWeight: 700 }}>{issue.type}</span>
+                                    <span style={{ fontSize: 11, color: issue.type === 'error' ? 'var(--danger)' : issue.type === 'warning' ? '#eab308' : '#3b82f6', textTransform: 'var(--caps)', fontWeight: 700 }}>{issue.type}</span>
                                     <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>L{issue.line}</span>
                                   </div>
                                   <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{issue.message}</div>
@@ -440,7 +440,7 @@ export function EditorRightPanels({
                             </button>
                             <div style={{ minWidth: 0, flex: 1 }}>
                               <div style={{ fontSize: 12, color: 'var(--fg-strong)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ref.title || ref.name || ref.uri || 'Untitled track'}</div>
-                              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
                                 {ref.reference_type === 'spotify' ? 'Spotify' : ref.reference_type === 'custom_upload' ? 'Upload' : (ref.reference_type || 'audio')}
                               </div>
                             </div>

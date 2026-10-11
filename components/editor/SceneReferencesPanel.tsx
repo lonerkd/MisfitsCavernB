@@ -11,7 +11,7 @@ import { MediaThumbVisual } from '@/components/studio/media/MediaThumb';
 import { MediaViewer } from '@/components/studio/media/MediaViewer';
 import { Modal } from '@/components/studio/ui';
 
-const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 8 };
+const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 8 };
 const hint: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6, color: 'var(--fg-muted)' };
 
 /**
@@ -73,7 +73,7 @@ export function SceneReferencesPanel({
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div>
         <div style={label}>Scene {sceneNumber}</div>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--fg)', textTransform: 'uppercase', lineHeight: 1.4 }}>{heading}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 600, color: 'var(--fg)', textTransform: 'var(--caps)', lineHeight: 1.4 }}>{heading}</div>
         {!row && (
           <div style={{ ...hint, marginTop: 6 }}>{syncState === 'error' ? 'Couldn’t save the scene list — check your connection.' : 'Saving this scene…'}</div>
         )}

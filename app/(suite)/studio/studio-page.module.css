@@ -33,8 +33,8 @@
 .module {
   font-family: var(--mono);
   font-size: max(9px, var(--mc-min-font, 0px));
-  letter-spacing: 3px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   color: var(--violet);
 }
 .projectPicker select {
@@ -89,8 +89,8 @@
   color: var(--fg-dim);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
+  letter-spacing: var(--caps-track);
+  text-transform: var(--caps);
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.2s, background 0.2s;

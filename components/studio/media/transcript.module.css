@@ -22,7 +22,7 @@ button.time:hover { color: var(--fg); }
 .time:focus-visible { outline: 2px solid var(--studio); outline-offset: 2px; border-radius: 4px; }
 
 .words { font-size: 13px; line-height: 1.5; color: var(--fg); margin: 0; overflow-wrap: anywhere; }
-.speaker { font-family: var(--mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--violet); margin-right: 6px; }
+.speaker { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--violet); margin-right: 6px; }
 .mark { background: color-mix(in srgb, var(--warn) 28%, transparent); color: inherit; border-radius: 4px; }
 
 .acts { display: flex; gap: 2px; }
@@ -44,7 +44,7 @@ button.time:hover { color: var(--fg); }
   padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--sunken);
 }
 .num { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--fg-muted); padding-top: 1px; }
-.source { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: 1px; color: var(--fg-dim); text-transform: uppercase; margin: 0 0 3px; }
+.source { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); color: var(--fg-dim); text-transform: var(--caps); margin: 0 0 3px; }
 .sourceBtn { background: none; border: 0; padding: 0; font: inherit; color: var(--fg-muted); cursor: pointer; text-decoration: underline; letter-spacing: inherit; text-transform: inherit; }
 .sourceBtn:hover { color: var(--fg); }
 .sourceBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 2px; border-radius: 4px; }

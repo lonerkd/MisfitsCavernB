@@ -262,7 +262,7 @@ export default function CommandPalette() {
                 <div role="status" style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>{searching ? 'Searching…' : `No matches for “${query}”`}</div>
               ) : groups.map(g => (
                 <div key={g.group} style={{ marginBottom: 6 }}>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', padding: '6px 10px 4px' }}>{g.group}</div>
                   {g.items.map(c => {
                     flatIdx++;
                     const idx = flatIdx;

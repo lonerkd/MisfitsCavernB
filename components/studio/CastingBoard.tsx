@@ -82,7 +82,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
 
   return (
     <div style={{ marginTop: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
         <Users size={16} /> Casting Board
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
       </div>
@@ -105,7 +105,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   {cast ? (
                     <span title={`Cast: ${cast.username || 'crew'}`} style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--success)', flexShrink: 0 }} />
                   ) : (
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1 }}>open</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>open</span>
                   )}
                 </button>
               );
@@ -120,13 +120,13 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
               <div style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${sel.color}33`, borderRadius: 14, padding: 24 }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: 2, color: sel.color, marginBottom: 20 }}>{sel.name}</div>
 
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
                 {cast ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 8, marginBottom: 24 }}>
                     <Avatar src={cast.avatar_url} name={cast.username || 'Crew'} size={38} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
-                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ok)', textTransform: 'uppercase', letterSpacing: 1 }}>Cast</div>
+                      <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ok)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>Cast</div>
                     </div>
                     <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>
                     <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--danger)', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>
@@ -149,7 +149,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                           <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
                             <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
                             <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</span>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</span>
                           </button>
                         ))}
                       </div>
@@ -157,7 +157,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   </div>
                 )}
 
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
                 {looksFor.length > 0 ? (
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 24 }}>
                     {looksFor.map(l => (
@@ -170,7 +170,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginBottom: 24 }}>No looks yet — add them to this character in the Character Bible (Story).</div>
                 )}
 
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
                 {fp.sceneNums.length > 0 ? (
                   <div>
                     <div style={{ display: 'flex', gap: 20, marginBottom: 10, fontFamily: 'var(--mono)', fontSize: 12 }}>

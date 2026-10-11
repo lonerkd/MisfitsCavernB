@@ -66,7 +66,7 @@ export function DeptWindow({ title, tag, color: rawColor, href, stats, preview, 
             <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: c }} />
           ))}
         </div>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 3, textTransform: 'uppercase', marginLeft: 6 }}>{tag}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: ink, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginLeft: 6 }}>{tag}</span>
       </div>
 
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -83,7 +83,7 @@ export function DeptWindow({ title, tag, color: rawColor, href, stats, preview, 
           {stats.map(s => (
             <div key={s.label}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 13, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>{s.label}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginTop: 3 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -93,7 +93,7 @@ export function DeptWindow({ title, tag, color: rawColor, href, stats, preview, 
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 5,
               fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-              textTransform: 'uppercase', color: ink,
+              textTransform: 'var(--caps)', color: ink,
               padding: '6px 12px', borderRadius: 9999,
               background: `${color}12`, border: `1px solid ${color}28`,
             }}
@@ -114,7 +114,7 @@ export function ScriptPreview({ pages, scripts, scenes }: { pages: number; scrip
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: 'var(--fg)', lineHeight: 1 }}>{pages}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
+        <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>pages · {scripts} script{scripts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</span>
       </div>
       {bars > 0 ? (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
@@ -137,7 +137,7 @@ export function AssetPreview({ concepts, scenes }: { concepts: number; scenes: n
   const palette = ['#6366f1', '#e8431a', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
   return (
     <div style={{ padding: '10px 12px' }}>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
+      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginBottom: 8 }}>{concepts} reference{concepts === 1 ? '' : 's'} · {scenes} scene{scenes === 1 ? '' : 's'}</div>
       {total > 0 ? (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
           {Array.from({ length: 6 }).map((_, i) => (
@@ -193,11 +193,11 @@ export function TimelinePreview({ deadline, milestones }: { deadline: string; mi
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
         {daysLeft === null ? (
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1.5, textTransform: 'uppercase' }}>No end date set</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>No end date set</span>
         ) : (
           <>
             <span style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: daysLeft < 30 ? 'var(--accent)' : 'var(--fg)', lineHeight: 1 }}>{Math.abs(daysLeft)}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{daysLeft < 0 ? 'days past the end date' : 'days to the end date'}</span>
           </>
         )}
       </div>

@@ -150,9 +150,9 @@ export default function AdminAnalyticsPage() {
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
-                  letterSpacing: 1,
+                  letterSpacing: 'var(--caps-track)',
                   cursor: 'pointer',
-                  textTransform: 'uppercase',
+                  textTransform: 'var(--caps)',
                 }}
               >
                 Last {range === 'week' ? 'Week' : range === 'month' ? 'Month' : 'Year'}

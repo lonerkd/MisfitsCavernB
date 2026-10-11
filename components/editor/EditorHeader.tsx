@@ -222,7 +222,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   padding: '8px 18px',
                   background: 'var(--accent)', color: 'var(--on-accent)',
                   borderRadius: 9999, fontWeight: 700, fontSize: 11,
-                  fontFamily: 'var(--mono)', letterSpacing: 2, textTransform: 'uppercase',
+                  fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                   border: 'none', cursor: 'pointer',
                   transition: 'box-shadow 0.25s, transform 0.2s',
                 }}
@@ -246,7 +246,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                       width: '100%', textAlign: 'left', padding: '9px 14px',
                       background: 'transparent', border: 'none', color: 'var(--fg-muted)',
                       fontSize: 11, cursor: 'pointer', borderRadius: 8,
-                      textTransform: 'uppercase', letterSpacing: 2,
+                      textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)',
                       fontFamily: 'var(--mono)', fontWeight: 500,
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
@@ -259,7 +259,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                     display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
                     padding: '9px 14px', background: 'transparent', border: 'none',
                     color: 'var(--fg-muted)', fontSize: 11, cursor: 'pointer', borderRadius: 8,
-                    textTransform: 'uppercase', letterSpacing: 2, fontFamily: 'var(--mono)', fontWeight: 500,
+                    textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', fontFamily: 'var(--mono)', fontWeight: 500,
                   }}
                   onMouseEnter={e => { e.currentTarget.style.background = 'rgba(232,67,26,0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
                   onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>

@@ -5,7 +5,7 @@
 .totals { display: flex; gap: 8px; flex-wrap: wrap; }
 .total { padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--panel); min-width: 92px; }
 .totalValue { font-family: var(--mono); font-size: 16px; color: var(--fg); }
-.totalLabel { font-family: var(--mono); font-size: max(8.5px, var(--mc-min-font, 0px)); letter-spacing: 1.5px; text-transform: uppercase; color: var(--fg-dim); margin-top: 2px; }
+.totalLabel { font-family: var(--mono); font-size: max(8.5px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); margin-top: 2px; }
 .spacer { flex: 1; }
 .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
 .search { width: 200px; }
@@ -47,11 +47,11 @@
 .sheet { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: var(--panel); }
 .sheetHead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
 .sheetNum { font-family: var(--display); font-size: 1.5rem; letter-spacing: 1px; color: var(--fg); line-height: 1; }
-.sheetHeading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: uppercase; }
+.sheetHeading { font-family: var(--mono); font-size: 11px; color: var(--fg); text-transform: var(--caps); }
 .sheetMeta { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
 .boxes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 8px; }
 .box { --c: #888; border-radius: 8px; border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); padding: 8px 10px; }
-.boxLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: 1px; text-transform: uppercase; color: var(--c); margin-bottom: 4px; }
+.boxLabel { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--c); margin-bottom: 4px; }
 .boxItems { display: flex; flex-wrap: wrap; gap: 4px; }
 .boxItem { font-family: var(--mono); font-size: 11px; color: var(--fg); background: rgba(var(--fg-rgb), 0.05); border: 1px solid transparent; border-radius: 4px; padding: 2px 7px; cursor: pointer; }
 .boxItem:hover { border-color: var(--c); }
