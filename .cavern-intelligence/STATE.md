@@ -50,8 +50,7 @@
 The suite becomes one connected core — **the film graph**: scenes, characters,
 locations, shoot days, story days, elements, shots and people as real linked
 rows, plus a universal layer so anything attaches to anything. Design:
-[film-graph-spec.md](film-graph-spec.md) (approved; step 1 — days and places → daylight — is built; next is step 2,
-people in scenes → sides). This comes before the wishlist ranking.
+[film-graph-spec.md](film-graph-spec.md) (approved; steps 1 (days and places → daylight) and 2 (characters, who is in each scene, casting by id) are built; next is step 3). This comes before the wishlist ranking.
 
 ## Open work — start here
 
@@ -138,6 +137,8 @@ the logline is a line of text; only the next milestone explains itself; Tailwind
 under `app/` now follow the tokens; about 360 spots of tracked spacing on non-capital text went through `--caps-track`.
 **Owner direction:** the top bar is folded into the island, one island on desk and phone with offline and on-set modes, and no duplicated
 information. Recorded in design-language.md; it is next.
+
+**Then (film graph, step 2 — people in scenes, #164):** migration `20261011010000` — `characters`, `scene_characters`, `character_castings.character_id`, and triggers keeping them in step with `cast_list` / `character_name`. **Applied to production by paste on 2026-10-11** (the connector's `apply_migration` hung). Verified: tables, column, 3 triggers, RLS, backfill (15 characters, 27 links); Production schema drift passed. Pasted migrations leave no row in `supabase_migrations.schema_migrations`.
 
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
