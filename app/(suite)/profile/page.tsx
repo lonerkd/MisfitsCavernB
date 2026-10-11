@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
+import { Save, LogOut, ExternalLink, Film, FileText, Briefcase, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -106,17 +106,8 @@ export default function ProfilePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        padding: '0 24px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', zIndex: 100,
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>PROFILE</h1>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        <h1 className="sr-only">Profile</h1>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
           {message && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>{message}</span>}
           <button onClick={handleSave} disabled={saving}
@@ -141,7 +132,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <div style={{ marginTop: 60, maxWidth: 'var(--w-reading)', margin: '60px auto 0', padding: '40px 24px 80px' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '8px auto 0', padding: '40px 24px 80px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px, 4vw, 24px)', marginBottom: 40 }}>
           <div style={{ flexShrink: 0 }}>

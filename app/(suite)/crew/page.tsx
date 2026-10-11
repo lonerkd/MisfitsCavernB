@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Search, User } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 import Link from 'next/link';
 import EmptyState from '@/components/ui/EmptyState';
 import Avatar from '@/components/ui/Avatar';
@@ -101,20 +101,11 @@ export default function CrewPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        padding: '16px 24px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', zIndex: 100
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>CREW DIRECTORY</h1>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        <h1 className="sr-only">Crew directory</h1>
       </header>
 
-      <div style={{ marginTop: 60, padding: 24, maxWidth: 'var(--w-content)', margin: '60px auto 0' }}>
+      <div style={{ padding: 24, maxWidth: 'var(--w-content)', margin: '8px auto 0' }}>
         {activeProject && (
           // A long project name ellipsizes in its tab instead of pushing the switch off a phone screen.
           <div style={{ display: 'inline-flex', maxWidth: '100%', gap: 4, marginBottom: 20, padding: 4, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>

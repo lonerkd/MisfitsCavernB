@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useEffectEvent } from 'react';
-import { ArrowLeft, MapPin, MessageSquare, Film, User } from 'lucide-react';
+import { MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { getPortfolioProjects } from '@/lib/supabase/portfolio';
@@ -101,19 +101,9 @@ export default function CrewMemberPage() {
   if (notFound || !profile) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
-        <header style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-          background: 'var(--surface)', backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-          padding: '0 24px', display: 'flex', alignItems: 'center', zIndex: 100,
-          boxSizing: 'border-box'
-        }}>
-          <Link href="/crew" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-            <ArrowLeft size={20} />
-            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>CREW</span>
-          </Link>
+        <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
         </header>
-        <div style={{ marginTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: 16 }}>
           <User size={40} style={{ opacity: 0.2 }} />
           <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>This crew member doesn&apos;t exist or has been removed.</div>
@@ -135,17 +125,7 @@ export default function CrewMemberPage() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
       {/* ── Fixed Header ───────────────────────────────────────────────────────── */}
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 60,
-        background: 'var(--surface)', backdropFilter: 'blur(10px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        padding: '0 24px', display: 'flex', justifyContent: 'space-between',
-        alignItems: 'center', zIndex: 100, boxSizing: 'border-box'
-      }}>
-        <Link href="/crew" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
-          <ArrowLeft size={20} />
-          <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>CREW</span>
-        </Link>
+      <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
         <span style={{
           fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 10px',
           border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(var(--ink-rgb), 0.15)'}`,
@@ -157,7 +137,7 @@ export default function CrewMemberPage() {
       </header>
 
       {/* ── Page Body ──────────────────────────────────────────────────────────── */}
-      <div style={{ marginTop: 60, maxWidth: 760, margin: '60px auto 0', padding: '60px 24px 80px' }}>
+      <div style={{ maxWidth: 760, margin: '8px auto 0', padding: '60px 24px 80px' }}>
 
         {/* ── Hero Block ───────────────────────────────────────────────────────── */}
         <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', marginBottom: 56 }}>

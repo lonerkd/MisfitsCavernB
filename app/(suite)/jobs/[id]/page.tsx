@@ -10,7 +10,6 @@ import { useToast } from '@/components/ui/Toast';
 import { applyToJob, getJob, hasApplied, listApplications, respondToApplication, type JobApplication as Application, type JobWithRelations as Job } from '@/lib/supabase/jobs';
 import Avatar from '@/components/ui/Avatar';
 import { awaitOSUser } from '@/lib/os';
-import { Mark } from '@/components/brand/Mark';
 
 const statusBadgeStyle = (status: string): React.CSSProperties => {
   const base: React.CSSProperties = {
@@ -182,42 +181,11 @@ export default function JobDetailPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
 
-      <header style={{
-        position: 'fixed', top: 0, left: 0, width: '100%', height: 58,
-        background: 'var(--surface)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-        boxShadow: '0 1px 0 rgba(139,92,246,0.08) inset',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 28px', zIndex: 100, boxSizing: 'border-box',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
-            ><Mark size={22} title="The Cavern home" /></div>
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <Link href="/jobs" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)', transition: 'opacity 0.2s' }}
-              onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.6')}
-              onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
-            >Jobs</div>
-          </Link>
-          <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{
-            fontFamily: 'var(--display)', fontSize: '0.85rem', letterSpacing: '-0.02em',
-            color: 'var(--fg-dim)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 260,
-          }}>
-            {job.title}
-          </div>
-        </div>
-
+      <header style={{ display: 'flex', justifyContent: 'flex-end', padding: '12px 28px 0' }}>
         <span style={statusBadgeStyle(job.status)}>{job.status}</span>
       </header>
 
-      <div style={{ maxWidth: 'var(--w-reading)', margin: '58px auto 0', padding: '48px 24px 100px' }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', padding: '48px 24px 100px' }}>
 
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 14 }}>
