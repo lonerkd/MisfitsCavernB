@@ -129,6 +129,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 
 **Then (the design language, first screens):** `components/film/` — `Sky` (a day's sun path with the working day laid on it, hours past sunset in the limit colour; geometry in `lib/film/sky.ts`, tested), `Paper`, `TimeBox`, `Stamp`. The call sheet and the stripboard are rebuilt on them: a sky per day, ruled Call / Shoot / Wrap boxes (Wrap filled red when it breaks the light), stamps for state, strips in a paper board's colours, black strips for company moves. Copy shortened ("Send to crew", "1 h 28 past sunset · 2 exteriors"); e2e updated to the new words. Next: the island on phones, then the rest of the suite.
 
+**Then (the island on a phone):** one pill at the foot replaces the five-tab bar — project and page and an unread count, with Capture beside it. It opens the Everything sheet (Today / Projects / Lounge first, then the page's controls, search, tools, projects). Behaviour kept: hidden on the editor/auth/public pages, away while typing, share-to-capture, the outbox count. Next: live activities in the pill, then the rest of the suite on the language.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

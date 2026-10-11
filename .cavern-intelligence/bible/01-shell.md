@@ -46,12 +46,9 @@ toggles, actions); a page that doesn't still gets a name and next places from
 `lib/island/routes.ts`. Size is per device (Settings › Island size). It
 overlays the page; `--taskbar-height` is its resting footprint only.
 
-### The phone tab bar (≤760px)
+### The island on a phone (≤760px)
 
-`components/mobile/MobileTabBar.tsx`: **Today · Projects · Capture · Lounge
-(unread badge) · More**. More is a sheet: search, every tool, the active
-project, and the page's island actions under "On this page". Hidden on the
-editor, split, auth and public pages; slides away while a field has focus.
+`components/mobile/MobileTabBar.tsx` (the file keeps its old name): **one pill at the foot** — the project (with its colour), the page, and an unread count — and **Capture** beside it, one tap. The pill opens the **Everything** sheet: Today · Projects · Lounge first (the Lounge with its unread badge), then the page's own controls under "On this page", search, every tool, and the project to work on. It replaced a five-tab bar. Hidden on the editor, split, auth and public pages; slides away while a field has focus.
 
 ### ⌘K command palette
 
