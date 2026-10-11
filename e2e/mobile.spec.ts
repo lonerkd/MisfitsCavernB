@@ -89,10 +89,11 @@ test.describe('The suite on a phone (local Supabase)', () => {
     const violations = await axeViolations(page);
     expect(violations, violations.join('\n')).toEqual([]);
 
-    // More: every tool, and the project to work on.
-    await tabs.getByRole('button', { name: 'More' }).click();
+    // The menu: the places, every tool, and the project to work on.
+    await tabs.getByRole('button', { name: /^Menu/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Everything' });
     await expect(sheet.getByRole('link', { name: 'Studio' })).toBeVisible();
+    await expect(sheet.getByRole('navigation', { name: 'Places' }).getByRole('link', { name: 'Lounge' })).toBeVisible();
     await expect(sheet.getByRole('radio', { name: new RegExp(`Tidewater ${TAG}`) })).toBeVisible();
     await sheet.getByRole('button', { name: 'Close' }).click();
     await expect(sheet).toBeHidden();
