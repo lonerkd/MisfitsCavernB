@@ -527,7 +527,7 @@ export default function EcosystemTaskbar() {
           </motion.div>
 
           <motion.div layout="position" className={s.main}>
-            {route.back && (
+            {route.back && mode !== 'dot' && (
               <Link href={route.back.href} prefetch={false} className={s.btn} aria-label={`Back to ${route.back.label}`}>
                 <ChevronLeft size={18} strokeWidth={1.5} aria-hidden />
               </Link>
