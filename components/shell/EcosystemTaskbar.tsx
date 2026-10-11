@@ -550,15 +550,15 @@ export default function EcosystemTaskbar() {
               {/* One slot each, so what's under the pointer survives the change of shape. */}
               {mode === 'rest' && <span className={s.glyph}><Glyph size={15} strokeWidth={1.6} aria-hidden /></span>}
               {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}
-              {onSet && mode === 'rest' && (
+              {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}
+              {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
+            </button>
+            {onSet && mode === 'rest' && (
                 <span className={s.onset}>
                   <Link href={ON_SET_HREF} prefetch={false} className={s.onsetLink}>{onSet.label}</Link>
                   <button type="button" className={s.onsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
                 </span>
               )}
-              {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}
-              {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
-            </button>
 
             {/* What the dot is about: the page's (or the hovered thing's) numbers and controls. */}
             {hasControls && (
