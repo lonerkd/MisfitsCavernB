@@ -58,7 +58,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
 
   return (
     <section aria-labelledby="production-title">
-      <SectionHeader id="production-title" eyebrow="Pre-production" title="Production" subtitle="Story, breakdown, readiness, schedule, the day on set and people — built from the screenplay and kept in step with it." />
+      <SectionHeader id="production-title" title="Production" />
       <div className={s.chips} role="tablist" aria-label="Production views" style={{ marginBottom: 24 }}>
         {VIEWS.map((v) => (
           <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>

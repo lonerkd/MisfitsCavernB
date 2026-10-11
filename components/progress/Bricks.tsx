@@ -30,13 +30,14 @@ export function accentVars(accent: string | null | undefined): React.CSSProperti
 }
 
 /** Goes to a place: in-page when the host handles it (the Studio switching tabs), else a link. */
-export function PlaceLink({ place, projectId, onNavigate, className, children, label }: {
+export function PlaceLink({ place, projectId, onNavigate, className, children, label, title }: {
   place: Place;
   projectId: string;
   onNavigate?: (place: Place) => boolean;
   className: string;
   children: React.ReactNode;
   label?: string;
+  title?: string;
 }) {
   const href = placeHref(place, projectId);
   return (
@@ -44,6 +45,7 @@ export function PlaceLink({ place, projectId, onNavigate, className, children, l
       href={href}
       className={className}
       aria-label={label}
+      title={title}
       onClick={(e) => {
         if (place.kind === 'hub' && place.anchor && window.location.pathname === `/projects/${projectId}`) {
           const el = document.getElementById(place.anchor);
@@ -71,11 +73,10 @@ export function Brick({ tool, projectId, onNavigate }: { tool: ToolState; projec
     );
   }
   return (
-    <PlaceLink place={tool.place} projectId={projectId} onNavigate={onNavigate} className={p.brick}>
+    <PlaceLink place={tool.place} projectId={projectId} onNavigate={onNavigate} className={p.brick} title={tool.blurb}>
       {tool.early && <span className={p.brickTag}>Early</span>}
       <span className={p.brickIcon} aria-hidden><Icon size={15} /></span>
       <span className={p.brickLabel}>{tool.label}</span>
-      <span className={p.brickBlurb}>{tool.blurb}</span>
     </PlaceLink>
   );
 }

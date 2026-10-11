@@ -95,7 +95,7 @@ export function StoryView() {
             {beats.map((beat, i) => <BeatCard key={beat.id} beat={beat} index={i} onDelete={remove} onPush={push} pushing={pushing === beat.id} />)}
           </div>
         ) : (
-          <EmptyState icon={<BookOpen size={26} />} title="No beats yet" subtitle="Break the story into beats — they feed the pitch deck." />
+          <EmptyState icon={<BookOpen size={26} />} title="No beats yet" subtitle="Break the story into beats." />
         )}
       </div>
       <CharacterBible />

@@ -86,7 +86,7 @@ export function MediaPicker({
         <EmptyState
           icon={<Link2 size={26} />}
           title={media.rows.length ? 'Everything in the library is already linked here' : 'The library is empty'}
-          subtitle="Upload photos, clips, audio or PDFs, or paste a link — they land in the project library and get linked here."
+          subtitle="Upload a file or paste a link."
         />
       ) : (
         <>

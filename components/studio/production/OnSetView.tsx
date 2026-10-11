@@ -112,7 +112,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
       <EmptyState
         icon={<Clapperboard size={26} />}
         title="No shoot days yet"
-        subtitle="Put scenes on shoot days and date them in the schedule — on the day, this is where the crew stamp the clock, tick off shots and log continuity."
+        subtitle="Put scenes on dated shoot days in the schedule."
         action={<button type="button" className={s.btnPrimary} onClick={() => onNavigate({ kind: 'studio', tab: 'production', view: 'schedule' })}>Open the schedule</button>}
       />
     );
