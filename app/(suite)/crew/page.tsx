@@ -198,7 +198,7 @@ export default function CrewPage() {
           <EmptyState
             icon={<User size={28} />}
             title={mode === 'project' ? 'No crew on this project yet' : 'No crew members found'}
-            subtitle={mode === 'project' ? 'Recruit talent from Studio or accept a job application to build the team.' : 'Try adjusting your search or filters'}
+            subtitle={mode === 'project' ? 'Recruit from Studio or accept a job application.' : 'Try other words or filters.'}
             action={mode === 'project' ? (
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <Link href="/studio?tab=production&view=crew" style={NEXT_BTN}>Recruit in Studio</Link>

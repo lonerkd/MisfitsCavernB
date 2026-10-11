@@ -113,9 +113,8 @@ export function PromosTab() {
     <section aria-labelledby="promos-title">
       <SectionHeader
         id="promos-title"
-        eyebrow="Distribution"
         title="Promos"
-        subtitle={campaigns.length ? `${campaigns.length} campaign${campaigns.length === 1 ? '' : 's'}${totalBudget ? ` · $${totalSpend.toLocaleString()} of $${totalBudget.toLocaleString()} spent` : ''}` : 'Plan the rollout: festivals, press and social campaigns.'}
+        subtitle={campaigns.length ? `${campaigns.length} campaign${campaigns.length === 1 ? '' : 's'}${totalBudget ? ` · $${totalSpend.toLocaleString()} of $${totalBudget.toLocaleString()} spent` : ''}` : undefined}
         actions={<button type="button" className={s.btn} aria-expanded={adding} onClick={() => setAdding((a) => !a)}><Plus size={12} /> New campaign</button>}
       />
       {adding && (
@@ -185,7 +184,7 @@ export function PromosTab() {
           ))}
         </div>
       ) : (
-        <EmptyState icon={<Megaphone size={26} />} title="No campaigns yet" subtitle="Add festival submissions, press pushes and social campaigns to plan the release." />
+        <EmptyState icon={<Megaphone size={26} />} title="No campaigns yet" subtitle="Plan festivals, press and social." />
       )}
     </section>
   );

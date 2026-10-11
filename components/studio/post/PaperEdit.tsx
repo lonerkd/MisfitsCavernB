@@ -60,7 +60,7 @@ export function PaperEdit() {
       <EmptyState
         icon={<FileText size={22} aria-hidden />}
         title="No paper edit yet"
-        subtitle="Open an interview or recording in the Library, bring in its transcript, and star the lines that tell the story. They line up here, across every recording, for you to put in order."
+        subtitle="Star the lines that tell the story, from any transcript."
         action={<button type="button" className={s.btnPrimary} onClick={() => goTo('library')}><FileText size={12} aria-hidden /> Open the Library</button>}
       />
     );

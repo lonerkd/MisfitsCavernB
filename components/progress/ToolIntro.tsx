@@ -24,9 +24,8 @@ export function ToolIntro({ tool, accent, style }: { tool: ToolState | null; acc
   return (
     <aside className={p.intro} style={{ ...accentVars(accent), ...style }} aria-label={`New: ${tool.label}`}>
       <Icon size={15} aria-hidden className={p.introIcon} />
-      <p className={p.introText}>
-        <strong>New here: {tool.label}.</strong> {tool.blurb}{' '}
-        <span className={p.introWhy}>{tool.early ? 'It opened early because the work has started.' : `It arrived with ${tool.phaseLabel}.`}</span>
+      <p className={p.introText} title={tool.early ? 'It opened early because the work has started.' : `It arrived with ${tool.phaseLabel}.`}>
+        <strong>{tool.label}.</strong> {tool.blurb}
       </p>
       <button type="button" className={p.introClose} onClick={dismiss} aria-label={`Got it — hide the note about ${tool.label}`}>
         Got it <X size={11} aria-hidden />

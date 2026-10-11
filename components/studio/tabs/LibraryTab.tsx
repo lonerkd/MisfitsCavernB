@@ -35,9 +35,8 @@ export function LibraryTab() {
     <section aria-labelledby="library-title">
       <SectionHeader
         id="library-title"
-        eyebrow="Library"
         title="References & Media"
-        subtitle={count ? `${count} item${count === 1 ? '' : 's'} · shared with everyone on the project. Drop files anywhere to upload.` : 'Photos, clips, music and PDFs for this project — shared with your crew, linkable to any scene.'}
+        subtitle={count ? `${count} item${count === 1 ? '' : 's'}` : undefined}
         actions={
           <>
             <button type="button" className={s.btn} onClick={() => setFinding(true)}>
@@ -64,7 +63,7 @@ export function LibraryTab() {
         <EmptyState
           icon={<Archive size={28} />}
           title="Nothing here yet"
-          subtitle="Upload location scouts, lookbook frames, test footage or temp music — or paste a YouTube, Vimeo or image link. Then link them to scenes."
+          subtitle="Upload a file or paste a link, then link it to scenes."
           action={<UploadButton onFiles={(files) => void uploader.add(files)} label="Upload files" />}
         />
       ) : (

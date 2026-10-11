@@ -72,7 +72,7 @@ test.describe('Phases v2 (local Supabase)', () => {
     await picker.waitFor();
     if ((await picker.inputValue()) !== shootId) await picker.selectOption(shootId);
     const intro = page.getByRole('complementary', { name: 'New: Schedule & call sheets' });
-    await expect(intro).toContainText('It arrived with Pre-Production.', { timeout: 20_000 });
+    await expect(intro).toContainText('Schedule & call sheets', { timeout: 20_000 });
     await intro.getByRole('button', { name: /Got it/ }).click();
     await expect(intro).toHaveCount(0);
     await page.reload();

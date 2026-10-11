@@ -7,11 +7,10 @@ import s from './studio.module.css';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
 
-export function SectionHeader({ id, eyebrow, title, subtitle, actions }: { id?: string; eyebrow: string; title: string; subtitle?: React.ReactNode; actions?: React.ReactNode }) {
+export function SectionHeader({ id, title, subtitle, actions }: { id?: string; title: string; subtitle?: React.ReactNode; actions?: React.ReactNode }) {
   return (
     <div className={s.header}>
       <div>
-        <div className={s.eyebrow}>{eyebrow}</div>
         <h2 id={id} className={s.title}>{title}</h2>
         {subtitle && <p className={s.subtitle}>{subtitle}</p>}
       </div>
