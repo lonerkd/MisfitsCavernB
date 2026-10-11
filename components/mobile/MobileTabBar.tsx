@@ -19,6 +19,7 @@ import {
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { islandRoute } from '@/lib/island/routes';
+import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { getLoungeUnread } from '@/lib/supabase/messages';
 import { readable } from '@/lib/util/color';
 import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture';
@@ -205,6 +206,7 @@ export default function MobileTabBar() {
     return () => { live = false; window.removeEventListener('focus', load); clearInterval(t); };
   }, [authed, pathname]);
 
+  const condition = useIslandCondition();
   if (!authed || !phone || hiddenOn(pathname)) return null;
 
   const route = islandRoute(pathname, !!activeProject);
@@ -222,6 +224,7 @@ export default function MobileTabBar() {
           <span className={m.pillText}>
             {activeProject?.title && <b>{activeProject.title}</b>}
             <span>{place}</span>
+            {condition.label && <span className={m.pillCondition} data-kind={condition.kind} role="status">{condition.label}</span>}
           </span>
           {unread > 0 && <span className={m.pillUnread} aria-hidden>{unread > 99 ? '99+' : unread}</span>}
         </button>

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { islandMode, isDeck, isEditable, isTypingKey, type IslandSignals } from './mode';
+import { islandCondition } from './condition';
 import { CONTROL_KEYS, islandRoute } from './routes';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, clampIslandScale, islandReserve } from './scale';
 
@@ -119,5 +120,18 @@ describe('islandRoute back target', () => {
     expect(islandRoute('/crew/c1', false).back).toEqual({ label: 'Crew', href: '/crew' });
     expect(islandRoute('/jobs/j1', false).back).toEqual({ label: 'Jobs board', href: '/jobs' });
     expect(islandRoute('/portfolio/manage', false).back).toEqual({ label: 'Portfolio', href: '/portfolio' });
+  });
+});
+
+describe('islandCondition', () => {
+  it('says nothing when online with nothing waiting', () => {
+    expect(islandCondition({ online: true, waiting: 0 })).toEqual({ kind: 'normal', label: '' });
+  });
+  it('says offline, with how many are waiting', () => {
+    expect(islandCondition({ online: false, waiting: 0 }).label).toBe('Offline');
+    expect(islandCondition({ online: false, waiting: 3 })).toEqual({ kind: 'offline', label: 'Offline · 3 waiting' });
+  });
+  it('says it is sending when back online with items waiting', () => {
+    expect(islandCondition({ online: true, waiting: 2 })).toEqual({ kind: 'syncing', label: 'Sending 2' });
   });
 });

@@ -144,3 +144,6 @@ textarea.captureInput { resize: vertical; line-height: 1.45; }
 .dictation p { margin: 0 0 4px; }
 .dictation span { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); margin-right: 6px; }
 .interim { color: var(--fg-muted); font-style: italic; }
+
+.pillCondition { font-size: 11px; color: var(--fg-dim); }
+.pillCondition[data-kind='offline'] { color: var(--limit, #b3261e); font-weight: 600; }
