@@ -15,7 +15,7 @@
 
 .frame { width: 100%; max-width: 640px; }
 .eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); margin: 0 0 10px; }
-.title { font-family: var(--display); font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: 2px; line-height: 1; margin: 0 0 12px; font-weight: 400; }
+.title { font-family: var(--display); font-size: clamp(2rem, 6vw, 3.2rem); letter-spacing: -0.02em; line-height: 1; margin: 0 0 12px; font-weight: 400; }
 .lead { font-family: var(--serif); font-size: 1.02rem; line-height: 1.6; color: var(--fg-muted); margin: 0 0 24px; max-width: 540px; }
 .field { max-width: 360px; }
 
@@ -47,7 +47,7 @@
 .form { display: flex; flex-direction: column; gap: 16px; }
 .brief { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 4px; }
 .briefTitle { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); margin: 0 0 14px; font-weight: 400; }
-.optional { letter-spacing: 1px; text-transform: none; }
+.optional { letter-spacing: var(--caps-track); text-transform: none; }
 .questions { display: flex; flex-direction: column; gap: 16px; }
 
 .later { margin-top: 40px; font-size: 12px; color: var(--fg-muted); }

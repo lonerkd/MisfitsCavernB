@@ -183,7 +183,7 @@ export default function GlobalAudioWidget() {
                     background: on ? 'rgba(16,185,129,0.14)' : 'rgba(var(--ink-rgb), 0.03)',
                     border: `1px solid ${on ? 'rgba(16,185,129,0.4)' : 'rgba(var(--ink-rgb), 0.06)'}`,
                     color: on ? 'var(--ok)' : 'var(--fg-dim)',
-                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                     textTransform: 'var(--caps)', cursor: 'pointer',
                     transition: 'all 0.2s', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}
@@ -246,7 +246,7 @@ export default function GlobalAudioWidget() {
           <Disc size={11} style={{ color: 'var(--ok)', flexShrink: 0 }} />
         </motion.div>
         <span style={{
-          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
+          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
           color: 'var(--fg-muted)', textTransform: 'var(--caps)',
         }}>
           {isPlaying ? 'Playing' : 'Audio Engine'}

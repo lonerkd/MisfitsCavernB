@@ -182,7 +182,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
             gap: 12, flexShrink: 0,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: 0.5 }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: '-0.02em' }}>
                 Diff — <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{label}</span>
               </h3>
               <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>

@@ -255,8 +255,8 @@ export default function PitchBoardPage() {
       }}>
         <Link href={`/projects/${projectId}`} style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={18} />
-          <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 3 }}>PITCH BOARD</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 1 }}>· {project?.title}</span>
+          <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>PITCH BOARD</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>· {project?.title}</span>
         </Link>
         {shareToken && (
           <div style={{ display: 'flex', gap: 8 }}>
@@ -282,7 +282,7 @@ export default function PitchBoardPage() {
       <div role="note" style={{
         display: 'flex', alignItems: 'center', gap: 8, padding: '8px 24px',
         background: 'rgba(232, 67, 26, 0.08)', borderBottom: '1px solid rgba(232, 67, 26, 0.18)',
-        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-muted)',
+        fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)',
       }}>
         <Globe size={12} aria-hidden style={{ color: 'var(--accent)', flexShrink: 0 }} />
         This is public: anyone can see what you put on this board, including budget and crew blocks.
@@ -290,12 +290,12 @@ export default function PitchBoardPage() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(260px, 340px) 1fr', gap: 0, alignItems: 'stretch', minHeight: 'calc(100vh - 60px)' }}>
         <aside style={{ borderRight: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 16, overflowY: 'auto' }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginBottom: 12 }}>ASSET LIBRARY</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
             {TAB_META.map(t => (
               <button key={t.id} onClick={() => setTab(t.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 5, padding: '6px 9px', borderRadius: 8, cursor: 'pointer',
-                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
+                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', whiteSpace: 'nowrap',
                 background: tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.04)',
                 color: tab === t.id ? textOn(accent) : 'var(--fg-muted)',
                 border: `1px solid ${tab === t.id ? accent : 'rgba(var(--ink-rgb), 0.06)'}`,
@@ -364,7 +364,7 @@ export default function PitchBoardPage() {
           {tab === 'custom' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>TEXT BLOCK</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginBottom: 6 }}>TEXT BLOCK</div>
                 <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Heading (optional)" style={inputStyle} />
                 <textarea value={customBody} onChange={e => setCustomBody(e.target.value)} placeholder="Write anything — a logline, a director's note, a pitch…" style={{ ...inputStyle, minHeight: 70, marginTop: 6, resize: 'vertical' }} />
                 <button
@@ -376,7 +376,7 @@ export default function PitchBoardPage() {
                 </button>
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginBottom: 6 }}>MEDIA (YOUTUBE / IMAGE URL)</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginBottom: 6 }}>MEDIA (YOUTUBE / IMAGE URL)</div>
                 <input value={mediaUrl} onChange={e => setMediaUrl(e.target.value)} placeholder="https://youtube.com/… or image URL" style={inputStyle} />
                 <button
                   disabled={!mediaUrl.trim()}
@@ -405,7 +405,7 @@ export default function PitchBoardPage() {
             transition: 'background 0.2s',
           }}
         >
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginBottom: 16 }}>
             THE DECK · {blocks.length} BLOCK{blocks.length === 1 ? '' : 'S'} · drag to reorder, drag from the library to add
           </div>
 
@@ -571,7 +571,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>{children}</div>;
 }
 function Centered({ children }: { children: React.ReactNode }) {
-  return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 3, color: 'var(--fg-dim)' }}>{children}</div>;
+  return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>{children}</div>;
 }
 function LibList({ children, empty }: { children?: React.ReactNode; empty?: string }) {
   if (empty) return <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', padding: '8px 0' }}>{empty}</div>;
@@ -608,12 +608,12 @@ const iconBtn: React.CSSProperties = { background: 'none', border: 'none', color
 function btnStyle(accent: string, filled: boolean): React.CSSProperties {
   return {
     display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 8, cursor: 'pointer',
-    fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1,
+    fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
     background: filled ? accent : 'rgba(var(--ink-rgb), 0.05)',
     color: filled ? textOn(accent) : 'var(--fg)',
     border: `1px solid ${filled ? accent : 'rgba(var(--ink-rgb), 0.1)'}`,
   };
 }
 function addAllStyle(accent: string): React.CSSProperties {
-  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 1, background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
+  return { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, width: '100%', padding: '8px 10px', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', background: `${accent}22`, color: accent, border: `1px solid ${accent}55` };
 }

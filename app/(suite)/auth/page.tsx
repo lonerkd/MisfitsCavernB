@@ -250,7 +250,7 @@ export default function AuthPage() {
             fontFamily: 'var(--display)',
             fontSize: 'clamp(2.2rem, 8vw, 3.4rem)',
             fontWeight: 400,
-            letterSpacing: 6,
+            letterSpacing: '-0.02em',
             lineHeight: 1,
             margin: '0 0 10px',
           }}>
@@ -357,7 +357,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => { setMode('forgot'); setError(''); setNotice(''); }}
-                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textDecoration: 'underline', cursor: 'pointer' }}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textDecoration: 'underline', cursor: 'pointer' }}
                 >
                   Forgot password?
                 </button>
@@ -372,7 +372,7 @@ export default function AuthPage() {
             {notice && (
               <div
                 role="status"
-                style={{ padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', marginBottom: 20, letterSpacing: 0.5, lineHeight: 1.5 }}
+                style={{ padding: '10px 14px', background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 'var(--radius-sm)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', marginBottom: 20, letterSpacing: 'var(--caps-track)', lineHeight: 1.5 }}
               >
                 {notice}
               </div>
@@ -393,7 +393,7 @@ export default function AuthPage() {
                     fontSize: 11,
                     color: 'var(--accent)',
                     marginBottom: 20,
-                    letterSpacing: 0.5,
+                    letterSpacing: 'var(--caps-track)',
                   }}
                 >
                   {error}
@@ -421,7 +421,7 @@ export default function AuthPage() {
 
           <div style={{ marginTop: 28, display: 'flex', alignItems: 'center', gap: 14 }}>
             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-subtle)' }}>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-subtle)' }}>
               or
             </span>
             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.05)' }} />
@@ -437,7 +437,7 @@ export default function AuthPage() {
               });
               if (error) toast(error.message || 'Could not start Discord sign-in.', 'error');
             }}
-            style={{ width: '100%', padding: '14px', background: 'rgba(88,101,242,0.12)', border: '1px solid rgba(88,101,242,0.4)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'all 0.2s', marginTop: 24, borderRadius: 'var(--radius-sm)' }}
+            style={{ width: '100%', padding: '14px', background: 'rgba(88,101,242,0.12)', border: '1px solid rgba(88,101,242,0.4)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'all 0.2s', marginTop: 24, borderRadius: 'var(--radius-sm)' }}
             onMouseEnter={e => e.currentTarget.style.background = 'rgba(88,101,242,0.22)'}
             onMouseLeave={e => e.currentTarget.style.background = 'rgba(88,101,242,0.12)'}>
             <svg width="16" height="12" viewBox="0 0 71 55" fill="#5865f2"><path d="M60.1 4.9A58.5 58.5 0 0045.6 0a40 40 0 00-1.8 3.7 54.1 54.1 0 00-16.2 0A38.5 38.5 0 0025.9 0 58.3 58.3 0 0011.3 5C1.6 19.6-1 33.8.3 47.9a58.8 58.8 0 0017.9 9 44 44 0 003.8-6.2 38.3 38.3 0 01-6-2.9l1.5-1.2a41.9 41.9 0 0036.2 0l1.5 1.2a38.3 38.3 0 01-6 2.9 44 44 0 003.8 6.2 58.6 58.6 0 0017.9-9C72 31.6 68.3 17.5 60.1 4.9zM23.7 39.4c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.8 7.2-6.4 7.2zm23.6 0c-3.5 0-6.4-3.2-6.4-7.2s2.8-7.2 6.4-7.2 6.5 3.2 6.4 7.2c0 4-2.9 7.2-6.4 7.2z"/></svg>
@@ -450,7 +450,7 @@ export default function AuthPage() {
             fontFamily: 'var(--mono)',
             fontSize: 11,
             color: 'var(--fg-muted)',
-            letterSpacing: 1,
+            letterSpacing: 'var(--caps-track)',
           }}>
             {mode === 'signin' ? "New here? " : 'Have an account? '}
             <button onClick={switchMode} style={{
@@ -459,7 +459,7 @@ export default function AuthPage() {
               color: 'var(--accent)',
               fontFamily: 'var(--mono)',
               fontSize: 11,
-              letterSpacing: 1,
+              letterSpacing: 'var(--caps-track)',
               textDecoration: 'underline',
             }}>
               {mode === 'signin' ? 'Sign Up' : 'Sign In'}

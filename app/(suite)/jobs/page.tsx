@@ -103,7 +103,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)', marginBottom: 6 }}>
               Crew Marketplace
             </div>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
+            <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: '-0.02em' }}>
               Post a Position
             </div>
           </div>
@@ -175,7 +175,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
               background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
               color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 14,
-              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               textTransform: 'var(--caps)', fontWeight: 600,
               cursor: form.title ? 'pointer' : 'default',
               transition: 'background 0.3s, box-shadow 0.3s',
@@ -236,23 +236,23 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
               padding: '4px 10px', borderRadius: 9999,
               background: `${color}14`,
               border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               color, textTransform: 'var(--caps)',
             }}>
               {job.role}
             </div>
             {job.projects?.title && (
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
                 {job.projects.title}
               </div>
             )}
           </div>
 
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: 2, marginBottom: 8, lineHeight: 1.2 }}>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: '-0.02em', marginBottom: 8, lineHeight: 1.2 }}>
             <Link href={`/jobs/${job.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{job.title}</Link>
           </div>
           {job.character_name && (
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-muted)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 8 }}>
               Casting call · the role of {job.character_name}
             </div>
           )}
@@ -300,7 +300,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
             background: `${color}18`,
             border: `1px solid ${color}44`,
             color: readable(color), cursor: 'pointer',
-            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
             textTransform: 'var(--caps)',
           }}
         >
@@ -347,7 +347,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
             <div style={{
               padding: '3px 9px', borderRadius: 9999,
               background: `${color}14`, border: `1px solid ${color}33`,
-              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               color, textTransform: 'var(--caps)',
             }}>
               {job.role}
@@ -356,7 +356,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               padding: '3px 9px', borderRadius: 9999,
               background: job.status === 'open' ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.04)',
               border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
-              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+              fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               color: job.status === 'open' ? 'var(--ok)' : 'var(--fg-dim)',
               textTransform: 'var(--caps)',
             }}>
@@ -368,7 +368,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               </div>
             )}
           </div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: 2 }}>{job.title}</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{job.title}</div>
         </div>
 
         {job.status === 'open' && (
@@ -383,7 +383,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               background: 'transparent',
               border: '1px solid rgba(var(--ink-rgb), 0.08)',
               color: 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               textTransform: 'var(--caps)', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
             }}
@@ -535,7 +535,7 @@ export default function JobsPage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: 6, color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
+            <div style={{ fontFamily: 'var(--display)', fontSize: '0.9rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)', transition: 'opacity 0.2s' }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '0.7')}
             ><Mark size={22} title="The Cavern home" /></div>
@@ -559,7 +559,7 @@ export default function JobsPage() {
                   style={{
                     position: 'relative', padding: '6px 14px', borderRadius: 9999,
                     background: 'transparent', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+                    fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                     textTransform: 'var(--caps)',
                     color: tab === t ? 'var(--fg)' : 'var(--fg-dim)',
                     transition: 'color 0.2s',
@@ -590,7 +590,7 @@ export default function JobsPage() {
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 16px', borderRadius: 9999,
                 background: '#7c3aed', color: '#fff', border: 'none',
-                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
+                fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                 textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',
               }}
@@ -629,7 +629,7 @@ export default function JobsPage() {
               background: !roleFilter ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
-              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
+              fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               textTransform: 'var(--caps)', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
@@ -652,7 +652,7 @@ export default function JobsPage() {
                   background: active ? `${color}12` : 'transparent',
                   border: 'none', cursor: 'pointer', marginBottom: 2,
                   color: active ? readable(color) : 'var(--fg-dim)',
-                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                   textTransform: 'var(--caps)', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
@@ -685,7 +685,7 @@ export default function JobsPage() {
                     background: 'rgba(var(--ink-rgb), 0.03)',
                     border: '1px solid rgba(var(--ink-rgb), 0.07)',
                     borderRadius: 14, color: 'var(--fg)',
-                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                     outline: 'none', boxSizing: 'border-box',
                     transition: 'border-color 0.2s',
                   }}
@@ -756,8 +756,8 @@ export default function JobsPage() {
           {tab === 'mine' && !user && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', textAlign: 'center' }}>
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
-              <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: '-0.02em', marginBottom: 8 }}>MY JOBS</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 'var(--caps-track)', marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
               <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}

@@ -81,7 +81,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 title="Open this project's hub"
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
-                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1,
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                   color: activeProject.accent_color || 'var(--accent)',
                   background: `${activeProject.accent_color || '#e8431a'}14`,
                   border: `1px solid ${activeProject.accent_color || '#e8431a'}30`,
@@ -156,7 +156,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   padding: '5px 13px', borderRadius: 9999, fontSize: 11, fontWeight: 600,
-                  letterSpacing: 0.5, border: 'none', cursor: 'pointer',
+                  letterSpacing: 'var(--caps-track)', border: 'none', cursor: 'pointer',
                   background: activeView === id ? 'rgba(var(--ink-rgb), 0.10)' : 'transparent',
                   color: activeView === id ? 'var(--fg)' : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)',

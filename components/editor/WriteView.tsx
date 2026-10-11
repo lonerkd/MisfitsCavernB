@@ -301,7 +301,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   display: 'flex', alignItems: 'center', gap: 8,
                   background: 'var(--surface)', border: '1px solid rgba(232,67,26,0.35)',
                   borderRadius: 20, padding: '6px 12px', backdropFilter: 'blur(12px)',
-                  fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, color: 'var(--fg-muted)',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)',
                 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} aria-hidden />
                   Tag mode — select words to tag them · underlined words are suggestions
@@ -347,7 +347,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '6px 16px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
-                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
+                    fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                   }}>
                     <span style={{ color, textTransform: 'var(--caps)', fontWeight: 700 }}>{status.label}</span>
                     <span style={{ color: 'var(--fg-dim)' }}>{status.hint}</span>

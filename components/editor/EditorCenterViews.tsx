@@ -265,7 +265,7 @@ export function StatsView({
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '36px 40px', maxWidth: 1000, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 36 }}>
-        <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg)' }}>SCRIPT ANALYTICS</div>
+        <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: '-0.02em', color: 'var(--fg)' }}>SCRIPT ANALYTICS</div>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{currentScriptTitle}</div>
       </div>
 
@@ -304,7 +304,7 @@ export function StatsView({
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1 }}>{label}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{label}</span>
                 </div>
               ))}
             </div>

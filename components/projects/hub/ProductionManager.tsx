@@ -290,7 +290,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           )}
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
-          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
             {analyzing ? 'READING THE BREAKDOWN…' : '✦ UPDATE FROM THE BREAKDOWN'}
           </button>
           <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', lineHeight: 1.5 }}>
@@ -327,7 +327,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           {portfolio.length === 0 ? (
             <>
               <Empty>No pitch board yet</Empty>
-              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>
+              <Link href={`/projects/${projectId}/pitch`} style={{ marginTop: 4, width: '100%', boxSizing: 'border-box', display: 'block', textAlign: 'center', textDecoration: 'none', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
                 ✦ BUILD PITCH BOARD
               </Link>
             </>
@@ -364,7 +364,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
         </Panel>
 
         {isOwner && <Panel title="Settings" accent={accent}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 4 }}>Default script format</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Default script format</div>
           <select
             value={settings.defaultScriptFormat || ''}
             onChange={e => setDefaultFormat(e.target.value as ScriptFormat | '')}
@@ -375,7 +375,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             {SCRIPT_FORMATS.map(f => <option key={f} value={f}>{SCRIPT_FORMAT_LABELS[f]}</option>)}
           </select>
 
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 1, marginBottom: 6 }}>Ecosystem modules</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', marginBottom: 6 }}>Ecosystem modules</div>
           {([
             ['scriptos', 'ScriptOS'], ['studio', 'Studio'], ['lounge', 'Lounge'],
             ['portfolio', 'Portfolio'], ['distribution', 'Distribution'],
@@ -523,7 +523,7 @@ function AddCrewForm({ accent, onAdd }: { accent: string; onAdd: (username: stri
       <label className="sr-only" htmlFor="add-crew-username">Username</label>
       <input id="add-crew-username" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') void submit(); }} placeholder="Username" style={{ ...MINI_INPUT, padding: '6px 8px', fontSize: 11 }} />
       <CraftPicker label="Their craft" value={craft} onChange={setCraft} placeholder="Their craft (optional)" noneLabel="No craft" />
-      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>ADD TO CREW</button>
+      <button type="button" onClick={() => void submit()} disabled={!username.trim()} style={{ background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '5px 10px', cursor: username.trim() ? 'pointer' : 'default', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>ADD TO CREW</button>
     </div>
   );
 }

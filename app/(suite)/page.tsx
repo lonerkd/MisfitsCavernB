@@ -246,7 +246,7 @@ function LoungePreview({ messages, caption }: { messages: { from: string; text: 
           alignItems: m.mine ? 'flex-end' : 'flex-start',
         }}>
           {!m.mine && (
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 1, marginBottom: 3 }}>{m.from}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)', marginBottom: 3 }}>{m.from}</span>
           )}
           <div style={{
             background: m.mine ? 'rgba(232, 67, 26,0.15)' : 'rgba(var(--ink-rgb), 0.05)',
@@ -270,7 +270,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
         {works.map((w, i) => (
           <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
-              <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: 0.5, lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
+              <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
             </div>
           </div>
@@ -387,7 +387,7 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
               <div style={{
                 fontFamily: 'var(--display)',
                 fontSize: '1.5rem',
-                letterSpacing: 3,
+                letterSpacing: '-0.02em',
                 color: 'var(--fg)',
                 lineHeight: 1,
               }}>
@@ -611,7 +611,7 @@ export default function Home() {
               fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
               fontStyle: 'italic',
               fontWeight: 300,
-              letterSpacing: 1,
+              letterSpacing: 'var(--caps-track)',
               marginTop: 28,
             }}
           >
@@ -664,7 +664,7 @@ export default function Home() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(232, 67, 26,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(232, 67, 26,0.18)', borderRadius: 14 }}>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
-              <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
+              <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
                 {activeProject ? `Resume ${activeProject.title}` : 'Continue your screenplay'}
               </div>
               {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
@@ -740,7 +740,7 @@ export default function Home() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: 1, lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
+                <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: '-0.02em', lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </motion.div>
             ))}
@@ -778,7 +778,7 @@ export default function Home() {
                   {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
                     <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
                   ))}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
                 </div>
                 <ScriptOSPreview lines={live.scriptLines} caption={loggedIn ? 'Your latest script appears here' : 'Screenplay formatting as you type'} />
               </div>

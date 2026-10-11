@@ -92,7 +92,7 @@ export default function CrewMemberPage() {
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, color: 'var(--fg-dim)' }}>LOADING...</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>LOADING...</div>
       </div>
     );
   }
@@ -110,14 +110,14 @@ export default function CrewMemberPage() {
         }}>
           <Link href="/crew" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
             <ArrowLeft size={20} />
-            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>CREW</span>
+            <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>CREW</span>
           </Link>
         </header>
         <div style={{ marginTop: 60, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 60px)', gap: 16 }}>
           <User size={40} style={{ opacity: 0.2 }} />
-          <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: '-0.02em', color: 'var(--fg-dim)' }}>PROFILE NOT FOUND</div>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 11, marginTop: 4, color: 'var(--fg-dim)' }}>This crew member doesn&apos;t exist or has been removed.</div>
-          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textDecoration: 'none', transition: 'border-color 0.2s' }}>
+          <Link href="/crew" style={{ marginTop: 24, padding: '10px 24px', border: '1px solid rgba(var(--ink-rgb), 0.15)', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textDecoration: 'none', transition: 'border-color 0.2s' }}>
             BACK TO CREW
           </Link>
         </div>
@@ -144,13 +144,13 @@ export default function CrewMemberPage() {
       }}>
         <Link href="/crew" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
-          <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4 }}>CREW</span>
+          <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em' }}>CREW</span>
         </Link>
         <span style={{
           fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 10px',
           border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(var(--ink-rgb), 0.15)'}`,
           color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
-          fontFamily: 'var(--mono)', letterSpacing: 2
+          fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)'
         }}>
           {profile.status}
         </span>
@@ -189,7 +189,7 @@ export default function CrewMemberPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               {profile.role && (
                 <span style={{
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                   color: 'var(--accent)', textTransform: 'var(--caps)'
                 }}>
                   {profile.role}
@@ -199,12 +199,12 @@ export default function CrewMemberPage() {
                 fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '3px 9px',
                 border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.5)' : 'rgba(var(--ink-rgb), 0.12)'}`,
                 color: profile.status === 'OPEN' ? '#00c850' : 'var(--fg-dim)',
-                fontFamily: 'var(--mono)', letterSpacing: 2
+                fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)'
               }}>
                 {profile.status}
               </span>
               {isOnline && (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', letterSpacing: 1, color: 'var(--ok)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', color: 'var(--ok)' }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--success)', boxShadow: '0 0 8px rgba(16,185,129,0.8)' }} />
                   Online now
                 </span>
@@ -344,7 +344,7 @@ export default function CrewMemberPage() {
                             position: 'absolute', bottom: 6, right: 8,
                             fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))',
                             background: 'rgba(0,0,0,0.75)', padding: '2px 6px',
-                            color: 'rgba(var(--ink-rgb), 0.6)', letterSpacing: 1
+                            color: 'rgba(var(--ink-rgb), 0.6)', letterSpacing: 'var(--caps-track)'
                           }}>
                             +{project.portfolio_media.length - 1}
                           </div>
@@ -365,7 +365,7 @@ export default function CrewMemberPage() {
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 11, fontWeight: 600, marginBottom: 6, lineHeight: 1.3 }}>
                       {project.title}
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)' }}>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
                       {project.portfolio_media.length} {project.portfolio_media.length === 1 ? 'CLIP' : 'CLIPS'}
                     </div>
                   </div>

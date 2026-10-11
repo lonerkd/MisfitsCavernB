@@ -96,7 +96,7 @@ export function SceneReferencesPanel({
             type="button"
             disabled={!row}
             onClick={() => setPicking(true)}
-            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: '#a5b4fc', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}
+            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: '#a5b4fc', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}
           >
             <ImagePlus size={15} /> Add
           </button>

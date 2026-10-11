@@ -84,11 +84,11 @@ const inputStyle: React.CSSProperties = {
 };
 const btnStyle: React.CSSProperties = {
   padding: '8px 14px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8,
-  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600,
+  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', fontWeight: 600,
 };
 const ghostBtn: React.CSSProperties = {
   padding: '8px 14px', background: 'transparent', color: 'var(--fg-muted)', border: '1px solid rgba(var(--ink-rgb), 0.12)',
-  borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer',
+  borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer',
 };
 
 export default function SettingsPage() {
@@ -225,7 +225,7 @@ export default function SettingsPage() {
       }}>
         <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>SETTINGS</h1>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>SETTINGS</h1>
         </Link>
         {msg && (
           <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 11, color: msg.ok ? 'var(--ok)' : 'var(--danger)' }}>
@@ -330,7 +330,7 @@ export default function SettingsPage() {
           <DeleteAccount userId={user.id} />
         </Section>
 
-        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, color: 'var(--fg-dim)', marginTop: 40 }}>
+        <div style={{ textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginTop: 40 }}>
           THE CAVERN · {user.email}
           <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
             <Link href="/privacy" style={{ color: 'inherit' }}>PRIVACY</Link>

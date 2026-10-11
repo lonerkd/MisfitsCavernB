@@ -65,7 +65,7 @@ export default function AdminUsersPage() {
             <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
               <ArrowLeft size={20} />
             </Link>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>
               USER MANAGEMENT
             </h1>
           </div>
@@ -81,7 +81,7 @@ export default function AdminUsersPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -91,7 +91,7 @@ export default function AdminUsersPage() {
             <span style={{
               fontFamily: 'var(--mono)',
               fontSize: 11,
-              letterSpacing: 2,
+              letterSpacing: 'var(--caps-track)',
               color: 'var(--accent)',
               borderBottom: '2px solid var(--accent)',
               paddingBottom: 8,
@@ -103,7 +103,7 @@ export default function AdminUsersPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -115,7 +115,7 @@ export default function AdminUsersPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}

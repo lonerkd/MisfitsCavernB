@@ -157,8 +157,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
         <Ring done={progress.current.done} total={progress.current.total} />
         <div className={p.headText}>
           <div className={p.eyebrow}>
-            Phase {progress.currentIndex + 1} of {progress.phases.length}
-            {signals.project_type && <> · {signals.project_type}</>}
+            {signals.project_type}
             {isOwner && formatDraft == null && (
               <button type="button" className={p.inlineBtn} onClick={() => setFormatDraft(signals.project_type ?? 'Feature')}>
                 Change format
@@ -169,7 +168,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
           <div className={p.summary}>
             {progress.ready && progress.next ? <span className={p.ready}>Everything here is done — ready for {progress.next.label}.</span>
               : progress.ready ? <span className={p.ready}>Every milestone is done.</span>
-              : `${progress.current.done} of ${progress.current.total} milestones · ${progress.totals.done} of ${progress.totals.total} across the project`}
+              : `${progress.current.done} of ${progress.current.total} milestones`}
           </div>
         </div>
       </div>
@@ -249,7 +248,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
 
         <div>
           <div className={p.sectionTitle}>
-            <Sub className={p.sectionHeading}>Toolkit · {progress.tools.filter((t) => t.unlocked).length} of {progress.tools.length} open</Sub>
+            <Sub className={p.sectionHeading}>Toolkit</Sub>
             {isOwner && (
               <button type="button" role="switch" aria-checked={signals.unlock_all} className={`${p.switch} ${signals.unlock_all ? p.switchOn : ''}`} onClick={toggleUnlockAll}>
                 <span className={p.switchTrack} aria-hidden /> Open all
@@ -277,6 +276,8 @@ function MilestoneList({ progress, phaseIndex, projectId, onNavigate }: {
 }) {
   const phase = progress.phases[phaseIndex];
   if (!phase.milestones.length) return <p className={p.note}>Nothing to track in this phase for this kind of project.</p>;
+  // Only the next thing to do explains itself; the rest are names.
+  const next = phase.milestones.find((m) => !m.done)?.id;
   return (
     <ul className={p.list}>
       {phase.milestones.map((m) => (
@@ -287,7 +288,7 @@ function MilestoneList({ progress, phaseIndex, projectId, onNavigate }: {
               {m.label}
               <span className="sr-only">{m.done ? ' — done' : ' — to do'}</span>
             </div>
-            {!m.done && <div className={p.mHint}>{m.hint}</div>}
+            {m.id === next && <div className={p.mHint}>{m.hint}</div>}
             {!m.done && m.progress && (
               <div className={p.bar} role="progressbar" aria-label={`${m.label} progress`} aria-valuemin={0} aria-valuemax={m.progress.of} aria-valuenow={m.progress.value}>
                 <div className={p.barFill} style={{ width: `${Math.round((m.progress.value / m.progress.of) * 100)}%` }} />

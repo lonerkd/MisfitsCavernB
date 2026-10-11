@@ -119,7 +119,7 @@ export default function NotificationBell() {
                 Notifications{unread > 0 ? ` · ${unread} new` : ''}
               </span>
               {unread > 0 && (
-                <button onClick={allRead} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer' }}>
+                <button onClick={allRead} style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer' }}>
                   <Check size={11} /> MARK ALL
                 </button>
               )}
@@ -140,7 +140,7 @@ export default function NotificationBell() {
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
                     <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                     {n.body && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}
-                    <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4, fontFamily: 'var(--mono)', letterSpacing: 1 }}>{timeAgo(n.created_at)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4, fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)' }}>{timeAgo(n.created_at)}</div>
                   </div>
                   <button aria-label="Dismiss" onClick={(e) => clearOne(e, n.id)} title="Dismiss" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', flexShrink: 0, height: 'fit-content' }}>
                     <X size={13} />

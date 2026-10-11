@@ -16,7 +16,7 @@
   position: relative; display: block; height: 58px; border-radius: 8px; overflow: hidden;
   border: 1px solid rgba(var(--ink-rgb), 0.12);
 }
-.previewText { position: absolute; left: 10px; top: 8px; font-family: var(--display); font-size: 20px; letter-spacing: 1px; line-height: 1; }
+.previewText { position: absolute; left: 10px; top: 8px; font-family: var(--display); font-size: 20px; letter-spacing: -0.02em; line-height: 1; }
 .previewBar { position: absolute; left: 10px; bottom: 10px; width: 36px; height: 8px; border-radius: 4px; }
 .previewLine { position: absolute; left: 52px; right: 10px; bottom: 12px; height: 3px; border-radius: 4px; opacity: 0.35; }
 .systemIcon { position: absolute; right: 8px; top: 8px; color: var(--fg-dim); }

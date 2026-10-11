@@ -9,14 +9,14 @@ import { X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { describeRange, localToday, rangeProblem, useMyUnavailability } from '@/lib/availability';
 
-const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, display: 'block', marginBottom: 6, color: 'var(--fg-dim)' };
+const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', display: 'block', marginBottom: 6, color: 'var(--fg-dim)' };
 const field: React.CSSProperties = {
   width: '100%', padding: '10px 12px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
   color: 'var(--fg)', fontSize: 13, borderRadius: 8, colorScheme: 'dark',
 };
 const btn: React.CSSProperties = {
   padding: '10px 14px', background: 'transparent', border: '1px solid var(--accent)', color: 'var(--accent)',
-  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, cursor: 'pointer', borderRadius: 8,
+  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', borderRadius: 8,
 };
 
 export function AwayEditor({ userId }: { userId: string | null }) {

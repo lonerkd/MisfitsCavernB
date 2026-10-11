@@ -48,7 +48,7 @@
 }
 .grip { width: 40px; height: 5px; border-radius: 4px; background: rgba(var(--ink-rgb), 0.2); margin: 4px auto 12px; }
 .sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-.sheetTitle { font-family: var(--display); font-size: 22px; letter-spacing: 1px; margin: 0; color: var(--fg-strong); font-weight: 400; }
+.sheetTitle { font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; margin: 0; color: var(--fg-strong); font-weight: 400; }
 .close { width: 44px; height: 44px; border-radius: 14px; border: 0; background: rgba(var(--ink-rgb), 0.06); color: var(--fg); display: grid; place-items: center; cursor: pointer; }
 
 .section { margin: 14px 0 6px; font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
@@ -94,7 +94,7 @@
   flex: 1; min-width: 0; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px;
   border: 0; background: none; padding: 0; color: inherit; text-align: left; cursor: pointer; font: inherit;
 }
-.continueFrom { font-family: var(--mono); font-size: 11px; letter-spacing: 0.5px; color: var(--fg-muted); }
+.continueFrom { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); color: var(--fg-muted); }
 .continueLabel { font-size: 14.5px; font-weight: 600; color: var(--fg-strong); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .continueX { flex: none; width: 40px; height: 40px; border-radius: 8px; border: 0; background: none; color: var(--fg-muted); display: grid; place-items: center; cursor: pointer; }
 .continueX:hover, .continueX:focus-visible { background: rgba(var(--ink-rgb), 0.06); color: var(--fg); }
@@ -126,7 +126,7 @@ textarea.captureInput { resize: vertical; line-height: 1.45; }
 .captureWaitName { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .recorder { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 14px 0 4px; }
-.recClock { font-family: var(--mono); font-size: 34px; letter-spacing: 2px; color: var(--fg-strong); font-variant-numeric: tabular-nums; }
+.recClock { font-family: var(--mono); font-size: 34px; letter-spacing: var(--caps-track); color: var(--fg-strong); font-variant-numeric: tabular-nums; }
 .recBtn {
   width: 84px; height: 84px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer;
   background: var(--accent); color: var(--on-accent); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);

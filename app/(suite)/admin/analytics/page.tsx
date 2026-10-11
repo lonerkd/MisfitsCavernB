@@ -77,7 +77,7 @@ export default function AdminAnalyticsPage() {
             <Link href="/admin" aria-label="Back to admin" style={{ color: 'var(--fg)', textDecoration: 'none' }}>
               <ArrowLeft size={20} />
             </Link>
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>
               ANALYTICS
             </h1>
           </div>
@@ -94,7 +94,7 @@ export default function AdminAnalyticsPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -106,7 +106,7 @@ export default function AdminAnalyticsPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -116,7 +116,7 @@ export default function AdminAnalyticsPage() {
             <span style={{
               fontFamily: 'var(--mono)',
               fontSize: 11,
-              letterSpacing: 2,
+              letterSpacing: 'var(--caps-track)',
               color: 'var(--accent)',
               borderBottom: '2px solid var(--accent)',
               paddingBottom: 8,
@@ -128,7 +128,7 @@ export default function AdminAnalyticsPage() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -190,7 +190,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', marginBottom: 16 }}>
               DETAILED METRICS
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16 }}>

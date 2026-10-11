@@ -13,7 +13,7 @@ import { awaitOSUser } from '@/lib/os';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { useLoad } from '@/lib/hooks/useLoad';
 
-const NEXT_BTN: React.CSSProperties = { display: 'inline-block', padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, cursor: 'pointer', fontWeight: 600, textDecoration: 'none' };
+const NEXT_BTN: React.CSSProperties = { display: 'inline-block', padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', fontWeight: 600, textDecoration: 'none' };
 
 
 type DisplayMember = {
@@ -110,7 +110,7 @@ export default function CrewPage() {
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'var(--fg)', textDecoration: 'none' }}>
           <ArrowLeft size={20} />
-          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>CREW DIRECTORY</h1>
+          <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>CREW DIRECTORY</h1>
         </Link>
       </header>
 
@@ -129,7 +129,7 @@ export default function CrewPage() {
                 style={{
                   padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer',
                   minWidth: 0, flexShrink: t.id === 'all' ? 0 : 1, overflow: 'hidden', textOverflow: 'ellipsis',
-                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, whiteSpace: 'nowrap',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', whiteSpace: 'nowrap',
                   background: mode === t.id ? 'var(--accent)' : 'transparent',
                   color: mode === t.id ? 'var(--bg)' : 'var(--fg-dim)',
                   transition: 'background 0.2s, color 0.2s',
@@ -159,7 +159,7 @@ export default function CrewPage() {
               <div role="group" aria-label="Availability" style={{ display: 'flex', gap: 6 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} type="button" aria-pressed={availFilter === a} onClick={() => setAvailFilter(a)}
-                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -247,7 +247,7 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
           </div>
           <div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 12, fontWeight: 'bold' }}>{member.username}</div>
-            {member.role && <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--accent)', letterSpacing: 1, marginTop: 2 }}>{member.role.toUpperCase()}</div>}
+            {member.role && <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--accent)', letterSpacing: 'var(--caps-track)', marginTop: 2 }}>{member.role.toUpperCase()}</div>}
           </div>
           {member.statusLabel && (
             <div style={{ marginLeft: 'auto' }}>

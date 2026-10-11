@@ -40,7 +40,7 @@ export default function AdminDashboard() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <BarChart3 size={20} style={{ color: 'var(--accent)' }} />
-            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, margin: 0 }}>
+            <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>
               ADMIN PANEL
             </h1>
           </div>
@@ -56,7 +56,7 @@ export default function AdminDashboard() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--accent)',
                 textDecoration: 'none',
                 borderBottom: '2px solid var(--accent)',
@@ -70,7 +70,7 @@ export default function AdminDashboard() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
               style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 11,
-                letterSpacing: 2,
+                letterSpacing: 'var(--caps-track)',
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
           </div>
 
           <div style={{ padding: 24, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8 }}>
-            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 2, marginBottom: 16 }}>
+            <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', marginBottom: 16 }}>
               QUICK ACTIONS
             </h2>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
                   fontWeight: 600,
-                  letterSpacing: 1,
+                  letterSpacing: 'var(--caps-track)',
                   cursor: 'pointer',
                   textDecoration: 'none',
                 }}
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
                   fontWeight: 600,
-                  letterSpacing: 1,
+                  letterSpacing: 'var(--caps-track)',
                   cursor: 'pointer',
                   textDecoration: 'none',
                 }}
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
           </div>
 
           <div style={{ marginTop: 40, padding: 24, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 8 }}>
-            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, marginBottom: 12 }}>
+            <h3 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', marginBottom: 12 }}>
               ADMIN FEATURES
             </h3>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 12, lineHeight: 1.8 }}>

@@ -87,7 +87,7 @@ export default function ShortcutsOverlay() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--accent)' }}>
                 <Keyboard size={17} />
-                <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 2, margin: 0, color: 'var(--fg)' }}>KEYBOARD SHORTCUTS</h2>
+                <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: '-0.02em', margin: 0, color: 'var(--fg)' }}>KEYBOARD SHORTCUTS</h2>
               </div>
               <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
@@ -108,7 +108,7 @@ export default function ShortcutsOverlay() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: 'var(--fg-dim)' }}>
+            <div style={{ marginTop: 20, paddingTop: 14, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', textAlign: 'center', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
               Press <kbd style={{ fontSize: 11, border: '1px solid rgba(var(--ink-rgb), 0.15)', borderRadius: 4, padding: '1px 5px' }}>?</kbd> anytime to reopen
             </div>
           </motion.div>

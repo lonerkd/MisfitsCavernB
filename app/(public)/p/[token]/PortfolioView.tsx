@@ -83,7 +83,7 @@ export function PortfolioView({ token }: { token: string }) {
         <div style={{
           fontFamily: 'var(--mono)',
           fontSize: 11,
-          letterSpacing: 3,
+          letterSpacing: 'var(--caps-track)',
           color: 'var(--fg-dim)',
           animation: 'pulse 1.6s ease-in-out infinite',
         }}>
@@ -111,13 +111,13 @@ export function PortfolioView({ token }: { token: string }) {
         <div style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(3rem, 10vw, 7rem)',
-          letterSpacing: 6,
+          letterSpacing: '-0.02em',
           color: 'var(--accent)',
           lineHeight: 1,
         }}>
           404
         </div>
-        <p style={{ fontSize: 13, letterSpacing: 2, color: 'var(--fg-dim)' }}>
+        <p style={{ fontSize: 13, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
           PORTFOLIO NOT FOUND
         </p>
         <p style={{ fontSize: 11, maxWidth: 320, textAlign: 'center', lineHeight: 1.7, color: 'var(--fg-dim)' }}>
@@ -132,7 +132,7 @@ export function PortfolioView({ token }: { token: string }) {
             color: 'var(--fg)',
             fontFamily: 'var(--mono)',
             fontSize: 11,
-            letterSpacing: 2,
+            letterSpacing: 'var(--caps-track)',
             textDecoration: 'none',
             transition: 'border-color 0.2s, color 0.2s',
           }}
@@ -198,7 +198,7 @@ export function PortfolioView({ token }: { token: string }) {
         <h1 style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(2.8rem, 8vw, 6.5rem)',
-          letterSpacing: 4,
+          letterSpacing: '-0.02em',
           lineHeight: 0.95,
           margin: 0,
           marginBottom: 20,
@@ -247,7 +247,7 @@ export function PortfolioView({ token }: { token: string }) {
               <div style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 12,
-                letterSpacing: 1,
+                letterSpacing: 'var(--caps-track)',
                 opacity: 0.85,
               }}>
                 {profiles.username}
@@ -256,7 +256,7 @@ export function PortfolioView({ token }: { token: string }) {
                 <div style={{
                   fontFamily: 'var(--mono)',
                   fontSize: 'max(9px, var(--mc-min-font, 0px))',
-                  letterSpacing: 2,
+                  letterSpacing: 'var(--caps-track)',
                   marginTop: 2, color: 'var(--fg-dim)' }}>
                   {profiles.role.toUpperCase()}
                 </div>
@@ -283,14 +283,14 @@ export function PortfolioView({ token }: { token: string }) {
                 <div style={{
                   fontFamily: 'var(--mono)',
                   fontSize: 'max(8px, var(--mc-min-font, 0px))',
-                  letterSpacing: 3,
+                  letterSpacing: 'var(--caps-track)',
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   YEAR
                 </div>
                 <div style={{
                   fontFamily: 'var(--display)',
                   fontSize: '1.6rem',
-                  letterSpacing: 3,
+                  letterSpacing: '-0.02em',
                   color: 'var(--fg)',
                 }}>
                   {year}
@@ -302,7 +302,7 @@ export function PortfolioView({ token }: { token: string }) {
                 <div style={{
                   fontFamily: 'var(--mono)',
                   fontSize: 'max(8px, var(--mc-min-font, 0px))',
-                  letterSpacing: 3,
+                  letterSpacing: 'var(--caps-track)',
                   marginBottom: 6, color: 'var(--fg-dim)' }}>
                   ROLE
                 </div>
@@ -355,7 +355,7 @@ export function PortfolioView({ token }: { token: string }) {
           <div style={{
             fontFamily: 'var(--mono)',
             fontSize: 'max(8px, var(--mc-min-font, 0px))',
-            letterSpacing: 3,
+            letterSpacing: 'var(--caps-track)',
             marginBottom: 20, color: 'var(--fg-dim)' }}>
             {portfolio_media.length === 1 ? '1 CLIP' : `${portfolio_media.length} CLIPS`}
           </div>
@@ -462,7 +462,7 @@ export function PortfolioView({ token }: { token: string }) {
                   title={playingMedia.title}
                 />
               ) : (
-                <a href={playingMedia.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2 }}>
+                <a href={playingMedia.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>
                   OPEN MEDIA ↗
                 </a>
               )}
@@ -473,7 +473,7 @@ export function PortfolioView({ token }: { token: string }) {
                 <h3 style={{
                   fontFamily: 'var(--display)',
                   fontSize: '1.3rem',
-                  letterSpacing: 3,
+                  letterSpacing: '-0.02em',
                   margin: 0,
                   opacity: 0.85,
                 }}>
@@ -498,7 +498,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
     padding: 'clamp(16px, 3vw, 24px)', borderRadius: 14,
     background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)',
   };
-  const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: 1, margin: 0 };
+  const heading: React.CSSProperties = { fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: '-0.02em', margin: 0 };
   const body: React.CSSProperties = { fontFamily: 'var(--serif)', fontSize: 13, lineHeight: 1.7, color: 'var(--fg-muted)', marginTop: 8 };
 
   switch (block.block_type) {
@@ -531,7 +531,7 @@ function DeckBlock({ block }: { block: PortfolioBlock }) {
       return (
         <div style={wrap}>
           <div style={label}>Budget</div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 2 }}>${Number(total).toLocaleString()}</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: '-0.02em' }}>${Number(total).toLocaleString()}</div>
           {lines.length > 0 && (
             <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 4 }}>
               {lines.map((l, i) => (
@@ -703,7 +703,7 @@ function VideoCard({ media, onClick }: { media: MediaItem; onClick: () => void }
           <div style={{
             fontFamily: 'var(--mono)',
             fontSize: 11,
-            letterSpacing: 0.5,
+            letterSpacing: 'var(--caps-track)',
             color: 'var(--fg)',
             opacity: 0.85,
             whiteSpace: 'nowrap',
@@ -723,7 +723,7 @@ function FooterLink() {
     <span style={{
       fontFamily: 'var(--mono)',
       fontSize: 'max(9px, var(--mc-min-font, 0px))',
-      letterSpacing: 2,
+      letterSpacing: 'var(--caps-track)',
       color: 'var(--fg-dim)',
     }}>
       POWERED BY{' '}

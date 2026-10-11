@@ -1396,7 +1396,7 @@ export default function EditorPage() {
               {item}
             </div>
           ))}
-          <div style={{ padding: '4px 12px 2px', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 0.5 }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
+          <div style={{ padding: '4px 12px 2px', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
         </div>
       )}
 
@@ -1531,7 +1531,7 @@ export default function EditorPage() {
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(12px, 4vw, 20px)',
-        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
+        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
       }}>
@@ -1543,12 +1543,12 @@ export default function EditorPage() {
             padding: '1px 7px', borderRadius: 4,
             background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(var(--ink-rgb), 0.04)',
             color: revisionMode ? 'var(--violet)' : 'var(--fg-dim)',
-            letterSpacing: 2,
+            letterSpacing: 'var(--caps-track)',
           }}>
             {revisionMode ? 'REVISION' : 'DRAFT'}
           </span>
           {(sprint.active || sprint.running) && (
-            <span style={{ color: 'var(--violet)', letterSpacing: 2 }}>
+            <span style={{ color: 'var(--violet)', letterSpacing: 'var(--caps-track)' }}>
               ◉ {Math.floor(sprint.left / 60).toString().padStart(2, '0')}:{(sprint.left % 60).toString().padStart(2, '0')} · {sprint.words}w
             </span>
           )}
@@ -1592,8 +1592,8 @@ export default function EditorPage() {
             <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1 }}>KEEP MINE</button>
-            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, fontWeight: 700 }}>TAKE THEIRS</button>
+            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>KEEP MINE</button>
+            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', fontWeight: 700 }}>TAKE THEIRS</button>
           </div>
         </div>
       )}

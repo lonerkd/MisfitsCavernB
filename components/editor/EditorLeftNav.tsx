@@ -110,7 +110,7 @@ export function EditorLeftNav({
                       border: '1px solid rgba(var(--ink-rgb), 0.07)',
                       borderRadius: 8, color: 'var(--fg-dim)',
                       cursor: 'pointer', textTransform: 'capitalize',
-                      fontFamily: 'var(--mono)', letterSpacing: 1,
+                      fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)',
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.3)'; e.currentTarget.style.color = 'var(--accent)'; }}
