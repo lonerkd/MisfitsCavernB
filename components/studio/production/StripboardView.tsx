@@ -12,6 +12,9 @@ import { studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow
 import { lightNoteText } from '@/lib/film/days';
 import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
+import { Sky } from '@/components/film/Sky';
+import { lightNoteBrief } from '@/lib/film/sky';
+import { locationKey } from '@/lib/studio';
 import { buildBoard, castOf, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
@@ -194,26 +197,26 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
               const fd = film.get(d.day);
               const light = fd?.light;
               const polar = fd?.notes.find((n) => n.kind === 'polar');
-              const km = fd?.moves.reduce((n, m) => n + m.km, 0) ?? 0;
+              const kmBetween = new Map((fd?.moves ?? []).map((m) => [`${m.from}|${m.to}`, m.km]));
               return (
                 <section key={d.day} aria-labelledby={`day-${d.day}`} className={cx(b.day, d.over && b.dayOver, dropDay === d.day && b.dayDrop)} data-day={d.day} onDragOver={onDayDragOver} onDragLeave={onDayDragLeave} onDrop={onDayDrop}>
-                  <div className={b.dayHead}>
-                    <h3 id={`day-${d.day}`} className={b.dayName}>Day {d.day}</h3>
-                    <input type="date" className={b.dayDateInput} aria-label={`Day ${d.day} date`} key={`${d.day}:${date ?? ''}`} defaultValue={date ?? ''}
+                  <Sky light={light} shootFrom={fd?.shootFrom} wrapAt={fd?.wrapAt} title={`Day ${d.day}`} titleId={`day-${d.day}`} width={230} height={150} compact
+                  />
+                  <div className={b.dayBody}>
+                  <input type="date" className={b.dayDateInput} aria-label={`Day ${d.day} date`} key={`${d.day}:${date ?? ''}`} defaultValue={date ?? ''}
                       onChange={(e) => { if (e.target.value || !e.target.validity.badInput) void setDate(d.day, e.target.value); }} />
-                  </div>
-                  {light && !polar && (
-                    <div className={b.light} title={`Sunrise to sunset at ${fd?.lightAt?.name} (${light.zone})`}>
-                      <Sun size={11} aria-hidden /> <span className="sr-only">Light: </span>{light.sunrise} – {light.sunset} · magic hour {light.goldenStarts} · {fd?.lightAt?.name}{light.zone !== deviceZone() ? ` (${light.zone})` : ''}
+                  {fd && (light || fd.notes.length > 0) && (
+                    <div className={b.limits} role="group" aria-label={`Day ${d.day} schedule notes`}>
+                      {light && <span className="sr-only">Light {light.sunrise} – {light.sunset}, magic hour {light.goldenStarts}, {fd.lightAt?.name} ({light.zone})</span>}
+                      {fd.notes.map((n) => (n.kind === 'no-date' || n.kind === 'polar' ? (
+                        <div key={n.kind} className={b.quiet}>{lightNoteBrief(n)}</div>
+                      ) : n.kind === 'no-place' ? (
+                        <Link key={n.kind} href="/studio?tab=production&view=locations" className={b.lightLink}>{lightNoteBrief(n)}</Link>
+                      ) : (
+                        <div key={n.kind} className={b.limit} title={lightNoteText(n)}><AlertTriangle size={11} aria-hidden /> {lightNoteBrief(n)}</div>
+                      )))}
                     </div>
                   )}
-                  {fd?.notes.map((n) => (n.kind === 'no-date' || n.kind === 'polar' ? (
-                    <div key={n.kind} className={b.dayDate}>{lightNoteText(n)}</div>
-                  ) : n.kind === 'no-place' ? (
-                    <Link key={n.kind} href="/studio?tab=production&view=locations" className={b.lightLink}>{lightNoteText(n)}</Link>
-                  ) : (
-                    <div key={n.kind} className={b.move}><AlertTriangle size={11} aria-hidden /> {lightNoteText(n)}</div>
-                  )))}
                   <div className={b.meter} role="meter" aria-label={`Day ${d.day} pages`} aria-valuemin={0} aria-valuemax={capacity} aria-valuenow={Math.min(d.eighths, capacity)} aria-valuetext={`${pages(d.eighths)} of ${pages(capacity)} pages`}>
                     <div className={cx(b.meterFill, d.over && b.meterOver)} style={{ width: `${fill}%` }} />
                   </div>
@@ -221,9 +224,6 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
                   </div>
-                  {d.locations.length > 1 && (
-                    <div className={b.move} title={d.locations.join(' → ')}><AlertTriangle size={11} aria-hidden /> {d.locations.length} locations — company move{km > 0 ? ` · ${km} km` : ''}</div>
-                  )}
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>
                       {d.cast.slice(0, 6).map((c) => <span key={c} className={b.castChip}>{c}</span>)}
@@ -232,16 +232,22 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                   )}
                   <ul className={b.strips} aria-label={`Day ${d.day} scenes`}>
                     {d.scenes.length === 0 && <li className={b.hint} style={{ padding: '10px 2px' }}>No scenes — drop one here.</li>}
-                    {d.scenes.map((sc) => {
+                    {d.scenes.map((sc, i) => {
                       const row = sc as SceneRow;
+                      // A black strip marks a company move, as on a paper board.
+                      const from = i > 0 ? locationKey(d.scenes[i - 1].location) : '';
+                      const here = locationKey(sc.location);
+                      const moved = !!from && !!here && from !== here;
+                      const km = moved ? kmBetween.get(`${from}|${here}`) : undefined;
                       const kind = stripKind(sc);
                       const e = eighthsOf(sc.est_duration);
                       const status = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
                       const els = elementCounts.get(sc.id) ?? 0;
                       const cast = castOf(sc);
                       return (
+                        <React.Fragment key={sc.id}>
+                        {moved && <li className={b.moveStrip}><span>Company move</span>{km != null && <em>{km} km</em>}</li>}
                         <li
-                          key={sc.id}
                           ref={(el) => { if (el) stripRefs.current.set(sc.id, el); else stripRefs.current.delete(sc.id); }}
                           className={cx(b.strip, dragId === sc.id && b.dragging, status === 'wrapped' && b.wrapped)}
                           style={{ ['--k' as string]: KIND_COLOR[kind], ['--kt' as string]: readable(KIND_COLOR[kind]), minHeight: 44 + Math.min(e, 16) * 2 }}
@@ -269,9 +275,11 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                             <span className={cx(b.dot, b[`dot_${status}`])} aria-hidden />
                           </button>
                         </li>
+                        </React.Fragment>
                       );
                     })}
                   </ul>
+                  </div>
                 </section>
               );
             })}

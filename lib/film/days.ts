@@ -55,6 +55,9 @@ export interface FilmDay {
   /** The place the light is computed for: the first that day with coordinates. */
   lightAt: DayPlace | null;
   light: DayLight | null;
+  /** The day's shooting call and wrap as "HH:MM", when the call sheet has them. */
+  shootFrom: string | null;
+  wrapAt: string | null;
   notes: LightNote[];
   /** Company moves between consecutive places that both have coordinates (straight-line). */
   moves: { from: string; to: string; km: number }[];
@@ -137,7 +140,7 @@ export function buildDays(
     return {
       id: day.id, number: day.day_number, date: day.shoot_date,
       scenes: dayScenes, eighths: dayScenes.reduce((n, s) => n + eighthsOf(s.est_duration), 0),
-      places: dayPlaces, lightAt, light, notes, moves,
+      places: dayPlaces, lightAt, light, shootFrom: clock(callsByDay[day.id]?.shooting_call), wrapAt: clock(callsByDay[day.id]?.estimated_wrap), notes, moves,
     };
   });
 }

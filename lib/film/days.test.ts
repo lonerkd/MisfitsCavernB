@@ -95,6 +95,13 @@ describe('buildDays', () => {
     expect(mixed.notes).toEqual([]);
   });
 
+  it('carries the day’s shooting call and wrap, for a sky to lay on the light', () => {
+    const [d] = buildDays([day(1, '2026-12-21')], [scene('d1', 'EXT. HARBOR - DAY', HARBOR)], PLACES, { d1: { shooting_call: '09:00:00', estimated_wrap: '18:00:00' } }, 'UTC');
+    expect([d.shootFrom, d.wrapAt]).toEqual(['09:00', '18:00']);
+    const [none] = buildDays([day(1, '2026-12-21')], [scene('d1', 'EXT. HARBOR - DAY', HARBOR)], PLACES, {}, 'UTC');
+    expect([none.shootFrom, none.wrapAt]).toEqual([null, null]);
+  });
+
   it('uses the viewer’s zone when the place has none', () => {
     const noZone = { ...HARBOR, timezone: null };
     const [d] = buildDays([day(1, '2026-06-21')], [scene('d1', 'EXT. HARBOR - DAY', noZone)], [noZone], {}, 'America/Vancouver');

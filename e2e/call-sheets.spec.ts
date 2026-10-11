@@ -71,9 +71,9 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     await picker.waitFor();
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
 
-    await sam.getByRole('button', { name: /^DAY 1/ }).click({ timeout: 30_000 });
-    await expect(sam.getByRole('status').filter({ hasText: 'Draft — the crew haven’t been sent this yet.' })).toBeVisible();
-    await expect(sam.getByRole('button', { name: 'Issue to the crew' })).toBeDisabled();
+    await sam.getByRole('button', { name: /^Day 1/ }).click({ timeout: 30_000 });
+    await expect(sam.getByRole('status').filter({ hasText: 'Draft' })).toBeVisible();
+    await expect(sam.getByRole('button', { name: 'Send to crew' })).toBeDisabled();
 
     await sam.getByLabel('Date', { exact: true }).fill('2026-11-03');
     await sam.getByLabel('Date', { exact: true }).blur();
@@ -84,7 +84,7 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     await expect.poll(async () => (await admin.from('call_sheet_calls').select('call_time').eq('project_id', projectId).eq('crew_user_id', crew.id)).data?.[0]?.call_time).toBe('07:15:00');
 
     await sam.getByLabel('Note to the crew').fill('Wear boots.');
-    await sam.getByRole('button', { name: 'Issue to the crew' }).click();
+    await sam.getByRole('button', { name: 'Send to crew' }).click();
     await expect(sam.getByRole('status').filter({ hasText: /^Issued v1/ })).toBeVisible();
     const sheet = (await admin.from('call_sheets').select('id, version').eq('project_id', projectId).eq('shoot_day', 1).single()).data!;
     expect(sheet.version).toBe(1);
@@ -112,8 +112,8 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     // A change makes it a revision.
     await sam.getByLabel('Location address').fill('40 Pier St');
     await sam.getByLabel('Location address').blur();
-    await expect(sam.getByRole('status').filter({ hasText: 'Changed since v1: location' })).toBeVisible();
-    await sam.getByRole('button', { name: 'Issue revision (v2)' }).click();
+    await expect(sam.getByRole('status').filter({ hasText: 'Changed since v1 · location' })).toBeVisible();
+    await sam.getByRole('button', { name: 'Send revision v2' }).click();
     await expect(sam.getByRole('status').filter({ hasText: /^Issued v2/ })).toBeVisible();
     await expect.poll(async () => (await admin.from('notifications').select('body').eq('user_id', crew.id).eq('type', 'call_sheet').order('created_at', { ascending: false }).limit(1)).data?.[0]?.body)
       .toBe('Changed: location. Your call 07:15. At 40 Pier St.');

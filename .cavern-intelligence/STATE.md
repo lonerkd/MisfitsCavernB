@@ -127,6 +127,8 @@ the #144 floors, so they were re-measured (owner's call) — BACKLOG 3.17.
 
 **Then (the design language, foundation):** [design-language.md](design-language.md). One interface face (Hanken Grotesk) through the existing tokens (`--mono` / `--display` / `--serif` now resolve to `--ui`), neutral text instead of cream (cream is the paper), sentence-case labels (`--caps` / `--caps-track`; 84 CSS rules and 209 inline styles moved onto them; the script's own capitals untouched), an 11px type floor on desktop too, new tokens for paper, the limit red and the stripboard colours. Terminal keeps monospace and caps. Next: the components (Sky, Paper, TimeBox, Stamp, Strip), the call sheet and schedule rebuilt on them, then the island on phones.
 
+**Then (the design language, first screens):** `components/film/` — `Sky` (a day's sun path with the working day laid on it, hours past sunset in the limit colour; geometry in `lib/film/sky.ts`, tested), `Paper`, `TimeBox`, `Stamp`. The call sheet and the stripboard are rebuilt on them: a sky per day, ruled Call / Shoot / Wrap boxes (Wrap filled red when it breaks the light), stamps for state, strips in a paper board's colours, black strips for company moves. Copy shortened ("Send to crew", "1 h 28 past sunset · 2 exteriors"); e2e updated to the new words. Next: the island on phones, then the rest of the suite.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

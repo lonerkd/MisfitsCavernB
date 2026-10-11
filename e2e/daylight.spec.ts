@@ -100,25 +100,25 @@ test.describe.serial('Daylight (local Supabase)', () => {
     await open(page, 'schedule');
     const day1 = page.getByRole('region', { name: 'Day 1' });
     await expect(day1.getByLabel('Day 1 date')).toHaveValue('2026-06-21', { timeout: 30_000 });
-    await expect(day1).toContainText(/04:2\d – 20:5\d/);
+    await expect(day1.getByRole('img', { name: /Sunrise 04:2\d, sunset 20:5\d/ })).toBeVisible();
 
     // Midwinter: the same harbour has less than eight hours of light.
     await day1.getByLabel('Day 1 date').fill('2026-12-21');
     await day1.getByLabel('Day 1 date').blur();
     await expect.poll(async () => (await admin.from('shoot_days').select('shoot_date').eq('project_id', projectId).eq('day_number', 1).single()).data?.shoot_date).toBe('2026-12-21');
-    await expect(day1).toContainText(/08:3\d – 16:3\d/);
-    await expect(day1.getByText(/light ends/)).toHaveCount(0);
+    await expect(day1.getByRole('img', { name: /Sunrise 08:3\d, sunset 16:3\d/ })).toBeVisible();
+    await expect(day1.getByText(/past sunset/)).toHaveCount(0);
 
     // A wrap after sunset, set on the call sheet, reaches the board live.
     await admin.from('call_sheets').upsert({ project_id: projectId, shoot_day: 1, shooting_call: '09:00', estimated_wrap: '18:00' }, { onConflict: 'project_id,shoot_day' });
-    await expect(day1.getByText(/2 exterior day scenes, but the light ends at 16:3\d and wrap is 18:00\./)).toBeVisible({ timeout: 20_000 });
+    await expect(day1.getByText(/1 h 2\d past sunset · 2 exteriors/)).toBeVisible({ timeout: 20_000 });
     expect(await axeViolations(page)).toEqual([]);
   });
 
   test('the call sheet carries the light', async ({ page }) => {
     test.setTimeout(120_000);
     await open(page, 'schedule');
-    await page.getByRole('button', { name: /^DAY 1/ }).click();
+    await page.getByRole('button', { name: /^Day 1/ }).click();
     const sheet = page.getByRole('group', { name: 'Day 1 light' });
     await expect(sheet).toContainText(/Sunrise 08:3\d/, { timeout: 30_000 });
     await expect(sheet).toContainText(/Sunset 16:3\d/);

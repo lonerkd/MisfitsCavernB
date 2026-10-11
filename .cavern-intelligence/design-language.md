@@ -34,7 +34,7 @@ quiet.
 5. **Red means "past a limit", and nothing else.** `--limit` (the sinopia
    accent): wrap after sunset, over budget, over the day's pages. Buttons
    that are merely primary use the ink or paper, not red.
-6. **No tracked capitals.** Labels are sentence case. Capitals and their
+6. **No tracked capitals.** Labels are sentence case, except the small field labels printed on Paper (a form's "Date", "Call", "Scenes"), which are capitals as on a printed form. Capitals and their
    tracking go through `--caps` / `--caps-track` (both off by default;
    Terminal turns them on). The screenplay's own capitals (slug lines, cues,
    transitions) are format, and are left alone.
@@ -83,10 +83,12 @@ offer guides; moving that into the interface itself is the next work.
 - Colour is never the only carrier of state: the stamp has words, the limit
   has the time beside it, a strip has its label.
 
+## Built
+
+`components/film/` (`Sky`, `Paper`, `TimeBox`, `Stamp`; geometry in `lib/film/sky.ts`), and on them the **call sheet** (the day's sky, then paper: ruled Call / Shoot / Wrap boxes, a stamp, strips, calls) and the **stripboard** (each day with its own sky and date, strips in the paper board's colours, black strips for company moves).
+
 ## Not yet done (in order)
 
-1. The components: `Sky`, `Paper`, `TimeBox`, `Stamp`, `Strip`, built to the
-   tokens, and the call sheet and schedule rebuilt on them.
-2. The island on a phone replacing the tab bar.
-3. The rest of the suite, screen by screen, to the word budget.
-4. Role- and phase-aware first screens ("my day").
+1. The island on a phone replacing the tab bar.
+2. The rest of the suite, screen by screen, to the word budget (breakdown, readiness, locations, on set, money, the project hub…).
+3. Role- and phase-aware first screens ("my day").
