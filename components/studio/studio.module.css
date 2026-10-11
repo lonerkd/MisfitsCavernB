@@ -413,20 +413,6 @@
 .refRemoveInline:hover { color: var(--danger); background: var(--panel-2); }
 
 /* ── Call sheets ───────────────────────────────────────────────────────── */
-.callGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 12px; }
-.callDay { background: var(--sunken); border: 1px solid var(--border, rgba(var(--ink-rgb), 0.06)); border-radius: 8px; padding: 12px 14px; }
-.callDayOpen { grid-column: 1 / -1; }
-.callDayHead { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; background: none; border: none; color: inherit; cursor: pointer; padding: 0; text-align: left; }
-.callDayNum { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--warn); }
-.callBody { margin-top: 12px; display: flex; flex-direction: column; gap: 12px; }
-.callFields { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.callField { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.callCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
-.callScene { font-size: 12px; color: var(--fg); margin: 3px 0; }
-.callRow { display: grid; grid-template-columns: minmax(0, 1fr) 124px minmax(0, 1fr); gap: 6px; align-items: center; margin: 4px 0; }
-.callRow .input { height: 30px; padding-top: 0; padding-bottom: 0; font-size: 11px; }
-.callName { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 560px) { .callRow { grid-template-columns: 1fr 120px; } .callRow .input:last-child { grid-column: 1 / -1; } }
 
 /* ── Post-production ───────────────────────────────────────────────────── */
 .postLayout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 18px; align-items: start; }
