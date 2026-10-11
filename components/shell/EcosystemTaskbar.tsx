@@ -16,6 +16,8 @@ import { useProject } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
+import { ON_SET_HREF } from '@/lib/island/onset';
+import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
@@ -284,6 +286,7 @@ export default function EcosystemTaskbar() {
   // ── What it has to offer here ────────────────────────────────────────────
   const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
   const condition = useIslandCondition();
+  const onSet = useOnSet();
   const pathApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
   const app = pathApp ?? APPS.find(a => a.id === route.app);
   const Glyph = app?.icon ?? Compass;
@@ -550,6 +553,12 @@ export default function EcosystemTaskbar() {
               {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}
               {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
             </button>
+            {onSet && mode === 'rest' && (
+                <span className={s.onset}>
+                  <Link href={ON_SET_HREF} prefetch={false} className={s.onsetLink}>{onSet.label}</Link>
+                  <button type="button" className={s.onsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
+                </span>
+              )}
 
             {/* What the dot is about: the page's (or the hovered thing's) numbers and controls. */}
             {hasControls && (
