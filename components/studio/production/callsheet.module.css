@@ -1,0 +1,67 @@
+/* The call sheet on the language (design-language.md): the day's sky, then paper. */
+.list { display: flex; flex-direction: column; gap: 12px; }
+.card { width: 100%; max-width: 560px; }
+
+/* A day that isn't open: one heavy line. */
+.row {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--border-2); background: var(--sunken); color: var(--fg);
+}
+.row:hover { border-color: var(--fg-dim); }
+.rowDay { font-weight: 900; font-size: var(--text-lg); letter-spacing: -0.03em; min-width: 3.4em; }
+.rowWhen { color: var(--fg-muted); font-size: var(--text-base); }
+.rowMeta { margin-left: auto; color: var(--fg-dim); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+.away { margin: 6px 2px 0; font-size: var(--text-sm); color: var(--warn); }
+
+.toolbar { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.ghost, .solid {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 4px; font: 700 var(--text-sm)/1 var(--ui); cursor: pointer; text-decoration: none;
+}
+.ghost { border: 1.5px solid var(--paper-rule); background: transparent; color: var(--on-paper); }
+.solid { border: 1.5px solid var(--on-paper); background: var(--on-paper); color: var(--paper); }
+.solid:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.field { display: block; margin-top: 14px; }
+.field > span { display: block; font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--paper-faint); }
+.field input, .field textarea {
+  width: 100%; margin-top: 2px; padding: 5px 0; border: 0; border-bottom: 1.5px solid var(--paper-rule); border-radius: 0;
+  background: transparent; font: 600 var(--text-md)/1.3 var(--ui); color: var(--on-paper); color-scheme: light;
+}
+.field textarea { resize: vertical; min-height: 3.4em; }
+.field input:focus, .field textarea:focus { outline: 2px solid var(--on-paper); outline-offset: 2px; }
+.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 16px; }
+
+.limits { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; }
+.limit { margin: 0; font-size: var(--text-md); font-weight: 700; color: var(--limit); }
+.quiet { margin: 0; font-size: var(--text-sm); color: var(--paper-faint); }
+.quiet a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.suggest { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: var(--text-sm); color: var(--paper-faint); }
+.suggest button { border: 0; background: none; padding: 0; font: 700 var(--text-sm)/1 var(--ui); color: var(--on-paper); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+/* The issue controls */
+.issue { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+.issueRow { display: flex; gap: 8px; flex-wrap: wrap; }
+.issueRow input { flex: 1 1 200px; min-width: 0; padding: 8px 10px; border: 1.5px solid var(--paper-rule); border-radius: 4px; background: transparent; font: 500 var(--text-base)/1.2 var(--ui); color: var(--on-paper); color-scheme: light; }
+.status { margin: 0; font-size: var(--text-sm); color: var(--paper-faint); }
+.seen { font-size: var(--text-sm); color: var(--paper-faint); margin: 0; }
+.seen b { color: var(--on-paper); font-weight: 700; }
+
+/* Scenes as strips */
+.scene { display: grid; grid-template-columns: 8px 24px minmax(0, 1fr) auto; gap: 0 10px; align-items: center; padding: 0; border-bottom: 1px solid rgba(20, 22, 27, 0.18); font-size: var(--text-md); font-weight: 700; }
+.scene u { align-self: stretch; text-decoration: none; margin: 0; min-height: 40px; background: var(--k); }
+.scene i { font-style: normal; font-variant-numeric: tabular-nums; }
+.scene span { overflow-wrap: anywhere; padding: 8px 0; }
+.scene em { font-style: normal; font-weight: 500; font-size: var(--text-sm); color: var(--paper-faint); font-variant-numeric: tabular-nums; padding-right: 2px; }
+.where { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; padding: 9px 0; font-size: var(--text-md); font-weight: 700; border-bottom: 1px solid rgba(20, 22, 27, 0.18); }
+.where span { font-weight: 400; font-size: var(--text-base); color: var(--paper-faint); text-align: right; }
+
+/* Calls: a name, a time, a remark */
+.calls { display: flex; flex-direction: column; }
+.call { display: grid; grid-template-columns: minmax(0, 1fr) 7.5rem minmax(0, 1.2fr); gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(20, 22, 27, 0.18); }
+.call b { font-size: var(--text-base); font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.call small { font-weight: 400; color: var(--paper-faint); font-size: var(--text-sm); }
+.call input { width: 100%; min-width: 0; padding: 5px 0; border: 0; border-bottom: 1.5px solid transparent; background: transparent; font: 600 var(--text-base)/1.2 var(--ui); color: var(--on-paper); color-scheme: light; font-variant-numeric: tabular-nums; }
+.call input:hover { border-bottom-color: var(--paper-rule); }
+.call input:focus { outline: 2px solid var(--on-paper); outline-offset: 2px; }
+.none { margin: 8px 0 0; font-size: var(--text-sm); color: var(--paper-faint); }
+@media (max-width: 560px) { .call { grid-template-columns: minmax(0, 1fr) 7rem; } .call input:last-child { grid-column: 1 / -1; } }

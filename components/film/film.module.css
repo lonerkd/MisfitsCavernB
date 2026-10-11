@@ -1,0 +1,81 @@
+/* The language's pieces (design-language.md): Sky, Paper, TimeBox, Stamp.
+   Everything is drawn from the tokens, so a theme restyles them; the sky's own
+   colours are the sky's, and can be overridden with --sky-*. */
+
+/* ── Sky ───────────────────────────────────────────────────────────────── */
+.sky {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  color: #fff;
+  background:
+    radial-gradient(120% 92% at 50% 112%, var(--sky-glow, rgba(246, 190, 110, 0.96)) 0%, rgba(222, 120, 74, 0.74) 22%, rgba(120, 70, 110, 0.5) 44%, rgba(30, 38, 84, 0.55) 66%, rgba(4, 7, 16, 0) 88%),
+    linear-gradient(180deg, var(--sky-top, #050816) 0%, var(--sky-mid, #0b1330) 55%, var(--sky-low, #1a1c44) 100%);
+}
+.skyShort { border-radius: var(--r-sm) var(--r-sm) 0 0; }
+.skyPlain { background: var(--bg-3); color: var(--fg); }
+.skyArt { display: block; width: 100%; height: auto; }
+.skyBox { position: relative; }
+.skyArt text { font-family: var(--ui); font-weight: 700; font-variant-numeric: tabular-nums; }
+.skyOver { position: absolute; inset: 0; padding: 22px 20px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; pointer-events: none; }
+.skyOver > * { pointer-events: auto; }
+.skyTitle { margin: 0; font-family: var(--display); font-weight: 900; font-size: clamp(2.6rem, 14vw, 3.6rem); line-height: 0.88; letter-spacing: -0.045em; color: #fff; }
+.skyOverSmall { padding: 12px 12px 0; }
+.skyTitleSmall { font-size: 2rem; }
+.skySub { margin: 8px 0 0; font-size: var(--text-md); font-weight: 500; color: rgba(255, 255, 255, 0.88); }
+
+/* ── Stamp ─────────────────────────────────────────────────────────────── */
+.stamp {
+  display: inline-block;
+  transform: rotate(-6deg);
+  border: 2.5px solid currentColor;
+  border-radius: 3px;
+  padding: 3px 9px 2px;
+  font-family: var(--ui);
+  font-weight: 800;
+  font-size: var(--text-sm);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--limit);
+  opacity: 0.9;
+}
+.stampSky { color: #ff7a4d; }
+.stampInk { color: var(--on-paper); }
+.stampOk { color: #1f7a52; }
+.stampQuiet { color: var(--fg-muted); }
+
+/* ── Paper ─────────────────────────────────────────────────────────────── */
+.paper {
+  --ink: var(--on-paper);
+  --faint: var(--paper-faint);
+  --rule: var(--paper-rule);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: var(--r-sm);
+  padding: 14px 14px 16px;
+  font-family: var(--ui);
+}
+.paperUnderSky { border-radius: 0 0 var(--r-md) var(--r-md); }
+.paper input, .paper textarea, .paper select { color: var(--ink); }
+.label { display: block; font-size: var(--text-2xs); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--faint); }
+.head { margin-top: 18px; padding-bottom: 5px; border-bottom: 1.5px solid var(--rule); display: flex; justify-content: space-between; align-items: baseline; }
+
+/* ── TimeBox: one time in a ruled cell ─────────────────────────────────── */
+.boxes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1.5px solid var(--rule); }
+.box { display: block; padding: 7px 10px 8px; cursor: text; }
+.box + .box { border-left: 1.5px solid var(--rule); }
+.box:focus-within { outline: 2px solid var(--ink); outline-offset: -2px; }
+.box input {
+  display: block; width: 100%; min-width: 0; margin-top: 1px; padding: 0; border: 0; background: transparent;
+  font: 800 1.7rem/1.1 var(--ui); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; color: inherit; color-scheme: light;
+}
+.box input:focus { outline: none; }
+.box input:invalid, .box input:not(:valid) { color: inherit; }
+.boxLate { background: var(--limit); color: #fff; }
+.boxLate .label { color: rgba(255, 255, 255, 0.86); }
+.boxLate input { color: #fff; color-scheme: dark; }
+.boxLate:focus-within { outline-color: #fff; }
+.boxEmpty input { color: rgba(20, 22, 27, 0.4); }
+
+.limitLine { margin: 10px 0 0; font-size: var(--text-md); font-weight: 700; color: var(--limit); }

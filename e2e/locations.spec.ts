@@ -80,8 +80,8 @@ test.describe('Locations (local Supabase)', () => {
 
     // The call sheet offers the address of the day's location.
     await page.goto('/studio?tab=production&view=schedule');
-    await page.getByRole('button', { name: /^DAY 1/ }).click({ timeout: 20_000 });
-    await expect(page.getByText('CAVE is at 1 Cave Rd.')).toBeVisible();
+    await page.getByRole('button', { name: /^Day 1/ }).click({ timeout: 20_000 });
+    await expect(page.getByText('CAVE is at 1 Cave Rd')).toBeVisible();
     await page.getByRole('button', { name: 'Use this address' }).click();
     await expect.poll(async () => (await admin.from('call_sheets').select('location_address').eq('project_id', projectId).eq('shoot_day', 1).maybeSingle()).data?.location_address)
       .toBe('1 Cave Rd');

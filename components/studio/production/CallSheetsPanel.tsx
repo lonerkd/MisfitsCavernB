@@ -2,7 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Check, ExternalLink, FileText, Printer, Send, Sun } from 'lucide-react';
+import { Check, ExternalLink, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
@@ -11,10 +11,17 @@ import {
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
+import { lightNoteBrief } from '@/lib/film/sky';
+import { stripKind, type StripKind } from '@/lib/studio/stripboard';
+import { Sky } from '@/components/film/Sky';
+import { Stamp } from '@/components/film/Stamp';
+import { Paper, PaperHead } from '@/components/film/Paper';
+import { TimeBox, TimeBoxes } from '@/components/film/TimeBox';
 import { deviceZone, filmDays } from '@/lib/film/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import s from '../studio.module.css';
+import c from './callsheet.module.css';
 
 type CrewMember = { user_id: string; role: string; username?: string };
 
@@ -87,32 +94,19 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
 
   return (
     <div className={s.panel}>
-      <div className={s.panelTitle}><FileText size={14} /> Call sheets <span className={s.hint}>· {days.length} shoot {days.length === 1 ? 'day' : 'days'}</span></div>
+      <div className={s.panelTitle}>Call sheets</div>
       {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: 'var(--danger)' }}>{sheets.error || calls.error}</div>}
-      <div className={s.callGrid}>
+      <div className={c.list}>
         {days.map((day) => {
           const d = dayFacts(scenes, day);
           const sheet = sheetFor(day);
           const open = openDay === day;
-          const dayCalls = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
+          const dayCalls = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
           const state = issueState(sheet, dayCalls);
           const clash = conflicts.get(day) ?? [];
           return (
-            <div key={day} className={cx(s.callDay, open && s.callDayOpen)}>
-              <button type="button" className={s.callDayHead} onClick={() => setOpenDay(open ? null : day)} aria-expanded={open}>
-                <span className={s.callDayNum}>DAY {day}</span>
-                <span className={s.hint}>
-                  {sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' : ''}
-                  {sheet?.general_call ? `call ${hhmm(sheet.general_call)} · ` : ''}{d.dayScenes.length} sc{d.pages ? ` · ${d.pages} pg` : ''}
-                  {' · '}{state.status === 'draft' ? 'draft' : state.status === 'issued' ? `issued v${state.version}` : `changed since v${state.version}`}
-                </span>
-              </button>
-              {clash.length > 0 && (
-                <p className={s.hint} role="note" style={{ color: 'var(--warn)', margin: '4px 12px 8px' }}>
-                  Away that day: {clash.map((a) => `${nameOf(a.user_id)} (${describeRange(a.starts_on, a.ends_on)})`).join(', ')}
-                </p>
-              )}
-              {open && (
+            <div key={day} className={c.card}>
+              {open ? (
                 <DayEditor
                   day={day} sheet={sheet} facts={d} crew={crew} state={state} film={film.get(day)}
                   addresses={d.locations.map((name) => ({ name, address: addressOf.get(locationKey(name)) })).filter((x): x is { name: string; address: string } => !!x.address)}
@@ -122,7 +116,22 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                   onSheet={(row) => sheets.upsertLocal(row)}
                   onCall={(row, removedId) => { if (row) calls.upsertLocal(row); else if (removedId) calls.removeLocal(removedId); }}
                   onPrint={() => print(day)}
+                  onClose={() => setOpenDay(null)}
                 />
+              ) : (
+                <button type="button" className={c.row} onClick={() => setOpenDay(day)} aria-expanded={false}>
+                  <span className={c.rowDay}>Day {day}</span>
+                  <span className={c.rowWhen}>{sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : 'No date'}</span>
+                  <span className={c.rowMeta}>{d.dayScenes.length} {d.dayScenes.length === 1 ? 'scene' : 'scenes'}{d.pages ? ` · ${d.pages} pg` : ''}</span>
+                  <Stamp tone={state.status === 'issued' ? 'ok' : state.status === 'changed' ? 'limit' : 'quiet'}>
+                    {state.status === 'draft' ? 'Draft' : state.status === 'issued' ? `Issued v${state.version}` : 'Changed'}
+                  </Stamp>
+                </button>
+              )}
+              {clash.length > 0 && (
+                <p className={c.away} role="note">
+                  Away that day: {clash.map((a) => `${nameOf(a.user_id)} (${describeRange(a.starts_on, a.ends_on)})`).join(', ')}
+                </p>
               )}
             </div>
           );
@@ -168,39 +177,31 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
   const dated = !!sheet?.shoot_date;
 
   return (
-    <div className={s.stack} style={{ gap: 8, padding: '10px 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.08)', background: 'rgba(var(--ink-rgb), 0.02)' }}>
-      <div className={s.row} style={{ justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <span className={s.hint} role="status">
-          {state.status === 'draft' && 'Draft — the crew haven’t been sent this yet.'}
-          {state.status === 'issued' && `Issued v${state.version}${sheet?.issued_at ? ` · ${new Date(sheet.issued_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}` : ''}.`}
-          {state.status === 'changed' && `Changed since v${state.version}: ${state.changes.join(', ') || 'details'}. Issue a revision to tell the crew.`}
-        </span>
-        {state.status !== 'draft' && sheet && (
-          <Link href={`/call/${sheet.id}`} className={cx(s.btnGhost, s.small)}><ExternalLink size={11} /> Crew view</Link>
-        )}
-      </div>
+    <div className={c.issue}>
+      {state.status === 'changed' && <p className={c.status} role="status">Changed since v{state.version} · {state.changes.join(', ') || 'details'}</p>}
+      {state.status === 'issued' && sheet?.issued_at && (
+        <p className={c.status}>{new Date(sheet.issued_at).toLocaleString(undefined, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+      )}
       {canIssue && needsIssue && (
-        <div className={s.row} style={{ gap: 8, flexWrap: 'wrap' }}>
-          <input className={s.input} style={{ flex: '1 1 220px' }} placeholder="Note to the crew (optional)" aria-label="Note to the crew"
-            value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
-          <button type="button" className={s.btnPrimary} onClick={() => void issue()} disabled={busy || !dated || !sheet}
-            title={dated ? undefined : 'Set the date first'}>
-            <Send size={11} /> {busy ? 'Sending…' : state.status === 'draft' ? 'Issue to the crew' : `Issue revision (v${version + 1})`}
+        <div className={c.issueRow}>
+          <input placeholder="Note to the crew" aria-label="Note to the crew" value={note} maxLength={500} onChange={(e) => setNote(e.target.value)} />
+          <button type="button" className={c.solid} onClick={() => void issue()} disabled={busy || !dated || !sheet} title={dated ? undefined : 'Set the date first'}>
+            <Send size={12} aria-hidden /> {busy ? 'Sending…' : state.status === 'draft' ? 'Send to crew' : `Send revision v${version + 1}`}
           </button>
-          {!dated && <span className={s.hint}>Set the date first.</span>}
         </div>
       )}
+      {canIssue && needsIssue && !dated && <p className={c.status}>Set the date first.</p>}
       {version > 0 && crew.length > 0 && (
-        <div className={s.hint}>
-          Confirmed v{version}: {confirmed.length} of {crew.length}
-          {' — '}
+        <p className={c.seen}>
+          <b>Confirmed v{version}: {confirmed.length} of {crew.length}</b>
+          {' · '}
           {crew.map((m, i) => {
             const a = ackOf(m.user_id);
             const current = a?.version === version;
             return (
               <span key={m.user_id}>
                 {i > 0 && ', '}
-                <span style={{ color: current ? 'var(--fg)' : undefined }}>
+                <span style={{ color: current ? 'var(--on-paper)' : undefined, fontWeight: current ? 700 : undefined }}>
                   {current && <Check size={10} aria-hidden style={{ verticalAlign: -1, marginRight: 2 }} />}
                   {m.username || 'Crew'}{a && !current ? ` (saw v${a.version})` : ''}
                 </span>
@@ -208,20 +209,24 @@ function IssueBar({ sheet, state, crew, acks, onIssued }: {
               </span>
             );
           })}
-        </div>
+        </p>
       )}
     </div>
   );
 }
 
-function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint }: {
+const STRIP_COLOR: Record<StripKind, string> = {
+  'int-day': 'var(--strip-int-day)', 'ext-day': 'var(--strip-ext-day)', 'int-night': 'var(--strip-int-night)', 'ext-night': 'var(--strip-ext-night)',
+};
+
+function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onClose }: {
   /** The day as the film graph has it: its light and what in the plan fights it. */
   film: FilmDay | undefined;
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
   /** The day's locations that have an address on record (Production › Locations). */
   addresses: { name: string; address: string }[];
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
-  onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void;
+  onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onClose: () => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -237,9 +242,10 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
     if ((key.endsWith('call') || key === 'estimated_wrap' ? hhmm(current) : current) === (next ?? '')) return;
     void saveSheet({ [key]: next } as CallSheetPatch);
   };
+  const commitTime = (key: 'general_call' | 'shooting_call' | 'estimated_wrap') => (next: string) => field(key, next);
 
   const saveCall = async (target: CallTarget, fields: { call_time: string | null; remarks: string | null; role_label?: string | null }) => {
-    const existing = calls.find((c) => ('crew_user_id' in target ? c.crew_user_id === target.crew_user_id : c.character_name === target.character_name));
+    const existing = calls.find((x) => ('crew_user_id' in target ? x.crew_user_id === target.crew_user_id : x.character_name === target.character_name));
     const sh = sheet ?? await saveSheet({});
     if (!sh) return;
     try { onCall(await studio.saveCall(sh, target, existing, fields), existing?.id); }
@@ -247,82 +253,112 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
   };
 
   // Render helpers (plain functions, not components, so inputs keep focus across re-renders).
-  const textField = (k: keyof CallSheetPatch, label: string, type = 'text', multiline = false) => {
+  const textField = (k: keyof CallSheetPatch, label: string, type = 'text', multiline = false, placeholder?: string) => {
     const raw = (sheet?.[k] ?? '') as string;
     const value = type === 'time' ? hhmm(raw) : raw;
     return (
-      <label className={s.callField} key={k}>
-        <span className={s.hint}>{label}</span>
+      <label className={c.field} key={k}>
+        <span>{label}</span>
         {multiline
-          ? <textarea className={s.textarea} rows={2} defaultValue={value} key={`${k}:${value}`} onBlur={(e) => field(k, e.target.value)} maxLength={5000} />
-          : <input className={s.input} type={type} defaultValue={value} key={`${k}:${value}`} onBlur={(e) => field(k, e.target.value)} maxLength={500} />}
+          ? <textarea rows={2} defaultValue={value} key={`${k}:${value}`} placeholder={placeholder} onBlur={(e) => field(k, e.target.value)} maxLength={5000} />
+          : <input type={type} defaultValue={value} key={`${k}:${value}`} placeholder={placeholder} onBlur={(e) => field(k, e.target.value)} maxLength={500} />}
       </label>
     );
   };
 
   const callRow = (key: string, target: CallTarget, name: string, role?: string) => {
-    const c = calls.find((x) => ('crew_user_id' in target ? x.crew_user_id === target.crew_user_id : x.character_name === target.character_name));
-    const time = hhmm(c?.call_time);
-    const remarks = c?.remarks ?? '';
+    const x = calls.find((y) => ('crew_user_id' in target ? y.crew_user_id === target.crew_user_id : y.character_name === target.character_name));
+    const time = hhmm(x?.call_time);
+    const remarks = x?.remarks ?? '';
     return (
-      <div className={s.callRow} key={key}>
-        <span className={s.callName}>{name}{role ? <span className={s.hint}> — {role}</span> : null}</span>
+      <div className={c.call} key={key}>
+        <b>{name}{role ? <small> · {role}</small> : null}</b>
         <input
-          className={s.input} type="time" aria-label={`Call time for ${name}`} defaultValue={time} key={`t:${c?.id}:${time}`}
+          type="time" aria-label={`Call time for ${name}`} defaultValue={time} key={`t:${x?.id}:${time}`}
           onBlur={(e) => { if (e.target.value !== time) void saveCall(target, { call_time: e.target.value || null, remarks: remarks || null }); }}
         />
         <input
-          className={s.input} placeholder="Remarks" aria-label={`Remarks for ${name}`} defaultValue={remarks} key={`r:${c?.id}:${remarks}`} maxLength={1000}
+          placeholder="Remarks" aria-label={`Remarks for ${name}`} defaultValue={remarks} key={`r:${x?.id}:${remarks}`} maxLength={1000}
           onBlur={(e) => { const v = e.target.value.trim(); if (v !== remarks) void saveCall(target, { call_time: time || null, remarks: v || null }); }}
         />
       </div>
     );
   };
 
-  return (
-    <div className={s.callBody}>
-      <div className={s.row} style={{ justifyContent: 'flex-end' }}>
-        <button type="button" className={cx(s.btn, s.small)} onClick={onPrint}><Printer size={11} /> Print / PDF</button>
-      </div>
-      <IssueBar sheet={sheet} state={state} crew={crew} acks={acks} onIssued={onIssued} />
-      <div className={s.callFields}>
-        {textField('shoot_date', 'Date', 'date')}
-        {textField('general_call', 'General call', 'time')}
-        {textField('shooting_call', 'Shooting call', 'time')}
-        {textField('estimated_wrap', 'Est. wrap', 'time')}
-        {textField('location_address', 'Location address')}
-        {textField('weather', 'Weather')}
-      </div>
-      {film && (film.light || film.notes.length > 0) && (
-        <div role="group" aria-label={`Day ${day} light`} className={s.stack} style={{ gap: 4 }}>
-          {lightLine(film.light) && <p className={s.hint} style={{ margin: 0, color: 'var(--fg)', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}><Sun size={11} aria-hidden /> {lightLine(film.light)} · {film.lightAt?.name}</p>}
-          {film.notes.map((n) => (
-            <p key={n.kind} className={s.hint} style={{ margin: 0, color: n.kind === 'no-date' || n.kind === 'no-place' || n.kind === 'polar' ? undefined : 'var(--warn)' }}>{lightNoteText(n)}</p>
-          ))}
-        </div>
-      )}
-      {addresses.filter((a) => a.address !== sheet?.location_address).map((a) => (
-        <p key={a.name} className={s.hint} style={{ margin: 0 }}>
-          {a.name} is at {a.address}.{' '}
-          <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void saveSheet({ location_address: a.address })}>Use this address</button>
-        </p>
-      ))}
-      {textField('notes', 'Notes (parking, safety, catering…)', 'text', true)}
+  const wrap = hhmm(sheet?.estimated_wrap);
+  const late = !!film?.notes.some((n) => n.kind === 'wrap-after-light');
+  const lightNotes = film?.notes ?? [];
+  const stamp = state.status === 'draft' ? <Stamp onSky role="status">Draft</Stamp>
+    : state.status === 'issued' ? <Stamp onSky tone="ok" role="status">Issued v{state.version}</Stamp>
+    : <Stamp onSky>Changed</Stamp>;
+  const dateText = sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : 'No date yet';
 
-      <div className={s.callCols}>
-        <div>
-          <div className={s.hint}>Scenes ({facts.dayScenes.length}{facts.pages ? ` · ${facts.pages} pg` : ''})</div>
-          {facts.dayScenes.map((sc) => <div key={sc.id} className={s.callScene}><span className={s.hint}>{sc.scene_number}.</span> {sc.heading ?? sc.title}</div>)}
-          <div className={s.hint} style={{ marginTop: 10 }}>Locations</div>
-          <div className={s.callScene}>{facts.locations.join(' · ') || '—'}</div>
+  return (
+    <div>
+      <Sky light={film?.light} shootFrom={hhmm(sheet?.shooting_call) || null} wrapAt={wrap || null} title={`Day ${day}`} subtitle={dateText} aside={stamp} />
+      <Paper underSky>
+        <div className={c.toolbar}>
+          {state.status !== 'draft' && sheet && <Link href={`/call/${sheet.id}`} className={c.ghost}><ExternalLink size={12} aria-hidden /> Crew view</Link>}
+          <button type="button" className={c.ghost} onClick={onPrint}><Printer size={12} aria-hidden /> Print</button>
+          <button type="button" className={c.ghost} onClick={onClose} aria-expanded>Close</button>
         </div>
-        <div>
-          <div className={s.hint}>Cast calls</div>
-          {facts.cast.length ? facts.cast.map((name) => callRow(`c:${name}`, { character_name: name }, name)) : <div className={s.hint}>No speaking cast in these scenes</div>}
-          <div className={s.hint} style={{ marginTop: 10 }}>Crew calls</div>
-          {crew.length ? crew.map((m) => callRow(`u:${m.user_id}`, { crew_user_id: m.user_id }, m.username || 'Crew member', m.role)) : <div className={s.hint}>No crew on this project yet</div>}
+
+        <TimeBoxes>
+          <TimeBox label="Call" name="General call" value={hhmm(sheet?.general_call)} onCommit={commitTime('general_call')} />
+          <TimeBox label="Shoot" name="Shooting call" value={hhmm(sheet?.shooting_call)} onCommit={commitTime('shooting_call')} />
+          <TimeBox label="Wrap" name="Est. wrap" value={wrap} late={late} onCommit={commitTime('estimated_wrap')} />
+        </TimeBoxes>
+
+        <div role="group" aria-label={`Day ${day} light`} className={c.limits}>
+          {lightLine(film?.light) && <span className="sr-only">{lightLine(film?.light)} · {film?.lightAt?.name}</span>}
+          {lightNotes.map((n) => (n.kind === 'no-date' || n.kind === 'no-place' || n.kind === 'polar'
+            ? <p key={n.kind} className={c.quiet} title={lightNoteText(n)}>{n.kind === 'no-place'
+              ? <Link href="/studio?tab=production&view=locations">{lightNoteBrief(n)}</Link> : lightNoteBrief(n)}</p>
+            : <p key={n.kind} className={c.limit} title={lightNoteText(n)}>{lightNoteBrief(n)}</p>))}
         </div>
-      </div>
+
+        <IssueBar sheet={sheet} state={state} crew={crew} acks={acks} onIssued={onIssued} />
+
+        <div className={c.pair}>
+          {textField('shoot_date', 'Date', 'date')}
+          {textField('location_address', 'Location address')}
+        </div>
+        {addresses.filter((a) => a.address !== sheet?.location_address).map((a) => (
+          <div key={a.name} className={c.suggest}>
+            <span>{a.name} is at {a.address}</span>
+            <button type="button" onClick={() => void saveSheet({ location_address: a.address })}>Use this address</button>
+          </div>
+        ))}
+        {textField('weather', 'Weather')}
+        {textField('notes', 'Notes', 'text', true, 'Parking, safety, catering')}
+
+        <PaperHead aside={facts.pages ? `${facts.pages} pg` : undefined}>Scenes</PaperHead>
+        {facts.dayScenes.length === 0 && <p className={c.none}>Nothing scheduled this day.</p>}
+        {facts.dayScenes.map((sc) => (
+          <div key={sc.id} className={c.scene} style={{ ['--k' as string]: STRIP_COLOR[stripKind(sc)] }}>
+            <u aria-hidden />
+            <i>{sc.scene_number}</i>
+            <span>{sc.heading ?? sc.title}</span>
+            <em>{String(sc.est_duration || '').match(/\d+\s*\/\s*8/)?.[0]?.replace(/\s/g, '') ?? ''}</em>
+          </div>
+        ))}
+
+        {facts.locations.length > 0 && (
+          <>
+            <PaperHead>Where</PaperHead>
+            {facts.locations.map((name) => <div key={name} className={c.where}>{name}<span>{addresses.find((a) => a.name === name)?.address ?? ''}</span></div>)}
+          </>
+        )}
+
+        <PaperHead>Cast</PaperHead>
+        <div className={c.calls}>
+          {facts.cast.length ? facts.cast.map((name) => callRow(`c:${name}`, { character_name: name }, name)) : <p className={c.none}>No speaking cast in these scenes.</p>}
+        </div>
+        <PaperHead>Crew</PaperHead>
+        <div className={c.calls}>
+          {crew.length ? crew.map((m) => callRow(`u:${m.user_id}`, { crew_user_id: m.user_id }, m.username || 'Crew member', m.role)) : <p className={c.none}>No crew on this project yet.</p>}
+        </div>
+      </Paper>
     </div>
   );
 }

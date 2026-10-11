@@ -98,7 +98,7 @@
      colours are a paper stripboard's. */
   --paper:       #ece8d5;
   --on-paper:    #14161b;
-  --paper-faint: rgba(20, 22, 27, 0.52);
+  --paper-faint: rgba(20, 22, 27, 0.68);
   --paper-rule:  rgba(20, 22, 27, 0.85);
   --limit:       #e8431a;
   --strip-ext-day:   #f3cf55;
