@@ -59,7 +59,7 @@ export function EditorLeftNav({
                   width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
                   background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)',
                   padding: '8px 12px', borderRadius: 8, color: 'var(--fg-muted)',
-                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
+                  fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                   cursor: 'pointer', transition: 'background 0.2s, color 0.2s',
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.08)'; e.currentTarget.style.color = 'var(--fg)'; }}
@@ -78,7 +78,7 @@ export function EditorLeftNav({
                       background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.06)',
                       padding: '6px', borderRadius: 8,
                       color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
-                      letterSpacing: 1.5, textTransform: 'uppercase', cursor: 'pointer',
+                      letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', cursor: 'pointer',
                       transition: 'border-color 0.2s, color 0.2s',
                     }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.14)'; e.currentTarget.style.color = 'var(--fg-muted)'; }}
@@ -91,7 +91,7 @@ export function EditorLeftNav({
 
                 <input ref={fileInputRef} type="file" accept=".fountain,.txt,.fdx,.pdf" onChange={handleImportFile} style={{ display: 'none' }} />
 
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 3, marginTop: 14, marginBottom: 7 }}>Templates</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginTop: 14, marginBottom: 7 }}>Templates</div>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                   {Object.keys(TEMPLATES).filter(k => k !== 'blank').map(key => (
                     <button key={key} onClick={async () => {
@@ -123,7 +123,7 @@ export function EditorLeftNav({
               <div style={{ flex: 1, overflowY: 'auto', padding: '10px 10px 20px' }}>
                 <div style={{
                   fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)',
-                  textTransform: 'uppercase', letterSpacing: 3, marginBottom: 10, paddingLeft: 4,
+                  textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 10, paddingLeft: 4,
                   display: 'flex', justifyContent: 'space-between',
                 }}>
                   <span>Story Map</span>
@@ -158,7 +158,7 @@ export function EditorLeftNav({
                             margin: '6px 0 4px', paddingLeft: 4,
                           }}>
                             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', flexShrink: 0 }}>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', flexShrink: 0 }}>
                               Act {isAct2Start ? 'II' : 'III'}
                             </span>
                             <div style={{ flex: 1, height: 1, background: 'rgba(var(--ink-rgb), 0.08)' }} />
@@ -197,7 +197,7 @@ export function EditorLeftNav({
                               fontFamily: 'var(--mono)', fontSize: 11,
                               color: isActive ? 'var(--fg)' : 'rgba(var(--fg-rgb), 0.7)',
                               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                              textTransform: 'uppercase', flex: 1, letterSpacing: 0.5
+                              textTransform: 'var(--caps)', flex: 1, letterSpacing: 'var(--caps-track)'
                             }}>
                               {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                             </span>

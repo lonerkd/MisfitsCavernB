@@ -22,7 +22,7 @@ import b from './stripboard.module.css';
 
 // Strip colours follow the paper stripboard: white/yellow/blue/green,
 // darkened to sit on the suite's ink background.
-const KIND_COLOR: Record<StripKind, string> = { 'int-day': '#e0ddae', 'ext-day': '#f5c542', 'int-night': '#5b8cff', 'ext-night': '#34c77b' };
+const KIND_COLOR: Record<StripKind, string> = { 'int-day': '#f6f3e6', 'ext-day': '#f3cf55', 'int-night': '#a9c0f5', 'ext-night': '#93dcae' };
 const STATUS_ORDER = ['planned', 'shot', 'wrapped'] as const;
 type Status = (typeof STATUS_ORDER)[number];
 

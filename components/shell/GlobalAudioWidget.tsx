@@ -89,7 +89,7 @@ export default function GlobalAudioWidget() {
               style={{
                 position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
                 background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'rgba(var(--fg-rgb), 0.85)',
-                fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase',
+                fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                 padding: '5px 10px', borderRadius: 8, whiteSpace: 'nowrap', pointerEvents: 'none', backdropFilter: 'blur(10px)',
               }}
             >
@@ -116,7 +116,7 @@ export default function GlobalAudioWidget() {
           <div style={{ fontFamily: 'var(--display)', fontSize: '1rem', color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {currentTrack?.name || 'No track playing'}
           </div>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'uppercase' }}>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textTransform: 'var(--caps)' }}>
             {currentTrack?.artists.map(a => a.name).join(', ') || 'Ready for playback'}
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function GlobalAudioWidget() {
             style={{ width: 60, accentColor: '#10b981' }}
           />
         </div>
-        <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase' }}>
+        <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'var(--caps)' }}>
           <LogOut size={10} /> Disconnect
         </button>
       </div>
@@ -184,7 +184,7 @@ export default function GlobalAudioWidget() {
                     border: `1px solid ${on ? 'rgba(16,185,129,0.4)' : 'rgba(var(--ink-rgb), 0.06)'}`,
                     color: on ? 'var(--ok)' : 'var(--fg-dim)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1,
-                    textTransform: 'uppercase', cursor: 'pointer',
+                    textTransform: 'var(--caps)', cursor: 'pointer',
                     transition: 'all 0.2s', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                   }}
                   title={src.from}
@@ -220,7 +220,7 @@ export default function GlobalAudioWidget() {
         </>
       )}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 12 }}>
-        <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase' }}>
+        <button onClick={logout} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'var(--caps)' }}>
           <LogOut size={10} /> Disconnect
         </button>
       </div>
@@ -247,7 +247,7 @@ export default function GlobalAudioWidget() {
         </motion.div>
         <span style={{
           fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1.5,
-          color: 'var(--fg-muted)', textTransform: 'uppercase',
+          color: 'var(--fg-muted)', textTransform: 'var(--caps)',
         }}>
           {isPlaying ? 'Playing' : 'Audio Engine'}
         </span>
@@ -270,14 +270,14 @@ export default function GlobalAudioWidget() {
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 16px', background: 'rgba(var(--ink-rgb), 0.03)', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)', marginBottom: 12 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 1.5, textTransform: 'uppercase' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>
                 Mode: {useIframeFallback ? 'Free' : 'Premium'}
               </span>
               <button
                 onClick={() => setUseIframeFallback(!useIframeFallback)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
-                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, color: useIframeFallback ? 'var(--warn)' : 'var(--ok)', textTransform: 'uppercase'
+                  fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: useIframeFallback ? 'var(--warn)' : 'var(--ok)', textTransform: 'var(--caps)'
                 }}
               >
                 <RefreshCw size={9} />
@@ -288,11 +288,11 @@ export default function GlobalAudioWidget() {
             {useIframeFallback ? renderFreeUI() : (!isPremium ? (
               <div style={{ padding: 24, textAlign: 'center' }}>
                 <Link2Off size={24} color="var(--accent)" style={{ marginBottom: 12 }} />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'uppercase', marginBottom: 12 }}>Premium Required</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', textTransform: 'var(--caps)', marginBottom: 12 }}>Premium Required</div>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', marginBottom: 16 }}>Spotify blocked the Web Playback connection. You must use Free Mode.</div>
                 <button
                   onClick={() => setUseIframeFallback(true)}
-                  style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 9999, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'uppercase', cursor: 'pointer' }}
+                  style={{ background: 'var(--accent)', color: '#000', border: 'none', padding: '6px 12px', borderRadius: 9999, fontFamily: 'var(--mono)', fontSize: 11, textTransform: 'var(--caps)', cursor: 'pointer' }}
                 >
                   Switch to Free Mode
                 </button>

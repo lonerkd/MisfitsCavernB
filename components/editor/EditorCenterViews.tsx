@@ -131,7 +131,7 @@ function SceneBoardCard({
         transition: 'box-shadow 0.35s, border-color 0.2s, opacity 0.2s', cursor: 'grab',
       }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, alignItems: 'center' }}>
-        <span style={{ fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1 }}>Scene {index + 1}</span>
+        <span style={{ fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>Scene {index + 1}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           {activeUsers.length > 0 && (
             <div style={{ display: 'flex', marginRight: 4 }}>
@@ -185,7 +185,7 @@ export function OutlineView({
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
-          <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)', color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}>{f}</button>
+          <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)', color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{f}</button>
         ))}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
       </div>
@@ -207,7 +207,7 @@ export function OutlineView({
               ); })()}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'uppercase', cursor: 'pointer' }}>{scene.text}</div>
+                  <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'var(--caps)', cursor: 'pointer' }}>{scene.text}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {CARD_COLORS.map(color => {
                       const active = sceneColors[globalIdx] === color;
@@ -266,7 +266,7 @@ export function StatsView({
     <div style={{ flex: 1, overflowY: 'auto', padding: '36px 40px', maxWidth: 1000, margin: '0 auto', width: '100%' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 36 }}>
         <div style={{ fontFamily: 'var(--display)', fontSize: '2rem', letterSpacing: 4, color: 'var(--fg)' }}>SCRIPT ANALYTICS</div>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{currentScriptTitle}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{currentScriptTitle}</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 40 }}>
@@ -282,7 +282,7 @@ export function StatsView({
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
           >
             <div style={{ fontFamily: 'var(--mono)', fontSize: 28, fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: 6 }}>{s.value}</div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 2.5, marginBottom: 3 }}>{s.label}</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 3 }}>{s.label}</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)'}}>{s.sub}</div>
           </div>
         ))}
@@ -295,7 +295,7 @@ export function StatsView({
         const { act1End, act2End } = actStructure;
         return (
           <div style={{ marginBottom: 40 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Timeline</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Timeline</div>
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
@@ -344,7 +344,7 @@ export function StatsView({
                     { pct: act2Pct, label: 'ACT III' },
                   ].map(({ pct, label }) => (
                     <div key={label} style={{ position: 'absolute', left: `${pct}%`, transform: pct > 0 ? 'translateX(-50%)' : '', top: 2 }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{label}</span>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', whiteSpace: 'nowrap' }}>{label}</span>
                     </div>
                   ))}
                 </div>
@@ -370,7 +370,7 @@ export function StatsView({
 
       {charStats.length > 0 && scenesList.length > 0 && (
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
           <div style={{ overflowX: 'auto' }}>
             <div style={{ minWidth: Math.max(400, scenesList.length * 22) }}>
               {charStats.slice(0, 8).map((cs, ci) => {
@@ -420,7 +420,7 @@ export function StatsView({
       )}
 
       <div style={{ marginBottom: 40 }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 8, overflow: 'hidden', height: 20 }}>
           <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
           <div style={{ flex: 1, background: 'var(--accent)' }} />
@@ -433,11 +433,11 @@ export function StatsView({
 
       {scenesList.length > 0 && (
         <div style={{ marginBottom: 40 }}>
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
           <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
               {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
-                <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 2, textTransform: 'uppercase' }}>{h}</div>
+                <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{h}</div>
               ))}
             </div>
             {scenesList.map((scene, i) => {
@@ -463,7 +463,7 @@ export function StatsView({
                   onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                 >
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{i + 1}</div>
-                  <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8, textTransform: 'uppercase' }}>
+                  <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', paddingRight: 8, textTransform: 'var(--caps)' }}>
                     {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                   </div>
                   <div>
@@ -482,7 +482,7 @@ export function StatsView({
       )}
 
       <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 12 }}>Script Health</div>
         <div style={{ display: 'flex', gap: 20 }}>
           {[
             { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: 'var(--danger)' },
@@ -491,7 +491,7 @@ export function StatsView({
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 22, fontWeight: 700, color: count === 0 && label === 'Errors' ? 'var(--ok)' : color, lineHeight: 1 }}>{count}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{label}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{label}</span>
             </div>
           ))}
         </div>

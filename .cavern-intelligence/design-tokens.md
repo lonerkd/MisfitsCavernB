@@ -61,11 +61,17 @@ cavern-border:  'rgba(255,255,255,0.04)'
 
 ## Typography
 
-| Role | Font Stack | CSS Var | Usage |
+The language is in [design-language.md](design-language.md); this is the token reference.
+
+| Role | Font | CSS var | Usage |
 |---|---|---|---|
-| Display | `Bebas Neue, sans-serif` | `--display` | h1–h6, `.mc-title`, headings, nav |
-| Mono | `DM Mono, monospace` | `--mono` | Body text, buttons, inputs, `.mc-text`, badges |
-| Serif | `Cormorant Garamond, serif` | `--serif` | Paragraphs (`p` tags), long-form text |
+| Interface | Hanken Grotesk (variable, 100–900) | `--ui` (also `--mono`, `--sans`, `--display`, `--serif`) | Everything: titles at 800–900, body 400–500, tabular numbers |
+| Screenplay | Courier Prime | `--script` | The script surfaces only |
+| Code | DM Mono | `--code` | Code; the Terminal theme maps the interface to it |
+| Reading | Cormorant Garamond | `--read` | Long reading (the legal pages) |
+| Logotype | Bebas Neue | `--wordmark` | Reserved; not used by the interface |
+
+Capitals: interface labels are sentence case; `--caps` / `--caps-track` switch tracked capitals on (Terminal does). Screenplay capitals are format and are not affected.
 
 ### Font Sizes
 ```css
@@ -78,7 +84,7 @@ h3 { font-size: clamp(1.2rem, 3vw, 2rem); }
 
 Defined in `app/globals.css`. See `archive/DESIGN_DIRECTION_2026-09.md`.
 
-- **Type:** `--text-2xs` 11 (floor, uppercase labels) · `xs` 12 · `sm` 13 · `base` 14 · `md` 16 · `lg` 20 · `xl` 24 · `2xl` 32. Literal `fontSize` under 11 fails lint.
+- **Type:** `--text-2xs` 11 (floor, everywhere — `--mc-min-font`) · `xs` 12 · `sm` 13 · `base` 14 · `md` 16 · `lg` 20 · `xl` 24 · `2xl` 32. Literal `fontSize` under 11 fails lint.
 - **Script face:** `--script` (Courier Prime) for screenplay surfaces only.
 - **Radii:** 4 · 8 · 14 · 20 · 28 · 9999. Others fail lint.
 - **Containers:** `--w-form` 480 · `--w-reading` 720 · `--w-content` 1160.

@@ -59,7 +59,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
     { label: 'The Visual World', bg: visual, render: (big: boolean) => (
       <>
         <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '2rem', letterSpacing: 4, margin: '16px 0' }}>THE VISUAL WORLD</h3>
-        <div style={{ fontSize: big ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'uppercase' }}>{concepts.length > 0 ? `${concepts.length} concept references` : 'Add images in the Library'}</div>
+        <div style={{ fontSize: big ? 14 : 10, fontFamily: 'var(--mono)', color: 'var(--accent)', textTransform: 'var(--caps)' }}>{concepts.length > 0 ? `${concepts.length} concept references` : 'Add images in the Library'}</div>
       </>
     ) },
     { label: 'The Characters', bg: undefined, render: (big: boolean) => (

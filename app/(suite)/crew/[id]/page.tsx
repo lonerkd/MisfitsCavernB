@@ -181,7 +181,7 @@ export default function CrewMemberPage() {
 
             <h1 style={{
               fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 6vw, 3.6rem)',
-              letterSpacing: 4, margin: '0 0 10px', lineHeight: 1, textTransform: 'uppercase'
+              letterSpacing: 'var(--caps-track)', margin: '0 0 10px', lineHeight: 1, textTransform: 'var(--caps)'
             }}>
               {profile.username}
             </h1>
@@ -190,7 +190,7 @@ export default function CrewMemberPage() {
               {profile.role && (
                 <span style={{
                   fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2,
-                  color: 'var(--accent)', textTransform: 'uppercase'
+                  color: 'var(--accent)', textTransform: 'var(--caps)'
                 }}>
                   {profile.role}
                 </span>
@@ -239,7 +239,7 @@ export default function CrewMemberPage() {
         {/* ── Bio ──────────────────────────────────────────────────────────────── */}
         {profile.bio && (
           <div style={{ marginBottom: 56 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, marginBottom: 16, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', marginBottom: 16, textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
               About
             </div>
             <p style={{
@@ -254,7 +254,7 @@ export default function CrewMemberPage() {
         {/* ── Credits: from the work itself (crew, cast, films made) ─────────────── */}
         {credits.length > 0 && (
           <section aria-labelledby="credits-title" style={{ marginBottom: 48, padding: 0 }}>
-            <h2 id="credits-title" style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, margin: '0 0 16px', textTransform: 'uppercase', color: 'var(--fg-dim)', fontWeight: 400 }}>
+            <h2 id="credits-title" style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', margin: '0 0 16px', textTransform: 'var(--caps)', color: 'var(--fg-dim)', fontWeight: 400 }}>
               Credits · {credits.length}
             </h2>
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -282,7 +282,7 @@ export default function CrewMemberPage() {
                         } catch (e) { toast(e instanceof Error ? e.message : 'Could not add it', 'error'); }
                         finally { setAdding(null); }
                       }}
-                      style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', padding: '8px 12px', minHeight: 32, borderRadius: 8, border: '1px solid rgba(232, 67, 26,0.4)', background: 'rgba(232, 67, 26,0.1)', color: 'var(--fg)', cursor: 'pointer' }}>
+                      style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', padding: '8px 12px', minHeight: 32, borderRadius: 8, border: '1px solid rgba(232, 67, 26,0.4)', background: 'rgba(232, 67, 26,0.1)', color: 'var(--fg)', cursor: 'pointer' }}>
                       {adding === c.project_id ? 'Adding…' : 'Add to portfolio'}
                     </button>
                   ))}
@@ -295,7 +295,7 @@ export default function CrewMemberPage() {
         {/* ── Portfolio Section ─────────────────────────────────────────────────── */}
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 24 }}>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
               Portfolio
             </div>
             {projects.length > 0 && (

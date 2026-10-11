@@ -51,7 +51,7 @@ export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any
       </div>
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, color: beat.color }}>{beat.title}</div>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 8, color: beat.color }}>{beat.title}</div>
         </div>
         <div style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--fg-muted)' }}>{beat.content}</div>
       </div>
@@ -114,10 +114,10 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)' }}>{member.name}</div>
-        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'uppercase', letterSpacing: 1 }}>{member.role}</div>
+        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{member.role}</div>
         {away && <div style={{ fontSize: 11, color: 'var(--warn)', marginTop: 3 }}>Away {away}</div>}
       </div>
-      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'uppercase' }}>
+      <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'var(--caps)' }}>
         {member.status || 'pending'}
       </div>
     </motion.div>
@@ -220,7 +220,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'uppercase', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
                    <select
                      value={role}
                      onChange={e => setRole(e.target.value)}

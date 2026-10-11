@@ -198,7 +198,7 @@ export default function ProjectHubPage() {
           <div style={{ width: 1, height: 20, background: 'rgba(var(--ink-rgb), 0.07)' }} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, minWidth: 0 }}>
             <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.title}</span>
-            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: project.color }}>{project.type}</span>
+            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: project.color }}>{project.type}</span>
           </div>
         </div>
 
@@ -211,7 +211,7 @@ export default function ProjectHubPage() {
               <React.Fragment key={phase.id}>
                 <div style={{
                   padding: '5px 12px', borderRadius: 9999,
-                  fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase',
+                  fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                   background: isActive ? `${project.color}18` : 'transparent',
                   color: isActive ? project.color : isDone ? 'var(--fg-muted)' : 'var(--fg-dim)',
                   border: isActive ? `1px solid ${project.color}35` : '1px solid transparent',
@@ -288,7 +288,7 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 6 }}>Production Hub</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginBottom: 6 }}>Production Hub</div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.5rem, 6vw, 4rem)', fontWeight: 400, letterSpacing: 2, lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <LoglineEditor
             projectId={id}

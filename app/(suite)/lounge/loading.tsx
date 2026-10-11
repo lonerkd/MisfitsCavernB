@@ -74,8 +74,8 @@ export default function LoungeLoading() {
         style={{
           fontFamily: 'var(--mono)',
           fontSize: 11,
-          letterSpacing: 3,
-          textTransform: 'uppercase', color: 'var(--fg-dim)' }}
+          letterSpacing: 'var(--caps-track)',
+          textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}
       >
         ENTERING LOUNGE...
       </span>

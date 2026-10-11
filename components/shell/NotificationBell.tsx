@@ -115,7 +115,7 @@ export default function NotificationBell() {
             style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
                 Notifications{unread > 0 ? ` · ${unread} new` : ''}
               </span>
               {unread > 0 && (

@@ -70,7 +70,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
 
       {canShape && gaps.length > 0 && (
         <section aria-labelledby="paper-gaps" className={s.panel} style={{ padding: 14 }}>
-          <h3 id="paper-gaps" className={s.hint} style={{ margin: '0 0 8px', textTransform: 'uppercase', letterSpacing: 2 }}><Lightbulb size={11} aria-hidden /> Still needed</h3>
+          <h3 id="paper-gaps" className={s.hint} style={{ margin: '0 0 8px', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}><Lightbulb size={11} aria-hidden /> Still needed</h3>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {gaps.map((g) => (
               <li key={g.key} className={s.row} style={{ gap: 10, flexWrap: 'wrap' }}>
@@ -103,7 +103,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
         <p className={s.hint}>{canShape ? 'No paperwork yet. Add what the production needs above, or any document — attach the PDF or a photo when you have it.' : 'Nothing for you here yet. When the production sends you a contract or release, it shows up here.'}</p>
       ) : byKind.map((g) => (
         <section key={g.id} aria-labelledby={`paper-${g.id}`} className={s.stack} style={{ gap: 6 }}>
-          <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'uppercase', letterSpacing: 2 }}>{g.plural} · {g.rows.length}</h3>
+          <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{g.plural} · {g.rows.length}</h3>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {g.rows.map((d) => (
               <DocItem key={d.id} doc={d} canShape={canShape} today={today} crew={crew} vendors={vendors}

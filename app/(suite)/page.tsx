@@ -97,8 +97,8 @@ function PipelineStage({ stage, index }: { stage: typeof STAGES[0]; index: numbe
       <span style={{
         fontFamily: 'var(--mono)',
         fontSize: 'max(8px, var(--mc-min-font, 0px))',
-        letterSpacing: 3,
-        textTransform: 'uppercase',
+        letterSpacing: 'var(--caps-track)',
+        textTransform: 'var(--caps)',
         color: hovered ? stage.color : 'var(--fg-dim)',
         transition: 'color 0.3s',
       }}>
@@ -173,7 +173,7 @@ function ScriptOSPreview({ lines, caption }: { lines?: string[]; caption: string
 }
 
 function PreviewCaption({ children }: { children: React.ReactNode }) {
-  return <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>{children}</p>;
+  return <p style={{ margin: '10px 0 0', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>{children}</p>;
 }
 
 function StudioPreview({ items, caption }: { items: { label: string; color: string }[]; caption: string }) {
@@ -271,7 +271,7 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
           <div key={i} style={{ position: 'relative', borderRadius: 8, overflow: 'hidden', minHeight: 120, background: `linear-gradient(160deg, #0d0d0f 0%, ${w.accent || '#1a1008'} 160%)`, border: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
             <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12 }}>
               <div style={{ fontFamily: 'var(--display)', fontSize: 18, letterSpacing: 0.5, lineHeight: 1.1, color: 'var(--fg)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{w.title}</div>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 4 }}>{[w.category, w.year].filter(Boolean).join(' · ') || 'New work'}</div>
             </div>
           </div>
         ))}
@@ -308,8 +308,8 @@ function PortfolioPreview({ works }: { works: Array<{ title: string; year: numbe
         bottom: '18%', right: 16,
         fontFamily: 'var(--mono)',
         fontSize: 'max(7px, var(--mc-min-font, 0px))',
-        letterSpacing: 3,
-        textTransform: 'uppercase',
+        letterSpacing: 'var(--caps-track)',
+        textTransform: 'var(--caps)',
         color: 'var(--fg-dim)',
       }}>
         Published work shows here
@@ -376,8 +376,8 @@ function ModuleTile({ title, tag, color, href, preview, style, index = 0 }: Modu
               <div style={{
                 fontFamily: 'var(--mono)',
                 fontSize: 'max(7.5px, var(--mc-min-font, 0px))',
-                letterSpacing: 3.5,
-                textTransform: 'uppercase',
+                letterSpacing: 'var(--caps-track)',
+                textTransform: 'var(--caps)',
                 color: readable(color),
                 marginBottom: 4,
                 opacity: 0.85,
@@ -423,8 +423,8 @@ function StatsTicker({ items }: { items: string[] }) {
           <span key={i} style={{
             fontFamily: 'var(--mono)',
             fontSize: 'max(9px, var(--mc-min-font, 0px))',
-            letterSpacing: 3.5,
-            textTransform: 'uppercase',
+            letterSpacing: 'var(--caps-track)',
+            textTransform: 'var(--caps)',
             color: 'var(--fg-dim)',
             padding: '0 36px',
             display: 'inline-flex',
@@ -562,8 +562,8 @@ export default function Home() {
               borderRadius: 9999,
               fontFamily: 'var(--mono)',
               fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
-              letterSpacing: 3,
-              textTransform: 'uppercase',
+              letterSpacing: 'var(--caps-track)',
+              textTransform: 'var(--caps)',
               color: 'var(--accent)',
             }}>
               <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
@@ -591,8 +591,8 @@ export default function Home() {
               marginTop: 18,
               fontFamily: 'var(--mono)',
               fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
-              letterSpacing: 4,
-              textTransform: 'uppercase',
+              letterSpacing: 'var(--caps-track)',
+              textTransform: 'var(--caps)',
               color: 'var(--fg-dim)',
             }}
             aria-hidden
@@ -663,7 +663,7 @@ export default function Home() {
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(232, 67, 26,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(232, 67, 26,0.18)', borderRadius: 14 }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 3, textTransform: 'uppercase', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
+              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: 1, lineHeight: 1 }}>
                 {activeProject ? `Resume ${activeProject.title}` : 'Continue your screenplay'}
               </div>
@@ -718,7 +718,7 @@ export default function Home() {
                   transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
                   style={{ height: 42, width: 80, margin: '0 auto', background: s.color, borderRadius: 8, filter: 'blur(4px)' }}
                 />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -741,7 +741,7 @@ export default function Home() {
                 transition={{ delay: i * 0.08, duration: 0.6 }}
                 style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
                 <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: 1, lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
               </motion.div>
             ))}
           </div>
@@ -865,8 +865,8 @@ export default function Home() {
         // Clear of the dock (it reports its own height; 0 where it's hidden).
         padding: '20px 0 calc(var(--taskbar-height, 0px) + 44px)',
         fontSize: 'max(7.5px, var(--mc-min-font, 0px))',
-        letterSpacing: 4,
-        textTransform: 'uppercase',
+        letterSpacing: 'var(--caps-track)',
+        textTransform: 'var(--caps)',
         fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
         The Cavern · by Misfits Cavern · © 2026 Peter Olowude
         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>

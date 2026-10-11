@@ -1455,7 +1455,7 @@ export default function EditorPage() {
                         {isSelected && (
                           <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
                             <div>
-                              <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Cast as</label>
+                              <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
                               <select
                                 value={cast?.crew_user_id || ''}
                                 onChange={e => handleCastCharacter(name, e.target.value)}
@@ -1562,7 +1562,7 @@ export default function EditorPage() {
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
               <span style={{ display: 'flex' }}>
                 {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'uppercase' }}>
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
                     {c.username.charAt(0)}
                   </span>
                 ))}
@@ -1588,7 +1588,7 @@ export default function EditorPage() {
       {conflict.detected && (
         <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 'var(--w-form)' }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--warn)', textTransform: 'uppercase', marginBottom: 3 }}>Edit conflict</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', textTransform: 'var(--caps)', marginBottom: 3 }}>Edit conflict</div>
             <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
           </div>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>

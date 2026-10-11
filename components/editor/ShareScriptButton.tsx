@@ -15,7 +15,7 @@ import type { StoredScript } from '@/lib/scriptos/storage';
 // same rule the database enforces (scripts_share_guard). On/off, copy, and a
 // new link that kills the old one.
 
-const label: CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase' };
+const label: CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' };
 
 export function ShareScriptButton({ script, projectCreatorId }: { script: StoredScript | null; projectCreatorId?: string | null }) {
   const { toast } = useToast();

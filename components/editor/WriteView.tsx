@@ -222,7 +222,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                                 key={t}
                                 onClick={() => setAnnotationDraft((d: any) => d ? { ...d, type: t } : d)}
                                 style={{
-                                  fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 0.5, textTransform: 'uppercase',
+                                  fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                                   padding: '3px 7px', borderRadius: 9999, cursor: 'pointer',
                                   background: annotationDraft.type === t ? `${ANNOTATION_META[t].color}2e` : 'rgba(var(--ink-rgb), 0.04)',
                                   border: `1px solid ${annotationDraft.type === t ? ANNOTATION_META[t].color : 'var(--fg-dim)'}`,
@@ -332,7 +332,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                       <X size={14} />
                     </button>
                   )}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
                     Table Read
                   </span>
                 </div>
@@ -349,7 +349,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                     padding: '6px 16px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 0.5,
                   }}>
-                    <span style={{ color, textTransform: 'uppercase', fontWeight: 700 }}>{status.label}</span>
+                    <span style={{ color, textTransform: 'var(--caps)', fontWeight: 700 }}>{status.label}</span>
                     <span style={{ color: 'var(--fg-dim)' }}>{status.hint}</span>
                   </div>
                 );

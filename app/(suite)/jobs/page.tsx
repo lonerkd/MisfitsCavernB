@@ -100,7 +100,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase', marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)', marginBottom: 6 }}>
               Crew Marketplace
             </div>
             <div style={{ fontFamily: 'var(--display)', fontSize: '1.4rem', letterSpacing: 2 }}>
@@ -127,7 +127,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Craft</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', marginBottom: 8 }}>Craft</div>
             <CraftPicker label="Craft" value={form.role || null} onChange={(craft) => setForm(f => ({ ...f, role: craft ?? '' }))} placeholder="Which craft is this for?" />
           </div>
 
@@ -147,7 +147,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
           />
 
           <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 8 }}>Hourly Rate (optional)</div>
+            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', marginBottom: 8 }}>Hourly Rate (optional)</div>
             <div style={{ position: 'relative' }}>
               <DollarSign size={12} color="rgba(var(--fg-rgb), 0.25)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -176,7 +176,7 @@ function PostModal({ onClose, onCreated, userId, projectId, projectTitle, initia
               color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 14,
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5,
-              textTransform: 'uppercase', fontWeight: 600,
+              textTransform: 'var(--caps)', fontWeight: 600,
               cursor: form.title ? 'pointer' : 'default',
               transition: 'background 0.3s, box-shadow 0.3s',
               boxShadow: form.title ? '0 6px 20px rgba(139,92,246,0.3)' : 'none',
@@ -237,7 +237,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
               background: `${color}14`,
               border: `1px solid ${color}33`,
               fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 2,
-              color, textTransform: 'uppercase',
+              color, textTransform: 'var(--caps)',
             }}>
               {job.role}
             </div>
@@ -284,7 +284,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
         {applied ? (
           <div role="status" style={{
             flexShrink: 0, padding: '10px 16px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)',
-            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-muted)',
+            fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)',
           }}>
             Applied · {applied}
           </div>
@@ -301,7 +301,7 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
             border: `1px solid ${color}44`,
             color: readable(color), cursor: 'pointer',
             fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-            textTransform: 'uppercase',
+            textTransform: 'var(--caps)',
           }}
         >
           Apply <ChevronRight size={10} />
@@ -315,9 +315,9 @@ function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (id: str
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             <button type="button" onClick={() => void send()} disabled={sending} style={{
               padding: '9px 18px', borderRadius: 9999, border: 'none', cursor: 'pointer', background: 'var(--jobs-color)', color: '#fff',
-              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600,
+              fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', fontWeight: 600,
             }}>{sending ? 'Sending…' : 'Send application'}</button>
-            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase' }}>Cancel</button>
+            <button type="button" onClick={() => setComposing(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>Cancel</button>
           </div>
         </div>
       )}
@@ -348,7 +348,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               padding: '3px 9px', borderRadius: 9999,
               background: `${color}14`, border: `1px solid ${color}33`,
               fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-              color, textTransform: 'uppercase',
+              color, textTransform: 'var(--caps)',
             }}>
               {job.role}
             </div>
@@ -358,7 +358,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               border: `1px solid ${job.status === 'open' ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.06)'}`,
               fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
               color: job.status === 'open' ? 'var(--ok)' : 'var(--fg-dim)',
-              textTransform: 'uppercase',
+              textTransform: 'var(--caps)',
             }}>
               {job.status}
             </div>
@@ -384,7 +384,7 @@ function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: string) =>
               border: '1px solid rgba(var(--ink-rgb), 0.08)',
               color: 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
-              textTransform: 'uppercase', cursor: 'pointer',
+              textTransform: 'var(--caps)', cursor: 'pointer',
               transition: 'border-color 0.2s, color 0.2s',
             }}
             onMouseEnter={e => {
@@ -541,7 +541,7 @@ export default function JobsPage() {
             ><Mark size={22} title="The Cavern home" /></div>
           </Link>
           <div style={{ width: 1, height: 16, background: 'rgba(var(--ink-rgb), 0.08)' }} />
-          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--jobs-text)', textTransform: 'uppercase' }}>Jobs</div>
+          <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)', textTransform: 'var(--caps)' }}>Jobs</div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -560,7 +560,7 @@ export default function JobsPage() {
                     position: 'relative', padding: '6px 14px', borderRadius: 9999,
                     background: 'transparent', border: 'none', cursor: 'pointer',
                     fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-                    textTransform: 'uppercase',
+                    textTransform: 'var(--caps)',
                     color: tab === t ? 'var(--fg)' : 'var(--fg-dim)',
                     transition: 'color 0.2s',
                   }}
@@ -591,7 +591,7 @@ export default function JobsPage() {
                 padding: '8px 16px', borderRadius: 9999,
                 background: '#7c3aed', color: '#fff', border: 'none',
                 fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2,
-                textTransform: 'uppercase', fontWeight: 600, cursor: 'pointer',
+                textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',
               }}
               onMouseEnter={e => {
@@ -617,7 +617,7 @@ export default function JobsPage() {
           height: 'calc(100vh - 58px)', overflowY: 'auto',
           background: 'var(--surface-2)',
         }}>
-          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 3, color: 'var(--fg-dim)', textTransform: 'uppercase', marginBottom: 16 }}>
+          <div className="mc-hide-phone" style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', marginBottom: 16 }}>
             Filter by Role
           </div>
 
@@ -630,7 +630,7 @@ export default function JobsPage() {
               border: 'none', cursor: 'pointer', marginBottom: 4,
               color: !roleFilter ? 'var(--fg)' : 'var(--fg-dim)',
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
-              textTransform: 'uppercase', textAlign: 'left',
+              textTransform: 'var(--caps)', textAlign: 'left',
               transition: 'background 0.2s, color 0.2s',
             }}
           >
@@ -653,7 +653,7 @@ export default function JobsPage() {
                   border: 'none', cursor: 'pointer', marginBottom: 2,
                   color: active ? readable(color) : 'var(--fg-dim)',
                   fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 1.5,
-                  textTransform: 'uppercase', textAlign: 'left',
+                  textTransform: 'var(--caps)', textAlign: 'left',
                   transition: 'background 0.2s, color 0.2s',
                 }}
                 onMouseEnter={e => !active && ((e.currentTarget as HTMLElement).style.color = 'rgba(var(--fg-rgb), 0.7)')}
@@ -721,7 +721,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--violet)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                     }}>
                       Show every role
                     </button>
@@ -737,7 +737,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--jobs-text)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                     }}>
                       Post the first one
                     </button>
@@ -758,7 +758,7 @@ export default function JobsPage() {
               <Briefcase size={40} style={{ color: 'var(--fg-dim)', marginBottom: 20 }} />
               <div style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: 3, marginBottom: 8 }}>MY JOBS</div>
               <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 1, marginBottom: 24 }}>Sign in to view your saved jobs and applications</div>
-              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
+              <Link href="/auth" style={{ padding: '10px 24px', background: 'var(--accent)', color: 'var(--on-accent)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', fontWeight: 600, borderRadius: 20 }}>Sign In</Link>
             </div>
           )}
 
@@ -773,7 +773,7 @@ export default function JobsPage() {
                       padding: '10px 22px', borderRadius: 9999,
                       background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)',
                       color: 'var(--jobs-text)', cursor: 'pointer',
-                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase',
+                      fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)',
                     }}>
                       Post your first position
                     </button>
@@ -786,7 +786,7 @@ export default function JobsPage() {
                   ))}
                 </div>
               )}
-              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2.5, textTransform: 'uppercase', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
+              <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)', fontWeight: 400, margin: '32px 0 12px' }}>
                 Applied to · {myApps.length}
               </h2>
               {myApps.length === 0 ? (
@@ -802,7 +802,7 @@ export default function JobsPage() {
                         <span style={{ color: 'var(--fg-muted)' }}> · {a.jobs!.role}{a.jobs!.projects?.title ? ` · ${a.jobs!.projects.title}` : ''}{a.jobs!.status === 'closed' ? ' · closed' : ''}</span>
                       </Link>
                       <span style={{
-                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 1.5, textTransform: 'uppercase', padding: '4px 10px', borderRadius: 9999,
+                        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', padding: '4px 10px', borderRadius: 9999,
                         color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
                         border: '1px solid rgba(var(--ink-rgb), 0.1)',
                       }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>

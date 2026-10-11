@@ -50,8 +50,8 @@ export default function SpotifyCallback() {
       color: 'var(--fg)',
       fontFamily: 'var(--mono)',
       fontSize: 12,
-      letterSpacing: 1.5,
-      textTransform: 'uppercase'
+      letterSpacing: 'var(--caps-track)',
+      textTransform: 'var(--caps)'
     }}>
       {error ? (
         <div style={{ color: 'var(--accent)', textAlign: 'center' }}>

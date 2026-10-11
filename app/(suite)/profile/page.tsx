@@ -204,7 +204,7 @@ export default function ProfilePage() {
               display: 'flex', justifyContent: 'space-between', alignItems: 'center',
               borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)', paddingBottom: 10, marginBottom: 12
             }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--fg-dim)' }}>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
                 {activeTab === 'scripts' ? 'My Screenplays' : activeTab === 'projects' ? 'My Productions' : 'My Posted Jobs'}
               </span>
               <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', letterSpacing: 1 }}>
@@ -260,7 +260,7 @@ export default function ProfilePage() {
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: p.accent_color || '#e8431a' }} />
                         {p.title}
                       </span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: 1 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--accent)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
                         {p.status || 'production'}
                       </span>
                     </Link>

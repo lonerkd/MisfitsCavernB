@@ -14,7 +14,7 @@ const panelStyle: React.CSSProperties = {
   flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
 };
 const headStyle: React.CSSProperties = { padding: '14px 18px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
-const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
+const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
 const closeStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' };
 const rowStyle: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', color: 'var(--fg)' };
 const metaStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', display: 'flex', gap: 6, marginBottom: 4 };

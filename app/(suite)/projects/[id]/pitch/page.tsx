@@ -477,7 +477,7 @@ function BlockCard({ block, accent, isDragging, isDropTarget, onDragStart, onDra
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <span style={{ color: accent, display: 'flex' }}>{BLOCK_ICON[block.block_type]}</span>
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 2, color: 'var(--fg-dim)', textTransform: 'uppercase' }}>{block.block_type}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{block.block_type}</span>
         </div>
 
         {editing ? (
