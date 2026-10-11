@@ -116,7 +116,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
   if (!loading && scenes.rows.length === 0) {
     return (
       <div className={r.empty}>
-        <p>No scenes yet. Scene headings in the script (INT. / EXT.) become scenes here, each checked for what it needs before the shoot.</p>
+        <p>No scenes yet. Add scene headings to the script.</p>
         {scriptId && <Link href={`/editor?script=${scriptId}`} className={s.btn}><PenLine size={12} /> Open the script</Link>}
       </div>
     );

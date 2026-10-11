@@ -291,7 +291,7 @@ function CategoryEditor({ bd, projectId, isOwner, onClose }: { bd: BreakdownStat
 
   return (
     <Modal title="Categories & rates" onClose={onClose} actions={<button type="button" className={s.btnPrimary} onClick={onClose}>Done</button>}>
-      <p className={s.hint} style={{ marginTop: 0 }}>Rename, recolour and reorder the project’s breakdown categories. A unit cost prices every element in the category that has no cost of its own.</p>
+      <p className={s.hint} style={{ marginTop: 0 }}>A unit cost prices any element in the category that has none of its own.</p>
       <div className={v.edRows}>
         {cats.map((c, i) => (
           <div key={c.id} className={v.edRow}>
