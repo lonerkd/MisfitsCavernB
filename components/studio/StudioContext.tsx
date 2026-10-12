@@ -4,17 +4,19 @@
 // and links, loaded once and kept live, shared by every tab. Replaces the old
 // 90-field untyped context.
 
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
+import { contextFromCastings } from '@/lib/scriptos/context';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
 import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
 import {
   fetchScriptContent,
   studio,
+  useCastings,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -108,9 +110,13 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const syncError = sync?.scriptId === scriptId ? sync.error : null;
   const [parsedScenes, setParsedScenes] = useState<{ scriptId: string; scenes: ScriptLineLite[][] } | null>(null);
   const reloadScenes = scenes.reload; // changes with the script, whose scenes it reloads
+  // The cast people have chosen is what the reader knows; the same one the editor reads with.
+  const castings = useCastings(projectId);
+  const readContextRef = useRef(contextFromCastings(castings.rows));
+  useLayoutEffect(() => { readContextRef.current = contextFromCastings(castings.rows); });
   const syncScenes = useCallback((id: string) => fetchScriptContent(id)
     .then(async (text) => {
-      const parsed = parseScript(text);
+      const parsed = parseScript(text, 'screenplay', undefined, { context: readContextRef.current });
       setParsedScenes({
         scriptId: id,
         scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),

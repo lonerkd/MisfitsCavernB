@@ -158,6 +158,14 @@ PLAIN 0.948 (0.574) · REAL_WORLD 0.922 (0.480) · INTERNATIONAL 0.927 (0.433) �
 
 Every text cell 1.000 (was 0.886–0.959); every PDF cell 0.995+ (was 0.826–0.939); every layout 0.998. **Read this number with suspicion**: the decoder's weights and the generator come from the same mental model of scripts, so a perfect score on the generator proves less than it looks. What does not come from the generator: all 800+ older tests (Fountain, round-trip, validator, analysis, editor and Studio end-to-end) pass with the decoder on; 19 hand-written scripts in `decode.test.ts`; and probes written after seeing the first result, which found and fixed two real weaknesses (a six-word cue name; a speaker who forgot the blank line above their cue). The owner's own scripts (`.private-corpus/`) are still the only independent check.
 
+### B7, and one rule that shapes it
+
+The reader now takes a `ParseContext` (`parseScript(text, format, learned, { context })`): the characters a person has cast, and names a person has rejected. A known name is believed even when it is too long to look like one; a rejected name is never a cue. The editor and the Studio both read with the project's castings, so the scene index is built from one reading.
+
+**Only what a person put there goes in.** The `characters` table is derived from the reader's own output, so feeding it back would let one wrong read confirm itself forever. Castings and rejections are human decisions.
+
+**Places are held back on purpose.** A heading recognised only because the project knows the place would make the editor and the Studio disagree about where scenes begin, and scene identity hangs on that. They need one shared context provider first (every surface that writes the scene index reading with the same knowledge); a test (`context-b7.test.ts`) pins that context never changes where scenes begin.
+
 ## 6. The route
 
 Every rung ships on its own, and ends with named numbers moving. Sizes: S ≈ an
@@ -172,7 +180,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
-| B7 | **Context in (L5)** | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
+| B7 | **Context in (L5)** *(first slice built: the cast and rejected names; places and the previous draft still to do)* | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
 | B8 | **Memory and corrections (L6)** | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
 | B9 | **Reads out with confidence (L7)** | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
 
