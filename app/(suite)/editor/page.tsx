@@ -15,6 +15,8 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
+import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
+import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
@@ -477,45 +479,29 @@ export default function EditorPage() {
     });
   }, [currentScript]);
 
+  // Where the caret goes after an edit: the textarea is controlled, so set it once React has rendered.
+  const placeCaret = (editor: HTMLTextAreaElement, caret: number) => {
+    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+  };
+
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
-
-    const snippets: Record<string, string> = {
-      'scene': '\n\nINT. LOCATION - DAY\n\n',
-      'action': '\n\nAction description here.\n\n',
-      'character': '\n\nCHARACTER NAME\n',
-      'dialogue': '(parenthetical)\nDialogue goes here.\n\n',
-      'transition': '\n\nCUT TO:\n\n',
-      'note': '\n\n[[Note: ]]'
-    };
-
-    const snippet = snippets[type] || '';
-    const start = editor.selectionStart;
-    const end = editor.selectionEnd;
-    const before = content.substring(0, start);
-    const after = content.substring(end);
-
-    setContent(before + snippet + after);
-    setTimeout(() => {
-      editor.focus();
-      editor.setSelectionRange(start + snippet.length - 1, start + snippet.length - 1);
-    }, 0);
+    const edit = insertSnippet(content, editor.selectionStart, editor.selectionEnd, type);
+    setContent(edit.next);
+    placeCaret(editor, edit.caret);
   };
 
   const acceptAutocomplete = (item: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
-    const { start, end } = completionRange;
-    const next = content.substring(0, start) + item + content.substring(end);
-    setContent(next);
+    const edit = acceptCompletion(content, completionRange, item);
+    setContent(edit.next);
     setShowAutocomplete(false);
-    const caret = start + item.length;
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+    placeCaret(editor, edit.caret);
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-
     if (showAutocomplete && autocompleteItems.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
@@ -523,98 +509,35 @@ export default function EditorPage() {
       if (e.key === 'Escape') { e.preventDefault(); setShowAutocomplete(false); return; }
     }
 
-    if (e.key === '(') {
-      const editor = textareaRef.current;
-      if (editor) {
+    const editor = textareaRef.current;
+    if (e.key === '(' && editor) {
+      e.preventDefault();
+      const edit = wrapInParens(content, editor.selectionStart, editor.selectionEnd);
+      setContent(edit.next);
+      placeCaret(editor, edit.caret);
+      return;
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey && editor && editor.selectionStart === editor.selectionEnd) {
+      const edit = enterInHeading(content, editor.selectionStart);
+      if (edit) {
         e.preventDefault();
-        const start = editor.selectionStart;
-        const end = editor.selectionEnd;
-        const sel = content.substring(start, end);
-        const next = content.substring(0, start) + '(' + sel + ')' + content.substring(end);
-        setContent(next);
-        const caret = start + 1 + sel.length;
-        setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+        setContent(edit.next);
+        placeCaret(editor, edit.caret);
         return;
       }
     }
 
-    if (e.key === 'Enter' && !e.shiftKey) {
-      const editor = textareaRef.current;
-      if (editor && editor.selectionStart === editor.selectionEnd) {
-        const cursor = editor.selectionStart;
-        const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
-        const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
-        const line = content.substring(lineStart, lineEnd);
-        if (/^\s*(int|ext|int\.\/ext|i\/e)\b/i.test(line) && line !== line.toUpperCase()) {
-          e.preventDefault();
-          const upper = line.toUpperCase();
-          const col = cursor - lineStart;
-
-          const next = content.substring(0, lineStart) + upper.substring(0, col) + '\n' + upper.substring(col) + content.substring(lineEnd);
-          setContent(next);
-          const caret = cursor + 1;
-          setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
-          return;
-        }
-      }
-    }
     if (e.key === 'Tab') {
       e.preventDefault();
-      const editor = textareaRef.current;
       if (!editor) return;
       const cursor = editor.selectionStart;
-      const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
-      const lineEnd = content.indexOf('\n', cursor) === -1 ? content.length : content.indexOf('\n', cursor);
-      const currentLine = content.substring(lineStart, lineEnd);
-      const trimmed = currentLine.trim();
-
-      if (!trimmed) {
-        insertElement('scene');
-        return;
-      }
-
-      const lineIdx = content.substring(0, lineStart).split('\n').length - 1;
-      const currentType = lines[lineIdx]?.type;
-      const cycleIdx = currentType ? TAB_TYPE_CYCLE.indexOf(currentType) : -1;
-      const base = cycleIdx === -1 ? 0 : cycleIdx;
-      const step = e.shiftKey ? -1 : 1;
-      const nextType = TAB_TYPE_CYCLE[(base + step + TAB_TYPE_CYCLE.length) % TAB_TYPE_CYCLE.length];
-      const transformed = transformLineForType(currentLine, nextType);
-      const next = content.substring(0, lineStart) + transformed + content.substring(lineEnd);
-      setContent(next);
-      const caret = lineStart + transformed.length;
-      setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+      const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
+      const edit = cycleLine(content, cursor, lines[lineIdx]?.type, e.shiftKey, TAB_TYPE_CYCLE, transformLineForType);
+      if (edit === 'empty') { insertElement('scene'); return; }
+      setContent(edit.next);
+      placeCaret(editor, edit.caret);
     }
-  };
-
-  const caretCoords = (ta: HTMLTextAreaElement, pos: number): { top: number; left: number } => {
-    const rect = ta.getBoundingClientRect();
-    const style = window.getComputedStyle(ta);
-    const mirror = document.createElement('div');
-    const props = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing', 'textTransform', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft', 'borderTopWidth', 'borderLeftWidth', 'boxSizing'] as const;
-    props.forEach(p => { (mirror.style as any)[p] = style[p as any]; });
-    mirror.style.position = 'absolute';
-    mirror.style.visibility = 'hidden';
-    mirror.style.whiteSpace = 'pre-wrap';
-    mirror.style.wordWrap = 'break-word';
-    mirror.style.width = `${ta.clientWidth}px`;
-    mirror.textContent = ta.value.substring(0, pos);
-    const marker = document.createElement('span');
-    marker.textContent = '​';
-    mirror.appendChild(marker);
-    document.body.appendChild(mirror);
-    const top = rect.top - ta.scrollTop + marker.offsetTop + parseFloat(style.lineHeight || '18');
-    const left = rect.left + marker.offsetLeft;
-    document.body.removeChild(mirror);
-    return { top, left };
-  };
-
-  const openAutocomplete = (items: string[], start: number, end: number, ta: HTMLTextAreaElement) => {
-    setAutocompleteItems(items);
-    setAutocompleteIdx(0);
-    setCompletionRange({ start, end });
-    setCursorPos(caretCoords(ta, end));
-    setShowAutocomplete(true);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -628,33 +551,17 @@ export default function EditorPage() {
     broadcastCursor(e.target.selectionStart);
 
     const ta = e.target;
-    const cursor = ta.selectionStart;
-    const lineStart = val.lastIndexOf('\n', cursor - 1) + 1;
-    const currentLine = val.substring(lineStart, cursor);
-    const trimmed = currentLine.trim();
-
-    if (currentLine.match(/^(INT\.|EXT\.)\s/)) {
-
-      const afterPrefix = currentLine.replace(/^(INT\.|EXT\.)\s*/, '');
-      const typed = afterPrefix.trim().toUpperCase();
-      const locations = [...new Set(lines.filter(l => l.type === 'slug').map(l => l.text.split('-')[0].replace(/^(INT\.|EXT\.)\s/, '').trim()).filter(Boolean))];
-      const matches = locations.filter(l => l.toUpperCase().startsWith(typed) && l.toUpperCase() !== typed);
-      if (matches.length > 0) {
-        openAutocomplete(matches, lineStart + (currentLine.length - afterPrefix.length), cursor, ta);
-      } else {
-        setShowAutocomplete(false);
-      }
-    } else if (trimmed.length >= 2 && trimmed === trimmed.toUpperCase() && !trimmed.includes('.') && !trimmed.includes(':')) {
-
-      const matchingChars = chars.filter(c => c.toUpperCase().startsWith(trimmed) && c.toUpperCase() !== trimmed);
-      const matchingTrans = TRANSITIONS.filter(t => t.startsWith(trimmed) && t !== trimmed);
-      const items = [...matchingChars, ...matchingTrans];
-      if (items.length > 0) {
-        const tokenStart = lineStart + (currentLine.length - currentLine.trimStart().length);
-        openAutocomplete(items, tokenStart, cursor, ta);
-      } else {
-        setShowAutocomplete(false);
-      }
+    const found = suggestionsAt(val, ta.selectionStart, {
+      slugs: lines.filter(l => l.type === 'slug').map(l => l.text),
+      characters: chars,
+      transitions: TRANSITIONS,
+    });
+    if (found) {
+      setAutocompleteItems(found.items);
+      setAutocompleteIdx(0);
+      setCompletionRange({ start: found.start, end: found.end });
+      setCursorPos(caretCoords(ta, found.end));
+      setShowAutocomplete(true);
     } else {
       setShowAutocomplete(false);
     }
