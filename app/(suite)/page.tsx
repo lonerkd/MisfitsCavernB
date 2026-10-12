@@ -852,7 +852,7 @@ export default function Home() {
             <Button href="/auth" variant="solid" size="lg">
               Start Writing
             </Button>
-            <Button href="mailto:peterolowude@icloud.com" variant="ghost" size="lg" external>
+            <Button href="https://instagram.com/lonerkid" variant="ghost" size="lg" external>
               Contact Crew
             </Button>
           </div>

@@ -19,8 +19,9 @@ Report privately, either way you prefer:
 1. **GitHub Security Advisories** — the repository's *Security* tab →
    *Report a vulnerability* (preferred: keeps the report and its fix in one
    place, with a disclosure timeline).
-2. **Email** — `peterolowude@icloud.com` (the contact published at
-   `/privacy`), with the subject line `SECURITY:`.
+2. **Instagram** — message [@lonerkid](https://instagram.com/lonerkid) on Instagram or [@lonerfss](https://x.com/lonerfss) on X (the contact
+   published at `/privacy`) saying you have a security report, and ask for a private
+   channel. Do not put details in the first message.
 
 Include, when you can: what happened, what an attacker could do, the steps to
 reproduce, and any relevant URLs or screenshots. We will acknowledge receipt

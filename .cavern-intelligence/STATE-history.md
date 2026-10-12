@@ -571,7 +571,7 @@ No migration.
 
 - **`/privacy` and `/terms`**, public, for Peter Olowude (an individual, not
   yet a registered business) in Alberta, Canada; contact
-  peterolowude@icloud.com — all in `lib/legal.ts` (change there, and move
+  the owner's Instagram, @lonerkid — all in `lib/legal.ts` (change there, and move
   `effective` forward whenever the wording changes).
 - Written to match what the app does: what's collected (account, profile,
   work, preferences, error reports kept 30 days, cookieless Vercel
@@ -966,7 +966,7 @@ Migration `20260929000000_lounge.sql` — applied to production; PR #84 merged.
 
 ## Earlier — A demo world to play in
 
-`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into kingsavyt@gmail.com in production (its own projects untouched); PR #83 merged:
+`scripts/demo/` seeds an account with the whole pipeline (`npm run demo:sql -- <email> [tz] > demo.sql`, then run it as the database owner; `--portable` leaves the email out and reads `set demo.owner = '…'`). Seeded into the owner's account in production (its own projects untouched); PR #83 merged:
 
 - **Salt Lines** (short, an idea: logline, two answers, two references) ·
   **The Quiet Hours** (feature, development done: draft, characters, beats,

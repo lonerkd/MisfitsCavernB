@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LegalPage, Mail } from '@/components/legal/LegalPage';
+import { LegalPage, Contact } from '@/components/legal/LegalPage';
 import { LEGAL } from '@/lib/legal/legal';
 
 export const metadata: Metadata = {
@@ -106,7 +106,7 @@ export default function PrivacyPage() {
       </ul>
       <p>
         You can also ask us for access to, or correction of, the personal information we hold about you by
-        writing to <Mail />. We will answer within 30 days. If you are not satisfied with our answer, you can
+        writing to <Contact />. We will answer within 30 days. If you are not satisfied with our answer, you can
         contact the Office of the Privacy Commissioner of Canada.
       </p>
 
@@ -129,7 +129,7 @@ export default function PrivacyPage() {
 
       <h2>Contact</h2>
       <p>
-        Questions or requests about your privacy: {LEGAL.operator}, <Mail />. See also our{' '}
+        Questions or requests about your privacy: {LEGAL.operator}, <Contact />. See also our{' '}
         <Link href="/terms">Terms of Service</Link>.
       </p>
     </LegalPage>
