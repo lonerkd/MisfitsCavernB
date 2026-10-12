@@ -144,7 +144,7 @@ coverage rules.
   the title is the commit a squash-merge leaves on main (the PR template
   says so too).
 - Coverage: `npm run test:coverage`, scoped to `lib/`, with thresholds in
-  `vitest.config.ts` (floors 50 / 50 / 52 / 50, measured 2026-10-10); the `checks` job runs it and uploads the report — CI enforces both rules the done-state asks for.
+  `vitest.config.ts` (floors 56 / 55 / 57 / 56, measured 58 / 58 / 59 / 58 on 2026-10-12); the `checks` job runs it and uploads the report — CI enforces both rules the done-state asks for.
 - Full-history secret scan: `secret-scan.yml` (gitleaks over every
   reachable commit; weekly + main + PRs). Three historical findings, all
   reviewed: two are the R2/S3-compatible docs phrase,
