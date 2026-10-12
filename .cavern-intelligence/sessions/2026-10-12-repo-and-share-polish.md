@@ -5,7 +5,7 @@
 - `CONTRIBUTING.md` (the rules that matter, the change cycle, how to report) and GitHub issue templates (bug, idea; security goes to the private advisory form).
 - `.env.example` now lists every variable the app reads (Web Push, the Spotify redirect rule), each marked required or optional.
 - `package.json` metadata (description, repository, homepage, `UNLICENSED`).
-- Share previews: Open Graph and Twitter metadata, and a generated share card (`app/opengraph-image.tsx`, the R13 mark on night ink); `/opengraph-image` is public in `proxy.ts`.
+- Share previews: Open Graph and Twitter metadata, and a generated share card (`app/(suite)/opengraph-image.tsx`, landing only so share pages keep their own, the R13 mark on night ink); `/opengraph-image*` is public in `proxy.ts`.
 
 **Verified:** typecheck, eslint, a production build; the card served as a 1200×630 PNG and looked right; the tags appear in the landing's HTML. **Not verified:** CI; how a real messenger renders the card (needs the deployed URL).
 

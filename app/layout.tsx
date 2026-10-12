@@ -67,13 +67,6 @@ export const metadata: Metadata = {
   description: 'The production suite for independent filmmakers — script, pre-production, the shoot, post and release in one connected system.',
   applicationName: 'The Cavern',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://misfits-cavern-b.vercel.app'),
-  openGraph: {
-    type: 'website',
-    siteName: 'The Cavern',
-    title: 'The Cavern — by Misfits Cavern',
-    description: 'Script to screen for independent filmmakers, in one connected system.',
-  },
-  twitter: { card: 'summary_large_image', title: 'The Cavern — by Misfits Cavern', description: 'Script to screen for independent filmmakers, in one connected system.' },
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
