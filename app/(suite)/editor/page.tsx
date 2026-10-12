@@ -66,9 +66,11 @@ import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
+import { cueCard } from '@/lib/film/cue';
+import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
-import { useShootDays, type LineCutNote } from '@/lib/studio';
+import { useCharacters, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -1100,6 +1102,21 @@ export default function EditorPage() {
   // When in the story each scene is, and its shoot day: the left margin.
   const shootDays = useShootDays(currentScript?.project_id ?? null);
   const datedDays = useMemo(() => new Set(shootDays.rows.filter((d) => d.shoot_date).map((d) => d.day_number)), [shootDays.rows]);
+  // The character whose cue the caret is on: who plays them, their look in this scene.
+  const projectCharacters = useCharacters(currentScript?.project_id ?? null);
+  const sceneStates = useSceneStates(currentScript?.project_id ?? null);
+  const cue = useMemo(() => {
+    const l = lines[cursorLine];
+    if (!l || l.type !== 'character') return { card: null, line: cursorLine };
+    const name = cueName(l.text);
+    return {
+      line: cursorLine,
+      card: cueCard({
+        cue: l.text, sceneId: sceneIndex.rows[currentSceneIdx]?.id ?? null, actor: castings[name]?.username,
+        stats: charStats.find((cs) => cs.name.toUpperCase() === name), characters: projectCharacters.rows, states: sceneStates.rows,
+      }),
+    };
+  }, [lines, cursorLine, sceneIndex.rows, currentSceneIdx, castings, charStats, projectCharacters.rows, sceneStates.rows]);
   const gutter = useMemo(() => sceneGutter(parsedScenes, sceneIndex.rows, datedDays), [parsedScenes, sceneIndex.rows, datedDays]);
   const [cutNoteLine, setCutNoteLine] = useState<number | null>(null);
   const { setResolved: setCutNoteResolved } = lineCutNotes;
@@ -1194,7 +1211,7 @@ export default function EditorPage() {
   const scriptProjectId = currentScript?.project_id ?? null;
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
-  const editorCtx: EditorCtx = { tools, cutNotes, gutter, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>

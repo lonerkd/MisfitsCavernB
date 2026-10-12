@@ -53,6 +53,7 @@ import { TagBar } from './breakdown/TagBar';
 import { readable } from '@/lib/util/color';
 import { CutNoteMarkers } from './CutNoteMarkers';
 import { SceneGutter } from './SceneGutter';
+import { CueCardOverlay } from './CueCardOverlay';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
 const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
@@ -277,6 +278,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 }}
               />
               <SceneGutter items={ctx.gutter} highlightRef={highlightRef} textareaRef={textareaRef} content={content} />
+              <CueCardOverlay card={ctx.cue.card} line={ctx.cue.line} highlightRef={highlightRef} textareaRef={textareaRef} content={content} />
               <CutNoteMarkers
                 byLine={ctx.cutNotes.byLine} highlightRef={highlightRef} textareaRef={textareaRef} content={content}
                 openLine={ctx.cutNotes.openLine} setOpenLine={ctx.cutNotes.setOpenLine}
