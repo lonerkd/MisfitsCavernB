@@ -278,7 +278,7 @@ export class ScriptParser {
           ? this.analyzeLine(trim, context)
           : this.analyzeNonScreenplayLine(trim, context);
         const decided = decoded?.states[i];
-        if (decided) this.applyDecision(analysis, decided, decoded!.confidence[i], trim);
+        if (decided) this.applyDecision(analysis, decided, decoded!.confidence[i], trim, decoded!.alternatives[i]);
       }
 
       if (analysis.type === 'slug') {
@@ -511,12 +511,20 @@ export class ScriptParser {
   }
 
   /** The decoder's label replaces the line's own; the rest of what the line was found to be stays. */
-  private applyDecision(analysis: { type: LineType; confidence: number; reasoning: string[]; meta?: any }, decided: State, confidence: number, trim: string): void {
+  private applyDecision(analysis: { type: LineType; confidence: number; reasoning: string[]; meta?: any }, decided: State, confidence: number, trim: string, alternative: State | null): void {
     analysis.type = decided;
     analysis.confidence = confidence;
     analysis.reasoning = [...analysis.reasoning, `Decoded as ${decided}`];
-    if (decided === 'character') analysis.meta = { ...analysis.meta, characterName: analysis.meta?.characterName || this.clean(trim) };
-    else if (analysis.meta) analysis.meta = { ...analysis.meta, characterName: undefined };
+    if (alternative) analysis.meta = { ...analysis.meta, alternative };
+    if (decided === 'character') {
+      const name = analysis.meta?.characterName || this.clean(trim);
+      analysis.meta = { ...analysis.meta, characterName: name };
+      // A name seen speaking once is a cue by the rules but a guess by the evidence: a person should look.
+      if ((this.characterStats.get(this.clean(name)) ?? 0) <= 1 && !this.learnedNames.has(this.clean(name))) {
+        analysis.confidence = Math.min(analysis.confidence, 60);
+        analysis.reasoning = [...analysis.reasoning, 'Seen speaking only once'];
+      }
+    } else if (analysis.meta) analysis.meta = { ...analysis.meta, characterName: undefined };
   }
 
   /** The Fountain title page: the leading block of known `Key:` lines and the indented lines under them. */

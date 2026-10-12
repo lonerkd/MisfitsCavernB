@@ -68,6 +68,8 @@ import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
+import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
+import { doubtfulReads } from '@/lib/scriptos/review';
 import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
@@ -131,6 +133,7 @@ export default function EditorPage() {
       lintIssues: validateScript(result.lines, parseSource, result.scenes, result.characters),
     };
   }, [parseSource, readContext]);
+  const doubts = useMemo(() => doubtfulReads(lines), [lines]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -1149,6 +1152,7 @@ export default function EditorPage() {
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
+                  readingPanel={<DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />}
                   breakdownPanel={
                     <BreakdownPanel
                       bd={bd}

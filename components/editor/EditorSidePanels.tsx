@@ -58,6 +58,7 @@ export interface EditorRightPanelsProps {
   /** The current scene's references panel (rendered by the page, which owns the scene index). */
   referencesPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
+  readingPanel?: React.ReactNode;
 }
 
 function SectionHeader({
@@ -104,7 +105,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -231,6 +232,7 @@ export function EditorRightPanels({
 
                 {rightPanel === 'insights' && (
                   <>
+                    {readingPanel}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader icon={ClipboardList} label="Script stats" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
                       {breakdownOpen && (
