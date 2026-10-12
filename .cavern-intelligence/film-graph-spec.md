@@ -1,7 +1,7 @@
 # The film graph — one connected core
 
 **Status: approved by the owner 2026-10-10. Step 1 (days and places → daylight)
-is built — migration `20261010010000`, `lib/film/`, ADR 0005. Step 2 (people in scenes): the schema is built — migration `20261011010000` (`characters`, `scene_characters`, casting by id); sides are built too (`lib/film/sides.ts`, printed from the call sheet); the rest of the graph's people links (`call_sheet_calls.character_id`, the app reading `scene_characters`) and step 3 are next.** Not yet in step 1, deliberately: `scenes.day_order`
+is built — migration `20261010010000`, `lib/film/`, ADR 0005. Step 2 (people in scenes): the schema is built — migration `20261011010000` (`characters`, `scene_characters`, casting by id); sides are built too (`lib/film/sides.ts`, printed from the call sheet); the rest of the graph's people links (`call_sheet_calls.character_id`, the app reading `scene_characters`) are next; **step 3 (story time → continuity) is built** — migration `20261012010000` (`scenes.story_day/story_time/story_confirmed`, `scene_states`), Production › Continuity.** Not yet in step 1, deliberately: `scenes.day_order`
 (nothing orders scenes within a day yet) and `shoot_day_id` on timesheets and
 expenses (they arrive with money, step 5).
 

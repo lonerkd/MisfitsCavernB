@@ -18,6 +18,7 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
 - **Apply migration `20261010010000_film_graph_days_and_places.sql` to production** (paste into the SQL editor) once its PR is merged: the film graph's first step. The app works without it only until the deploy — the new code reads `shoot_days`. Then run *Production schema drift*.
+- **Apply migration `20261012010000_film_graph_story_time.sql` to production** (paste into the SQL editor) once its PR is merged — the film graph's step 3 (story time, continuity). Production lacks the columns until then, so Production › Continuity errors. Then run *Production schema drift*.
 - **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
@@ -57,6 +58,9 @@ through dev tools — `tailwindcss` → `chokidar`, and `eslint-config-next` →
 fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
 changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
+
+### 3.18 Film graph — what's left after steps 1–3 — L (owner: the editor gets cut over)
+Done: days and places (1), characters and sides (2), story time and continuity (3). Left, in order: **(a)** the app reads `scene_characters` / `call_sheet_calls.character_id` instead of `cast_list` / `character_name` text (S–M); **(b)** continuity extras — a photo and wardrobe/prop elements on a look, a wardrobe/make-up sheet (PDF), shoot order beside story order, the look-change warning on the call sheet (M); **(c)** step 4 entities and links, the card, mentions (L); **(d)** thin the editor page (restructure phase 7) then **cut the editor over to the graph** — it reads and writes cast, story time, location and mentions as rows, with the text copies kept in step until `e2e` for co-writing and offline is green (L, owner direction 2026-10-11); **(e)** step 5 money, step 6 my day, step 7 drop the text columns. Done when nothing reads `scenes.cast_list`, `scenes.location` or `character_name` and the old columns are gone.
 
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,

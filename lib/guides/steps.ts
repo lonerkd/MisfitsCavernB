@@ -43,7 +43,7 @@ export interface StepDef {
 
 const editor: Place = { kind: 'path', path: '/editor' };
 const studio = (tab: 'library' | 'scenes' | 'post' | 'promos' | 'pitch' | 'share'): Place => ({ kind: 'studio', tab });
-const view = (v: 'story' | 'breakdown' | 'readiness' | 'locations' | 'money' | 'paperwork' | 'schedule' | 'onset' | 'crew'): Place =>
+const view = (v: 'story' | 'breakdown' | 'readiness' | 'locations' | 'money' | 'paperwork' | 'schedule' | 'onset' | 'crew' | 'continuity'): Place =>
   ({ kind: 'studio', tab: 'production', view: v });
 const hub = (anchor?: 'logline' | 'production' | 'brief' | 'guide'): Place => ({ kind: 'hub', anchor });
 

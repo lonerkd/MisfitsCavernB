@@ -96,6 +96,8 @@ pitch boards and portfolios.
 - **Cast & crew**: crew, presence, recruiting, casting with each character's
   scene footprint.
 
+- **Continuity** (`ContinuityView`, `lib/film/story.ts`, `continuity.ts`): the film in story order. Story day and time are read from the headings (NEXT MORNING, N DAYS LATER, DAY n, a night then a morning; flashbacks and dreams are off the line) and offered with one button — never forced; a person's edit is confirmed and kept. Per scene, each character's look (`scene_states`, saved on blur); a look that changes inside one story day is flagged.
+
 ## 5b. On set
 
 - **Studio › Production › On set** (`production/OnSetView.tsx`, logic in

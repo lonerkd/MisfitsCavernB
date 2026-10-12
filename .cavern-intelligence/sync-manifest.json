@@ -1,16 +1,16 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-11T23:51:37.906Z",
+  "last_synchronized": "2026-10-12T00:58:45.641Z",
   "stats": {
-    "totalFiles": 674,
-    "totalSize": 4588135,
+    "totalFiles": 686,
+    "totalSize": 4704938,
     "byExtension": {
-      ".json": 13,
+      ".json": 14,
       ".md": 55,
-      ".tsx": 185,
-      ".ts": 365,
-      ".js": 7,
-      ".sql": 49
+      ".tsx": 186,
+      ".ts": 371,
+      ".js": 10,
+      ".sql": 50
     }
   },
   "modules": {
@@ -261,6 +261,7 @@
         "components/studio/post/PaperEdit.tsx",
         "components/studio/production/BreakdownView.tsx",
         "components/studio/production/CallSheetsPanel.tsx",
+        "components/studio/production/ContinuityView.tsx",
         "components/studio/production/CrewView.tsx",
         "components/studio/production/LocationsView.tsx",
         "components/studio/production/MoneyView.tsx",
@@ -352,7 +353,8 @@
         "supabase/migrations/20261007020000_append_to_script.sql",
         "supabase/migrations/20261008010000_web_push.sql",
         "supabase/migrations/20261010010000_film_graph_days_and_places.sql",
-        "supabase/migrations/20261011010000_film_graph_people_in_scenes.sql"
+        "supabase/migrations/20261011010000_film_graph_people_in_scenes.sql",
+        "supabase/migrations/20261012010000_film_graph_story_time.sql"
       ]
     }
   },
@@ -575,7 +577,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-11T23:42:05.536Z"
+      "last_modified": "2026-10-11T23:51:37.914Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -630,7 +632,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-11T23:42:05.535Z"
+      "last_modified": "2026-10-11T23:51:37.913Z"
     },
     {
       "path": "app/(public)/layout.tsx",
@@ -894,8 +896,8 @@
     },
     {
       "path": "app/(suite)/studio/page.tsx",
-      "size": 11990,
-      "last_modified": "2026-10-11T21:04:32.217Z"
+      "size": 11781,
+      "last_modified": "2026-10-12T00:52:46.714Z"
     },
     {
       "path": "app/(suite)/today/page.tsx",
@@ -965,7 +967,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-11T23:42:05.535Z"
+      "last_modified": "2026-10-11T23:51:37.914Z"
     },
     {
       "path": "components/availability/AwayEditor.tsx",
@@ -1393,6 +1395,11 @@
       "last_modified": "2026-10-11T23:49:54.726Z"
     },
     {
+      "path": "components/studio/production/ContinuityView.tsx",
+      "size": 7093,
+      "last_modified": "2026-10-12T00:51:59.574Z"
+    },
+    {
       "path": "components/studio/production/CrewView.tsx",
       "size": 3563,
       "last_modified": "2026-10-10T09:15:18.059Z"
@@ -1484,8 +1491,8 @@
     },
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
-      "size": 6251,
-      "last_modified": "2026-10-11T16:25:01.943Z"
+      "size": 6438,
+      "last_modified": "2026-10-12T00:52:09.579Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1578,6 +1585,26 @@
       "last_modified": "2026-10-11T20:18:33.147Z"
     },
     {
+      "path": "coverage/block-navigation.js",
+      "size": 2336,
+      "last_modified": "2026-10-12T00:18:10.416Z"
+    },
+    {
+      "path": "coverage/coverage-summary.json",
+      "size": 49195,
+      "last_modified": "2026-10-12T00:18:10.413Z"
+    },
+    {
+      "path": "coverage/prettify.js",
+      "size": 26708,
+      "last_modified": "2026-10-12T00:18:10.421Z"
+    },
+    {
+      "path": "coverage/sorter.js",
+      "size": 5744,
+      "last_modified": "2026-10-12T00:18:10.419Z"
+    },
+    {
       "path": "e2e/accessibility.spec.ts",
       "size": 6772,
       "last_modified": "2026-10-10T08:35:17.677Z"
@@ -1626,6 +1653,11 @@
       "path": "e2e/community.spec.ts",
       "size": 6142,
       "last_modified": "2026-10-10T08:35:17.683Z"
+    },
+    {
+      "path": "e2e/continuity.spec.ts",
+      "size": 4997,
+      "last_modified": "2026-10-12T00:53:49.911Z"
     },
     {
       "path": "e2e/credits.spec.ts",
@@ -1978,6 +2010,16 @@
       "last_modified": "2026-10-10T08:35:17.799Z"
     },
     {
+      "path": "lib/film/continuity.test.ts",
+      "size": 2330,
+      "last_modified": "2026-10-12T00:51:29.201Z"
+    },
+    {
+      "path": "lib/film/continuity.ts",
+      "size": 2950,
+      "last_modified": "2026-10-12T00:51:23.531Z"
+    },
+    {
       "path": "lib/film/coordinates.test.ts",
       "size": 1806,
       "last_modified": "2026-10-11T05:04:37.001Z"
@@ -2033,6 +2075,16 @@
       "last_modified": "2026-10-11T14:20:27.091Z"
     },
     {
+      "path": "lib/film/story.test.ts",
+      "size": 3788,
+      "last_modified": "2026-10-12T00:50:10.842Z"
+    },
+    {
+      "path": "lib/film/story.ts",
+      "size": 4867,
+      "last_modified": "2026-10-12T00:50:01.012Z"
+    },
+    {
       "path": "lib/film/studio.test.ts",
       "size": 4161,
       "last_modified": "2026-10-11T05:04:37.004Z"
@@ -2079,8 +2131,8 @@
     },
     {
       "path": "lib/guides/steps.ts",
-      "size": 43966,
-      "last_modified": "2026-10-10T08:35:17.801Z"
+      "size": 43981,
+      "last_modified": "2026-10-12T00:52:03.912Z"
     },
     {
       "path": "lib/guides/workflows.ts",
@@ -2344,8 +2396,8 @@
     },
     {
       "path": "lib/os/progress.ts",
-      "size": 21533,
-      "last_modified": "2026-10-10T08:35:17.821Z"
+      "size": 21179,
+      "last_modified": "2026-10-12T00:52:09.751Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -2674,8 +2726,8 @@
     },
     {
       "path": "lib/studio/api.ts",
-      "size": 46713,
-      "last_modified": "2026-10-11T05:04:37.005Z"
+      "size": 48698,
+      "last_modified": "2026-10-12T00:50:43.757Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -2719,8 +2771,8 @@
     },
     {
       "path": "lib/studio/index.ts",
-      "size": 15793,
-      "last_modified": "2026-10-11T05:04:37.006Z"
+      "size": 15992,
+      "last_modified": "2026-10-12T00:50:46.778Z"
     },
     {
       "path": "lib/studio/live.test.tsx",
@@ -2914,8 +2966,8 @@
     },
     {
       "path": "lib/supabase/database.types.ts",
-      "size": 127850,
-      "last_modified": "2026-10-11T22:26:28.383Z"
+      "size": 125388,
+      "last_modified": "2026-10-12T00:47:57.034Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -3433,6 +3485,11 @@
       "last_modified": "2026-10-11T22:26:28.383Z"
     },
     {
+      "path": "supabase/migrations/20261012010000_film_graph_story_time.sql",
+      "size": 2370,
+      "last_modified": "2026-10-12T00:46:32.951Z"
+    },
+    {
       "path": "tailwind.config.js",
       "size": 1855,
       "last_modified": "2026-10-11T20:18:33.148Z"
@@ -3536,6 +3593,11 @@
       "path": "tests/integration/film-graph-people.test.ts",
       "size": 4580,
       "last_modified": "2026-10-11T22:26:28.386Z"
+    },
+    {
+      "path": "tests/integration/film-graph-story.test.ts",
+      "size": 5064,
+      "last_modified": "2026-10-12T00:46:40.009Z"
     },
     {
       "path": "tests/integration/formats.test.ts",
