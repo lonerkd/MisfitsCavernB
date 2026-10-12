@@ -1,15 +1,15 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-11T23:51:37.906Z",
+  "last_synchronized": "2026-10-12T01:05:07.065Z",
   "stats": {
-    "totalFiles": 674,
-    "totalSize": 4588135,
+    "totalFiles": 678,
+    "totalSize": 4672118,
     "byExtension": {
-      ".json": 13,
+      ".json": 14,
       ".md": 55,
       ".tsx": 185,
       ".ts": 365,
-      ".js": 7,
+      ".js": 10,
       ".sql": 49
     }
   },
@@ -575,7 +575,7 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-11T23:42:05.536Z"
+      "last_modified": "2026-10-12T00:58:45.646Z"
     },
     {
       "path": ".github/pull_request_template.md",
@@ -630,7 +630,7 @@
     {
       "path": "AGENTS.md",
       "size": 6196,
-      "last_modified": "2026-10-11T23:42:05.535Z"
+      "last_modified": "2026-10-12T00:58:45.644Z"
     },
     {
       "path": "app/(public)/layout.tsx",
@@ -895,7 +895,7 @@
     {
       "path": "app/(suite)/studio/page.tsx",
       "size": 11990,
-      "last_modified": "2026-10-11T21:04:32.217Z"
+      "last_modified": "2026-10-12T01:02:46.318Z"
     },
     {
       "path": "app/(suite)/today/page.tsx",
@@ -965,7 +965,7 @@
     {
       "path": "CLAUDE.md",
       "size": 751,
-      "last_modified": "2026-10-11T23:42:05.535Z"
+      "last_modified": "2026-10-12T00:58:45.646Z"
     },
     {
       "path": "components/availability/AwayEditor.tsx",
@@ -1485,7 +1485,7 @@
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
       "size": 6251,
-      "last_modified": "2026-10-11T16:25:01.943Z"
+      "last_modified": "2026-10-12T01:02:46.319Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1576,6 +1576,26 @@
       "path": "components/ui/Toast.tsx",
       "size": 2929,
       "last_modified": "2026-10-11T20:18:33.147Z"
+    },
+    {
+      "path": "coverage/block-navigation.js",
+      "size": 2336,
+      "last_modified": "2026-10-12T00:18:10.416Z"
+    },
+    {
+      "path": "coverage/coverage-summary.json",
+      "size": 49195,
+      "last_modified": "2026-10-12T00:18:10.413Z"
+    },
+    {
+      "path": "coverage/prettify.js",
+      "size": 26708,
+      "last_modified": "2026-10-12T00:18:10.421Z"
+    },
+    {
+      "path": "coverage/sorter.js",
+      "size": 5744,
+      "last_modified": "2026-10-12T00:18:10.419Z"
     },
     {
       "path": "e2e/accessibility.spec.ts",
@@ -2080,7 +2100,7 @@
     {
       "path": "lib/guides/steps.ts",
       "size": 43966,
-      "last_modified": "2026-10-10T08:35:17.801Z"
+      "last_modified": "2026-10-12T01:02:46.320Z"
     },
     {
       "path": "lib/guides/workflows.ts",
@@ -2345,7 +2365,7 @@
     {
       "path": "lib/os/progress.ts",
       "size": 21533,
-      "last_modified": "2026-10-10T08:35:17.821Z"
+      "last_modified": "2026-10-12T01:02:46.322Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -2675,7 +2695,7 @@
     {
       "path": "lib/studio/api.ts",
       "size": 46713,
-      "last_modified": "2026-10-11T05:04:37.005Z"
+      "last_modified": "2026-10-12T01:02:46.323Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -2720,7 +2740,7 @@
     {
       "path": "lib/studio/index.ts",
       "size": 15793,
-      "last_modified": "2026-10-11T05:04:37.006Z"
+      "last_modified": "2026-10-12T01:02:46.324Z"
     },
     {
       "path": "lib/studio/live.test.tsx",
@@ -2915,7 +2935,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 127850,
-      "last_modified": "2026-10-11T22:26:28.383Z"
+      "last_modified": "2026-10-12T01:02:46.326Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
