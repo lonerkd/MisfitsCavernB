@@ -1,14 +1,14 @@
 {
   "project": "The Cavern",
-  "last_synchronized": "2026-10-12T02:15:02.957Z",
+  "last_synchronized": "2026-10-12T01:18:08.318Z",
   "stats": {
-    "totalFiles": 690,
-    "totalSize": 4726467,
+    "totalFiles": 686,
+    "totalSize": 4711037,
     "byExtension": {
       ".json": 14,
       ".md": 55,
-      ".tsx": 187,
-      ".ts": 374,
+      ".tsx": 186,
+      ".ts": 371,
       ".js": 10,
       ".sql": 50
     }
@@ -199,7 +199,6 @@
         "components/editor/editorPageParts.tsx",
         "components/editor/EditorSidePanels.tsx",
         "components/editor/PreviewView.tsx",
-        "components/editor/SceneGutter.tsx",
         "components/editor/SceneReferencesPanel.tsx",
         "components/editor/ShareScriptButton.tsx",
         "components/editor/TimingPanel.tsx",
@@ -363,7 +362,7 @@
     {
       "path": ".claude/settings.json",
       "size": 6731,
-      "last_modified": "2026-10-12T01:53:08.032Z"
+      "last_modified": "2026-10-10T08:35:17.481Z"
     },
     {
       "path": ".claude/settings.local.json",
@@ -578,12 +577,12 @@
     {
       "path": ".github/copilot-instructions.md",
       "size": 691,
-      "last_modified": "2026-10-12T01:40:27.291Z"
+      "last_modified": "2026-10-12T01:05:07.074Z"
     },
     {
       "path": ".github/pull_request_template.md",
       "size": 792,
-      "last_modified": "2026-10-12T01:53:08.033Z"
+      "last_modified": "2026-10-10T08:35:17.504Z"
     },
     {
       "path": ".review-20260928-030156.md",
@@ -632,8 +631,8 @@
     },
     {
       "path": "AGENTS.md",
-      "size": 6201,
-      "last_modified": "2026-10-12T01:53:08.035Z"
+      "size": 6196,
+      "last_modified": "2026-10-12T01:05:07.073Z"
     },
     {
       "path": "app/(public)/layout.tsx",
@@ -757,8 +756,8 @@
     },
     {
       "path": "app/(suite)/editor/page.tsx",
-      "size": 85691,
-      "last_modified": "2026-10-12T02:07:31.324Z"
+      "size": 85095,
+      "last_modified": "2026-10-11T20:18:33.024Z"
     },
     {
       "path": "app/(suite)/jobs/loading.tsx",
@@ -898,7 +897,7 @@
     {
       "path": "app/(suite)/studio/page.tsx",
       "size": 12004,
-      "last_modified": "2026-10-12T01:25:57.064Z"
+      "last_modified": "2026-10-12T01:13:03.213Z"
     },
     {
       "path": "app/(suite)/today/page.tsx",
@@ -967,8 +966,8 @@
     },
     {
       "path": "CLAUDE.md",
-      "size": 768,
-      "last_modified": "2026-10-12T01:53:08.036Z"
+      "size": 751,
+      "last_modified": "2026-10-12T01:05:07.073Z"
     },
     {
       "path": "components/availability/AwayEditor.tsx",
@@ -1047,8 +1046,8 @@
     },
     {
       "path": "components/editor/editorCtx.ts",
-      "size": 2207,
-      "last_modified": "2026-10-12T02:02:15.148Z"
+      "size": 2034,
+      "last_modified": "2026-10-10T08:35:17.623Z"
     },
     {
       "path": "components/editor/EditorErrorBoundary.tsx",
@@ -1077,18 +1076,13 @@
     },
     {
       "path": "components/editor/EditorSidePanels.tsx",
-      "size": 33408,
-      "last_modified": "2026-10-12T02:08:03.510Z"
+      "size": 32506,
+      "last_modified": "2026-10-11T06:39:59.686Z"
     },
     {
       "path": "components/editor/PreviewView.tsx",
       "size": 6417,
       "last_modified": "2026-10-10T09:15:18.017Z"
-    },
-    {
-      "path": "components/editor/SceneGutter.tsx",
-      "size": 3096,
-      "last_modified": "2026-10-12T02:06:34.529Z"
     },
     {
       "path": "components/editor/SceneReferencesPanel.tsx",
@@ -1122,8 +1116,8 @@
     },
     {
       "path": "components/editor/WriteView.tsx",
-      "size": 22272,
-      "last_modified": "2026-10-12T02:02:15.149Z"
+      "size": 22104,
+      "last_modified": "2026-10-11T20:18:33.123Z"
     },
     {
       "path": "components/editor/WritingLoop.tsx",
@@ -1403,7 +1397,7 @@
     {
       "path": "components/studio/production/ContinuityView.tsx",
       "size": 7230,
-      "last_modified": "2026-10-12T01:25:57.064Z"
+      "last_modified": "2026-10-12T01:13:03.216Z"
     },
     {
       "path": "components/studio/production/CrewView.tsx",
@@ -1498,7 +1492,7 @@
     {
       "path": "components/studio/tabs/ProductionTab.tsx",
       "size": 6524,
-      "last_modified": "2026-10-12T01:25:57.065Z"
+      "last_modified": "2026-10-12T01:13:03.217Z"
     },
     {
       "path": "components/studio/tabs/PromosTab.tsx",
@@ -1663,7 +1657,7 @@
     {
       "path": "e2e/continuity.spec.ts",
       "size": 5094,
-      "last_modified": "2026-10-12T01:25:57.065Z"
+      "last_modified": "2026-10-12T01:13:03.217Z"
     },
     {
       "path": "e2e/credits.spec.ts",
@@ -1684,11 +1678,6 @@
       "path": "e2e/documents.spec.ts",
       "size": 5247,
       "last_modified": "2026-10-10T08:35:17.684Z"
-    },
-    {
-      "path": "e2e/editor-gutter.spec.ts",
-      "size": 5088,
-      "last_modified": "2026-10-12T02:08:03.510Z"
     },
     {
       "path": "e2e/editor-project-script.spec.ts",
@@ -2023,12 +2012,12 @@
     {
       "path": "lib/film/continuity.test.ts",
       "size": 2373,
-      "last_modified": "2026-10-12T01:25:57.070Z"
+      "last_modified": "2026-10-12T01:13:03.219Z"
     },
     {
       "path": "lib/film/continuity.ts",
       "size": 3011,
-      "last_modified": "2026-10-12T01:25:57.073Z"
+      "last_modified": "2026-10-12T01:13:03.222Z"
     },
     {
       "path": "lib/film/coordinates.test.ts",
@@ -2061,16 +2050,6 @@
       "last_modified": "2026-10-11T14:20:27.090Z"
     },
     {
-      "path": "lib/film/gutter.test.ts",
-      "size": 2898,
-      "last_modified": "2026-10-12T02:06:34.527Z"
-    },
-    {
-      "path": "lib/film/gutter.ts",
-      "size": 2487,
-      "last_modified": "2026-10-12T02:06:34.526Z"
-    },
-    {
       "path": "lib/film/sides-print.ts",
       "size": 2230,
       "last_modified": "2026-10-12T01:13:00.325Z"
@@ -2098,12 +2077,12 @@
     {
       "path": "lib/film/story.test.ts",
       "size": 3861,
-      "last_modified": "2026-10-12T01:25:57.087Z"
+      "last_modified": "2026-10-12T01:13:03.224Z"
     },
     {
       "path": "lib/film/story.ts",
       "size": 4968,
-      "last_modified": "2026-10-12T01:25:57.090Z"
+      "last_modified": "2026-10-12T01:13:03.227Z"
     },
     {
       "path": "lib/film/studio.test.ts",
@@ -2153,7 +2132,7 @@
     {
       "path": "lib/guides/steps.ts",
       "size": 43981,
-      "last_modified": "2026-10-12T01:25:57.091Z"
+      "last_modified": "2026-10-12T01:13:03.232Z"
     },
     {
       "path": "lib/guides/workflows.ts",
@@ -2418,7 +2397,7 @@
     {
       "path": "lib/os/progress.ts",
       "size": 21573,
-      "last_modified": "2026-10-12T01:25:57.092Z"
+      "last_modified": "2026-10-12T01:13:03.234Z"
     },
     {
       "path": "lib/os/queries.ts",
@@ -2748,7 +2727,7 @@
     {
       "path": "lib/studio/api.ts",
       "size": 48698,
-      "last_modified": "2026-10-12T01:25:57.094Z"
+      "last_modified": "2026-10-12T01:13:03.235Z"
     },
     {
       "path": "lib/studio/call-sheet.test.ts",
@@ -2793,7 +2772,7 @@
     {
       "path": "lib/studio/index.ts",
       "size": 16377,
-      "last_modified": "2026-10-12T01:25:57.095Z"
+      "last_modified": "2026-10-12T01:13:03.236Z"
     },
     {
       "path": "lib/studio/live.test.tsx",
@@ -2988,7 +2967,7 @@
     {
       "path": "lib/supabase/database.types.ts",
       "size": 129589,
-      "last_modified": "2026-10-12T01:25:57.095Z"
+      "last_modified": "2026-10-12T01:13:03.238Z"
     },
     {
       "path": "lib/supabase/jobs.ts",
@@ -3243,7 +3222,7 @@
     {
       "path": "scripts/sync-intel.js",
       "size": 7731,
-      "last_modified": "2026-10-12T01:53:08.037Z"
+      "last_modified": "2026-10-10T08:35:17.900Z"
     },
     {
       "path": "scripts/test-anon-rls.js",
@@ -3508,7 +3487,7 @@
     {
       "path": "supabase/migrations/20261012010000_film_graph_story_time.sql",
       "size": 2411,
-      "last_modified": "2026-10-12T01:25:57.097Z"
+      "last_modified": "2026-10-12T01:13:03.239Z"
     },
     {
       "path": "tailwind.config.js",
@@ -3618,7 +3597,7 @@
     {
       "path": "tests/integration/film-graph-story.test.ts",
       "size": 5152,
-      "last_modified": "2026-10-12T01:25:57.101Z"
+      "last_modified": "2026-10-12T01:13:03.242Z"
     },
     {
       "path": "tests/integration/formats.test.ts",
