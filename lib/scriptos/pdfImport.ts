@@ -5,7 +5,7 @@ export interface PdfImportProgress {
   totalPages: number;
 }
 
-interface PositionedItem {
+export interface PositionedItem {
   str: string;
   transform: number[];
 }
@@ -24,7 +24,7 @@ function looksLikeCenteredCharacterCue(text: string, x: number | null): boolean 
   return CHARACTER_REGEX.test(text) && x !== null && x > 180 && x < 350;
 }
 
-function reconstructPageText(items: PositionedItem[]): string {
+export function reconstructPageText(items: PositionedItem[]): string {
   if (!items.length) return '';
 
   const sorted = [...items].sort((a, b) => {
