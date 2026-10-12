@@ -1,6 +1,7 @@
 import type { Project } from '@/lib/os';
 import type { LineCutNote } from '@/lib/studio';
 import type { PlacedNote } from '@/lib/studio/cutlines';
+import type { GutterItem } from '@/lib/film/gutter';
 import type { EditorBreakdown } from './breakdown/useEditorBreakdown';
 
 export interface EditorCtx {
@@ -14,6 +15,8 @@ export interface EditorCtx {
     resolve: (note: LineCutNote, resolved: boolean) => void;
     canResolve: boolean;
   };
+  /** When in the story each scene is, and its shoot day — the left margin (read only). */
+  gutter: GutterItem[];
   bd: EditorBreakdown;
   openBreakdown: (elementId?: string | null) => void;
   activeProject: any;

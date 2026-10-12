@@ -65,9 +65,10 @@ import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
+import { sceneGutter } from '@/lib/film/gutter';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
-import type { LineCutNote } from '@/lib/studio';
+import { useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -1096,6 +1097,10 @@ export default function EditorPage() {
     () => placeLineNotes(lineCutNotes.notes, parsedScenes.map((sc, i) => ({ id: sceneIndex.rows[i]?.id ?? null, start: sc.startIndex })), lines.map((l) => l.text)),
     [lineCutNotes.notes, parsedScenes, sceneIndex.rows, lines],
   );
+  // When in the story each scene is, and its shoot day: the left margin.
+  const shootDays = useShootDays(currentScript?.project_id ?? null);
+  const datedDays = useMemo(() => new Set(shootDays.rows.filter((d) => d.shoot_date).map((d) => d.day_number)), [shootDays.rows]);
+  const gutter = useMemo(() => sceneGutter(parsedScenes, sceneIndex.rows, datedDays), [parsedScenes, sceneIndex.rows, datedDays]);
   const [cutNoteLine, setCutNoteLine] = useState<number | null>(null);
   const { setResolved: setCutNoteResolved } = lineCutNotes;
   const cutNoteUserId = sessionUser?.id;
@@ -1189,7 +1194,7 @@ export default function EditorPage() {
   const scriptProjectId = currentScript?.project_id ?? null;
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
-  const editorCtx: EditorCtx = { tools, cutNotes, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { tools, cutNotes, gutter, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -1315,6 +1320,7 @@ export default function EditorPage() {
               }}>
                 <EditorRightPanels
                   showBreakdown={tools.breakdown}
+                  currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
                   rightPanel={rightPanel} setRightPanel={setRightPanel}
                   activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
                   getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}

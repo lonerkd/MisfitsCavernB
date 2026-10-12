@@ -8,6 +8,7 @@ import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Pl
 import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
+import type { GutterItem } from '@/lib/film/gutter';
 
 const CHARACTER_COLOR = '#ffaa00';
 
@@ -16,6 +17,8 @@ export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'histo
 export interface EditorRightPanelsProps {
   /** Hide the Breakdown tab until the project reaches it (see lib/os/progress). */
   showBreakdown?: boolean;
+  /** When in the story the scene being written is, and its shoot day (the gutter's item for it). */
+  currentStory?: GutterItem | null;
   rightPanel: RightPanelTab;
   setRightPanel: (p: RightPanelTab) => void;
   activeView: string;
@@ -101,7 +104,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel, showBreakdown = true,
+  referencesPanel, breakdownPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -177,6 +180,12 @@ export function EditorRightPanels({
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(color), background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>
                           </div>
+                          {currentStory && (
+                            <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', marginBottom: chars.length ? 10 : 0, fontStyle: currentStory.guessed ? 'italic' : 'normal' }}>
+                              {[currentStory.day != null ? `Day ${currentStory.day}` : '', currentStory.time ?? ''].filter(Boolean).join(' · ')}
+                              {currentStory.shoot != null && <span style={{ fontStyle: 'normal', color: 'var(--fg-dim)' }}>{currentStory.day != null || currentStory.time ? ' · ' : ''}Shoot day {currentStory.shoot}</span>}
+                            </div>
+                          )}
                           {chars.length > 0 && (
                             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                               {chars.slice(0, 5).map(c => (
