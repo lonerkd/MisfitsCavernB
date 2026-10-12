@@ -21,8 +21,10 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
 ## Start of every session
 
 1. This file.
-2. [`STATE.md`](STATE.md) — open work, known issues, the latest session
-   (start at its "Resume here" if there is one).
+2. [`STATE.md`](STATE.md) — the handoff: open work, known issues (start at its
+   "Resume here" if there is one) — then the newest notes in
+   [`sessions/`](sessions/README.md) for what the last PRs did (Claude Code
+   prints the latest three at start).
 3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
 4. [`INDEX.md`](INDEX.md) — the map: where everything else is.
 
@@ -53,7 +55,8 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
    changing auth settings, or a design decision the owner hasn't made.
 8. **Docs move with code.** A change to files, architecture or access
    updates the doc that owns it in the same PR, then `npm run sync-intel`,
-   then `STATE.md` and `BACKLOG.md`.
+   then a session note and `BACKLOG.md` (`STATE.md` only when the handoff
+   changes).
 
 ## The change cycle
 
@@ -64,9 +67,11 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
 4. **Implement** — following `conventions.md` and `design-tokens.md`.
 5. **Verify** — the commands above; for UI, look at it (`npm run dev`, or the
    `run-misfits-cavern` skill); for realtime, two sessions at once.
-6. **Sync** — `npm run sync-intel`; STATE gets a new "Latest Session"
-   (the previous one moves to `STATE-history.md`); BACKLOG gains what was
-   found and not done (what, where, size, done-when) and loses what's done.
+6. **Sync** — `npm run sync-intel`; add a note for this PR in `sessions/`
+   (`YYYY-MM-DD-slug.md` — a new file, so it never conflicts); BACKLOG gains
+   what was found and not done (what, where, size, done-when) and loses what's
+   done. Edit `STATE.md` only when the handoff itself changes (a decision,
+   work finished or opened, something the owner must do).
 7. **Commit** — clear message, PR from the template, green CI before merge
    (`checks`, `database`, `e2e-local`, the Vercel preview).
 
@@ -101,7 +106,7 @@ bug before fixing it; prove the fix with the same reproduction.
 
 | Tool | Reads | What it is |
 |---|---|---|
-| Claude Code (local + cloud) | `CLAUDE.md` | `@`-imports this file and `STATE.md`, plus Claude-only notes |
+| Claude Code (local + cloud) | `CLAUDE.md` | `@`-imports this file, `STATE.md`, `BACKLOG.md` and `INDEX.md`, plus Claude-only notes |
 | Codex, Cursor, Cline, Windsurf, Zed, Gemini, Jules, Copilot agent | `AGENTS.md` | a generated mirror of this file (some tools don't follow links) |
 | GitHub Copilot (chat) | `.github/copilot-instructions.md` | a pointer here |
 

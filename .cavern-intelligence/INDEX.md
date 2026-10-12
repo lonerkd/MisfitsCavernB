@@ -10,11 +10,11 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 | Layer | File(s) | Holds | Changes |
 |---|---|---|---|
 | **Rules** | [`RULES.md`](RULES.md) | how to work: non-negotiables, the change cycle, personas, where to look | rarely, by decision |
-| **Now** | [`STATE.md`](STATE.md) · [`BACKLOG.md`](BACKLOG.md) · [`STATE-history.md`](STATE-history.md) | open work and the latest session · every open task, scoped · past sessions | every session |
+| **Now** | [`STATE.md`](STATE.md) · [`BACKLOG.md`](BACKLOG.md) · [`sessions/`](sessions/README.md) · [`STATE-history.md`](STATE-history.md) | the handoff · every open task, scoped · one note per PR · sessions before 2026-10-11 | the handoff when it changes; BACKLOG and a new session note every PR |
 | **What it is** | [`bible/`](bible/README.md) | every part of the suite: purpose, screens, states, rules, connections, gaps; the generated inventory; the audit | when a part changes |
 | **How it works** | the deep docs below | the engineering of each system | with the code |
 | **Product and brand** | [`overview-and-goals.md`](overview-and-goals.md) · [`brand/`](brand/README.md) · [`restructure-proposal.md`](restructure-proposal.md) | vision · the mark and the brand decisions · the plan for the repo | by decision |
-| **Generated** | `sync-manifest.json` · `bible/inventory.md` · `bible/screens/` | file map · what each route touches · every screen | `npm run sync-intel` · `npm run bible` · `npm run bible:shots` |
+| **Generated** | `sync-manifest.json` (not committed — it changes on every run) · `bible/inventory.md` · `bible/screens/` | file map · what each route touches · every screen | `npm run sync-intel` · `npm run bible` · `npm run bible:shots` |
 
 ## Deep docs (how it works)
 
@@ -34,7 +34,7 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 
 | Tool | Entry file | It is |
 |---|---|---|
-| Claude Code (local and cloud) | `CLAUDE.md` | `@`-imports `RULES.md` and `STATE.md`, plus Claude-only notes — generated |
+| Claude Code (local and cloud) | `CLAUDE.md` | `@`-imports `RULES.md`, `STATE.md`, `BACKLOG.md` and `INDEX.md`, plus Claude-only notes — generated |
 | Codex, Cursor, Cline, Windsurf, Zed, Gemini, Jules, Copilot's agent | `AGENTS.md` | a generated mirror of `RULES.md` |
 | GitHub Copilot chat | `.github/copilot-instructions.md` | a generated pointer here |
 | People | `README.md` | setup and commands; points here |
@@ -47,6 +47,6 @@ hand-written copy of the rules.
 ## The contract
 
 - A change to files, architecture or access updates the doc that owns it in
-  the same PR, then `npm run sync-intel`, then `STATE.md` and `BACKLOG.md`.
+  the same PR, then `npm run sync-intel`, then a note in `sessions/` and `BACKLOG.md`.
 - One fact, one home. If you find the same thing in two places, keep the
   owner (the table above) and link to it from the other.
