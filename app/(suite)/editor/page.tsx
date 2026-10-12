@@ -506,13 +506,13 @@ export default function EditorPage() {
 
     if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
       toast('Extracting PDF…', 'success');
-      Promise.all([
-        import('@/lib/scriptos/pdfImport'),
-        import('@/lib/scriptos/normalize'),
-      ])
-        .then(([{ extractTextFromPdf }, { normalizeScreenplay }]) =>
-          extractTextFromPdf(file).then(raw => normalizeScreenplay(raw) || raw))
-        .then(finish)
+      import('@/lib/scriptos/pdfImport')
+        .then(({ extractTextFromPdf }) => extractTextFromPdf(file))
+        .then((raw) => {
+          // A scan or a picture of a page has no text to read: say so, don't import an empty script.
+          if (!raw.trim()) { toast('That PDF has no text to read — it looks like a scan. Export the script as a text PDF, or import a Fountain or Final Draft file.', 'error'); return; }
+          finish(raw);
+        })
         .catch(err => {
           console.error(err);
           toast('Could not read that PDF.', 'error');

@@ -44,10 +44,10 @@ describe('PDF layout: the same script on a different page', () => {
     ['margin -72', { shift: -72 }], ['margin -36', { shift: -36 }], ['A4 -8', { shift: -8 }], ['standard', {}], ['margin +18', { shift: 18 }], ['margin +36', { shift: 36 }],
     ['scale 0.85', { scale: 0.85 }], ['scale 0.9', { scale: 0.9 }], ['scale 1.1', { scale: 1.1 }], ['scale 1.2', { scale: 1.2 }],
   ];
-  // Measured 2026-10-12 on REAL_WORLD, 30 seeded scripts per layout.
+  // Measured 2026-10-12 on REAL_WORLD, 30 seeded scripts per layout; raised after B6 (the layout reader learns the page's own columns).
   const FLOORS: Record<string, number> = {
-    'margin -72': 0.29, 'margin -36': 0.47, 'A4 -8': 0.47, standard: 0.47, 'margin +18': 0.47, 'margin +36': 0.47,
-    'scale 0.85': 0.47, 'scale 0.9': 0.47, 'scale 1.1': 0.47, 'scale 1.2': 0.47,
+    'margin -72': 0.91, 'margin -36': 0.91, 'A4 -8': 0.91, standard: 0.91, 'margin +18': 0.91, 'margin +36': 0.91,
+    'scale 0.85': 0.91, 'scale 0.9': 0.91, 'scale 1.1': 0.91, 'scale 1.2': 0.91,
   };
   const measured: Record<string, number> = {};
   for (const [name, layout] of LAYOUTS) measured[name] = measurePdf(REAL_WORLD, undefined, layout).score.macroF1;

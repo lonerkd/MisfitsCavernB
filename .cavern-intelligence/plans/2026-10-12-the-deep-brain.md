@@ -150,6 +150,10 @@ real scripts** (owner's own, never committed) scored the same way: see §8.
 
 PLAIN 0.949 (0.929) · REAL_WORLD 0.924 (0.875) · INTERNATIONAL 0.928 (0.807) · dotNumbers 0.949 (0.719) · nonLatin 0.949 (0.766) · shouting 0.886 (0.869) · parentheticals 0.943 (0.923). **Cast found: 72% → 100%** on a tidy script. Scenes found exactly: 100% in every text cell. The PDF path moved only 0.01–0.04 (its stitcher is untouched until B6). What is left in the text read is the whole-document kind of error: shouted dialogue after a cue, `(beat)` mid-speech, caps action — B5.
 
+### Baseline after B6 (macro-F1, PDF path → was)
+
+PLAIN 0.948 (0.574) · REAL_WORLD 0.922 (0.480) · INTERNATIONAL 0.927 (0.433) · every margin and scale 0.886+ (the ~0.5 in margin cliff, 0.305, is gone). Scenes found exactly: 100% in every PDF cell; cast found 100%. The PDF path now reads within a hair of typed text, so what limits it is the parser (B5), not the reader.
+
 ## 6. The route
 
 Every rung ships on its own, and ends with named numbers moving. Sizes: S ≈ an
@@ -163,7 +167,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B3 | **Evidence layer (L1)** *(built)* | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
-| B6 | **The PDF reader rebuilt** | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
+| B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
 | B7 | **Context in (L5)** | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
 | B8 | **Memory and corrections (L6)** | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
 | B9 | **Reads out with confidence (L7)** | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
