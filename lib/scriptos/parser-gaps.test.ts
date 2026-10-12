@@ -32,16 +32,16 @@ describe('KNOWN GAPS in the classifier', () => {
     expect(typeOfLine('FLASH CUT TO:')).toBe('transition');
   });
 
-  it.fails('a (parenthetical) between two speeches is a parenthetical, not dialogue', () => {
+  it('a (parenthetical) between two speeches is a parenthetical, not dialogue', () => {
     expect(types(HEAD + 'MAYA\nHello.\n(beat)\nGoodbye.\n')).toEqual(['slug', 'character', 'dialogue', 'parenthetical', 'dialogue']);
   });
 
-  it.fails('a speech in ALL CAPS keeps its cue (shouting is still dialogue)', () => {
+  it('a speech in ALL CAPS keeps its cue (shouting is still dialogue)', () => {
     expect(types(HEAD + 'MAYA\nSTOP RIGHT THERE!\n')).toEqual(['slug', 'character', 'dialogue']);
     expect(types(HEAD + 'MAYA\nNO. NO. NO.\n')).toEqual(['slug', 'character', 'dialogue']);
   });
 
-  it.fails('an ALL-CAPS action line followed straight by action is not a character cue', () => {
+  it('an ALL-CAPS action line followed straight by action is not a character cue', () => {
     expect(types(HEAD + 'THE DOOR EXPLODES.\nMaya ducks.\n')).toEqual(['slug', 'action', 'action']);
   });
 

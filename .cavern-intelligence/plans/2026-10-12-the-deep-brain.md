@@ -154,6 +154,10 @@ PLAIN 0.949 (0.929) · REAL_WORLD 0.924 (0.875) · INTERNATIONAL 0.928 (0.807) �
 
 PLAIN 0.948 (0.574) · REAL_WORLD 0.922 (0.480) · INTERNATIONAL 0.927 (0.433) · every margin and scale 0.886+ (the ~0.5 in margin cliff, 0.305, is gone). Scenes found exactly: 100% in every PDF cell; cast found 100%. The PDF path now reads within a hair of typed text, so what limits it is the parser (B5), not the reader.
 
+### Baseline after B5 (macro-F1, text → was)
+
+Every text cell 1.000 (was 0.886–0.959); every PDF cell 0.995+ (was 0.826–0.939); every layout 0.998. **Read this number with suspicion**: the decoder's weights and the generator come from the same mental model of scripts, so a perfect score on the generator proves less than it looks. What does not come from the generator: all 800+ older tests (Fountain, round-trip, validator, analysis, editor and Studio end-to-end) pass with the decoder on; 19 hand-written scripts in `decode.test.ts`; and probes written after seeing the first result, which found and fixed two real weaknesses (a six-word cue name; a speaker who forgot the blank line above their cue). The owner's own scripts (`.private-corpus/`) are still the only independent check.
+
 ## 6. The route
 
 Every rung ships on its own, and ends with named numbers moving. Sizes: S ≈ an
@@ -166,7 +170,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
 | B3 | **Evidence layer (L1)** *(built)* | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
-| B5 | **The decoder (L4)** | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
+| B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
 | B7 | **Context in (L5)** | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
 | B8 | **Memory and corrections (L6)** | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |

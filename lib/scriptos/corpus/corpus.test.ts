@@ -104,19 +104,19 @@ const STYLES: Array<[string, Style]> = [['PLAIN', PLAIN], ['REAL_WORLD', REAL_WO
 
 /** Macro-F1 floors: [text, pdf]. Measured 2026-10-12 on 30 seeded scripts per cell; text floors raised after B3 (the evidence layer), PDF floors after B6 (the layout reader). */
 const FLOORS: Record<string, [number, number]> = {
-  PLAIN: [0.93, 0.93],
-  REAL_WORLD: [0.91, 0.91],
-  INTERNATIONAL: [0.91, 0.91],
-  dotNumbers: [0.93, 0.93],
-  letterNumbers: [0.93, 0.93],
-  periodTransitions: [0.93, 0.93],
-  bareTransitions: [0.93, 0.93],
-  shouting: [0.87, 0.87],
-  oddNames: [0.93, 0.93],
-  nonLatin: [0.93, 0.93],
-  extensions: [0.94, 0.94],
-  traps: [0.93, 0.93],
-  parentheticals: [0.93, 0.93],
+  PLAIN: [0.99, 0.98],
+  REAL_WORLD: [0.99, 0.98],
+  INTERNATIONAL: [0.99, 0.98],
+  dotNumbers: [0.99, 0.98],
+  letterNumbers: [0.99, 0.98],
+  periodTransitions: [0.99, 0.98],
+  bareTransitions: [0.99, 0.98],
+  shouting: [0.99, 0.98],
+  oddNames: [0.99, 0.98],
+  nonLatin: [0.99, 0.98],
+  extensions: [0.99, 0.98],
+  traps: [0.99, 0.98],
+  parentheticals: [0.99, 0.98],
 };
 
 describe('the reading pipeline on the corpus', () => {
