@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Play, Pause, SkipBack, SkipForward, Disc, Volume2, LogOut, Link2Off, RefreshCw } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
+import { useToast } from '@/components/ui/Toast';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { parseSpotifyRef, spotifyEmbedSrc, type SpotifyRef } from '@/lib/spotify/refs';
 import { myPlaylists } from '@/lib/spotify/search';
@@ -55,6 +56,7 @@ export default function GlobalAudioWidget() {
     volume, setVolumeLevel, togglePlay, nextTrack, prevTrack,
     useIframeFallback, setUseIframeFallback, logout
   } = useSpotify();
+  const { toast } = useToast();
 
   const [expanded, setExpanded] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
@@ -67,7 +69,7 @@ export default function GlobalAudioWidget() {
     return (
       <div style={{ position: 'relative' }}>
         <motion.button
-          onClick={redirectToSpotifyAuth}
+          onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }}
           aria-label="Connect Spotify"
           onHoverStart={() => setHovered(true)}
           onHoverEnd={() => setHovered(false)}

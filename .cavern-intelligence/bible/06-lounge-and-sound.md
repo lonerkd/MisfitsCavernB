@@ -67,6 +67,19 @@ fetch.
   mood are grouped ("Dread · scenes 3, 7, 12"), each a Spotify search.
 - **Spotify**: connect (OAuth → `/auth/spotify-callback`, tokens in
   `spotify_connections`), search, play in the global widget (Web Playback).
+  **Redirect addresses** (`lib/spotify/redirect.ts`): Spotify only accepts
+  addresses registered *exactly* in the Spotify app's settings, over https or on
+  `127.0.0.1` (not `localhost`), and the sign-in state lives in the tab that
+  started it, so the person must come back to the same site. The app therefore
+  connects only from the deployed site (`https://misfits-cavern-b.vercel.app`, or
+  the https `NEXT_PUBLIC_APP_URL`) and from `127.0.0.1`; anywhere else (a Vercel
+  preview, `localhost`) it says why in a toast instead of sending the person to
+  Spotify's red "Invalid redirect URI" page. **Register** in the Spotify
+  dashboard › the app › Redirect URIs:
+  `https://misfits-cavern-b.vercel.app/auth/spotify-callback` and, for local
+  work, `http://127.0.0.1:<port>/auth/spotify-callback`; remove any
+  `http://localhost…` entry. The address sent at sign-in is kept and reused for
+  the token exchange, so the two can't drift.
 - **Save to the project** (`project_audio_references`) — the project's audio
   bible.
 - **SFX library**: upload sounds (≤ 20 MB) to the public `sfx_library`
