@@ -29,9 +29,7 @@ import { useSpotify } from '@/lib/os/SpotifyContext';
 import { audioRefUrl, listAudioRefs } from '@/lib/supabase/audio';
 import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { useOSGate } from '@/lib/os';
-import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { logAuditAction } from '@/lib/supabase/audit';
-import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
@@ -48,6 +46,8 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useEditUndo } from '@/components/editor/useEditUndo';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
+import { useScriptCasting } from '@/components/editor/useScriptCasting';
+import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
@@ -170,14 +170,8 @@ export default function EditorPage() {
 
   const [completionRange, setCompletionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
-  const [showFindReplace, setShowFindReplace] = useState(false);
-  const [findText, setFindText] = useState('');
-  const findCount = useMemo(() => {
-    if (!findText || !content) return 0;
-    const matches = content.match(new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'));
-    return matches ? matches.length : 0;
-  }, [findText, content]);
-  const [replaceText, setReplaceText] = useState('');
+  const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
+    useFindReplace(content, setContent);
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
   const [revisions, setRevisions] = useState<Revision[]>([]);
@@ -190,8 +184,6 @@ export default function EditorPage() {
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
 
-  const [castings, setCastings] = useState<Record<string, Casting>>({});
-  const [projectCrew, setProjectCrew] = useState<CrewMember[]>([]);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
@@ -222,35 +214,7 @@ export default function EditorPage() {
     setActiveView('write');
   }, [setActiveView]);
 
-  const [castingsFor, setCastingsFor] = useState(activeProject?.id);
-  if (castingsFor !== activeProject?.id) {
-    setCastingsFor(activeProject?.id);
-    if (!activeProject?.id) { setCastings({}); setProjectCrew([]); }
-  }
-  useEffect(() => {
-    if (!activeProject?.id) return;
-    getCastingsForProject(activeProject.id).then(setCastings).catch(console.error);
-    getProjectCrew(activeProject.id).then(setProjectCrew).catch(console.error);
-  }, [activeProject?.id]);
-
-  const castProjectId = activeProject?.id;
-  const handleCastCharacter = useCallback(async (characterName: string, crewUserId: string) => {
-    if (!castProjectId) return;
-    try {
-      const auth = { user: await awaitOSUser() };
-      if (!auth.user) return;
-      if (!crewUserId) {
-        await removeCasting(castProjectId, characterName);
-        setCastings(prev => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
-        return;
-      }
-      await setCasting(castProjectId, characterName, crewUserId, auth.user.id);
-      const updated = await getCastingsForProject(castProjectId);
-      setCastings(updated);
-    } catch (e: any) {
-      toast(e.message || 'Could not update casting', 'error');
-    }
-  }, [castProjectId, toast]);
+  const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
 
   // Which script opens: ?script=<id> (links from the Studio) wins; otherwise
   // the active project's script (the effect below); otherwise the writer's
@@ -442,20 +406,6 @@ export default function EditorPage() {
     toast('Formatting normalized to canonical Fountain.', 'success');
   }, [content, toast, commitHistory]);
 
-  const handleFindReplace = useCallback(() => {
-    if (!findText) return;
-    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-    setContent(prev => prev.replace(regex, replaceText));
-    toast(`Replaced ${findCount} occurrences`, 'success');
-  }, [findText, replaceText, findCount, toast]);
-
-  const handleFindReplaceOne = useCallback(() => {
-    if (!findText) return;
-    const regex = new RegExp(findText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    setContent(prev => prev.replace(regex, replaceText));
-    toast('Replaced 1 occurrence', 'success');
-  }, [findText, replaceText, toast]);
-
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
     const rev = await createRevisionDB(currentScript.id, content, revisions.length);
@@ -533,7 +483,7 @@ export default function EditorPage() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
 
   const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

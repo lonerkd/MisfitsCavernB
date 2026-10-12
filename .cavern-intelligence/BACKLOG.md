@@ -61,6 +61,9 @@ release; take the plain fix then. Done when `npm audit` reports 0.
 ### 3.18 Film graph — what's left after steps 1–3 — L (owner: the editor gets cut over)
 Done: days and places (1), characters and sides (2), story time and continuity (3). Left, in order: **(a)** the app reads `scene_characters` / `call_sheet_calls.character_id` instead of `cast_list` / `character_name` text (S–M); **(b)** continuity extras — a photo and wardrobe/prop elements on a look, a wardrobe/make-up sheet (PDF), shoot order beside story order, the look-change warning on the call sheet (M); **(c)** step 4 entities and links, the card, mentions (L); **(d)** the editor on the graph — **a major expansion, not a thinning** (owner, 2026-10-11): planned rung by rung in [plans/2026-10-11-editor-integration.md](plans/2026-10-11-editor-integration.md) (E0 safety net → E1 take the page apart → E2 read the graph → E3 CRDT → E4 write the graph → E5 margin links → E6 contract; XL overall, decisions for the owner in §6); **(e)** step 5 money, step 6 my day, step 7 drop the text columns. Done when nothing reads `scenes.cast_list`, `scenes.location` or `character_name` and the old columns are gone.
 
+### 3.19 Editor find & replace: the count and the replacement disagree on case — S (product call)
+The bar counts matches ignoring case but replaces only exact-case matches (`components/editor/useFindReplace.ts`; pinned by a `KNOWN QUIRK` unit test). So "Replaced 2 occurrences" can be shown when nothing changed. Decide: match case on both (safe for a screenplay — `MAYA` vs `Maya`), or ignore case on both, or offer a Match case toggle. Done when the count equals what is replaced and the unit test is updated.
+
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
 projects, scenes and wraps; not for media uploads, crew invites/role
