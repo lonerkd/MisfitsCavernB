@@ -25,15 +25,14 @@ vi.mock('pdfjs-dist', () => ({
 }));
 
 import { extractTextFromPdf } from './pdfImport';
-import { normalizeScreenplay } from './normalize';
 import { importToContent } from './import';
 import { parseScript } from './parser';
 
-/** What the editor ends up with for a PDF: stitched, normalised, then parsed. */
+/** What the editor ends up with for a PDF: read from the page layout, then parsed. */
 async function importPdf(...doc: Array<Array<[string, number]>>) {
   pages.current = doc.map(page);
   const raw = await extractTextFromPdf({ arrayBuffer: async () => new ArrayBuffer(0) } as unknown as File);
-  const content = normalizeScreenplay(raw) || raw;
+  const content = raw;
   return { raw, content, lines: parseScript(content).lines.filter((l) => l.type !== 'empty') };
 }
 const typesOf = (lines: Array<{ type: string }>) => lines.map((l) => l.type);
@@ -53,22 +52,22 @@ describe('PDF import — what works', () => {
 });
 
 describe('KNOWN GAPS in PDF import', () => {
-  it.fails('a hyphenated or accented character name is a cue, not swallowed into the line before it (MARY-ANN, JOSÉ)', async () => {
+  it('a hyphenated or accented character name is a cue, not swallowed into the line before it (MARY-ANN, JOSÉ)', async () => {
     const { lines } = await importPdf([['EXT. PIER - DAY', 108], ['Boats come in.', 108], ['MARY-ANN', 252], ['Hello, sailor.', 180], ['JOSÉ', 252], ['Hola.', 180]]);
     expect(typesOf(lines)).toEqual(['slug', 'action', 'character', 'dialogue', 'character', 'dialogue']);
   });
 
-  it.fails('FADE OUT. (with a full stop) ends the script as a transition, not inside the last speech', async () => {
+  it('FADE OUT. (with a full stop) ends the script as a transition, not inside the last speech', async () => {
     const { lines } = await importPdf([['INT. ROOM - DAY', 108], ['MAYA', 252], ['Goodbye.', 180], ['FADE OUT.', 396]]);
     expect(typesOf(lines)).toEqual(['slug', 'character', 'dialogue', 'transition']);
   });
 
-  it.fails('a parenthetical stays a parenthetical (it is not glued onto the dialogue)', async () => {
+  it('a parenthetical stays a parenthetical (it is not glued onto the dialogue)', async () => {
     const { lines } = await importPdf([['INT. ROOM - DAY', 108], ['MAYA', 252], ['(quietly)', 223], ['You\'re late.', 180]]);
     expect(typesOf(lines)).toEqual(['slug', 'character', 'parenthetical', 'dialogue']);
   });
 
-  it.fails('a cue with an extension (LEO (O.S.)) keeps its dialogue', async () => {
+  it('a cue with an extension (LEO (O.S.)) keeps its dialogue', async () => {
     const { lines } = await importPdf([['INT. ROOM - DAY', 108], ['LEO (O.S.)', 252], ['Traffic.', 180]]);
     expect(typesOf(lines)).toEqual(['slug', 'character', 'dialogue']);
   });

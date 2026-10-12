@@ -102,21 +102,21 @@ describe('the scorer', () => {
 //   BRAIN_REPORT=1 npx vitest run lib/scriptos/corpus   prints the full matrix.
 const STYLES: Array<[string, Style]> = [['PLAIN', PLAIN], ['REAL_WORLD', REAL_WORLD], ['INTERNATIONAL', INTERNATIONAL], ...Object.entries(STRESS)];
 
-/** Macro-F1 floors: [text, pdf]. Measured 2026-10-12 on 30 seeded scripts per cell; text floors raised after B3 (the evidence layer). */
+/** Macro-F1 floors: [text, pdf]. Measured 2026-10-12 on 30 seeded scripts per cell; text floors raised after B3 (the evidence layer), PDF floors after B6 (the layout reader). */
 const FLOORS: Record<string, [number, number]> = {
-  PLAIN: [0.93, 0.57],
-  REAL_WORLD: [0.91, 0.48],
-  INTERNATIONAL: [0.91, 0.44],
-  dotNumbers: [0.93, 0.40],
-  letterNumbers: [0.93, 0.40],
-  periodTransitions: [0.93, 0.56],
-  bareTransitions: [0.93, 0.47],
-  shouting: [0.87, 0.53],
-  oddNames: [0.93, 0.49],
-  nonLatin: [0.93, 0.47],
-  extensions: [0.94, 0.55],
-  traps: [0.93, 0.58],
-  parentheticals: [0.93, 0.54],
+  PLAIN: [0.93, 0.93],
+  REAL_WORLD: [0.91, 0.91],
+  INTERNATIONAL: [0.91, 0.91],
+  dotNumbers: [0.93, 0.93],
+  letterNumbers: [0.93, 0.93],
+  periodTransitions: [0.93, 0.93],
+  bareTransitions: [0.93, 0.93],
+  shouting: [0.87, 0.87],
+  oddNames: [0.93, 0.93],
+  nonLatin: [0.93, 0.93],
+  extensions: [0.94, 0.94],
+  traps: [0.93, 0.93],
+  parentheticals: [0.93, 0.93],
 };
 
 describe('the reading pipeline on the corpus', () => {

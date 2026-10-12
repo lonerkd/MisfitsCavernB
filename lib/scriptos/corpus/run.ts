@@ -1,8 +1,7 @@
 // Runs the real reading pipeline over the seeded corpus and scores it.
 
 import { parseScript } from '../parser';
-import { normalizeScreenplay } from '../normalize';
-import { reconstructPageText } from '../pdfImport';
+import { layoutPages } from '../pdfLayout';
 import { generateScript, type Style } from './generate';
 import { renderPdfPages, renderText } from './render';
 import { pool, scoreBlocks, scoreLines, structureScore, type Score } from './score';
@@ -34,16 +33,14 @@ export function measureText(style: Style, seeds = SEEDS): Result {
   return summarize(scores, structure);
 }
 
-/** The whole PDF path: page text items → the stitcher → the normaliser → the parser. */
+/** The whole PDF path: page text items → the layout reader → the parser. */
 export function measurePdf(style: Style, seeds = SEEDS, layout: { shift?: number; scale?: number } = {}): Result {
   const scores: Score[] = [];
   const structure: ReturnType<typeof structureScore>[] = [];
   for (const seed of seeds) {
     const elements = generateScript(seed, style);
     const { truth } = renderText(elements);
-    const raw = renderPdfPages(elements, layout).map((items) => reconstructPageText(items) + '\n\n').join('').trim();
-    const content = normalizeScreenplay(raw) || raw;
-    const read = parseScript(content);
+    const read = parseScript(layoutPages(renderPdfPages(elements, layout)));
     scores.push(scoreBlocks(truth, read.lines));
     structure.push(structureScore(truth, { scenes: read.scenes.length, cast: read.characters.map((c) => c.name) }));
   }
