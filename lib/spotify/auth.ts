@@ -1,16 +1,9 @@
 import { supabase } from '../supabase/client';
 import { awaitOSUser } from '@/lib/os';
+import { spotifyRedirect } from './redirect';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '';
 
-function getRedirectUri() {
-  if (typeof window !== 'undefined' && window.location.origin.includes('localhost')) {
-    return `${window.location.origin}/auth/spotify-callback`;
-  }
-
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://misfits-cavern-b.vercel.app';
-  return `${baseUrl}/auth/spotify-callback`;
-}
 
 // PKCE verifier / OAuth state: must be unguessable, so crypto randomness only,
 // and uniform — bytes ≥ 248 are dropped so no character is likelier (256 % 62).
@@ -68,26 +61,36 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
   }
 }
 
-export async function redirectToSpotifyAuth() {
+/**
+ * Starts the Spotify sign-in. Returns why it can't start (shown to the person),
+ * or null once the browser is on its way to Spotify.
+ */
+export async function redirectToSpotifyAuth(): Promise<string | null> {
+  if (!CLIENT_ID) return 'Spotify isn’t set up for this site yet (no client id).';
+  const redirect = spotifyRedirect(window.location.origin, process.env.NEXT_PUBLIC_APP_URL);
+  if ('error' in redirect) return redirect.error;
   const verifier = generateRandomString(128);
   const challenge = await generateCodeChallenge(verifier);
   const state = generateRandomString(32);
 
   window.sessionStorage.setItem('spotify_code_verifier', verifier);
   window.sessionStorage.setItem('spotify_oauth_state', state);
+  // The token exchange must send exactly the address this sign-in used.
+  window.sessionStorage.setItem('spotify_redirect_uri', redirect.uri);
 
   const scope = 'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state playlist-read-private';
   const authUrl = new URL('https://accounts.spotify.com/authorize');
 
   authUrl.searchParams.append('client_id', CLIENT_ID);
   authUrl.searchParams.append('response_type', 'code');
-  authUrl.searchParams.append('redirect_uri', getRedirectUri());
+  authUrl.searchParams.append('redirect_uri', redirect.uri);
   authUrl.searchParams.append('code_challenge_method', 'S256');
   authUrl.searchParams.append('code_challenge', challenge);
   authUrl.searchParams.append('scope', scope);
   authUrl.searchParams.append('state', state);
 
   window.location.href = authUrl.toString();
+  return null;
 }
 
 /**
@@ -97,10 +100,12 @@ export async function redirectToSpotifyAuth() {
 export async function getAccessToken(code: string, state: string | null): Promise<string> {
   const verifier = window.sessionStorage.getItem('spotify_code_verifier');
   const expected = window.sessionStorage.getItem('spotify_oauth_state');
+  const redirectUri = window.sessionStorage.getItem('spotify_redirect_uri');
+  window.sessionStorage.removeItem('spotify_redirect_uri');
   window.sessionStorage.removeItem('spotify_code_verifier');
   window.sessionStorage.removeItem('spotify_oauth_state');
 
-  if (!verifier || !expected || state !== expected) {
+  if (!verifier || !expected || !redirectUri || state !== expected) {
     throw new Error('This Spotify sign-in didn’t start here (or already finished). Connect again from Soundtrack.');
   }
 
@@ -108,7 +113,7 @@ export async function getAccessToken(code: string, state: string | null): Promis
   params.append('client_id', CLIENT_ID);
   params.append('grant_type', 'authorization_code');
   params.append('code', code);
-  params.append('redirect_uri', getRedirectUri());
+  params.append('redirect_uri', redirectUri);
   params.append('code_verifier', verifier);
 
   const result = await fetch('https://accounts.spotify.com/api/token', {
