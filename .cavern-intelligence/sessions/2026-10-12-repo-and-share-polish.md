@@ -10,3 +10,5 @@
 **Verified:** typecheck, eslint, a production build; the card served as a 1200×630 PNG and looked right; the tags appear in the landing's HTML. **Not verified:** CI; how a real messenger renders the card (needs the deployed URL).
 
 **Left:** a designer's redraw of the mark before investors (brand README); the domain.
+
+**CI (owner: stop re-running 25 minutes of checks):** the `changes` job now decides per job — `database` only when the schema, the data layer, the integration tests, package files or workflows change; `e2e-local` (five shards) only when app, components, lib, public, e2e, supabase, config or workflows change; docs, templates and notes run `checks` only; a push to main runs the database tests but not the journeys (the PR already ran them). A change to the workflow itself runs everything.
