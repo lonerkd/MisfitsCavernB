@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -120,6 +120,13 @@ export function useCharacters(projectId: string | null) {
   return useLiveRows<StoryCharacter>({
     scope: projectId, table: 'characters', filter: `project_id=eq.${projectId}`,
     load: () => studio.listCharacters(projectId!), keyOf: (x) => String(x.id),
+  });
+}
+
+export function useReadingCorrections(projectId: string | null) {
+  return useLiveRows<ReadingCorrection>({
+    scope: projectId, table: 'reading_corrections', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listReadingCorrections(projectId!), keyOf: (x) => String(x.id),
   });
 }
 

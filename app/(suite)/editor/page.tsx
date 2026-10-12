@@ -66,12 +66,13 @@ import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
-import { contextFromCastings } from '@/lib/scriptos/context';
+import { contextFromProject } from '@/lib/scriptos/context';
+import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
-import { useCharacters, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
+import { useCharacters, useReadingCorrections, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -118,7 +119,8 @@ export default function EditorPage() {
   const parseSource = useDeferredValue(content);
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
-  const readContext = useMemo(() => contextFromCastings(Object.values(castings)), [castings]);
+  const corrections = useReadingCorrections(currentScript?.project_id ?? null);
+  const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
     const result = parseScript(parseSource, 'screenplay', undefined, { context: readContext });
@@ -1297,6 +1299,7 @@ export default function EditorPage() {
                                 }}
                               />
                             ))}
+                            {currentScript?.project_id && <NotCharacterButton projectId={currentScript.project_id} name={name} onSaved={corrections.upsertLocal} />}
                           </div>
                         )}
                       </div>
@@ -1304,6 +1307,7 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
+              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={corrections.removeLocal} />}
             </motion.div>
           </motion.div>
         )}

@@ -2493,6 +2493,41 @@ export type Database = {
         };
         Relationships: [];
       };
+      reading_corrections: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          name: string;
+          project_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          name: string;
+          project_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          name?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reading_corrections_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scene_characters: {
         Row: {
           character_id: string;

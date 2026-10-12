@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
-import { contextFromCastings } from '@/lib/scriptos/context';
+import { contextFromProject } from '@/lib/scriptos/context';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
 import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
@@ -17,6 +17,7 @@ import {
   fetchScriptContent,
   studio,
   useCastings,
+  useReadingCorrections,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -112,8 +113,9 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const reloadScenes = scenes.reload; // changes with the script, whose scenes it reloads
   // The cast people have chosen is what the reader knows; the same one the editor reads with.
   const castings = useCastings(projectId);
-  const readContextRef = useRef(contextFromCastings(castings.rows));
-  useLayoutEffect(() => { readContextRef.current = contextFromCastings(castings.rows); });
+  const corrections = useReadingCorrections(projectId);
+  const readContextRef = useRef(contextFromProject(castings.rows, corrections.rows));
+  useLayoutEffect(() => { readContextRef.current = contextFromProject(castings.rows, corrections.rows); });
   const syncScenes = useCallback((id: string) => fetchScriptContent(id)
     .then(async (text) => {
       const parsed = parseScript(text, 'screenplay', undefined, { context: readContextRef.current });

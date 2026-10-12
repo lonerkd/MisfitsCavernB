@@ -181,7 +181,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
 | B7 | **Context in (L5)** *(first slice built: the cast and rejected names; places and the previous draft still to do)* | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
-| B8 | **Memory and corrections (L6)** | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
+| B8 | **Memory and corrections (L6)** *(first slice built: "not a character" / "is a character", per project; line overrides and per-writer memory still to do)* | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
 | B9 | **Reads out with confidence (L7)** | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
 
 Order is deliberate: **measure → make the measure hard to fool → complete the

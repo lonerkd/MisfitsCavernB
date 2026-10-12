@@ -15,6 +15,18 @@ export function contextFromCastings(castings: ReadonlyArray<{ character_name: st
   return { characters: names, rejectedNames: rejectedNames.map((n) => n.trim().toUpperCase()).filter(Boolean) };
 }
 
+/**
+ * Everything a person has told the project about its characters: the cast they
+ * chose, the names they confirmed, the names they rejected.
+ */
+export function contextFromProject(
+  castings: ReadonlyArray<{ character_name: string }>,
+  corrections: ReadonlyArray<{ kind: string; name: string }>,
+): ParseContext {
+  const confirmed = corrections.filter((c) => c.kind === 'character').map((c) => ({ character_name: c.name }));
+  return contextFromCastings([...castings, ...confirmed], corrections.filter((c) => c.kind === 'not_character').map((c) => c.name));
+}
+
 /** A stable key for a context, so a consumer can tell whether it changed. */
 export function contextKey(context: ParseContext | undefined): string {
   if (!context) return '';
