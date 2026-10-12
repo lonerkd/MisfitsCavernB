@@ -22,7 +22,6 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useConfirm } from '@/components/ui/Confirm';
 import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
@@ -31,13 +30,11 @@ import { audioRefUrl, listAudioRefs } from '@/lib/supabase/audio';
 import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { useOSGate } from '@/lib/os';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
-import { listAnnotations, addAnnotation, deleteAnnotation, ANNOTATION_META, ANNOTATION_TYPES, type ScriptAnnotation, type AnnotationType } from '@/lib/supabase/annotations';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
-import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
-import { formatRuntime, timeCharacters, timeScript } from '@/lib/scriptos/timing';
+import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
@@ -49,6 +46,9 @@ import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCen
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
+import { useEditUndo } from '@/components/editor/useEditUndo';
+import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
+import { useTableRead } from '@/components/editor/useTableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
@@ -74,7 +74,7 @@ import { awaitOSUser, osState } from '@/lib/os';
 
 import {
   PRINT_COLORS, TEMPLATES, PLACEHOLDER, TRANSITIONS, ELEMENT_STATUS,
-  MAX_HISTORY, TAB_TYPE_CYCLE, stripLineDecoration, toSentenceCase,
+  TAB_TYPE_CYCLE, stripLineDecoration, toSentenceCase,
   transformLineForType, LinePreview,
 } from '@/components/editor/editorPageParts';
 
@@ -92,12 +92,6 @@ export default function EditorPage() {
     }
   }, [activeProject?.id]);
 
-  const [annotations, setAnnotations] = useState<ScriptAnnotation[]>([]);
-  const [annotationDraft, setAnnotationDraft] = useState<{ line: number; type: AnnotationType; text: string } | null>(null);
-  const reloadAnnotations = useCallback((scriptId: string) => {
-    listAnnotations(scriptId).then(setAnnotations).catch(() => setAnnotations([]));
-  }, []);
-
   const playAudioRef = useCallback((ref: any) => {
     if (ref.reference_type === 'spotify') playUri(ref.uri);
     else if (ref.reference_type === 'custom_upload') {
@@ -107,7 +101,6 @@ export default function EditorPage() {
   }, [playUri]);
 
   const { toast } = useToast();
-  const confirm = useConfirm();
   // Latest toast for the run-once init effect, without re-running it.
   const toastRef = useRef(toast);
   useLayoutEffect(() => { toastRef.current = toast; });
@@ -115,17 +108,8 @@ export default function EditorPage() {
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
+  const { noteEdit: noteHistoryEdit, commit: commitHistory, undo, redo } = useEditUndo(currentScript?.id, content, setContent);
   const stash = useScriptStash(currentScript?.id ?? null);
-  // No script, no margin notes; a script's own load in the effect below.
-  const [annotationsFor, setAnnotationsFor] = useState(currentScript?.id);
-  if (annotationsFor !== currentScript?.id) {
-    setAnnotationsFor(currentScript?.id);
-    if (!currentScript?.id) setAnnotations([]);
-  }
-  useEffect(() => {
-    if (currentScript?.id) reloadAnnotations(currentScript.id);
-  }, [currentScript?.id, reloadAnnotations]);
-
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
   const parseSource = useDeferredValue(content);
@@ -147,27 +131,12 @@ export default function EditorPage() {
     return heading ? { ordinal, heading } : null;
   }, [lines, parsedScenes]);
 
-  const annotScriptId = currentScript?.id;
-  const submitAnnotation = useCallback(async () => {
-    if (!annotationDraft || !annotScriptId || !annotationDraft.text.trim()) return;
-    try {
-      const a = await addAnnotation({ scriptId: annotScriptId, lineIndex: annotationDraft.line, type: annotationDraft.type, text: annotationDraft.text.trim(), scene: sceneAtLine(annotationDraft.line) });
-      reloadAnnotations(annotScriptId);
-      setAnnotationDraft(null);
-      if (a.routed_table) toast(`${ANNOTATION_META[a.type].label} added to ${ANNOTATION_META[a.type].routesTo}`, 'success');
-    } catch (e: any) {
-      toast(e?.message || 'Could not add that note', 'error');
-    }
-  }, [annotationDraft, annotScriptId, reloadAnnotations, sceneAtLine, toast]);
+  const { annotations, annotationDraft, setAnnotationDraft, submitAnnotation, removeAnnotation } = useScriptAnnotations(currentScript?.id, sceneAtLine);
 
-  const removeAnnotation = useCallback(async (id: string) => {
-    if (!annotScriptId) return;
-    const a = annotations.find(x => x.id === id);
-    const kept = a?.routed_table ? ` The ${ANNOTATION_META[a.type].label.toLowerCase()} it created stays.` : '';
-    if (!await confirm(`Remove this margin note?${kept}`)) return;
-    setAnnotations(prev => prev.filter(x => x.id !== id));
-    try { await deleteAnnotation(id); } catch (e: any) { toast(e?.message || 'Could not remove that note', 'error'); reloadAnnotations(annotScriptId); }
-  }, [annotations, confirm, annotScriptId, reloadAnnotations, toast]);
+  // The table read follows the parse; each scene it times is stored by the scene index (built below).
+  const saveReadRef = useRef<(sceneIdx: number, seconds: number) => void>(() => {});
+  const { playing: tableReadPlaying, lineIdx: tableReadLineIdx, start: startTableRead, pause: pauseTableRead, resume: resumeTableRead, stop: stopTableRead } =
+    useTableRead({ lines, scriptId: currentScript?.id, saveReadRef, textareaRef });
 
   const [scripts, setScripts] = useState<StoredScript[]>([]);
 
@@ -234,13 +203,6 @@ export default function EditorPage() {
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
-  const [tableReadPlaying, setTableReadPlaying] = useState(false);
-  const [tableReadLineIdx, setTableReadLineIdx] = useState<number | null>(null);
-  const tableReadEngineRef = useRef<TableReadEngine | null>(null);
-
-  const [history, setHistory] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
-  const historyPushTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingSnapshotRef = useRef<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -386,132 +348,6 @@ export default function EditorPage() {
   });
   useEffect(() => followProject(), [activeProject?.id]);
 
-  // The table read times each scene it reads in full (from its heading to the
-  // next), pauses excluded; the times calibrate the runtime (lib/scriptos/timing).
-  const saveReadRef = useRef<(sceneIdx: number, seconds: number) => void>(() => {});
-  const readClock = useRef<{ scene: number; fromHeading: boolean; since: number | null; elapsed: number; timed: number[] }>({ scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] });
-  const sceneOfLine = useMemo(() => {
-    let n = -1;
-    return lines.map((l) => (l.type === 'slug' ? ++n : n));
-  }, [lines]);
-  const closeReadScene = useCallback(() => {
-    const c = readClock.current;
-    if (c.since != null) { c.elapsed += (performance.now() - c.since) / 1000; c.since = null; }
-    if (c.scene >= 0 && c.fromHeading && c.elapsed >= 1) {
-      saveReadRef.current(c.scene, c.elapsed);
-      c.timed.push(c.elapsed);
-    }
-  }, []);
-
-  const startTableRead = useCallback((fromIndex = 0) => {
-    if (!isTableReadSupported()) { toast('Table read isn’t supported in this browser', 'error'); return; }
-    tableReadEngineRef.current?.stop();
-    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
-    const engine = getTableReadEngine(lines, {
-      onLineStart: (idx) => {
-        setTableReadLineIdx(idx);
-        const c = readClock.current;
-        const scene = sceneOfLine[idx] ?? -1;
-        if (scene !== c.scene) {
-          closeReadScene();
-          readClock.current = { ...c, scene, fromHeading: lines[idx]?.type === 'slug', since: performance.now(), elapsed: 0 };
-        } else if (c.since == null) {
-          c.since = performance.now();
-        }
-      },
-      onComplete: () => {
-        closeReadScene();
-        const timed = readClock.current.timed;
-        if (timed.length) toast(`Table read timed ${timed.length} scene${timed.length === 1 ? '' : 's'} — ${formatRuntime(timed.reduce((a, b) => a + b, 0))}. The runtime now uses it.`, 'success');
-        readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
-        setTableReadPlaying(false); setTableReadLineIdx(null);
-      },
-      rate: 1,
-    });
-    tableReadEngineRef.current = engine;
-    setTableReadPlaying(true);
-    engine.play(fromIndex);
-  }, [lines, toast, sceneOfLine, closeReadScene]);
-
-  const pauseTableRead = useCallback(() => {
-    tableReadEngineRef.current?.pause();
-    const c = readClock.current;
-    if (c.since != null) { c.elapsed += (performance.now() - c.since) / 1000; c.since = null; }
-    setTableReadPlaying(false);
-  }, []);
-
-  const resumeTableRead = useCallback(() => {
-    tableReadEngineRef.current?.resume();
-    readClock.current.since = performance.now();
-    setTableReadPlaying(true);
-  }, []);
-
-  const stopTableRead = useCallback(() => {
-    tableReadEngineRef.current?.stop();
-    // A scene stopped half-way isn't a timing; the ones read in full are already saved.
-    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
-    setTableReadPlaying(false);
-    setTableReadLineIdx(null);
-  }, []);
-
-  useEffect(() => () => { tableReadEngineRef.current?.stop(); }, []);
-  // Switching scripts: no undo history or table read carries over. State resets
-  // as the new script renders; the reading engine and pending snapshot after.
-  const [scriptShown, setScriptShown] = useState(currentScript?.id);
-  if (scriptShown !== currentScript?.id) {
-    setScriptShown(currentScript?.id);
-    setTableReadPlaying(false);
-    setTableReadLineIdx(null);
-    setHistory({ past: [], future: [] });
-  }
-  useEffect(() => {
-    tableReadEngineRef.current?.stop();
-    readClock.current = { scene: -1, fromHeading: false, since: null, elapsed: 0, timed: [] };
-    pendingSnapshotRef.current = null;
-  }, [currentScript?.id]);
-
-  const noteHistoryEdit = useCallback((prevContent: string) => {
-    if (pendingSnapshotRef.current == null) pendingSnapshotRef.current = prevContent;
-    if (historyPushTimer.current) clearTimeout(historyPushTimer.current);
-    historyPushTimer.current = setTimeout(() => {
-      const snapshot = pendingSnapshotRef.current;
-      pendingSnapshotRef.current = null;
-      if (snapshot == null) return;
-      setHistory(h => ({ past: [...h.past, snapshot].slice(-MAX_HISTORY), future: [] }));
-    }, 600);
-  }, []);
-
-  const undo = useCallback(() => {
-    if (historyPushTimer.current) { clearTimeout(historyPushTimer.current); historyPushTimer.current = null; }
-    setHistory(h => {
-      const pending = pendingSnapshotRef.current;
-      pendingSnapshotRef.current = null;
-      const past = pending != null ? [...h.past, pending] : h.past;
-      if (!past.length) return h;
-      const prev = past[past.length - 1];
-      setContent(prev);
-      return { past: past.slice(0, -1), future: [content, ...h.future].slice(0, MAX_HISTORY) };
-    });
-  }, [content]);
-
-  const redo = useCallback(() => {
-    setHistory(h => {
-      if (!h.future.length) return h;
-      const next = h.future[0];
-      setContent(next);
-      return { past: [...h.past, content].slice(-MAX_HISTORY), future: h.future.slice(1) };
-    });
-  }, [content]);
-
-
-  useEffect(() => {
-    if (tableReadLineIdx == null || !textareaRef.current) return;
-    const textarea = textareaRef.current;
-    const lineHeight = 26;
-    const targetScroll = (tableReadLineIdx * lineHeight) - (window.innerHeight * 0.3);
-    textarea.scrollTo({ top: Math.max(0, targetScroll), behavior: 'smooth' });
-  }, [tableReadLineIdx]);
-
   useEffect(() => {
     if (!currentScript) return;
     let active = true;
@@ -601,10 +437,10 @@ export default function EditorPage() {
     const normalized = canonicalizeFountain(content);
     if (normalized === content) { toast('Already in canonical Fountain form.', 'info'); return; }
     // Committed history entry so Normalize is a single click away from undo.
-    setHistory(h => ({ past: [...h.past, content].slice(-MAX_HISTORY), future: [] }));
+    commitHistory(content);
     setContent(normalized);
     toast('Formatting normalized to canonical Fountain.', 'success');
-  }, [content, toast]);
+  }, [content, toast, commitHistory]);
 
   const handleFindReplace = useCallback(() => {
     if (!findText) return;
