@@ -61,7 +61,6 @@ export interface Scene {
   location: string;
   timeOfDay: string;
   characters: string[];
-  omitted: boolean;
   wordCount?: number;
   eighths?: number;
   elements?: SceneElements;

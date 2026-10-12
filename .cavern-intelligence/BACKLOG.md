@@ -66,7 +66,7 @@ The bar counts matches ignoring case but replaces only exact-case matches (`comp
 
 ### 3.20 The classifier and the importer — what is still wrong — S (found 2026-10-11; B2, B3, B5, B6 fixed the rest)
 Still pinned as an expected-failure test: `lib/scriptos/parser-gaps.test.ts` (1).
-1. **Fields that say more than they know** (S, B9). `Character.firstLineIndex` is always 0 and `Character.lines` counts cues, not lines; `Scene.omitted` is always false; `ScriptLine.confidence` was read by nothing (the decoder now sets it from how far its choice beat the next best; the suite does not yet use it). Fill them in or remove them.
+1. **Done (B9):** `Character.firstLineIndex` is the line of the first cue (-1 if none), `Scene.omitted` is gone (nothing read it), `ScriptLine.confidence` is the decoder's own and feeds the editor's "doubtful reads". `Character.lines` counts speeches, as its comment now says.
 2. **Real PDFs** (needs the owner): the PDF reader is tested on synthetic pages only. Send a few script PDFs (text PDFs and a scan) so it can be measured on real item splitting, rotation and two-column dual dialogue; a scan is reported as "no text" and not OCR'd.
 **Fixed:** Fountain import as written, the title page, dual dialogue as Fountain spells it (B2); numbered headings with a full stop, `FADE OUT.` and bare transitions, names with digits and full stops, non-Latin cues, "Interior lights…", a mid-sentence "draft" (B3); shouted dialogue after a cue, `(beat)` mid-speech, ALL-CAPS action before action (B5, the whole-document decoder); the PDF reader (B6).
 

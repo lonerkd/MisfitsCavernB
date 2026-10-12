@@ -65,9 +65,9 @@ describe('KNOWN GAPS in the classifier', () => {
     expect(r.scenes[0].characters).toContain('LEO');
   });
 
-  it.fails('the character list says where each character first appears', () => {
+  it('(fixed in B9) the character list says where each character first appears', () => {
     const { characters } = parseScript(HEAD + 'MAYA\nHi.\n\nLEO\nHey.\n');
-    expect(characters.find((c) => c.name === 'LEO')?.firstLineIndex).toBe(6);
+    expect(characters.find((c) => c.name === 'LEO')?.firstLineIndex).toBe(5);
   });
 });
 
