@@ -48,6 +48,8 @@ export interface Params {
   dialogueOutsideSpeech: number; parentheticalOutsideSpeech: number; parentheticalAfterParenthetical: number;
   cueAfterCue: number; cueAfterSpeechNoBlank: number; actionInsideSpeech: number;
   impossible: number;
+  /** How sharply costs become certainty: lower is more decisive. */
+  temperature: number;
 }
 
 export const DEFAULT_PARAMS: Params = {
@@ -57,6 +59,7 @@ export const DEFAULT_PARAMS: Params = {
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
   cueAfterCue: 40, cueAfterSpeechNoBlank: 14, actionInsideSpeech: 16,
   impossible: 80,
+  temperature: 3,
 };
 
 type Cls = State | 'empty' | 'other';
@@ -127,15 +130,18 @@ const fixedClass = (t: LineType | undefined): Cls =>
 export interface Decoded {
   /** The chosen label for each line; null where the line was not the decoder's to decide. */
   states: Array<State | null>;
-  /** 0–100: how far the chosen label beat the next best one at that line, given the lines before. */
+  /** 0–100: how likely the chosen label is, over every labelling of the whole script (forward-backward on the same costs). A signal for ranking doubt, not a calibrated probability. */
   confidence: number[];
+  /** The next most likely label at that line, when it is not negligible. */
+  alternatives: Array<State | null>;
 }
 
 export function decodeLabels(obs: Observation[], ev: Evidence, p: Params = DEFAULT_PARAMS): Decoded {
   const n = obs.length;
   const states: Array<State | null> = new Array(n).fill(null);
   const confidence: number[] = new Array(n).fill(100);
-  if (!n) return { states, confidence };
+  const alternatives: Array<State | null> = new Array(n).fill(null);
+  if (!n) return { states, confidence, alternatives };
 
   // Per position: the candidate (class, cost) pairs.
   type Cand = { cls: Cls; state: State | null; cost: number };
@@ -161,12 +167,43 @@ export function decodeLabels(obs: Observation[], ev: Evidence, p: Params = DEFAU
   let j = dp[n - 1].indexOf(Math.min(...dp[n - 1]));
   for (let i = n - 1; i >= 0; i--) {
     states[i] = cands[i][j].state;
-    if (cands[i].length > 1) {
-      const sorted = [...dp[i]].sort((a, b) => a - b);
-      const margin = (sorted[1] ?? sorted[0] + 40) - sorted[0];
-      confidence[i] = Math.max(40, Math.min(100, Math.round(50 + margin)));
-    }
     j = back[i][j];
   }
-  return { states, confidence };
+
+  // How sure: the probability of each label at each line over ALL labellings, by the
+  // forward-backward pass on the same costs (each cost c weighs exp(-c / T)).
+  const T = p.temperature;
+  const weight = (c: number) => Math.exp(-c / T);
+  const norm = (xs: number[]) => { const t = xs.reduce((a, b) => a + b, 0) || 1; for (let k = 0; k < xs.length; k++) xs[k] /= t; };
+  const alpha: number[][] = cands.map((cs) => new Array(cs.length).fill(0));
+  const beta: number[][] = cands.map((cs) => new Array(cs.length).fill(1));
+  cands[0].forEach((c, k) => { alpha[0][k] = weight(c.cost + (c.state ? transitionCost('empty', c.state, p) : 0)); });
+  norm(alpha[0]);
+  for (let i = 1; i < n; i++) {
+    cands[i].forEach((c, k) => {
+      let sum = 0;
+      cands[i - 1].forEach((pc, m) => { sum += alpha[i - 1][m] * weight(c.cost + (c.state ? transitionCost(pc.cls, c.state, p) : 0)); });
+      alpha[i][k] = sum;
+    });
+    norm(alpha[i]);
+  }
+  for (let i = n - 2; i >= 0; i--) {
+    cands[i].forEach((pc, m) => {
+      let sum = 0;
+      cands[i + 1].forEach((c, k) => { sum += weight(c.cost + (c.state ? transitionCost(pc.cls, c.state, p) : 0)) * beta[i + 1][k]; });
+      beta[i][m] = sum;
+    });
+    norm(beta[i]);
+  }
+  for (let i = 0; i < n; i++) {
+    if (cands[i].length < 2) continue;
+    const marginal = cands[i].map((_, k) => alpha[i][k] * beta[i][k]);
+    norm(marginal);
+    const order = marginal.map((m, k) => [m, k] as const).sort((x, y) => y[0] - x[0]);
+    const chosen = cands[i].findIndex((c) => c.state === states[i]);
+    confidence[i] = Math.round((marginal[chosen] ?? 0) * 100);
+    const second = order.find(([, k]) => cands[i][k].state !== states[i]);
+    alternatives[i] = second && second[0] > 0.02 ? cands[i][second[1]].state : null;
+  }
+  return { states, confidence, alternatives };
 }
