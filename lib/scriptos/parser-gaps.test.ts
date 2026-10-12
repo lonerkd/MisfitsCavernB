@@ -16,17 +16,17 @@ const typeOfLine = (line: string, before = HEAD, after = '\n\nMaya waits.\n') =>
 };
 
 describe('KNOWN GAPS in the classifier', () => {
-  it.fails('a numbered heading with a period is a scene heading ("12. INT. HOUSE - DAY")', () => {
+  it('a numbered heading with a period is a scene heading ("12. INT. HOUSE - DAY")', () => {
     expect(typeOfLine('12. INT. HOUSE - DAY')).toBe('slug');
     expect(typeOfLine('12A. INT. HOUSE - DAY')).toBe('slug');
   });
 
-  it.fails('FADE OUT. and CUT TO BLACK. (with a full stop) are transitions', () => {
+  it('FADE OUT. and CUT TO BLACK. (with a full stop) are transitions', () => {
     expect(typeOfLine('FADE OUT.')).toBe('transition');
     expect(typeOfLine('CUT TO BLACK.')).toBe('transition');
   });
 
-  it.fails('transitions written without the colon are transitions (DISSOLVE TO, SMASH CUT TO)', () => {
+  it('transitions written without the colon are transitions (DISSOLVE TO, SMASH CUT TO)', () => {
     expect(typeOfLine('DISSOLVE TO')).toBe('transition');
     expect(typeOfLine('SMASH CUT TO')).toBe('transition');
     expect(typeOfLine('FLASH CUT TO:')).toBe('transition');
@@ -45,16 +45,16 @@ describe('KNOWN GAPS in the classifier', () => {
     expect(types(HEAD + 'THE DOOR EXPLODES.\nMaya ducks.\n')).toEqual(['slug', 'action', 'action']);
   });
 
-  it.fails('a line that merely contains "draft" is not a title page', () => {
+  it('a line that merely contains "draft" is not a title page', () => {
     expect(typeOfLine('A cold draft blows through.', '', '\n\nINT. ROOM - DAY\n\nMaya waits.\n')).toBe('action');
   });
 
-  it.fails('a character in a non-Latin script is still a character (Cyrillic, CJK, Arabic)', () => {
+  it('a character in a non-Latin script is still a character (Cyrillic, CJK, Arabic)', () => {
     expect(types(HEAD + 'МАЙЯ\nПривет.\n')).toEqual(['slug', 'character', 'dialogue']);
     expect(types(HEAD + '美雅\n你好。\n')).toEqual(['slug', 'character', 'dialogue']);
   });
 
-  it.fails('a sentence that begins with the word Interior/Exterior is action, not a scene heading', () => {
+  it('a sentence that begins with the word Interior/Exterior is action, not a scene heading', () => {
     expect(typeOfLine('Interior lights flicker on.')).toBe('action');
     expect(typeOfLine('Exterior shots hold steady.')).toBe('action');
   });

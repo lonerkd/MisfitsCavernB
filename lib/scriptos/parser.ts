@@ -26,6 +26,15 @@ export const KNOWLEDGE = {
     'QUICK CUT:', 'HARD CUT TO:', 'CROSSFADE TO:'
   ]),
 
+  // Transitions as they are often written: with or without the colon or full stop.
+  TRANSITION_BARE: new Set([
+    'CUT TO', 'CUT TO BLACK', 'FADE IN', 'FADE OUT', 'FADE TO', 'FADE TO BLACK', 'FINAL FADE OUT',
+    'DISSOLVE', 'DISSOLVE TO', 'SMASH CUT', 'SMASH CUT TO', 'MATCH CUT', 'MATCH CUT TO',
+    'JUMP CUT', 'JUMP CUT TO', 'FLASH CUT', 'FLASH CUT TO', 'WIPE TO', 'IRIS IN', 'IRIS OUT',
+    'INTERCUT', 'BACK TO', 'TIME CUT', 'MORPH TO', 'BLACKOUT', 'SLAM TO BLACK', 'RESET TO',
+    'QUICK CUT', 'HARD CUT TO', 'CROSSFADE TO'
+  ]),
+
   CAMERA_ANGLES: new Set([
     'ANGLE ON', 'CLOSE UP', 'C.U.', 'ECU', 'XCU', 'MCU', 'POV', 'PAN TO',
     'TILT UP', 'TILT DOWN', 'ZOOM IN', 'ZOOM OUT', 'DOLLY IN', 'DOLLY OUT',
@@ -135,22 +144,48 @@ export class ScriptParser {
     return this.format === 'screenplay' || this.format === 'teleplay' || this.format === 'stage-play';
   }
 
+  /** Has cased letters (in any alphabet) and none of them lower-case. Uncased scripts never are: see looksLikeUncasedName. */
   private isCaps(text: string): boolean {
-    const letters = text.replace(/[^a-zA-Z]/g, '');
-    return letters.length > 0 && text === text.toUpperCase();
+    const hasCase = [...text].some((c) => c !== c.toLowerCase() || c !== c.toUpperCase());
+    return hasCase && text === text.toUpperCase();
+  }
+
+  /**
+   * What a cue looks like in a script with no capitals (CJK, Arabic, Hebrew…): a short,
+   * unpunctuated line after a blank line, with a line directly under it.
+   */
+  private looksLikeUncasedName(text: string, prevBlank: boolean, next: string): boolean {
+    if (!prevBlank || !next) return false;
+    if (text.length < 1 || text.length > 24) return false;
+    if (!/\p{L}/u.test(text) || /[A-Za-z]/.test(text)) return false;
+    if ([...text].some((c) => c !== c.toLowerCase() || c !== c.toUpperCase())) return false;
+    return !/[。.!?！？…,，、:;]$/u.test(text) && !/^[(\[]/.test(text);
+  }
+
+  /** Is this line a transition, with or without its colon or full stop? */
+  private isTransitionText(upper: string): boolean {
+    const bare = upper.replace(/[:.]+$/, '').trim();
+    return KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, '')) || KNOWLEDGE.TRANSITION_BARE.has(bare);
   }
 
   private clean(text: string): string {
     return text
       .replace(/\s*\(.*?\)\s*/g, ' ')
       .replace(/^\^/, '')
-      .replace(/[^\p{L}\p{N}\s'’\-]/gu, '')
+      .replace(/[^\p{L}\p{N}\s'’\-.]/gu, '')
       .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/^\.+|\.+$/g, '')
       .trim();
   }
 
   private isSceneHeading(text: string): boolean {
-    return /^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.test(text.trim());
+    const m = /^\s*(?:\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.exec(text);
+    if (!m) return false;
+    // "INT." / "EXT." / "I/E" are headings on sight. A bare word ("Interior lights flicker on.")
+    // is one only if the line also looks like a heading: a dash before the time, or all capitals.
+    if (text.slice(m[0].length).startsWith('.') || m[1].includes('/') || m[1].includes('.')) return true;
+    return /\s[-–—]\s/.test(text) || this.isCaps(text.trim());
   }
 
   public parse(): ParseResult {
@@ -291,14 +326,16 @@ export class ScriptParser {
     });
     this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
-      if (!this.isCaps(trim) || trim.length < 2 || trim.length >= 50) return;
+      const prevBlank = idx === 0 || !this.rawLines[idx - 1].trim();
+      const nextRaw = (this.rawLines[idx + 1] || '').trim();
+      if (!(this.isCaps(trim) || this.looksLikeUncasedName(trim, prevBlank, nextRaw)) || trim.length < 1 || trim.length >= 50) return;
       const cleanName = this.clean(trim);
       const words = cleanName.split(' ').filter(Boolean);
 
       if (words.length === 0 || words.length > 4) return;
-      if (/\d/.test(cleanName)) return;
+      if ((cleanName.match(/\p{L}/gu) ?? []).length < 1) return;
       if (this.isSceneHeading(trim)) return;
-      if (KNOWLEDGE.SCENE_PREFIXES.has(cleanName) || KNOWLEDGE.TRANSITIONS.has(cleanName) || KNOWLEDGE.CAMERA_ANGLES.has(cleanName) || KNOWLEDGE.TIME_OF_DAY.has(cleanName)) return;
+      if (KNOWLEDGE.SCENE_PREFIXES.has(cleanName) || this.isTransitionText(cleanName) || KNOWLEDGE.CAMERA_ANGLES.has(cleanName) || KNOWLEDGE.TIME_OF_DAY.has(cleanName)) return;
       const next = (this.rawLines[idx + 1] || '').trim();
       const followedBySpeech = next.length > 0 && (next.startsWith('(') || !this.isCaps(next));
       if (!followedBySpeech) return;
@@ -471,7 +508,7 @@ export class ScriptParser {
       reasoning.push('Starts with dot (shorthand slug)');
     }
 
-    if (KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, ''))) {
+    if (this.isTransitionText(upper)) {
       scores.transition = 100;
       reasoning.push('Exact transition match');
     } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < 40) {
@@ -496,7 +533,7 @@ export class ScriptParser {
     // the whole line — or these get misread as action and silently corrupt
     // dialogue attribution and scene cast lists.
     const namePart = text.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    if (this.isCaps(namePart) && namePart.length >= 2 && namePart.length < 60) {
+    if ((this.isCaps(namePart) || this.looksLikeUncasedName(namePart, context.prev?.type === 'empty', context.next)) && namePart.length >= 1 && namePart.length < 60) {
       let charScore = 30;
 
       if (this.characterStats.get(cleanName)! >= 1) {
@@ -606,7 +643,7 @@ export class ScriptParser {
   private isTitlePageContent(text: string): boolean {
     const lower = text.toLowerCase();
     const keywords = ['written by', 'story by', 'screenplay by', 'draft', 'date:', 'contact:', 'copyright', 'wga'];
-    return keywords.some(k => lower.includes(k));
+    return keywords.some(k => lower.startsWith(k));
   }
 
   private extractSceneNumber(text: string): string | undefined {
@@ -699,7 +736,7 @@ export class ScriptParser {
   }
 
   private stripScenePrefix(slug: string): string {
-    return slug.trim().replace(/^\s*(\d+[A-Z]?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
+    return slug.trim().replace(/^\s*(\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
   }
 
   private isTimePart(part: string): boolean {

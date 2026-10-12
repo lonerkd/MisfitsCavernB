@@ -146,6 +146,10 @@ real scripts** (owner's own, never committed) scored the same way: see §8.
 - **The PDF reader is not layout-robust, but layout is not yet its main problem.** On the realistic-traps style its score is flat (0.480) from a 1 in margin to a 2 in margin and from 0.85× to 1.2× scale, because structure loss (cues swallowed, paragraphs merged) dominates. The one cliff: a ~0.5 in left margin drops it to 0.305, where the fixed x-range stops seeing cues. Layout becomes the bottleneck only after the structure fixes (B6).
 - **A private corpus is wired**: `.private-corpus/` (git-ignored) is read by `lib/scriptos/corpus/private.test.ts` — lossless, stable, and a line-by-line diff of every change in how a line is read since the last snapshot (`BRAIN_UPDATE=1` accepts it). No labels needed; skipped when the folder is absent.
 
+### Baseline after B3 (macro-F1, parser on text → was)
+
+PLAIN 0.949 (0.929) · REAL_WORLD 0.924 (0.875) · INTERNATIONAL 0.928 (0.807) · dotNumbers 0.949 (0.719) · nonLatin 0.949 (0.766) · shouting 0.886 (0.869) · parentheticals 0.943 (0.923). **Cast found: 72% → 100%** on a tidy script. Scenes found exactly: 100% in every text cell. The PDF path moved only 0.01–0.04 (its stitcher is untouched until B6). What is left in the text read is the whole-document kind of error: shouted dialogue after a cue, `(beat)` mid-speech, caps action — B5.
+
 ## 6. The route
 
 Every rung ships on its own, and ends with named numbers moving. Sizes: S ≈ an
@@ -156,7 +160,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B0 | **The measure** *(built)* | corpus, scorer, ratchet, baseline | M | — |
 | B1 | **Make it harder to fool** *(built)* | metamorphic tests; layout variants for the PDF renderer (margins, page size, font size); the private-corpus runner | M | the measure's honesty |
 | B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
-| B3 | **Evidence layer (L1)** | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
+| B3 | **Evidence layer (L1)** *(built)* | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
