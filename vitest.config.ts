@@ -8,7 +8,9 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['lib/**/*.test.ts', 'lib/**/*.test.tsx'],
+    // Hooks that live beside their components (components/editor/*) are unit-tested
+    // there; coverage below still measures lib/ only.
+    include: ['lib/**/*.test.ts', 'lib/**/*.test.tsx', 'components/**/*.test.ts', 'components/**/*.test.tsx'],
     environment: 'node',
     coverage: {
       // Scope: the unit-tested core (lib/). Pages and components are covered
