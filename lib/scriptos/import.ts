@@ -47,31 +47,6 @@ export function parseFdx(xml: string): string {
   return blocks.length ? serializeBlocks(blocks) : '';
 }
 
-function preprocessFountain(text: string): string {
-  let t = text.replace(/\r\n?/g, '\n');
-
-  t = t.replace(/\/\*[\s\S]*?\*\//g, '');
-  const out: string[] = [];
-  const lines = t.split('\n');
-
-  let i = 0;
-  if (/^[A-Za-z][\w ]*:/.test(lines[0] || '')) {
-    while (i < lines.length && lines[i].trim() !== '') i++;
-  }
-  for (; i < lines.length; i++) {
-    let line = lines[i];
-    const s = line.trim();
-    if (/^={3,}$/.test(s) || /^#{1,6}\s/.test(s) || s.startsWith('=')) continue;
-    if (s.startsWith('.') && !s.startsWith('..')) line = s.slice(1).toUpperCase();
-    else if (s.startsWith('!')) line = s.slice(1);
-    else if (s.startsWith('@')) line = s.slice(1).toUpperCase();
-    else if (s.startsWith('>') && s.endsWith('<')) line = s.slice(1, -1).trim();
-    else if (s.startsWith('>')) line = s.slice(1).trim().toUpperCase();
-    out.push(line);
-  }
-  return out.join('\n');
-}
-
 export function importToContent(text: string, filename: string): { content: string; format: ScriptFormat } {
   const lower = filename.toLowerCase();
   const isFdx = lower.endsWith('.fdx') || /<FinalDraft\b/i.test(text) || /<Paragraph\b[^>]*Type=/i.test(text);
@@ -79,6 +54,9 @@ export function importToContent(text: string, filename: string): { content: stri
     const content = parseFdx(text);
     if (content) return { content, format: 'screenplay' };
   }
-  const source = lower.endsWith('.fountain') ? preprocessFountain(text) : text;
-  return { content: normalizeScreenplay(source), format: 'screenplay' };
+  // A Fountain file is already what the parser reads, natively and losslessly: forced
+  // headings, the title page, sections, synopses, notes and boneyard. Only the line endings
+  // are made uniform; nothing is rewritten.
+  if (lower.endsWith('.fountain')) return { content: text.replace(/\r\n?/g, '\n'), format: 'screenplay' };
+  return { content: normalizeScreenplay(text), format: 'screenplay' };
 }

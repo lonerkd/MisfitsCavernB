@@ -155,7 +155,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 |---|---|---|---|---|
 | B0 | **The measure** *(built)* | corpus, scorer, ratchet, baseline | M | — |
 | B1 | **Make it harder to fool** *(built)* | metamorphic tests; layout variants for the PDF renderer (margins, page size, font size); the private-corpus runner | M | the measure's honesty |
-| B2 | **L0 complete** | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
+| B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
 | B3 | **Evidence layer (L1)** | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
