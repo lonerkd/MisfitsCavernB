@@ -66,6 +66,7 @@ export const metadata: Metadata = {
   title: 'The Cavern — by Misfits Cavern',
   description: 'The production suite for independent filmmakers — script, pre-production, the shoot, post and release in one connected system.',
   applicationName: 'The Cavern',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://misfits-cavern-b.vercel.app'),
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [

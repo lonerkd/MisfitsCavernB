@@ -1,0 +1,32 @@
+name: Bug
+description: Something in The Cavern is broken or lying
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open the editor\n2. ..."
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where
+      description: Page and device, e.g. /editor on iPhone Safari
+  - type: dropdown
+    id: who
+    attributes:
+      label: Who sees it
+      options:
+        - Owner (Sam)
+        - Crew (Jordan)
+        - Outsider (Riley)
+        - Everyone

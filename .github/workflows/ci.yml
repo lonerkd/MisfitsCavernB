@@ -13,22 +13,35 @@ concurrency:
 jobs:
   # What the PR touches. A docs-only change (Markdown, the knowledge hub)
   # can't break the schema or a journey, so it skips those jobs; `checks`
-  # still runs. Pushes to main always run everything.
+  # still runs. The database job runs when the schema or its callers change; the
+  # browser journeys when anything a person can see or do changes. Pushes to main
+  # run the database tests only (the PR already ran the journeys on the same code).
   changes:
     runs-on: ubuntu-latest
     outputs:
       code: ${{ steps.diff.outputs.code }}
+      db: ${{ steps.diff.outputs.db }}
+      app: ${{ steps.diff.outputs.app }}
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: diff
         run: |
-          if [ "${{ github.event_name }}" != "pull_request" ]; then echo "code=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          # Pushes to main run the database tests (the schema must never drift) but not the
+          # browser journeys: the PR already ran them on the same code.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            { echo "code=true"; echo "db=true"; echo "app=false"; } >> "$GITHUB_OUTPUT"; exit 0
+          fi
           CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           echo "$CHANGED"
-          if echo "$CHANGED" | grep -qvE '\.md$|^\.cavern-intelligence/'; then CODE=true; else CODE=false; fi
-          echo "code=$CODE" | tee -a "$GITHUB_OUTPUT"
+          # Anything that is not prose or repo furniture can change behaviour.
+          if echo "$CHANGED" | grep -qvE '\.md$|^\.cavern-intelligence/|^\.github/(ISSUE_TEMPLATE|pull_request_template|CODEOWNERS)|^\.env\.example$|^LICENSE$'; then CODE=true; else CODE=false; fi
+          # The schema and what talks to it.
+          if echo "$CHANGED" | grep -qE '^supabase/|^tests/integration/|^lib/supabase/|^lib/studio/|^package(-lock)?\.json$|^\.github/workflows/'; then DB=true; else DB=false; fi
+          # What a person can do in a browser: pages, components, the engine, the specs.
+          if echo "$CHANGED" | grep -qE '^(app|components|lib|public|e2e|supabase)/|^proxy\.ts$|^(next|playwright|tailwind|postcss)\.config|^package(-lock)?\.json$|^\.github/workflows/'; then APP=true; else APP=false; fi
+          { echo "code=$CODE"; echo "db=$DB"; echo "app=$APP"; } | tee -a "$GITHUB_OUTPUT"
 
   checks:
     runs-on: ubuntu-latest
@@ -77,7 +90,7 @@ jobs:
   #      real auth, real RLS, no mocks.
   database:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.db == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -100,7 +113,7 @@ jobs:
   # app, Postgres and the browser, and more workers only time out.
   e2e-local:
     needs: changes
-    if: needs.changes.outputs.code == 'true'
+    if: needs.changes.outputs.app == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
