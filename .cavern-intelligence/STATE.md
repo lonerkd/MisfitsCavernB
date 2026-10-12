@@ -47,9 +47,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    and `LICENSE`, leaked-password protection, the two old Windows stashes,
    branch protection on `main` (`pr-title`, `checks`, `database` required),
    signed commits, the first `v*` tag, the domain.
-3. **Next code work**: 3.17 — unit tests for the `lib/supabase/*` modules
-   #137 added, then raise the coverage floors back to 49/49/51/49 (they were
-   re-measured to 47/47/49/47 on 2026-10-10); restructure
+3. **Next code work**: restructure
    phases 4–8 (`restructure-proposal.md`: shell/primitives, route groups,
    thin pages, optional Studio routes); admin catalogues + moderation (3.14);
    email (3.15); activity feed (3.5, product call); dev-toolchain advisories

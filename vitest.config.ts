@@ -38,10 +38,10 @@ export default defineConfig({
       // with them: 50.48 / 50.65 / 52.58 / 50.43. Floored to whole numbers, so
       // only a real drop fails.
       thresholds: {
-        statements: 50,
-        branches: 50,
-        functions: 52,
-        lines: 50,
+        statements: 56,
+        branches: 55,
+        functions: 57,
+        lines: 56,
       },
     },
   },
