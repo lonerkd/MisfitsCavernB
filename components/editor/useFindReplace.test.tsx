@@ -19,10 +19,12 @@ function setup(text: string) {
 }
 
 describe('useFindReplace', () => {
-  it('counts every match, ignoring case, and none for an empty search', () => {
+  it('counts every match, matching case by default, and none for an empty search', () => {
     const { result } = setup('Maya sees MAYA and maya.');
     expect(result.current.findCount).toBe(0);
     act(() => result.current.setFindText('maya'));
+    expect(result.current.findCount).toBe(1);
+    act(() => result.current.setMatchCase(false));
     expect(result.current.findCount).toBe(3);
   });
 
@@ -59,14 +61,25 @@ describe('useFindReplace', () => {
     expect(toast).not.toHaveBeenCalled();
   });
 
-  it('KNOWN QUIRK — the count ignores case but the replacement does not (BACKLOG)', () => {
+  it('the count is what is replaced, in either case mode', () => {
     const { result } = setup('Maya and MAYA');
     act(() => { result.current.setFindText('maya'); result.current.setReplaceText('Zoe'); });
+    expect(result.current.findCount).toBe(0);
+    act(() => result.current.replaceAll());
+    expect(result.current.content).toBe('Maya and MAYA');
+    expect(toast).toHaveBeenCalledWith('Nothing to replace', 'info');
+    act(() => result.current.setMatchCase(false));
     expect(result.current.findCount).toBe(2);
     act(() => result.current.replaceAll());
-    // Nothing matched exactly, so nothing changed — yet it reports 2.
-    expect(result.current.content).toBe('Maya and MAYA');
+    expect(result.current.content).toBe('Zoe and Zoe');
     expect(toast).toHaveBeenCalledWith('Replaced 2 occurrences', 'success');
+  });
+
+  it('a dollar pattern in the replacement is plain text', () => {
+    const { result } = setup('cost');
+    act(() => { result.current.setFindText('cost'); result.current.setReplaceText('$& and $1'); });
+    act(() => result.current.replaceAll());
+    expect(result.current.content).toBe('$& and $1');
   });
 
   it('opens and closes the bar', () => {

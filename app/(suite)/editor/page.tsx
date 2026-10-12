@@ -181,7 +181,7 @@ export default function EditorPage() {
 
   const [completionRange, setCompletionRange] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
 
-  const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
+  const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, matchCase, setMatchCase, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
     useFindReplace(content, setContent);
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
@@ -1019,6 +1019,7 @@ export default function EditorPage() {
           <FindReplaceBar
             findText={findText} setFindText={setFindText}
             replaceText={replaceText} setReplaceText={setReplaceText}
+            matchCase={matchCase} setMatchCase={setMatchCase}
             findCount={findCount}
             onReplaceOne={handleFindReplaceOne}
             onReplaceAll={handleFindReplace}
