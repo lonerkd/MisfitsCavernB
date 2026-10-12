@@ -6,13 +6,15 @@ import { Search, X } from 'lucide-react';
 
 // ── Find & Replace bar (drops down under the toolbar) ──────────────────────
 export function FindReplaceBar({
-  findText, setFindText, replaceText, setReplaceText,
+  findText, setFindText, replaceText, setReplaceText, matchCase, setMatchCase,
   findCount, onReplaceOne, onReplaceAll, onClose,
 }: {
   findText: string;
   setFindText: (v: string) => void;
   replaceText: string;
   setReplaceText: (v: string) => void;
+  matchCase: boolean;
+  setMatchCase: (v: boolean) => void;
   findCount: number;
   onReplaceOne: () => void;
   onReplaceAll: () => void;
@@ -23,6 +25,7 @@ export function FindReplaceBar({
       <Search size={14} style={{ color: 'var(--fg-muted)' }} />
       <input value={findText} onChange={e => setFindText(e.target.value)} placeholder="Find..." style={{ flex: 1, maxWidth: 240, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '6px 10px', color: 'var(--fg-strong)', fontSize: 12, outline: 'none' }} />
       <input value={replaceText} onChange={e => setReplaceText(e.target.value)} placeholder="Replace..." style={{ flex: 1, maxWidth: 240, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '6px 10px', color: 'var(--fg-strong)', fontSize: 12, outline: 'none' }} />
+      <button type="button" aria-pressed={matchCase} title="Match case" onClick={() => setMatchCase(!matchCase)} style={{ background: matchCase ? 'rgba(var(--ink-rgb), 0.14)' : 'rgba(var(--ink-rgb), 0.05)', border: 'none', borderRadius: 4, padding: '5px 8px', color: 'var(--fg-strong)', fontSize: 11, cursor: 'pointer' }}>Aa</button>
       <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{findCount} found</span>
       <button onClick={onReplaceOne} style={{ background: 'rgba(var(--ink-rgb), 0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: 'var(--fg-strong)', fontSize: 11, cursor: 'pointer' }}>Replace</button>
       <button onClick={onReplaceAll} style={{ background: 'rgba(var(--ink-rgb), 0.05)', border: 'none', borderRadius: 4, padding: '5px 10px', color: 'var(--fg-strong)', fontSize: 11, cursor: 'pointer' }}>All</button>
