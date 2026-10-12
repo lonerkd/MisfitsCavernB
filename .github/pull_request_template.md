@@ -19,4 +19,4 @@ and what you ran locally. -->
 - [ ] `npx tsc --noEmit`, `npm run lint`, `npm run test` pass
 - [ ] RLS changes tested as owner, crew and outsider
 - [ ] Feedback via `useToast()`, confirmations via `useConfirm()`
-- [ ] `.cavern-intelligence/STATE.md` updated, `npm run sync-intel` run
+- [ ] A note added in `.cavern-intelligence/sessions/`, `BACKLOG.md` updated, `npm run sync-intel` run (`STATE.md` only if the handoff changed)

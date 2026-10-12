@@ -24,3 +24,6 @@ screenshot.mjs
 
 # Coverage report (npm run test:coverage)
 coverage/
+
+# Generated on every run (timestamps, mtimes) — never committed
+.cavern-intelligence/sync-manifest.json

@@ -4,6 +4,11 @@
   "env": {
     "NEXT_TELEMETRY_DISABLED": "1"
   },
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": "node scripts/latest-sessions.js 3" }] }
+    ]
+  },
   "permissions": {
     "defaultMode": "default",
     "allow": [

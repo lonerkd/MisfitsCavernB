@@ -17,7 +17,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   (Organization › Usage: which line is over — likely egress or Realtime; the
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
-- **Apply migration `20261010010000_film_graph_days_and_places.sql` to production** (paste into the SQL editor) once its PR is merged: the film graph's first step. The app works without it only until the deploy — the new code reads `shoot_days`. Then run *Production schema drift*.
 - **Apply migration `20261012010000_film_graph_story_time.sql` to production** (paste into the SQL editor) once its PR is merged — the film graph's step 3 (story time, continuity). Production lacks the columns until then, so Production › Continuity errors. Then run *Production schema drift*.
 - **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›

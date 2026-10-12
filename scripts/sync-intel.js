@@ -155,6 +155,10 @@ ${mirrored}`,
 
 @.cavern-intelligence/STATE.md
 
+@.cavern-intelligence/BACKLOG.md
+
+@.cavern-intelligence/INDEX.md
+
 ## Claude-only notes
 
 - **Harness**: \`.claude/settings.json\` (committed) — MCP servers, and which
@@ -162,8 +166,8 @@ ${mirrored}`,
   \`.cavern-intelligence/tools-and-access.md\` §2–3. Don't restate them here.
 - **Skills**: \`.claude/skills/\` — \`run-misfits-cavern\` (run, test and
   drive the suite), \`supabase\`, \`supabase-postgres-best-practices\`.
-- Every open task: \`.cavern-intelligence/BACKLOG.md\`. The map:
-  \`.cavern-intelligence/INDEX.md\`.
+- What the last PRs did: \`.cavern-intelligence/sessions/\` (a SessionStart
+  hook prints the newest three at the start of a session).
 `,
     '.github/copilot-instructions.md': `${NOTE}
 
