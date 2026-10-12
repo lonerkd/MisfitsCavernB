@@ -9,7 +9,8 @@ test.describe('Legal pages', () => {
       await expect(page).toHaveURL(new RegExp(`${path}$`)); // not redirected to sign-in
       await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
       await expect(page.getByText(/Peter Olowude/).first()).toBeVisible();
-      await expect(page.getByRole('link', { name: 'peterolowude@icloud.com' }).first()).toHaveAttribute('href', 'mailto:peterolowude@icloud.com');
+      await expect(page.getByRole('link', { name: '@lonerkid on Instagram' }).first()).toHaveAttribute('href', 'https://instagram.com/lonerkid');
+      await expect(page.getByRole('link', { name: '@lonerfss on X' }).first()).toHaveAttribute('href', 'https://x.com/lonerfss');
       // No sideways scroll on a phone-width screen either.
       await page.setViewportSize({ width: 390, height: 844 });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);

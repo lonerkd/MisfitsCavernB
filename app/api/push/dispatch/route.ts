@@ -5,7 +5,6 @@ import webpush from 'web-push';
 import { dispatchNotification } from '@/lib/push/dispatch';
 import { parseJsonBody } from '@/lib/validation';
 import { pushDispatchBodySchema } from '@/lib/validation/push';
-import { LEGAL } from '@/lib/legal/legal';
 
 // The database posts here after a notification is written, when push is
 // configured (internal.push_config: this URL + a shared secret). Only that
@@ -40,7 +39,7 @@ export async function POST(req: NextRequest) {
   const parsed = await parseJsonBody(req, pushDispatchBodySchema);
   if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
 
-  webpush.setVapidDetails(process.env.VAPID_SUBJECT || `mailto:${LEGAL.contactEmail}`, publicKey, privateKey);
+  webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'https://misfits-cavern-b.vercel.app', publicKey, privateKey);
   const db = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   try {
     const result = await dispatchNotification(db, parsed.data.notification_id, (t, payload) =>

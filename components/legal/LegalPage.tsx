@@ -23,6 +23,12 @@ export function LegalPage({ title, other, children }: {
   );
 }
 
-export function Mail() {
-  return <a href={`mailto:${LEGAL.contactEmail}`}>{LEGAL.contactEmail}</a>;
+export function Contact() {
+  return (
+    <>
+      <a href={LEGAL.contactUrl} target="_blank" rel="noopener noreferrer">{LEGAL.contactLabel}</a>
+      {' or '}
+      <a href={LEGAL.contactAltUrl} target="_blank" rel="noopener noreferrer">{LEGAL.contactAltLabel}</a>
+    </>
+  );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { LegalPage, Mail } from '@/components/legal/LegalPage';
+import { LegalPage, Contact } from '@/components/legal/LegalPage';
 import { LEGAL } from '@/lib/legal/legal';
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export default function TermsPage() {
       <ul>
         <li>You must be at least 13 years old, and old enough in your province or country to agree to these terms
           yourself — otherwise a parent or guardian must agree for you.</li>
-        <li>Give accurate information, keep your password to yourself, and tell us at <Mail /> if you think someone
+        <li>Give accurate information, keep your password to yourself, and tell us at <Contact /> if you think someone
           else has used your account. You are responsible for what happens under your account.</li>
         <li>You can delete your account at any time from Settings.</li>
       </ul>
@@ -69,7 +69,7 @@ export default function TermsPage() {
 
       <h2>Copyright complaints</h2>
       <p>
-        If you believe something in {LEGAL.product} infringes your copyright, write to <Mail /> with the link to
+        If you believe something in {LEGAL.product} infringes your copyright, write to <Contact /> with the link to
         it and why. We follow Canada&rsquo;s notice-and-notice rules and will act on valid notices.
       </p>
 
@@ -109,7 +109,7 @@ export default function TermsPage() {
       </p>
 
       <h2>Contact</h2>
-      <p>{LEGAL.operator} · <Mail /></p>
+      <p>{LEGAL.operator} · <Contact /></p>
     </LegalPage>
   );
 }
