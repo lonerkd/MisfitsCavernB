@@ -56,3 +56,39 @@ export function sceneWordCounts(lines: ScriptLine[], headings: ScriptLine[]): nu
 export function sceneCharacters(lines: ScriptLine[], headings: ScriptLine[]): string[][] {
   return sceneSlices(lines, headings).map((slice) => [...new Set(slice.filter((l) => l.type === 'character').map((l) => l.text.trim()))]);
 }
+
+/** The index (among `headings`) of the scene the caret line is in; -1 before the first heading. */
+export function sceneAtCaret(lines: ScriptLine[], headings: ScriptLine[], caretLine: number): number {
+  let last = -1;
+  const upTo = Math.min(Math.max(caretLine, 0), lines.length - 1);
+  for (let i = 0; i <= upTo; i++) {
+    if (lines[i].type !== 'slug') continue;
+    const at = headings.indexOf(lines[i]);
+    if (at !== -1) last = at;
+  }
+  return last;
+}
+
+export interface Acts { [key: string]: number; act1End: number; act2End: number; act2Start: number; act3Start: number }
+
+/** A three-act split by words: the act breaks fall near 25% and 75% of the script's words (scene numbers, 1-based). */
+export function actStructure(wordCounts: number[]): Acts {
+  const n = wordCounts.length;
+  if (n === 0) return { act1End: 0, act2End: 0, act2Start: 1, act3Start: 1 };
+  const total = wordCounts.reduce((a, b) => a + b, 0) || 1;
+  const byCount1 = Math.max(1, Math.ceil(n * 0.25));
+  const byCount2 = Math.max(byCount1 + 1, Math.ceil(n * 0.75));
+  let act1End = byCount1;
+  let act2End = byCount2;
+  let running = 0;
+  for (let i = 0; i < n; i++) {
+    running += wordCounts[i];
+    const pct = running / total;
+    if (pct >= 0.25 && act1End === Math.ceil(n * 0.25)) act1End = i + 1;
+    if (pct >= 0.75 && act2End === Math.ceil(n * 0.75)) act2End = i + 1;
+  }
+  act1End = Math.min(act1End, n - 2);
+  act2End = Math.min(act2End, n - 1);
+  act2End = Math.max(act2End, act1End + 1);
+  return { act1End, act2End, act2Start: act1End + 1, act3Start: act2End + 1 };
+}

@@ -15,7 +15,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
-import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene } from '@/lib/scriptos/sceneviews';
+import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
@@ -629,19 +629,7 @@ export default function EditorPage() {
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
-  const currentSceneIdx = useMemo(() => {
-    let lineCount = 0;
-    let lastScene = -1;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].type === 'slug') {
-        const sIdx = scenesList.indexOf(lines[i]);
-        if (sIdx !== -1) lastScene = sIdx;
-      }
-      if (lineCount >= cursorLine) break;
-      lineCount++;
-    }
-    return lastScene;
-  }, [lines, scenesList, cursorLine]);
+  const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
 
   // ── Split screen: the other pane follows the caret's scene; the Studio can
   // send the script to a scene (in a split, or by ?scene=<id> on the URL).
@@ -755,24 +743,7 @@ export default function EditorPage() {
     }
   );
 
-  const actStructure = useMemo(() => {
-    const n = scenesList.length;
-    if (n === 0) return { act1End: 0, act2End: 0, act2Start: 1, act3Start: 1 };
-    const totalWc = sceneWordCounts.reduce((a, b) => a + b, 0) || 1;
-    let running = 0;
-    let act1End = Math.max(1, Math.ceil(n * 0.25));
-    let act2End = Math.max(act1End + 1, Math.ceil(n * 0.75));
-    for (let i = 0; i < sceneWordCounts.length; i++) {
-      running += sceneWordCounts[i];
-      const pct = running / totalWc;
-      if (pct >= 0.25 && act1End === Math.ceil(n * 0.25)) act1End = i + 1;
-      if (pct >= 0.75 && act2End === Math.ceil(n * 0.75)) act2End = i + 1;
-    }
-    act1End = Math.min(act1End, n - 2);
-    act2End = Math.min(act2End, n - 1);
-    act2End = Math.max(act2End, act1End + 1);
-    return { act1End, act2End, act2Start: act1End + 1, act3Start: act2End + 1 };
-  }, [sceneWordCounts, scenesList.length]);
+  const actStructure = useMemo(() => actsFromWords(sceneWordCounts), [sceneWordCounts]);
 
   const uniqueLocations = useMemo(() => {
     const locs = new Map<string, number>();

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseScript } from './parser';
-import { filterScenes, reorderScenes, sceneCharacters, scenePositions, sceneWordCounts } from './sceneviews';
+import { actStructure, filterScenes, reorderScenes, sceneAtCaret, sceneCharacters, scenePositions, sceneWordCounts } from './sceneviews';
 
 const SRC = 'Title: X\n\nINT. KITCHEN - DAY\n\nMAYA\nHi there.\n\nEXT. STREET - NIGHT\n\nLEO\nHey.\n\nINT. HALL - DAY\n\nMaya waits.\n';
 const lines = () => parseScript(SRC, 'screenplay').lines;
@@ -47,5 +47,26 @@ describe('scene views', () => {
     const words = sceneWordCounts(l, h);
     expect(words).toHaveLength(3);
     expect(words[0]).toBeGreaterThan(words[2] - 1);
+  });
+});
+
+describe('scene at the caret and the acts', () => {
+  it('finds the scene the caret line is in', () => {
+    const l = lines();
+    const h = l.filter((x) => x.type === 'slug');
+    const at = (text: string) => l.findIndex((x) => x.text.includes(text));
+    expect(sceneAtCaret(l, h, 0)).toBe(-1); // the title page, before any heading
+    expect(sceneAtCaret(l, h, at('Hi there'))).toBe(0);
+    expect(sceneAtCaret(l, h, at('Hey.'))).toBe(1);
+    expect(sceneAtCaret(l, h, at('Maya waits'))).toBe(2);
+    expect(sceneAtCaret(l, h, 9999)).toBe(2);
+    expect(sceneAtCaret([], [], 0)).toBe(-1);
+  });
+
+  it('splits the acts near a quarter and three quarters of the words', () => {
+    expect(actStructure([])).toEqual({ act1End: 0, act2End: 0, act2Start: 1, act3Start: 1 });
+    expect(actStructure([10, 10, 10, 10, 10, 10, 10, 10])).toEqual({ act1End: 3, act2End: 7, act2Start: 4, act3Start: 8 });
+    // a long opening scene pulls the first break earlier
+    expect(actStructure([100, 10, 10, 10, 10, 10, 10, 10]).act1End).toBe(1);
   });
 });
