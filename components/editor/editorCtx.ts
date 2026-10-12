@@ -2,6 +2,7 @@ import type { Project } from '@/lib/os';
 import type { LineCutNote } from '@/lib/studio';
 import type { PlacedNote } from '@/lib/studio/cutlines';
 import type { GutterItem } from '@/lib/film/gutter';
+import type { CueCard } from '@/lib/film/cue';
 import type { EditorBreakdown } from './breakdown/useEditorBreakdown';
 
 export interface EditorCtx {
@@ -17,6 +18,8 @@ export interface EditorCtx {
   };
   /** When in the story each scene is, and its shoot day — the left margin (read only). */
   gutter: GutterItem[];
+  /** The character whose cue the caret is on, and the line it is on (read only). */
+  cue: { card: CueCard | null; line: number };
   bd: EditorBreakdown;
   openBreakdown: (elementId?: string | null) => void;
   activeProject: any;

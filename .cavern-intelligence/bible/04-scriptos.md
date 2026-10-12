@@ -34,7 +34,7 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 - **Footer** (`WriteFooter`): page / scene / word count, focus and
   typewriter modes.
 - Margins: cut notes on their lines (`CutNoteMarkers`, live) and script
-  annotations. **Left margin — the scene gutter** (`SceneGutter`, `lib/film/gutter.ts`): beside each scene heading, its story day and time (read from the script's headings and shown in italics, or the person's own setting from Studio › Continuity) and, once its shoot day has a date, `Shoot N`. Read only (it takes no clicks or caret); hidden when the page is under 720px wide. The right panel's **Now Writing** card shows the same for the scene being written.
+  annotations. **Left margin — the scene gutter** (`SceneGutter`, `lib/film/gutter.ts`): beside each scene heading, its story day and time (read from the script's headings and shown in italics, or the person's own setting from Studio › Continuity) and, once its shoot day has a date, `Shoot N`. Read only (it takes no clicks or caret); hidden when the page is under 720px wide. The right panel's **Now Writing** card shows the same for the scene being written. **Cue card** (`CueCardOverlay`, `lib/film/cue.ts`): with the caret on a character's cue, a card in the right margin — who plays them, their look in this scene (Studio › Continuity), their speeches and scenes. Follows the caret, read only.
 
 ## Features
 
