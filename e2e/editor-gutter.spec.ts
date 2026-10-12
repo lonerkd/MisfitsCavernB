@@ -80,4 +80,43 @@ test.describe('Editor gutter (local Supabase)', () => {
     await expect(script).toHaveValue(SCRIPT);
     expect((await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content).toBe(SCRIPT);
   });
+
+  test('the cue card shows who plays the character and their look, only while the caret is on the cue', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', me.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await page.goto('/studio');
+    const picker = page.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+
+    // The scene index (and so MAYA, from the cast list) exists once the editor has synced it.
+    await page.goto(`/editor?script=${scriptId}`);
+    const script = page.getByLabel('Script', { exact: true });
+    await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
+    await expect.poll(async () => (await admin.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA')).data?.length ?? 0, { timeout: 30_000 }).toBe(1);
+    const maya = (await admin.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA').single()).data!;
+    const first = (await admin.from('scenes').select('id').eq('script_id', scriptId).order('ordinal')).data![0];
+    await admin.from('character_castings').insert({ project_id: projectId, character_name: 'MAYA', crew_user_id: me.id });
+    await admin.from('scene_states').insert({ project_id: projectId, scene_id: first.id, character_id: maya.id, look: 'Red coat' });
+
+    // Caret on the heading: no card. Caret on MAYA's cue: the card.
+    await page.reload();
+    await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
+    await script.click();
+    await page.keyboard.press('Control+Home');
+    await expect(page.getByRole('note', { name: /^MAYA, played by/ })).toHaveCount(0);
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('note', { name: /^MAYA, played by gut.+, look in this scene: Red coat/ })).toBeVisible({ timeout: 15_000 });
+
+    // Moved onto her dialogue, the card goes; the script was never touched.
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByRole('note', { name: /^MAYA, played by/ })).toHaveCount(0);
+    await expect(script).toHaveValue(SCRIPT);
+  });
 });
