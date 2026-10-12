@@ -34,6 +34,7 @@ export interface CallSheetView {
 export type ProjectLocation = Tables<'project_locations'>;
 export type StoryCharacter = Pick<Tables<'characters'>, 'id' | 'name'>;
 export type SceneState = Tables<'scene_states'>;
+export type ReadingCorrection = Tables<'reading_corrections'>;
 export type Vendor = Tables<'vendors'>;
 export type Expense = Tables<'expenses'>;
 export type Timesheet = Tables<'timesheets'>;
@@ -526,6 +527,28 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  // ── What a person tells the reader ───────────────────────────────────────
+
+  async function listReadingCorrections(projectId: string): Promise<ReadingCorrection[]> {
+    const { data, error } = await db.from('reading_corrections').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load what the reader has been told');
+    return data;
+  }
+
+  /** One verdict per name: saying the opposite replaces the old one. */
+  async function setReadingCorrection(projectId: string, name: string, kind: 'not_character' | 'character'): Promise<ReadingCorrection> {
+    const { data, error } = await db.from('reading_corrections')
+      .upsert({ project_id: projectId, name: name.trim().toUpperCase(), kind }, { onConflict: 'project_id,name' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save that');
+    return data;
+  }
+
+  async function removeReadingCorrection(id: string): Promise<void> {
+    const { error } = await db.from('reading_corrections').delete().eq('id', id);
+    if (error) fail(error, 'Could not take that back');
+  }
+
   /** One record per character per scene; the first save makes it. */
   async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
     const { data, error } = await db.from('scene_states')
@@ -875,7 +898,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
