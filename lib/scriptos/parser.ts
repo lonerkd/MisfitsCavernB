@@ -749,10 +749,17 @@ export class ScriptParser {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
+  /** `lines` is how many times they speak; `firstLineIndex` is the line of their first cue, or -1 if the reader never read one. */
   public getCharacters(): Character[] {
+    const first = new Map<string, number>();
+    for (const l of this.lines) {
+      if (l.type !== 'character') continue;
+      const name = (l.meta?.characterName as string | undefined) ?? this.clean(l.text);
+      if (!first.has(name)) first.set(name, l.index);
+    }
     return Array.from(this.characterStats.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([name, count]) => ({ name, lines: count, firstLineIndex: 0 }));
+      .map(([name, count]) => ({ name, lines: count, firstLineIndex: first.get(name) ?? -1 }));
   }
 
   public extractScenes(lines: ScriptLine[]): Scene[] {
@@ -775,8 +782,7 @@ export class ScriptParser {
           sceneNumber: line.meta?.sceneNumber || '',
           location: this.parseLocation(slugText),
           timeOfDay: this.parseTime(slugText),
-          characters: [],
-          omitted: false
+          characters: []
         };
       } else if (currentScene) {
         const characterName = line.meta?.characterName;
