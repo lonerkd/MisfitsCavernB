@@ -7,11 +7,13 @@ import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
 import {
-  issueState, locationKey, studio, useCallSheetAcks, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
+  issueState, locationKey, studio, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
 import { lightNoteBrief } from '@/lib/film/sky';
+import { buildSides } from '@/lib/film/sides';
+import { sidesHtml } from '@/lib/film/sides-print';
 import { stripKind, type StripKind } from '@/lib/studio/stripboard';
 import { Sky } from '@/components/film/Sky';
 import { Stamp } from '@/components/film/Stamp';
@@ -42,7 +44,9 @@ function dayFacts(scenes: SceneRow[], day: number) {
  * are saved (call_sheets / call_sheet_calls) and shared live with the crew.
  */
 export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: CrewMember[] }) {
-  const { project } = useStudio();
+  const { project, sceneLines } = useStudio();
+  const { toast } = useToast();
+  const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
   const calls = useCallSheetCalls(project.id);
   const acks = useCallSheetAcks(project.id);
@@ -92,6 +96,26 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     w.document.close();
   };
 
+  // Each called actor's pages for the day, from the script's saved text.
+  const printSides = (day: number) => {
+    const d = dayFacts(scenes, day);
+    const sheet = sheetFor(day);
+    const mine = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
+    const sides = buildSides(
+      d.dayScenes.map((sc) => ({ heading: sc.heading ?? sc.title ?? '', sceneNumber: sc.scene_number, lines: sceneLines.get(sc.id) ?? [] })),
+      d.cast.map((name) => ({
+        character: name,
+        actor: crew.find((m) => m.user_id === castings.rows.find((k) => k.character_name.toUpperCase() === name.toUpperCase())?.crew_user_id)?.username ?? null,
+        call: hhmm(mine.find((x) => x.character_name === name)?.call_time) || null,
+      })),
+    );
+    if (!sides.length) { toast('No one called that day has lines in the script yet.', 'info'); return; }
+    const w = window.open('', '_blank', 'width=820,height=1060');
+    if (!w) { toast('Allow pop-ups to print the sides.', 'error'); return; }
+    w.document.write(sidesHtml(sides, { title: project.title, day, date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toDateString() : null }));
+    w.document.close();
+  };
+
   return (
     <div className={s.panel}>
       <div className={s.panelTitle}>Call sheets</div>
@@ -116,6 +140,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                   onSheet={(row) => sheets.upsertLocal(row)}
                   onCall={(row, removedId) => { if (row) calls.upsertLocal(row); else if (removedId) calls.removeLocal(removedId); }}
                   onPrint={() => print(day)}
+                  onPrintSides={() => printSides(day)}
                   onClose={() => setOpenDay(null)}
                 />
               ) : (
@@ -219,14 +244,14 @@ const STRIP_COLOR: Record<StripKind, string> = {
   'int-day': 'var(--strip-int-day)', 'ext-day': 'var(--strip-ext-day)', 'int-night': 'var(--strip-int-night)', 'ext-night': 'var(--strip-ext-night)',
 };
 
-function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onClose }: {
+function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onPrintSides, onClose }: {
   /** The day as the film graph has it: its light and what in the plan fights it. */
   film: FilmDay | undefined;
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
   /** The day's locations that have an address on record (Production › Locations). */
   addresses: { name: string; address: string }[];
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
-  onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onClose: () => void;
+  onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onPrintSides: () => void; onClose: () => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -300,6 +325,7 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
         <div className={c.toolbar}>
           {state.status !== 'draft' && sheet && <Link href={`/call/${sheet.id}`} className={c.ghost}><ExternalLink size={12} aria-hidden /> Crew view</Link>}
           <button type="button" className={c.ghost} onClick={onPrint}><Printer size={12} aria-hidden /> Print</button>
+          <button type="button" className={c.ghost} onClick={onPrintSides}><Printer size={12} aria-hidden /> Sides</button>
           <button type="button" className={c.ghost} onClick={onClose} aria-expanded>Close</button>
         </div>
 
