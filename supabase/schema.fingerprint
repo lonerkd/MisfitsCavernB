@@ -464,6 +464,14 @@ column scene_media.note text
 column scene_media.position integer default 0 not null
 column scene_media.project_id uuid not null
 column scene_media.scene_id uuid not null
+column scene_states.character_id uuid not null
+column scene_states.created_at timestamp with time zone default now() not null
+column scene_states.id uuid default gen_random_uuid() not null
+column scene_states.look text default ''::text not null
+column scene_states.notes text default ''::text not null
+column scene_states.project_id uuid not null
+column scene_states.scene_id uuid not null
+column scene_states.updated_at timestamp with time zone default now() not null
 column scenes.cast_list text
 column scenes.color text
 column scenes.created_at timestamp with time zone default now()
@@ -483,6 +491,9 @@ column scenes.script_id uuid
 column scenes.shoot_day integer default 1
 column scenes.shoot_day_id uuid
 column scenes.status text default 'planned'::text not null
+column scenes.story_confirmed boolean default false not null
+column scenes.story_day integer
+column scenes.story_time text
 column scenes.time_of_day text default 'DAY'::text
 column scenes.title text not null
 column scenes.updated_at timestamp with time zone default now() not null
@@ -949,6 +960,12 @@ constraint scene_media.scene_media_media_fkey FOREIGN KEY (media_id, project_id)
 constraint scene_media.scene_media_note_check CHECK ((char_length(note) <= 1000))
 constraint scene_media.scene_media_pkey PRIMARY KEY (scene_id, media_id)
 constraint scene_media.scene_media_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
+constraint scene_states.scene_states_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE CASCADE
+constraint scene_states.scene_states_look_check CHECK ((char_length(look) <= 500))
+constraint scene_states.scene_states_notes_check CHECK ((char_length(notes) <= 2000))
+constraint scene_states.scene_states_pkey PRIMARY KEY (id)
+constraint scene_states.scene_states_scene_character_key UNIQUE (scene_id, character_id)
+constraint scene_states.scene_states_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint scenes.scenes_color_check CHECK (((color IS NULL) OR (color ~ '^#[0-9a-fA-F]{6}$'::text)))
 constraint scenes.scenes_heading_check CHECK ((char_length(heading) <= 300))
 constraint scenes.scenes_id_project_key UNIQUE (id, project_id)
@@ -959,6 +976,8 @@ constraint scenes.scenes_project_id_fkey FOREIGN KEY (project_id) REFERENCES pro
 constraint scenes.scenes_read_seconds_check CHECK (((read_seconds IS NULL) OR ((read_seconds > (0)::numeric) AND (read_seconds <= (36000)::numeric))))
 constraint scenes.scenes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint scenes.scenes_shoot_day_fkey FOREIGN KEY (shoot_day_id, project_id) REFERENCES shoot_days(id, project_id) ON DELETE SET NULL (shoot_day_id)
+constraint scenes.scenes_story_day_check CHECK (((story_day IS NULL) OR (story_day >= 1)))
+constraint scenes.scenes_story_time_check CHECK (((story_time IS NULL) OR (char_length(story_time) <= 60)))
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
@@ -1387,6 +1406,8 @@ index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree 
 index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
+index CREATE INDEX scene_states_character_idx ON public.scene_states USING btree (character_id)
+index CREATE INDEX scene_states_project_idx ON public.scene_states USING btree (project_id)
 index CREATE INDEX scenes_location_idx ON public.scenes USING btree (location_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX scenes_shoot_day_idx ON public.scenes USING btree (shoot_day_id)
@@ -1496,6 +1517,8 @@ index CREATE UNIQUE INDEX push_subscriptions_pkey ON public.push_subscriptions U
 index CREATE UNIQUE INDEX scene_characters_pkey ON public.scene_characters USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
+index CREATE UNIQUE INDEX scene_states_pkey ON public.scene_states USING btree (id)
+index CREATE UNIQUE INDEX scene_states_scene_character_key ON public.scene_states USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
 index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
 index CREATE UNIQUE INDEX script_annotations_pkey ON public.script_annotations USING btree (id)
@@ -1653,6 +1676,7 @@ policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticate
 policy public.scene_media "scene_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.scene_media "scene_media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.scene_states "scene_states access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scenes "scenes delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.scenes "scenes insert" PERMISSIVE INSERT to authenticated using - check internal.can_access_project(project_id)
 policy public.scenes "scenes update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1739,6 +1763,7 @@ realtime public.projects
 realtime public.scene_characters
 realtime public.scene_elements
 realtime public.scene_media
+realtime public.scene_states
 realtime public.scenes
 realtime public.script_stash
 realtime public.set_log
@@ -1795,6 +1820,7 @@ rls push_subscriptions enabled=true forced=false
 rls scene_characters enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
+rls scene_states enabled=true forced=false
 rls scenes enabled=true forced=false
 rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
@@ -1840,6 +1866,7 @@ trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.proj
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
