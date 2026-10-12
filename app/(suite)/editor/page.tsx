@@ -12,8 +12,9 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { saveScript, getAllScripts, getScript, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
-import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
+import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
+import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
+import { toggleDualCaret } from '@/lib/scriptos/dual';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
@@ -386,24 +387,7 @@ export default function EditorPage() {
     setSaving(false);
   }, [currentScript, content, toast]);
 
-  const handleExport = useCallback((format: string) => {
-    if (!currentScript) return;
-    if (format === 'txt' || format === 'fountain') {
-      exportScriptAsText({ ...currentScript, content }, format as 'txt' | 'fountain');
-      toast(`Exported as .${format}`, 'success');
-    } else if (format === 'fdx') {
-      exportScriptAsFdx({ ...currentScript, content });
-      toast('Exported as .fdx (Final Draft)', 'success');
-    } else if (format === 'pdf') {
-      toast('Generating PDF...', 'info');
-      exportScriptAsPdf({ ...currentScript, content }, titlePage).catch(() => toast('Could not make the PDF — check your connection and try again.', 'error'));
-    } else {
-
-      exportScriptAsText({ ...currentScript, content }, 'txt');
-      toast(`Exported as .txt`, 'success');
-    }
-    setShowFormatMenu(false);
-  }, [currentScript, content, titlePage, toast]);
+  const handleExport = useScriptExport({ currentScript, content, titlePage, toast, onDone: () => setShowFormatMenu(false) });
 
   const handleNormalize = useCallback(() => {
     if (!content.trim()) { toast('Nothing to format yet.', 'info'); return; }
@@ -432,21 +416,10 @@ export default function EditorPage() {
   const toggleDualDialogue = useCallback(() => {
     const editor = textareaRef.current;
     if (!editor) return;
-    const cursor = editor.selectionStart;
-    const lineStart = content.lastIndexOf('\n', cursor - 1) + 1;
-    const le = content.indexOf('\n', cursor);
-    const lineEnd = le === -1 ? content.length : le;
-    const line = content.substring(lineStart, lineEnd);
-    const leading = line.length - line.trimStart().length;
-    const rest = line.slice(leading);
-    const core = rest.replace(/^\^/, '').trim();
-    const isChar = core.length > 1 && core === core.toUpperCase() && /[A-Z]/.test(core) && !/^(INT|EXT|EST|I\/E)[.\s]/.test(core) && !core.endsWith(':');
-    if (!isChar) { toast('Put the cursor on a character name to toggle dual dialogue', 'info'); return; }
-    const has = rest.startsWith('^');
-    const newRest = has ? rest.slice(1) : '^' + rest;
-    const next = content.substring(0, lineStart) + line.slice(0, leading) + newRest + content.substring(lineEnd);
-    setContent(next);
-    toast(has ? 'Dual dialogue removed' : 'Marked as dual dialogue (^)', 'success');
+    const toggled = toggleDualCaret(content, editor.selectionStart);
+    if (!toggled) { toast('Put the cursor on a character name to toggle dual dialogue', 'info'); return; }
+    setContent(toggled.next);
+    toast(toggled.added ? 'Marked as dual dialogue (^)' : 'Dual dialogue removed', 'success');
   }, [content, toast]);
 
   useEffect(() => {
@@ -494,59 +467,7 @@ export default function EditorPage() {
     return () => window.removeEventListener('keydown', handler);
   }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
 
-  const handleImportFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    e.target.value = '';
-
-    const title = file.name.replace(/\.(fountain|txt|fdx|pdf)$/i, '');
-
-    const finish = async (text: string) => {
-      const imported = await importScriptFromText(text, title);
-      if (imported) {
-        setScripts(prev => [...prev, imported]);
-        setCurrentScript(imported);
-        setContent(text);
-        toast(`Imported "${title}"`, 'success');
-      }
-    };
-
-    if (/\.pdf$/i.test(file.name) || file.type === 'application/pdf') {
-      toast('Extracting PDF…', 'success');
-      import('@/lib/scriptos/pdfImport')
-        .then(({ extractTextFromPdf }) => extractTextFromPdf(file))
-        .then((raw) => {
-          // A scan or a picture of a page has no text to read: say so, don't import an empty script.
-          if (!raw.trim()) { toast('That PDF has no text to read — it looks like a scan. Export the script as a text PDF, or import a Fountain or Final Draft file.', 'error'); return; }
-          finish(raw);
-        })
-        .catch(err => {
-          console.error(err);
-          toast('Could not read that PDF.', 'error');
-        });
-      return;
-    }
-
-    if (/\.(fdx|fountain)$/i.test(file.name)) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const raw = ev.target?.result as string;
-        import('@/lib/scriptos/import')
-          .then(({ importToContent }) => importToContent(raw, file.name))
-          .then(({ content }) => finish(content))
-          .catch(err => {
-            console.error(err);
-            toast(`Could not read that ${file.name.split('.').pop()} file.`, 'error');
-          });
-      };
-      reader.readAsText(file);
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (ev) => { finish(ev.target?.result as string); };
-    reader.readAsText(file);
-  }, [toast]);
+  const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
 
   const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
     setTitlePage(prev => {
