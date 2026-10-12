@@ -35,13 +35,13 @@ export function measureText(style: Style, seeds = SEEDS): Result {
 }
 
 /** The whole PDF path: page text items → the stitcher → the normaliser → the parser. */
-export function measurePdf(style: Style, seeds = SEEDS): Result {
+export function measurePdf(style: Style, seeds = SEEDS, layout: { shift?: number; scale?: number } = {}): Result {
   const scores: Score[] = [];
   const structure: ReturnType<typeof structureScore>[] = [];
   for (const seed of seeds) {
     const elements = generateScript(seed, style);
     const { truth } = renderText(elements);
-    const raw = renderPdfPages(elements).map((items) => reconstructPageText(items) + '\n\n').join('').trim();
+    const raw = renderPdfPages(elements, layout).map((items) => reconstructPageText(items) + '\n\n').join('').trim();
     const content = normalizeScreenplay(raw) || raw;
     const read = parseScript(content);
     scores.push(scoreBlocks(truth, read.lines));
