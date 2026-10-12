@@ -140,6 +140,12 @@ rewrite a script in an equivalent way — CRLF, indentation, A4 vs Letter, caps
 cues vs colon cues — and the read must not change; (3) a **private corpus of
 real scripts** (owner's own, never committed) scored the same way: see §8.
 
+### What B1 found
+
+- **The parser is perfectly stable** under every equivalent rewrite — CRLF, trailing spaces, indentation, doubled blank lines, no final newline, leading blanks: 1.000 for every style. A real strength, now locked in (the floors are 1).
+- **The PDF reader is not layout-robust, but layout is not yet its main problem.** On the realistic-traps style its score is flat (0.480) from a 1 in margin to a 2 in margin and from 0.85× to 1.2× scale, because structure loss (cues swallowed, paragraphs merged) dominates. The one cliff: a ~0.5 in left margin drops it to 0.305, where the fixed x-range stops seeing cues. Layout becomes the bottleneck only after the structure fixes (B6).
+- **A private corpus is wired**: `.private-corpus/` (git-ignored) is read by `lib/scriptos/corpus/private.test.ts` — lossless, stable, and a line-by-line diff of every change in how a line is read since the last snapshot (`BRAIN_UPDATE=1` accepts it). No labels needed; skipped when the folder is absent.
+
 ## 6. The route
 
 Every rung ships on its own, and ends with named numbers moving. Sizes: S ≈ an
@@ -148,7 +154,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | # | Rung | Does | Size | Moves |
 |---|---|---|---|---|
 | B0 | **The measure** *(built)* | corpus, scorer, ratchet, baseline | M | — |
-| B1 | **Make it harder to fool** | metamorphic tests; layout variants for the PDF renderer (A4, margins, fonts); the private-corpus runner; more traps | M | the measure's honesty |
+| B1 | **Make it harder to fool** *(built)* | metamorphic tests; layout variants for the PDF renderer (margins, page size, font size); the private-corpus runner | M | the measure's honesty |
 | B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
 | B3 | **Evidence layer (L1)** | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |

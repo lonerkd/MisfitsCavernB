@@ -27,3 +27,6 @@ coverage/
 
 # Generated on every run (timestamps, mtimes) — never committed
 .cavern-intelligence/sync-manifest.json
+
+# The owner's real scripts for the private corpus — never committed
+.private-corpus/
