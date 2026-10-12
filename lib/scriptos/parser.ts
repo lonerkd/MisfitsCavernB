@@ -109,7 +109,19 @@ export const KNOWLEDGE = {
   ])
 };
 
-export interface ParseOptions { /** Use the whole-document decoder (default: DECODER_DEFAULT). */ decoder?: boolean }
+/** What the rest of the suite knows about this script (lib/scriptos/context.ts). */
+export interface ParseContext {
+  /** Characters known to exist (cast by a person): a cue with one of these names is believed. */
+  characters?: readonly string[];
+  /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
+  rejectedNames?: readonly string[];
+}
+
+export interface ParseOptions {
+  /** Use the whole-document decoder (default: DECODER_DEFAULT). */
+  decoder?: boolean;
+  context?: ParseContext;
+}
 export const DECODER_DEFAULT = true;
 
 export type ScriptFormat = 'screenplay' | 'teleplay' | 'stage-play' | 'treatment' | 'podcast' | 'doc-outline';
@@ -131,12 +143,16 @@ export class ScriptParser {
 
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
   private useDecoder: boolean;
+  private rejectedNames: Set<string>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
-    this.learnedNames = learnedNames;
+    // Names from the project are matched however they were typed; a cue is read in capitals.
+    const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
+    this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
+    this.learnedNames = new Set([...learnedNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -341,6 +357,7 @@ export class ScriptParser {
       const nextRaw = (this.rawLines[idx + 1] || '').trim();
       if (!(this.isCaps(trim) || this.looksLikeUncasedName(trim, prevBlank, nextRaw)) || trim.length < 1 || trim.length >= 50) return;
       const cleanName = this.clean(trim);
+      if (this.rejectedNames.has(cleanName)) return;
       const words = cleanName.split(' ').filter(Boolean);
 
       if (words.length === 0 || words.length > 4) return;
@@ -488,6 +505,7 @@ export class ScriptParser {
       isTransition: (u) => this.isTransitionText(u),
       looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
       isKnownName: (n) => this.characterStats.has(this.clean(n)),
+      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
     });
   }

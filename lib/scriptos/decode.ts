@@ -24,6 +24,8 @@ export interface Evidence {
   /** Seen as a speaker elsewhere in the script (or told to us by the project). */
   isKnownName(name: string): boolean;
   hasExtension(upper: string): boolean;
+  /** A person said this name is not a character. */
+  isRejectedName?(name: string): boolean;
 }
 
 export interface Observation {
@@ -39,7 +41,7 @@ export interface Observation {
 
 /** The weights. Lower cost is a better fit. Tuned on the corpus (lib/scriptos/corpus); change one, re-measure. */
 export interface Params {
-  cue: number; knownName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
+  cue: number; knownName: number; rejectedName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
   dialogue: number; dialogueCaps: number;
   action: number; actionProse: number; actionCaps: number;
   /** Grammar. */
@@ -49,7 +51,7 @@ export interface Params {
 }
 
 export const DEFAULT_PARAMS: Params = {
-  cue: 6, knownName: 12, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
+  cue: 6, knownName: 12, rejectedName: 60, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
   dialogue: 4, dialogueCaps: 6,
   action: 10, actionProse: 8, actionCaps: 12,
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
@@ -83,6 +85,7 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
     character = p.cue;
     if (ev.isKnownName(namePart)) character -= p.knownName;
     if (ev.hasExtension(upper)) character -= p.extension;
+    if (ev.isRejectedName?.(namePart)) character += p.rejectedName;
     if (!o.next) character += p.noSpeechUnder;
     if (sentenceEnd) character += p.cueSentence;
     if (words > 6) character += p.cueLong;

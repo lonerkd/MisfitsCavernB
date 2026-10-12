@@ -66,6 +66,7 @@ import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
+import { contextFromCastings } from '@/lib/scriptos/context';
 import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
@@ -115,16 +116,19 @@ export default function EditorPage() {
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
   const parseSource = useDeferredValue(content);
+  // The cast people have chosen is what the reader knows about this project (read before the parse).
+  const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
+  const readContext = useMemo(() => contextFromCastings(Object.values(castings)), [castings]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
-    const result = parseScript(parseSource);
+    const result = parseScript(parseSource, 'screenplay', undefined, { context: readContext });
     return {
       lines: result.lines,
       parsedScenes: result.scenes,
       charStats: analyzeCharacters(result.lines, result.scenes),
       lintIssues: validateScript(result.lines, parseSource, result.scenes, result.characters),
     };
-  }, [parseSource]);
+  }, [parseSource, readContext]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -215,8 +219,6 @@ export default function EditorPage() {
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
   }, [setActiveView]);
-
-  const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
 
   // Which script opens: ?script=<id> (links from the Studio) wins; otherwise
   // the active project's script (the effect below); otherwise the writer's
