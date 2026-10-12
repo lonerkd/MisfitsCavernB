@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { BookOpen, Calendar, Clapperboard, ClipboardCheck, DollarSign, FileCheck2, Lock, MapPin, Tags, Users } from 'lucide-react';
+import { BookOpen, Calendar, Clapperboard, ClipboardCheck, DollarSign, Eye, FileCheck2, Lock, MapPin, Tags, Users } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -23,6 +23,7 @@ const LocationsView = dynamic(() => import('../production/LocationsView').then((
 const MoneyView = dynamic(() => import('../production/MoneyView').then((m) => m.MoneyView), { loading: viewLoading });
 const PaperworkView = dynamic(() => import('../production/PaperworkView').then((m) => m.PaperworkView), { loading: viewLoading });
 const OnSetView = dynamic(() => import('../production/OnSetView').then((m) => m.OnSetView), { loading: viewLoading });
+const ContinuityView = dynamic(() => import('../production/ContinuityView').then((m) => m.ContinuityView), { loading: viewLoading });
 const CrewView = dynamic(() => import('../production/CrewView').then((m) => m.CrewView), { loading: viewLoading });
 
 type View = ProductionView;
@@ -31,6 +32,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode }> = [
   { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} /> },
   { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} /> },
   { id: 'locations', label: 'Locations', icon: <MapPin size={12} /> },
+  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} /> },
   { id: 'money', label: 'Money', icon: <DollarSign size={12} /> },
   { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} /> },
   { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} /> },
@@ -73,6 +75,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
       {!lock && view === 'locations' && <LocationsView />}
+      {!lock && view === 'continuity' && <ContinuityView />}
       {!lock && view === 'money' && <MoneyView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
       {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}
       {!lock && view === 'onset' && <OnSetView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}

@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -113,6 +113,20 @@ export function useTimesheets(projectId: string | null) {
     scope: projectId, table: 'timesheets', filter: `project_id=eq.${projectId}`,
     load: () => studio.listTimesheets(projectId!), keyOf: (x) => String(x.id),
     sort: (a, b) => b.work_date.localeCompare(a.work_date),
+  });
+}
+
+export function useCharacters(projectId: string | null) {
+  return useLiveRows<StoryCharacter>({
+    scope: projectId, table: 'characters', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listCharacters(projectId!), keyOf: (x) => String(x.id),
+  });
+}
+
+export function useSceneStates(projectId: string | null) {
+  return useLiveRows<SceneState>({
+    scope: projectId, table: 'scene_states', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listSceneStates(projectId!), keyOf: (x) => String(x.id),
   });
 }
 

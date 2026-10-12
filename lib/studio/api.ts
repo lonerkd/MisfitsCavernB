@@ -32,6 +32,8 @@ export interface CallSheetView {
   acked: number | null;
 }
 export type ProjectLocation = Tables<'project_locations'>;
+export type StoryCharacter = Pick<Tables<'characters'>, 'id' | 'name'>;
+export type SceneState = Tables<'scene_states'>;
 export type Vendor = Tables<'vendors'>;
 export type Expense = Tables<'expenses'>;
 export type Timesheet = Tables<'timesheets'>;
@@ -510,6 +512,36 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  // ── Story time and continuity ────────────────────────────────────────────
+
+  async function listCharacters(projectId: string): Promise<StoryCharacter[]> {
+    const { data, error } = await db.from('characters').select('id, name').eq('project_id', projectId).order('name');
+    if (error) fail(error, 'Could not load the characters');
+    return data;
+  }
+
+  async function listSceneStates(projectId: string): Promise<SceneState[]> {
+    const { data, error } = await db.from('scene_states').select('*').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load continuity');
+    return data;
+  }
+
+  /** One record per character per scene; the first save makes it. */
+  async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
+    const { data, error } = await db.from('scene_states')
+      .upsert({ project_id: projectId, scene_id: sceneId, character_id: characterId, ...patch }, { onConflict: 'scene_id,character_id' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save the look');
+    return data;
+  }
+
+  /** Sets when in the story a scene happens. A person's change is confirmed (a later guess leaves it); a guess applied from the script is not. */
+  async function setSceneStory(sceneId: string, story: { story_day: number | null; story_time: string | null }, confirmed: boolean): Promise<SceneRow> {
+    const { data, error } = await db.from('scenes').update({ ...story, story_confirmed: confirmed }).eq('id', sceneId).select('*').single();
+    if (error) fail(error, 'Could not save the story time');
+    return data;
+  }
+
   // ── Money ────────────────────────────────────────────────────────────────
 
   async function listBudgetLines(projectId: string): Promise<BudgetItem[]> {
@@ -843,7 +875,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

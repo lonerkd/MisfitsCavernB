@@ -142,6 +142,8 @@ information. Recorded in design-language.md; it is next.
 
 **Then (film graph step 2 — sides):** each day's call sheet has a **Sides** button: one printed page per called actor who speaks that day (their scenes in shooting order, own cue and speeches highlighted). Pure `lib/film/sides.ts` + `sides-print.ts`, unit-tested (8 tests); no schema change. Not yet: the app still reads `cast_list` text, not `scene_characters`; `call_sheet_calls.character_id`; e2e for the Sides button (needs the local stack). Next: step 3 (story time → continuity).
 
+**Then (film graph step 3 — story time and continuity):** migration `20261012010000` (**apply to production after merge**, by paste): `scenes.story_day/story_time/story_confirmed`, `scene_states`. `lib/film/story.ts` (reads the story day from headings), `continuity.ts` (look changes inside a day), Production › **Continuity**. Verified: persona test (6), full integration suite (341), drift clean, e2e `continuity.spec.ts` + neighbours (daylight, call sheets, studio journey) against a local stack. Not yet: look photos/wardrobe elements on a state, a continuity PDF for wardrobe/make-up, shoot-order beside story-order, the warning on the call sheet. **Owner direction (2026-10-11):** the editor will eventually be cut over to the graph — plan: finish steps 3–4, thin the editor page (restructure 7), cut over behind e2e (co-writing, offline), then drop the text columns (step 7). Also: the coverage floors are 50/50/52/50 and hold (52/53/54/52) — 3.17 is done.
+
 Lessons: the Supabase connector's writes time out from the cloud (read works);
 check production after a timed-out write before retrying. The 3D hero loaded
 later and exposed a faded tagline failing axe contrast — fixed. Parallel

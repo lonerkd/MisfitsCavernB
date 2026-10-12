@@ -2627,6 +2627,54 @@ export type Database = {
           },
         ];
       };
+      scene_states: {
+        Row: {
+          character_id: string;
+          created_at: string;
+          id: string;
+          look: string;
+          notes: string;
+          project_id: string;
+          scene_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          character_id: string;
+          created_at?: string;
+          id?: string;
+          look?: string;
+          notes?: string;
+          project_id: string;
+          scene_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          character_id?: string;
+          created_at?: string;
+          id?: string;
+          look?: string;
+          notes?: string;
+          project_id?: string;
+          scene_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "scene_states_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "scene_states_scene_fkey";
+            columns: ["scene_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       scenes: {
         Row: {
           cast_list: string | null;
@@ -2648,6 +2696,9 @@ export type Database = {
           shoot_day: number | null;
           shoot_day_id: string | null;
           status: string;
+          story_confirmed: boolean;
+          story_day: number | null;
+          story_time: string | null;
           time_of_day: string | null;
           title: string;
           updated_at: string;
@@ -2672,6 +2723,9 @@ export type Database = {
           shoot_day?: number | null;
           shoot_day_id?: string | null;
           status?: string;
+          story_confirmed?: boolean;
+          story_day?: number | null;
+          story_time?: string | null;
           time_of_day?: string | null;
           title: string;
           updated_at?: string;
@@ -2696,6 +2750,9 @@ export type Database = {
           shoot_day?: number | null;
           shoot_day_id?: string | null;
           status?: string;
+          story_confirmed?: boolean;
+          story_day?: number | null;
+          story_time?: string | null;
           time_of_day?: string | null;
           title?: string;
           updated_at?: string;
