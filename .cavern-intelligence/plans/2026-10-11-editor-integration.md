@@ -1,6 +1,6 @@
 # The editor on the film graph — plan
 
-**Status: draft for the owner, 2026-10-11.** Nothing here is built. Owner
+**Status: decisions 1–3 made by the owner 2026-10-11; 4 settled below. Built so far: see the session notes.** Owner
 direction: *the editor is the core of the suite; it has to be cut over to the
 film graph to be fully integrated, and that is a major expansion, not a
 thinning.* This plan takes that at face value.
@@ -155,6 +155,13 @@ behalf) is deliberately after E3.
 4. **What the gutter shows by default** (story day, shoot day, location,
    daylight) vs. on hover — a design call, to settle with the design language
    (*show, don't write*).
+
+## 6b. Decided (owner, 2026-10-11)
+
+1. **A CRDT (Yjs) under the script — yes.** (E3.)
+2. **A rename may rewrite the script text — yes.** The script follows the graph's names. (E4.)
+3. **The read-only gutter and cue card come before taking the page apart (E1)** — built on a thin adapter, accepting some rework in E1.
+4. **Gutter default (proposed, owner to confirm):** every scene shows story day and time; shoot day and the daylight mark appear once the scene is scheduled; more on hover or in the scene card. Quiet by default (*show, don't write*).
 
 ## 7. What I would not do
 
