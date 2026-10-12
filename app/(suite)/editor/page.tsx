@@ -15,6 +15,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
+import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene } from '@/lib/scriptos/sceneviews';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
@@ -593,17 +594,7 @@ export default function EditorPage() {
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
-  const scenePositions = useMemo(() => {
-    let cursor = 0;
-    const positions: number[] = [];
-    for (const s of scenesList) {
-      const idx = content.toUpperCase().indexOf(s.text.toUpperCase(), cursor);
-      if (idx < 0) { positions.push(-1); continue; }
-      positions.push(idx);
-      cursor = idx + s.text.length;
-    }
-    return positions;
-  }, [scenesList, content]);
+  const scenePositions = useMemo(() => positionsOfScenes(scenesList, content), [scenesList, content]);
 
   const jumpToScene = (sceneIndex: number) => {
     setActiveView('write');
@@ -621,26 +612,10 @@ export default function EditorPage() {
   };
 
   const reorderScenes = (from: number, to: number) => {
-    if (from === to || from < 0 || to < 0) return;
-    if (scenePositions.some(p => p < 0)) return;
-    const positions = scenePositions;
-    const preamble = content.substring(0, positions[0]);
-    const blocks = positions.map((p, k) => content.substring(p, k + 1 < positions.length ? positions[k + 1] : content.length));
-    const [moved] = blocks.splice(from, 1);
-    blocks.splice(to, 0, moved);
-    setContent(preamble + blocks.join(''));
+    const next = moveScene(content, scenePositions, from, to);
+    if (next !== null) setContent(next);
   };
-  const filteredScenes = useMemo(() => {
-    if (sceneFilter === 'all') return scenesList;
-    return scenesList.filter(s => {
-      const upper = s.text.toUpperCase();
-      if (sceneFilter === 'int') return upper.includes('INT');
-      if (sceneFilter === 'ext') return upper.includes('EXT');
-      if (sceneFilter === 'day') return upper.includes('DAY');
-      if (sceneFilter === 'night') return upper.includes('NIGHT');
-      return true;
-    });
-  }, [scenesList, sceneFilter]);
+  const filteredScenes = useMemo(() => filterScenes(scenesList, sceneFilter), [scenesList, sceneFilter]);
   const chars = [...new Set(lines.filter(l => l.type === 'character').map(l => l.text.trim()))];
   const wordCount = content.split(/\s+/).filter(Boolean).length;
   const pageEst = Math.max(1, Math.round(timing.pages));
@@ -648,29 +623,11 @@ export default function EditorPage() {
   const actionLines = lines.filter(l => l.type === 'action').length;
   const dialogueRatio = actionLines + dialogueLines > 0 ? Math.round((dialogueLines / (actionLines + dialogueLines)) * 100) : 0;
 
-  const sceneWordCounts = useMemo(() => {
-    const counts: number[] = [];
-    for (let s = 0; s < scenesList.length; s++) {
-      const startIdx = lines.findIndex(l => l.id === scenesList[s].id);
-      const endIdx = s + 1 < scenesList.length ? lines.findIndex(l => l.id === scenesList[s + 1].id) : lines.length;
-      const sceneLines = lines.slice(startIdx, endIdx);
-      const wc = sceneLines.reduce((sum, l) => sum + l.text.split(/\s+/).filter(Boolean).length, 0);
-      counts.push(wc);
-    }
-    return counts;
-  }, [lines, scenesList]);
+  const sceneWordCounts = useMemo(() => countSceneWords(lines, scenesList), [lines, scenesList]);
 
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
-  const sceneCharMap = useMemo(() => {
-    return scenesList.map((scene, i) => {
-      const startIdx = lines.findIndex(l => l.id === scene.id);
-      const endIdx = i + 1 < scenesList.length
-        ? lines.findIndex(l => l.id === scenesList[i + 1].id)
-        : lines.length;
-      return [...new Set(lines.slice(startIdx, endIdx).filter(l => l.type === 'character').map(l => l.text.trim()))];
-    });
-  }, [lines, scenesList]);
+  const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
   const currentSceneIdx = useMemo(() => {
     let lineCount = 0;
