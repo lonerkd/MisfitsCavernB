@@ -161,6 +161,8 @@ export class ScriptParser {
       this.preScanSpeakers();
     }
 
+    const titleLines = this.titlePageLines();
+
     for (let i = 0; i < this.rawLines.length; i++) {
       const raw = this.rawLines[i];
       const trim = raw.trim();
@@ -169,6 +171,13 @@ export class ScriptParser {
         this.lines.push(this.line(i, '', 'empty', 100));
         this.insideDialogueBlock = false;
         this.requestDual = false;
+        continue;
+      }
+
+      // Fountain title page: `Key: value` lines (and their indented continuations)
+      // at the very top, up to the first blank line.
+      if (titleLines.has(i)) {
+        this.lines.push(this.line(i, raw, 'title', 100, ['Fountain title page']));
         continue;
       }
 
@@ -218,7 +227,11 @@ export class ScriptParser {
       } else if (analysis.type === 'character') {
         const charName = analysis.meta?.characterName || trim;
 
-        const isDual = trim.startsWith('^') || this.requestDual;
+        // Fountain writes dual dialogue as a caret AFTER the second speaker's name
+        // ("STEEL ^"): the speech before it, and this one, are shown side by side.
+        const trailingCaret = /\s\^\s*$/.test(trim);
+        if (trailingCaret) { this.markPreviousSpeechDual(); this.requestDual = true; }
+        const isDual = trim.startsWith('^') || trailingCaret || this.requestDual;
 
         const isContinued = this.lastSpeaker !== null &&
           this.clean(charName) === this.lastSpeaker &&
@@ -396,6 +409,33 @@ export class ScriptParser {
     if (trim.startsWith('@')) return { type: 'character', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced character'], meta: { characterName: this.clean(trim.slice(1)) } };
     if (trim.startsWith('!')) return { type: 'action', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced action'], meta: { text: trim.slice(1).trim() } };
     return null;
+  }
+
+  /** The Fountain title page: the leading block of known `Key:` lines and the indented lines under them. */
+  private titlePageLines(): Set<number> {
+    const KEY = /^(title|credit|author|authors|source|notes|draft date|date|contact|copyright|revision|watermark|font|tl|tc|tr|bl|bc|br)\s*:/i;
+    const out = new Set<number>();
+    let i = 0;
+    while (i < this.rawLines.length && !this.rawLines[i].trim()) i++;
+    if (i >= this.rawLines.length || !KEY.test(this.rawLines[i].trim())) return out;
+    for (; i < this.rawLines.length && this.rawLines[i].trim(); i++) {
+      const line = this.rawLines[i];
+      if (/^[ \t]/.test(line) || /^[A-Za-z][A-Za-z ]*:/.test(line.trim())) out.add(i);
+      else break;
+    }
+    return out;
+  }
+
+  /** The speech just before the current cue (across the blank line between them) is the other half of a dual dialogue. */
+  private markPreviousSpeechDual(): void {
+    const lines = this.lines;
+    let k = lines.length - 1;
+    while (k >= 0 && lines[k].type === 'empty') k--;
+    const end = k;
+    while (k >= 0 && (lines[k].type === 'dialogue' || lines[k].type === 'parenthetical')) k--;
+    if (k >= 0 && lines[k].type === 'character') {
+      for (let j = k; j <= end; j++) lines[j].meta = { ...lines[j].meta, isDualDialogue: true };
+    }
   }
 
   private markPreviousDual(): void {

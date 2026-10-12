@@ -59,7 +59,7 @@ describe('KNOWN GAPS in the classifier', () => {
     expect(typeOfLine('Exterior shots hold steady.')).toBe('action');
   });
 
-  it.fails('dual dialogue as Fountain writes it — a caret AFTER the second name (LEO ^) — is dual', () => {
+  it('(fixed in B2) dual dialogue as Fountain writes it — a caret AFTER the second name (LEO ^) — is dual', () => {
     const r = parseScript(HEAD + 'MAYA\nHi.\n\nLEO ^\nHey.\n');
     expect(r.lines.some((l) => l.meta?.isDualDialogue)).toBe(true);
     expect(r.scenes[0].characters).toContain('LEO');

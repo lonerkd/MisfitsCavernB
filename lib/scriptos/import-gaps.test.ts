@@ -79,7 +79,7 @@ describe('KNOWN GAPS in PDF import', () => {
   });
 });
 
-describe('Fountain import', () => {
+describe('Fountain import (as written since B2)', () => {
   const SRC = 'Title: Harbor\nAuthor: Ana\n\n.SNIPER SCOPE\n\n= Maya arrives\n\n# ACT ONE\n\n@mc\nHello.\n\nINT. ROOM - DAY\n\nText.\n';
 
   it('keeps the plain screenplay elements and the notes', () => {
@@ -88,22 +88,22 @@ describe('Fountain import', () => {
     expect(content).toContain('[[remember to cut]]');
   });
 
-  it.fails('keeps a forced scene heading (.SNIPER SCOPE) as a scene heading', () => {
+  it('keeps a forced scene heading (.SNIPER SCOPE) as a scene heading', () => {
     const { content } = importToContent(SRC, 'x.fountain');
     expect(parseScript(content).lines.some((l) => l.type === 'slug' && /SNIPER SCOPE/.test(l.text))).toBe(true);
   });
 
-  it.fails('keeps the title page (Title:, Author:)', () => {
+  it('keeps the title page (Title:, Author:)', () => {
     expect(importToContent(SRC, 'x.fountain').content).toContain('Title: Harbor');
   });
 
-  it.fails('keeps sections and synopses (# ACT ONE, = Maya arrives)', () => {
+  it('keeps sections and synopses (# ACT ONE, = Maya arrives)', () => {
     const { content } = importToContent(SRC, 'x.fountain');
     expect(content).toContain('# ACT ONE');
     expect(content).toContain('= Maya arrives');
   });
 
-  it.fails('keeps a forced character name as written (@mc is not upper-cased)', () => {
+  it('keeps a forced character name as written (@mc is not upper-cased)', () => {
     expect(importToContent(SRC, 'x.fountain').content).toContain('@mc');
   });
 });
