@@ -2,6 +2,7 @@
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { eighthsOf } from './timing';
+import { decodeLabels, type Decoded, type Observation, type State } from './decode';
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -108,6 +109,9 @@ export const KNOWLEDGE = {
   ])
 };
 
+export interface ParseOptions { /** Use the whole-document decoder (default: DECODER_DEFAULT). */ decoder?: boolean }
+export const DECODER_DEFAULT = true;
+
 export type ScriptFormat = 'screenplay' | 'teleplay' | 'stage-play' | 'treatment' | 'podcast' | 'doc-outline';
 
 export class ScriptParser {
@@ -125,7 +129,11 @@ export class ScriptParser {
   private insideBoneyard: boolean = false;
   private requestDual: boolean = false;
 
-  constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set()) {
+  /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
+  private useDecoder: boolean;
+
+  constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
+    this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
     this.learnedNames = learnedNames;
@@ -197,6 +205,7 @@ export class ScriptParser {
     }
 
     const titleLines = this.titlePageLines();
+    const decoded = this.useDecoder && this.usesScreenplayGrammar() ? this.decode(titleLines) : null;
 
     for (let i = 0; i < this.rawLines.length; i++) {
       const raw = this.rawLines[i];
@@ -252,6 +261,8 @@ export class ScriptParser {
         analysis = this.usesScreenplayGrammar()
           ? this.analyzeLine(trim, context)
           : this.analyzeNonScreenplayLine(trim, context);
+        const decided = decoded?.states[i];
+        if (decided) this.applyDecision(analysis, decided, decoded!.confidence[i], trim);
       }
 
       if (analysis.type === 'slug') {
@@ -446,6 +457,48 @@ export class ScriptParser {
     if (trim.startsWith('@')) return { type: 'character', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced character'], meta: { characterName: this.clean(trim.slice(1)) } };
     if (trim.startsWith('!')) return { type: 'action', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced action'], meta: { text: trim.slice(1).trim() } };
     return null;
+  }
+
+  /** What the decoder is asked to decide: every line, with the ones Fountain syntax already settled marked fixed. */
+  private decode(titleLines: Set<number>): Decoded {
+    const obs: Observation[] = [];
+    let boneyard = false;
+    for (let i = 0; i < this.rawLines.length; i++) {
+      const trim = this.rawLines[i].trim();
+      const prevBlank = i === 0 || !this.rawLines[i - 1].trim();
+      const next = (this.rawLines[i + 1] ?? '').trim();
+      const base = { text: trim, prevBlank, next };
+      if (!trim) { obs.push({ ...base, kind: 'empty' }); continue; }
+      if (titleLines.has(i)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      if (boneyard || trim.startsWith('/*')) {
+        const closes = trim.endsWith('*/');
+        boneyard = boneyard ? !closes : !trim.includes('*/');
+        obs.push({ ...base, kind: 'fixed', fixed: 'boneyard' });
+        continue;
+      }
+      if (trim === '^') { obs.push({ ...base, kind: 'fixed', fixed: 'dual' }); continue; }
+      const forced = this.preClassify(trim);
+      if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
+      if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      obs.push({ ...base, kind: 'free' });
+    }
+    return decodeLabels(obs, {
+      isCaps: (t) => this.isCaps(t),
+      isHeading: (t) => this.isSceneHeading(t),
+      isTransition: (u) => this.isTransitionText(u),
+      looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
+      isKnownName: (n) => this.characterStats.has(this.clean(n)),
+      hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
+    });
+  }
+
+  /** The decoder's label replaces the line's own; the rest of what the line was found to be stays. */
+  private applyDecision(analysis: { type: LineType; confidence: number; reasoning: string[]; meta?: any }, decided: State, confidence: number, trim: string): void {
+    analysis.type = decided;
+    analysis.confidence = confidence;
+    analysis.reasoning = [...analysis.reasoning, `Decoded as ${decided}`];
+    if (decided === 'character') analysis.meta = { ...analysis.meta, characterName: analysis.meta?.characterName || this.clean(trim) };
+    else if (analysis.meta) analysis.meta = { ...analysis.meta, characterName: undefined };
   }
 
   /** The Fountain title page: the leading block of known `Key:` lines and the indented lines under them. */
@@ -815,7 +868,7 @@ export function extractElementsFromAction(text: string, characters: string[] = [
   return result;
 }
 
-export function parseScript(text: string, format: ScriptFormat = 'screenplay', learnedNames?: Set<string>): ParseResult {
-  const parser = new ScriptParser(text, format, learnedNames);
+export function parseScript(text: string, format: ScriptFormat = 'screenplay', learnedNames?: Set<string>, options?: ParseOptions): ParseResult {
+  const parser = new ScriptParser(text, format, learnedNames, options);
   return parser.parse();
 }

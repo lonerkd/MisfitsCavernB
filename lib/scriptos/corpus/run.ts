@@ -1,6 +1,6 @@
 // Runs the real reading pipeline over the seeded corpus and scores it.
 
-import { parseScript } from '../parser';
+import { parseScript, type ParseOptions } from '../parser';
 import { layoutPages } from '../pdfLayout';
 import { generateScript, type Style } from './generate';
 import { renderPdfPages, renderText } from './render';
@@ -21,12 +21,12 @@ function summarize(scores: Score[], structure: ReturnType<typeof structureScore>
 }
 
 /** The parser, on a script typed as text. */
-export function measureText(style: Style, seeds = SEEDS): Result {
+export function measureText(style: Style, seeds = SEEDS, options?: ParseOptions): Result {
   const scores: Score[] = [];
   const structure: ReturnType<typeof structureScore>[] = [];
   for (const seed of seeds) {
     const { text, truth } = renderText(generateScript(seed, style));
-    const read = parseScript(text);
+    const read = parseScript(text, 'screenplay', undefined, options);
     scores.push(scoreLines(truth, read.lines));
     structure.push(structureScore(truth, { scenes: read.scenes.length, cast: read.characters.map((c) => c.name) }));
   }
@@ -34,13 +34,13 @@ export function measureText(style: Style, seeds = SEEDS): Result {
 }
 
 /** The whole PDF path: page text items → the layout reader → the parser. */
-export function measurePdf(style: Style, seeds = SEEDS, layout: { shift?: number; scale?: number } = {}): Result {
+export function measurePdf(style: Style, seeds = SEEDS, layout: { shift?: number; scale?: number } = {}, options?: ParseOptions): Result {
   const scores: Score[] = [];
   const structure: ReturnType<typeof structureScore>[] = [];
   for (const seed of seeds) {
     const elements = generateScript(seed, style);
     const { truth } = renderText(elements);
-    const read = parseScript(layoutPages(renderPdfPages(elements, layout)));
+    const read = parseScript(layoutPages(renderPdfPages(elements, layout)), 'screenplay', undefined, options);
     scores.push(scoreBlocks(truth, read.lines));
     structure.push(structureScore(truth, { scenes: read.scenes.length, cast: read.characters.map((c) => c.name) }));
   }

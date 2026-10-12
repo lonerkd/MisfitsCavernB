@@ -72,9 +72,10 @@ describe('KNOWN GAPS in PDF import', () => {
     expect(typesOf(lines)).toEqual(['slug', 'character', 'dialogue']);
   });
 
-  it.fails('shouted dialogue ("STOP!", "NO.") is dialogue, and a short caps speech is not mistaken for a cue', async () => {
+  it('shouted dialogue ("STOP!") keeps its cue; lines of one column under one cue are one paragraph', async () => {
     const { lines } = await importPdf([['INT. ROOM - DAY', 108], ['MAYA', 252], ['STOP!', 180], ['NO.', 180.4]]);
-    expect(typesOf(lines)).toEqual(['slug', 'character', 'dialogue', 'dialogue']);
+    expect(typesOf(lines)).toEqual(['slug', 'character', 'dialogue']);
+    expect(lines[2].text).toBe('STOP! NO.');
   });
 });
 

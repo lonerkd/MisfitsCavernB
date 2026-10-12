@@ -123,6 +123,12 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
   take('transition', (s) => s.transition, 0.5);
   take('character', (s) => s.capsShort, 0.55);
   take('dialogue', (s) => s.lower * Math.min(1, s.n / 2), 0.3);
+  // A column between the action margin and the cue column is dialogue, whatever is in it (shouting has no lower case).
+  const cueCol = [...roles.entries()].find(([, r]) => r === 'character')?.[0];
+  if (cueCol && ![...roles.values()].includes('dialogue')) {
+    const between = free.filter((c) => c.x > action.x + 20 && c.x < cueCol.x - 20).sort((x, y) => y.count - x.count)[0];
+    if (between) { roles.set(between, 'dialogue'); free.splice(free.indexOf(between), 1); }
+  }
   // Anything left sits with its nearest named neighbour.
   for (const c of free) {
     const named = [...roles.entries()].filter(([k]) => k !== c).sort((a, b) => Math.abs(a[0].x - c.x) - Math.abs(b[0].x - c.x))[0];
