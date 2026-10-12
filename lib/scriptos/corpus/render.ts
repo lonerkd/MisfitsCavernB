@@ -42,22 +42,27 @@ function wrap(text: string, width: number): string[] {
 }
 
 /** The pages of text items a PDF reader would report for the script (55 lines a page, page numbers from page 2). */
-export function renderPdfPages(elements: Element[], opts: { linesPerPage?: number } = {}): PositionedItem[][] {
+export function renderPdfPages(elements: Element[], opts: { linesPerPage?: number; shift?: number; scale?: number } = {}): PositionedItem[][] {
   const perPage = opts.linesPerPage ?? 55;
+  // Everything moves sideways by `shift` points: another page size or margin (a 1 in left margin is -36; A4 centred is about -8).
+  const shift = opts.shift ?? 0;
+  // Horizontal scale about the page's left edge: another page size, or another font size.
+  const scale = opts.scale ?? 1;
+  const px = (x: number) => x * scale + shift;
   const rows: Array<{ str: string; x: number } | null> = [];
   let prevGroup: number | null = null;
   elements.forEach((el, i) => {
     const sameSpeech = i > 0 && el.group !== null && el.group === prevGroup;
     if (i > 0 && !sameSpeech) rows.push(null);
     const col = COLUMN[el.type];
-    for (const line of wrap(el.text, col.width)) rows.push({ str: line, x: col.x });
+    for (const line of wrap(el.text, col.width)) rows.push({ str: line, x: px(col.x) });
     prevGroup = el.group;
   });
   const pages: PositionedItem[][] = [];
   for (let start = 0; start < rows.length; start += perPage) {
     const items: PositionedItem[] = [];
     const pageNo = pages.length + 1;
-    if (pageNo > 1) items.push({ str: `${pageNo}.`, transform: [12, 0, 0, 12, 540, 740] });
+    if (pageNo > 1) items.push({ str: `${pageNo}.`, transform: [12, 0, 0, 12, px(540), 740] });
     rows.slice(start, start + perPage).forEach((row, r) => {
       if (row) items.push({ str: row.str, transform: [12, 0, 0, 12, row.x, 700 - r * 12] });
     });
