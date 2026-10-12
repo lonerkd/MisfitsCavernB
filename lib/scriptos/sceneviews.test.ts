@@ -1,0 +1,51 @@
+import { describe, expect, it } from 'vitest';
+import { parseScript } from './parser';
+import { filterScenes, reorderScenes, sceneCharacters, scenePositions, sceneWordCounts } from './sceneviews';
+
+const SRC = 'Title: X\n\nINT. KITCHEN - DAY\n\nMAYA\nHi there.\n\nEXT. STREET - NIGHT\n\nLEO\nHey.\n\nINT. HALL - DAY\n\nMaya waits.\n';
+const lines = () => parseScript(SRC, 'screenplay').lines;
+const headings = () => lines().filter((l) => l.type === 'slug');
+
+describe('scene views', () => {
+  it('finds each heading in the text', () => {
+    const p = scenePositions(headings(), SRC);
+    expect(p).toHaveLength(3);
+    expect(p.map((i) => SRC.substring(i, i + 4))).toEqual(['INT.', 'EXT.', 'INT.']);
+    expect(scenePositions([{ ...headings()[0], text: 'INT. NOWHERE' }], SRC)).toEqual([-1]);
+  });
+
+  it('moves a scene and keeps every other character of the script', () => {
+    const next = reorderScenes(SRC, scenePositions(headings(), SRC), 2, 0)!;
+    expect(next.indexOf('INT. HALL')).toBeLessThan(next.indexOf('INT. KITCHEN'));
+    expect(next.length).toBe(SRC.length);
+    expect(next.startsWith('Title: X')).toBe(true);
+    expect([...next].sort().join('')).toBe([...SRC].sort().join(''));
+  });
+
+  it('refuses a move that is not one', () => {
+    const p = scenePositions(headings(), SRC);
+    expect(reorderScenes(SRC, p, 1, 1)).toBeNull();
+    expect(reorderScenes(SRC, p, -1, 0)).toBeNull();
+    expect(reorderScenes(SRC, p, 0, 9)).toBeNull();
+    expect(reorderScenes(SRC, [3, -1], 0, 1)).toBeNull();
+    expect(reorderScenes(SRC, [], 0, 1)).toBeNull();
+  });
+
+  it('filters by interior, exterior, day or night', () => {
+    const h = headings();
+    expect(filterScenes(h, 'all')).toHaveLength(3);
+    expect(filterScenes(h, 'int')).toHaveLength(2);
+    expect(filterScenes(h, 'ext')).toHaveLength(1);
+    expect(filterScenes(h, 'night').map((s) => s.text)).toEqual(['EXT. STREET - NIGHT']);
+    expect(filterScenes(h, 'day')).toHaveLength(2);
+  });
+
+  it('counts words and speakers per scene', () => {
+    const l = lines();
+    const h = l.filter((x) => x.type === 'slug'); // one parse: line ids are per parse
+    expect(sceneCharacters(l, h)).toEqual([['MAYA'], ['LEO'], []]);
+    const words = sceneWordCounts(l, h);
+    expect(words).toHaveLength(3);
+    expect(words[0]).toBeGreaterThan(words[2] - 1);
+  });
+});
