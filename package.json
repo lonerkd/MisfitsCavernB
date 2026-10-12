@@ -75,5 +75,12 @@
     "tailwindcss": "^3.4.0",
     "typescript": "^5.9.3",
     "vitest": "^5.0.3"
-  }
+  },
+  "description": "The Cavern by Misfits Cavern — the production suite for independent filmmakers.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lonerkd/MisfitsCavernB.git"
+  },
+  "license": "UNLICENSED",
+  "homepage": "https://misfits-cavern-b.vercel.app"
 }

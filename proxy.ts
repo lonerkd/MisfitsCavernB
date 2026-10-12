@@ -12,6 +12,7 @@ export async function proxy(request: NextRequest) {
     '/api/public',
     '/_next',
     '/favicon.ico',
+    '/opengraph-image',
   ];
   if (publicPaths.some((p) => path === p || path.startsWith(p + '/'))) {
     return NextResponse.next();
