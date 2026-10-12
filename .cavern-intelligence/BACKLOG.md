@@ -64,6 +64,80 @@ Done: days and places (1), characters and sides (2), story time and continuity (
 ### 3.19 Editor find & replace: the count and the replacement disagree on case — S (product call)
 The bar counts matches ignoring case but replaces only exact-case matches (`components/editor/useFindReplace.ts`; pinned by a `KNOWN QUIRK` unit test). So "Replaced 2 occurrences" can be shown when nothing changed. Decide: match case on both (safe for a screenplay — `MAYA` vs `Maya`), or ignore case on both, or offer a Match case toggle. Done when the count equals what is replaced and the unit test is updated.
 
+### 3.20 The classifier and the importer — known gaps — M–L (found 2026-10-11 by comparing with the old parser and import modal)
+Pinned as expected-failure tests, so a fix flips one: `lib/scriptos/parser-gaps.test.ts` (11) and `lib/scriptos/import-gaps.test.ts` (9). By damage:
+1. **PDF import corrupts cues it can't recognise** (M). `pdfImport.ts` tests a cue with `^[A-Z][A-Z0-9\s().']{1,50}# The Cavern — Backlog
+
+Every open task and planned pass, scoped. **This is the one list** — when work
+is found and not done, it goes here (not only in a session note); when it's
+done, delete it here and record it in `STATE.md`'s latest session. `STATE.md`
+carries the short version ("Open work") and is injected into every session.
+
+Sizes: **S** ≈ an hour or two · **M** ≈ a session · **L** ≈ several sessions.
+Last audited: 2026-10-06 (each item checked against the code, production, the
+advisors and every screen that day — `bible/audit-2026-10-06.md`).
+
+---
+
+## 1. For the owner (outside the code)
+
+- **Supabase usage** — the dashboard says the free-plan grace period is over
+  (Organization › Usage: which line is over — likely egress or Realtime; the
+  database, storage and request counts are well inside). Decide: trim it, or
+  move to Pro (also brings daily backups).
+- **Apply migration `20261012010000_film_graph_story_time.sql` to production** (paste into the SQL editor) once its PR is merged — the film graph's step 3 (story time, continuity). Production lacks the columns until then, so Production › Continuity errors. Then run *Production schema drift*.
+- **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
+- **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
+  Auth › SMTP, on a domain you own, before strangers sign up (3.15).
+- **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
+- **Lawyer review** of `/privacy` and `/terms` (`lib/legal/legal.ts`; Peter Olowude,
+  Alberta, Canada).
+- **Optional — branch protection on `main`** with `checks`, `database` and
+  the `e2e-local` shards required. That turns on GitHub auto-merge, so a
+  green PR merges itself instead of waiting for a session to notice.
+- **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
+  Still flagged by the security advisor (`auth_leaked_password_protection`).
+- **Stashes**: the cloud container's ("legal") is dropped — every line was
+  already on `main` (re-checked 2026-10-06). **Old stashes on the Windows machine** (the one that made the island
+  branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites
+  and were never reconciled. Look at each (`git stash show -p stash@{n}`);
+  anything not on `main` goes into a branch, then drop them. (The cloud
+  container's only stash, "legal", is fully on `main` — checked line by line.)
+- **Stale remote branches**: 17 of the 18 deleted 2026-10-06 (tips matched; restore with `git push origin <sha>:refs/heads/<name>` from the list in git history of this file). `claude/design-scales` stays — it now carries PR #137 (data access through `lib/`, the sign-in fix).
+
+## 2. To verify
+
+- **`e2e/onset-offline.spec.ts` on Windows with the older local Chromium
+  (1228)**: after an offline reload the day stays on "Loading the schedule…".
+  Same on plain `main`, passes in CI and in the cloud container. Check on a
+  second Windows machine / a newer Chromium before treating it as a bug.
+
+## 3. Upgrades (scoped — in suggested order)
+
+### 3.1 Dev-toolchain advisories — watch, S when upstream moves
+Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,
+2026-10-06, after `source-map-js` 1.2.2; 2026-10-03's fix bumped `dompurify`,
+`fflate`, `brace-expansion`, `postcss-selector-parser` and the Next ESLint
+config). Left: 7 high, all `braces` (every version flagged) reached only
+through dev tools — `tailwindcss` → `chokidar`, and `eslint-config-next` →
+`fast-glob` — and 2 moderate, `postcss-selector-parser` under Tailwind 3's
+`postcss-nested`. Nothing ships to the browser or server; the only offered
+fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
+changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
+release; take the plain fix then. Done when `npm audit` reports 0.
+
+### 3.18 Film graph — what's left after steps 1–3 — L (owner: the editor gets cut over)
+Done: days and places (1), characters and sides (2), story time and continuity (3). Left, in order: **(a)** the app reads `scene_characters` / `call_sheet_calls.character_id` instead of `cast_list` / `character_name` text (S–M); **(b)** continuity extras — a photo and wardrobe/prop elements on a look, a wardrobe/make-up sheet (PDF), shoot order beside story order, the look-change warning on the call sheet (M); **(c)** step 4 entities and links, the card, mentions (L); **(d)** the editor on the graph — **a major expansion, not a thinning** (owner, 2026-10-11): planned rung by rung in [plans/2026-10-11-editor-integration.md](plans/2026-10-11-editor-integration.md) (E0 safety net → E1 take the page apart → E2 read the graph → E3 CRDT → E4 write the graph → E5 margin links → E6 contract; XL overall, decisions for the owner in §6); **(e)** step 5 money, step 6 my day, step 7 drop the text columns. Done when nothing reads `scenes.cast_list`, `scenes.location` or `character_name` and the old columns are gone.
+
+### 3.19 Editor find & replace: the count and the replacement disagree on case — S (product call)
+The bar counts matches ignoring case but replaces only exact-case matches (`components/editor/useFindReplace.ts`; pinned by a `KNOWN QUIRK` unit test). So "Replaced 2 occurrences" can be shown when nothing changed. Decide: match case on both (safe for a screenplay — `MAYA` vs `Maya`), or ignore case on both, or offer a Match case toggle. Done when the count equals what is replaced and the unit test is updated.
+
+ at x 180–350. `MARY-ANN`, `JOSÉ` and any hyphenated or non-ASCII name are swallowed into the previous paragraph; `FADE OUT.` ends up inside the last speech; a parenthetical is glued to the dialogue; `LEO (O.S.)` loses its dialogue; shouted `STOP!` / `NO.` lose theirs. The stitcher is the old import modal's algorithm ported as it was (hard-coded points for US-Letter margins). Fix: read a cue by its indent relative to the page's own margins and by the parser's cue rules, not a character class. Done when the five PDF gaps pass.
+2. **Fountain import throws away what the parser would keep** (S). `importToContent` rewrites a `.fountain` file to plain text before the lossless parser sees it: forced headings (`.SNIPER SCOPE` becomes action), the title page, sections, synopses and boneyard are dropped, and `@mc` is upper-cased. Done when a `.fountain` file is imported as it is (the parser already reads Fountain natively).
+3. **Classifier** (M). A numbered heading with a period (`12. INT. …`) isn't a heading (a regression from the old parser). `FADE OUT.`, `CUT TO BLACK.`, and `DISSOLVE TO` / `SMASH CUT TO` without a colon aren't transitions. A `(beat)` between two speeches becomes dialogue (and the table read speaks it). A cue followed by an ALL-CAPS speech loses both. An ALL-CAPS action line followed straight by action becomes a bogus character. Any line containing "draft" in the first 50 lines becomes a title page. Cyrillic, CJK and Arabic cues aren't recognised (`isCaps` looks at a–z only). A sentence that starts with the word "Interior" or "Exterior" is a heading. Fountain's own dual-dialogue syntax (`LEO ^`, caret after the name) isn't read — only a leading or lone caret is.
+4. **Fields that say more than they know** (S). `Character.firstLineIndex` is always 0 and `Character.lines` counts cues, not lines; `Scene.omitted` is always false; `ScriptLine.confidence` is read by nothing. Fill them in or remove them.
+Done when every `it.fails` in both files is an `it`.
+
 ### 3.21 The deep brain — the script engine, rung by rung — XL (owner direction, 2026-10-12)
 A layered, deterministic, explainable reading engine: lossless Fountain first, then evidence, a document profile, a whole-document decoder, the suite's context as priors, and memory of corrections; the importers rebuilt on the same engine. Plan, layers, baseline and decisions: [plans/2026-10-12-the-deep-brain.md](plans/2026-10-12-the-deep-brain.md). **B0 (the measure) is built** — `lib/scriptos/corpus/`, with floors in `corpus.test.ts` that may only be raised. Next, in order: **B1** make the measure hard to fool (metamorphic tests, PDF layout variants, a private corpus of real scripts) · **B2** Fountain complete, and Fountain imported as-is · **B3** the evidence layer (fixes numbered headings, `FADE OUT.`, non-Latin and digit/period names; also BACKLOG 3.20) · **B4** document profile · **B5** the decoder · **B6** the PDF reader rebuilt on geometry · **B7** the project's context in · **B8** memory and corrections · **B9** confidence out to the suite. Done when the corpus matrix's weakest cell is above 0.9 and a private real-script corpus agrees. Owner input needed: real scripts for the private corpus.
 
