@@ -1151,6 +1151,7 @@ function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
+function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
 function public.admin_list_users() body=a4c00b1cc3f3a7545f7ea32a9d31b623
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
 function public.append_to_script(p_script uuid, p_text text) body=2f0ee0349c99fd212a171f033d4ff8a1
@@ -1244,6 +1245,7 @@ grant function internal.transcript_lines_touch() postgres
 grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
+grant function public.admin_close_job(p_job uuid) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
 grant function public.append_to_script(p_script uuid, p_text text) authenticated,postgres,service_role

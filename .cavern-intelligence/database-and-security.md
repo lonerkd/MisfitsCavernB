@@ -131,6 +131,7 @@ Callable by **signed-in users**:
 | `account_deletion_plan()`, `delete_my_account(username)` | the caller; deletion refused while they own a crewed project or are the last admin (§C) |
 | `transfer_project(project, to)` | caller owns the project; recipient is confirmed crew |
 | `admin_list_users()`, `admin_platform_analytics(since)`, `set_user_admin(user, admin)` | `internal.caller_is_admin()`; an admin can't remove their own rights |
+| `admin_close_job(job)` | `internal.caller_is_admin()`; sets `status = 'closed'` (deletes nothing) and writes an `audit_logs` row |
 | `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
 | `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |
 | `lounge_unread()`, `mark_lounge_read(channel, partner)` | channels filtered by `internal.can_view_channel`; DMs the caller is in |

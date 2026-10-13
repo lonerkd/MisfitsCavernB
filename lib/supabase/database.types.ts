@@ -3831,6 +3831,7 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_close_job: { Args: { p_job: string }; Returns: undefined };
       admin_list_users: {
         Args: Record<PropertyKey, never>;
         Returns: {

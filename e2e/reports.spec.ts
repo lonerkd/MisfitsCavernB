@@ -32,6 +32,7 @@ test.describe.serial('Reports (local Supabase)', () => {
   });
   test.afterAll(async () => {
     if (!admin) return;
+    await admin.from('audit_logs').delete().eq('resource_id', jobId);
     await admin.from('reports').delete().eq('target_id', jobId);
     await admin.from('jobs').delete().eq('id', jobId);
     for (const u of Object.values(users)) await admin.auth.admin.deleteUser(u.id);
@@ -82,8 +83,12 @@ test.describe.serial('Reports (local Supabase)', () => {
     await expect(boss.page.getByText(`reported by member${TAG}`)).toBeVisible();
     await expect(boss.page.getByRole('link', { name: 'Look at it' })).toHaveAttribute('href', `/jobs/${jobId}`);
 
-    await boss.page.getByRole('button', { name: 'Resolved' }).click();
+    // Acting on it: close the job (the poster's tools are not needed), and the report closes with it.
+    await boss.page.getByRole('button', { name: 'Close the job' }).click();
+    await boss.page.getByRole('button', { name: 'Close job', exact: true }).click();
     await expect(boss.page.getByText('Marked resolved')).toBeVisible({ timeout: 20_000 });
+    expect((await admin.from('jobs').select('status').eq('id', jobId).single()).data?.status).toBe('closed');
+    expect((await admin.from('audit_logs').select('user_id, action').eq('resource_id', jobId)).data).toEqual([{ user_id: users.boss.id, action: 'admin_close_job' }]);
     await expect(boss.page.getByText('Asks for money up front')).toHaveCount(0);
     await boss.page.getByRole('tab', { name: 'Resolved' }).click();
     await expect(boss.page.getByText('Asks for money up front')).toBeVisible({ timeout: 20_000 });

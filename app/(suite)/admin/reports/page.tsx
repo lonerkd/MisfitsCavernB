@@ -10,14 +10,16 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { ProtectedPage, useCurrentUser } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
-import { listReports, settleReport, targetHref, type ReportStatus } from '@/lib/supabase/reports';
+import { closeReportedJob, listReports, settleReport, targetHref, type ReportStatus } from '@/lib/supabase/reports';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 
 const TABS: { id: ReportStatus; label: string }[] = [{ id: 'open', label: 'Open' }, { id: 'resolved', label: 'Resolved' }, { id: 'dismissed', label: 'Dismissed' }];
 
 export default function AdminReportsPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { user } = useCurrentUser();
   const [tab, setTab] = useState<ReportStatus>('open');
   const reports = useLoad(`reports:${tab}`, () => listReports(tab));
@@ -29,6 +31,14 @@ export default function AdminReportsPage() {
     if (error) { toast(`Could not update it: ${error}`, 'error'); return; }
     toast(status === 'resolved' ? 'Marked resolved' : 'Dismissed', 'success');
     reports.reload();
+  };
+
+  // Close the job that was reported, then close the report with it.
+  const closeJob = async (id: string, jobId: string) => {
+    if (!(await confirm({ title: 'Close this job?', message: 'It leaves the board and stops taking applications. Nothing is deleted, and it is recorded in the audit log.', confirmLabel: 'Close job' }))) return;
+    const error = await closeReportedJob(jobId);
+    if (error) { toast(`Could not close it: ${error}`, 'error'); return; }
+    await settle(id, 'resolved');
   };
 
   return (
@@ -66,6 +76,7 @@ export default function AdminReportsPage() {
                   <p style={{ margin: 0, fontSize: 15, overflowWrap: 'anywhere' }}>{r.reason}</p>
                   {r.status === 'open' && (
                     <div style={{ display: 'flex', gap: 8 }}>
+                      {r.kind === 'job' && <Button variant="danger" onClick={() => void closeJob(r.id, r.target_id)}>Close the job</Button>}
                       <Button onClick={() => void settle(r.id, 'resolved')}>Resolved</Button>
                       <Button variant="ghost" onClick={() => void settle(r.id, 'dismissed')}>Dismiss</Button>
                     </div>
