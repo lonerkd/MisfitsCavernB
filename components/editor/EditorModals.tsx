@@ -42,6 +42,7 @@ const SHORTCUTS: [string, string][] = [
   ['Ctrl + G', 'Go to Scene'],
   ['Ctrl + /', 'Show Shortcuts'],
   ['Tab', 'Smart element insert'],
+  ['Escape, then Tab', 'Leave the script (move to the next control)'],
   ['Ctrl + Shift + B', 'Breakdown tag mode'],
   ['Alt + 1–9', 'Tag the selection (tag mode)'],
   ['Alt + Enter / Alt + ⌫', 'Accept / dismiss a suggestion'],

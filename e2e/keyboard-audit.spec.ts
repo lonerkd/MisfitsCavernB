@@ -45,6 +45,7 @@ async function audit(page: Page, route: string): Promise<Finding[]> {
   const noRingList: string[] = [];
   let last = '';
   let stuck = 0;
+  let same = 0;
   for (let i = 0; i < MAX_TABS; i++) {
     await page.keyboard.press('Tab');
     const info = await page.evaluate(() => {
@@ -53,20 +54,29 @@ async function audit(page: Page, route: string): Promise<Finding[]> {
       const cs = getComputedStyle(el);
       const ring = (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) || cs.boxShadow !== 'none';
       const label = (el.getAttribute('aria-label') || el.textContent || (el as HTMLInputElement).placeholder || el.getAttribute('name') || '').trim().slice(0, 40);
-      const path = `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}|${label}`;
+      const w = window as unknown as { __kb?: number };
+      if (!el.dataset.kb) el.dataset.kb = String((w.__kb = (w.__kb ?? 0) + 1));
+      const path = `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}|${label}|${el.dataset.kb}`;
       const r = el.getBoundingClientRect();
       return { path, ring, visible: r.width > 0 && r.height > 0, offscreen: r.bottom < 0 || r.top > innerHeight + 4000 };
     });
     if (!info) { if (++stuck > 3) break; continue; }
     stuck = 0;
-    if (info.path === last) { add('trap', `focus stays on ${info.path}`); break; }
+    // A date or time field spends several Tab presses on its own parts; only a longer stay is a trap.
+    if (info.path === last) {
+      // A field that keeps Tab for itself (the script) may offer Escape as the way out.
+      if (++same === 3) await page.keyboard.press('Escape');
+      if (same >= 8) { add('trap', `focus stays on ${info.path}`); break; }
+      continue;
+    }
+    same = 0;
     last = info.path;
     stops.set(info.path, (stops.get(info.path) ?? 0) + 1);
     if (!info.ring && noRing++ < 6) noRingList.push(info.path);
     if (!info.visible) add('hidden-stop', `focus lands on an element with no size: ${info.path}`);
     if ((stops.get(info.path) ?? 0) > 2) break; // the order has looped round
   }
-  for (const p of noRingList) add('no-focus-ring', p);
+  for (const p of noRingList) add('no-focus-ring', p.replace(/|d+$/, ''));
 
   // Everything focusable that the tabbing never reached (limited to the first loop).
   const reached = new Set(stops.keys());
