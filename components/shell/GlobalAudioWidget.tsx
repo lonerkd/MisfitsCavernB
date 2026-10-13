@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { parseSpotifyRef, spotifyEmbedSrc, type SpotifyRef } from '@/lib/spotify/refs';
 import { myPlaylists } from '@/lib/spotify/search';
+import { HOUSE_PLAYLISTS } from '@/lib/spotify/house';
 import { useProject } from '@/lib/os';
 import { listSpotifyRefs } from '@/lib/supabase/audio';
 
@@ -22,8 +23,8 @@ const formatMs = (ms: number) => {
 interface Source { key: string; name: string; from: string; ref: SpotifyRef }
 
 /**
- * What to listen to: the active project's Spotify references (its sound, as
- * the team collected it) and the listener's own playlists — nothing preset.
+ * What to listen to: The Cavern's playlists first, then the active project's
+ * Spotify references and the listener's own playlists.
  */
 function useListeningSources(enabled: boolean) {
   const { activeProject } = useProject();
@@ -37,12 +38,13 @@ function useListeningSources(enabled: boolean) {
         myPlaylists().catch(() => []),
       ]);
       if (!on) return;
-      const list: Source[] = [];
+      const list: Source[] = HOUSE_PLAYLISTS.map((p) => ({ key: `h:${p.ref.id}`, name: p.name, from: 'The Cavern', ref: p.ref }));
+      const house = new Set(HOUSE_PLAYLISTS.map((p) => p.ref.id));
       for (const r of refs) {
         const ref = parseSpotifyRef(r.uri);
         if (ref) list.push({ key: `p:${r.id}`, name: r.title || 'Project reference', from: activeProject?.title ?? 'This project', ref });
       }
-      for (const p of mine) list.push({ key: `m:${p.id}`, name: p.name, from: 'Your playlists', ref: { kind: 'playlist', id: p.id } });
+      for (const p of mine.filter((m) => !house.has(m.id))) list.push({ key: `m:${p.id}`, name: p.name, from: 'Your playlists', ref: { kind: 'playlist', id: p.id } });
       setSources(list);
     })().catch(() => { if (on) setSources([]); });
     return () => { on = false; };
