@@ -31,6 +31,22 @@ describe('every theme', () => {
   });
 });
 
+describe('dim text', () => {
+  const hex2 = (n: number) => Math.round(n).toString(16).padStart(2, '0');
+  // --fg-dim is an rgba over a surface: flatten it, then measure against that surface.
+  it.each(THEMES.map((t) => [t.id] as const))('%s: --fg-dim reads on every solid surface (4.5:1)', (id) => {
+    const b = block(id)!;
+    const m = token(b, '--fg-dim')!.match(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/)!;
+    const [r, g, bl, a] = [+m[1], +m[2], +m[3], +m[4]];
+    for (const name of ['--bg', '--bg-2', '--bg-3', '--bg-4']) {
+      const s = token(b, name)!;
+      const n = parseInt(s.slice(1), 16);
+      const flat = '#' + [r * a + ((n >> 16) & 255) * (1 - a), g * a + ((n >> 8) & 255) * (1 - a), bl * a + (n & 255) * (1 - a)].map(hex2).join('');
+      expect(contrast(flat, s), `${id} ${name}`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+});
+
 describe('choosing', () => {
   it('reads old names, objects and junk', () => {
     expect(toThemeChoice('cyberpunk')).toEqual({ id: 'neon' });
