@@ -14,6 +14,7 @@ every admin read goes through a function or policy that checks
 | `/admin/analytics` | <img src="screens/admin-analytics--desktop.webp" width="420"> | <img src="screens/admin-analytics--phone.webp" width="140"> |
 | `/admin/crafts` | the list of film crafts people pick from (profiles, jobs, crew): add one (name, department, colour, above/below the line), remove one (confirmed). Everyone reads it; only an admin writes (RLS) | `crafts` |
 | `/admin/reports` | what people flagged (messages, jobs, profiles), newest first, open / resolved / dismissed, who reported and why, a link to the job or profile; close each as resolved or dismissed. Anyone signed in can file a report (the flag on a message, a job, a profile); only an admin reads them all | `reports` |
+| `/admin/channel-presets` | the channels the Lounge suggests to a production by phase: add one (name, type, who sees it, who posts, phase, topic, why), remove one (confirmed); channels already made from it stay. Everyone reads; only an admin writes (RLS) | `channel_presets` |
 | `/admin/errors` | <img src="screens/admin-errors--desktop.webp" width="420"> | <img src="screens/admin-errors--phone.webp" width="140"> |
 | `/admin/audit-logs` | <img src="screens/admin-audit-logs--desktop.webp" width="420"> | <img src="screens/admin-audit-logs--phone.webp" width="140"> |
 
@@ -37,9 +38,9 @@ every admin read goes through a function or policy that checks
 
 ## Known gaps
 
-- Crafts have an admin screen (`/admin/crafts`); the other catalogues —
-  project formats, brief questions, channel presets — are still changed by
-  migration (3.14).
+- Crafts (`/admin/crafts`) and channel suggestions (`/admin/channel-presets`)
+  have admin screens; the other catalogues — project formats and brief
+  questions — are still changed by migration (3.14).
 - Moderation is a queue only: reports are filed and settled, but acting on
   one (hide, remove, suspend) is by hand (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
