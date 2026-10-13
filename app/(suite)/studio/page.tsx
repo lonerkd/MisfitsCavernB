@@ -4,6 +4,8 @@
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
 
+import { ViewAsBanner, OutsiderPreview } from '@/components/projects/ViewAs';
+import { useViewAs } from '@/lib/os/viewAs';
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
@@ -81,6 +83,7 @@ export default function StudioPage() {
     void document.fonts?.ready.then(reveal);
   }, [tab, activeProject?.id]);
   const progressState = useProjectProgress(activeProject?.id);
+  const viewMode = useViewAs(activeProject?.id);
   const { progress, reload: reloadProgress } = progressState;
   // Tabs looked at before their phase, this visit ("Open it now").
   const [peeked, setPeeked] = useState<Set<TabId>>(new Set());
@@ -190,8 +193,10 @@ export default function StudioPage() {
             <Link href="/projects" className={s.btnPrimary} style={{ marginTop: 20 }}>{projects.length ? 'Your projects' : 'Create a project'}</Link>
           </div>
         ) : (
+          activeProject.creator_id === user.id && viewMode === 'outsider' ? <OutsiderPreview projectId={activeProject.id} /> :
           <StudioProvider key={activeProject.id} project={activeProject} userId={user.id} onNavigate={(t, v) => navigate({ kind: 'studio', tab: t, view: v })}>
             <ProgressContext.Provider value={progressState}>
+              <ViewAsBanner projectId={activeProject.id} />
               <div role="tabpanel">
                 {tabLock && !peeked.has(tab) ? (
                   <LockedTool

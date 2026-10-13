@@ -329,3 +329,6 @@ loops, notes during playback, comparing reads, scoring from the Soundtrack.
 **To add**: drag crew onto roles, side-by-side candidates (photos, reels),
 notes per candidate per role, audition scheduling, decision history, a
 casting sheet PDF.
+
+### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
+**View as** exists for the hub and the Studio (`lib/os/viewAs.ts`). Left: the Lounge (`ownsActive`, channel management), the call-sheet page and any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** a "Post an announcement" box in the project hub that posts to the project's announce channel (post policy "managers") and notifies the crew; a platform-wide broadcast needs email first (3.15). **Owner dashboard:** one page with the owner's projects, what is blocked, who has not acknowledged a call sheet, and the `/admin` stats beside them. Done when each is in the suite and covered by a persona spec.

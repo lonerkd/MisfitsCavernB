@@ -4,6 +4,7 @@
 // and links, loaded once and kept live, shared by every tab. Replaces the old
 // 90-field untyped context.
 
+import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
@@ -174,10 +175,11 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     return map;
   }, [parsedScenes, scriptId, scenes.rows]);
 
+  const viewMode = useViewAs(project.id);
   const value: StudioData = {
     project,
     userId,
-    isOwner: project.creator_id === userId,
+    isOwner: effectiveOwner(project.creator_id === userId, viewMode),
     media,
     links,
     shots,
