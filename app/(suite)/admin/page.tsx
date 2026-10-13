@@ -137,6 +137,18 @@ export default function AdminDashboard() {
             >
               REPORTS
             </Link>
+            <Link
+              href="/admin/channel-presets"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              CHANNELS
+            </Link>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>
