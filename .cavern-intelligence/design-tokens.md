@@ -50,14 +50,8 @@ Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CS
 | Portfolio | `#f59e0b` |
 | Jobs | `#8b5cf6` |
 
-### Tailwind Classes
-```js
-cavern-bg:      '#080808'     // legacy — prefer CSS var --bg
-cavern-fg:      '#f0ece4'     // legacy — prefer CSS var --fg  
-cavern-accent:  '#ff3c00'     // legacy — prefer CSS var --accent
-cavern-muted:   'rgba(255,255,255,0.2)'
-cavern-border:  'rgba(255,255,255,0.04)'
-```
+### Tailwind colours
+None. The old `cavern-*` colours were removed (nothing used them); use the CSS variables above.
 
 ## Typography
 

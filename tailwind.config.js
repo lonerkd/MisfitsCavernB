@@ -7,15 +7,6 @@ module.exports = {
   ],
   theme: {
     extend: {
-      colors: {
-        'cavern': {
-          'bg': '#080808',
-          'fg': '#f0ece4',
-          'accent': '#ff3c00',
-          'muted': 'rgba(255,255,255,0.2)',
-          'border': 'rgba(255,255,255,0.04)',
-        }
-      },
       fontFamily: {
         // The interface face (design-language.md): these utilities follow the same tokens as the rest of the suite.
         'display': ['var(--display)'],
