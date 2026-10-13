@@ -13,13 +13,15 @@ Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CS
 | `--bg-4` | `#0a131e` | Active surface |
 | `--glass` | `rgba(4,7,13,0.78)` | Glass morphism panels |
 
-### Foreground (Vanilla)
+### Foreground (cool white)
 | Token | Color | Opacity |
 |---|---|---|
-| `--fg` | `#e0ddae` | 1.0 |
-| `--fg-muted` | `#e0ddae` | 0.72 |
-| `--fg-dim` | `#e0ddae` | 0.58 (≥4.5:1 on every surface — WCAG AA; never go lower for text) |
-| `--fg-ghost` | `#e0ddae` | 0.12 |
+| `--fg` | `#e9ebef` | 1.0 |
+| `--fg-muted` | `#e9ebef` | 0.74 |
+| `--fg-dim` | `#e9ebef` | 0.58 (≥4.5:1 on every surface in every theme — tested; never go lower for text) |
+| `--fg-ghost` | `#e9ebef` | 0.12 |
+
+Vanilla `#e0ddae` is `--cream`: the title colour and the paper, not body text.
 
 ### Accent (Sinopia)
 | Token | Color | Opacity |
@@ -37,8 +39,8 @@ Source of truth: `tailwind.config.js` (Tailwind classes) + `app/globals.css` (CS
 ### Borders
 | Token | Color | Opacity |
 |---|---|---|
-| `--border` | `#e0ddae` | 0.07 |
-| `--border-2` | `#e0ddae` | 0.12 |
+| `--border` | `#e9ebef` | 0.08 |
+| `--border-2` | `#e9ebef` | 0.14 |
 | `--border-accent` | `#e8431a` | 0.32 |
 
 ### Module Accent Colors
