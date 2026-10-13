@@ -1110,6 +1110,42 @@ export type Database = {
           },
         ];
       };
+      hidden_messages: {
+        Row: {
+          hidden_at: string;
+          hidden_by: string | null;
+          message_id: string;
+          original: string;
+        };
+        Insert: {
+          hidden_at?: string;
+          hidden_by?: string | null;
+          message_id: string;
+          original: string;
+        };
+        Update: {
+          hidden_at?: string;
+          hidden_by?: string | null;
+          message_id?: string;
+          original?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hidden_messages_hidden_by_fkey";
+            columns: ["hidden_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hidden_messages_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: true;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;
@@ -1357,6 +1393,7 @@ export type Database = {
           content: string;
           created_at: string | null;
           edited_at: string | null;
+          hidden_at: string | null;
           id: string;
           parent_message_id: string | null;
           pinned: boolean | null;
@@ -1372,6 +1409,7 @@ export type Database = {
           content: string;
           created_at?: string | null;
           edited_at?: string | null;
+          hidden_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
@@ -1387,6 +1425,7 @@ export type Database = {
           content?: string;
           created_at?: string | null;
           edited_at?: string | null;
+          hidden_at?: string | null;
           id?: string;
           parent_message_id?: string | null;
           pinned?: boolean | null;
@@ -3832,6 +3871,10 @@ export type Database = {
         };
       };
       admin_close_job: { Args: { p_job: string }; Returns: undefined };
+      admin_hide_message: {
+        Args: { p_hidden: boolean; p_message: string };
+        Returns: undefined;
+      };
       admin_list_users: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -3850,6 +3893,16 @@ export type Database = {
           active_users: number;
           avg_project_days: number;
           completed_projects: number;
+        }[];
+      };
+      admin_reported_message: {
+        Args: { p_report: string };
+        Returns: {
+          channel_uuid: string;
+          content: string;
+          created_at: string;
+          hidden: boolean;
+          sender_id: string;
         }[];
       };
       append_to_script: {
@@ -3875,6 +3928,7 @@ export type Database = {
           content: string;
           created_at: string | null;
           edited_at: string | null;
+          hidden_at: string | null;
           id: string;
           parent_message_id: string | null;
           pinned: boolean | null;
@@ -4056,6 +4110,7 @@ export type Database = {
           content: string;
           created_at: string | null;
           edited_at: string | null;
+          hidden_at: string | null;
           id: string;
           parent_message_id: string | null;
           pinned: boolean | null;

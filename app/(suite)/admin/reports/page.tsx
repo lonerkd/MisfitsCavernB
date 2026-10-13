@@ -10,12 +10,35 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { ProtectedPage, useCurrentUser } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
-import { closeReportedJob, listReports, settleReport, targetHref, type ReportStatus } from '@/lib/supabase/reports';
+import { closeReportedJob, hideMessage, listReports, readReportedMessage, settleReport, targetHref, type ReportStatus } from '@/lib/supabase/reports';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 
 const TABS: { id: ReportStatus; label: string }[] = [{ id: 'open', label: 'Open' }, { id: 'resolved', label: 'Resolved' }, { id: 'dismissed', label: 'Dismissed' }];
+
+/** What was said, for an admin (even in a channel they are not in, because someone reported it), with hide / bring back. */
+function ReportedMessage({ reportId, messageId }: { reportId: string; messageId: string }) {
+  const { toast } = useToast();
+  const confirm = useConfirm();
+  const msg = useLoad(`message:${reportId}`, () => readReportedMessage(reportId));
+  const toggle = async (hidden: boolean) => {
+    if (hidden && !(await confirm({ title: 'Hide this message?', message: 'Everyone will read "[Removed by an admin]" instead. You keep the words and can bring it back. It is recorded in the audit log.', confirmLabel: 'Hide it' }))) return;
+    const error = await hideMessage(messageId, hidden);
+    if (error) { toast(`Could not do that: ${error}`, 'error'); return; }
+    toast(hidden ? 'Hidden' : 'Brought back', 'success');
+    msg.reload();
+  };
+  if (msg.error) return <p role="alert" style={{ margin: 0, color: 'var(--fg-muted)', fontSize: 13 }}>The message is gone, or you cannot read it.</p>;
+  if (!msg.data) return msg.loading ? <p style={{ margin: 0, color: 'var(--fg-muted)', fontSize: 13 }}>Loading the message…</p> : null;
+  return (
+    <blockquote style={{ margin: 0, padding: '8px 12px', borderLeft: '3px solid rgba(var(--ink-rgb), 0.25)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <span style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{msg.data.content}</span>
+      <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{msg.data.hidden ? 'Hidden from everyone.' : 'Visible to the channel.'}</span>
+      <div><Button variant={msg.data.hidden ? 'ghost' : 'danger'} onClick={() => void toggle(!msg.data!.hidden)}>{msg.data.hidden ? 'Bring it back' : 'Hide the message'}</Button></div>
+    </blockquote>
+  );
+}
 
 export default function AdminReportsPage() {
   const { toast } = useToast();
@@ -71,9 +94,10 @@ export default function AdminReportsPage() {
                     <strong style={{ color: 'var(--fg)', textTransform: 'capitalize' }}>{r.kind}</strong>
                     <span>reported by {r.reporter?.username ?? 'someone'}</span>
                     <time dateTime={r.created_at}>{new Date(r.created_at).toLocaleString()}</time>
-                    {href ? <Link href={href} style={{ color: 'var(--accent)' }}>Look at it</Link> : <span>Find it in the Lounge</span>}
+                    {href ? <Link href={href} style={{ color: 'var(--accent)' }}>Look at it</Link> : null}
                   </div>
                   <p style={{ margin: 0, fontSize: 15, overflowWrap: 'anywhere' }}>{r.reason}</p>
+                  {r.kind === 'message' && <ReportedMessage reportId={r.id} messageId={r.target_id} />}
                   {r.status === 'open' && (
                     <div style={{ display: 'flex', gap: 8 }}>
                       {r.kind === 'job' && <Button variant="danger" onClick={() => void closeJob(r.id, r.target_id)}>Close the job</Button>}

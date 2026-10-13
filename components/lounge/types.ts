@@ -9,4 +9,6 @@ export interface Message {
   avatar_url?: string | null;
   edited?: boolean;
   pinned?: boolean;
+  /** An admin removed it; `text` is the notice, not the words. */
+  hidden?: boolean;
 }
