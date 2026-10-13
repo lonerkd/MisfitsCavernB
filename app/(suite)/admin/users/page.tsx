@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { ProtectedPage } from '@/lib/os';
-import { ArrowLeft, Shield, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Shield, Edit2, Trash2, Ban, UserCheck } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 
 interface UserRow {
   id: string;
@@ -14,11 +15,13 @@ interface UserRow {
   role: string;
   status: 'OPEN' | 'BUSY';
   is_admin?: boolean;
+  suspended?: boolean;
   created_at: string;
 }
 
 export default function AdminUsersPage() {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
@@ -41,6 +44,16 @@ export default function AdminUsersPage() {
     if (error) { toast(error.message || 'Could not change admin rights', 'error'); return; }
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_admin: !currentAdmin } : u));
     toast(currentAdmin ? 'Admin rights removed' : 'Admin rights granted', 'success');
+  };
+
+  // Suspending stops sign-in and ends their sessions; nothing of theirs is deleted, and it can be lifted.
+  const toggleSuspended = async (u: UserRow) => {
+    const suspend = !u.suspended;
+    if (suspend && !(await confirm({ title: `Suspend ${u.username}?`, message: 'They are signed out and cannot sign back in. Nothing of theirs is deleted, and you can lift it any time. It is recorded in the audit log.', confirmLabel: 'Suspend' }))) return;
+    const { error } = await supabase.rpc('admin_set_suspended', { p_user: u.id, p_suspended: suspend });
+    if (error) { toast(error.message || 'Could not change that', 'error'); return; }
+    setUsers(prev => prev.map(x => x.id === u.id ? { ...x, suspended: suspend } : x));
+    toast(suspend ? `${u.username} is suspended` : `${u.username} can sign in again`, 'success');
   };
 
   return (
@@ -181,6 +194,7 @@ export default function AdminUsersPage() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           {user.is_admin && <Shield size={12} style={{ color: 'var(--accent)' }} />}
                           {user.username}
+                          {user.suspended && <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 9999, border: '1px solid var(--danger)', color: 'var(--danger)' }}>Suspended</span>}
                         </div>
                       </td>
                       <td style={{ padding: 16 }}>
@@ -226,6 +240,17 @@ export default function AdminUsersPage() {
                           >
                             <Shield size={10} />
                           </button>
+                          {!user.is_admin && (
+                            <button
+                              type="button"
+                              aria-label={user.suspended ? `Lift suspension for ${user.username}` : `Suspend ${user.username}`}
+                              title={user.suspended ? 'Lift suspension' : 'Suspend'}
+                              onClick={(e) => { e.stopPropagation(); void toggleSuspended(user); }}
+                              style={{ display: 'flex', alignItems: 'center', padding: '6px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.2)', color: user.suspended ? 'var(--ok)' : 'var(--danger)', borderRadius: 4, cursor: 'pointer' }}
+                            >
+                              {user.suspended ? <UserCheck size={12} /> : <Ban size={12} />}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

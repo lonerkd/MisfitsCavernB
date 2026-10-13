@@ -1892,6 +1892,7 @@ export type Database = {
           role: string | null;
           sprint_minutes: number;
           status: string | null;
+          suspended_at: string | null;
           ui_prefs: NonNullable<Json>;
           updated_at: string | null;
           username: string;
@@ -1912,6 +1913,7 @@ export type Database = {
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          suspended_at?: string | null;
           ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username: string;
@@ -1932,6 +1934,7 @@ export type Database = {
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
+          suspended_at?: string | null;
           ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username?: string;
@@ -3884,6 +3887,7 @@ export type Database = {
           is_admin: boolean;
           role: string;
           status: string;
+          suspended: boolean;
           username: string;
         }[];
       };
@@ -3904,6 +3908,10 @@ export type Database = {
           hidden: boolean;
           sender_id: string;
         }[];
+      };
+      admin_set_suspended: {
+        Args: { p_suspended: boolean; p_user: string };
+        Returns: undefined;
       };
       append_to_script: {
         Args: { p_script: string; p_text: string };

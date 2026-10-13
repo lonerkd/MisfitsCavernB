@@ -24,7 +24,7 @@ every admin read goes through a function or policy that checks
 | Page | What | Data |
 |---|---|---|
 | `/admin` | totals (users, projects, scripts, jobs) and links to the rest | `get_platform_stats` |
-| `/admin/users` | every account: username, email, joined, admin; grant or remove admin (never your own; never the last admin) | `admin_list_users`, `set_user_admin` |
+| `/admin/users` | every account: username, email, joined, admin, suspended; grant or remove admin (never your own; never the last admin); **suspend** or lift a suspension on anyone who is not an admin (no sign-in, sessions ended, nothing deleted; a suspended person sees "This account has been suspended") | `admin_list_users`, `set_user_admin` |
 | `/admin/analytics` | users, projects, completed, scripts, jobs, average project duration, completion rate, sign-ups over a period | `admin_platform_analytics(since)` |
 | `/admin/errors` | what broke for people, grouped by message and page, newest first, with counts; clear a group once it's fixed (confirm) | `client_errors` (30 days) |
 | `/admin/audit-logs` | actions by person and time, search, filter by action; logins (1 h), actions (24 h), projects created (24 h) | `audit_logs` |

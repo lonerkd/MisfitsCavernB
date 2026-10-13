@@ -134,6 +134,7 @@ Callable by **signed-in users**:
 | `admin_list_users()`, `admin_platform_analytics(since)`, `set_user_admin(user, admin)` | `internal.caller_is_admin()`; an admin can't remove their own rights |
 | `admin_reported_message(report)` | `internal.caller_is_admin()`; returns the words of a message **only if someone reported it** (even in a channel the admin is not in); never any other message |
 | `admin_hide_message(message, hidden)` | `internal.caller_is_admin()`; replaces the words with a notice and keeps the original in `hidden_messages` (admin-only read); bring-back restores it; audit-logged |
+| `admin_set_suspended(user, suspended)` | `internal.caller_is_admin()`; not yourself, not another admin; sets the auth service's ban (`auth.users.banned_until`, 100 years out — not `infinity`, which the auth service cannot parse), ends their sessions, sets `profiles.suspended_at`; audit-logged. `admin_list_users()` returns `suspended` |
 | `admin_close_job(job)` | `internal.caller_is_admin()`; sets `status = 'closed'` (deletes nothing) and writes an `audit_logs` row |
 | `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
 | `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |

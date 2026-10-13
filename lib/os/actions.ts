@@ -1,3 +1,4 @@
+import { signInMessage } from '@/lib/auth/errors';
 import { supabase, type Database } from '@/lib/supabase/client';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { osState } from './store';
@@ -11,8 +12,10 @@ import type { Project } from './types';
 export async function osSignIn(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
-    osState().setSession({ error: error.message || 'Sign in failed' });
-    throw error;
+    const message = signInMessage(error.message);
+    osState().setSession({ error: message });
+    // Keep the service's error code: the sign-in page decides what to say from it.
+    throw Object.assign(new Error(message), { code: (error as { code?: string }).code });
   }
   // Mark the store authed BEFORE the caller navigates, so a gated page can never
   // render while it still says 'anon'; profile + projects load in the background.
