@@ -57,6 +57,12 @@ test.describe.serial('Suspending an account (local Supabase)', () => {
     await expect(boss.page.getByText('Suspended', { exact: true })).toBeVisible();
     expect((await admin.from('audit_logs').select('action').eq('resource_id', users.member.id)).data).toEqual([{ action: 'admin_suspend_user' }]);
 
+    // It reads plainly in the audit log, with a way to the person.
+    await boss.page.goto('/admin/audit-logs');
+    const row = boss.page.getByRole('row').filter({ hasText: 'Suspended an account (admin)' }).first();
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await expect(row.getByRole('link', { name: 'Look at it' })).toHaveAttribute('href', `/crew/${users.member.id}`);
+
     // The member cannot get in.
     const member = await signIn(browser, users.member.email);
     await expect(member.page).toHaveURL(/\/auth/, { timeout: 15_000 });
