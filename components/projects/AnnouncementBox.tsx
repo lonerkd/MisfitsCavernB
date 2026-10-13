@@ -16,9 +16,10 @@ export function AnnouncementBox({ projectId, projectTitle, userId }: { projectId
     if (busy || !text.trim()) return;
     setBusy(true);
     try {
-      const { notified } = await postAnnouncement({ projectId, projectTitle, userId, text });
+      const { notified, failed } = await postAnnouncement({ projectId, projectTitle, userId, text });
       setText('');
-      toast(notified ? `Posted, and ${notified} ${notified === 1 ? 'person' : 'people'} told.` : 'Posted to the announcements channel.', 'success');
+      if (failed) toast(`Posted, but ${failed} ${failed === 1 ? 'person' : 'people'} could not be told — they will still see it in the Lounge.`, 'error');
+      else toast(notified ? `Posted, and ${notified} ${notified === 1 ? 'person' : 'people'} told.` : 'Posted to the announcements channel.', 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not post the announcement', 'error');
     } finally {
