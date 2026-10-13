@@ -454,6 +454,15 @@ column reading_corrections.id uuid default gen_random_uuid() not null
 column reading_corrections.kind text not null
 column reading_corrections.name text not null
 column reading_corrections.project_id uuid not null
+column reports.created_at timestamp with time zone default now() not null
+column reports.id uuid default gen_random_uuid() not null
+column reports.kind text not null
+column reports.reason text not null
+column reports.reporter_id uuid default auth.uid() not null
+column reports.resolved_at timestamp with time zone
+column reports.resolved_by uuid
+column reports.status text default 'open'::text not null
+column reports.target_id uuid not null
 column scene_characters.character_id uuid not null
 column scene_characters.created_at timestamp with time zone default now() not null
 column scene_characters.project_id uuid not null
@@ -960,6 +969,13 @@ constraint reading_corrections.reading_corrections_name_check CHECK ((((char_len
 constraint reading_corrections.reading_corrections_pkey PRIMARY KEY (id)
 constraint reading_corrections.reading_corrections_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint reading_corrections.reading_corrections_project_name_key UNIQUE (project_id, name)
+constraint reports.reports_kind_check CHECK ((kind = ANY (ARRAY['message'::text, 'job'::text, 'profile'::text])))
+constraint reports.reports_once_key UNIQUE (reporter_id, kind, target_id)
+constraint reports.reports_pkey PRIMARY KEY (id)
+constraint reports.reports_reason_check CHECK (((char_length(btrim(reason)) >= 1) AND (char_length(btrim(reason)) <= 500)))
+constraint reports.reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint reports.reports_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint reports.reports_status_check CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text, 'dismissed'::text])))
 constraint scene_characters.scene_characters_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE CASCADE
 constraint scene_characters.scene_characters_pkey PRIMARY KEY (scene_id, character_id)
 constraint scene_characters.scene_characters_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
@@ -1407,6 +1423,7 @@ index CREATE INDEX projects_project_type_idx ON public.projects USING btree (pro
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
 index CREATE INDEX reading_corrections_project_idx ON public.reading_corrections USING btree (project_id)
+index CREATE INDEX reports_status_idx ON public.reports USING btree (status, created_at DESC)
 index CREATE INDEX scene_characters_character_idx ON public.scene_characters USING btree (character_id)
 index CREATE INDEX scene_characters_project_idx ON public.scene_characters USING btree (project_id)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
@@ -1529,6 +1546,8 @@ index CREATE UNIQUE INDEX push_subscriptions_endpoint_key ON public.push_subscri
 index CREATE UNIQUE INDEX push_subscriptions_pkey ON public.push_subscriptions USING btree (id)
 index CREATE UNIQUE INDEX reading_corrections_pkey ON public.reading_corrections USING btree (id)
 index CREATE UNIQUE INDEX reading_corrections_project_name_key ON public.reading_corrections USING btree (project_id, name)
+index CREATE UNIQUE INDEX reports_once_key ON public.reports USING btree (reporter_id, kind, target_id)
+index CREATE UNIQUE INDEX reports_pkey ON public.reports USING btree (id)
 index CREATE UNIQUE INDEX scene_characters_pkey ON public.scene_characters USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
@@ -1686,6 +1705,9 @@ policy public.push_subscriptions "push_subscriptions add own" PERMISSIVE INSERT 
 policy public.push_subscriptions "push_subscriptions read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.push_subscriptions "push_subscriptions remove own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.reading_corrections "reading_corrections access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.reports "reports insert" PERMISSIVE INSERT to authenticated using - check ((reporter_id = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text) AND (resolved_by IS NULL))
+policy public.reports "reports settle" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.reports "reports view" PERMISSIVE SELECT to authenticated using ((reporter_id = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
 policy public.scene_characters "scene_characters access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_elements "scene_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
@@ -1835,6 +1857,7 @@ rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
 rls push_subscriptions enabled=true forced=false
 rls reading_corrections enabled=true forced=false
+rls reports enabled=true forced=false
 rls scene_characters enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false

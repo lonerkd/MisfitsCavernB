@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportButton } from '@/components/ui/ReportButton';
 import React, { useState } from 'react';
 import { Smile, MessageSquare, Trash2, Pin, PinOff, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -152,6 +153,7 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
             <Pencil size={11} />
           </button>
         )}
+        {!isMe && currentUserId && <ReportButton kind="message" targetId={msg.id} style={actionStyle} />}
         {canPin && onPin && (
           <button type="button" onClick={() => onPin(msg)} aria-label={msg.pinned ? 'Unpin message' : 'Pin message'} title={msg.pinned ? 'Unpin' : 'Pin'} style={actionStyle}>
             {msg.pinned ? <PinOff size={11} /> : <Pin size={11} />}

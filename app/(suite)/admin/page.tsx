@@ -125,6 +125,18 @@ export default function AdminDashboard() {
             >
               CRAFTS
             </Link>
+            <Link
+              href="/admin/reports"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              REPORTS
+            </Link>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>
