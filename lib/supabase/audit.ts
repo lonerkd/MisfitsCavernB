@@ -17,7 +17,12 @@ export type AuditAction =
   | 'crew_role_changed'
   | 'job_created'
   | 'job_closed'
-  | 'admin_action';
+  | 'admin_action'
+  | 'admin_close_job'
+  | 'admin_hide_message'
+  | 'admin_unhide_message'
+  | 'admin_suspend_user'
+  | 'admin_unsuspend_user';
 
 export interface AuditLog {
   id: string;

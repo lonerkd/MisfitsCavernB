@@ -7,6 +7,7 @@ import { ArrowLeft, Filter, Download, Search, Clock, User, Zap } from 'lucide-re
 import { ProtectedPage } from '@/lib/os';
 import { Input } from '@/components/ui/Input';
 import { readable } from '@/lib/util/color';
+import { actionTone, describeAction, describeDetails, resourceHref } from '@/lib/audit/describe';
 import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditLog, type AuditAction } from '@/lib/supabase/audit';
 
 const ACTIONS: AuditAction[] = [
@@ -27,6 +28,11 @@ const ACTIONS: AuditAction[] = [
   'job_created',
   'job_closed',
   'admin_action',
+  'admin_close_job',
+  'admin_hide_message',
+  'admin_unhide_message',
+  'admin_suspend_user',
+  'admin_unsuspend_user',
 ];
 
 const NO_ACTIVITY = { loginsLastHour: 0, actionsLast24h: 0, projectsCreated24h: 0 };
@@ -82,13 +88,7 @@ export default function AuditLogsPage() {
     a.click();
   };
 
-  const actionHex = (action: AuditAction) => (
-    action.includes('created') || action.includes('invited') ? '#10b981'
-      : action.includes('deleted') || action.includes('removed') ? '#ef4444'
-      : action.includes('changed') || action.includes('updated') ? '#f59e0b'
-      : action.includes('login') || action.includes('logout') ? '#6366f1'
-      : '#0099ff'
-  );
+  const actionHex = actionTone;
 
   const totalPages = Math.ceil(totalLogs / pageSize);
 
@@ -260,7 +260,7 @@ export default function AuditLogsPage() {
               <option value="">All Actions</option>
               {ACTIONS.map(action => (
                 <option key={action} value={action}>
-                  {action.replace(/_/g, ' ').toUpperCase()}
+                  {describeAction(action)}
                 </option>
               ))}
             </select>
@@ -324,17 +324,17 @@ export default function AuditLogsPage() {
                             color: readable(actionHex(log.action)),
                           }}
                         >
-                          {log.action.replace(/_/g, ' ')}
+                          {describeAction(log.action, log.resource_type)}
                         </span>
                       </td>
                       <td style={{ padding: 12, opacity: 0.7 }}>
                         {log.resource_type}
-                        {log.resource_id && ` (${log.resource_id})`}
+                        {log.resource_id && (resourceHref(log.resource_type, log.resource_id)
+                          ? <> · <Link href={resourceHref(log.resource_type, log.resource_id)!} style={{ color: 'var(--accent)' }}>Look at it</Link></>
+                          : ` (${log.resource_id})`)}
                       </td>
                       <td style={{ padding: 12, fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>
-                        {Object.keys(log.details).length > 0
-                          ? JSON.stringify(log.details).substring(0, 50) + '...'
-                          : '-'}
+                        {describeDetails(log.details)}
                       </td>
                     </tr>
                   ))
