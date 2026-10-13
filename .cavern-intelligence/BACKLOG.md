@@ -102,9 +102,7 @@ a call sheet issued on the desk arrives as a notification on the phone.
 An App Store listing with Discord sign-in also needs **Sign in with Apple**.
 
 ### 3.14 Admin catalogues and moderation — M (product call)
-Crafts, project formats, brief questions and channel presets are admin data
-with no screens (changed by migration). Add `/admin/catalogue` (CRUD under the
-existing admin-write policies). And before the network opens to strangers:
+**Crafts have `/admin/crafts` (add, remove).** Project formats, brief questions and channel presets are still admin data with no screens (changed by migration): add the same kind of page for each under the existing admin-write policies. And before the network opens to strangers:
 report a message / job / profile, an admin queue, hide and suspend. Done when
 the owner can add a craft without a deploy, and a report reaches the queue.
 
