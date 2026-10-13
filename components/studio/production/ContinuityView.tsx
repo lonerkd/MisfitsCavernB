@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { Eye, PenLine, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import EmptyState from '@/components/ui/EmptyState';
-import { studio, useCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
+import { castByScene, castOfScene } from '@/lib/film/cast';
+import { studio, useCharacters, useSceneCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
 import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';
 import { storyChanges, storyLabel, type StoryScene } from '@/lib/film/story';
 import { useStudio } from '../StudioContext';
@@ -13,7 +14,6 @@ import { cx } from '../ui';
 import s from '../studio.module.css';
 
 const PARTS = ['dawn', 'morning', 'day', 'afternoon', 'evening', 'dusk', 'night'];
-const castOf = (sc: SceneRow) => (sc.cast_list ?? '').split(',').map((n) => n.trim().toUpperCase()).filter(Boolean);
 
 /**
  * The film in story order: which day of the story each scene is on, and how
@@ -25,6 +25,9 @@ export function ContinuityView() {
   const { project, scenes, scriptId } = useStudio();
   const characters = useCharacters(project.id);
   const states = useSceneStates(project.id);
+  const links = useSceneCharacters(project.id);
+  const castByScn = useMemo(() => castByScene(links.rows, characters.rows), [links.rows, characters.rows]);
+  const castOf = (sc: SceneRow) => castOfScene(sc, castByScn);
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 
