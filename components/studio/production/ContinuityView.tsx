@@ -73,8 +73,15 @@ export function ContinuityView() {
     );
   }
 
+  const loadError = states.error ?? characters.error;
   return (
     <div className={s.stack}>
+      {loadError && (
+        <div className={s.panel} role="alert">
+          <div className={s.panelTitle}>Continuity could not load</div>
+          <p className={s.hint}>{loadError}</p>
+        </div>
+      )}
       <div className={s.toolbar}>
         <div className={s.panelTitle}>Continuity</div>
         {guesses.length > 0 && (

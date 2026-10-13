@@ -139,12 +139,21 @@ const FRIENDLY: Record<string, string> = {
   'PGRST116': 'That item no longer exists, or you can’t see it.',
 };
 
-function fail(error: { message: string; code?: string } | null, fallback: string): never {
+/** Codes for a table or column the database does not have yet: code that shipped before its migration was applied. */
+const NOT_MIGRATED = new Set(['42P01', '42703', 'PGRST204', 'PGRST205']);
+export const NOT_MIGRATED_MESSAGE = 'This part of the suite needs a database update that has not been applied yet. Ask the owner to apply it.';
+
+/** The words to show for a failed call. */
+export function describeFailure(error: { message: string; code?: string } | null, fallback: string): string {
   const code = error?.code;
   const raw = error?.message || '';
+  if ((code && NOT_MIGRATED.has(code)) || /schema cache/i.test(raw)) return NOT_MIGRATED_MESSAGE;
   const internal = /violates|constraint|relation "|syntax|column "/i.test(raw);
-  const message = (code && FRIENDLY[code]) || (code === '42501' && internal ? 'You don’t have permission to do that.' : null) || (internal ? fallback : raw) || fallback;
-  throw new StudioError(message, code);
+  return (code && FRIENDLY[code]) || (code === '42501' && internal ? 'You don’t have permission to do that.' : null) || (internal ? fallback : raw) || fallback;
+}
+
+function fail(error: { message: string; code?: string } | null, fallback: string): never {
+  throw new StudioError(describeFailure(error, fallback), error?.code);
 }
 
 const byOrdinal = (a: SceneRow, b: SceneRow) => (a.ordinal ?? 0) - (b.ordinal ?? 0);
