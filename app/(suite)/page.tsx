@@ -1,5 +1,6 @@
 'use client';
 
+import { DISCORD_INVITE } from '@/lib/community/discord';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
@@ -435,6 +436,11 @@ export default function Home() {
             <Button href="/auth" variant="solid" size="lg">
               Start Writing
             </Button>
+            {DISCORD_INVITE && (
+              <Button href={DISCORD_INVITE} variant="ghost" size="lg" external>
+                Join the Discord
+              </Button>
+            )}
             <Button href="https://instagram.com/lonerkid" variant="ghost" size="lg" external>
               Contact Crew
             </Button>
