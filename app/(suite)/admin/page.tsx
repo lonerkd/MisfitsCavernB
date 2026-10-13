@@ -113,6 +113,18 @@ export default function AdminDashboard() {
             >
               ERRORS
             </Link>
+            <Link
+              href="/admin/crafts"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              CRAFTS
+            </Link>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>

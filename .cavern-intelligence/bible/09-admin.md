@@ -12,6 +12,7 @@ every admin read goes through a function or policy that checks
 | `/admin` | <img src="screens/admin--desktop.webp" width="420"> | <img src="screens/admin--phone.webp" width="140"> |
 | `/admin/users` | <img src="screens/admin-users--desktop.webp" width="420"> | <img src="screens/admin-users--phone.webp" width="140"> |
 | `/admin/analytics` | <img src="screens/admin-analytics--desktop.webp" width="420"> | <img src="screens/admin-analytics--phone.webp" width="140"> |
+| `/admin/crafts` | the list of film crafts people pick from (profiles, jobs, crew): add one (name, department, colour, above/below the line), remove one (confirmed). Everyone reads it; only an admin writes (RLS) | `crafts` |
 | `/admin/errors` | <img src="screens/admin-errors--desktop.webp" width="420"> | <img src="screens/admin-errors--phone.webp" width="140"> |
 | `/admin/audit-logs` | <img src="screens/admin-audit-logs--desktop.webp" width="420"> | <img src="screens/admin-audit-logs--phone.webp" width="140"> |
 
@@ -35,9 +36,9 @@ every admin read goes through a function or policy that checks
 
 ## Known gaps
 
-- The catalogues have no admin screens: they're changed by migration. A
-  `/admin/catalogue` would let the owner add a craft, a format or a brief
-  question without a deploy (3.14).
+- Crafts have an admin screen (`/admin/crafts`); the other catalogues —
+  project formats, brief questions, channel presets — are still changed by
+  migration (3.14).
 - No moderation tools (report a message, a job or a profile; hide or ban).
   Needed before the network opens to strangers (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
