@@ -30,8 +30,8 @@ async function announcementsChannel(projectId: string): Promise<Channel> {
   return channel;
 }
 
-/** Post to the team. Returns how many crew were notified. Throws with a message a person can read. */
-export async function postAnnouncement(args: { projectId: string; projectTitle: string; userId: string; text: string }): Promise<{ notified: number }> {
+/** Post to the team. Returns how many crew were notified, and how many could not be. Throws with a message a person can read. */
+export async function postAnnouncement(args: { projectId: string; projectTitle: string; userId: string; text: string }): Promise<{ notified: number; failed: number }> {
   const text = args.text.trim();
   if (!text) throw new Error('Write the announcement first.');
   if (text.length > ANNOUNCEMENT_MAX) throw new Error(`Keep it under ${ANNOUNCEMENT_MAX} characters.`);
@@ -43,6 +43,7 @@ export async function postAnnouncement(args: { projectId: string; projectTitle: 
   if (error) throw new Error('Posted, but could not look up the crew to notify.');
   const notice = announcementNotice(args.projectTitle, text);
   const people = [...new Set((data ?? []).map((r) => r.user_id).filter((id) => id !== args.userId))];
-  await Promise.all(people.map((id) => notify(id, { ...notice, link: '/lounge' }, args.userId)));
-  return { notified: people.length };
+  const results = await Promise.all(people.map((id) => notify(id, { ...notice, link: '/lounge' }, args.userId)));
+  const failed = results.filter(Boolean).length;
+  return { notified: people.length - failed, failed };
 }

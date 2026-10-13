@@ -29,9 +29,10 @@ export async function saveNotificationPrefs(userId: string, patch: Partial<Notif
   return next;
 }
 
-export async function notify(userId: string | null | undefined, n: { type: string; title: string; body?: string; link?: string }, actorId?: string | null) {
-  if (!userId || (actorId && actorId === userId)) return;
-  await supabase.from('notifications').insert({
+/** Tell someone. Returns an error message when it could not be sent (callers that can say so should), null otherwise. */
+export async function notify(userId: string | null | undefined, n: { type: string; title: string; body?: string; link?: string }, actorId?: string | null): Promise<string | null> {
+  if (!userId || (actorId && actorId === userId)) return null;
+  const { error } = await supabase.from('notifications').insert({
     user_id: userId,
     type: n.type,
     title: n.title,
@@ -39,6 +40,7 @@ export async function notify(userId: string | null | undefined, n: { type: strin
     link: n.link ?? null,
     read: false,
   });
+  return error ? error.message : null;
 }
 
 export async function fetchNotifications(userId: string, limit = 30): Promise<Notification[]> {
