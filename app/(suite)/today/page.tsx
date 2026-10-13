@@ -11,7 +11,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
-import { getTodayWork, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
+import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
+import { ownerRows, type OwnerData } from '@/lib/today/owner';
 import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
@@ -27,6 +28,22 @@ type Sheet = TodaySheet;
 type Task = TodayTask;
 interface Unread { key: string; label: string; href: string; count: number }
 
+/** What needs the owner on one of their projects: unanswered crew, overdue tasks, the next shoot day. */
+function OwnerFlags({ row, today }: { row: import('@/lib/today/owner').OwnerRow; today: string }) {
+  const flags: { text: string; warn: boolean }[] = [];
+  if (row.pendingCrew) flags.push({ text: `${row.pendingCrew} ${row.pendingCrew === 1 ? 'invite' : 'invites'} unanswered`, warn: true });
+  if (row.overdueTasks) flags.push({ text: `${row.overdueTasks} ${row.overdueTasks === 1 ? 'task' : 'tasks'} overdue`, warn: true });
+  if (row.next) flags.push({ text: `Day ${row.next.day} · ${dayLabel(row.next.date, today)}${row.next.issued ? '' : ' · call sheet not issued'}`, warn: !row.next.issued && row.needsYou });
+  if (!flags.length) return null;
+  return (
+    <ul aria-label={`${row.title}: what needs you`} style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      {flags.map((f) => (
+        <li key={f.text} style={{ fontSize: 12, padding: '3px 9px', borderRadius: 9999, border: `1px solid ${f.warn ? 'var(--warn)' : 'rgba(var(--ink-rgb), 0.18)'}`, color: f.warn ? 'var(--warn)' : 'var(--fg-muted)' }}>{f.text}</li>
+      ))}
+    </ul>
+  );
+}
+
 export default function TodayPage() {
   const { isLoading, user } = useOSGate();
   const { user: profile } = useCurrentUser();
@@ -40,18 +57,23 @@ export default function TodayPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [unread, setUnread] = useState<Unread[]>([]);
   const [updates, setUpdates] = useState<Notification[]>([]);
+  const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
+  const ownerById = useMemo(() => new Map(ownerRows(projects.filter((p) => p.creator_id === user?.id).map((p) => ({ id: p.id, title: p.title, phase: p.status })), ownerData ?? { pendingCrew: [], openTasks: [], sheets: [] }, today).map((r) => [r.id, r])), [projects, user?.id, ownerData, today]);
 
   // Gathers the day, then shows it in one go.
   const load = useCallback(() => {
     if (!user) return Promise.resolve();
     return (async () => {
-      const [work, un, notes] = await Promise.all([
+      const ownedIds = projects.filter((p) => p.creator_id === user.id).map((p) => p.id);
+      const [work, un, notes, owner] = await Promise.all([
         getTodayWork(user.id, projectIds, today),
         getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
         fetchNotifications(user.id, 8).catch(() => [] as Notification[]),
+        // A nicety for the owner: if it does not load, the cards simply show no flags.
+        getOwnerData(ownedIds, today).catch((): OwnerData | null => null),
       ]);
 
       // Name what's unread: channels by name (and project), people by username.
@@ -64,8 +86,9 @@ export default function TodayPage() {
         })),
         ...named.people.map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
       ].sort((a, b) => b.count - a.count);
-      return { work, notes, rows };
-    })().then(({ work, notes, rows }) => {
+      return { work, notes, rows, owner };
+    })().then(({ work, notes, rows, owner }) => {
+      setOwnerData(owner);
       setSheets(work.sheets);
       setMyCalls(work.myCalls);
       setTasks(work.tasks);
@@ -77,7 +100,7 @@ export default function TodayPage() {
       toast('Could not load your days and tasks. Reload to try again.', 'error');
       setLoaded(true);
     });
-  }, [user, projectIds, today, projectById, toast]);
+  }, [user, projects, projectIds, today, projectById, toast]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -243,6 +266,7 @@ export default function TodayPage() {
                       <span className={t.phase}>{phase?.label ?? p.status}</span>
                     </span>
                   </Link>
+                  {ownerById.get(p.id) && <OwnerFlags row={ownerById.get(p.id)!} today={today} />}
                   <div className={t.jump}>
                     <button type="button" className={t.jumpBtn} onClick={() => void goTo(p.id, '/editor')}><FileText size={17} aria-hidden /> Script</button>
                     <button type="button" className={t.jumpBtn} onClick={() => void goTo(p.id, '/studio')}><LayoutGrid size={17} aria-hidden /> Studio</button>
