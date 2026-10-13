@@ -5,6 +5,8 @@
 // the top and "Got it" to confirm they've seen this version. Read through
 // RLS: members of the production only.
 
+import { ViewAsBanner } from '@/components/projects/ViewAs';
+import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -61,7 +63,8 @@ export default function CallSheetPage() {
     return () => { alive = false; };
   }, [id, user?.id]);
 
-  const isOwner = !!project && project.creator_id === user?.id;
+  const viewMode = useViewAs(project?.id);
+  const isOwner = effectiveOwner(!!project && project.creator_id === user?.id, viewMode);
   const canIssue = useCanShape(project?.id, isOwner);
   // The crew see what was issued; a draft shows as it stands, marked as a draft.
   const snap: CallSheetSnapshot | null = useMemo(
@@ -122,6 +125,7 @@ export default function CallSheetPage() {
 
   return (
     <main className={c.page}>
+      {project && <ViewAsBanner projectId={project.id} />}
       <div className={c.frame}>
         <p className={c.eyebrow}>{project?.title} · call sheet{version ? ` · v${version}` : ''}</p>
         <h1 className={c.title}>Day {sheet.shoot_day}</h1>

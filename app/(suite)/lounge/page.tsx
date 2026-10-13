@@ -1,5 +1,7 @@
 'use client';
 
+import { ViewAsBanner } from '@/components/projects/ViewAs';
+import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import { useState, useRef, useEffect, useEffectEvent, useCallback, useMemo } from 'react';
 import { Send, Users, Smile, Hash, Lock, Settings as SettingsIcon, X, Volume2, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck, Pin, Search, ChevronLeft } from 'lucide-react';
 import { audienceLabel, groupChannels } from '@/lib/lounge/audience';
@@ -116,7 +118,8 @@ export default function LoungePage() {
 
   // Channels a production tends to want, offered to its owner when they fit
   // the phase, the brief and the crew (public.channel_presets, lib/brief).
-  const ownsActive = !!(activeProject && currentUser && activeProject.creator_id === currentUser.id);
+  const viewMode = useViewAs(activeProject?.id);
+  const ownsActive = effectiveOwner(!!(activeProject && currentUser && activeProject.creator_id === currentUser.id), viewMode);
   const loungePhase = activeProject ? mapStatusToPhase(activeProject.status) : null;
   const loungeBrief = useProjectBrief(ownsActive ? activeProject!.id : null, activeProject?.project_type ?? null, loungePhase, { script: false });
   const [presets, setPresets] = useState<ChannelPreset[]>([]);
@@ -468,6 +471,7 @@ export default function LoungePage() {
     <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: '100dvh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
+      {activeProject && <ViewAsBanner projectId={activeProject.id} />}
 
       <nav className="mc-lounge-top" style={{
         position: 'sticky',
@@ -528,7 +532,7 @@ export default function LoungePage() {
           <div style={{ padding: '16px 12px', overflowY: 'auto', flex: 1 }}>
              {(() => {
                const groups = groupChannels(channels, activeProject?.id ?? null);
-               const isOwner = !!(activeProject && currentUser && (activeProject as any).creator_id === currentUser.id);
+               const isOwner = ownsActive;
                const renderGroup = (label: string, list: Channel[], showAdd: boolean, scope: 'project' | 'community') => (
                  <div style={{ marginBottom: 18 }}>
                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', marginBottom: 8 }}>
