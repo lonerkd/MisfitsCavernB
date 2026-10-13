@@ -34,6 +34,7 @@ export interface CallSheetView {
 export type ProjectLocation = Tables<'project_locations'>;
 export type StoryCharacter = Pick<Tables<'characters'>, 'id' | 'name'>;
 export type SceneState = Tables<'scene_states'>;
+export type SceneCharacter = Pick<Tables<'scene_characters'>, 'scene_id' | 'character_id' | 'project_id'>;
 export type ReadingCorrection = Tables<'reading_corrections'>;
 export type Vendor = Tables<'vendors'>;
 export type Expense = Tables<'expenses'>;
@@ -521,6 +522,13 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** Who is in which scene, as links by id. */
+  async function listSceneCharacters(projectId: string): Promise<SceneCharacter[]> {
+    const { data, error } = await db.from('scene_characters').select('scene_id, character_id, project_id').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load who is in each scene');
+    return data;
+  }
+
   async function listSceneStates(projectId: string): Promise<SceneState[]> {
     const { data, error } = await db.from('scene_states').select('*').eq('project_id', projectId);
     if (error) fail(error, 'Could not load continuity');
@@ -898,7 +906,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

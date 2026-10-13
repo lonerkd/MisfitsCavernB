@@ -6,7 +6,8 @@ import { useToast } from '@/components/ui/Toast';
 import Avatar from '@/components/ui/Avatar';
 import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
 import { logActivity } from '@/lib/supabase/activity';
-import { useCharacterMedia, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
+import { useCharacterMedia, useCharacters, useSceneCharacters, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
+import { castByScene, castOfScene } from '@/lib/film/cast';
 import { List as Users } from 'lucide-react';
 import { useStudio } from './StudioContext';
 import { useScriptCharacters } from './production/useScriptCharacters';
@@ -40,6 +41,9 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
   const characterLooks = useCharacterMedia(projectId);
+  const storyCharacters = useCharacters(projectId);
+  const sceneLinks = useSceneCharacters(projectId);
+  const castByScn = useMemo(() => castByScene(sceneLinks.rows, storyCharacters.rows), [sceneLinks.rows, storyCharacters.rows]);
   const looks = useMemo(() => {
     const m: Record<string, Media[]> = {};
     for (const l of characterLooks.rows) {
@@ -57,7 +61,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
 
   const footprint = (name: string) => {
     const up = name.toUpperCase();
-    const inScenes = scenes.rows.filter((sc) => String(sc.cast_list || '').toUpperCase().split(',').map((c) => c.trim()).includes(up));
+    const inScenes = scenes.rows.filter((sc) => castOfScene(sc, castByScn).includes(up));
     const days = Array.from(new Set(inScenes.map((sc) => sc.shoot_day || 1))).sort((a, b) => a - b);
     return { sceneNums: inScenes.map((sc) => sc.scene_number).sort((a, b) => a - b), days };
   };
