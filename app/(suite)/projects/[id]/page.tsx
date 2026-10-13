@@ -23,6 +23,7 @@ import { BriefPanel } from '@/components/brief/BriefPanel';
 import { PhasePanel } from '@/components/progress/PhasePanel';
 import { GuidePanel } from '@/components/guides/GuidePanel';
 import { ViewAsSwitch, ViewAsBanner, OutsiderPreview } from '@/components/projects/ViewAs';
+import { AnnouncementBox } from '@/components/projects/AnnouncementBox';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
 import type { ProjectHubViewModel } from '@/components/projects/hub/types';
@@ -248,6 +249,8 @@ export default function ProjectHubPage() {
             onSaved={(logline) => setRealProject(p => p ? { ...p, description: logline } : p)}
           />
         </motion.div>
+
+        {ownerView && me?.id && <AnnouncementBox projectId={id} projectTitle={project.title} userId={me.id} />}
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
