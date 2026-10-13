@@ -40,6 +40,8 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     await admin.from('scripts').insert({ title: 'Night Shift', content: 'INT. CORRIDOR - NIGHT\n\nMaya pushes a cart.\n\nMAYA\nRoom 12.\n', project_id: p!.id, created_by: uid, last_edited_by: uid });
     const { data: job } = await admin.from('jobs').insert({ title: 'Gaffer', role: 'Gaffer', created_by: uid, project_id: p!.id, status: 'open', description: 'Two nights' }).select('id').single();
     const { data: pf } = await admin.from('portfolio_projects').insert({ user_id: uid, title: 'Night Shift', year: 2026, role: 'Director', category: 'Short Film' }).select('id, share_token').single();
+    // A report to show in the queue.
+    await admin.from('reports').insert({ reporter_id: uid, kind: 'job', target_id: job!.id, reason: 'Looks like a scam' });
     await admin.from('portfolio_media').insert({ project_id: pf!.id, url: 'https://youtu.be/dQw4w9WgXcQ', media_type: 'youtube', title: 'Trailer' });
 
     const found: string[] = [];
@@ -67,7 +69,7 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
       ...['overview', 'library', 'scenes', 'production', 'post', 'promos', 'pitch', 'share'].map((t) => `/studio?tab=${t}`),
       '/studio?tab=production&view=readiness',
       '/editor', '/lounge', '/soundtrack', '/jobs', `/jobs/${job!.id}`, '/crew', `/crew/${uid}`,
-      '/portfolio', '/portfolio/manage', '/profile', '/settings', '/admin', '/admin/users', '/admin/analytics', '/admin/audit-logs',
+      '/portfolio', '/portfolio/manage', '/profile', '/settings', '/admin', '/admin/users', '/admin/analytics', '/admin/audit-logs', '/admin/reports', '/admin/crafts', '/admin/channel-presets', '/admin/formats',
     ];
     for (const r of routes) await check(page, r);
 
