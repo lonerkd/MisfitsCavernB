@@ -1,5 +1,6 @@
 'use client';
 
+import { signInMessage } from '@/lib/auth/errors';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParam } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
@@ -178,6 +179,8 @@ export default function AuthPage() {
         setError('An account with this email already exists.');
       } else if (code === 'email_not_confirmed' || msg.includes('Email not confirmed')) {
         setError('Please check your email to confirm your account.');
+      } else if (code === 'user_banned' || /suspended/i.test(msg)) {
+        setError(msg.includes('suspended') ? msg : signInMessage('banned'));
       } else if (code === 'weak_password') {
         setError('Password must be at least 8 characters with uppercase, lowercase, and numbers.');
       } else if (code === 'otp_expired') {

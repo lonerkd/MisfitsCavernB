@@ -20,7 +20,7 @@ export interface Persona {
 }
 
 // Throwaway accounts on a local stack: a fresh random password per run.
-const PASSWORD = randomUUID();
+export const PASSWORD = randomUUID();
 
 function env(name: string): string {
   const v = process.env[name];
