@@ -1,4 +1,5 @@
 import { getValidToken } from './auth';
+import { describeSpotifyFailure } from './failure';
 import { parseScript } from '../scriptos/parser';
 
 export async function searchSpotify(query: string, type: 'track' | 'playlist' | 'album' = 'playlist') {
@@ -8,7 +9,8 @@ export async function searchSpotify(query: string, type: 'track' | 'playlist' | 
   const url = new URL('https://api.spotify.com/v1/search');
   url.searchParams.append('q', query);
   url.searchParams.append('type', type);
-  url.searchParams.append('limit', '12');
+  // Development Mode apps may ask for at most 10.
+  url.searchParams.append('limit', '10');
 
   const res = await fetch(url.toString(), {
     headers: {
