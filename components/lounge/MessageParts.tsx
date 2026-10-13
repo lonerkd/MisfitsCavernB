@@ -119,7 +119,7 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
               </div>
             </div>
           ) : (
-            <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: 'rgba(var(--fg-rgb), 0.85)', margin: 0, whiteSpace: 'pre-wrap' }}>
+            <p style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.65, color: msg.hidden ? 'var(--fg-muted)' : 'rgba(var(--fg-rgb), 0.85)', fontStyle: msg.hidden ? 'italic' : undefined, margin: 0, whiteSpace: 'pre-wrap' }}>
               {msg.text}
               {msg.edited && <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', marginLeft: 6 }}>(edited)</span>}
             </p>
@@ -148,12 +148,12 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
             <MessageSquare size={12} />
           </button>
         )}
-        {isMe && onEdit && !editing && (
+        {isMe && onEdit && !editing && !msg.hidden && (
           <button type="button" onClick={() => { setDraft(msg.text); setEditing(true); }} aria-label="Edit message" title="Edit" style={actionStyle}>
             <Pencil size={11} />
           </button>
         )}
-        {!isMe && currentUserId && <ReportButton kind="message" targetId={msg.id} style={actionStyle} />}
+        {!isMe && !msg.hidden && currentUserId && <ReportButton kind="message" targetId={msg.id} style={actionStyle} />}
         {canPin && onPin && (
           <button type="button" onClick={() => onPin(msg)} aria-label={msg.pinned ? 'Unpin message' : 'Pin message'} title={msg.pinned ? 'Unpin' : 'Pin'} style={actionStyle}>
             {msg.pinned ? <PinOff size={11} /> : <Pin size={11} />}

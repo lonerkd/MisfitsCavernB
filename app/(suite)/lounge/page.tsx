@@ -223,6 +223,7 @@ export default function LoungePage() {
           avatar_url: m.profiles?.avatar_url,
           edited: !!m.edited_at,
           pinned: !!m.pinned,
+          hidden: !!m.hidden_at,
         }));
         setMessages(formatted);
         if (!dmTarget) {

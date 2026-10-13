@@ -61,3 +61,18 @@ export async function closeReportedJob(jobId: string): Promise<string | null> {
   const { error } = await supabase.rpc('admin_close_job', { p_job: jobId });
   return error ? error.message : null;
 }
+
+export interface ReportedMessage { content: string; sender_id: string; channel_uuid: string | null; created_at: string; hidden: boolean }
+
+/** What an admin reads of a reported message (its words even if hidden; admins only). Throws a readable message. */
+export async function readReportedMessage(reportId: string): Promise<ReportedMessage | null> {
+  const { data, error } = await supabase.rpc('admin_reported_message', { p_report: reportId });
+  if (error) throw new Error(error.message);
+  return (data?.[0] as ReportedMessage | undefined) ?? null;
+}
+
+/** Hide a message (everyone then reads a notice) or bring it back. Returns an error message, or null. */
+export async function hideMessage(messageId: string, hidden: boolean): Promise<string | null> {
+  const { error } = await supabase.rpc('admin_hide_message', { p_message: messageId, p_hidden: hidden });
+  return error ? error.message : null;
+}
