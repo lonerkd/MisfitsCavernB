@@ -87,6 +87,7 @@ budget, crew, script, custom text) → saved as the project's portfolio blocks
 
 ## Rules
 
+- **View as** (`lib/os/viewAs.ts`, `components/projects/ViewAs.tsx`): the project's real owner can preview the hub and the Studio as crew or as an outsider (Me · Crew · Outsider, in the hub header). It changes only what the interface shows — owner controls go for crew; an outsider sees the same page as a project that does not exist — never what the database allows (RLS), and nothing is written. Kept per project for the tab's session; a banner and "Back to me" show while it is on.
 - A project is visible to its creator and confirmed crew unless private
   (`internal.can_access_project`); everything project-scoped follows that.
 - Owner: everything. Lead / contributor ("shapers", `can_shape_project`):

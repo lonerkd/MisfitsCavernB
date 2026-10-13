@@ -22,6 +22,8 @@ import { useProjectBrief, useCanShape } from '@/lib/brief';
 import { BriefPanel } from '@/components/brief/BriefPanel';
 import { PhasePanel } from '@/components/progress/PhasePanel';
 import { GuidePanel } from '@/components/guides/GuidePanel';
+import { ViewAsSwitch, ViewAsBanner, OutsiderPreview } from '@/components/projects/ViewAs';
+import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
 import type { ProjectHubViewModel } from '@/components/projects/hub/types';
 import { DeptWindow, ScriptPreview, AssetPreview, CrewPreview, TimelinePreview, PortfolioPreview } from '@/components/projects/hub/DeptWindow';
@@ -120,6 +122,7 @@ export default function ProjectHubPage() {
     return () => { active = false; };
   }, [id]);
 
+  const viewMode = useViewAs(id);
   const project = realProject;
 
   if (loading || !project) {
@@ -130,6 +133,9 @@ export default function ProjectHubPage() {
     );
   }
 
+  // A real owner previewing as someone else: an outsider sees nothing; crew see the crew's controls.
+  if (project.isOwner && viewMode === 'outsider') return <OutsiderPreview projectId={id} />;
+  const ownerView = effectiveOwner(project.isOwner, viewMode);
   const isRealProject = true;
   const team = crewTeam.map(m => ({ ...m, online: onlineIds.has(m.id) }));
   const onlineCount = team.filter(m => m.online).length;
@@ -168,6 +174,7 @@ export default function ProjectHubPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
       <GrainOverlay />
+      <ViewAsBanner projectId={id} />
 
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '50vh', pointerEvents: 'none', zIndex: 0,
@@ -191,7 +198,7 @@ export default function ProjectHubPage() {
             {counts.tasksDone}/{counts.tasks} tasks done
           </div>
           )}
-          {project.isOwner && (
+          {ownerView && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <select
                 value={project.visibility}
@@ -232,11 +239,12 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
+          {project.isOwner && <div style={{ marginBottom: 10 }}><ViewAsSwitch projectId={id} /></div>}
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.6rem, 7vw, 4.4rem)', fontWeight: 900, letterSpacing: '-0.045em', lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <LoglineEditor
             projectId={id}
             value={project.description}
-            isOwner={project.isOwner}
+            isOwner={ownerView}
             onSaved={(logline) => setRealProject(p => p ? { ...p, description: logline } : p)}
           />
         </motion.div>
@@ -247,7 +255,7 @@ export default function ProjectHubPage() {
           transition={{ delay: 0.05, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          <PhasePanel projectId={id} state={progressState} isOwner={project.isOwner} accent={project.accent || 'var(--accent)'}
+          <PhasePanel projectId={id} state={progressState} isOwner={ownerView} accent={project.accent || 'var(--accent)'}
             onFormatChanged={(type) => { setRealProject(p => p ? { ...p, type } : p); refreshProject(id); }} />
         </motion.div>
 
@@ -260,7 +268,7 @@ export default function ProjectHubPage() {
 
         {isRealProject && progressState.signals && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }} style={{ marginBottom: 24 }}>
-            <GuidePanel projectId={id} signals={progressState.signals} isOwner={project.isOwner} format={briefFormat}
+            <GuidePanel projectId={id} signals={progressState.signals} isOwner={ownerView} format={briefFormat}
               structure={typeof brief.answers.structure === 'string' ? brief.answers.structure : null}
               accent={project.accent || 'var(--accent)'} userId={me?.id ?? null} role={me?.role ?? null} />
           </motion.div>
@@ -384,7 +392,7 @@ export default function ProjectHubPage() {
         </div>
 
         {isRealProject && <div id="production" />}
-        {isRealProject && <ProductionManager projectId={id} projectTitle={project.title} accent={project.color} isOwner={project.isOwner} />}
+        {isRealProject && <ProductionManager projectId={id} projectTitle={project.title} accent={project.color} isOwner={ownerView} />}
       </div>
 
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }`}</style>
