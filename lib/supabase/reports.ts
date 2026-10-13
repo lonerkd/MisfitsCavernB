@@ -55,3 +55,9 @@ export function targetHref(kind: ReportKind, targetId: string): string | null {
   if (kind === 'profile') return `/crew/${targetId}`;
   return null;
 }
+
+/** Close a reported job (admin only; the database checks). Returns an error message, or null. */
+export async function closeReportedJob(jobId: string): Promise<string | null> {
+  const { error } = await supabase.rpc('admin_close_job', { p_job: jobId });
+  return error ? error.message : null;
+}
