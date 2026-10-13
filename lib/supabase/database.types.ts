@@ -2528,6 +2528,57 @@ export type Database = {
           },
         ];
       };
+      reports: {
+        Row: {
+          created_at: string;
+          id: string;
+          kind: string;
+          reason: string;
+          reporter_id: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: string;
+          target_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          kind: string;
+          reason: string;
+          reporter_id?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: string;
+          target_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          reason?: string;
+          reporter_id?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: string;
+          target_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey";
+            columns: ["reporter_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reports_resolved_by_fkey";
+            columns: ["resolved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scene_characters: {
         Row: {
           character_id: string;

@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportButton } from '@/components/ui/ReportButton';
 import { useState } from 'react';
 import { useNow } from '@/lib/hooks/useNow';
 import { DollarSign, ChevronRight } from 'lucide-react';
@@ -128,6 +129,7 @@ export function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (
           Apply <ChevronRight size={10} />
         </motion.button>
         )}
+        <ReportButton kind="job" targetId={job.id} />
       </div>
       {composing && !applied && (
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>

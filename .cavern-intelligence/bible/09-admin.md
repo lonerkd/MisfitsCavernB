@@ -13,6 +13,7 @@ every admin read goes through a function or policy that checks
 | `/admin/users` | <img src="screens/admin-users--desktop.webp" width="420"> | <img src="screens/admin-users--phone.webp" width="140"> |
 | `/admin/analytics` | <img src="screens/admin-analytics--desktop.webp" width="420"> | <img src="screens/admin-analytics--phone.webp" width="140"> |
 | `/admin/crafts` | the list of film crafts people pick from (profiles, jobs, crew): add one (name, department, colour, above/below the line), remove one (confirmed). Everyone reads it; only an admin writes (RLS) | `crafts` |
+| `/admin/reports` | what people flagged (messages, jobs, profiles), newest first, open / resolved / dismissed, who reported and why, a link to the job or profile; close each as resolved or dismissed. Anyone signed in can file a report (the flag on a message, a job, a profile); only an admin reads them all | `reports` |
 | `/admin/errors` | <img src="screens/admin-errors--desktop.webp" width="420"> | <img src="screens/admin-errors--phone.webp" width="140"> |
 | `/admin/audit-logs` | <img src="screens/admin-audit-logs--desktop.webp" width="420"> | <img src="screens/admin-audit-logs--phone.webp" width="140"> |
 
@@ -39,7 +40,7 @@ every admin read goes through a function or policy that checks
 - Crafts have an admin screen (`/admin/crafts`); the other catalogues —
   project formats, brief questions, channel presets — are still changed by
   migration (3.14).
-- No moderation tools (report a message, a job or a profile; hide or ban).
-  Needed before the network opens to strangers (3.14).
+- Moderation is a queue only: reports are filed and settled, but acting on
+  one (hide, remove, suspend) is by hand (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
   only place (and its grace-period banner is open: STATE).

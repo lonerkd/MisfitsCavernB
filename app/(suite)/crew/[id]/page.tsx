@@ -1,5 +1,6 @@
 'use client';
 
+import { ReportButton } from '@/components/ui/ReportButton';
 import React, { useState, useEffect, useEffectEvent } from 'react';
 import { MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
@@ -165,6 +166,7 @@ export default function CrewMemberPage() {
             }}>
               {profile.username}
             </h1>
+            {viewerId && viewerId !== profile.id && <div style={{ marginBottom: 10 }}><ReportButton kind="profile" targetId={profile.id} label="Report" /></div>}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
               {profile.role && (
