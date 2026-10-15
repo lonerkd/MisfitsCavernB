@@ -26,10 +26,8 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    [`sessions/`](sessions/README.md) for what the last PRs did (Claude Code
    prints the latest three at start).
 3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
-4. [`INDEX.md`](INDEX.md) — the map: where everything else is.
-5. For speed: [`PLAYBOOK.md`](PLAYBOOK.md) — read less, search first, skip
-   what's generated; and when something costs you time, leave a pitfall line
-   there in the same PR, so the next session starts smarter.
+4. [`INDEX.md`](INDEX.md) — the map: where everything else is, the playbook
+   included. Nothing else is a required read to start.
 
 ## Non-negotiables
 
