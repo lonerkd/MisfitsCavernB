@@ -9,9 +9,8 @@ export interface LintIssue {
   rule: string;
 }
 
-export function validateScript(lines: ScriptLine[], content: string, scenes: Scene[] = [], characters: Character[] = []): LintIssue[] {
+export function validateScript(lines: ScriptLine[], scenes: Scene[] = [], characters: Character[] = []): LintIssue[] {
   const issues: LintIssue[] = [];
-  const rawLines = content.split('\n');
   let hasSlug = false;
 
   lines.forEach((line, i) => {

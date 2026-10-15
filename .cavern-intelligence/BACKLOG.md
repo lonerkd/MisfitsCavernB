@@ -152,6 +152,23 @@ coverage rules.
 the `LICENSE` wording.
 
 
+### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
+**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.
+
+### 3.24 Audit follow-ups: lint in the margin, agent permission envelope — S/M each (found 2026-10-15)
+**Lint affordance (S):** validation issues live only in the editor's
+Validation side-tab — no jump-to-line, no inline marker, while the editor
+ships carets, reading corrections and annotations inline. Add a click-to-line
+on each issue and a gutter dot; `EditorSidePanels.tsx` + the editor page.
+Done when an issue takes you to its line and a persona spec covers it.
+**Agent permission envelope (owner decision first):** `.claude/settings.json`
+allows Supabase `execute_sql`/`apply_migration` and Vercel `deploy_to_vercel`
+without prompting, and `tools-and-access.md` §3 justifies it by the
+branch→PR→persona-test workflow — which needs branch protection (§1) to be
+real. Either enable branch protection, or move those three to `ask` until it
+exists. Done when the doc and the settings agree.
+
+
 ---
 
 ## 4. Wishlist (owner, 2026-10-07) — ranked and scoped in [wishlist-ranking.md](wishlist-ranking.md)
@@ -327,5 +344,3 @@ loops, notes during playback, comparing reads, scoring from the Soundtrack.
 notes per candidate per role, audition scheduling, decision history, a
 casting sheet PDF.
 
-### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
-**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.

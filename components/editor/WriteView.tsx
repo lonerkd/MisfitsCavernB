@@ -15,7 +15,6 @@ import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
-import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';

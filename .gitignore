@@ -31,3 +31,4 @@ coverage/
 # The owner's real scripts for the private corpus — never committed
 .private-corpus/
 e2e/keyboard-audit.json
+*.err

@@ -48,9 +48,9 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    branch protection on `main` (`pr-title`, `checks`, `database` required),
    signed commits, the first `v*` tag, the domain.
 3. **Next code work**: restructure
-   phases 4–8 (`restructure-proposal.md`: shell/primitives, route groups,
-   thin pages, optional Studio routes); admin catalogues + moderation (3.14);
-   email (3.15); activity feed (3.5, product call); dev-toolchain advisories
+   phases 7–8 (`restructure-proposal.md`: thin pages, optional Studio
+   routes); admin catalogues + moderation (3.14); email (3.15);
+   activity feed (3.5, product call); dev-toolchain advisories
    (3.1, watch upstream).
 4. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.

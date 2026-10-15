@@ -2,9 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { validateScript } from './validator';
 import { parseScript } from './parser';
 
+// The real editor call site: parse once, hand lines + scenes + characters to
+// the validator, so the structure rules (scene-length, character-intro,
+// dialogue-length, act1-pacing) run here exactly as they do in ScriptOS.
 function issuesFor(script: string) {
-  const { lines } = parseScript(script);
-  return validateScript(lines, script);
+  const { lines, scenes, characters } = parseScript(script);
+  return validateScript(lines, scenes, characters);
 }
 
 describe('validateScript', () => {
@@ -62,5 +65,28 @@ describe('validateScript', () => {
     for (const issue of issues) {
       expect(issue.line).toBeGreaterThanOrEqual(1);
     }
+  });
+
+  it('reports a character-intro on a first speech not set up in action', () => {
+    const script = 'INT. ROOM - DAY\n\nSAM\nHello there.';
+    const issues = issuesFor(script);
+    expect(issues.some((i) => i.rule === 'character-intro')).toBe(true);
+  });
+
+  it('does not report a character-intro when action introduces them first', () => {
+    const script = 'INT. ROOM - DAY\n\nSAM crosses the room.\n\nSAM\nHello there.';
+    const issues = issuesFor(script);
+    expect(issues.some((i) => i.rule === 'character-intro')).toBe(false);
+  });
+
+  it('structure rules run for the whole parsed document (scenes are real)', () => {
+    // Guards the regression the dead parameter hid: scenes must be passed
+    // through, or every rule behind `scenes.length > 0` is silently skipped.
+    const script = 'INT. ROOM - DAY\n\nSAM\nHello.\n\nINT. HALL - NIGHT\n\nSAM walks off.';
+    const { lines, scenes } = parseScript(script);
+    expect(scenes.length).toBeGreaterThanOrEqual(2);
+    const withScenes = validateScript(lines, scenes, []);
+    const withoutScenes = validateScript(lines);
+    expect(withScenes.length).toBeGreaterThanOrEqual(withoutScenes.length);
   });
 });

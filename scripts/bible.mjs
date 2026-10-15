@@ -11,13 +11,18 @@
 // that open it. The access tier comes from proxy.ts. Facts only — the written
 // chapters (bible/*.md) say what each part is for.
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, relative } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 
 const ROOT = process.cwd();
 const OUT = '.cavern-intelligence/bible/inventory.md';
 
+// Windows joins with `\`, which breaks every `/…/` regex below (it once
+// produced an inventory with 0 routes on the owner's machine). Normalize
+// every path this script passes around to POSIX separators, once, here.
+const posix = (p) => p.split(sep).join('/');
+
 const walk = (dir, keep) => readdirSync(dir).flatMap((name) => {
-  const p = join(dir, name);
+  const p = posix(join(dir, name));
   return statSync(p).isDirectory() ? walk(p, keep) : keep(p) ? [p] : [];
 });
 const read = (p) => readFileSync(p, 'utf8');
@@ -45,8 +50,8 @@ function tier(route) {
 const EXT = ['', '.ts', '.tsx', '/index.ts', '/index.tsx'];
 function resolve(spec, from) {
   let base;
-  if (spec.startsWith('@/')) base = join(ROOT, spec.slice(2));
-  else if (spec.startsWith('.')) base = join(dirname(from), spec);
+  if (spec.startsWith('@/')) base = posix(join(ROOT, spec.slice(2)));
+  else if (spec.startsWith('.')) base = posix(join(dirname(from), spec));
   else return null;
   for (const e of EXT) { const p = base + e; if (existsSync(p) && statSync(p).isFile()) return p; }
   return null;
@@ -102,7 +107,9 @@ function coveredBy(route) {
 
 // ── Routes ──────────────────────────────────────────────────────────────────
 const pages = walk('app', (p) => /\/(page|route)\.tsx?$/.test(p)).sort();
-const routeOf = (p) => '/' + relative('app', dirname(p)).split('/').filter((s) => !/^\(.*\)$/.test(s)).join('/');
+// `relative()` returns `\` on Windows — normalize before any `/`-prefix compare.
+const rel = (p) => posix(relative(ROOT, p));
+const routeOf = (p) => '/' + posix(relative('app', dirname(p))).split('/').filter((s) => !/^\(.*\)$/.test(s)).join('/');
 const rows = pages.map((file) => {
   const route = routeOf(file).replace(/^\/$/, '/') || '/';
   const files = closure(file);
@@ -110,11 +117,11 @@ const rows = pages.map((file) => {
   return {
     route: route === '' ? '/' : route,
     kind: file.endsWith('route.ts') ? 'api' : 'page',
-    file: relative(ROOT, file),
+    file: rel(file),
     lines: read(file).split('\n').length,
     graph: files.length,
-    components: [...new Set(files.map((f) => relative(ROOT, f)).filter((f) => f.startsWith('components/')).map((f) => f.split('/').slice(0, 2).join('/').replace(/\.tsx$/, '')))].sort(),
-    lib: [...new Set(files.map((f) => relative(ROOT, f)).filter((f) => f.startsWith('lib/')).map((f) => f.split('/')[1].replace(/\.tsx?$/, '')))].sort(),
+    components: [...new Set(files.map(rel).filter((f) => f.startsWith('components/')).map((f) => f.split('/').slice(0, 2).join('/').replace(/\.tsx$/, '')))].sort(),
+    lib: [...new Set(files.map(rel).filter((f) => f.startsWith('lib/')).map((f) => f.split('/')[1].replace(/\.tsx?$/, '')))].sort(),
     tables: union(own, 'tables'),
     rpcs: union(own, 'rpcs'),
     buckets: union(own, 'buckets'),

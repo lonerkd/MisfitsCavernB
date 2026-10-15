@@ -32,7 +32,7 @@ The bones are sound, and moving them would cost more than it gives:
 | `lib/` root is a pile | 17 loose files (`crafts` + `crafts-core`, `formats` + `formats-core`, `themes`, `search`, `legal`, `onboarding`, `color`, `password-strength`, `useEscapeKey`, `api-rate-limit`); one-file folders (`lib/types`, `lib/storage`); providers split between `lib/context` and `lib/os` |
 | Giant pages | `editor` 1610 lines, `lounge` 1530, `projects/[id]` 1255, `/` 878, `jobs` 858, `p/[token]` 779, `projects` 756 |
 | ~~Two permission models~~ (fixed 2026-10-07) | RLS is the model; the client keeps one page gate (`ProtectedPage`) and `useCanShape` |
-| Data access in pages | 30 files call `supabase.from` directly — BACKLOG 3.2 |
+| Data access in pages | some pages still call `supabase.from` directly — thinning happens phase by phase in phase 7 |
 | ~~Mixed brand~~ (fixed, phase 2) | "Misfits Cavern", "MISFITS CAVERN", "MC", "Enter Cavern" in 30 files, the manifest, the service worker, the package name |
 
 ## Target layout
@@ -74,8 +74,8 @@ share pages), and the suite layout owns the island and tab bar.
 | 3 | **iPhone install** (3.13, PWA part) | M | ~~PNG icons~~ (done in phase 2), splash images, Add to Home Screen coaching on phones, then Web Push (subscriptions table, VAPID, an Edge Function sender) | low → medium (push is new infra) |
 | 4 | ✓ **Shell and primitives** (done) | M | `components/` root → `components/shell/` and `components/ui/`; `lib/context` → `lib/os`; loose `lib/*.ts` → domain folders and `lib/hooks`, `lib/util`. `git mv` (history kept) + a codemod for imports | low — moves only; typecheck catches every missed import |
 | 5 | ✓ **Route groups** (done) | S/M | `app/(public)` and `app/(suite)` with their own layouts | medium — provider order; full e2e |
-| 6 | **One permission model** (3.10) | S | delete the unused model; one `useProjectRole(projectId)` → owner / lead / contributor / viewer / none, mirroring RLS | low |
-| 7 | **Thin pages** | M each | split editor, Lounge, project hub, landing, jobs, press kit into `components/<domain>/` parts; data into `lib/` as they go (3.2) | medium — one page per PR, e2e per page |
+| 6 | ✓ **One permission model** (done 2026-10-07) | S | the unused client model was deleted; `useCanShape` in `lib/brief` plus the page gate `ProtectedPage` mirror RLS | low |
+| 7 | **Thin pages** | M each | split editor, Lounge, project hub, landing, jobs, press kit into `components/<domain>/` parts; data into `lib/` as it goes | medium — one page per PR, e2e per page |
 | 8 | *Optional* **Studio routes** | M | `/studio/[tab]/[view]` instead of `?tab=&view=` (old URLs redirect): code-split per tab, real back button | medium |
 
 Phases 1–2 first, since everything after is easier once the name is settled.
@@ -135,7 +135,7 @@ real practice by launch (BACKLOG 3.16):
 
 | Practice | State |
 |---|---|
-| Every change through a reviewed PR with CI green | ✓ (CI: lint, types, 472 unit, 289 integration, 39 e2e, schema drift) |
+| Every change through a reviewed PR with CI green | ✓ (CI: lint, types, 1,000+ unit with coverage floors, 56 integration suites, 69 e2e specs, schema drift) |
 | Architecture and product docs | ✓ (`.cavern-intelligence/`, the bible) |
 | Branch protection on `main`, required checks | owner (GitHub settings) |
 | Conventional commit messages (`feat:`, `fix:`, `docs:`…) | partly — make it the rule |

@@ -136,7 +136,7 @@ export default function EditorPage() {
       lines: result.lines,
       parsedScenes: result.scenes,
       charStats: analyzeCharacters(result.lines, result.scenes),
-      lintIssues: validateScript(result.lines, parseSource, result.scenes, result.characters),
+      lintIssues: validateScript(result.lines, result.scenes, result.characters),
     };
   }, [parseSource, readContext]);
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
