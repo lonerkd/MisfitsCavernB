@@ -115,6 +115,8 @@ export default function EditorPage() {
   const toastRef = useRef(toast);
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
+  const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
@@ -503,6 +505,8 @@ export default function EditorPage() {
   };
 
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Tab' && tabLeavesScript.current) { tabLeavesScript.current = false; return; }
+    tabLeavesScript.current = e.key === 'Escape' && !showAutocomplete;
     if (showAutocomplete && autocompleteItems.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
