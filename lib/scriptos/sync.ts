@@ -57,22 +57,33 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         config: { broadcast: { self: false }, presence: { key: user.id } },
       });
 
+      // The known server baseline starts as whatever was loaded, not empty —
+      // otherwise the first remote update (e.g. a beat's append) can't tell
+      // an append from a full replace (everything "starts with" '').
+      lastRemoteRef.current = localRef.current;
+
+      // Shared by the broadcast and its postgres_changes backup: never
+      // clobber typing in progress — raise the same conflict instead.
+      const mergeRemote = (remote: string) => {
+        const local = localRef.current;
+        const base = lastRemoteRef.current;
+
+        const typingNow = Date.now() - lastLocalEditRef.current < 1000;
+        if (typingNow && base && local !== base && remote !== base &&
+            Math.abs(local.length - base.length) > 5 && Math.abs(remote.length - base.length) > 5) {
+          setConflict({ detected: true, remoteContent: remote, remoteLength: remote.length, localLength: local.length, message: 'A collaborator saved changes while you were typing.' });
+          return;
+        }
+
+        lastRemoteRef.current = remote;
+        if (remote !== local) applyRemote(remote);
+      };
+
       channel
         .on('broadcast', { event: 'content_update' }, (payload) => {
           const remote = payload.payload?.content;
           if (remote === undefined) return;
-          const local = localRef.current;
-          const base = lastRemoteRef.current;
-
-          const typingNow = Date.now() - lastLocalEditRef.current < 1000;
-          if (typingNow && base && local !== base && remote !== base &&
-              Math.abs(local.length - base.length) > 5 && Math.abs(remote.length - base.length) > 5) {
-            setConflict({ detected: true, remoteContent: remote, remoteLength: remote.length, localLength: local.length, message: 'A collaborator saved changes while you were typing.' });
-            return;
-          }
-
-          lastRemoteRef.current = remote;
-          if (remote !== local) applyRemote(remote);
+          mergeRemote(remote);
         })
         // Text added to the end of the script elsewhere (a story beat from the
         // Studio — lib/scriptos/beats.ts). The server already has it; add it
@@ -89,14 +100,21 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         // realtime publication so a row change reaches us here too, even
         // if the broadcast was missed — the only way the other party would
         // otherwise need a refresh to catch up.
+        //
+        // This UPDATE payload is a DB row snapshot, not a delta — it can't
+        // tell an append from a concurrent save, and when there's unsaved
+        // local typing it can be genuinely stale (e.g. the row predates the
+        // owner's own not-yet-saved edit). Only step in when local has no
+        // pending unsaved edit of its own; otherwise defer entirely to the
+        // broadcast (content_update/append), which knows the delta and
+        // merges correctly, and to the next save cycle for reconciliation.
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'scripts', filter: `id=eq.${scriptId}` }, (payload) => {
           const remote = (payload.new as { content?: string; last_edited_by?: string } | null)?.content;
           if (remote === undefined || remote === null) return;
           if ((payload.new as { last_edited_by?: string })?.last_edited_by === meRef.current?.id) return;
-          const local = localRef.current;
-          if (remote === lastRemoteRef.current || remote === local) return;
-          lastRemoteRef.current = remote;
-          applyRemote(remote);
+          if (remote === lastRemoteRef.current || remote === localRef.current) return;
+          if (localRef.current !== lastRemoteRef.current) return;
+          mergeRemote(remote);
         })
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
