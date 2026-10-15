@@ -64,10 +64,15 @@ jobs:
       # CLAUDE.md, AGENTS.md and .github/copilot-instructions.md are generated
       # from .cavern-intelligence/RULES.md; fail if one was edited or is stale.
       - run: node scripts/sync-intel.js --check
-      # Advisory: a merged PR with no session note (history is shallow, so
-      # fetch what the check reads). Runs on main only.
+      # The bible inventory is generated from the code (`npm run bible`); fail
+      # if a change moved routes or tables without rebuilding the map — the
+      # same pattern as db:types:check. (bible.mjs normalizes Windows paths,
+      # so this reproduces on the owner's machine as well as on Linux.)
+      - run: npm run bible
+      - run: git diff --exit-code -- .cavern-intelligence/bible/inventory.md
+      # A merged PR with no session note fails (history is shallow, so fetch
+      # what the check reads). Runs on main only.
       - if: github.ref == 'refs/heads/main'
-        continue-on-error: true
         run: |
           git fetch --shallow-since=2026-10-10 origin main
           npm run check-sessions

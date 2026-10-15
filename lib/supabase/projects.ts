@@ -25,7 +25,7 @@ export interface DBProject {
   settings?: any;
   festival_submissions?: any[];
   visibility?: ProjectVisibility;
-  share_token?: string | null;
+  share_token?: string;
   created_at: string;
   updated_at: string;
 }
@@ -118,13 +118,12 @@ export async function getProjectCardFacts(projects: { id: string; creator_id: st
 }
 
 export async function updateProject(projectId: string, updates: Partial<DBProject>) {
-  // Cast while visibility/share_token await the migration + generated-type regen.
   const { data, error } = await supabase
     .from('projects')
     .update({
       ...updates,
       updated_at: new Date().toISOString()
-    } as any)
+    })
     .eq('id', projectId)
     .select()
     .single();

@@ -48,9 +48,9 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    branch protection on `main` (`pr-title`, `checks`, `database` required),
    signed commits, the first `v*` tag, the domain.
 3. **Next code work**: restructure
-   phases 4–8 (`restructure-proposal.md`: shell/primitives, route groups,
-   thin pages, optional Studio routes); admin catalogues + moderation (3.14);
-   email (3.15); activity feed (3.5, product call); dev-toolchain advisories
+   phases 7–8 (`restructure-proposal.md`: thin pages, optional Studio
+   routes); admin catalogues + moderation (3.14); email (3.15);
+   activity feed (3.5, product call); dev-toolchain advisories
    (3.1, watch upstream).
 4. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
@@ -61,9 +61,16 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 ## Known issues
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
-- *Production schema drift* runs nightly and passes (2026-10-06: production
-  matches the snapshot). It logs in as `drift_reader` (catalog reads +
-  bucket settings only; `tools-and-access.md` §7).
+- *Production schema drift* **is failing (since 2026-10-13)**: production's
+  `internal.timesheets_guard()` body no longer matches the committed
+  fingerprint — someone edited that function in production outside a
+  migration between 2026-10-12 15:50 and 10-13 00:52 (the fingerprint line
+  has not changed since PR #81, so the repo did not move). Needs the owner
+  to decide: restore production to the migration's version, or carry the
+  production version in a new migration (`database-and-security.md` §3).
+  The nightly check stays red on purpose until then — it is not noise.
+  It logs in as `drift_reader` (catalog reads + bucket settings only;
+  `tools-and-access.md` §7).
 - Supabase free plan: "grace period is over" banner. Database 23 MB, storage
   46 kB, 20 users, ~200 requests/day — all well inside the limits, so the
   overage is something only the dashboard shows (likely egress or Realtime).
