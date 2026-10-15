@@ -5,7 +5,6 @@ import type { AddressInfo } from 'node:net';
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { Client as Pg } from 'pg';
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- http_ece (web-push's encryption) has no types or ESM entry
 const ece = require('http_ece') as { decrypt: (buf: Buffer, opts: Record<string, unknown>) => Buffer };
 
 // Web Push end to end: a notification written in the database reaches the
