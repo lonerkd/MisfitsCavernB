@@ -540,7 +540,12 @@ export default function EcosystemTaskbar() {
             <button
               type="button"
               className={s.handle}
-              aria-label={pinned ? 'Close the island' : deck ? 'Keep the island open' : `Open the island — ${title}`}
+              aria-label={pinned ? 'Close the island' : deck ? 'Keep the island open' : `Open the island — ${[
+                title,
+                mode === 'live' && transient ? transient.label : '',
+                condition.label && mode !== 'dot' ? condition.label : '',
+                mode === 'rest' && lead ? `${lead.label} ${lead.value}` : '',
+              ].filter(Boolean).join(' ')}`}
               aria-pressed={pinned}
               title={deck ? (pinned ? 'Close' : 'Keep open') : 'Everything in the suite · Caps Lock for keys'}
               onClick={() => (pinned ? close() : setPinned(true))}
@@ -549,9 +554,9 @@ export default function EcosystemTaskbar() {
               {mode === 'live' && transient && <span className={s.label} role="status">{transient.label}</span>}
               {/* One slot each, so what's under the pointer survives the change of shape. */}
               {mode === 'rest' && <span className={s.glyph}><Glyph size={15} strokeWidth={1.6} aria-hidden /></span>}
-              {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}
-              {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}
-              {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small><span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
+              {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}{' '}
+              {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}{' '}
+              {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small>{' '}<span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
             </button>
             {onSet && mode === 'rest' && (
                 <span className={s.onset}>

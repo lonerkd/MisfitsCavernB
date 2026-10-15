@@ -212,11 +212,11 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
               className={[p.railBtn, i < progress.currentIndex && p.railDone, i === progress.currentIndex && p.railCurrent, i === shown.index && p.railSelected].filter(Boolean).join(' ')}
               aria-pressed={i === shown.index}
               aria-current={i === progress.currentIndex ? 'step' : undefined}
-              aria-label={`${ph.label}: ${ph.done} of ${ph.total} milestones${i === progress.currentIndex ? ', current phase' : ''}`}
+              aria-label={`${ph.abbr} ${ph.done}/${ph.total}, ${ph.label}: ${ph.done} of ${ph.total} milestones${i === progress.currentIndex ? ', current phase' : ''}`}
               onClick={() => setSelected(i === progress.currentIndex ? null : i)}
             >
               {i < progress.currentIndex && <Check size={10} aria-hidden />}
-              {ph.abbr}
+              {ph.abbr}{' '}
               <span className={p.railCount} aria-hidden>{ph.done}/{ph.total}</span>
             </button>
             {i < progress.phases.length - 1 && <span aria-hidden className={`${p.railLine} ${i < progress.currentIndex ? p.railLineDone : ''}`} />}

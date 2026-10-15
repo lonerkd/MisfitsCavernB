@@ -222,11 +222,11 @@ export default function MobileTabBar() {
           <Link href={route.back.href} className={m.pillBack} aria-label={`Back to ${route.back.label}`}><ChevronLeft size={20} aria-hidden /></Link>
         )}
         <button type="button" className={m.pillMain} aria-expanded={more} aria-haspopup="dialog" onClick={() => setMore(true)}
-          aria-label={`Menu. ${activeProject?.title ? `${activeProject.title}, ` : ''}${place}${unread ? `, ${unread} unread` : ''}`}>
+          aria-label={`Menu. ${[activeProject?.title, place, condition.label].filter(Boolean).join(' ')}${unread ? `, ${unread} unread` : ''}`}>
           <span className={m.pillDot} style={{ background: activeProject?.accent_color || 'var(--accent)' }} aria-hidden />
           <span className={m.pillText}>
-            {activeProject?.title && <b>{activeProject.title}</b>}
-            <span>{place}</span>
+            {activeProject?.title && <b>{activeProject.title}</b>}{' '}
+            <span>{place}</span>{' '}
             {condition.label && <span className={m.pillCondition} data-kind={condition.kind} role="status">{condition.label}</span>}
           </span>
           {unread > 0 && <span className={m.pillUnread} aria-hidden>{unread > 99 ? '99+' : unread}</span>}
