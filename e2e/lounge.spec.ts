@@ -82,7 +82,7 @@ test.describe('Lounge (local Supabase)', () => {
     await gen.hover();
     await gen.getByRole('button', { name: 'Pin message' }).click();
     await expect(gen.getByText('PINNED')).toBeVisible();
-    await page.getByRole('button', { name: `Pinned messages in #${name}` }).click();
+    await page.getByRole('button', { name: new RegExp(`^Pinned.* messages in #${name}`) }).click();
     const pinned = page.getByRole('dialog', { name: `Pinned in #${name}` });
     await expect(pinned.getByText('Generator arrives at the pier at five')).toBeVisible();
     await expect(await axeViolations(page)).toEqual([]);
