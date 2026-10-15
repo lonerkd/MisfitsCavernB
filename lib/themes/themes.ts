@@ -5,7 +5,7 @@
 // Pure except `applyTheme` / `readLocalTheme` (DOM, localStorage).
 
 export type ThemeId =
-  | 'default' | 'terminal' | 'blueprint' | 'mono' | 'paper' | 'editorial'
+  | 'default' | 'inkrust' | 'terminal' | 'blueprint' | 'mono' | 'paper' | 'editorial'
   | 'glass' | 'neon' | 'slate' | 'lagoon' | 'forest' | 'vampire';
 
 export interface ThemeDef {
@@ -19,6 +19,7 @@ export interface ThemeDef {
 
 export const THEMES: ThemeDef[] = [
   { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
+  { id: 'inkrust', label: 'Ink & Rust', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#d7340b'] },
   { id: 'terminal', label: 'Terminal', hint: 'Green phosphor, monospace everything', mode: 'dark', swatch: ['#030a05', '#8dfc9b', '#3dff6e'] },
   { id: 'blueprint', label: 'Blueprint', hint: 'Drafting-table blue with a grid', mode: 'dark', swatch: ['#0b2447', '#dbe8ff', '#5cc8ff'] },
   { id: 'mono', label: 'Mono', hint: 'Black, white and greys — no colour', mode: 'dark', swatch: ['#000000', '#f2f2f2', '#ffffff'] },

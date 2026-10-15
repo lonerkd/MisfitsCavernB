@@ -171,6 +171,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | Theme | Mode | Look |
 |---|---|---|
 | `default` (Cavern) | dark | near-black, cream text, ember accent |
+| `inkrust` (Ink & Rust) | dark | ink-blue night, pale-gold text, muted rust accent |
 | `terminal` | dark | green phosphor, mono type |
 | `blueprint` | dark | drafting blue, sky accent, grid |
 | `mono` | dark | black and white |
