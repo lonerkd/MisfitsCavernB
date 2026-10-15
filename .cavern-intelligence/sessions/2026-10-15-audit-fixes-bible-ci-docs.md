@@ -42,8 +42,16 @@ committed inventory on Windows (45 routes · 39 pages · 70 tables · 53
 functions · 69 specs).
 
 **Not verified here:** the CI bible-gate on a Linux runner (it will run on
-this PR); the Production schema drift run (dispatched this session, result
-in the workflow history).
+this PR — and did: `checks` passed with the gate in place).
+
+**Discovery — the nightly drift check is failing and it is genuine:** the dispatched drift run
+failed, and it is not noise. Production's `internal.timesheets_guard()` body
+differs from the committed fingerprint; the fingerprint line has not changed
+since PR #81, so production was edited outside a migration between
+2026-10-12 15:50 and 10-13 00:52 (the last passing nightly). The nightly check
+has failed on every run since. STATE.md's "drift passes" claim was stale and
+is corrected; BACKLOG §1 now carries the owner decision (restore production
+to the migration, or migrate production's version forward).
 
 **Owner follow-ups unchanged:** branch protection is still yours (see BACKLOG
 §1 — `conventional`, `checks`, `database` as required checks); the two

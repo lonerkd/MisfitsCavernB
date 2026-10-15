@@ -18,6 +18,7 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
 - **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
+- **Production drift — `internal.timesheets_guard()` (P1, found 2026-10-15 by the drift check)**: production's function body differs from the migration's (`20260928090000_money.sql`); the repo's fingerprint hasn't changed since PR #81, so production was edited outside a migration between 10-12 15:50 and 10-13 00:52. Pick one: (a) restore production to the migration's version (re-run that function definition), or (b) if the production version is the intended fix, write a new migration carrying it and re-run the fingerprint. Done when the nightly drift run is green.
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
