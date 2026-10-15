@@ -330,3 +330,18 @@ casting sheet PDF.
 
 ### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
 **View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.
+
+## 5. Accepted, not yet built
+
+### 5.1 Conflict-free co-writing (ADR 0006) — M/L
+**What**: a Yjs `Y.Text` for the script, synced over the existing
+`script_${id}` Supabase Realtime channel as the transport (no new WebSocket
+server); `scripts.content` stays the persisted truth; presence and cursors
+stay as they are. **Where**: `lib/scriptos/sync.ts` (the provider lives
+beside it), the write surface in `components/editor/WriteView.tsx`, a scoped
+Yjs undo manager (local author only), then delete the conflict heuristic
+and its UI. **Done when**: two simultaneous sessions editing the same
+paragraph keep both edits word-level (an integration test with two simulated
+authors + an e2e two-browser spec), offline capture reconciles through the
+CRDT on reconnect, and the conflict prompt is gone from the editor.
+Read `adr/0006-conflict-free-co-writing.md` first — it is the design.

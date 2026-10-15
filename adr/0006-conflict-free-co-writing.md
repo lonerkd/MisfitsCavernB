@@ -1,6 +1,6 @@
 # 0006. Conflict-free co-writing: a CRDT for the script text
 
-- Status: Proposed
+- Status: Accepted (by the owner, 2026-10-14 — the conflict prompt must go)
 - Date: 2026-10-14
 
 ## Context

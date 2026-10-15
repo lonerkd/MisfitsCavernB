@@ -26,3 +26,9 @@ not an implementation.
 **Next, if the owner accepts the ADR:** a `yjs` provider over the existing
 `script_${id}` Realtime channel, a scoped undo manager, and removal of the
 conflict heuristic in `lib/scriptos/sync.ts`.
+
+---
+
+**Update (same day):** the owner accepted the ADR. Status flipped to Accepted;
+the implementation is scoped in `BACKLOG.md` §5.1 (its own PR, own session —
+the build deserves a full clean pass, not a tail-end of this one).
