@@ -1,5 +1,6 @@
 'use client';
 
+import { moveTarget, focusMoved } from '@/lib/util/reorderKeys';
 import React from 'react';
 import { Plus, FileUp, Book } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
@@ -168,7 +169,9 @@ export function EditorLeftNav({
                         <button
                           onClick={() => jumpToScene(i)}
                           draggable
-                          title="Drag to reorder · click to jump to this scene"
+                          data-reorder="nav" data-index={i}
+                          onKeyDown={e => { const to = moveTarget(e.key, e.altKey, i, scenesList.length); if (to === null) return; e.preventDefault(); reorderScenes(i, to); focusMoved('nav', to); }}
+                          title="Drag, or Alt + ↑/↓, to reorder · click to jump to this scene"
                           onDragStart={e => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
                           onDragOver={e => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
                           onDragEnd={() => { setDragSceneIdx(null); setDropSceneIdx(null); }}
