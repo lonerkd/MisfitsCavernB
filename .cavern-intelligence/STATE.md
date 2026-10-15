@@ -4,10 +4,10 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
-## Resume here (handoff, 2026-10-11)
+## Resume here (handoff, 2026-10-15)
 
 1. **`main` is current.** Start with `git switch main && git pull`; then `node scripts/latest-sessions.js` for what the last PRs did, and `gh pr list` for what is open.
-2. **First job — apply six migrations to production (owner pastes them, in this order).** Their code is live but the database is not, so Production › **Continuity** errors (no `story_day` column or `scene_states`) and "Not a character" in the Character Bible cannot save (no `reading_corrections`); the **Report** flags (messages, jobs, profiles) and `/admin/reports` error until `reports` exists; everything else degrades quietly. Paste each file into the SQL editor (https://supabase.com/dashboard/project/fxsryglwpwcqkfjljbrm/sql/new), one at a time: `supabase/migrations/20261012010000_film_graph_story_time.sql`, then `supabase/migrations/20261012020000_reading_corrections.sql`, then `supabase/migrations/20261013010000_reports.sql`, then `supabase/migrations/20261013020000_admin_close_job.sql` (the queue's "Close the job"), then `supabase/migrations/20261013030000_hide_message.sql` (the queue's "Hide the message"), then `supabase/migrations/20261013040000_suspend_user.sql` (Suspend on `/admin/users`). Then check production has them (tables `scene_states`, `reading_corrections` and `reports`, column `scenes.story_confirmed`), run **Production schema drift** (workflow id 367546497, `gh api -X POST repos/lonerkd/MisfitsCavernB/actions/workflows/367546497/dispatches -f ref=main`) and record it in a session note. The Supabase connector reads production but times out on writes.
+2. **Production has all six migrations** (checked 2026-10-15 against the live database: tables `scene_states`, `reading_corrections`, `reports`, column `scenes.story_confirmed`, functions `admin_close_job`, `admin_reported_message`, `admin_hide_message`, `admin_list_users`, `admin_set_suspended`). Still to do: run **Production schema drift** (workflow id 367546497, `gh api -X POST repos/lonerkd/MisfitsCavernB/actions/workflows/367546497/dispatches -f ref=main`) and record it in a session note.
 3. **Then Web Push setup** (BACKLOG 3.13): VAPID keys in Vercel, and the
    dispatch URL + secret in `internal.push_config`; see
    `adr/0004-push-dispatch-from-the-database.md` and `lib/push/`.
@@ -40,7 +40,7 @@ rows, plus a universal layer so anything attaches to anything. Design:
 Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 [`bible/`](bible/README.md). In order:
 
-1. **Apply the three migrations, then Web Push setup** (above).
+1. **Web Push setup** (above).
 2. **Owner, outside the code** (owner: "good for now" — revisit before
    launch): the SMTP sender and redirect allow-list (above), Supabase usage
    (grace period over — which line?), lawyer review of `/privacy`, `/terms`
