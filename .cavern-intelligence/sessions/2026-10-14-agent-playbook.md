@@ -23,3 +23,13 @@ were not relevant.
 
 **Next:** the owner should confirm the pitfalls list reads true from their
 side (especially the migration-by-hand one); anything missing, add a line.
+
+---
+
+**Correction (owner, same day):** the session start stays **four reads** —
+the fifth step this note's commit added to RULES.md is reverted. The map
+(`INDEX.md`, step 4) routes to the playbook; nothing else becomes a required
+read. The owner's principle, recorded: the intelligence folder was made to
+**centralize and organize** — nothing outside it unless necessary, and
+nothing in it more deeply contextual than its factual function and the
+existing state.
