@@ -302,7 +302,7 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
                     {sc && <span className={s.hint}>Sc {sc.scene_number} · {sc.heading ?? sc.title}</span>}
                     {sc?.script_id && (
                       <button type="button" className={s.noteScript} onClick={() => openInScript(sc, n.id)}
-                        aria-label={`Open ${n.line_text ? 'the line' : `scene ${sc.scene_number}`} in the script`}>
+                        aria-label={`In script: open ${n.line_text ? 'the line' : `scene ${sc.scene_number}`}`}>
                         <FileText size={10} aria-hidden /> In script
                       </button>
                     )}

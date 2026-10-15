@@ -19,6 +19,7 @@ export type Database = {
           target_type: string | null;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           action: string;
           created_at?: string | null;
@@ -59,6 +60,7 @@ export type Database = {
           user_agent: string | null;
           user_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           action: string;
           created_at?: string | null;
@@ -102,6 +104,7 @@ export type Database = {
           project_id: string;
           unit_cost: number;
         };
+        ComputedFields: never;
         Insert: {
           color: string;
           created_at?: string;
@@ -139,6 +142,7 @@ export type Database = {
           name_key: string;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -182,6 +186,7 @@ export type Database = {
           status: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           assigned_to?: string | null;
           category_id: string;
@@ -254,6 +259,7 @@ export type Database = {
           position: number;
           unit: string | null;
         };
+        ComputedFields: never;
         Insert: {
           ask_when?: NonNullable<Json>;
           created_at?: string;
@@ -297,6 +303,7 @@ export type Database = {
           project_id: string;
           updated_at: string | null;
         };
+        ComputedFields: never;
         Insert: {
           actual_cost?: number | null;
           amount?: number;
@@ -353,6 +360,7 @@ export type Database = {
           user_id: string;
           version: number;
         };
+        ComputedFields: never;
         Insert: {
           acked_at?: string;
           call_sheet_id: string;
@@ -396,6 +404,7 @@ export type Database = {
           remarks: string | null;
           role_label: string | null;
         };
+        ComputedFields: never;
         Insert: {
           call_sheet_id: string;
           call_time?: string | null;
@@ -457,6 +466,7 @@ export type Database = {
           version: number;
           weather: string | null;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string | null;
           estimated_wrap?: string | null;
@@ -548,6 +558,7 @@ export type Database = {
           title: string;
           updated_at: string | null;
         };
+        ComputedFields: never;
         Insert: {
           budget?: number | null;
           created_at?: string | null;
@@ -608,6 +619,7 @@ export type Database = {
           id: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           can_manage?: boolean;
           can_post?: boolean;
@@ -653,6 +665,7 @@ export type Database = {
           type: string;
           why: string;
         };
+        ComputedFields: never;
         Insert: {
           audience?: string;
           key: string;
@@ -691,6 +704,7 @@ export type Database = {
           topic: string | null;
           type: string;
         };
+        ComputedFields: never;
         Insert: {
           audience?: string;
           created_at?: string | null;
@@ -744,6 +758,7 @@ export type Database = {
           id: string;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           character_id?: string | null;
           character_name: string;
@@ -802,6 +817,7 @@ export type Database = {
           position: number;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           character_id: string;
           created_at?: string;
@@ -849,6 +865,7 @@ export type Database = {
           name: string;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           id?: string;
@@ -884,6 +901,7 @@ export type Database = {
           user_agent: string | null;
           user_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           digest?: string | null;
@@ -927,6 +945,7 @@ export type Database = {
           name: string;
           position: number;
         };
+        ComputedFields: never;
         Insert: {
           above_the_line?: boolean;
           color: string;
@@ -953,6 +972,7 @@ export type Database = {
           updated_at: string | null;
           webhook_url: string;
         };
+        ComputedFields: never;
         Insert: {
           channel_id: string;
           created_at?: string | null;
@@ -1000,6 +1020,7 @@ export type Database = {
           status: string;
           vendor_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           amount: number;
           budget_item_id?: string | null;
@@ -1077,6 +1098,7 @@ export type Database = {
           user_id: string;
           workflow: string | null;
         };
+        ComputedFields: never;
         Insert: {
           done?: string[];
           hidden?: boolean;
@@ -1117,6 +1139,7 @@ export type Database = {
           message_id: string;
           original: string;
         };
+        ComputedFields: never;
         Insert: {
           hidden_at?: string;
           hidden_by?: string | null;
@@ -1155,6 +1178,7 @@ export type Database = {
           job_id: string;
           status: string | null;
         };
+        ComputedFields: never;
         Insert: {
           applicant_id: string;
           applied_at?: string | null;
@@ -1204,6 +1228,7 @@ export type Database = {
           title: string;
           updated_at: string | null;
         };
+        ComputedFields: never;
         Insert: {
           budget_item_id?: string | null;
           character_name?: string | null;
@@ -1273,6 +1298,7 @@ export type Database = {
           partner_id: string | null;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           channel_id?: string | null;
           id?: string;
@@ -1331,6 +1357,7 @@ export type Database = {
           updated_at: string;
           width: number | null;
         };
+        ComputedFields: never;
         Insert: {
           board?: string | null;
           created_at?: string;
@@ -1403,6 +1430,7 @@ export type Database = {
           receiver_id: string | null;
           sender_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           channel_id?: string | null;
           channel_uuid?: string | null;
@@ -1485,6 +1513,7 @@ export type Database = {
           type: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           body?: string | null;
           created_at?: string | null;
@@ -1537,6 +1566,7 @@ export type Database = {
           source_ref_id: string | null;
           title: string | null;
         };
+        ComputedFields: never;
         Insert: {
           block_type: string;
           body?: string | null;
@@ -1581,6 +1611,7 @@ export type Database = {
           title: string | null;
           url: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string | null;
           id?: string;
@@ -1624,6 +1655,7 @@ export type Database = {
           user_id: string;
           year: number | null;
         };
+        ComputedFields: never;
         Insert: {
           accent_color?: string | null;
           category?: string | null;
@@ -1686,6 +1718,7 @@ export type Database = {
           title: string;
           url: string | null;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -1744,6 +1777,7 @@ export type Database = {
           title: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           assigned_to?: string | null;
           created_at?: string;
@@ -1814,6 +1848,7 @@ export type Database = {
           resolved_by: string | null;
           scene_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           at_seconds: number;
           body: string;
@@ -1897,6 +1932,7 @@ export type Database = {
           updated_at: string | null;
           username: string;
         };
+        ComputedFields: never;
         Insert: {
           avatar_url?: string | null;
           bio?: string | null;
@@ -1962,6 +1998,7 @@ export type Database = {
           title: string;
           uri: string;
         };
+        ComputedFields: never;
         Insert: {
           added_by?: string | null;
           created_at?: string | null;
@@ -2017,6 +2054,7 @@ export type Database = {
           title: string | null;
           updated_at: string | null;
         };
+        ComputedFields: never;
         Insert: {
           color?: string | null;
           content?: string | null;
@@ -2075,6 +2113,7 @@ export type Database = {
           updated_at: string;
           value: NonNullable<Json>;
         };
+        ComputedFields: never;
         Insert: {
           answered_by?: string | null;
           project_id: string;
@@ -2124,6 +2163,7 @@ export type Database = {
           status: string | null;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           craft?: string | null;
           created_at?: string | null;
@@ -2196,6 +2236,7 @@ export type Database = {
           updated_at: string;
           vendor_id: string | null;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -2286,6 +2327,7 @@ export type Database = {
           skip_milestones: string[];
           skip_phases: string[];
         };
+        ComputedFields: never;
         Insert: {
           blurb?: string;
           created_at?: string;
@@ -2328,6 +2370,7 @@ export type Database = {
           timezone: string | null;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           address?: string | null;
           contact?: string | null;
@@ -2389,6 +2432,7 @@ export type Database = {
           project_id: string;
           title: string;
         };
+        ComputedFields: never;
         Insert: {
           assigned_to?: string | null;
           completed?: boolean | null;
@@ -2445,6 +2489,7 @@ export type Database = {
           updated_at: string | null;
           visibility: string;
         };
+        ComputedFields: never;
         Insert: {
           accent_color?: string | null;
           archived_at?: string | null;
@@ -2513,6 +2558,7 @@ export type Database = {
           user_agent: string | null;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           auth: string;
           created_at?: string;
@@ -2544,6 +2590,7 @@ export type Database = {
           name: string;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -2582,6 +2629,7 @@ export type Database = {
           status: string;
           target_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           id?: string;
@@ -2628,6 +2676,7 @@ export type Database = {
           project_id: string;
           scene_id: string;
         };
+        ComputedFields: never;
         Insert: {
           character_id: string;
           created_at?: string;
@@ -2665,6 +2714,7 @@ export type Database = {
           project_id: string;
           scene_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -2713,6 +2763,7 @@ export type Database = {
           project_id: string;
           scene_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -2766,6 +2817,7 @@ export type Database = {
           scene_id: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           character_id: string;
           created_at?: string;
@@ -2831,6 +2883,7 @@ export type Database = {
           title: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           cast_list?: string | null;
           color?: string | null;
@@ -2929,6 +2982,7 @@ export type Database = {
           text: string;
           type: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string | null;
           created_by?: string | null;
@@ -2995,6 +3049,7 @@ export type Database = {
           updated_at: string | null;
           updated_by: string | null;
         };
+        ComputedFields: never;
         Insert: {
           age?: string | null;
           arc?: string | null;
@@ -3054,6 +3109,7 @@ export type Database = {
           updated_at: string;
           updated_by: string | null;
         };
+        ComputedFields: never;
         Insert: {
           character_bible?: NonNullable<Json>;
           script_id: string;
@@ -3088,6 +3144,7 @@ export type Database = {
           script_id: string;
           snapshot: string;
         };
+        ComputedFields: never;
         Insert: {
           color_index?: number;
           created_at?: string | null;
@@ -3131,6 +3188,7 @@ export type Database = {
           script_id: string;
           text: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -3182,6 +3240,7 @@ export type Database = {
           updated_at: string | null;
           version: number | null;
         };
+        ComputedFields: never;
         Insert: {
           content?: string | null;
           created_at?: string | null;
@@ -3259,6 +3318,7 @@ export type Database = {
           shot_id: string | null;
           take: number | null;
         };
+        ComputedFields: never;
         Insert: {
           at?: string;
           body?: string | null;
@@ -3343,6 +3403,7 @@ export type Database = {
           title: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           audio_url: string;
           created_at?: string | null;
@@ -3389,6 +3450,7 @@ export type Database = {
           shoot_date: string | null;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           day_number: number;
@@ -3432,6 +3494,7 @@ export type Database = {
           shot_size: string | null;
           status: string | null;
         };
+        ComputedFields: never;
         Insert: {
           angle?: string | null;
           created_at?: string | null;
@@ -3503,6 +3566,7 @@ export type Database = {
           updated_at: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           access_token: string;
           expires_at: number;
@@ -3534,6 +3598,7 @@ export type Database = {
           type: string | null;
           updated_at: string | null;
         };
+        ComputedFields: never;
         Insert: {
           assigned_to?: string | null;
           created_at?: string | null;
@@ -3600,6 +3665,7 @@ export type Database = {
           user_id: string | null;
           work_date: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           decided_at?: string | null;
@@ -3665,6 +3731,7 @@ export type Database = {
           text: string;
           updated_at: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           created_by?: string | null;
@@ -3726,6 +3793,7 @@ export type Database = {
           starts_on: string;
           user_id: string;
         };
+        ComputedFields: never;
         Insert: {
           created_at?: string;
           ends_on: string;
@@ -3763,6 +3831,7 @@ export type Database = {
           notes: string | null;
           project_id: string;
         };
+        ComputedFields: never;
         Insert: {
           category?: string | null;
           contact?: string | null;
@@ -3809,6 +3878,7 @@ export type Database = {
           user_id: string;
           words: number;
         };
+        ComputedFields: never;
         Insert: {
           day: string;
           goal: number;

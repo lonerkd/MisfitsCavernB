@@ -72,8 +72,8 @@ test.describe('On set (local Supabase)', () => {
     await expect(card).toBeVisible({ timeout: 20_000 });
 
     // Stamp crew call.
-    await page.getByRole('button', { name: 'Crew call: stamp now' }).click();
-    await expect(page.getByRole('button', { name: /^Crew call at / })).toBeVisible({ timeout: 10_000 });
+    await page.getByRole('button', { name: 'Crew call Tap now' }).click();
+    await expect(page.getByRole('button', { name: /^Crew call \d/ })).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/Crew in — setting up/)).toBeVisible();
 
     // Got the shot; the scene starts; wrap it.
