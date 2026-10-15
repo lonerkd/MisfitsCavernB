@@ -232,7 +232,7 @@ function ClockButton({ label, at, entry, canEdit, onStamp, onCorrect }: {
   if (!at || !entry) {
     return (
       <button type="button" className={o.clockBtn} onClick={onStamp}>
-        <span className={o.clockLabel}>{label}</span><span className={o.clockTap}>Tap now</span>
+        <span className={o.clockLabel}>{label}</span>{" "}<span className={o.clockTap}>Tap now</span>
       </button>
     );
   }
@@ -260,7 +260,7 @@ function ClockButton({ label, at, entry, canEdit, onStamp, onCorrect }: {
     <button type="button" className={cx(o.clockBtn, o.clockOn)} disabled={!canEdit(entry)}
       aria-label={`${label} ${fmtTime(at)}${canEdit(entry) ? ', correct the time' : ''}`}
       onClick={() => { setValue(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`); setEditing(true); }}>
-      <span className={o.clockLabel}>{label}</span><span className={o.clockTime}>{fmtTime(at)}</span>
+      <span className={o.clockLabel}>{label}</span>{" "}<span className={o.clockTime}>{fmtTime(at)}</span>
     </button>
   );
 }
