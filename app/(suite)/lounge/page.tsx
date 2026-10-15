@@ -633,7 +633,7 @@ export default function LoungePage() {
                   <Search size={12} /> <span className="mc-hide-phone">SEARCH</span>
                 </button>
                 {!dmTarget && activeChannel && activeChannel.type !== 'voice' && (
-                  <button type="button" onClick={() => { setShowSearch(false); setShowPinned(true); }} aria-label={`Pinned messages in #${activeChannel.name}`} title="Pinned"
+                  <button type="button" onClick={() => { setShowSearch(false); setShowPinned(true); }} aria-label={`Pinned${messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''} messages in #${activeChannel.name}`} title="Pinned"
                     style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
                     <Pin size={12} /> <span className="mc-hide-phone">PINNED</span>{messages.some((m) => m.pinned) ? ` · ${messages.filter((m) => m.pinned).length}` : ''}
                   </button>

@@ -176,7 +176,7 @@ function ShotCard({ shot, sceneNumber, frame, frameSrc, note, scene, first, last
         <span className={d.grip} aria-hidden><GripVertical size={12} /></span>
       </div>
 
-      <button type="button" className={d.camera} onClick={() => setCamera(true)} aria-haspopup="dialog" aria-label={`Camera for shot ${label}: ${cameraLine || 'not set'}`}>
+      <button type="button" className={d.camera} onClick={() => setCamera(true)} aria-haspopup="dialog" aria-label={`Camera for shot ${label}: ${cameraLine || 'Set the camera'}`}>
         <Camera size={11} aria-hidden /> {cameraLine || 'Set the camera'}
       </button>
 

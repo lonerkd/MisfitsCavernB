@@ -85,7 +85,7 @@ test.describe('Cut notes on script lines (local Supabase)', () => {
     expect(await axeViolations(page)).toEqual([]);
 
     // "In script" opens the editor on the line, its margin note open.
-    await notes.filter({ hasText: 'Hold on Maya' }).getByRole('button', { name: 'Open the line in the script' }).click();
+    await notes.filter({ hasText: 'Hold on Maya' }).getByRole('button', { name: 'In script: open the line' }).click();
     await page.waitForURL(/\/editor\?script=.*&note=/, { timeout: 20_000 });
     const dialog = page.getByRole('dialog', { name: /^Cut notes on line 13$/ });
     await expect(dialog).toBeVisible({ timeout: 20_000 });
