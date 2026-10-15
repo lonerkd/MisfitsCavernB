@@ -22,3 +22,12 @@ gates on the PR.
 
 **Design note:** no script/studio/jobs ambient tokens — the house look owns
 those; Ink & Rust inherits the defaults, so it stays a skin, not a fork.
+
+---
+
+**Update (owner, same day):** the catalogue now follows the owner's order of
+importance — Cavern, Paper, Vampire, Blueprint, Terminal, Editorial, then
+the rest (Ink & Rust seventh, then the previous relative order). The picker
+follows `THEMES`; `design-tokens.md`'s table follows the catalogue. Nothing
+depends on order — no test asserts it, and `resolveTheme`/`applyTheme` look
+themes up by id.
