@@ -1,5 +1,6 @@
 'use client';
 
+import { moveTarget, focusMoved } from '@/lib/util/reorderKeys';
 import { TimingPanel } from './TimingPanel';
 import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
 import React from 'react';
@@ -50,6 +51,8 @@ export function BoardView({
           isDragging={dragSceneIdx === i}
           isDropTarget={dropSceneIdx === i && dragSceneIdx !== null && dragSceneIdx !== i}
           onJump={() => jumpToScene(i)}
+          onMove={(to) => { reorderScenes(i, to); focusMoved('board', to); }}
+          count={scenesList.length}
           onSetNote={note => setSceneNote(i, note)}
           onDragStart={(e) => { setDragSceneIdx(i); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move'; }}
           onDragOver={(e) => { e.preventDefault(); if (dropSceneIdx !== i) setDropSceneIdx(i); }}
@@ -63,7 +66,7 @@ export function BoardView({
 
 function SceneBoardCard({
   scene, index, lines, cardColor, wordCount, note, isDragging, isDropTarget,
-  onJump, onSetNote, onDragStart, onDragOver, onDragEnd, onDrop,
+  onJump, onMove, count, onSetNote, onDragStart, onDragOver, onDragEnd, onDrop,
 }: {
   scene: ScriptLine;
   index: number;
@@ -74,6 +77,8 @@ function SceneBoardCard({
   isDragging: boolean;
   isDropTarget: boolean;
   onJump: () => void;
+  onMove: (to: number) => void;
+  count: number;
   onSetNote: (note: string) => void;
   onDragStart: (e: any) => void;
   onDragOver: (e: any) => void;
@@ -107,6 +112,14 @@ function SceneBoardCard({
   return (
     <div
       onClick={() => { onJump(); zoneHandlers.onClick(); }}
+      role="group" tabIndex={0} data-reorder="board" data-index={index}
+      aria-label={`Scene ${index + 1}: ${scene.text}. Enter opens it in the script. Alt and the arrow keys move it.`}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === 'Enter') { e.preventDefault(); onJump(); return; }
+        const to = moveTarget(e.key, e.altKey, index, count);
+        if (to !== null) { e.preventDefault(); onMove(to); }
+      }}
       onMouseEnter={zoneHandlers.onMouseEnter}
       onMouseLeave={zoneHandlers.onMouseLeave}
       style={{ cursor: 'grab' }}
@@ -115,7 +128,7 @@ function SceneBoardCard({
         initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}
         whileHover={{ y: -4, boxShadow: `0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px ${cardColor}25` }}
 
-      title="Drag to reorder · click to open in the script"
+      title="Drag, or Alt + arrow keys, to reorder · click to open in the script"
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
