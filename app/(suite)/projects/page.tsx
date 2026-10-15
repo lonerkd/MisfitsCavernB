@@ -1,5 +1,6 @@
 'use client';
 
+import { stepTarget, focusSelector } from '@/lib/util/reorderKeys';
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, ArrowUpRight, Clock, Archive, ArchiveRestore, Search } from 'lucide-react';
 import Link from 'next/link';
@@ -107,7 +108,12 @@ function daysUntil(dateStr: string): number {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000);
 }
 
-function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardViewModel; canArchive: boolean; onArchive: (p: ProjectCardViewModel) => void }) {
+// Where a keyboard move has sent a project. The old card stays on screen for a moment while the board redraws and
+// still receives keys, so for a second or so a press steps on from here, not from the phase that card was drawn with.
+const movedTo = new Map<string, { to: Phase; at: number }>();
+const recentMove = (id: string): Phase | undefined => { const m = movedTo.get(id); return m && Date.now() - m.at < 1500 ? m.to : undefined; };
+
+function ProjectCard({ project, canArchive, onArchive, onMove }: { project: ProjectCardViewModel; canArchive: boolean; onArchive: (p: ProjectCardViewModel) => void; onMove?: (projectId: string, to: Phase) => void }) {
   const [hovered, setHovered] = useState(false);
   const phase = PHASE_COLORS[project.phase];
   const icon = useFormatIcon(project.type);
@@ -117,8 +123,19 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
   const r = project.readiness;
   const pct = r && r.total ? Math.round((r.done / r.total) * 100) : null;
 
+  const phaseIds = PHASES.map((p) => p.id as Phase);
   return (
-    <div style={{ position: 'relative' }}>
+    <div
+      style={{ position: 'relative' }}
+      data-project-card={project.id}
+      onKeyDown={(e) => {
+        const to = onMove && e.target === e.currentTarget.querySelector('a') ? stepTarget(phaseIds, recentMove(project.id) ?? project.phase, e.key, e.altKey) : null;
+        if (!to) return;
+        e.preventDefault();
+        movedTo.set(project.id, { to, at: Date.now() });
+        onMove!(project.id, to);
+      }}
+    >
     {canArchive && (
       <button
         type="button"
@@ -134,7 +151,7 @@ function ProjectCard({ project, canArchive, onArchive }: { project: ProjectCardV
         {project.archived ? <ArchiveRestore size={12} aria-hidden /> : <Archive size={12} aria-hidden />}
       </button>
     )}
-    <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Link href={`/projects/${project.id}`} style={{ textDecoration: 'none', display: 'block' }} aria-keyshortcuts="Alt+ArrowLeft Alt+ArrowRight" title={onMove ? 'Alt + ← / → moves it to the previous or next phase' : undefined}>
       <motion.div
         draggable
         onDragStart={e => {
@@ -344,7 +361,7 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
               exit={{ opacity: 0, scale: 0.96 }}
               transition={{ delay: i * 0.07, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             >
-              <ProjectCard project={p} canArchive={canArchive(p)} onArchive={onArchive} />
+              <ProjectCard project={p} canArchive={canArchive(p)} onArchive={onArchive} onMove={(id, to) => { onDropProject(id, to); focusSelector(`[data-project-card="${id}"] a`); }} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -488,6 +505,7 @@ export default function ProjectsPage() {
     } catch (err: any) {
       console.error('Failed to move project:', err);
       toast('Failed to move project', 'error');
+      movedTo.delete(projectId);
       setProjectsList(oldList);
     }
   };

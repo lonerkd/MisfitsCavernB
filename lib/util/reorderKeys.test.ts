@@ -21,3 +21,18 @@ describe('moveTarget', () => {
     expect(moveTarget('ArrowUp', true, 0, 1)).toBeNull();
   });
 });
+
+import { stepTarget } from './reorderKeys';
+
+describe('stepTarget', () => {
+  const phases = ['development', 'pre-production', 'production'];
+  it('steps one along with Alt + ←/→ only', () => {
+    expect(stepTarget(phases, 'pre-production', 'ArrowRight', true)).toBe('production');
+    expect(stepTarget(phases, 'pre-production', 'ArrowLeft', true)).toBe('development');
+    expect(stepTarget(phases, 'production', 'ArrowRight', true)).toBeNull();
+    expect(stepTarget(phases, 'development', 'ArrowLeft', true)).toBeNull();
+    expect(stepTarget(phases, 'pre-production', 'ArrowRight', false)).toBeNull();
+    expect(stepTarget(phases, 'pre-production', 'Home', true)).toBeNull();
+    expect(stepTarget(phases, 'unknown', 'ArrowRight', true)).toBeNull();
+  });
+});
