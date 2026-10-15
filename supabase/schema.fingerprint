@@ -1824,6 +1824,7 @@ realtime public.scene_media
 realtime public.scene_states
 realtime public.scenes
 realtime public.script_stash
+realtime public.scripts
 realtime public.set_log
 realtime public.shoot_days
 realtime public.shots

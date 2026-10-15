@@ -84,6 +84,20 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           lastRemoteRef.current = lastRemoteRef.current + text;
           applyRemote(localRef.current + text);
         })
+        // Backup path: the broadcast above has no delivery guarantee (a
+        // dropped socket, a reconnect mid-session). scripts is in the
+        // realtime publication so a row change reaches us here too, even
+        // if the broadcast was missed — the only way the other party would
+        // otherwise need a refresh to catch up.
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'scripts', filter: `id=eq.${scriptId}` }, (payload) => {
+          const remote = (payload.new as { content?: string; last_edited_by?: string } | null)?.content;
+          if (remote === undefined || remote === null) return;
+          if ((payload.new as { last_edited_by?: string })?.last_edited_by === meRef.current?.id) return;
+          const local = localRef.current;
+          if (remote === lastRemoteRef.current || remote === local) return;
+          lastRemoteRef.current = remote;
+          applyRemote(remote);
+        })
         .on('presence', { event: 'sync' }, () => {
           const state = channel.presenceState();
           const others: Collaborator[] = Object.keys(state)

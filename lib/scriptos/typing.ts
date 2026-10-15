@@ -48,7 +48,13 @@ export function enterInHeading(content: string, cursor: number): Edit | null {
   return { next: content.substring(0, start) + upper.substring(0, col) + '\n' + upper.substring(col) + content.substring(end), caret: cursor + 1 };
 }
 
-/** Tab on an empty line is "new scene"; on a line it cycles the element type (Shift reverses). */
+/**
+ * Tab on a blank line between existing content, or on a wholly blank
+ * script, is "new scene" (a quick way to drop a heading in a gap, or to
+ * start a document). A blank *trailing* line after real content — the
+ * ordinary case right after Enter — cycles the element type instead
+ * (Shift reverses), same as any other line.
+ */
 export function cycleLine(
   content: string,
   cursor: number,
@@ -59,7 +65,8 @@ export function cycleLine(
 ): Edit | 'empty' {
   const { start, end } = lineBounds(content, cursor);
   const line = content.substring(start, end);
-  if (!line.trim()) return 'empty';
+  const trailingAfterContent = end === content.length && start > 0;
+  if (!line.trim() && !trailingAfterContent) return 'empty';
   const at = currentType ? cycle.indexOf(currentType) : -1;
   const base = at === -1 ? 0 : at;
   const nextType = cycle[(base + (reverse ? -1 : 1) + cycle.length) % cycle.length];

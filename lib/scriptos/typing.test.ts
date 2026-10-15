@@ -47,8 +47,14 @@ describe('cycleLine', () => {
   it('starts from the first type when the current one is unknown', () => {
     expect(cycleLine('Hi', 0, undefined, false, cycle, transform)).toMatchObject({ next: 'character:Hi' });
   });
-  it('says "empty" on a blank line (the editor makes a new scene)', () => {
+  it('says "empty" on a blank line between existing content (the editor makes a new scene)', () => {
     expect(cycleLine('A\n\nB', 2, 'action', false, cycle, transform)).toBe('empty');
+  });
+  it('says "empty" on a wholly blank script (the editor starts one with a scene)', () => {
+    expect(cycleLine('', 0, undefined, false, cycle, transform)).toBe('empty');
+  });
+  it('cycles a blank trailing line after real content, instead of inserting a scene (QA 2026-10-15 #4: action line, Enter, Tab)', () => {
+    expect(cycleLine('Action line.\n', 13, 'action', false, cycle, transform)).toEqual({ next: 'Action line.\ncharacter:', caret: 23 });
   });
 });
 

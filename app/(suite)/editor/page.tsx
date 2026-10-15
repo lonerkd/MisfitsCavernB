@@ -827,7 +827,7 @@ export default function EditorPage() {
         </AnimatePresence>
 
         {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
-        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? 'var(--bg)' : 'var(--sunken)', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
