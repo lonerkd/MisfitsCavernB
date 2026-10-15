@@ -64,6 +64,13 @@ jobs:
       # CLAUDE.md, AGENTS.md and .github/copilot-instructions.md are generated
       # from .cavern-intelligence/RULES.md; fail if one was edited or is stale.
       - run: node scripts/sync-intel.js --check
+      # Advisory: a merged PR with no session note (history is shallow, so
+      # fetch what the check reads). Runs on main only.
+      - if: github.ref == 'refs/heads/main'
+        continue-on-error: true
+        run: |
+          git fetch --shallow-since=2026-10-10 origin main
+          npm run check-sessions
       - run: npm run typecheck
       - run: npm run lint
       # With the coverage report: thresholds live in vitest.config.ts, so this
