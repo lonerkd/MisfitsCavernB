@@ -30,3 +30,23 @@ export function focusMoved(surface: string, index: number): void {
   };
   setTimeout(attempt, 20);
 }
+
+/** One step along an ordered list (the phases) with Alt + ←/→, or null. */
+export function stepTarget<T>(list: readonly T[], current: T, key: string, alt: boolean): T | null {
+  const i = list.indexOf(current);
+  const to = i < 0 || (key !== 'ArrowLeft' && key !== 'ArrowRight') ? null : moveTarget(key, alt, i, list.length);
+  return to === null || Math.abs(to - i) !== 1 ? null : list[to];
+}
+
+/** Put focus back on whatever matches the selector for about a second (the board rebuilds when a card moves). */
+export function focusSelector(selector: string): void {
+  const until = Date.now() + 1000;
+  const attempt = () => {
+    const active = document.activeElement;
+    const el = document.querySelector<HTMLElement>(selector);
+    if (active && active !== document.body && !el?.contains(active)) return;
+    if (el && !el.contains(active)) el.focus();
+    if (Date.now() < until) setTimeout(attempt, 50);
+  };
+  setTimeout(attempt, 20);
+}
