@@ -1,6 +1,7 @@
 {
-  "name": "misfits-cavern",
+  "name": "cavern-offline",
   "version": "1.0.0",
+  "description": "Cavern Offline — the open-source, local-first, private cut of The Cavern production suite for independent filmmakers",
   "private": true,
   "scripts": {
     "dev": "next dev",

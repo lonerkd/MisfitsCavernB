@@ -1,10 +1,14 @@
-# Misfits Cavern
+# Cavern Offline
 
-**The production suite for independent filmmakers.** Write the screenplay, plan the shoot, run the crew, and market the film — in one interconnected workspace built for micro-budget productions.
+**The open-source, local-first, private cut of [The Cavern](https://github.com/lonerkd/MisfitsCavernB) — the production suite for independent filmmakers.** Same bloodline, different promise: your scripts live on your machine first.
 
-Live: [misfits-cavern-b.vercel.app](https://misfits-cavern-b.vercel.app)
+> **Production suite:** [misfits-cavern-b.vercel.app](https://misfits-cavern-b.vercel.app) · **Production repo:** [lonerkd/MisfitsCavernB](https://github.com/lonerkd/MisfitsCavernB) (Supabase-backed, RLS-first, crew collaboration). This repo is the **offline/private sibling**: fewer servers, more ownership.
+
+**⚠️ License note:** this branch still carries the parent repo's proprietary `LICENSE`. Before publishing this as open source, that file must be replaced with one the owner actually intends (MIT, Apache-2.0, …) — see the parent repo's `LICENSE` and decide first.
 
 ---
+
+## The Suite (as of the July 2026 snapshot)
 
 ## The Suite
 
