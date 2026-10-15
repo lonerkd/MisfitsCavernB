@@ -1,0 +1,261 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --display: 'Bebas Neue', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --serif: 'Cormorant Garamond', serif;
+  --bg: #080808;
+  --fg: #f0ece4;
+  --accent: #ff3c00;
+  --muted: rgba(255, 255, 255, 0.2);
+  --border: rgba(255, 255, 255, 0.04);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  overflow-x: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--mono);
+  line-height: 1.5;
+}
+
+::selection {
+  background: rgba(255, 60, 0, 0.4);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
+}
+
+/* Grain texture overlay */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain 0.5s steps(6) infinite;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--display);
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+h1 {
+  font-size: clamp(3.5rem, 14vw, 11rem);
+}
+
+h2 {
+  font-size: clamp(2rem, 6vw, 3.5rem);
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+}
+
+p {
+  font-family: var(--serif);
+  line-height: 1.8;
+  opacity: 0.7;
+}
+
+/* Links & Buttons */
+a {
+  color: var(--fg);
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+a:hover {
+  color: var(--accent);
+}
+
+.link-btn {
+  font-size: 9px;
+  font-family: var(--mono);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--muted);
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: all 0.3s;
+  flex-shrink: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.link-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.cta-btn {
+  font-size: 10px;
+  font-family: var(--mono);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--muted);
+  padding: 14px 30px;
+  transition: all 0.4s;
+  display: inline-block;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.cta-btn:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bg);
+}
+
+/* Animations */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(36px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes grain {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-5%, -10%);
+  }
+  30% {
+    transform: translate(7%, -25%);
+  }
+  50% {
+    transform: translate(-15%, 10%);
+  }
+  70% {
+    transform: translate(0%, 15%);
+  }
+  90% {
+    transform: translate(-10%, 10%);
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes sceneSlideIn {
+  from {
+    opacity: 0;
+    transform: rotate(0deg) scale(0.4);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Utility classes */
+.text-stroke {
+  -webkit-text-stroke: 2px var(--fg);
+  color: transparent;
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.border-accent {
+  border-color: var(--accent);
+}
+
+.bg-cavern-dark {
+  background-color: var(--bg);
+}
+
+.text-cavern-fg {
+  color: var(--fg);
+}
+
+.opacity-muted {
+  opacity: 0.5;
+}
+
+/* Gradient overlays */
+.gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 30%, rgba(0, 0, 0, 0.92));
+  pointer-events: none;
+}
+
+.gradient-overlay-light {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 20%, rgba(0, 0, 0, 0.88));
+  pointer-events: none;
+}
+
+/* Container */
+.container {
+  width: 100%;
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+/* Section spacing */
+section {
+  padding: 90px 18px;
+}
