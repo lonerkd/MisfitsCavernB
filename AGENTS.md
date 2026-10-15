@@ -32,6 +32,9 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    prints the latest three at start).
 3. [`BACKLOG.md`](.cavern-intelligence/BACKLOG.md) — every open task, scoped. Pick from it.
 4. [`INDEX.md`](.cavern-intelligence/INDEX.md) — the map: where everything else is.
+5. For speed: [`PLAYBOOK.md`](.cavern-intelligence/PLAYBOOK.md) — read less, search first, skip
+   what's generated; and when something costs you time, leave a pitfall line
+   there in the same PR, so the next session starts smarter.
 
 ## Non-negotiables
 

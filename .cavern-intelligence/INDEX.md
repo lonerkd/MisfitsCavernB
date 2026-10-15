@@ -38,7 +38,7 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 | Codex, Cursor, Cline, Windsurf, Zed, Gemini, Jules, Copilot's agent | `AGENTS.md` | a generated mirror of `RULES.md` |
 | GitHub Copilot chat | `.github/copilot-instructions.md` | a generated pointer here |
 | People | `README.md` | setup and commands; points here |
-| **The owner** (vision, not engineering) | [`.cavern-intelligence/OWNER.md`](OWNER.md) | the plain-language guide: what this folder is, the glossary, what agents will ask, what only the owner can do |
+| **Agents, any tool, any session** | [`PLAYBOOK.md`](PLAYBOOK.md) | how to consume this system fast and leave it smarter: the fast start, search-first, the skip list, the learning loop, the living pitfalls |
 
 Claude skills live in `.claude/skills/` (the one place Claude Code loads
 them from); they're listed in `tools-and-access.md` §4. Adding a tool: add
