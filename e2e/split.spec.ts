@@ -93,7 +93,7 @@ test.describe('Split screen (local Supabase)', () => {
     await expect(second.getByRole('article', { name: /^Scene 2:/ })).toHaveAttribute('aria-current', 'location', { timeout: 10_000 });
 
     // The Studio sends the script to scene 1.
-    await second.getByRole('button', { name: 'Open scene 1 in the script' }).click();
+    await second.getByRole('button', { name: 'In script — open scene 1' }).click();
     await expect.poll(() => first.getByLabel('Script', { exact: true }).evaluate((el) => (el as HTMLTextAreaElement).selectionStart), { timeout: 10_000 }).toBe(0);
     // …and the script's new scene comes back to the Studio.
     await expect(second.getByRole('article', { name: /^Scene 1:/ })).toHaveAttribute('aria-current', 'location', { timeout: 10_000 });

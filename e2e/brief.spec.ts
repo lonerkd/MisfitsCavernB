@@ -95,11 +95,11 @@ test.describe('Project brief (local Supabase)', () => {
     await page.goto('/lounge');
     const suggested = page.getByRole('group', { name: 'Suggested channels' });
     await expect(suggested).toBeVisible({ timeout: 20_000 });
-    await expect(suggested.getByRole('button', { name: 'Open #legal for Owners' })).toBeVisible();
+    await expect(suggested.getByRole('button', { name: '#legal Owners, add this channel' })).toBeVisible();
     await expect(suggested.getByRole('button', { name: /#dailies/ })).toHaveCount(0); // that's for the shoot
-    await suggested.getByRole('button', { name: 'Open #legal for Owners' }).click();
+    await suggested.getByRole('button', { name: '#legal Owners, add this channel' }).click();
     await expect(page.getByRole('button', { name: 'legal', exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(suggested.getByRole('button', { name: 'Open #legal for Owners' })).toHaveCount(0);
+    await expect(suggested.getByRole('button', { name: '#legal Owners, add this channel' })).toHaveCount(0);
     await expect.poll(async () => (await admin.from('channels').select('audience, type').eq('project_id', projectId).eq('name', 'legal').maybeSingle()).data)
       .toEqual({ audience: 'owners', type: 'text' });
   });

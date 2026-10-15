@@ -570,10 +570,10 @@ export default function LoungePage() {
                        <div style={{ fontSize: 'max(8.5px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', padding: '0 6px', marginBottom: 6 }}>Suggested for this phase</div>
                        {suggested.map((p) => (
                          <button key={p.key} type="button" onClick={() => void addPreset(p)} title={`${p.why} ${p.topic}`.trim()}
-                           aria-label={`Open #${p.name} for ${audienceLabel(p.audience)}`}
+                           aria-label={`${p.type === 'voice' ? '🔊 ' : ''}#${p.name} ${audienceLabel(p.audience)}, add this channel`}
                            style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '5px 8px', borderRadius: 4, background: 'transparent', border: '1px dashed rgba(var(--ink-rgb), 0.1)', color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, textAlign: 'left', marginBottom: 4 }}>
                            <span aria-hidden style={{ color: 'var(--accent)' }}>+</span>
-                           <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.type === 'voice' ? '🔊 ' : '#'}{p.name}</span>
+                           <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.type === 'voice' ? '🔊 ' : '#'}{p.name}</span>{' '}
                            <span style={{ fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{audienceLabel(p.audience)}</span>
                          </button>
                        ))}
