@@ -27,6 +27,9 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
    prints the latest three at start).
 3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
 4. [`INDEX.md`](INDEX.md) — the map: where everything else is.
+5. For speed: [`PLAYBOOK.md`](PLAYBOOK.md) — read less, search first, skip
+   what's generated; and when something costs you time, leave a pitfall line
+   there in the same PR, so the next session starts smarter.
 
 ## Non-negotiables
 
