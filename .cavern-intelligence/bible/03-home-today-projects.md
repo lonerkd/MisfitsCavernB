@@ -17,14 +17,22 @@ Deep docs: [`project-brief.md`](../project-brief.md), phases in §11.
 
 ## `/` — home (signed in)
 
-The same page as the landing (§8) with the visitor's own layer on top: a
-**Resume** card (the last script edited → open ScriptOS / open Studio), the
-pipeline (Write · Organize · Crew · Showcase · Launch), platform totals
-(`get_platform_stats`, samples excluded), a ticker of real activity (open
-roles, screenplays in progress — `lib/home/ticker.ts`), and module tiles that
-preview real content (the script, Studio references, Lounge messages,
-portfolio pieces). Nav shows Editor · Studio · Lounge · Portfolio · Jobs, the
-bell and the account.
+The suite's working dashboard. It is organized around the production's ideal
+workflow, so a returning creator lands on the question that matters next:
+
+- **stage** — the pipeline rail (Write · Organize · Crew · Showcase · Launch)
+  marks where the project is in the workflow;
+- **action** — "What needs your attention" lists the next action by stage,
+  live from the data: your in-progress script, open roles, recent work,
+  Lounge unread and the jobs board;
+- **resume** — the last script edited (open ScriptOS / Studio), the module
+  tiles that preview real content (script, Studio references, Lounge
+  messages, portfolio pieces) and the platform totals + ticker of real
+  activity. Nav shows Editor · Studio · Lounge · Portfolio · Jobs, the bell
+  and the account.
+
+The same page as the landing (§8) behind the visitor's own layer, so the
+same screen serves discovery and work.
 
 ## `/today` — the working home on a phone
 

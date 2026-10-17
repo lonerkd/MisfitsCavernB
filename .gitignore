@@ -32,3 +32,6 @@ coverage/
 .private-corpus/
 e2e/keyboard-audit.json
 *.err
+*.bak
+scripts/panelfix.js
+scripts/fix2.js
