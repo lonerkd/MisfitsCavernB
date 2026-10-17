@@ -88,4 +88,24 @@ describe('timesheets', () => {
     const corrected = (await cast.sam.client.from('timesheets').update({ hours: 11 }).eq('id', mine.id).select('status, decided_by').single()).data!;
     expect(corrected).toEqual({ status: 'submitted', decided_by: null });
   });
+
+  it('a lead can approve someone else\'s hours, but not their own — only the owner can', async () => {
+    await adminClient().from('project_crew').update({ role: 'lead' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+
+    // Jordan (now lead) approves Casey's hours — that's the point of being a lead.
+    const caseys = (await casey.client.from('timesheets').insert({ project_id: projectId, work_date: '2026-11-04', hours: 3 }).select('id').single()).data!;
+    const caseysApproved = (await cast.jordan.client.from('timesheets').update({ status: 'approved', rate: 25 }).eq('id', caseys.id).select('status, decided_by').single()).data!;
+    expect(caseysApproved).toMatchObject({ status: 'approved', decided_by: cast.jordan.id });
+
+    // Jordan's own hours: Jordan can log them, but can't approve them — even though Jordan can shape the project.
+    const jordans = (await cast.jordan.client.from('timesheets').insert({ project_id: projectId, work_date: '2026-11-04', hours: 4 }).select('id, status').single()).data!;
+    expect(jordans.status).toBe('submitted');
+    expect((await cast.jordan.client.from('timesheets').update({ status: 'approved', rate: 25 }).eq('id', jordans.id)).error).not.toBeNull();
+
+    // Only the owner can.
+    const jordansApproved = (await cast.sam.client.from('timesheets').update({ status: 'approved', rate: 25 }).eq('id', jordans.id).select('status, decided_by').single()).data!;
+    expect(jordansApproved).toMatchObject({ status: 'approved', decided_by: cast.sam.id });
+
+    await adminClient().from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+  });
 });
