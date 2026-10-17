@@ -271,7 +271,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 style={{
                   position: 'absolute', inset: 0,
                   padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
-                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : '#e0e0e0',
+                  background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? '#0099ff' : 'var(--fg)',
                   fontFamily: 'var(--script)', fontSize: 16, lineHeight: 1.6,
                   resize: 'none', outline: 'none',
                 }}

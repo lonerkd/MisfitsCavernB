@@ -44,6 +44,47 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   Same on plain `main`, passes in CI and in the cloud container. Check on a
   second Windows machine / a newer Chromium before treating it as a bug.
 
+## 2.1 From the Oct 15 QA report — open (the P0 and 4 of 5 P1s are fixed)
+
+- **Owner decision — the island's keyboard layer (was P1 #5, "design"):**
+  keyboard commands already work without hovering (`kbActive` tracks
+  `CapsLock` globally; the keydown handler in `EcosystemTaskbar.tsx`
+  doesn't gate on hover). What reads as broken is the two-step gesture
+  itself — hover to see the deck, `CapsLock` to drive it — not matching
+  "a keyboard and mouse command layer for the suite." Decide the intended
+  model (keys always live without a modifier? the deck opens on focus, not
+  just hover?) before this is re-coded.
+- **~25 P2s and ~10 P3s, not started** — autocomplete leaves the cursor on
+  the name line instead of dialogue; Ctrl+F/Ctrl+G losing focus; no "not a
+  character" control outside hover; a Chrome-autofill key event crashing
+  with no `key`; React error #418 on every load; a call sheet date
+  accepting "102020"; logging hours twice on one day silently overwriting;
+  no notification when added to crew; a project phase label not updating
+  until reload; three different page-count numbers across screens; an
+  unlabeled password field; `/soundtrack`'s player not rendering; applying
+  to your own job; the pill covering Save/Cancel on a phone; every
+  `portfolio_projects.share_token` being publicly listable; several
+  accessibility-tree naming issues; crew unable to mark a library item
+  shareable; small items (autocomplete needing 2 letters, bad share links
+  returning 200, `/STUDIO` 404ing, focus landing on `<body>` after the
+  palette, a gate's title mismatch, 15×15px touch targets, leaked-password
+  protection off, a suspended user clearing their own flag in their last
+  session). Full detail in the QA report (owner has it); work through
+  worst-first per `RULES.md`'s triage (broken > lying UI > missing >
+  polish) when picked up.
+- **Confirmed pre-existing, separate from the report:** a suite-wide axe
+  `label-content-name-mismatch` regression — found while babysitting PR
+  #230's CI, across at least 4 components (on-set clock buttons, cut-notes'
+  "open in script" button, the Lounge's pinned-message button, the shot
+  designer's camera button) — each renders visible text that isn't a
+  prefix of its `aria-label`. Likely missed by the axe-core 4.14 bump's
+  partial fix (`2026-10-14-deps-and-label-in-name.md`). Not yet scoped to
+  a single PR.
+- **Owner, outside the code:** the QA session's own cleanup (delete
+  `QA-Night Shift` and its script, the v2 call sheet, the two `thekid`
+  timesheet entries, the `#general` QA messages, remove `thekid` from
+  crew) — the report has the exact list.
+
 ## 3. Upgrades (scoped — in suggested order)
 
 ### 3.1 Dev-toolchain advisories — watch, S when upstream moves
