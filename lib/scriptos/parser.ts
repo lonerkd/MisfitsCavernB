@@ -124,7 +124,8 @@ export interface ParseOptions {
 }
 export const DECODER_DEFAULT = true;
 
-export type ScriptFormat = 'screenplay' | 'teleplay' | 'stage-play' | 'treatment' | 'podcast' | 'doc-outline';
+export type { ScriptFormat } from '@/lib/formats/script-formats';
+import type { ScriptFormat } from '@/lib/formats/script-formats';
 
 export class ScriptParser {
   private rawLines: string[];

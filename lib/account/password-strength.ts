@@ -20,6 +20,17 @@ const COMMON = new Set([
   'misfits', 'cavern', 'misfitscavern', 'filmmaker', 'screenplay',
 ]);
 
+export const PASSWORD_RULES_HINT = 'At least 8 characters, with an uppercase letter, a lowercase letter and a number.';
+
+/** Complexity rules (same as the sign-in page's server-side message). Returns the first unmet rule, or null. */
+export function checkPasswordComplexity(password: string): string | null {
+  if (password.length < 8) return 'Password must be at least 8 characters.';
+  if (!/\p{Ll}/u.test(password)) return 'Password needs a lowercase letter.';
+  if (!/\p{Lu}/u.test(password)) return 'Password needs an uppercase letter.';
+  if (!/\d/.test(password)) return 'Password needs a number.';
+  return null;
+}
+
 export function checkPasswordWeakness(password: string, email?: string, username?: string): string | null {
   const p = password.toLowerCase();
 

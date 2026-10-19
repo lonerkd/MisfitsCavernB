@@ -14,13 +14,20 @@ export function awayOn(away: Away[], date: string): Away[] {
   return away.filter((a) => overlaps(a, date, date));
 }
 
+const spanDays = (a: Away) => (new Date(`${a.ends_on}T00:00:00Z`).getTime() - new Date(`${a.starts_on}T00:00:00Z`).getTime()) / 86_400_000;
+const cmp = (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
+const byLongest = (a: Away, b: Away) =>
+  spanDays(b) - spanDays(a) || cmp(a.starts_on, b.starts_on) || cmp(a.ends_on, b.ends_on) || cmp(a.user_id, b.user_id);
+
 /** For each dated shoot day, the people away on it (days with nobody away are left out). */
 export function dayConflicts(sheets: Array<{ shoot_day: number; shoot_date: string | null }>, away: Away[]): Map<number, Away[]> {
   const out = new Map<number, Away[]>();
   for (const sheet of sheets) {
     if (!sheet.shoot_date) continue;
-    const who = awayOn(away, sheet.shoot_date);
-    // One entry per person, even if two of their ranges cover the day.
+    // One entry per person, even if two of their ranges cover the day: the
+    // longest range wins (ties: earlier start, earlier end, then user), so the
+    // result never depends on the order `away` arrives in.
+    const who = awayOn(away, sheet.shoot_date).sort(byLongest);
     const unique = who.filter((a, i) => who.findIndex((b) => b.user_id === a.user_id) === i);
     if (unique.length) out.set(sheet.shoot_day, unique);
   }

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useOnChange } from '@/lib/hooks/useOnChange';
+import { canJoinVoiceRoom, holdsSeat, seatedIds, type VoicePresenceState } from './mesh';
 
 export interface VoicePeer {
   id: string;
@@ -26,7 +28,7 @@ interface PeerState {
   hasRemoteDesc: boolean;
 }
 
-export function useVoiceRoom(channelId: string, me: { id: string; name: string; avatar?: string } | null, joined: boolean) {
+export function useVoiceRoom(channelId: string, me: { id: string; name: string; avatar?: string } | null, joined: boolean, onFull?: () => void) {
   const [peers, setPeers] = useState<VoicePeer[]>([]);
   const [muted, setMuted] = useState(false);
   const [micError, setMicError] = useState<string | null>(null);
@@ -37,6 +39,10 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
   const peersRef = useRef<Map<string, PeerState>>(new Map());
   const audioCtxRef = useRef<AudioContext | null>(null);
   const rosterRef = useRef<Map<string, { name: string; avatar?: string }>>(new Map());
+  // Set when the room turned us away; ends the session even if the caller keeps `joined` true.
+  const [live, setLive] = useState(false); // we hold a seat in the room
+  const [turnedAway, setTurnedAway] = useState(false);
+  useOnChange(joined, () => setTurnedAway(false));
 
   const syncPeerList = useCallback(() => {
     const list: VoicePeer[] = [];
@@ -108,11 +114,14 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
 
   const meId = me?.id;
   // What others see of me; read when joining, not a reason to rejoin.
-  const myPresence = useEffectEvent(() => ({ id: meId, name: me?.name, avatar: me?.avatar }));
+  const myPresence = useEffectEvent((joinedAt: number) => ({ id: meId, name: me?.name, avatar: me?.avatar, joinedAt }));
+  const roomFull = useEffectEvent(() => onFull?.());
 
   useEffect(() => {
-    if (!joined || !meId || !channelId) return;
+    if (!joined || turnedAway || !meId || !channelId) return;
     let cancelled = false;
+    let seated = false; // our presence is published and we hold a seat
+    let turnedAwayHere = false;
     const peers = peersRef.current;
 
     (async () => {
@@ -126,6 +135,14 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
       } catch (err: any) {
         setMicError(err?.name === 'NotAllowedError' ? 'Microphone permission denied — you are in listen-only mode.' : 'No microphone found — you are in listen-only mode.');
       }
+
+      if (cancelled) return;
+      const turnAway = () => {
+        if (turnedAwayHere || cancelled) return;
+        turnedAwayHere = true;
+        setTurnedAway(true);
+        roomFull();
+      };
 
       const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: meId }, broadcast: { self: false } } });
       chanRef.current = ch;
@@ -164,6 +181,9 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         .on('broadcast', { event: 'rtc_ice' }, ({ payload }) => { handleIce(payload); })
         .on('presence', { event: 'sync' }, () => {
           const state = ch.presenceState() as any;
+          // Two people can join at the same moment and both pass the first check;
+          // the seat order is the same for everyone, so the later one leaves here.
+          if (seated && !holdsSeat(state, meId)) { turnAway(); return; }
           rosterRef.current = new Map(Object.entries(state).map(([key, arr]: [string, any]) => [key, { name: arr[0]?.name || 'Anonymous', avatar: arr[0]?.avatar }]));
 
           peersRef.current.forEach((_, id) => { if (!rosterRef.current.has(id)) closePeer(id); });
@@ -171,11 +191,18 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         })
         .on('presence', { event: 'join' }, () => syncPeerList())
         .subscribe(async (status: string) => {
-          if (status !== 'SUBSCRIBED') return;
-          await ch.track(myPresence());
+          if (status !== 'SUBSCRIBED' || cancelled || turnedAwayHere) return;
+          // Full mesh does not scale: turn away before opening a single connection.
+          const others = Object.keys(ch.presenceState()).filter(k => k !== meId);
+          if (!canJoinVoiceRoom(others.length)) { turnAway(); return; }
+          await ch.track(myPresence(Date.now()));
+          if (cancelled || turnedAwayHere) return;
 
-          const state = ch.presenceState() as any;
-          for (const peerId of Object.keys(state)) {
+          const state = ch.presenceState() as VoicePresenceState;
+          if (!holdsSeat(state, meId)) { turnAway(); return; }
+          seated = true;
+          setLive(true);
+          for (const peerId of seatedIds(state)) {
             if (peerId === meId) continue;
             const ps = createPeer(peerId);
             const offer = await ps.pc.createOffer({ offerToReceiveAudio: true });
@@ -194,9 +221,9 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
       streamRef.current = null;
       if (chanRef.current) { supabase.removeChannel(chanRef.current); chanRef.current = null; }
       if (audioCtxRef.current) { audioCtxRef.current.close().catch(() => {}); audioCtxRef.current = null; }
-      setPeers([]); setSpeaking(false); setMicError(null); setMuted(false);
+      setPeers([]); setLive(false); setSpeaking(false); setMicError(null); setMuted(false);
     };
-  }, [joined, channelId, meId, attachSpeakingMeter, closePeer, createPeer, syncPeerList]);
+  }, [joined, turnedAway, channelId, meId, attachSpeakingMeter, closePeer, createPeer, syncPeerList]);
 
   const toggleMute = useCallback(() => {
     setMuted(m => {
@@ -206,5 +233,5 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
     });
   }, []);
 
-  return { peers, muted, toggleMute, micError, speaking };
+  return { peers, muted, toggleMute, micError, speaking, live };
 }

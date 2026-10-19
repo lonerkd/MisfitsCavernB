@@ -46,9 +46,21 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   save landed meanwhile).
 - **Retry**: a failed save schedules `syncPendingScripts` in 15 s
   (`scheduleScriptSync`) — the `online` event alone misses failures while the
-  browser still thinks it's online; the `online` event also triggers it.
-- **Offline deletes** are tombstones replayed on the next sync, so a deleted
-  script never comes back and its text doesn't linger on the server.
+  browser still thinks it's online. A pass that fails (an upsert or a delete
+  replay errors) schedules the next with backoff: 15 s, 30 s, 60 s … capped at
+  5 min (`retryDelayMs`); a clean pass resets it. The `online` event cancels a
+  waiting retry and syncs at once.
+- **Sync status** (`getSyncStatus` / `subscribeSyncStatus`): module state in
+  `storage.ts` — scripts pending, deletes queued, mid-pass, next retry time,
+  failed passes in a row, `online`/`offline`. `components/editor/SyncStatusChip`
+  shows it in the editor's status bar (hidden when online and nothing queued)
+  with a countdown and **Sync now**; `describeSync` holds the wording.
+- **Offline deletes** are tombstones (an id, never content) replayed on the
+  next sync, so a deleted script never comes back and its text doesn't linger
+  on the server. The local copy is removed at once, a tombstoned script is
+  never re-uploaded, and the server's RLS decides whether the replayed delete
+  is allowed — so a stale tombstone on a shared device can't remove anyone
+  else's script. A refused delete stays queued and counts as a failed pass.
 - **The open script** per project is a pointer in `localStorage`
   (`getCurrentScriptId` / `setCurrentScriptId`).
 - **Revisions** are `script_revisions` (`lib/scriptos/revisions.ts`: lock a

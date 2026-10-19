@@ -29,7 +29,10 @@ and for the film. Engineering detail:
   (audience, post policy, private roster, Discord webhook).
 - **Voice**: a voice channel is a full-mesh WebRTC room (2–8 people);
   signalling over Realtime broadcast; the newcomer makes the offers. Speaking
-  rings on avatars.
+  rings on avatars. A 9th person is turned away (`lib/webrtc/mesh.ts`): error
+  toast and a "room is full" line, no connections opened; seats go to the
+  earliest eight by join time, so a simultaneous join resolves the same way on
+  every client.
 - **Unread**: `lounge_reads` + `lounge_unread()`; badges on channels, DMs, the
   tab bar and the island.
 - Deep links: `?channel=<id>`, `?dm=<user>` (notifications use them).
@@ -96,6 +99,7 @@ fetch.
 
 ## Known gaps
 
-- Voice is mesh: beyond ~8 speakers it needs an SFU.
+- Voice is mesh: capped at 8 (the 9th is turned away); beyond that it needs an
+  SFU (BACKLOG 3.24).
 - Lounge DMs and messages aren't end-to-end encrypted (fine for a crew tool;
   say so in the privacy policy — it does).

@@ -15,37 +15,30 @@
 //      heading — cutting a scene and pasting it back restores its links.
 //   4. Everything else gets a fresh id; unmatched old scenes are removed
 //      (kept on the server with removed_at, never deleted).
+//
+// The types below are derived from the parser's Scene and the generated
+// public.scenes row, never re-declared by hand: renaming or retyping either
+// side breaks the compile here instead of the RPC payload drifting silently.
+
+import type { Tables } from '@/lib/supabase/database.types';
+import type { Scene } from '@/lib/scriptos/types';
+
+type SceneColumns = Tables<'scenes'>;
 
 /** The parts of a parsed scene (lib/scriptos/parser) the index stores. */
-export interface ParsedSceneInput {
-  heading: string;
-  location?: string;
-  timeOfDay?: string;
-  characters?: string[];
-  eighths?: number;
-}
+export type ParsedSceneInput = Pick<Scene, 'heading'> & Partial<Pick<Scene, 'location' | 'timeOfDay' | 'characters' | 'eighths'>>;
 
 /** A scene row as read from public.scenes for one script. */
-export interface IndexedScene {
-  id: string;
-  heading: string | null;
-  ordinal: number | null;
-  removed_at: string | null;
-  location?: string | null;
-  time_of_day?: string | null;
-  cast_list?: string | null;
-  est_duration?: string | null;
-}
+export type IndexedScene = Pick<SceneColumns, 'id' | 'heading' | 'ordinal' | 'removed_at'> &
+  Partial<Pick<SceneColumns, 'location' | 'time_of_day' | 'cast_list' | 'est_duration'>>;
 
-/** One entry of the plan sent to sync_script_scenes, in script order. */
-export interface ScenePlanRow {
-  id: string;
-  heading: string;
-  location: string | null;
-  time_of_day: string;
-  cast_list: string | null;
-  est_duration: string;
-}
+/**
+ * One entry of the plan sent to sync_script_scenes, in script order — the
+ * columns that function writes, with the ones it always fills made non-null.
+ */
+export type ScenePlanRow = Pick<SceneColumns, 'id' | 'location' | 'cast_list'> & {
+  [K in 'heading' | 'time_of_day' | 'est_duration']: NonNullable<SceneColumns[K]>;
+};
 
 export interface ScenePlan {
   /** Active scene ids (by ordinal) the plan was computed from. */

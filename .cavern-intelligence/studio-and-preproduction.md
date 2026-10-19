@@ -35,6 +35,16 @@ fields are only written by the sync; people own `note`, `color`, `shoot_day`,
 `status`. Scripts outside a project have no index (the editor keeps their
 notes/colours on the device and moves them in when the script joins a project).
 
+The plan's types (`lib/studio/scene-sync.ts`) are derived, not hand-written:
+`ParsedSceneInput` from the parser's `Scene`, `IndexedScene` and `ScenePlanRow`
+from the generated `scenes` row — so a renamed or retyped column breaks the
+compile, and the plan goes to the RPC as `Json` without a cast. What crosses
+the boundary: heading, location, time of day (`UNKNOWN` → `DAY`), the cast as
+comma-joined text (the parser strips commas from names, so the
+`scenes_link_cast` trigger's split is safe) and eighths as `N/8 pg`. The
+parser's printed scene number (`12A`) is not stored — `scene_number` is the
+position.
+
 ## 3. Library and references
 
 - Uploads: private `project-media` bucket, `<project>/<media id>/<file>`,

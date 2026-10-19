@@ -1,0 +1,7 @@
+# Session — 2026-10-18: unit tests for the Crew page's modes and data mapping
+
+**Found:** `app/(suite)/crew/page.tsx` (the `/crew` directory) had no unit test: its mode switch (All talent / the active project's crew), the `Profile` and `CrewMember` → card mapping, the error path and both empty states were covered only by e2e.
+
+**Changed:** `app/(suite)/crew/page.test.tsx` (new, 7 tests, jsdom): global mode passes search, craft and availability to `listDirectory` (search after the 300 ms debounce); project mode calls `getProjectCrew(activeProject.id)`, maps status, role and the "Unknown" username, and hides the directory filters; a failing `getProjectCrew` shows the error with its message and Retry reloads; a directory error with no message falls back to the default text; the empty states (Clear filters only when a filter is set; Studio / Jobs links in project mode). Only the data layer (`listDirectory`, `getProjectCrew`), the OS store, presence and the craft picker are stubbed; `useLoad`, the page and its cards run for real. `vitest.config.ts` now includes `app/**/*.test.tsx`; coverage still measures `lib/` only, so the thresholds are unaffected.
+
+**Verified:** nothing yet — this session's shell refused `npm ci` and a `node_modules` link, so typecheck, lint, test and build have not been run. Run `npm ci && npm run typecheck && npm run lint && npm run test && npm run build` before merging.

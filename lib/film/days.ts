@@ -114,16 +114,40 @@ export function buildDays(
         const wrap = clock(calls?.estimated_wrap);
         // A wrap earlier on the clock than the call is after midnight.
         const wrapMinutes = wrap == null ? null : minutesOf(wrap) + (call != null && minutesOf(wrap) < minutesOf(call) ? 1440 : 0);
-        const extDay = dayScenes.filter((s) => isExterior(s) && isDay(s)).length;
-        const extNight = dayScenes.filter((s) => isExterior(s) && isNight(s)).length;
-        if (extDay && wrapMinutes != null && light.sunset && wrapMinutes > minutesOf(light.sunset)) {
-          notes.push({ kind: 'wrap-after-light', scenes: extDay, lightEnds: light.sunset, wrap: wrap as string });
+        // The call sheet runs on one clock — the light place's. Each exterior is judged by the sun at
+        // its own place (a scene with no coordinates by the light place's), shown on that clock, so a
+        // day that crosses longitudes is warned by the scene the light fails first.
+        const lightOf = (s: DayScene) => {
+          const p = s.location_id ? placeOf.get(s.location_id) : undefined;
+          const own = p && hasCoordinates(p) ? p : lightAt;
+          if (own === lightAt) return light as DayLight & { polar?: boolean };
+          const t = sunTimes(day.shoot_date as string, own.latitude as number, own.longitude as number);
+          return { ...(light as DayLight), sunrise: at(t.sunrise), sunset: at(t.sunset), dusk: at(t.dusk), polar: !!t.polar };
+        };
+        const extDayScenes = dayScenes.filter((s) => isExterior(s) && isDay(s)).map(lightOf).filter((l) => !l.polar);
+        const extNightScenes = dayScenes.filter((s) => isExterior(s) && isNight(s)).map(lightOf).filter((l) => !l.polar);
+        const extDay = extDayScenes.length;
+        const extNight = extNightScenes.length;
+        if (wrapMinutes != null) {
+          const late = extDayScenes.filter((l) => l.sunset && wrapMinutes > minutesOf(l.sunset));
+          if (late.length) {
+            const lightEnds = late.reduce((a, l) => (minutesOf(l.sunset) < minutesOf(a) ? l.sunset : a), late[0].sunset);
+            notes.push({ kind: 'wrap-after-light', scenes: late.length, lightEnds, wrap: wrap as string });
+          }
         }
-        if (extDay && extDay === dayScenes.length && call != null && light.sunrise && minutesOf(call) < minutesOf(light.sunrise)) {
-          notes.push({ kind: 'call-before-light', scenes: extDay, lightStarts: light.sunrise, call });
+        if (extDay && extDay === dayScenes.length && call != null) {
+          const dark = extDayScenes.filter((l) => l.sunrise && minutesOf(call) < minutesOf(l.sunrise));
+          if (dark.length) {
+            const lightStarts = dark.reduce((a, l) => (minutesOf(l.sunrise) > minutesOf(a) ? l.sunrise : a), dark[0].sunrise);
+            notes.push({ kind: 'call-before-light', scenes: extDay, lightStarts, call });
+          }
         }
-        if (extNight && wrapMinutes != null && light.dusk && wrapMinutes < minutesOf(light.dusk)) {
-          notes.push({ kind: 'night-needs-dark', scenes: extNight, dark: light.dusk, wrap: wrap as string });
+        if (wrapMinutes != null) {
+          const early = extNightScenes.filter((l) => l.dusk && wrapMinutes < minutesOf(l.dusk));
+          if (early.length) {
+            const dark = early.reduce((a, l) => (minutesOf(l.dusk) > minutesOf(a) ? l.dusk : a), early[0].dusk);
+            notes.push({ kind: 'night-needs-dark', scenes: early.length, dark, wrap: wrap as string });
+          }
         }
       }
     }

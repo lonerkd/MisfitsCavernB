@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { collectMyData } from '@/lib/supabase/profiles';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
 import { checkHibpBreach } from '@/lib/account/password-strength';
+import { RECOVERY_PATH, recoveryErrorMessage } from '@/lib/auth/recovery';
 import { MOTION_PREF_EVENT } from '@/components/ui/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { ThemePicker } from '@/components/ui/ThemePicker';
@@ -179,6 +180,15 @@ export default function SettingsPage() {
     flash(error ? error.message : 'Password updated.', !error);
   };
 
+  // Handlers only run in the browser, so window.location is always there.
+  const emailResetLink = async () => {
+    if (!user?.email) return;
+    setBusy('reset');
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: `${window.location.origin}${RECOVERY_PATH}` });
+    setBusy(null);
+    flash(error ? recoveryErrorMessage(error) : `Reset link sent to ${user.email}.`, !error);
+  };
+
   // Dynamic import: push code stays out of every page's first-load JS (bundle budget).
   const forgetPush = () => import('@/lib/push/client').then((m) => m.forgetThisDevicePush());
   const signOut = async () => { await forgetPush(); await supabase.auth.signOut(); router.replace('/auth'); };
@@ -240,6 +250,9 @@ export default function SettingsPage() {
               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" style={inputStyle} />
               <button style={btnStyle} onClick={changePassword} disabled={busy === 'password'}>{busy === 'password' ? '…' : 'CHANGE'}</button>
             </div>
+          } />
+          <Row label="Forgot your password?" hint="We email a link that lets you set a new one." control={
+            <button style={ghostBtn} onClick={emailResetLink} disabled={busy === 'reset'}>{busy === 'reset' ? '…' : 'EMAIL ME A RESET LINK'}</button>
           } />
           <Row label="Public profile" hint="Edit your name, role, bio and availability." control={
             <Link href="/profile" style={{ ...ghostBtn, textDecoration: 'none', display: 'inline-block' }}>EDIT PROFILE</Link>

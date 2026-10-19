@@ -183,6 +183,61 @@ describe('messages', () => {
     expect(r.data).toEqual({ '👍': [cast.jordan.id] });
     expect((await cast.riley.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: '👍' })).error).not.toBeNull();
   });
+
+  it('a message cannot arrive with reactions, a pin or an edit mark already on it', async () => {
+    const { data: ch } = await cast.sam.client.from('channels').select('id').eq('project_id', projectId).eq('name', 'set-talk').single();
+    const base = { sender_id: cast.sam.id, content: 'forged', channel_uuid: ch!.id };
+    const forged = await cast.sam.client.from('messages').insert({ ...base, reactions: { '👍': [cast.jordan.id] } });
+    expect(forged.error).not.toBeNull();
+    const pinned = await cast.sam.client.from('messages').insert({ ...base, pinned: true, pinned_at: new Date().toISOString() });
+    expect(pinned.error).not.toBeNull();
+    const edited = await cast.sam.client.from('messages').insert({ ...base, edited_at: new Date().toISOString() });
+    expect(edited.error).not.toBeNull();
+    // An empty reactions object (what the column defaults to) is fine.
+    expect((await cast.sam.client.from('messages').insert({ ...base, reactions: {} })).error).toBeNull();
+  });
+
+  it('nobody can rewrite reactions directly — only through the RPC', async () => {
+    const { data: ch } = await cast.sam.client.from('channels').select('id').eq('project_id', projectId).eq('name', 'set-talk').single();
+    const { data: msg } = await cast.sam.client.from('messages')
+      .insert({ sender_id: cast.sam.id, content: 'direct write', channel_uuid: ch!.id }).select('id').single();
+    for (const who of [cast.sam, cast.jordan, cast.riley]) {
+      await who.client.from('messages').update({ reactions: { '🔥': [who.id] } }).eq('id', msg!.id);
+    }
+    const { data: after } = await cast.sam.client.from('messages').select('reactions').eq('id', msg!.id).single();
+    expect(after!.reactions).toEqual({});
+  });
+
+  it('simultaneous reactions all land', async () => {
+    const { data: ch } = await cast.sam.client.from('channels').select('id').eq('project_id', projectId).eq('name', 'set-talk').single();
+    const { data: msg } = await cast.sam.client.from('messages')
+      .insert({ sender_id: cast.sam.id, content: 'race', channel_uuid: ch!.id }).select('id').single();
+    const results = await Promise.all([cast.sam, cast.jordan].map((who) =>
+      who.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: '👍' })));
+    for (const r of results) expect(r.error).toBeNull();
+    const { data: after } = await cast.sam.client.from('messages').select('reactions').eq('id', msg!.id).single();
+    const ids = (after!.reactions as Record<string, string[]>)['👍'] ?? [];
+    expect([...ids].sort()).toEqual([cast.sam.id, cast.jordan.id].sort());
+  });
+
+  it('a direct message can be reacted to by its two people only', async () => {
+    const { data: dm } = await cast.riley.client.from('messages')
+      .insert({ sender_id: cast.riley.id, receiver_id: cast.sam.id, content: 'psst' }).select('id').single();
+    expect((await cast.sam.client.rpc('toggle_message_reaction', { p_message: dm!.id, p_emoji: '👀' })).error).toBeNull();
+    expect((await cast.jordan.client.rpc('toggle_message_reaction', { p_message: dm!.id, p_emoji: '👀' })).error).not.toBeNull();
+  });
+
+  it('caps the distinct emoji on a message at 20', async () => {
+    const { data: ch } = await cast.sam.client.from('channels').select('id').eq('project_id', projectId).eq('name', 'set-talk').single();
+    const { data: msg } = await cast.sam.client.from('messages')
+      .insert({ sender_id: cast.sam.id, content: 'cap', channel_uuid: ch!.id }).select('id').single();
+    for (let i = 0; i < 20; i++) {
+      expect((await cast.sam.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: `e${i}` })).error).toBeNull();
+    }
+    expect((await cast.sam.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: 'e20' })).error).not.toBeNull();
+    // Adding to an emoji already there is still fine.
+    expect((await cast.jordan.client.rpc('toggle_message_reaction', { p_message: msg!.id, p_emoji: 'e0' })).error).toBeNull();
+  });
 });
 
 describe('SFX uploads', () => {

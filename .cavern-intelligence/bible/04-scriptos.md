@@ -65,8 +65,9 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
   last-writer-wins, not a character merge.
 - **Offline**: every save goes to IndexedDB first (`idb-keyval`,
   `script_<id>`, `syncPending`), then to Supabase if online. A failed save
-  retries in 15 s (`scheduleScriptSync`) and on the `online` event
-  (`syncPendingScripts`); deletes made offline are tombstones replayed on
+  retries in 15 s (`scheduleScriptSync`, backing off to 5 min while it keeps
+  failing) and on the `online` event (`syncPendingScripts`); the status bar's
+  `SyncStatusChip` shows what is queued, the network and the next retry; deletes made offline are tombstones replayed on
   reconnect so a script never comes back. The current script pointer and
   editor modes live in `localStorage`.
 

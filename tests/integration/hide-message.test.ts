@@ -97,10 +97,10 @@ describe('hiding', () => {
     expect((await cast.riley.client.from('messages').select('content').eq('id', otherMessageId).single()).data?.content).toBe('A harmless note');
   });
 
-  it('deleting a hidden message takes its kept original with it', async () => {
+  it('the sender cannot delete a hidden message, so its kept original stays on the record', async () => {
     await cast.sam.client.rpc('admin_hide_message', { p_message: otherMessageId, p_hidden: true });
     expect((await adminClient().from('hidden_messages').select('message_id').eq('message_id', otherMessageId)).data).toHaveLength(1);
-    expect((await cast.jordan.client.from('messages').delete().eq('id', otherMessageId)).error).toBeNull();
-    expect((await adminClient().from('hidden_messages').select('message_id').eq('message_id', otherMessageId)).data).toEqual([]);
+    expect((await cast.jordan.client.from('messages').delete().eq('id', otherMessageId).select('id')).data ?? []).toEqual([]);
+    expect((await adminClient().from('hidden_messages').select('original').eq('message_id', otherMessageId).single()).data?.original).toBe('A harmless note');
   });
 });

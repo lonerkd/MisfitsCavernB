@@ -39,18 +39,31 @@ describe('getProjectOverview', () => {
       { id: 'b', name: 'Crew', role: 'Gaffer' },
       { id: 'c', name: 'sam', role: 'Crew' },
     ]);
-    expect(o.festivals).toEqual([{ status: 'accepted' }]);
+    expect(o.festivalsSubmitted).toBe(1);
+    expect(o.festivalsAccepted).toBe(1);
   });
 
   it('is empty, not broken, for a project with nothing in it', async () => {
     useFake({});
     const o = await getProjectOverview('p1');
-    expect(o).toMatchObject({ scripts: 0, scenes: 0, eighths: 0, tasks: 0, budget: 0, concepts: 0, campaigns: 0, festivals: [], crew: [] });
+    expect(o).toMatchObject({ scripts: 0, scenes: 0, eighths: 0, tasks: 0, budget: 0, concepts: 0, campaigns: 0, festivalsSubmitted: 0, festivalsAccepted: 0, crew: [] });
   });
 
-  it('ignores a festival list that is not a list', async () => {
-    useFake({ projects: { data: { festival_submissions: { oops: true } } } });
-    expect((await getProjectOverview('p1')).festivals).toEqual([]);
+  it('counts festivals like get_project_progress: submitted or accepted, skipping anything malformed', async () => {
+    useFake({ projects: { data: { festival_submissions: [
+      { status: 'planned' }, { status: 'submitted' }, { status: 'accepted' }, { status: 'rejected' },
+      null, 'Sundance', [], { name: 'no status' }, { status: 3 },
+    ] } } });
+    const o = await getProjectOverview('p1');
+    expect(o.festivalsSubmitted).toBe(2);
+    expect(o.festivalsAccepted).toBe(1);
+  });
+
+  it.each([
+    { oops: true }, null, 'x',
+  ])('counts no festivals when the column is not a list (%o)', async (festival_submissions) => {
+    useFake({ projects: { data: { festival_submissions } } });
+    expect(await getProjectOverview('p1')).toMatchObject({ festivalsSubmitted: 0, festivalsAccepted: 0 });
   });
 
   it('throws when any read fails, rather than showing a partial page', async () => {

@@ -31,60 +31,134 @@ async function setDeletedIds(ids: string[]): Promise<void> {
 
 // ── Offline Queue / Sync Manager ─────────────────────────────────────────────
 
+/** What the editor footer shows about the offline queue. */
+export interface SyncStatus {
+  /** Scripts saved on this device and not yet on the server. */
+  pending: number;
+  /** Deletes made offline and not yet replayed on the server. */
+  deletes: number;
+  /** A sync pass is running now. */
+  syncing: boolean;
+  /** Epoch ms of the next automatic retry; null when none is waiting. */
+  nextRetryAt: number | null;
+  /** Failed passes in a row; 0 after a clean one. */
+  attempts: number;
+  /** The browser's own idea of connectivity. */
+  online: boolean;
+}
+
+const RETRY_BASE_MS = 15000;
+const RETRY_MAX_MS = 5 * 60 * 1000;
+
+/** 15 s, 30 s, 60 s … capped at 5 min, for the nth failed pass in a row. */
+export function retryDelayMs(attempts: number): number {
+  return Math.min(RETRY_BASE_MS * 2 ** Math.max(0, attempts - 1), RETRY_MAX_MS);
+}
+
+let status: SyncStatus = {
+  pending: 0, deletes: 0, syncing: false, nextRetryAt: null, attempts: 0,
+  online: typeof navigator === 'undefined' ? true : navigator.onLine,
+};
+const listeners = new Set<() => void>();
+
+function patchStatus(patch: Partial<SyncStatus>) {
+  status = { ...status, ...patch };
+  listeners.forEach((l) => l());
+}
+
+export function getSyncStatus(): SyncStatus { return status; }
+
+export function subscribeSyncStatus(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => { listeners.delete(listener); };
+}
+
+/** Recount the queue from the device store. */
+export async function refreshSyncStatus(): Promise<void> {
+  try {
+    let pending = 0;
+    for (const k of await keys()) {
+      if (typeof k === 'string' && k.startsWith('script_')) {
+        const script = await get<StoredScript>(k);
+        if (script?.syncPending) pending++;
+      }
+    }
+    patchStatus({ pending, deletes: (await getDeletedIds()).length });
+  } catch { /* storage unavailable — keep the last known counts */ }
+}
+
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
 export async function syncPendingScripts() {
   const user = await awaitOSUser();
   if (!user) return;
 
-  // Replay offline deletes first — a delete wins over any queued upsert.
-  const tombstoned = await getDeletedIds();
-  for (const sid of tombstoned) {
-    const { error } = await supabase.from('scripts').delete().eq('id', sid);
-    if (!error) await setDeletedIds((await getDeletedIds()).filter((x) => x !== sid));
-  }
+  // A pass that starts now supersedes any waiting retry.
+  if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+  patchStatus({ syncing: true, nextRetryAt: null });
+  let failed = false;
 
-  const allKeys = await keys();
-  for (const k of allKeys) {
-    if (typeof k === 'string' && k.startsWith('script_')) {
-      const script = await get<StoredScript>(k);
-      if (script && script.syncPending) {
-        console.log(`[Offline Sync] Pushing pending script ${script.id}...`);
+  try {
+    // Replay offline deletes first — a delete wins over any queued upsert.
+    // The tombstone holds an id only (no content); the server's RLS decides
+    // whether this person may delete the row, so a replay can't touch others'.
+    const tombstoned = await getDeletedIds();
+    for (const sid of tombstoned) {
+      const { error } = await supabase.from('scripts').delete().eq('id', sid);
+      if (!error) await setDeletedIds((await getDeletedIds()).filter((x) => x !== sid));
+      else failed = true;
+    }
 
-        const baseData = {
-          id: script.id,
-          title: script.title,
-          content: script.content,
-          last_edited_by: user.id,
-          updated_at: script.updatedAt,
-          project_id: script.project_id
-        };
+    const allKeys = await keys();
+    for (const k of allKeys) {
+      if (typeof k === 'string' && k.startsWith('script_')) {
+        const script = await get<StoredScript>(k);
+        if (script && script.syncPending) {
+          const baseData = {
+            id: script.id,
+            title: script.title,
+            content: script.content,
+            last_edited_by: user.id,
+            updated_at: script.updatedAt,
+            project_id: script.project_id
+          };
 
-        const { error } = await supabase.from('scripts').upsert([{
-          ...baseData,
-          created_by: script.user_id || user.id,
-          status: 'draft'
-        }]);
+          const { error } = await supabase.from('scripts').upsert([{
+            ...baseData,
+            created_by: script.user_id || user.id,
+            status: 'draft'
+          }]);
 
-        if (!error) {
-          // Only clear the flag if the writer hasn't saved newer text while this
-          // upload was in flight — otherwise we'd overwrite it with this snapshot.
-          const latest = await get<StoredScript>(k);
-          if (latest && latest.updatedAt === script.updatedAt) {
-            await set(k, { ...latest, syncPending: false });
+          if (!error) {
+            // Only clear the flag if the writer hasn't saved newer text while this
+            // upload was in flight — otherwise we'd overwrite it with this snapshot.
+            const latest = await get<StoredScript>(k);
+            if (latest && latest.updatedAt === script.updatedAt) {
+              await set(k, { ...latest, syncPending: false });
+            }
+          } else {
+            failed = true;
+            console.error(`[Offline Sync] Failed to sync ${script.id}:`, error);
           }
-        } else {
-          console.error(`[Offline Sync] Failed to sync ${script.id}:`, error);
         }
       }
     }
+  } catch (e) {
+    failed = true;
+    console.error('[Offline Sync] Pass failed:', e);
+  } finally {
+    patchStatus({ syncing: false, attempts: failed ? status.attempts + 1 : 0 });
+    await refreshSyncStatus();
+    if (failed) scheduleScriptSync(retryDelayMs(status.attempts));
   }
 }
 
 // Retry unsynced edits shortly after a failed save. The 'online' event alone
 // misses the common case: a request that failed while the browser still
 // considered itself online (a blip, a dropped connection), which never fires it.
-let retryTimer: ReturnType<typeof setTimeout> | null = null;
-export function scheduleScriptSync(delayMs = 15000) {
+export function scheduleScriptSync(delayMs = RETRY_BASE_MS) {
   if (typeof window === 'undefined' || retryTimer) return;
+  patchStatus({ nextRetryAt: Date.now() + delayMs });
   retryTimer = setTimeout(() => {
     retryTimer = null;
     syncPendingScripts().catch(console.error);
@@ -93,9 +167,11 @@ export function scheduleScriptSync(delayMs = 15000) {
 
 if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
-    console.log('[Offline Sync] Back online! Syncing pending changes...');
+    patchStatus({ online: true });
+    // Back online: syncPendingScripts cancels a waiting retry and runs now.
     syncPendingScripts().catch(console.error);
   });
+  window.addEventListener('offline', () => patchStatus({ online: false }));
 }
 
 // ── Storage APIs ─────────────────────────────────────────────────────────────
@@ -264,6 +340,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
     }
   }
 
+  await refreshSyncStatus();
   return unifiedData;
 }
 
@@ -276,9 +353,11 @@ export async function deleteScript(id: string): Promise<boolean> {
   if (navigator.onLine) {
     const { error } = await supabase.from('scripts').delete().eq('id', id);
     if (!error) await setDeletedIds((await getDeletedIds()).filter((x) => x !== id));
+    await refreshSyncStatus();
     return !error;
   }
 
+  await refreshSyncStatus();
   return true;
 }
 

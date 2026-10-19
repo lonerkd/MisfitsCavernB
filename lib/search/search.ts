@@ -52,9 +52,9 @@ export function hitTarget(hit: Pick<SearchHit, 'kind' | 'id' | 'project_id'>): {
 /** Worth asking the database: at least two letters or digits. */
 export const searchable = (q: string) => q.replace(/[^\p{L}\p{N}]+/gu, '').length >= 2;
 
-export async function searchSuite(q: string, limit = 30): Promise<SearchHit[]> {
+export async function searchSuite(q: string, limit = 30, client: Pick<typeof supabase, 'rpc'> = supabase): Promise<SearchHit[]> {
   if (!searchable(q)) return [];
-  const { data, error } = await supabase.rpc('search_suite', { p_query: q, p_limit: limit });
+  const { data, error } = await client.rpc('search_suite', { p_query: q, p_limit: limit });
   if (error) throw new Error(error.message);
   return (data ?? []) as SearchHit[];
 }

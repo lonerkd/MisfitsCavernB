@@ -84,7 +84,7 @@ Defined in `app/globals.css`. See `archive/DESIGN_DIRECTION_2026-09.md`.
 - **Script face:** `--script` (Courier Prime) for screenplay surfaces only.
 - **Radii:** 4 · 8 · 14 · 20 · 28 · 9999. Others fail lint.
 - **Containers:** `--w-form` 480 · `--w-reading` 720 · `--w-content` 1160.
-- **Space:** `--s-1`..`--s-8` (4px base). **Imagery:** `--ar-scope` 2.39:1, `--ar-film` 16:9, `--ar-still` 3:2, `--ar-poster` 2:3; text over stills goes on `--scrim`.
+- **Space:** `--s-1`..`--s-8` (4px base). **Imagery:** `--ar-scope` 2.39:1, `--ar-film` 16:9, `--ar-still` 3:2, `--ar-poster` 2:3; text over stills goes on `--scrim`; an empty video/still tile is `--media-bg` (dark in every theme).
 - `--secondary` (#336467) is 3.0:1 on `--bg`: fills and borders only, never text.
 
 ## Component Classes

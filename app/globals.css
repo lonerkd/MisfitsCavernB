@@ -57,6 +57,7 @@
   --ar-still: 3 / 2;
   --ar-poster: 2 / 3;
   --scrim: linear-gradient(to top, rgba(4, 7, 16, 0.92), rgba(4, 7, 16, 0.35) 55%, transparent);
+  --media-bg: #0e0e0e; /* empty video/still tile: dark in every theme, white overlays sit on it */
 
   /* Surface hierarchy — deep ink-blue base */
   --bg:    #040710;
@@ -204,15 +205,9 @@ body.custom-cursor-active * {
   input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea { font-size: 16px !important; }
 }
 
-/* The header's natural content (title, tools, Share, Export) is wider than
-   it looks — it overflowed silently (clipped, Share/Export off-screen)
-   anywhere narrower than ~1460px, since the old 820px breakpoint left a
-   wide gap with no overflow handling at all. Scrollable at any width,
-   rather than guessing a wider threshold. */
-.mc-editor-header { overflow-x: auto; scrollbar-width: none; }
-.mc-editor-header::-webkit-scrollbar { display: none; }
 @media (max-width: 820px) {
-  .mc-editor-header { gap: 10px; }
+  .mc-editor-header { overflow-x: auto; gap: 10px; scrollbar-width: none; }
+  .mc-editor-header::-webkit-scrollbar { display: none; }
 }
 
 /* A small control keeps its look but gets a thumb-sized touch area. */

@@ -1,4 +1,4 @@
-import type { ScriptFormat } from '@/lib/scriptos/parser';
+import { SCRIPT_FORMAT_REGISTRY, SCRIPT_FORMATS, type ScriptFormat } from '@/lib/formats/script-formats';
 
 export interface EcosystemModules {
   scriptos: boolean;
@@ -34,11 +34,6 @@ export function getProjectModules(settings?: ProjectSettings | null): EcosystemM
   return { ...DEFAULT_ECOSYSTEM_MODULES, ...(settings?.modules || {}) };
 }
 
-export const SCRIPT_FORMAT_LABELS: Record<ScriptFormat, string> = {
-  screenplay: 'Screenplay',
-  teleplay: 'Teleplay',
-  'stage-play': 'Stage Play',
-  treatment: 'Treatment',
-  podcast: 'Podcast Script',
-  'doc-outline': 'Documentary Outline',
-};
+export const SCRIPT_FORMAT_LABELS = Object.fromEntries(
+  SCRIPT_FORMATS.map((f) => [f, SCRIPT_FORMAT_REGISTRY[f].label]),
+) as Record<ScriptFormat, string>;
