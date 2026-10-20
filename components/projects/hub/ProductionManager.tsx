@@ -12,13 +12,12 @@ import { notify } from '@/lib/supabase/notifications';
 import { usePillZone } from '@/lib/os/PillContext';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
-import type { ScriptFormat } from '@/lib/scriptos/parser';
+import { SCRIPT_FORMATS, type ScriptFormat } from '@/lib/formats/script-formats';
 import { awaitOSUser } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 
-const SCRIPT_FORMATS: ScriptFormat[] = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'];
 const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
 const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
   planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',

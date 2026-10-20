@@ -1,9 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { computeProgress, type ProjectProgress, type ProjectSignals } from '@/lib/os/progress';
 import { fetchProjectSignals, PROGRESS_EVENT } from '@/lib/supabase/progress';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
+
+/** Waits before each retry of a failed read; after the last one the error is shown. */
+const RETRY_DELAYS_MS = [1000, 2000, 4000];
 
 export interface ProjectProgressState {
   signals: ProjectSignals | null;
@@ -27,18 +30,36 @@ export function useProjectProgress(projectId: string | null | undefined): Projec
   const loading = !!projectId && !mine;
   const [error, setError] = useState<string | null>(null);
 
+  // Bumped by every reload and on unmount / project change: a read that is no longer the latest
+  // (superseded, or the component is gone) neither retries nor touches state.
+  const latest = useRef(0);
+
   const reload = useCallback(async () => {
     if (!projectId) return;
-    await fetchProjectSignals(projectId).then(
-      (next) => { setGot({ projectId, signals: next }); setError(null); },
-      (e) => {
+    const mineRun = ++latest.current;
+    for (let attempt = 0; ; attempt++) {
+      try {
+        const next = await fetchProjectSignals(projectId);
+        if (latest.current !== mineRun) return;
+        setGot({ projectId, signals: next });
+        setError(null);
+        return;
+      } catch (e) {
+        if (latest.current !== mineRun) return;
+        if (attempt < RETRY_DELAYS_MS.length) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+          if (latest.current !== mineRun) return;
+          continue;
+        }
         setGot((g) => ({ projectId, signals: g?.projectId === projectId ? g.signals : null }));
         setError(e instanceof Error ? e.message : 'Could not load project progress');
-      },
-    );
+        return;
+      }
+    }
   }, [projectId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads from the database, an external system
     void reload();
     if (!projectId) return;
     const onFocus = () => { if (document.visibilityState === 'visible') void reload(); };
@@ -50,6 +71,7 @@ export function useProjectProgress(projectId: string | null | undefined): Projec
     document.addEventListener('visibilitychange', onFocus);
     window.addEventListener(PROGRESS_EVENT, onChange);
     return () => {
+      latest.current++;
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onFocus);
       window.removeEventListener(PROGRESS_EVENT, onChange);

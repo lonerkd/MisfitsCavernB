@@ -18,7 +18,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
 - **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
-- **Production drift — `internal.timesheets_guard()` (P1, found 2026-10-15 by the drift check)**: production's function body differs from the migration's (`20260928090000_money.sql`); the repo's fingerprint hasn't changed since PR #81, so production was edited outside a migration between 10-12 15:50 and 10-13 00:52. Pick one: (a) restore production to the migration's version (re-run that function definition), or (b) if the production version is the intended fix, write a new migration carrying it and re-run the fingerprint. Done when the nightly drift run is green.
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
@@ -43,47 +42,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   (1228)**: after an offline reload the day stays on "Loading the schedule…".
   Same on plain `main`, passes in CI and in the cloud container. Check on a
   second Windows machine / a newer Chromium before treating it as a bug.
-
-## 2.1 From the Oct 15 QA report — open (the P0 and 4 of 5 P1s are fixed)
-
-- **Owner decision — the island's keyboard layer (was P1 #5, "design"):**
-  keyboard commands already work without hovering (`kbActive` tracks
-  `CapsLock` globally; the keydown handler in `EcosystemTaskbar.tsx`
-  doesn't gate on hover). What reads as broken is the two-step gesture
-  itself — hover to see the deck, `CapsLock` to drive it — not matching
-  "a keyboard and mouse command layer for the suite." Decide the intended
-  model (keys always live without a modifier? the deck opens on focus, not
-  just hover?) before this is re-coded.
-- **~25 P2s and ~10 P3s, not started** — autocomplete leaves the cursor on
-  the name line instead of dialogue; Ctrl+F/Ctrl+G losing focus; no "not a
-  character" control outside hover; a Chrome-autofill key event crashing
-  with no `key`; React error #418 on every load; a call sheet date
-  accepting "102020"; logging hours twice on one day silently overwriting;
-  no notification when added to crew; a project phase label not updating
-  until reload; three different page-count numbers across screens; an
-  unlabeled password field; `/soundtrack`'s player not rendering; applying
-  to your own job; the pill covering Save/Cancel on a phone; every
-  `portfolio_projects.share_token` being publicly listable; several
-  accessibility-tree naming issues; crew unable to mark a library item
-  shareable; small items (autocomplete needing 2 letters, bad share links
-  returning 200, `/STUDIO` 404ing, focus landing on `<body>` after the
-  palette, a gate's title mismatch, 15×15px touch targets, leaked-password
-  protection off, a suspended user clearing their own flag in their last
-  session). Full detail in the QA report (owner has it); work through
-  worst-first per `RULES.md`'s triage (broken > lying UI > missing >
-  polish) when picked up.
-- **Confirmed pre-existing, separate from the report:** a suite-wide axe
-  `label-content-name-mismatch` regression — found while babysitting PR
-  #230's CI, across at least 4 components (on-set clock buttons, cut-notes'
-  "open in script" button, the Lounge's pinned-message button, the shot
-  designer's camera button) — each renders visible text that isn't a
-  prefix of its `aria-label`. Likely missed by the axe-core 4.14 bump's
-  partial fix (`2026-10-14-deps-and-label-in-name.md`). Not yet scoped to
-  a single PR.
-- **Owner, outside the code:** the QA session's own cleanup (delete
-  `QA-Night Shift` and its script, the v2 call sheet, the two `thekid`
-  timesheet entries, the `#general` QA messages, remove `thekid` from
-  crew) — the report has the exact list.
 
 ## 3. Upgrades (scoped — in suggested order)
 
@@ -192,23 +150,6 @@ coverage rules.
 **Owner:** branch protection on `main` with `pr-title`, `checks` and
 `database` required; signed commits; the first `v*` tag; the lawyer's OK on
 the `LICENSE` wording.
-
-
-### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
-**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.
-
-### 3.24 Audit follow-ups: lint in the margin, agent permission envelope — S/M each (found 2026-10-15)
-**Lint affordance (S):** validation issues live only in the editor's
-Validation side-tab — no jump-to-line, no inline marker, while the editor
-ships carets, reading corrections and annotations inline. Add a click-to-line
-on each issue and a gutter dot; `EditorSidePanels.tsx` + the editor page.
-Done when an issue takes you to its line and a persona spec covers it.
-**Agent permission envelope (owner decision first):** `.claude/settings.json`
-allows Supabase `execute_sql`/`apply_migration` and Vercel `deploy_to_vercel`
-without prompting, and `tools-and-access.md` §3 justifies it by the
-branch→PR→persona-test workflow — which needs branch protection (§1) to be
-real. Either enable branch protection, or move those three to `ask` until it
-exists. Done when the doc and the settings agree.
 
 
 ---
@@ -362,10 +303,13 @@ bible's ScriptOS known gaps).
 ### 4.13 Offline and installable
 **Built**: the editor saves to IndexedDB first and syncs (retry, on
 reconnect, tombstones for offline deletes), a conflict prompt (keep mine /
-take theirs), sync state in its header; On set works offline; Capture's
-outbox; a service worker; an installable web app (iPhone polish is 3.13).
-**To add**: an app-wide offline indicator (4.1), sync status per document in
-lists, "sync now", downloading a whole project for offline, an offline queue
+take theirs), sync state in its header, and (2026-10-18) a status-bar chip
+for the script queue — pending scripts and deletes, network, a retry
+countdown with backoff (15 s → 5 min), "Sync now" (`SyncStatusChip`); On set
+works offline; Capture's outbox; a service worker; an installable web app
+(iPhone polish is 3.13).
+**To add**: an app-wide offline indicator (4.1; the chip's `getSyncStatus`
+store is the feed for it), sync status per document in lists, downloading a whole project for offline, an offline queue
 for actions beyond scripts, bandwidth-aware sync, a line-by-line conflict
 view.
 
@@ -386,3 +330,5 @@ loops, notes during playback, comparing reads, scoring from the Soundtrack.
 notes per candidate per role, audition scheduling, decision history, a
 casting sheet PDF.
 
+### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
+**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.

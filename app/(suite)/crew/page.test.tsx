@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 
 // The data layer and the OS store are the page's boundaries; everything between
 // them (useLoad, the mode switch, the mapping, the cards) runs for real.
@@ -46,7 +46,7 @@ describe('CrewPage', () => {
     render(<CrewPage />);
     expect(await screen.findByText('Ada')).toBeTruthy();
     expect(screen.getByText('EDITOR')).toBeTruthy();
-    expect(screen.getByText('OPEN')).toBeTruthy();
+    expect(within(screen.getAllByRole('link')[0]).getByText('OPEN')).toBeTruthy(); // the filter bar has an OPEN button too
     expect(screen.getByText('Cuts fast.')).toBeTruthy();
     expect(screen.getByText('Calgary')).toBeTruthy();
     expect(screen.getByText(/Discord: ada#1/)).toBeTruthy();
@@ -89,7 +89,7 @@ describe('CrewPage', () => {
     expect(screen.getByText('Unknown')).toBeTruthy(); // no username
     expect(screen.queryByLabelText('Search crew')).toBeNull(); // directory filters hidden
     const hrefs = screen.getAllByRole('link').map(a => a.getAttribute('href'));
-    expect(hrefs).toEqual(['/crew/u1', '/crew/']);
+    expect(hrefs).toEqual(['/crew/u1', '/crew']);
   });
 
   it('shows the error and retries when getProjectCrew fails', async () => {

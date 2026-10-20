@@ -141,7 +141,7 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
           boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
           borderRadius: 4,
         }}>
-          {lines.length === 0 ? (
+          {lines.every((l) => l.type === 'empty') ? (
             <div style={{ fontFamily: 'var(--script)', fontSize: 13, textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>
               This script is empty.
             </div>

@@ -80,7 +80,6 @@ kit (`/p`) → showcase.
 
 ## Known gaps
 
-- `/portfolio` uses a few hard-coded colours (`#0e0e0e`) where tokens belong.
 - No reviews, references or verified credits yet (product call).
 - Crew, jobs, portfolio and profile pages query tables directly rather than
   through `lib/` (BACKLOG 3.2).

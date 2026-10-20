@@ -20,5 +20,5 @@ export const DEFAULT_SCRIPT_FORMAT: ScriptFormat = 'screenplay';
 export const SCRIPT_FORMATS = Object.keys(SCRIPT_FORMAT_REGISTRY) as ScriptFormat[];
 
 export function isScriptFormat(value: unknown): value is ScriptFormat {
-  return typeof value === 'string' && Object.hasOwn(SCRIPT_FORMAT_REGISTRY, value);
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(SCRIPT_FORMAT_REGISTRY, value);
 }
