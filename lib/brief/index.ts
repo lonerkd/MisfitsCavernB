@@ -39,6 +39,9 @@ export function loadQuestions(): Promise<BriefQuestion[]> {
   return catalogue;
 }
 
+/** Forget the cached catalogue (after an admin changes it). */
+export function resetQuestions(): void { catalogue = null; }
+
 let presets: Promise<ChannelPreset[]> | null = null;
 export function loadChannelPresets(): Promise<ChannelPreset[]> {
   presets ??= (async () => {

@@ -16,6 +16,7 @@ every admin read goes through a function or policy that checks
 | `/admin/reports` | what people flagged (messages, jobs, profiles), newest first, open / resolved / dismissed, who reported and why, a link to the job or profile; close each as resolved or dismissed; a reported job can be closed from the queue (`admin_close_job`), and a reported message read and hidden or brought back (`admin_reported_message`, `admin_hide_message`) — both recorded in the audit log. An admin reads only messages that were reported. Anyone signed in can file a report (the flag on a message, a job, a profile); only an admin reads them all | `reports` |
 | `/admin/channel-presets` | the channels the Lounge suggests to a production by phase: add one (name, type, who sees it, who posts, phase, topic, why), remove one (confirmed); channels already made from it stay. Everyone reads; only an admin writes (RLS) | `channel_presets` |
 | `/admin/formats` | the kinds of project people can start: add one (name, one line, icon, the script format it opens, which phases it skips), remove one (confirmed); projects already made keep their format. Phase labels and skipped milestones stay as migrations for now. Everyone reads; only an admin writes (RLS) | `project_formats` |
+| `/admin/brief-questions` | the questions every project's brief asks: add one (words, hint, phase, choices or a number range), remove one (confirmed, and the confirm says how many projects' answers go with it). What a choice implies stays a migration. Everyone reads; only an admin writes (RLS) | `brief_questions`, `project_brief` |
 | `/admin/errors` | <img src="screens/admin-errors--desktop.webp" width="420"> | <img src="screens/admin-errors--phone.webp" width="140"> |
 | `/admin/audit-logs` | <img src="screens/admin-audit-logs--desktop.webp" width="420"> | <img src="screens/admin-audit-logs--phone.webp" width="140"> |
 
@@ -39,9 +40,9 @@ every admin read goes through a function or policy that checks
 
 ## Known gaps
 
-- Crafts, channel suggestions and project formats have admin screens
-  (`/admin/crafts`, `/admin/channel-presets`, `/admin/formats`); the brief
-  questions are still changed by migration (3.14).
+- Every catalogue has an admin screen (`/admin/crafts`, `/admin/channel-presets`,
+  `/admin/formats`, `/admin/brief-questions`). Brief questions can't be edited
+  in place, and what an option implies is still a migration (3.14).
 - Moderation is a queue only: reports are filed and settled, but acting on
   one (hide, remove, suspend) is by hand (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
