@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
 import { parseScript, type ScriptFormat } from '@/lib/scriptos/parser';
 import { timeScript } from '@/lib/scriptos/timing';
-import { scanScript } from './script';
+import { scanScript } from './parsers';
 import type { Json } from '@/lib/supabase/database.types';
 import {
   EMPTY_CONTEXT, implications, nextMoves, type Answers, type BriefQuestion, type BriefValue,
@@ -14,7 +14,8 @@ import {
 import type { Phase } from '@/lib/os/phases';
 
 export * from './core';
-export { scanScript, sceneList } from './script';
+export { scanScript } from './parsers';
+export { sceneList } from './script';
 
 /** Announced after any answer changes, so every open view re-reads. */
 export const BRIEF_EVENT = 'mc:brief-changed';
