@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
+const { assertPreviewNotProduction } = require('./scripts/preview-env-guard');
+
+// A Vercel preview must never run against the production database (ADR 0006).
+assertPreviewNotProduction(process.env);
 
 const nextConfig = {
   reactStrictMode: true,
