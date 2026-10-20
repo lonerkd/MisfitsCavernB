@@ -45,4 +45,11 @@ describe('describeDetails', () => {
     expect(long).toHaveLength(80);
     expect(long.endsWith('…')).toBe(true);
   });
+
+  it('cuts between key-value pairs, never inside one, when the first pair fits', () => {
+    const out = describeDetails({ title: 'Night Shift', note: 'y'.repeat(100), after: 'z' }, 40);
+    expect(out).toBe('title: Night Shift…');
+    expect(out.length).toBeLessThanOrEqual(40);
+    expect(describeDetails({ a: '1', b: '2', c: '3' }, 12)).toBe('a: 1, b: 2…');
+  });
 });
