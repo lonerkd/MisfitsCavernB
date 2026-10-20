@@ -278,7 +278,9 @@ on export; formats by project type.
 **To add**: FDX round-trip fidelity tests; Movie Magic Screenwriter, Celtx
 and Highland import; RTF, ePub and HTML export; intercut, montage, series of
 shots and flashback/dream formatting; subtitled lines in another language;
-A/B pages, locked pages with asterisks, manual scene numbers; act breaks for
+A/B pages, locked pages with asterisks, manual scene numbers (the parser
+reads `12A` but `sync_script_scenes` stores the position in the integer
+`scenes.scene_number` — needs a text column); act breaks for
 TV; custom element styles; headers/footers with dynamic content.
 
 ### 4.10 Breakdown and scheduling
