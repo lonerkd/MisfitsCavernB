@@ -136,10 +136,37 @@ export class ScriptParser {
 
   private learnedNames: Set<string>;
 
+  /*
+   * Per-scene state reset
+   *
+   * These fields carry state from one line to the next while parse() walks the text.
+   * When a line is classified as a slug (scene heading), parse() does:
+   *
+   *   sceneIndex++              -> -1 before the first slug, then 0, 1, 2…
+   *   lastSpeaker = null        -> the first cue of the new scene is never "(CONT'D)",
+   *                                even if the same character spoke last in the scene
+   *                                before. isContinued needs a non-null lastSpeaker.
+   *   insideDialogueBlock=false -> the slug ends any open speech, so the next cue is
+   *                                not read as a continuation of one.
+   *   requestDual = false       -> a dangling caret (`^` or `NAME ^`) cannot pair a
+   *                                speech in the old scene with one in the new scene.
+   *
+   * The same two flags are also cleared, without touching lastSpeaker, by a blank line
+   * (insideDialogueBlock + requestDual) and by action, transition or centered text
+   * (same two). So within a scene, "same speaker again after a break" is still
+   * detected as CONT'D; only a slug forgets the speaker.
+   *
+   * insideBoneyard is deliberately NOT reset by a slug: a boneyard block swallows every
+   * line until its closing marker (the slug inside it is typed 'boneyard' and never reaches this
+   * branch), and it is source-only commentary, not scene state.
+   */
   private sceneIndex: number = -1;
+  /** Cleaned name of the last cue in the current scene; null at the start of each scene. */
   private lastSpeaker: string | null = null;
+  /** True from a cue until a blank line, action, transition or slug. */
   private insideDialogueBlock: boolean = false;
   private insideBoneyard: boolean = false;
+  /** A caret asked for the next speech to be dual; cleared on blank line, action, transition or slug. */
   private requestDual: boolean = false;
 
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
@@ -283,6 +310,9 @@ export class ScriptParser {
       }
 
       if (analysis.type === 'slug') {
+        // A slug starts a new scene, so every piece of per-speech state is cleared
+        // (see "Per-scene state reset" above the field declarations). Nothing about
+        // who spoke, or whether a dual-dialogue pair is open, may leak across the cut.
         this.sceneIndex++;
         this.lastSpeaker = null;
         this.insideDialogueBlock = false;
