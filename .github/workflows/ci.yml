@@ -10,6 +10,19 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# Legal identity for the build and the journeys (lib/legal/legal.ts reads these
+# and fails the build without them). Fixture values: CI checks that the pages
+# render whatever the environment says, not what production says.
+env:
+  LEGAL_OPERATOR: Test Operator
+  LEGAL_COUNTRY: Canada
+  LEGAL_PROVINCE: Alberta
+  LEGAL_CONTACT_LABEL: '@test-operator on Instagram'
+  LEGAL_CONTACT_URL: https://instagram.com/test-operator
+  LEGAL_CONTACT_ALT_LABEL: '@test-operator on X'
+  LEGAL_CONTACT_ALT_URL: https://x.com/test-operator
+  LEGAL_EFFECTIVE: 1 January 2026
+
 jobs:
   # What the PR touches. A docs-only change (Markdown, the knowledge hub)
   # can't break the schema or a journey, so it skips those jobs; `checks`

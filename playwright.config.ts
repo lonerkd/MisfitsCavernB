@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { loadEnvConfig } from '@next/env';
+
+// Read .env.local like Next does, so specs can assert on the LEGAL_* values the build used.
+loadEnvConfig(process.cwd());
 
 // Default: test the branch under a locally built/served instance, started by
 // webServer below. PLAYWRIGHT_BASE_URL overrides this to point at a deployed

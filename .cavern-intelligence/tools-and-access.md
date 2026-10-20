@@ -112,6 +112,13 @@ Server-only (**never** `NEXT_PUBLIC_`): `SUPABASE_SERVICE_ROLE_KEY` — used by
 `app/api/discord/notify` to read `discord_integrations.webhook_url` (a table
 with no client-readable RLS policy by design).
 
+Legal identity (server-only, **required** — `next build` fails without them):
+`LEGAL_OPERATOR`, `LEGAL_COUNTRY`, `LEGAL_PROVINCE`, `LEGAL_CONTACT_LABEL`,
+`LEGAL_CONTACT_URL`, `LEGAL_CONTACT_ALT_LABEL`, `LEGAL_CONTACT_ALT_URL`,
+`LEGAL_EFFECTIVE`. Read by `lib/legal/legal.ts` into the static `/privacy` and
+`/terms`; the owner changes them in Vercel and redeploys. CI sets fixture
+values at workflow level and `e2e/legal.spec.ts` asserts against them.
+
 CI (`.github/workflows/ci.yml`) reads `NEXT_PUBLIC_SUPABASE_URL` and
 `NEXT_PUBLIC_SUPABASE_ANON_KEY` from Actions **variables** (`vars.*`) — they are
 publishable; only `SUPABASE_SERVICE_ROLE_KEY` is a secret. Both Discord routes
