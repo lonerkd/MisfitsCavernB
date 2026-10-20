@@ -47,3 +47,15 @@ every admin read goes through a function or policy that checks
   one (hide, remove, suspend) is by hand (3.14).
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
   only place (and its grace-period banner is open: STATE).
+- Stack traces in the error log may expose internal paths. `client_errors`
+  keeps each stack as sent (up to 8,000 characters, `lib/errors/report.ts`;
+  `report_client_error` only trims, rate-limits and keeps 30 days —
+  `database-and-security.md` §2), and `/admin/errors` shows it. Bundle file
+  names, source paths and route or query strings in a stack would reach
+  anyone who gets an admin session, and anyone can write to the table through
+  the anon-callable RPC, so what is stored is not trusted. Recommended:
+  redact before storing (strip the origin and absolute or filesystem paths
+  down to the bundle file name and line; drop query strings and anything that
+  looks like a token or email), in `describeError` and again in
+  `report_client_error`, and keep the page showing only the stored,
+  redacted text. Not built yet.
