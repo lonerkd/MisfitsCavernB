@@ -1,6 +1,7 @@
 
 
 import { get, set, keys, del } from 'idb-keyval';
+import { assertValidRules, runMigrations, type MigrationTable } from './migrations';
 
 const CACHE_VERSION_KEY = 'app_cache_version';
 const CURRENT_CACHE_VERSION = 1;
@@ -11,13 +12,12 @@ interface CacheEntry {
   data: any;
 }
 
-interface MigrationRule {
-  from: number;
-  to: number;
-  migrate: (data: any) => any;
-}
-
-const migrations: Record<string, MigrationRule[]> = {
+// Rules per namespace, one per `from` version (see ./migrations). Empty while
+// every shape is still version 1: when a cached shape changes, bump
+// CURRENT_CACHE_VERSION and add a { from, to, migrate } rule here for each
+// namespace whose data changed. A namespace with no rule for an old version
+// reads as a miss and the stale entry is dropped.
+const migrations: MigrationTable = {
   'revisions': [],
   'titlepage': [],
   'profiles': [],
@@ -25,6 +25,8 @@ const migrations: Record<string, MigrationRule[]> = {
   'lounge': [],
   'studio': [],
 };
+
+assertValidRules(migrations);
 
 async function migrateLocalStorage() {
   if (typeof window === 'undefined') return;
@@ -77,17 +79,26 @@ export async function getCacheItem(key: string, namespace?: string): Promise<any
       return (entry as any).data || entry;
     }
 
-    if (entry.version < CURRENT_CACHE_VERSION && namespace && migrations[namespace]) {
-      const applicableMigrations = migrations[namespace].filter(
-        m => m.from >= entry.version && m.to <= CURRENT_CACHE_VERSION
+    // Written by a newer build: not ours to read or to delete.
+    if (entry.version > CURRENT_CACHE_VERSION) return null;
+
+    if (entry.version < CURRENT_CACHE_VERSION) {
+      const result = runMigrations(
+        (namespace && migrations[namespace]) || [],
+        entry.data,
+        entry.version,
+        CURRENT_CACHE_VERSION,
       );
-
-      let migratedData = entry.data;
-      for (const migration of applicableMigrations) {
-        migratedData = migration.migrate(migratedData);
+      if (!result.ok) {
+        // No path to the current shape, or a step failed: never hand callers
+        // old-shape data. Drop the entry so the next read is a plain miss
+        // instead of failing the same migration again.
+        console.error(`Cache item "${key}" could not be migrated (${result.reason} at v${result.at}); dropped.`);
+        await del(key);
+        return null;
       }
-
-      return migratedData;
+      await set(key, { version: CURRENT_CACHE_VERSION, timestamp: entry.timestamp, data: result.data });
+      return result.data;
     }
 
     return entry.data;
