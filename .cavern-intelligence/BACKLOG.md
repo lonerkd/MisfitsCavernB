@@ -21,7 +21,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
-- **Set the `LEGAL_*` variables in Vercel** (all environments; list in `tools-and-access.md` §6, values in `.env.example`) **before the next production deploy** — the build now fails without them.
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal/legal.ts`; Peter Olowude,
   Alberta, Canada).
 - **Optional — branch protection on `main`** with `checks`, `database` and
