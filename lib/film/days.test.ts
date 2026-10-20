@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildDays, lightLine, lightNoteText, type DayPlace, type DayRecord, type DayScene } from './days';
+import { buildDays, calendarDay, lightLine, lightNoteText, type DayPlace, type DayRecord, type DayScene } from './days';
 
 const HARBOR: DayPlace = { id: 'harbor', name: 'HARBOR', latitude: 51.0447, longitude: -114.0719, timezone: 'America/Phoenix' };
 const WAREHOUSE: DayPlace = { id: 'warehouse', name: 'WAREHOUSE', latitude: null, longitude: null, timezone: null };
@@ -127,6 +127,64 @@ describe('buildDays', () => {
   it('leaves out scenes with no day; a day with no scenes still appears', () => {
     const days = buildDays([day(1, null), day(2, null)], [scene(null, 'INT. WAREHOUSE - DAY', WAREHOUSE), scene('d2', 'INT. WAREHOUSE - DAY', WAREHOUSE)], PLACES, {}, 'UTC');
     expect(days.map((d) => d.scenes.length)).toEqual([0, 1]);
+  });
+});
+
+describe('calendarDay', () => {
+  it('keeps a real date, and the date part of a timestamp', () => {
+    expect(calendarDay('2026-06-21')).toBe('2026-06-21');
+    expect(calendarDay('2026-06-21T08:00:00Z')).toBe('2026-06-21');
+    expect(calendarDay(' 2028-02-29 ')).toBe('2028-02-29');
+  });
+
+  it('is null for anything that is not a real date', () => {
+    for (const bad of [null, undefined, '', 'tomorrow', '2026-6-21', '2026-13-01', '2026-02-31', '2027-02-29', '2026-06-21x', 20260621, {}]) {
+      expect(calendarDay(bad)).toBeNull();
+    }
+  });
+});
+
+describe('buildDays with unusable input', () => {
+  it('treats an unreadable date as no date, never NaN or a throw', () => {
+    for (const bad of ['tomorrow', '2026-02-31', '', null]) {
+      const [d] = buildDays([day(1, bad)], [scene('d1', 'EXT. HARBOR - DAY', HARBOR)], PLACES, {}, 'UTC');
+      expect(d.date).toBeNull();
+      expect(d.light).toBeNull();
+      expect(d.notes).toEqual([{ kind: 'no-date' }]);
+      expect(JSON.stringify(d)).not.toMatch(/NaN|Invalid/);
+    }
+  });
+
+  it('ignores places with out-of-range or non-finite coordinates, and names the first', () => {
+    const bad: DayPlace[] = [
+      { id: 'a', name: 'A', latitude: 95, longitude: 10, timezone: null },
+      { id: 'b', name: 'B', latitude: Number.NaN, longitude: 10, timezone: null },
+      { id: 'c', name: 'C', latitude: 10, longitude: 181, timezone: null },
+    ];
+    const [d] = buildDays([day(1, '2026-06-21')], bad.map((p) => scene('d1', 'EXT. X - DAY', p)), bad, {}, 'UTC');
+    expect(d.lightAt).toBeNull();
+    expect(d.light).toBeNull();
+    expect(d.moves).toEqual([]);
+    expect(d.notes).toEqual([{ kind: 'no-place', place: 'A' }]);
+  });
+
+  it('skips a good place that follows bad ones and still gives its light', () => {
+    const bad: DayPlace = { id: 'a', name: 'A', latitude: 95, longitude: 10, timezone: null };
+    const [d] = buildDays([day(1, '2026-06-21')], [scene('d1', 'EXT. X - DAY', bad), scene('d1', 'EXT. HARBOR - DAY', HARBOR)], [bad, HARBOR], {}, 'UTC');
+    expect(d.lightAt?.name).toBe('HARBOR');
+    expect(d.light?.sunrise).not.toBe('');
+  });
+
+  it('ignores call times that are not clock times', () => {
+    const [d] = buildDays([day(1, '2026-12-21')], [scene('d1', 'EXT. HARBOR - DAY', HARBOR)], PLACES, { d1: { shooting_call: '99:99', estimated_wrap: '12:75' } }, 'UTC');
+    expect([d.shootFrom, d.wrapAt]).toEqual([null, null]);
+    expect(d.notes).toEqual([]);
+  });
+
+  it('copes with a scene pointing at a place that does not exist', () => {
+    const [d] = buildDays([day(1, '2026-06-21')], [scene('d1', 'EXT. X - DAY', { ...HARBOR, id: 'ghost' })], PLACES, {}, 'UTC');
+    expect(d.places).toEqual([]);
+    expect(d.notes).toEqual([]);
   });
 });
 

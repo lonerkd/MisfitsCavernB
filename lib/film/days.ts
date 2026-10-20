@@ -4,7 +4,7 @@
 
 import { eighthsOf } from '@/lib/studio/shoot-days';
 import { distanceKm } from './coordinates';
-import { formatInZone, isCoordinate, sunTimes } from './daylight';
+import { formatInZone, isCoordinate, sunTimes, type SunTimes } from './daylight';
 
 export interface DayScene {
   id: string;
@@ -70,7 +70,30 @@ const isNight = (s: DayScene) => /\bNIGHT\b/.test(timeOf(s));
 const isDay = (s: DayScene) => !isNight(s) && !/\b(DUSK|EVENING|DAWN|SUNSET|SUNRISE|MAGIC HOUR)\b/.test(timeOf(s)) && /\bDAY\b|\bMORNING\b|\bAFTERNOON\b/.test(timeOf(s));
 
 const hasCoordinates = (p: DayPlace) => isCoordinate(p.latitude, p.longitude);
-const clock = (t: string | null | undefined) => (t && /^\d{2}:\d{2}/.test(t) ? t.slice(0, 5) : null);
+const clock = (t: string | null | undefined) => {
+  const m = typeof t === 'string' ? /^(\d{2}):(\d{2})/.exec(t) : null;
+  return m && Number(m[1]) < 24 && Number(m[2]) < 60 ? `${m[1]}:${m[2]}` : null;
+};
+
+/**
+ * The calendar day as "YYYY-MM-DD", or null when the value isn't a real date
+ * (missing, malformed, or one that doesn't exist, like 2026-02-31). A timestamp
+ * with the date leading is accepted, so the sun is never asked about "NaN".
+ */
+export function calendarDay(value: unknown): string | null {
+  const m = typeof value === 'string' ? /^(\d{4})-(\d{2})-(\d{2})(?:$|[T ])/.exec(value.trim()) : null;
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const at = new Date(Date.UTC(y, mo - 1, d));
+  const real = at.getUTCFullYear() === y && at.getUTCMonth() === mo - 1 && at.getUTCDate() === d;
+  return real ? `${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+/** The sun for a place and date, or null if it didn't come out as real instants. */
+function usableSun(date: string, place: DayPlace): SunTimes | null {
+  const sun = sunTimes(date, place.latitude as number, place.longitude as number);
+  return Number.isFinite(sun.solarNoon.getTime()) && Number.isFinite(sun.daylightMinutes) ? sun : null;
+}
 const minutesOf = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5));
 
 export function buildDays(
@@ -93,14 +116,19 @@ export function buildDays(
     const notes: LightNote[] = [];
     let light: DayLight | null = null;
 
-    if (!day.shoot_date) {
+    // An unreadable date is no date: nothing to compute the light from.
+    const shootDate = calendarDay(day.shoot_date);
+    const sun = shootDate && lightAt ? usableSun(shootDate, lightAt) : null;
+
+    if (!shootDate) {
       if (dayScenes.length) notes.push({ kind: 'no-date' });
-    } else if (!lightAt) {
-      if (dayPlaces.length) notes.push({ kind: 'no-place', place: dayPlaces[0].name });
+    } else if (!lightAt || !sun) {
+      // The place the light was tried for, else the day's first.
+      const named = lightAt ?? dayPlaces[0];
+      if (named) notes.push({ kind: 'no-place', place: named.name });
     } else {
       const zone = lightAt.timezone || viewerZone;
-      const sun = sunTimes(day.shoot_date, lightAt.latitude as number, lightAt.longitude as number);
-      const at = (d: Date | null) => formatInZone(d, zone);
+      const at = (d: Date | null) => formatInZone(d && Number.isFinite(d.getTime()) ? d : null, zone);
       light = {
         dawn: at(sun.dawn), sunrise: at(sun.sunrise), goldenEnds: at(sun.goldenEnds),
         goldenStarts: at(sun.goldenStarts), sunset: at(sun.sunset), dusk: at(sun.dusk),
@@ -162,7 +190,7 @@ export function buildDays(
     }
 
     return {
-      id: day.id, number: day.day_number, date: day.shoot_date,
+      id: day.id, number: day.day_number, date: shootDate,
       scenes: dayScenes, eighths: dayScenes.reduce((n, s) => n + eighthsOf(s.est_duration), 0),
       places: dayPlaces, lightAt, light, shootFrom: clock(callsByDay[day.id]?.shooting_call), wrapAt: clock(callsByDay[day.id]?.estimated_wrap), notes, moves,
     };
