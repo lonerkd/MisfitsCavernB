@@ -44,7 +44,13 @@ The role, the project, the poster. For applicants: apply / applied. For the
 poster: applicants with their profiles and notes; **respond**
 (`respond_to_application`: accept → adds them to `project_crew` with the
 job's craft, casts them for a casting call, optionally closes the job,
-notifies them; decline).
+notifies them; decline). Transitions: pending → accepted or declined;
+declined → accepted ("Mark accepted"); an acceptance is final (undo a hire
+from the crew). The same answer twice is refused. Answers to one posting run
+one at a time (the posting's row is locked), so with "Close the posting when
+I accept someone" two acceptances at once fill it once — the second is
+refused ("just filled") and the page reloads what the database holds. One
+answer at a time on the page too: the buttons wait while one is saving.
 
 ### `/portfolio` — your work, presented
 A cinematic page of the person's pieces (featured work, the work, a project
