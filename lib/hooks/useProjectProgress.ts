@@ -80,9 +80,20 @@ export function useProjectProgress(projectId: string | null | undefined): Projec
 
   // "Show every tool" (the account's choice) opens everything, like the project's own switch.
   const { prefs } = useUiPrefs();
-  const progress = useMemo(
-    () => (signals ? computeProgress(signals, { unlockAll: signals.unlock_all || prefs.show_all_tools }) : null),
-    [signals, prefs.show_all_tools],
-  );
-  return { signals, progress, loading, error, reload };
+  // A throw in computeProgress becomes an error message, not a crashed page.
+  const { progress, computeError } = useMemo(() => {
+    if (!signals) return { progress: null, computeError: null };
+    try {
+      return {
+        progress: computeProgress(signals, { unlockAll: signals.unlock_all || prefs.show_all_tools }),
+        computeError: null,
+      };
+    } catch (e) {
+      return {
+        progress: null,
+        computeError: e instanceof Error ? e.message : 'Could not compute project progress',
+      };
+    }
+  }, [signals, prefs.show_all_tools]);
+  return { signals, progress, loading, error: error ?? computeError, reload };
 }
