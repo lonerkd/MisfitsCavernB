@@ -319,6 +319,12 @@ export function toolState(progress: ProjectProgress | null, id: ToolId): ToolSta
   return progress?.tools.find((t) => t.id === id) ?? null;
 }
 
+/** A count from the RPC's JSON (a number or numeric string); anything else, infinite or negative reads as zero. */
+function count(v: unknown): number {
+  const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : 0;
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 /** Normalises the RPC's JSON: missing or malformed fields read as zero. */
 export function toSignals(raw: unknown): ProjectSignals | null {
   if (!raw || typeof raw !== 'object') return null;
@@ -328,7 +334,7 @@ export function toSignals(raw: unknown): ProjectSignals | null {
     if (key === 'format') { out.format = toFormatRules(r.format); continue; }
     const base = (EMPTY_SIGNALS as unknown as Record<string, unknown>)[key];
     const v = r[key];
-    if (typeof base === 'number') out[key] = typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || 0;
+    if (typeof base === 'number') out[key] = count(v);
     else if (typeof base === 'boolean') out[key] = v === true;
     else out[key] = typeof v === 'string' ? v : null;
   }
