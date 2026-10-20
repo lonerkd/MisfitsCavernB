@@ -123,6 +123,7 @@ Callable by **anyone** (anon + signed in) — public pages:
 | `get_platform_stats()` | aggregate counts only, samples excluded |
 | `get_person_credits(user)` | only projects that are `public` or that the caller can access (`internal.can_access_project`) |
 | `report_client_error(…)` | validated kind, message ≤1000 chars, rate-limited (20/min signed in, 60/min signed out) |
+| `log_password_breach(email, count, context)` | context in `signup`/`reset`/`change`, count ≥ 1, plausible address; writes one `audit_logs` row (`password_breach_detected`) holding an HMAC-SHA256 of the address keyed by `internal.password_breach_secret` (hashed in the database, not the browser; the address and password are never stored), the count and the context; rate-limited (10/min signed in, 60/min signed out); admin-read through the existing `audit_logs` policy; a daily pg_cron job deletes rows older than 90 days. The count is the browser's claim — the server never sees the password. |
 
 Callable by **signed-in users**:
 

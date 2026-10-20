@@ -10,6 +10,7 @@ import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useToast } from '@/components/ui/Toast';
 import { supabase } from '@/lib/supabase/client';
 import { checkHibpBreach } from '@/lib/account/password-strength';
+import { logPasswordBreach } from '@/lib/logging';
 import { checkNewPassword, recoveryErrorMessage } from '@/lib/auth/recovery';
 
 /**
@@ -78,6 +79,7 @@ export default function ResetPasswordPage() {
     try {
       const count = await checkHibpBreach(password);
       if (count > 0) {
+        void logPasswordBreach(email, count, 'reset');
         setError(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose a unique password.`);
         return;
       }

@@ -19,6 +19,7 @@ const SENTENCES: Record<string, string> = {
   crew_role_changed: 'Changed a crew role',
   job_created: 'Posted a job',
   job_closed: 'Closed a job',
+  password_breach_detected: 'A breached password was refused',
   admin_action: 'Took an admin action',
   admin_close_job: 'Closed a reported job (admin)',
   admin_hide_message: 'Hid a reported message (admin)',

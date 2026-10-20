@@ -14,6 +14,7 @@ import { useToast } from '@/components/ui/Toast';
 import { osSignIn as signIn, osSignUp as signUp, useSession } from '@/lib/os';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import { checkPasswordWeakness, checkHibpBreach } from '@/lib/account/password-strength';
+import { logPasswordBreach } from '@/lib/logging';
 import { RECOVERY_PATH, recoveryErrorMessage } from '@/lib/auth/recovery';
 import { supabase } from '@/lib/supabase/client';
 
@@ -145,7 +146,7 @@ export default function AuthPage() {
       const weak = checkPasswordWeakness(typed.password, typed.email, typed.username);
       if (weak) { setError(weak); return; }
       const count = await checkHibpBreach(typed.password);
-      if (count > 0) { setError(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose a unique password.`); setLoading(false); return; }
+      if (count > 0) { void logPasswordBreach(typed.email, count, 'signup'); setError(`This password has appeared in ${count.toLocaleString()} known data breaches. Choose a unique password.`); setLoading(false); return; }
     }
 
     setLoading(true);
