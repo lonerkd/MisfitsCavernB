@@ -197,8 +197,13 @@ export default function AdminDashboard() {
                     {stat.label}
                   </span>
                 </div>
-                <div style={{ fontSize: '2rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
-                  {loading ? '...' : stat.value}
+                <div
+                  aria-busy={loading}
+                  style={{ fontSize: '2rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)', minHeight: '2.4rem' }}
+                >
+                  {loading
+                    ? <div className="skeleton" aria-hidden="true" style={{ height: '2rem', width: 72, borderRadius: 4 }} />
+                    : stat.value}
                 </div>
               </div>
             ))}
