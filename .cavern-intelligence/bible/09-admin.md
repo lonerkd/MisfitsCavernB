@@ -28,7 +28,7 @@ every admin read goes through a function or policy that checks
 | `/admin/users` | every account: username, email, joined, admin, suspended; grant or remove admin (never your own; never the last admin); **suspend** or lift a suspension on anyone who is not an admin (no sign-in, sessions ended, nothing deleted; a suspended person sees "This account has been suspended") | `admin_list_users`, `set_user_admin` |
 | `/admin/analytics` | users, projects, completed, scripts, jobs, average project duration, completion rate, sign-ups over a period | `admin_platform_analytics(since)` |
 | `/admin/errors` | what broke for people, grouped by message and page, newest first, with counts; clear a group once it's fixed (confirm) | `client_errors` (30 days) |
-| `/admin/audit-logs` | actions by person and time, search, filter by action; logins (1 h), actions (24 h), projects created (24 h) | `audit_logs` |
+| `/admin/audit-logs` | actions by person and time, search, filter by action, 50 a page; logins (1 h), actions (24 h), projects created (24 h); **Export page** (the rows shown, CSV) and **Export all matches** (every log the action filter and the search match, across all pages: the filters run in the database, read in batches of 1000 until one comes back empty, repeats dropped by id; CSV with quotes escaped and formula cells defused — `lib/audit/export.ts`) | `audit_logs` |
 
 ## Rules
 
@@ -45,6 +45,10 @@ every admin read goes through a function or policy that checks
   in place, and what an option implies is still a migration (3.14).
 - Moderation is a queue only: reports are filed and settled, but acting on
   one (hide, remove, suspend) is by hand (3.14).
+- The audit log's on-screen search narrows only the page loaded (50 rows);
+  "Export all matches" searches the whole log in the database. Moving the
+  on-screen search into the query (`lib/audit/export.ts` has the filters) is
+  BACKLOG 3.14.
 - No usage view (storage, egress, Realtime) — the Supabase dashboard is the
   only place (and its grace-period banner is open: STATE).
 - Stack traces in the error log may expose internal paths. `client_errors`

@@ -86,7 +86,7 @@ export async function getAuditLogs(
         details,
         created_at,
         profiles:user_id(username)
-      `)
+      `, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
