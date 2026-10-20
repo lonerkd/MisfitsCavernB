@@ -4114,9 +4114,7 @@ export type Database = {
           author_role: string;
           author_username: string;
           content: string;
-          format: string;
           title: string;
-          updated_at: string;
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };

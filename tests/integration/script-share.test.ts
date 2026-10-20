@@ -83,7 +83,7 @@ describe('script share links — the token is the only way in', () => {
       expect(rows[0].title).toBe('Shared Draft');
       expect(rows[0].content).toContain('Read me.');
       expect(rows[0].author_username).toBe(cast.sam.username);
-      expect(Object.keys(rows[0]).sort()).toEqual(['author_avatar_url', 'author_role', 'author_username', 'content', 'format', 'title', 'updated_at']);
+      expect(Object.keys(rows[0]).sort()).toEqual(['author_avatar_url', 'author_role', 'author_username', 'content', 'title']);
     }
   });
 
