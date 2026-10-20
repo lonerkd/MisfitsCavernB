@@ -211,9 +211,17 @@ export interface CategoryCost {
   amount: number;
   /** Elements with no cost of their own in a category with no unit cost. */
   unpriced: number;
+  /** The part of `amount` that rests on the category's unit cost (elements with no cost of their own), not on a figure someone entered. */
+  estimated: number;
 }
 
-/** The breakdown's cost per category: each element's cost, or its category's unit cost. */
+/**
+ * The breakdown's cost per category: each element's cost, or its category's unit cost.
+ *
+ * The unit-cost fallback is a default estimate, not a quote. `estimated` reports how much of
+ * `amount` rests on it, so a caller that writes `amount` somewhere binding (the budget's
+ * "Push to budget") can tell the person — see BreakdownView.pushToBudget.
+ */
 export function costByCategory(categories: BreakdownCategory[], elements: BreakdownElement[]): CategoryCost[] {
   return [...categories]
     .sort((a, b) => a.position - b.position)
@@ -225,6 +233,7 @@ export function costByCategory(categories: BreakdownCategory[], elements: Breakd
         elements: own.length,
         amount: own.reduce((sum, e) => sum + (e.cost != null ? Number(e.cost) : unitCost), 0),
         unpriced: own.filter((e) => e.cost == null && unitCost === 0).length,
+        estimated: own.filter((e) => e.cost == null).length * unitCost,
       };
     })
     .filter((c) => c.elements > 0);

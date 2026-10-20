@@ -94,6 +94,14 @@ describe('costByCategory', () => {
       ['wardrobe', 1, 0, 1],
     ]);
   });
+
+  it('reports the amount resting on the unit cost, not the number of elements', () => {
+    const costs = costByCategory(CATS, [el('1', 'Revolver', 'c-props', 120), el('2', 'Lantern', 'c-props'), el('3', 'Anvil', 'c-props'), el('4', 'Jacket', 'c-ward')]);
+    const props = costs.find((c) => c.category.key === 'props')!;
+    expect(props.amount).toBe(120 + 2 * 50);
+    expect(props.estimated).toBe(100);
+    expect(costs.find((c) => c.category.key === 'wardrobe')!.estimated).toBe(0);
+  });
 });
 
 describe('groupForScene', () => {

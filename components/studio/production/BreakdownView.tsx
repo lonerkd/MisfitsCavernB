@@ -70,7 +70,9 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
       announceProgressChange(project.id);
       const changed = r.added + r.updated + r.removed;
       const n = costs.filter((c) => c.amount > 0).length;
-      toast(changed ? `Budget updated from the breakdown — ${money(total)} across ${n} categor${n === 1 ? 'y' : 'ies'}.` : 'The budget already matches the breakdown.', 'success');
+      const estimated = costs.reduce((x, c) => x + c.estimated, 0);
+      const basis = estimated > 0 ? ` (${money(estimated)} of it from category unit costs, not element prices)` : '';
+      toast(changed ? `Budget updated from the breakdown — ${money(total)}${basis} across ${n} categor${n === 1 ? 'y' : 'ies'}.` : 'The budget already matches the breakdown.', 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not update the budget', 'error');
     } finally {
