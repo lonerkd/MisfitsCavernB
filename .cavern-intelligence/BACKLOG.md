@@ -39,6 +39,8 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 2. To verify
 
+- **`tests/integration/validation-vs-rls.test.ts`** (2026-10-17) was written but never run (no `node_modules`, no Docker in that worktree). Run it against the local stack with typecheck and lint; fix anything it shows. S.
+
 - **`e2e/onset-offline.spec.ts` on Windows with the older local Chromium
   (1228)**: after an offline reload the day stays on "Loading the schedule…".
   Same on plain `main`, passes in CI and in the cloud container. Check on a
