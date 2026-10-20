@@ -14,6 +14,7 @@ import { Check, MapPin, Printer } from 'lucide-react';
 import { useOSGate, useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
+import { withTimeout } from '@/lib/supabase/withTimeout';
 import {
   callFor, hhmm, issueState, snapshotOf, studio, toSnapshot,
   type CallSheet, type CallSheetCall, type CallSheetPerson, type CallSheetScene, type CallSheetSnapshot,
@@ -45,7 +46,8 @@ export default function CallSheetPage() {
     const uid = user?.id;
     if (!uid) return;
     let alive = true;
-    studio.getCallSheetView(id, uid).then((v) => {
+    // A hung request would leave the skeleton up forever; time out to the error state.
+    withTimeout(studio.getCallSheetView(id, uid), 15000, 'Loading the call sheet timed out.').then((v) => {
       if (!alive) return;
       if (!v) { setState('missing'); return; }
       setSheet(v.sheet);
