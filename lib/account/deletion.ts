@@ -36,10 +36,23 @@ export function batches<T>(items: T[], size = 100): T[][] {
   return out;
 }
 
-async function removeFiles(bucket: string, paths: string[]) {
+/**
+ * Remove in batches, then confirm. `remove` succeeds without error when a policy
+ * hides a file from the caller, so every path the API didn't report as removed is
+ * checked — if one still exists, stop before the account (and the record of those
+ * files) is deleted.
+ */
+export async function removeFiles(bucket: string, paths: string[]) {
+  const store = supabase.storage.from(bucket);
   for (const batch of batches(paths)) {
-    const { error } = await supabase.storage.from(bucket).remove(batch);
+    const { data, error } = await store.remove(batch);
     if (error) throw new Error(`Couldn't remove your files (${bucket}): ${error.message}`);
+    const removed = new Set((data ?? []).map((f) => f.name));
+    for (const path of batch.filter((p) => !removed.has(p))) {
+      const { data: stillThere, error: checkError } = await store.exists(path);
+      if (checkError) throw new Error(`Couldn't confirm your files were removed (${bucket}): ${checkError.message}`);
+      if (stillThere) throw new Error(`Couldn't remove all your files (${bucket}); your account was not deleted.`);
+    }
   }
 }
 
