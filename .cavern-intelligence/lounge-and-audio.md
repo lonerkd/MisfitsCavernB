@@ -18,7 +18,7 @@ The Lounge features decentralized peer-to-peer voice rooms, providing crew commu
 
 ### Peer Mesh Pipeline (`lib/webrtc/voice.ts`)
 - **No SFU (Selective Forwarding Unit) Server:** The architecture is built as a **full mesh network**. Every user opens a direct WebRTC peer connection (`RTCPeerConnection`) with every other user in the channel.
-- **Scalability:** Full mesh scales perfectly for typical indie film crew sizes (2 to 8 concurrent speakers) and runs entirely inside the users' browsers.
+- **Scalability:** Full mesh scales perfectly for typical indie film crew sizes (2 to 8 concurrent speakers) and runs entirely inside the users' browsers. The limit is enforced: `lib/webrtc/mesh.ts` seats the earliest 8 by presence `joinedAt`; a 9th is turned away before any connection opens (toast + "room is full"), and a simultaneous join is settled by the same seat order on every client.
 - **Signaling Channel:** Peer-to-peer connection initiation, SDP offers, answers, and ICE candidates are exchanged using Supabase Realtime broadcast events.
 - **The Newcomer Initiation Rule:** To prevent race conditions during negotiation:
   > **Rule:** Only the *newcomer* who joins the room is responsible for dispatching WebRTC connection offers (`createOffer`) to all pre-existing peers (discovered via Supabase Realtime Presence). The pre-existing peers respond with answers (`createAnswer`). This ensures exactly one side of each voice pair initiates connection.
