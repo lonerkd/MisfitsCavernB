@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { SFX_BUCKET } from '@/lib/supabase/audio';
 
 // Leaving the suite (supabase/migrations/20260929090000_account_deletion.sql).
 // The database decides what goes and what stays; files can only be removed
@@ -53,8 +54,8 @@ export async function deleteMyAccount(userId: string, confirm: string): Promise<
   if (confirm.trim() !== plan.username) throw new Error('Type your username to confirm.');
 
   for (const [bucket, paths] of Object.entries(plan.files)) await removeFiles(bucket, paths.filter(Boolean));
-  const { data: sfx } = await supabase.storage.from('sfx_library').list(userId, { limit: 1000 });
-  if (sfx?.length) await removeFiles('sfx_library', sfx.map((f) => `${userId}/${f.name}`));
+  const { data: sfx } = await supabase.storage.from(SFX_BUCKET).list(userId, { limit: 1000 });
+  if (sfx?.length) await removeFiles(SFX_BUCKET, sfx.map((f) => `${userId}/${f.name}`));
 
   const { error } = await supabase.rpc('delete_my_account', { p_confirm: confirm.trim() });
   if (error) throw new Error(error.message);
