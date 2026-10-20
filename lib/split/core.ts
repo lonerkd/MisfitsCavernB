@@ -30,6 +30,12 @@ export function safePanePath(raw: string | null | undefined, fallback: string): 
   try { path = decodeURIComponent(path); } catch { return fallback; }
   if (!path.startsWith('/') || path.startsWith('//') || path.startsWith('/\\')) return fallback;
   if (/^\/split(?:[/?#]|$)/.test(path) || /[\u0000-\u001f]/.test(path)) return fallback;
+  // Judge the path the browser will load: dot segments (`/a/../split`, `/%2e%2e/split`)
+  // and backslashes collapse to `/split` only once resolved.
+  const base = 'http://split.invalid';
+  let resolved: URL;
+  try { resolved = new URL(path, base); } catch { return fallback; }
+  if (resolved.origin !== base || /^\/split(?:\/|$)/.test(resolved.pathname)) return fallback;
   return path;
 }
 
