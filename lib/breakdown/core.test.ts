@@ -123,3 +123,47 @@ describe('nameKey', () => {
     expect(nameKey('刀')).not.toBe(nameKey('剣'));
   });
 });
+
+describe('accents (composed and decomposed)', () => {
+  const composed = 'café';
+  const decomposed = 'café';
+  const base = { characters: ['MAYA'], categories: CATS, dismissed: new Set<string>(), taggedElementIds: new Set<string>() };
+
+  it('nameKey gives one key for both spellings and keeps accented names apart from plain ones', () => {
+    expect(nameKey(decomposed)).toBe(nameKey(composed));
+    expect(nameKey('Naïve')).toBe(nameKey('naïve'));
+    expect(nameKey(composed)).not.toBe(nameKey('cafe'));
+    expect(nameKey('naïve')).not.toBe(nameKey('naive'));
+  });
+
+  it('findMentions finds a name in either spelling, with the original offsets', () => {
+    for (const written of [composed, decomposed]) {
+      const text = `Maya orders a ${written}.`;
+      for (const name of [composed, decomposed]) {
+        expect(findMentions(text, [name]).map((m) => text.slice(m.start, m.end))).toEqual([written]);
+      }
+    }
+  });
+
+  it('a plain name is not found inside an accented word, in either spelling', () => {
+    expect(findMentions(`A ${composed} sign.`, ['cafe'])).toEqual([]);
+    expect(findMentions(`A ${decomposed} sign.`, ['cafe'])).toEqual([]);
+    expect(findMentions('A naïve plan.', ['naive'])).toEqual([]);
+  });
+
+  it('memory: a decomposed accent in the script finds the remembered name, and the plain name does not collide', () => {
+    const memory = indexMemory([{ name: 'Café sign', category_key: 'props', projects: 1 }, { name: 'Cafe', category_key: 'wardrobe', projects: 1 }]);
+    expect(suggestForScene({ ...base, actionText: `Maya passes the ${decomposed} sign.`, elements: [], memory }))
+      .toEqual([{ name: 'Café sign', categoryId: 'c-props', reason: 'remembered' }]);
+    expect(suggestForScene({ ...base, actionText: 'Maya passes the cafe.', elements: [], memory }))
+      .toEqual([{ name: 'Cafe', categoryId: 'c-ward', reason: 'remembered' }]);
+  });
+
+  it('a project element matches either spelling and a dismissal holds for both', () => {
+    const elements = [el('e1', composed, 'c-props')];
+    const actionText = `Maya enters the ${decomposed}.`;
+    expect(suggestForScene({ ...base, actionText, elements }))
+      .toEqual([{ name: composed, categoryId: 'c-props', reason: 'mentioned', elementId: 'e1' }]);
+    expect(suggestForScene({ ...base, actionText, elements, dismissed: new Set([nameKey(decomposed)]) })).toEqual([]);
+  });
+});

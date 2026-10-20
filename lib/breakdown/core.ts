@@ -55,6 +55,14 @@ export interface Mention {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/** A name as a pattern matching its accented letters composed ("é") or decomposed ("e" + U+0301) in the text. */
+function accentTolerant(name: string): string {
+  return Array.from(name.normalize('NFC'), (ch) => {
+    const decomposed = ch.normalize('NFD');
+    return decomposed === ch ? escapeRe(ch) : `(?:${escapeRe(ch)}|${escapeRe(decomposed)})`;
+  }).join('');
+}
+
 /**
  * Where each name appears in `text` — whole words, any case, allowing a
  * plural or possessive ("revolver", "Revolvers", "REVOLVER'S"). Longer names
@@ -64,8 +72,9 @@ export function findMentions(text: string, names: string[]): Mention[] {
   const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean))).sort((a, b) => b.length - a.length);
   const taken: Mention[] = [];
   for (const name of unique) {
-    const pattern = escapeRe(name).replace(/\s+/g, '\\s+');
-    const re = new RegExp(`(?<![\\p{L}\\p{N}])${pattern}(?:'s|’s|s|es)?(?![\\p{L}\\p{N}])`, 'giu');
+    const pattern = accentTolerant(name).replace(/\s+/g, '\\s+');
+    // \p{M}: a combining accent belongs to its word, so "cafe" is not found inside a decomposed "café".
+    const re = new RegExp(`(?<![\\p{L}\\p{N}\\p{M}])${pattern}(?:'s|’s|s|es)?(?![\\p{L}\\p{N}\\p{M}])`, 'giu');
     for (const m of Array.from(text.matchAll(re))) {
       const start = m.index ?? 0;
       const end = start + m[0].length;
@@ -119,7 +128,7 @@ export const EMPTY_MEMORY: BreakdownMemory = { byKey: new Map(), byFirstWord: ne
 function memoryCandidates(text: string, memory: BreakdownMemory): RememberedElement[] {
   if (!memory.byFirstWord.size) return [];
   const out = new Set<RememberedElement>();
-  for (const word of text.match(/[\p{L}\p{N}'’]+/gu) ?? []) {
+  for (const word of text.match(/[\p{L}\p{N}\p{M}'’]+/gu) ?? []) {
     const k = nameKey(word);
     for (const key of [k, k.replace(/(s|es)$/, '')]) {
       for (const r of memory.byFirstWord.get(key) ?? []) out.add(r);
