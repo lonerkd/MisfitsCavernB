@@ -126,6 +126,7 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     const riley = await signIn(browser, outsider);
     await riley.goto(`/call/${sheet.id}`);
     await expect(riley.getByRole('heading', { name: 'Call sheet not found' })).toBeVisible({ timeout: 20_000 });
+    await expect(riley.getByText('That call sheet isn’t available to you — it may have been removed.')).toBeVisible();
     await expect(riley.getByText('40 Pier St')).toHaveCount(0);
   });
 });

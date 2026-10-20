@@ -62,6 +62,13 @@ Where a call sheet notification lands: the viewer's own call on top, "Got it"
 everyone's calls. Members of the production only. The owner sees who has
 acknowledged.
 
+States (`lib/studio/call-sheet-load.ts`): loading · ready · **not found**
+(removed, or not on the production — an info toast, and a line in Admin ›
+Errors with the sheet's id, digest `call-sheet:missing`) · **couldn't load**
+(the reason, "Try again", an error toast, and the error in Admin › Errors,
+digest `call-sheet:load-failed`). A new sheet or a retry never shows the last
+one's data.
+
 ## Rules
 
 - Everything is project-scoped (`can_access_project`); money, paperwork,
