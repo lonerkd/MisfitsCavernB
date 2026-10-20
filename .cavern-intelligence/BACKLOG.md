@@ -72,6 +72,9 @@ A layered, deterministic, explainable reading engine: lossless Fountain first, t
 ### 3.22 The reader's context: places, the previous draft — M (B7 follow-ups; rejections shipped in B8)
 (a) **Done (B8):** a stored per-project "not a character" / "is a character" list (`reading_corrections`), a "Not a character" action in the Character Bible with a way back, obeyed by the editor and the Studio. (b) **Places and the previous draft as evidence**, once every surface that writes the scene index reads with one shared context (today the editor and the Studio do; public share, export, pitch and brief pages parse without it). (c) Context for the other callers where it does not affect scenes. Done when a rejected name survives a reload and both surfaces agree on the scene index.
 
+### 3.24 Production manager trusts the festival jsonb — S (found 2026-10-16)
+`getProductionData` (`lib/supabase/project-hub.ts`) casts `projects.festival_submissions` to `FestivalRow[]` without checking it; `ProductionManager` then reads `f.status` / `f.id` on each entry, so a `null` or non-object entry breaks the panel. Keep only object entries with a string `id`, `name` and a known `status` (the overview's counts already skip malformed entries). Done when a malformed list renders the valid festivals and a unit test proves it.
+
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
 projects, scenes and wraps; not for media uploads, crew invites/role
