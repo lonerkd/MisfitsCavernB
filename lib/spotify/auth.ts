@@ -1,5 +1,6 @@
 import { supabase } from '../supabase/client';
 import { awaitOSUser } from '@/lib/os';
+import { reportError } from '@/lib/errors/report';
 import { spotifyRedirect } from './redirect';
 
 const CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID || '';
@@ -17,6 +18,13 @@ function generateRandomString(length: number) {
     }
   }
   return out;
+}
+
+// Spotify trouble goes to the suite's error log, tagged with where it happened
+// (Supabase errors are plain objects, so they're wrapped to keep a message).
+function logFailure(where: string, err: unknown) {
+  const detail = err instanceof Error ? err.message : (err as { message?: string } | null)?.message ?? String(err);
+  void reportError('promise', new Error(`spotify ${where}: ${detail}`));
 }
 
 // Local token copies belong to one app user. Signing out (by any route) and
@@ -46,18 +54,19 @@ async function persistTokens(accessToken: string, refreshToken: string | undefin
   }
   window.localStorage.setItem('spotify_token_expires_at', expiresAt.toString());
 
+  const storedRefreshToken = refreshToken || window.localStorage.getItem('spotify_refresh_token');
+  if (!storedRefreshToken) return;
   try {
-    const storedRefreshToken = refreshToken || window.localStorage.getItem('spotify_refresh_token');
-    if (!storedRefreshToken) return;
-    await supabase.from('spotify_connections').upsert({
+    const { error } = await supabase.from('spotify_connections').upsert({
       user_id: user.id,
       access_token: accessToken,
       refresh_token: storedRefreshToken,
       expires_at: expiresAt,
       updated_at: new Date().toISOString(),
     });
-  } catch {
-
+    if (error) logFailure('persistTokens', error);
+  } catch (err) {
+    logFailure('persistTokens', err);
   }
 }
 
@@ -156,7 +165,8 @@ async function refreshWithToken(refreshToken: string): Promise<string | null> {
     await persistTokens(data.access_token, data.refresh_token || refreshToken, expiresAt);
 
     return data.access_token;
-  } catch (error) {
+  } catch (err) {
+    logFailure('refreshWithToken', err);
     return null;
   }
 }
@@ -177,7 +187,8 @@ async function loadTokensFromAccount(): Promise<string | null> {
       .select('access_token, refresh_token, expires_at')
       .eq('user_id', user.id)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) { logFailure('loadTokensFromAccount', error); return null; }
+    if (!data) return null;
 
     if (Date.now() < data.expires_at - 60000) {
       window.localStorage.setItem(OWNER_KEY, user.id);
@@ -188,7 +199,8 @@ async function loadTokensFromAccount(): Promise<string | null> {
     }
 
     return refreshWithToken(data.refresh_token);
-  } catch {
+  } catch (err) {
+    logFailure('loadTokensFromAccount', err);
     return null;
   }
 }
@@ -217,8 +229,9 @@ export function logoutSpotify() {
   clearLocalTokens();
   window.dispatchEvent(new Event('spotify-auth-changed'));
 
-  awaitOSUser().then((user) => {
+  awaitOSUser().then(async (user) => {
     if (!user) return;
-    supabase.from('spotify_connections').delete().eq('user_id', user.id).then(() => {});
-  });
+    const { error } = await supabase.from('spotify_connections').delete().eq('user_id', user.id);
+    if (error) logFailure('logoutSpotify', error);
+  }).catch((err) => logFailure('logoutSpotify', err));
 }
