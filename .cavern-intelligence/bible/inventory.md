@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**40 pages · 6 API routes · 70 tables · 53 database functions · 69 e2e specs**
+**40 pages · 6 API routes · 70 tables · 54 database functions · 69 e2e specs**
 
 ## Routes
 
@@ -422,6 +422,7 @@
 | `handle_new_user` | internal (policies, triggers, other functions) |
 | `has_discord_webhook` | called from a route |
 | `issue_call_sheet` | called from a route |
+| `log_password_breach` | called from a route |
 | `log_writing` | called from a route |
 | `lounge_unread` | called from a route |
 | `mark_lounge_read` | called from a route |
