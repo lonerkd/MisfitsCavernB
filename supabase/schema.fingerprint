@@ -1139,6 +1139,7 @@ function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
+function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
@@ -1196,7 +1197,7 @@ function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
-function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=ba7afb078e08288d7bb9934add4a21a1
+function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=1dab5a7c14578a22e95dbcbbd3255d64
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
 function public.search_suite(p_query text, p_limit integer) body=4d14749d29aca4c8937a6d64ac672b57
@@ -1206,7 +1207,7 @@ function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) body=b5a59a26e
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
-function public.toggle_message_reaction(p_message uuid, p_emoji text) body=cd160ef64976bfa777db1932a6756003
+function public.toggle_message_reaction(p_message uuid, p_emoji text) body=7541910170337e67eb33e1f13087fe83
 function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba786d52dc7715f088f3
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
@@ -1236,6 +1237,7 @@ grant function internal.is_project_member(pid uuid) authenticated,postgres,servi
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
 grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
 grant function internal.media_guard() postgres,service_role
+grant function internal.messages_insert_guard() postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
@@ -1663,9 +1665,9 @@ policy public.media "media delete" PERMISSIVE DELETE to authenticated using (int
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.media "media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.media "media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.messages "Channel messages readable" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid)) OR ((channel_uuid IS NULL) AND (channel_id IS NOT NULL))) check -
-policy public.messages "messages delete" PERMISSIVE DELETE to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND can_manage_channel(channel_uuid))) check -
-policy public.messages "messages send" PERMISSIVE INSERT to authenticated using - check ((sender_id = ( SELECT auth.uid() AS uid)) AND (((receiver_id IS NOT NULL) AND (channel_uuid IS NULL)) OR ((receiver_id IS NULL) AND (channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid))))
+policy public.messages "messages delete" PERMISSIVE DELETE to authenticated using ((hidden_at IS NULL) AND ((sender_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND can_manage_channel(channel_uuid))) AND (NOT (EXISTS ( SELECT 1 FROM messages r WHERE ((r.parent_message_id = messages.id) AND (r.hidden_at IS NOT NULL)))))) check -
+policy public.messages "messages read" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid))) check -
+policy public.messages "messages send" PERMISSIVE INSERT to authenticated using - check ((sender_id = ( SELECT auth.uid() AS uid)) AND (((receiver_id IS NOT NULL) AND (channel_uuid IS NULL)) OR ((receiver_id IS NULL) AND (channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid))) AND (COALESCE(reactions, '{}'::jsonb) = '{}'::jsonb) AND (NOT pinned) AND (pinned_by IS NULL) AND (edited_at IS NULL))
 policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
@@ -1915,6 +1917,7 @@ trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
+trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
