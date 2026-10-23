@@ -4150,6 +4150,10 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      log_password_breach: {
+        Args: { p_breach_count: number; p_context: string; p_email: string };
+        Returns: undefined;
+      };
       log_writing: {
         Args: { p_day: string; p_sprint?: boolean; p_words: number };
         Returns: {

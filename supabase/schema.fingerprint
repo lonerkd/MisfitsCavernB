@@ -1188,6 +1188,7 @@ function public.get_shared_script(p_token text) body=165d26baee415ec5ddfbd3fb264
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
+function public.log_password_breach(p_breach_count integer, p_context text, p_email text) body=00000000000000000000000000000000
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
 function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
@@ -1286,6 +1287,7 @@ grant function public.get_shared_script(p_token text) anon,authenticated,postgre
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
+grant function public.log_password_breach(p_breach_count integer, p_context text, p_email text) anon,authenticated
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.lounge_unread() authenticated,postgres,service_role
 grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
