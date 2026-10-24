@@ -33,13 +33,12 @@ begin
     raise exception 'Application not found' using errcode = 'P0002';
   end if;
 
-  -- Reject a second answer for the same application.
-  if a.status <> 'pending' then
-    if a.status = 'accepted' then
-      raise exception 'Already accepted' using errcode = 'P0003';
-    else
-      raise exception 'Already declined' using errcode = 'P0003';
-    end if;
+  -- Block duplicate finalisations: an accepted application is always final;
+  -- a declined one can be overridden (accepted after all), but not declined twice.
+  if a.status = 'accepted' then
+    raise exception 'Already accepted' using errcode = 'P0003';
+  elsif a.status = 'rejected' and p_status = 'rejected' then
+    raise exception 'Already declined' using errcode = 'P0003';
   end if;
 
   update public.job_applications set status = p_status where id = a.id;

@@ -113,7 +113,7 @@ export default function CallSheetPage() {
       <main className={c.page}>
         <div className={c.frame}>
           <h1 className={c.title}>Call sheet not found</h1>
-          <p className={c.lead}>That call sheet isn&apos;t available to you — it may have been removed. <Link href="/projects">Your projects</Link></p>
+          <p className={c.lead}>That call sheet isn&#x2019;t available to you — it may have been removed. <Link href="/projects">Your projects</Link></p>
         </div>
       </main>
     );
