@@ -22,6 +22,12 @@ function originOf(value: string | undefined): string | null {
 }
 
 /**
+ * The returned `uri` is always `<origin>/auth/spotify-callback`, built from the
+ * page's own origin — never from `configured` — so it is the exact string to
+ * register with Spotify. `configured` only widens which origins may connect
+ * (compared as parsed origins, so a stray trailing slash in the env value can't
+ * lock a custom domain out).
+ *
  * `origin` is where the person is now (`window.location.origin`); `configured`
  * is NEXT_PUBLIC_APP_URL when set (a custom domain, once there is one).
  */

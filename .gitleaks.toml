@@ -1,0 +1,5 @@
+[allowlist]
+  description = "Test fixtures — not real secrets"
+  commits = [
+    "47dbaabaa99672ea201180d968d4ff6ebb8d9362",
+  ]

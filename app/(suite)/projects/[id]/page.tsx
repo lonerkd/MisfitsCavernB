@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
-import { getProjectOverview, getProjectRow, type FestivalRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
+import { getProjectOverview, getProjectRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
 import { findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
@@ -100,7 +100,7 @@ export default function ProjectHubPage() {
         return;
       }
       if (!active) return;
-      const { eighths, festivals } = o;
+      const { eighths } = o;
       setCounts({
         scripts: o.scripts,
         // Short scripts in tenths (3/8 pg → 0.4), longer ones in whole pages.
@@ -112,8 +112,8 @@ export default function ProjectHubPage() {
         timeline: o.milestones.length,
         scenes: o.scenes,
         concepts: o.concepts,
-        festivalsSubmitted: festivals.filter(f => f.status === 'submitted' || f.status === 'accepted').length,
-        festivalsAccepted: festivals.filter(f => f.status === 'accepted').length,
+        festivalsSubmitted: o.festivalsSubmitted,
+        festivalsAccepted: o.festivalsAccepted,
         campaigns: o.campaigns,
       });
       setMilestones(o.milestones);

@@ -29,12 +29,18 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
 - **Saving**: 1.5 s after typing stops, the writer broadcasts the whole text
   and updates `scripts.content` (`last_edited_by`, `updated_at`). Others apply
   a remote version when it differs from theirs.
-- **Conflict rule**: if a remote version arrives while you're typing (an edit
-  in the last second) and both your text and theirs differ by more than five
-  characters from the last shared version, nothing is applied: the editor
-  shows **KEEP MINE / TAKE THEIRS** (`resolveConflict`, banner at the foot of
-  `app/(suite)/editor/page.tsx`). Otherwise it's whole-document last-writer-wins —
-  no character merge (a CRDT would be the next step).
+- **Conflict rule**: when a remote version arrives and both your text and
+  theirs differ from the last shared version, the two are merged by line
+  against that version (`mergeScript`, `lib/scriptos/merge.ts` — a pure
+  three-way merge, tested in `merge.test.ts`). Edits in different places all
+  survive and the merged text is applied (the normal save then carries it).
+  Only when both sides changed the *same lines* differently is nothing applied:
+  the editor shows **KEEP MINE / TAKE THEIRS** (`resolveConflict`, banner at
+  the foot of `app/(suite)/editor/page.tsx`). With no shared version yet
+  (first remote message) the remote text is taken. This is a line-level
+  three-way merge, not a CRDT: no per-character merge within one line, and the
+  base is the last text this client saw, so a third simultaneous writer can
+  still hit the prompt. A real CRDT (BACKLOG 3.18 d, E3) would remove both limits.
 
 ---
 
@@ -46,9 +52,21 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   save landed meanwhile).
 - **Retry**: a failed save schedules `syncPendingScripts` in 15 s
   (`scheduleScriptSync`) — the `online` event alone misses failures while the
-  browser still thinks it's online; the `online` event also triggers it.
-- **Offline deletes** are tombstones replayed on the next sync, so a deleted
-  script never comes back and its text doesn't linger on the server.
+  browser still thinks it's online. A pass that fails (an upsert or a delete
+  replay errors) schedules the next with backoff: 15 s, 30 s, 60 s … capped at
+  5 min (`retryDelayMs`); a clean pass resets it. The `online` event cancels a
+  waiting retry and syncs at once.
+- **Sync status** (`getSyncStatus` / `subscribeSyncStatus`): module state in
+  `storage.ts` — scripts pending, deletes queued, mid-pass, next retry time,
+  failed passes in a row, `online`/`offline`. `components/editor/SyncStatusChip`
+  shows it in the editor's status bar (hidden when online and nothing queued)
+  with a countdown and **Sync now**; `describeSync` holds the wording.
+- **Offline deletes** are tombstones (an id, never content) replayed on the
+  next sync, so a deleted script never comes back and its text doesn't linger
+  on the server. The local copy is removed at once, a tombstoned script is
+  never re-uploaded, and the server's RLS decides whether the replayed delete
+  is allowed — so a stale tombstone on a shared device can't remove anyone
+  else's script. A refused delete stays queued and counts as a failed pass.
 - **The open script** per project is a pointer in `localStorage`
   (`getCurrentScriptId` / `setCurrentScriptId`).
 - **Revisions** are `script_revisions` (`lib/scriptos/revisions.ts`: lock a

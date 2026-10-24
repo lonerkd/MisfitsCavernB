@@ -39,8 +39,19 @@ export interface ProjectOverview {
   milestones: MilestoneRow[];
   concepts: number;
   portfolio: { id: string; title: string }[];
-  festivals: { status?: string }[];
+  /** Festivals submitted to, counting those that accepted (as `get_project_progress` counts them). */
+  festivalsSubmitted: number;
+  festivalsAccepted: number;
   campaigns: number;
+}
+
+/** Statuses on `projects.festival_submissions` (a jsonb list with no constraint): anything that isn't an entry with a status counts as nothing. */
+function festivalStatuses(list: Json | null | undefined): string[] {
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((f) => {
+    const status = f && typeof f === 'object' && !Array.isArray(f) ? f.status : undefined;
+    return typeof status === 'string' ? [status] : [];
+  });
 }
 
 /** The counts and lists the project page's overview shows, in one round. */
@@ -60,7 +71,7 @@ export async function getProjectOverview(projectId: string): Promise<ProjectOver
   check(sc, cr, tk, bd, tl, scn, cn, pf, pr, cp);
   const tasks = tk.data ?? [];
   const scenes = scn.data ?? [];
-  const festivals = pr.data?.festival_submissions;
+  const festivals = festivalStatuses(pr.data?.festival_submissions);
   return {
     scripts: sc.data?.length ?? 0,
     // Each scene's length is "n/8".
@@ -73,7 +84,8 @@ export async function getProjectOverview(projectId: string): Promise<ProjectOver
     milestones: tl.data ?? [],
     concepts: cn.count ?? 0,
     portfolio: pf.data ?? [],
-    festivals: (Array.isArray(festivals) ? festivals : []) as { status?: string }[],
+    festivalsSubmitted: festivals.filter((s) => s === 'submitted' || s === 'accepted').length,
+    festivalsAccepted: festivals.filter((s) => s === 'accepted').length,
     campaigns: cp.count ?? 0,
   };
 }

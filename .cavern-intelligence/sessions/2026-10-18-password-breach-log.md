@@ -1,0 +1,9 @@
+# Session — 2026-10-18: a refused breached password is logged
+
+**Built:** when sign-up, password reset or change-password finds the password in a known breach, the page calls `logPasswordBreach` (`lib/logging`) → RPC `log_password_breach` → one `audit_logs` row, `password_breach_detected`: `{ email_hash, breach_count, context }`. Migration `20261016000000_password_breach_log.sql`; types, the audit page sentence (`lib/audit/describe.ts`) and the definer allowlist (`database-and-security.md` §2.D) updated.
+
+**Review points addressed:** (1) the hash is HMAC-SHA256 with a secret in `internal.password_breach_secret`, computed in the database — not an unsalted hash, and not hashed in the browser; it is still a pseudonym (the database owner can recompute it). (2) The browser sends the address as typed over TLS; the count is the browser's claim and is documented as a signal — the server never sees the password. Rate-limited, validated, clamped. (4) The address is never stored; the integration test asserts the row contains neither the address nor its tag. (5) `audit_logs` RLS is unchanged and tested: admin read only; direct inserts for another user or anonymous are refused; the secret table has no API grants. Retention: pg_cron `password-breach-log-retention`, daily, 90 days.
+
+**Verified:** see the PR notes — unit tests, typecheck, lint, build. **Not verified:** the migration and `tests/integration/password-breach-log.test.ts` have not run (no Docker on this machine); the retention job has no test — check `select * from cron.job` after applying. Apply to production by hand after merge, then the drift check.
+
+**Open:** `audit_logs` "insert own" lets any signed-in user write a row with any action for themselves (so a `password_breach_detected` row can be forged by its own user) — pre-existing; tighten if the log is ever used as evidence.

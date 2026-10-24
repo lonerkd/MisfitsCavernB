@@ -161,6 +161,18 @@ export default function AdminDashboard() {
             >
               FORMATS
             </Link>
+            <Link
+              href="/admin/brief-questions"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              BRIEF
+            </Link>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24, marginBottom: 40 }}>
@@ -185,8 +197,13 @@ export default function AdminDashboard() {
                     {stat.label}
                   </span>
                 </div>
-                <div style={{ fontSize: '2rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
-                  {loading ? '...' : stat.value}
+                <div
+                  aria-busy={loading}
+                  style={{ fontSize: '2rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)', minHeight: '2.4rem' }}
+                >
+                  {loading
+                    ? <div className="skeleton" aria-hidden="true" style={{ height: '2rem', width: 72, borderRadius: 4 }} />
+                    : stat.value}
                 </div>
               </div>
             ))}

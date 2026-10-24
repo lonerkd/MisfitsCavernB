@@ -45,7 +45,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         position: 'relative',
         overflow: 'hidden',
         aspectRatio,
-        background: '#0e0e0e',
+        background: 'var(--media-bg)',
         border: '1px solid rgba(var(--ink-rgb), 0.04)',
         cursor: 'none',
         gridColumn: span === 'wide' ? '1 / -1' : undefined,
@@ -64,7 +64,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.7s var(--ease-expo)', transform: hover ? 'scale(1.05)' : 'scale(1)' }}
         />
       ) : (
-        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 30% 30%, rgba(245,158,11,0.18), transparent 60%), #0e0e0e' }} />
+        <div aria-hidden style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 30% 30%, rgba(245,158,11,0.18), transparent 60%), var(--media-bg)' }} />
       )}
 
       <div style={{

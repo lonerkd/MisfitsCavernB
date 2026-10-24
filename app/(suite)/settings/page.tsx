@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { collectMyData } from '@/lib/supabase/profiles';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
-import { checkHibpBreach } from '@/lib/account/password-strength';
+import { checkHibpBreach, checkPasswordComplexity, checkPasswordWeakness, PASSWORD_RULES_HINT } from '@/lib/account/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/ui/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { ThemePicker } from '@/components/ui/ThemePicker';
@@ -166,7 +166,8 @@ export default function SettingsPage() {
     flash(error ? error.message : 'Confirmation sent to your new email.', !error);
   };
   const changePassword = async () => {
-    if (newPassword.length < 8) { flash('Password must be at least 8 characters.', false); return; }
+    const problem = checkPasswordComplexity(newPassword) ?? checkPasswordWeakness(newPassword, user?.email);
+    if (problem) { flash(problem, false); return; }
     if (leakCheck) {
       setBusy('password');
       const count = await checkHibpBreach(newPassword);
@@ -235,7 +236,7 @@ export default function SettingsPage() {
               <button style={btnStyle} onClick={changeEmail} disabled={busy === 'email'}>{busy === 'email' ? '…' : 'UPDATE'}</button>
             </div>
           } />
-          <Row label="Password" hint="At least 8 characters." control={
+          <Row label="Password" hint={PASSWORD_RULES_HINT} control={
             <div style={{ display: 'flex', gap: 8 }}>
               <input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password" style={inputStyle} />
               <button style={btnStyle} onClick={changePassword} disabled={busy === 'password'}>{busy === 'password' ? '…' : 'CHANGE'}</button>

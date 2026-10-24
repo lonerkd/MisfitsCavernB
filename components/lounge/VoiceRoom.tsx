@@ -5,15 +5,23 @@ import { Volume2, Mic, MicOff } from 'lucide-react';
 import { type Channel } from '@/lib/supabase/channels';
 import { useVoiceRoom } from '@/lib/webrtc/voice';
 import Avatar from '@/components/ui/Avatar';
+import { useToast } from '@/components/ui/Toast';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { VOICE_ROOM_FULL_MESSAGE } from '@/lib/webrtc/mesh';
 
 export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string; name: string; avatar?: string } | null }) {
   const [joined, setJoined] = useState(false);
-  const { peers, muted, toggleMute, micError, speaking } = useVoiceRoom(channel.id, me, joined);
+  const [full, setFull] = useState(false);
+  const { toast } = useToast();
+  const { peers, muted, toggleMute, micError, speaking, live } = useVoiceRoom(channel.id, me, joined, () => {
+    setJoined(false);
+    setFull(true);
+    toast(VOICE_ROOM_FULL_MESSAGE, 'error');
+  });
 
-  useOnChange(channel.id, () => setJoined(false));
+  useOnChange(channel.id, () => { setJoined(false); setFull(false); });
 
-  const everyone = joined && me ? [{ id: me.id, name: me.name, avatar: me.avatar, speaking, connected: true }, ...peers] : peers;
+  const everyone = joined && live && me ? [{ id: me.id, name: me.name, avatar: me.avatar, speaking, connected: true }, ...peers] : peers;
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 26, padding: 40 }}>
@@ -35,10 +43,10 @@ export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string;
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? 'Waiting for others to join…' : 'No one here yet'}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? (live ? 'Waiting for others to join…' : 'Connecting…') : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => setJoined(j => !j)} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => { setFull(false); setJoined(j => !j); }} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : 'JOIN VOICE'}
         </button>
         {joined && (
@@ -47,8 +55,8 @@ export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string;
           </button>
         )}
       </div>
-      <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: micError ? 'var(--warn)' : 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
-        {micError || (joined ? 'Live — peer-to-peer audio with your crew. Green ring = speaking.' : 'Join to talk with everyone in this room.')}
+      <div role={full ? 'alert' : undefined} style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: full || micError ? 'var(--warn)' : 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', maxWidth: 340, textAlign: 'center', lineHeight: 1.6 }}>
+        {full ? VOICE_ROOM_FULL_MESSAGE : micError || (joined ? (live ? 'Live — peer-to-peer audio with your crew. Green ring = speaking.' : 'Connecting…') : 'Join to talk with everyone in this room.')}
       </div>
     </div>
   );

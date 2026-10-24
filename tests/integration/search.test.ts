@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { adminClient, anonClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject, createScript } from './support/project';
+import { searchSuite } from '@/lib/search/search';
 
 // Suite-wide search as personas: Sam's production (Jordan on its crew) holds
 // a script, a location and a task; Riley has a public project of their own.
@@ -71,5 +72,39 @@ describe('search_suite', () => {
     expect(await search(cast.sam.client, '   ')).toEqual([]);
     expect(await search(cast.sam.client, '&|!:*()')).toEqual([]);
     expect((await anonClient().rpc('search_suite', { p_query: TAG })).error).not.toBeNull();
+  });
+});
+
+// `searchSuite` (lib/search) against the real database, as each persona.
+describe('searchSuite', () => {
+  it('returns [] without asking for empty, whitespace, single-character and symbol-only input', async () => {
+    // The anon client would be refused by the database, so a [] here proves no call was made.
+    const anon = anonClient();
+    for (const q of ['', '   ', 'a', ' a ', '!', '&|!:*()', '--', '%_']) {
+      expect(await searchSuite(q, 30, anon)).toEqual([]);
+    }
+  });
+
+  it('finds work with two characters, and with special characters around the words', async () => {
+    expect((await searchSuite(TAG, 30, cast.sam.client)).some((h) => h.id === projectId)).toBe(true);
+    expect((await searchSuite(`  "${TAG}"!  `, 30, cast.sam.client)).some((h) => h.id === projectId)).toBe(true);
+    expect((await searchSuite(`${TAG.slice(0, 2)}`, 30, cast.sam.client))).toBeInstanceOf(Array);
+  });
+
+  it('treats quotes, SQL, tsquery and LIKE syntax as plain text: no error, no leak, nothing damaged', async () => {
+    const hostile = [`o'brien; drop table projects --`, `${TAG}' or '1'='1`, `${TAG}:* & !(x) | <->`, `${TAG}%`, `\\${TAG}_`, '𝒳𝒴 💥', 'a'.repeat(5000)];
+    for (const q of hostile) {
+      const hits = await searchSuite(q, 30, cast.riley.client);
+      expect(hits.filter((h) => h.project_id === projectId)).toEqual([]);
+    }
+    expect((await searchSuite(TAG, 30, cast.sam.client)).some((h) => h.id === projectId)).toBe(true);
+  });
+
+  it('honours the limit', async () => {
+    expect((await searchSuite(TAG, 1, cast.sam.client)).length).toBeLessThanOrEqual(1);
+  });
+
+  it('throws the database’s own error message when the call is refused', async () => {
+    await expect(searchSuite(TAG, 30, anonClient())).rejects.toThrow(/permission denied|not authori[sz]ed|jwt/i);
   });
 });

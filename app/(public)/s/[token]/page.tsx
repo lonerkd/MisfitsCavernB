@@ -4,11 +4,13 @@
 // turning sharing off or making a new link closes this one at once (nothing
 // is cached). Nobody can list shared scripts or read one by id.
 
+import { cache } from 'react';
 import type React from 'react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { publicClient } from '@/lib/supabase/public';
 import { parseScript } from '@/lib/scriptos/parser';
+import { logShareLookup } from '@/lib/scriptos/shareLog';
 import type { ScriptLine } from '@/lib/scriptos/types';
 
 export const dynamic = 'force-dynamic';
@@ -16,19 +18,25 @@ export const dynamic = 'force-dynamic';
 interface SharedScript {
   title: string;
   content: string;
-  format: string | null;
-  updated_at: string | null;
   author_username: string | null;
   author_avatar_url: string | null;
   author_role: string | null;
 }
 
-async function load(token: string): Promise<SharedScript | null> {
+// cache(): the metadata and the page both ask; one lookup (and one log line)
+// per request.
+const load = cache(async (token: string): Promise<SharedScript | null> => {
   const db = publicClient();
   if (!db || !token) return null;
-  const { data } = await db.rpc('get_shared_script', { p_token: token });
-  return data?.[0] ?? null;
-}
+  const { data, error } = await db.rpc('get_shared_script', { p_token: token });
+  if (error) {
+    logShareLookup('share_link_error', token, error.message);
+    return null;
+  }
+  const script = data?.[0] ?? null;
+  if (!script) logShareLookup('share_link_miss', token);
+  return script;
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
@@ -141,7 +149,7 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
           boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
           borderRadius: 4,
         }}>
-          {lines.length === 0 ? (
+          {lines.every((l) => l.type === 'empty') ? (
             <div style={{ fontFamily: 'var(--script)', fontSize: 13, textAlign: 'center', padding: 40, color: 'var(--fg-dim)' }}>
               This script is empty.
             </div>

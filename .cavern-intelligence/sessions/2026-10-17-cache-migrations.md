@@ -1,0 +1,9 @@
+# Session — 2026-10-17: the cache's migration chain (`lib/storage`)
+
+**Found:** `getCacheItem` migrated with `filter(from >= entry.version && to <= CURRENT)` over an unordered list: it skipped a rule starting at the entry's own version when the rules were out of order, never checked that the steps joined up, let a throwing `migrate` reject into the generic catch (a miss, retried on every read), returned old-shape data when a namespace had no rules, and never wrote the migrated entry back. All of it dormant, since every rule array is empty at `CURRENT_CACHE_VERSION = 1`.
+
+**Changed:** `lib/storage/migrations.ts` (new, pure) — `runMigrations` walks one rule per version from the entry's to the current one; it fails (never throws) on a missing step, an overshooting rule or a throwing step. `assertValidRules` runs at load: every rule moves forward, and a namespace has **at most one rule per `from`** (this makes the path unambiguous; it is now enforced, not assumed). `getCacheItem` — on a failed migration it logs, **deletes the entry** and returns a miss (so it is not retried forever and old-shape data is never served); on success it writes the migrated entry back at the current version; an entry from a *newer* build reads as a miss and is left alone. `migrations.test.ts` covers the chain, order, mid-chain start, overshoot, missing step, throwing step (input untouched) and rule validation.
+
+**Deliberately not done:** the rule arrays are still empty. No cached shape has changed since version 1, so any transformation written now would be invented (non-negotiable 1). The first real rule goes in with the version bump that needs it, with a test.
+
+**Verified:** nothing run. This worktree has no `node_modules` and `npm ci` was not approved in the non-interactive session. **To run:** `npm ci`, `npm run typecheck`, `npm run lint`, `npm run test -- lib/storage`, `npm run build`.

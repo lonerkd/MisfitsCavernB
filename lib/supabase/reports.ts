@@ -62,6 +62,12 @@ export async function closeReportedJob(jobId: string): Promise<string | null> {
   return error ? error.message : null;
 }
 
+/** Suspend the reported person's account (admin only; the database refuses yourself and other admins; audit-logged). Returns an error message, or null. */
+export async function suspendReportedUser(userId: string): Promise<string | null> {
+  const { error } = await supabase.rpc('admin_set_suspended', { p_user: userId, p_suspended: true });
+  return error ? error.message : null;
+}
+
 export interface ReportedMessage { content: string; sender_id: string; channel_uuid: string | null; created_at: string; hidden: boolean }
 
 /** What an admin reads of a reported message (its words even if hidden; admins only). Throws a readable message. */

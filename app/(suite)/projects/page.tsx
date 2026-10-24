@@ -12,7 +12,7 @@ import { setProjectStatus } from '@/lib/supabase/projects';
 import { getProjectCardFacts, getUserProjects } from '@/lib/supabase/projects';
 import { fetchProjectsSignals, setProjectArchived } from '@/lib/supabase/progress';
 import type { ProjectSignals } from '@/lib/os/progress';
-import { SORTS, matchesQuery as matches, readinessOf, sortProjects, type Readiness, type SortKey } from '@/lib/os/board';
+import { SORTS, matchesQuery as matches, percentOf, readinessOf, sortProjects, type Readiness, type SortKey } from '@/lib/os/board';
 import { startProject } from '@/lib/onboarding/onboarding';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
@@ -88,6 +88,8 @@ interface ProjectCardViewModel {
   progress: { done: number; total: number } | null;
   /** How far the current phase has come (lib/os/progress), and its next step. */
   readiness: Readiness | null;
+  /** What `readiness` is read from, kept so a moved card is re-read for its new phase. */
+  signals: ProjectSignals | null;
   /** The project's end date, if one is set — never invented. */
   deadline: string | null;
   /** Usernames of the owner and crew. */
@@ -121,7 +123,7 @@ function ProjectCard({ project, canArchive, onArchive, onMove }: { project: Proj
   const days = project.deadline && project.phase !== 'delivery' ? daysUntil(project.deadline) : null;
   const overdue = days !== null && days < 0;
   const r = project.readiness;
-  const pct = r && r.total ? Math.round((r.done / r.total) * 100) : null;
+  const pct = percentOf(r);
 
   const phaseIds = PHASES.map((p) => p.id as Phase);
   return (
@@ -416,6 +418,7 @@ export default function ProjectsPage() {
           createdAt: p.created_at ?? '',
           updatedAt: p.updated_at ?? p.created_at ?? '',
           readiness: readinessOf(signals[p.id]),
+          signals: signals[p.id] ?? null,
           progress: facts[p.id]?.tasksTotal ? { done: facts[p.id].tasksDone, total: facts[p.id].tasksTotal } : null,
           deadline: p.end_date || null,
           team: facts[p.id]?.team ?? [],
@@ -491,7 +494,7 @@ export default function ProjectsPage() {
   const handleDropProject = async (projectId: string, targetPhase: Phase) => {
     const oldList = [...projectsList];
     const targetProj = projectsList.find(p => p.id === projectId);
-    setProjectsList(prev => prev.map(p => p.id === projectId ? { ...p, phase: targetPhase } : p));
+    setProjectsList(prev => prev.map(p => p.id === projectId ? { ...p, phase: targetPhase, readiness: readinessOf(p.signals, targetPhase) } : p));
 
     try {
       const dbStatus = PHASE_STATUS[targetPhase];

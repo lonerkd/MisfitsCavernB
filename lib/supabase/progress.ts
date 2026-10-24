@@ -18,15 +18,26 @@ export async function fetchProjectSignals(projectId: string): Promise<ProjectSig
   return toSignals(data);
 }
 
-/** Signals for many projects in one call; ones the caller can't see are absent. */
+/** `projects_progress` reads at most this many ids per call. */
+const BATCH = 200;
+
+/** Signals for many projects; ones the caller can't see are absent. Asked in batches (RLS applies to each call), so no card past 200 loses its bar. */
 export async function fetchProjectsSignals(projectIds: string[]): Promise<Record<string, ProjectSignals>> {
-  if (!projectIds.length) return {};
-  const { data, error } = await supabase.rpc('projects_progress', { p_projects: projectIds.slice(0, 200) });
-  if (error) throw new Error(error.message || 'Could not load project progress');
+  const ids = [...new Set(projectIds)];
+  if (!ids.length) return {};
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += BATCH) batches.push(ids.slice(i, i + BATCH));
+  const answers = await Promise.all(batches.map(async (p_projects) => {
+    const { data, error } = await supabase.rpc('projects_progress', { p_projects });
+    if (error) throw new Error(error.message || 'Could not load project progress');
+    return data;
+  }));
   const out: Record<string, ProjectSignals> = {};
-  for (const [id, raw] of Object.entries((data ?? {}) as Record<string, unknown>)) {
-    const s = toSignals(raw);
-    if (s) out[id] = s;
+  for (const data of answers) {
+    for (const [id, raw] of Object.entries((data && typeof data === 'object' ? data : {}) as Record<string, unknown>)) {
+      const s = toSignals(raw);
+      if (s) out[id] = s;
+    }
   }
   return out;
 }

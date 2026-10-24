@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, getClientIp } from '@/lib/util/api-rate-limit';
+import type { Database } from '@/lib/supabase/database.types';
+import { canSeeChannel, getChannelWebhookUrl, getUsername } from '@/lib/supabase/discord';
 import { discordNotifyBodySchema, discordWebhookUrlSchema, parseJsonBody } from '@/lib/validation';
 
 function getSupabaseAdmin() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
-  return createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
+  return createClient<Database>(url, key, { auth: { autoRefreshToken: false, persistSession: false } });
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Server not configured' }, { status: 500 });
   }
 
-  const supabaseAsUser = createClient(
+  const supabaseAsUser = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     anonKey,
     {
@@ -54,39 +56,27 @@ export async function POST(req: NextRequest) {
       global: { headers: { Authorization: `Bearer ${token}` } },
     }
   );
-  const { data: channel, error: channelError } = await supabaseAsUser
-    .from('channels')
-    .select('id')
-    .eq('id', channelId)
-    .maybeSingle();
-  if (channelError || !channel) {
+  if (!(await canSeeChannel(supabaseAsUser, channelId))) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  const { data, error } = await supabaseAdmin
-    .from('discord_integrations')
-    .select('webhook_url')
-    .eq('channel_id', channelId)
-    .maybeSingle();
-
-  if (error || !data?.webhook_url) return NextResponse.json({ ok: true, bridged: false });
+  const webhookUrl = await getChannelWebhookUrl(supabaseAdmin, channelId);
+  if (!webhookUrl) return NextResponse.json({ ok: true, bridged: false });
 
   // Re-validate the stored URL before fetching it. Rows are written through
   // /api/discord/test, but a direct insert (or a future writer) must not be able
   // to turn this route into an SSRF probe against an arbitrary URL.
-  const storedUrl = discordWebhookUrlSchema.safeParse(data.webhook_url);
+  const storedUrl = discordWebhookUrlSchema.safeParse(webhookUrl);
   if (!storedUrl.success) return NextResponse.json({ ok: true, bridged: false });
 
-  let senderName = 'The Cavern';
-  const { data: profile } = await supabaseAdmin.from('profiles').select('username').eq('id', user.id).maybeSingle();
-  if (profile?.username) senderName = profile.username;
+  const senderName = (await getUsername(supabaseAdmin, user.id)) || 'The Cavern';
 
   try {
     const discordRes = await fetch(storedUrl.data, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: (senderName || 'The Cavern').slice(0, 80),
+        username: senderName.slice(0, 80),
         content: content.slice(0, 2000),
       }),
     });

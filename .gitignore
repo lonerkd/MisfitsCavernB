@@ -32,3 +32,7 @@ coverage/
 .private-corpus/
 e2e/keyboard-audit.json
 *.err
+
+# Obsidian vault settings (the vault is .cavern-intelligence/)
+.obsidian/
+.cavern-intelligence/.obsidian/

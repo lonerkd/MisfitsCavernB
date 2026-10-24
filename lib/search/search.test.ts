@@ -24,4 +24,9 @@ describe('search results', () => {
     expect(searchable('ab')).toBe(true);
     expect(searchable('é1')).toBe(true);
   });
+
+  it('counts letters and digits only, in any script', () => {
+    for (const q of ['', '   ', '\t\n', 'a', '7', '--', "'", '%_', '&|!:*()', '💥💥', 'a!', "o'"]) expect(searchable(q)).toBe(false);
+    for (const q of ["o'b", 'a b', '1-2', '日本', 'Ж Ж', '"ab"', ' ab ', 'x'.repeat(5000)]) expect(searchable(q)).toBe(true);
+  });
 });

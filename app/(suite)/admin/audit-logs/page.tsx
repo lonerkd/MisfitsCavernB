@@ -8,7 +8,10 @@ import { ProtectedPage } from '@/lib/os';
 import { Input } from '@/components/ui/Input';
 import { readable } from '@/lib/util/color';
 import { actionTone, describeAction, describeDetails, resourceHref } from '@/lib/audit/describe';
-import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditLog, type AuditAction } from '@/lib/supabase/audit';
+import { getAuditLogs, getActivitySummary, getMostActiveUsers, type AuditAction } from '@/lib/supabase/audit';
+import { auditLogsToCsv, downloadCsv, fetchAllAuditLogs } from '@/lib/audit/export';
+import { supabase } from '@/lib/supabase/client';
+import { useToast } from '@/components/ui/Toast';
 
 const ACTIONS: AuditAction[] = [
   'user_login',
@@ -41,6 +44,7 @@ export default function AuditLogsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState<AuditAction | ''>('');
   const [page, setPage] = useState(0);
+  const { toast } = useToast();
 
   const pageSize = 50;
 
@@ -66,26 +70,23 @@ export default function AuditLogsPage() {
   useEffect(() => { if (summary.error) console.error('Failed to load activity summary:', summary.error); }, [summary.error]);
 
   const exportLogs = () => {
-    const csv = [
-      ['Timestamp', 'User', 'Action', 'Resource Type', 'Resource ID', 'Details'],
-      ...logs.map(log => [
-        new Date(log.created_at).toLocaleString(),
-        log.username || 'Deleted account',
-        log.action,
-        log.resource_type,
-        log.resource_id || '-',
-        JSON.stringify(log.details),
-      ]),
-    ]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+    downloadCsv(auditLogsToCsv(logs), `audit-logs-page-${page + 1}-${new Date().toISOString()}.csv`);
+  };
 
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `audit-logs-${new Date().toISOString()}.csv`;
-    a.click();
+  // Every row the action filter and the search match, read from the database in batches.
+  const [exportingAll, setExportingAll] = useState(false);
+  const exportAllMatches = async () => {
+    setExportingAll(true);
+    try {
+      const all = await fetchAllAuditLogs(supabase, { action: actionFilter || undefined, search: searchTerm });
+      if (all.length === 0) { toast('No logs match — nothing to export', 'info'); return; }
+      downloadCsv(auditLogsToCsv(all), `audit-logs-all-${new Date().toISOString()}.csv`);
+      toast(`Exported ${all.length} log${all.length === 1 ? '' : 's'}`, 'success');
+    } catch (e) {
+      toast(`Could not export: ${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setExportingAll(false);
+    }
   };
 
   const actionHex = actionTone;
@@ -120,24 +121,36 @@ export default function AuditLogsPage() {
               AUDIT LOGS
             </h1>
           </div>
-          <button
-            onClick={exportLogs}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 16px',
-              background: 'rgba(0,153,255,0.1)',
-              border: '1px solid rgba(0,153,255,0.3)',
-              color: '#0099ff',
-              borderRadius: 4,
-              fontFamily: 'var(--mono)',
-              fontSize: 11,
-              cursor: 'pointer',
-            }}
-          >
-            <Download size={14} /> EXPORT
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { label: 'EXPORT PAGE', title: 'Download the rows shown on this page as CSV', onClick: exportLogs, busy: false },
+              { label: exportingAll ? 'EXPORTING…' : 'EXPORT ALL MATCHES', title: 'Download every log the search and action filter match, across all pages, as CSV', onClick: exportAllMatches, busy: exportingAll },
+            ].map(b => (
+              <button
+                key={b.title}
+                onClick={b.onClick}
+                disabled={b.busy}
+                aria-busy={b.busy}
+                title={b.title}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 16px',
+                  background: 'rgba(0,153,255,0.1)',
+                  border: '1px solid rgba(0,153,255,0.3)',
+                  color: '#0099ff',
+                  borderRadius: 4,
+                  fontFamily: 'var(--mono)',
+                  fontSize: 11,
+                  cursor: b.busy ? 'wait' : 'pointer',
+                  opacity: b.busy ? 0.6 : 1,
+                }}
+              >
+                <Download size={14} /> {b.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         <div style={{ marginTop: 60, padding: '40px 24px', maxWidth: 1400, margin: '60px auto 0' }}>

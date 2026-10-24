@@ -62,6 +62,8 @@ export default function JobDetailPage() {
   const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [applyError, setApplyError] = useState('');
   const [closeWhenFilled, setCloseWhenFilled] = useState(true);
+  // The application being answered (null when none is).
+  const [responding, setResponding] = useState<string | null>(null);
 
   const isCreator = user && job && user.id === job.created_by;
 
@@ -143,21 +145,37 @@ export default function JobDetailPage() {
   };
 
   // One step in the database: status, crew, casting, closing, telling them.
+  // One answer at a time: while one is on its way every answer button waits,
+  // so a double click (or a second applicant clicked straight after) can't
+  // race it. The database also refuses a repeat, a change to a hire, and an
+  // acceptance that would fill a posting someone else just filled.
   const handleApplicationStatus = async (appId: string, newStatus: 'accepted' | 'rejected') => {
+    if (responding || !job) return;
+    setResponding(appId);
     try {
-      const close = newStatus === 'accepted' && closeWhenFilled && job?.status === 'open';
+      const close = newStatus === 'accepted' && closeWhenFilled && job.status === 'open';
       const r = await respondToApplication(appId, newStatus, close);
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status: newStatus } : a));
       if (r.closed) setJob(j => (j ? { ...j, status: 'closed' } : j));
       toast(
         newStatus === 'rejected' ? 'Application declined — they’ve been told'
           : r.cast_as ? `Cast as ${r.cast_as}${r.joined_crew ? ' and added to the crew' : ''}${r.closed ? ' · posting closed' : ''}`
-          : job?.project_id ? `${r.joined_crew ? 'Added to the crew' : 'Accepted — already on the crew'}${r.closed ? ' · posting closed' : ''}`
+          : job.project_id ? `${r.joined_crew ? 'Added to the crew' : 'Accepted — already on the crew'}${r.closed ? ' · posting closed' : ''}`
           : `Accepted${r.closed ? ' · posting closed' : ''}`,
         'success',
       );
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not update the application', 'error');
+      // The page may be behind (another tab, another answer): show what the database holds.
+      try {
+        const [fresh, rows] = await Promise.all([getJob(job.id), listApplications(job.id)]);
+        if (fresh) setJob(fresh);
+        setApplications(rows);
+      } catch (err) {
+        console.error('Error reloading the posting:', err);
+      }
+    } finally {
+      setResponding(null);
     }
   };
 
@@ -371,24 +389,28 @@ export default function JobDetailPage() {
                       <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
                         <button
                           onClick={() => handleApplicationStatus(app.id, 'accepted')}
+                          disabled={responding !== null}
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(34,197,94,0.1)', border: '1px solid #22c55e',
                             color: 'var(--ok)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
-                            letterSpacing: 'var(--caps-track)', cursor: 'pointer', transition: 'background 0.15s',
+                            letterSpacing: 'var(--caps-track)', cursor: responding ? 'wait' : 'pointer', transition: 'background 0.15s',
+                            opacity: responding && responding !== app.id ? 0.5 : 1,
                           }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.2)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(34,197,94,0.1)')}
                         >
-                          ACCEPT
+                          {responding === app.id ? 'SAVING…' : 'ACCEPT'}
                         </button>
                         <button
                           onClick={() => handleApplicationStatus(app.id, 'rejected')}
+                          disabled={responding !== null}
                           style={{
                             padding: '7px 18px',
                             background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.15)',
                             color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
-                            letterSpacing: 'var(--caps-track)', cursor: 'pointer', transition: 'all 0.15s',
+                            letterSpacing: 'var(--caps-track)', cursor: responding ? 'wait' : 'pointer', transition: 'all 0.15s',
+                            opacity: responding && responding !== app.id ? 0.5 : 1,
                           }}
                           onMouseEnter={e => {
                             e.currentTarget.style.borderColor = 'rgba(232, 67, 26,0.5)';
@@ -404,15 +426,24 @@ export default function JobDetailPage() {
                       </div>
                     )}
 
-                    {app.status !== 'pending' && (
+                    {/* A hire is final here — they're on the crew (and cast); undo it from the crew. */}
+                    {app.status === 'accepted' && job.project_id && (
+                      <div style={{ marginTop: 16, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
+                        To undo this hire, remove them from{' '}
+                        <Link href={`/projects/${job.project_id}`} style={{ color: 'var(--accent)' }}>the project’s crew</Link>.
+                      </div>
+                    )}
+
+                    {app.status === 'rejected' && (
                       <button
-                        onClick={() => handleApplicationStatus(app.id, app.status === 'accepted' ? 'rejected' : 'accepted')}
+                        onClick={() => handleApplicationStatus(app.id, 'accepted')}
+                        disabled={responding !== null}
                         style={{
                           marginTop: 16,
                           padding: '6px 14px',
                           background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)',
                           color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))',
-                          letterSpacing: 'var(--caps-track)', cursor: 'pointer', transition: 'all 0.15s',
+                          letterSpacing: 'var(--caps-track)', cursor: responding ? 'wait' : 'pointer', transition: 'all 0.15s',
                         }}
                         onMouseEnter={e => {
                           e.currentTarget.style.color = 'rgba(var(--fg-rgb), 0.7)';
@@ -423,7 +454,7 @@ export default function JobDetailPage() {
                           e.currentTarget.style.borderColor = 'rgba(var(--ink-rgb), 0.1)';
                         }}
                       >
-                        {app.status === 'accepted' ? 'MARK REJECTED' : 'MARK ACCEPTED'}
+                        {responding === app.id ? 'SAVING…' : 'MARK ACCEPTED'}
                       </button>
                     )}
                   </div>

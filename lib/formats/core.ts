@@ -2,7 +2,7 @@
 // for a project. No Supabase import, so it's safe anywhere (and in tests).
 
 import { type FormatRules, type PhaseDef, phasesFor, toFormatRules } from '@/lib/os/phases';
-import type { ScriptFormat } from '@/lib/scriptos/parser';
+import { DEFAULT_SCRIPT_FORMAT, isScriptFormat, type ScriptFormat } from './script-formats';
 
 export interface ProjectFormat {
   name: string;
@@ -13,8 +13,6 @@ export interface ProjectFormat {
   position: number;
 }
 
-const SCRIPT_FORMATS: ScriptFormat[] = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'];
-
 /** A database row → a format, with anything malformed read as the default. */
 export function toProjectFormat(row: {
   name: string; blurb: string; icon: string; script_format: string;
@@ -24,7 +22,7 @@ export function toProjectFormat(row: {
     name: row.name,
     blurb: row.blurb,
     icon: row.icon,
-    script_format: (SCRIPT_FORMATS as string[]).includes(row.script_format) ? (row.script_format as ScriptFormat) : 'screenplay',
+    script_format: isScriptFormat(row.script_format) ? row.script_format : DEFAULT_SCRIPT_FORMAT,
     rules: toFormatRules(row) ?? { phase_labels: {}, skip_phases: [], skip_milestones: [] },
     position: row.position,
   };
@@ -42,6 +40,6 @@ export function formatPhases(format: ProjectFormat | null): PhaseDef[] {
 
 /** The script format a new script in this project starts in. */
 export function defaultScriptFormat(format: ProjectFormat | null, override?: string | null): ScriptFormat {
-  if (override && (SCRIPT_FORMATS as string[]).includes(override)) return override as ScriptFormat;
-  return format?.script_format ?? 'screenplay';
+  if (isScriptFormat(override)) return override;
+  return format?.script_format ?? DEFAULT_SCRIPT_FORMAT;
 }

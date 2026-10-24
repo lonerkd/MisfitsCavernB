@@ -19,6 +19,7 @@ const SENTENCES: Record<string, string> = {
   crew_role_changed: 'Changed a crew role',
   job_created: 'Posted a job',
   job_closed: 'Closed a job',
+  password_breach_detected: 'A breached password was refused',
   admin_action: 'Took an admin action',
   admin_close_job: 'Closed a reported job (admin)',
   admin_hide_message: 'Hid a reported message (admin)',
@@ -53,9 +54,20 @@ export function actionTone(action: string): string {
   return '#0099ff';
 }
 
-/** What the extra details say, short enough for a table cell; cut with an ellipsis only when long. */
+/**
+ * What the extra details say, short enough for a table cell. When too long it keeps whole
+ * `key: value` pairs and ends with an ellipsis; only a first pair that alone is too long is cut mid-value.
+ */
 export function describeDetails(details: Record<string, unknown> | null | undefined, max = 80): string {
   if (!details || Object.keys(details).length === 0) return '-';
-  const text = Object.entries(details).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join(', ');
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+  const pairs = Object.entries(details).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`);
+  const text = pairs.join(', ');
+  if (text.length <= max) return text;
+  let kept = '';
+  for (const pair of pairs) {
+    const next = kept ? `${kept}, ${pair}` : pair;
+    if (next.length + 1 > max) break;
+    kept = next;
+  }
+  return kept ? `${kept}…` : `${pairs[0].slice(0, max - 1)}…`;
 }

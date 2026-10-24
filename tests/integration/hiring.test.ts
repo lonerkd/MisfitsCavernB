@@ -108,3 +108,77 @@ describe('responding', () => {
     expect((await cast.sam.client.rpc('respond_to_application', { p_application: appId, p_status: 'maybe' })).error).not.toBeNull();
   });
 });
+
+// 20261018010000_respond_to_application_transitions: pending → accepted |
+// rejected, rejected → accepted, accepted is final; one answer at a time per posting.
+describe('answering: the transitions', () => {
+  const respond = (appId: string, status: string, close = false) =>
+    cast.sam.client.rpc('respond_to_application', { p_application: appId, p_status: status, p_close: close });
+  const notesFor = async (who: Persona, jobTitle: string) =>
+    ((await adminClient().from('notifications').select('title').eq('user_id', who.id).eq('type', 'application').like('title', `%${jobTitle}`)).data ?? []).length;
+
+  it('a declined application can be accepted after all, and they join the crew', async () => {
+    const jobId = await post({ title: 'Grip, pickups', role: 'Grip' });
+    const appId = await apply(casey, jobId);
+    expect((await respond(appId, 'rejected')).error).toBeNull();
+    const { data, error } = await respond(appId, 'accepted', true);
+    expect(error).toBeNull();
+    expect(data).toEqual({ status: 'accepted', joined_crew: true, cast_as: null, closed: true });
+    expect((await adminClient().from('job_applications').select('status').eq('id', appId).single()).data?.status).toBe('accepted');
+    expect((await adminClient().from('project_crew').select('craft, status').eq('project_id', projectId).eq('user_id', casey.id).single()).data)
+      .toEqual({ craft: 'Grip', status: 'confirmed' });
+    expect((await lastNote(casey))?.title).toBe('You\'re in · Grip, pickups');
+    await adminClient().from('project_crew').delete().eq('project_id', projectId).eq('user_id', casey.id);
+  });
+
+  it('an acceptance is final; the same answer twice is refused and tells nobody twice', async () => {
+    const jobId = await post({ title: 'Gaffer, B camera', role: 'Gaffer' });
+    const appId = await apply(casey, jobId);
+    expect((await respond(appId, 'accepted')).error).toBeNull();
+    expect((await respond(appId, 'accepted')).error?.message).toMatch(/Already accepted/);
+    expect((await respond(appId, 'rejected')).error?.message).toMatch(/Already accepted/);
+    // Still on the crew, still accepted, told once.
+    expect((await adminClient().from('job_applications').select('status').eq('id', appId).single()).data?.status).toBe('accepted');
+    expect((await adminClient().from('project_crew').select('status').eq('project_id', projectId).eq('user_id', casey.id).single()).data?.status).toBe('confirmed');
+    expect(await notesFor(casey, 'Gaffer, B camera')).toBe(1);
+
+    const otherJob = await post({ title: 'Boom operator', role: 'Boom operator' });
+    const declined = await apply(casey, otherJob);
+    expect((await respond(declined, 'rejected')).error).toBeNull();
+    expect((await respond(declined, 'rejected')).error?.message).toMatch(/Already declined/);
+    expect(await notesFor(casey, 'Boom operator')).toBe(1);
+    await adminClient().from('project_crew').delete().eq('project_id', projectId).eq('user_id', casey.id);
+  });
+
+  it('close when filled: two acceptances at once fill the place once', async () => {
+    const jobId = await post({ title: 'Casting: THEO', role: 'Actor', character_name: 'Theo' });
+    const first = await apply(casey, jobId);
+    const second = await apply(cast.riley, jobId);
+    // Both sent together, both asking to close the posting when filled.
+    const results = await Promise.all([respond(first, 'accepted', true), respond(second, 'accepted', true)]);
+    const won = results.filter(r => !r.error);
+    const lost = results.filter(r => r.error);
+    expect(won).toHaveLength(1);
+    expect(won[0].data).toMatchObject({ status: 'accepted', closed: true });
+    expect(lost[0].error?.message).toMatch(/just filled/);
+
+    const admin = adminClient();
+    expect((await admin.from('jobs').select('status').eq('id', jobId).single()).data?.status).toBe('closed');
+    const apps = (await admin.from('job_applications').select('id, status, applicant_id').eq('job_id', jobId)).data ?? [];
+    const accepted = apps.filter(a => a.status === 'accepted');
+    expect(accepted).toHaveLength(1);
+    expect(apps.filter(a => a.status === 'pending')).toHaveLength(1);
+    // The role went to the one accepted, and only they were told.
+    expect((await admin.from('character_castings').select('crew_user_id').eq('project_id', projectId).eq('character_name', 'THEO').single()).data?.crew_user_id)
+      .toBe(accepted[0].applicant_id);
+    const loser = accepted[0].applicant_id === casey.id ? cast.riley : casey;
+    expect(await notesFor(loser, 'Casting: THEO')).toBe(0);
+
+    // Hiring a second person on purpose, without asking to close, still works.
+    const pending = apps.find(a => a.status === 'pending')!.id;
+    const { data, error } = await respond(pending, 'accepted');
+    expect(error).toBeNull();
+    expect(data).toMatchObject({ status: 'accepted', closed: false });
+    await admin.from('project_crew').delete().eq('project_id', projectId).eq('user_id', casey.id);
+  });
+});

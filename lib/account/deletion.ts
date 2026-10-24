@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase/client';
+import { SFX_BUCKET } from '@/lib/supabase/audio';
 
 // Leaving the suite (supabase/migrations/20260929090000_account_deletion.sql).
 // The database decides what goes and what stays; files can only be removed
@@ -35,10 +36,23 @@ export function batches<T>(items: T[], size = 100): T[][] {
   return out;
 }
 
-async function removeFiles(bucket: string, paths: string[]) {
+/**
+ * Remove in batches, then confirm. `remove` succeeds without error when a policy
+ * hides a file from the caller, so every path the API didn't report as removed is
+ * checked — if one still exists, stop before the account (and the record of those
+ * files) is deleted.
+ */
+export async function removeFiles(bucket: string, paths: string[]) {
+  const store = supabase.storage.from(bucket);
   for (const batch of batches(paths)) {
-    const { error } = await supabase.storage.from(bucket).remove(batch);
+    const { data, error } = await store.remove(batch);
     if (error) throw new Error(`Couldn't remove your files (${bucket}): ${error.message}`);
+    const removed = new Set((data ?? []).map((f) => f.name));
+    for (const path of batch.filter((p) => !removed.has(p))) {
+      const { data: stillThere, error: checkError } = await store.exists(path);
+      if (checkError) throw new Error(`Couldn't confirm your files were removed (${bucket}): ${checkError.message}`);
+      if (stillThere) throw new Error(`Couldn't remove all your files (${bucket}); your account was not deleted.`);
+    }
   }
 }
 
@@ -53,8 +67,8 @@ export async function deleteMyAccount(userId: string, confirm: string): Promise<
   if (confirm.trim() !== plan.username) throw new Error('Type your username to confirm.');
 
   for (const [bucket, paths] of Object.entries(plan.files)) await removeFiles(bucket, paths.filter(Boolean));
-  const { data: sfx } = await supabase.storage.from('sfx_library').list(userId, { limit: 1000 });
-  if (sfx?.length) await removeFiles('sfx_library', sfx.map((f) => `${userId}/${f.name}`));
+  const { data: sfx } = await supabase.storage.from(SFX_BUCKET).list(userId, { limit: 1000 });
+  if (sfx?.length) await removeFiles(SFX_BUCKET, sfx.map((f) => `${userId}/${f.name}`));
 
   const { error } = await supabase.rpc('delete_my_account', { p_confirm: confirm.trim() });
   if (error) throw new Error(error.message);

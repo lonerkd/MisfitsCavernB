@@ -14,6 +14,7 @@ import { Check, MapPin, Printer } from 'lucide-react';
 import { useOSGate, useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
+import { withTimeout } from '@/lib/supabase/withTimeout';
 import {
   callFor, hhmm, issueState, snapshotOf, studio, toSnapshot,
   type CallSheet, type CallSheetCall, type CallSheetPerson, type CallSheetScene, type CallSheetSnapshot,
@@ -45,7 +46,8 @@ export default function CallSheetPage() {
     const uid = user?.id;
     if (!uid) return;
     let alive = true;
-    studio.getCallSheetView(id, uid).then((v) => {
+    // A hung request would leave the skeleton up forever; time out to the error state.
+    withTimeout(studio.getCallSheetView(id, uid), 15000, 'Loading the call sheet timed out.').then((v) => {
       if (!alive) return;
       if (!v) { setState('missing'); return; }
       setSheet(v.sheet);
@@ -111,7 +113,7 @@ export default function CallSheetPage() {
       <main className={c.page}>
         <div className={c.frame}>
           <h1 className={c.title}>Call sheet not found</h1>
-          <p className={c.lead}>It may have been removed, or you’re not on this production. <Link href="/projects">Your projects</Link></p>
+          <p className={c.lead}>That call sheet isn&#x2019;t available to you — it may have been removed. <Link href="/projects">Your projects</Link></p>
         </div>
       </main>
     );

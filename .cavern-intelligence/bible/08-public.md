@@ -41,6 +41,7 @@ token can't be probed) · empty (nothing published yet).
 
 ## Rules
 
+- A wrong or switched-off `/s/<token>` logs one JSON line (`share_link_miss`: a one-way token fingerprint, no address — the platform's request log has the address; `x-forwarded-for` is forgeable). Alert on repeats in the log drain.
 - Turning sharing off takes effect at once: nothing is cached (`/m` is
   `no-store`, `/shared` is dynamic).
 - The owner decides what's published (`media.shared`, `media_guard`).

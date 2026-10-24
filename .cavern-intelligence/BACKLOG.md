@@ -18,7 +18,6 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
 - **GitGuardian**: mark incidents 37942181 and 37942439 false positives (test fixtures); delete the two `e2e.recover.*@example.com` accounts in production (Authentication › Users).
-- **Production drift — `internal.timesheets_guard()` (P1, found 2026-10-15 by the drift check)**: production's function body differs from the migration's (`20260928090000_money.sql`); the repo's fingerprint hasn't changed since PR #81, so production was edited outside a migration between 10-12 15:50 and 10-13 00:52. Pick one: (a) restore production to the migration's version (re-run that function definition), or (b) if the production version is the intended fix, write a new migration carrying it and re-run the fingerprint. Done when the nightly drift run is green.
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
@@ -39,51 +38,12 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 2. To verify
 
+- **`tests/integration/validation-vs-rls.test.ts`** (2026-10-17) was written but never run (no `node_modules`, no Docker in that worktree). Run it against the local stack with typecheck and lint; fix anything it shows. S.
+
 - **`e2e/onset-offline.spec.ts` on Windows with the older local Chromium
   (1228)**: after an offline reload the day stays on "Loading the schedule…".
   Same on plain `main`, passes in CI and in the cloud container. Check on a
   second Windows machine / a newer Chromium before treating it as a bug.
-
-## 2.1 From the Oct 15 QA report — open (the P0 and 4 of 5 P1s are fixed)
-
-- **Owner decision — the island's keyboard layer (was P1 #5, "design"):**
-  keyboard commands already work without hovering (`kbActive` tracks
-  `CapsLock` globally; the keydown handler in `EcosystemTaskbar.tsx`
-  doesn't gate on hover). What reads as broken is the two-step gesture
-  itself — hover to see the deck, `CapsLock` to drive it — not matching
-  "a keyboard and mouse command layer for the suite." Decide the intended
-  model (keys always live without a modifier? the deck opens on focus, not
-  just hover?) before this is re-coded.
-- **~25 P2s and ~10 P3s, not started** — autocomplete leaves the cursor on
-  the name line instead of dialogue; Ctrl+F/Ctrl+G losing focus; no "not a
-  character" control outside hover; a Chrome-autofill key event crashing
-  with no `key`; React error #418 on every load; a call sheet date
-  accepting "102020"; logging hours twice on one day silently overwriting;
-  no notification when added to crew; a project phase label not updating
-  until reload; three different page-count numbers across screens; an
-  unlabeled password field; `/soundtrack`'s player not rendering; applying
-  to your own job; the pill covering Save/Cancel on a phone; every
-  `portfolio_projects.share_token` being publicly listable; several
-  accessibility-tree naming issues; crew unable to mark a library item
-  shareable; small items (autocomplete needing 2 letters, bad share links
-  returning 200, `/STUDIO` 404ing, focus landing on `<body>` after the
-  palette, a gate's title mismatch, 15×15px touch targets, leaked-password
-  protection off, a suspended user clearing their own flag in their last
-  session). Full detail in the QA report (owner has it); work through
-  worst-first per `RULES.md`'s triage (broken > lying UI > missing >
-  polish) when picked up.
-- **Confirmed pre-existing, separate from the report:** a suite-wide axe
-  `label-content-name-mismatch` regression — found while babysitting PR
-  #230's CI, across at least 4 components (on-set clock buttons, cut-notes'
-  "open in script" button, the Lounge's pinned-message button, the shot
-  designer's camera button) — each renders visible text that isn't a
-  prefix of its `aria-label`. Likely missed by the axe-core 4.14 bump's
-  partial fix (`2026-10-14-deps-and-label-in-name.md`). Not yet scoped to
-  a single PR.
-- **Owner, outside the code:** the QA session's own cleanup (delete
-  `QA-Night Shift` and its script, the v2 call sheet, the two `thekid`
-  timesheet entries, the `#general` QA messages, remove `thekid` from
-  crew) — the report has the exact list.
 
 ## 3. Upgrades (scoped — in suggested order)
 
@@ -102,6 +62,9 @@ release; take the plain fix then. Done when `npm audit` reports 0.
 ### 3.18 Film graph — what's left after steps 1–3 — L (owner: the editor gets cut over)
 Done: days and places (1), characters and sides (2), story time and continuity (3). Left, in order: **(a)** the app reads `scene_characters` / `call_sheet_calls.character_id` instead of `cast_list` / `character_name` text (S–M) — **started 2026-10-13**: `lib/film/cast.ts`, Continuity and the Casting board read the links; still on the text: call sheet cast (`CallSheetsPanel`, public `/call`), On set, Readiness, Scenes tab, stripboard, and `character_name` on calls; **(b)** continuity extras — a photo and wardrobe/prop elements on a look, a wardrobe/make-up sheet (PDF), shoot order beside story order, the look-change warning on the call sheet (M); **(c)** step 4 entities and links, the card, mentions (L); **(d)** the editor on the graph — **a major expansion, not a thinning** (owner, 2026-10-11): planned rung by rung in [plans/2026-10-11-editor-integration.md](plans/2026-10-11-editor-integration.md) (E0 safety net → E1 take the page apart → E2 read the graph → E3 CRDT → E4 write the graph → E5 margin links → E6 contract; XL overall, decisions for the owner in §6); **(e)** step 5 money, step 6 my day, step 7 drop the text columns. Done when nothing reads `scenes.cast_list`, `scenes.location` or `character_name` and the old columns are gone.
 
+### 3.18a Backfill: the "list, don't guess" report does not exist — S (found 2026-10-18)
+`film-graph-spec.md` §6/§8 promise that ambiguous matches are *listed for a person to settle*. The two backfills (`20261010010000`, `20261011010000`) only match on `upper(btrim(name))`, so near-identical names (`COFFEE SHOP` / `COFFEE  SHOP`, `DR. SMITH` / `DR SMITH`) stay separate rows — nothing is merged wrongly, but nothing is listed either. `tests/integration/film-graph-backfill.test.ts` pins the no-merge behaviour and carries two `it.todo`s for the listing. Done when a read-only report (new migration + persona test) names the near-duplicate pairs per project and the todos become tests.
+
 ### 3.20 The classifier and the importer — what is still wrong — S (found 2026-10-11; B2, B3, B5, B6 fixed the rest)
 Still pinned as an expected-failure test: `lib/scriptos/parser-gaps.test.ts` (1).
 1. **Done (B9):** `Character.firstLineIndex` is the line of the first cue (-1 if none), `Scene.omitted` is gone (nothing read it), `ScriptLine.confidence` is the decoder's own and feeds the editor's "doubtful reads". `Character.lines` counts speeches, as its comment now says.
@@ -113,6 +76,9 @@ A layered, deterministic, explainable reading engine: lossless Fountain first, t
 
 ### 3.22 The reader's context: places, the previous draft — M (B7 follow-ups; rejections shipped in B8)
 (a) **Done (B8):** a stored per-project "not a character" / "is a character" list (`reading_corrections`), a "Not a character" action in the Character Bible with a way back, obeyed by the editor and the Studio. (b) **Places and the previous draft as evidence**, once every surface that writes the scene index reads with one shared context (today the editor and the Studio do; public share, export, pitch and brief pages parse without it). (c) Context for the other callers where it does not affect scenes. Done when a rejected name survives a reload and both surfaces agree on the scene index.
+
+### 3.24 Production manager trusts the festival jsonb — S (found 2026-10-16)
+`getProductionData` (`lib/supabase/project-hub.ts`) casts `projects.festival_submissions` to `FestivalRow[]` without checking it; `ProductionManager` then reads `f.status` / `f.id` on each entry, so a `null` or non-object entry breaks the panel. Keep only object entries with a string `id`, `name` and a known `status` (the overview's counts already skip malformed entries). Done when a malformed list renders the valid festivals and a unit test proves it.
 
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
@@ -143,9 +109,10 @@ a call sheet issued on the desk arrives as a notification on the phone.
 An App Store listing with Discord sign-in also needs **Sign in with Apple**.
 
 ### 3.14 Admin catalogues and moderation — M (product call)
-**Moderation, first slice built:** anyone signed in can **Report** a Lounge message, a job or a profile (a flag, a reason, one report per person per thing); admins work `/admin/reports` (open / resolved / dismissed, a link to the thing, who reported). An admin can **close a reported job** from the queue (`admin_close_job`, audit-logged). An admin can also **read a reported message and hide it** (everyone reads "[Removed by an admin]"; the original is kept for admins; bring-back restores it). An admin can **suspend an account** from `/admin/users` (the auth service's ban: no sign-in, no refresh, sessions ended; nothing deleted; reversible; audit-logged; not yourself, not an admin). An access token already issued lasts until it expires (at most an hour). Left: notifying the reporter, reporting from more places (portfolio pieces, media), and admin read access to a reported message in a private channel (deliberately not granted). **Crafts, channel suggestions and project formats have admin screens (`/admin/crafts`, `/admin/channel-presets`, `/admin/formats`: add, remove).** Brief questions are still admin data with no screen (changed by migration): add the same kind of page for each under the existing admin-write policies. And before the network opens to strangers:
+**Moderation, first slice built:** anyone signed in can **Report** a Lounge message, a job or a profile (a flag, a reason, one report per person per thing); admins work `/admin/reports` (open / resolved / dismissed, a link to the thing, who reported). An admin can **close a reported job** from the queue (`admin_close_job`, audit-logged). An admin can also **read a reported message and hide it** (everyone reads "[Removed by an admin]"; the original is kept for admins; bring-back restores it). An admin can **suspend an account** from `/admin/users` (the auth service's ban: no sign-in, no refresh, sessions ended; nothing deleted; reversible; audit-logged; not yourself, not an admin). An access token already issued lasts until it expires (at most an hour). Left: notifying the reporter, reporting from more places (portfolio pieces, media), and admin read access to a reported message in a private channel (deliberately not granted). **Crafts, channel suggestions, project formats and brief questions have admin screens (`/admin/crafts`, `/admin/channel-presets`, `/admin/formats`, `/admin/brief-questions`: add, remove).** Left on the brief screen (plan: `plans/2026-10-17-admin-brief-questions.md`): edit and reorder a question, set `implies`/`detect`/`ask_when` (still migrations), an audit-log entry when a question is removed (it deletes every project's answer). And before the network opens to strangers:
 report a message / job / profile, an admin queue, hide and suspend. Done when
 the owner can add a craft without a deploy, and a report reaches the queue.
+**Redact error stacks (S, found 2026-10-18):** `client_errors.stack` is stored and shown unredacted (`lib/errors/report.ts` `describeError`, `report_client_error`, `/admin/errors`). Strip origins, absolute paths, query strings and token- or email-like text before storing, in the client and in the RPC (new migration + persona test). Done when a stack with a path and a token is stored redacted. See `bible/09-admin.md` › Known gaps.
 
 ### 3.15 Email — M
 Notifications are in-app only; auth mail uses Supabase's default sender (low
@@ -192,23 +159,6 @@ coverage rules.
 **Owner:** branch protection on `main` with `pr-title`, `checks` and
 `database` required; signed commits; the first `v*` tag; the lawyer's OK on
 the `LICENSE` wording.
-
-
-### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
-**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.
-
-### 3.24 Audit follow-ups: lint in the margin, agent permission envelope — S/M each (found 2026-10-15)
-**Lint affordance (S):** validation issues live only in the editor's
-Validation side-tab — no jump-to-line, no inline marker, while the editor
-ships carets, reading corrections and annotations inline. Add a click-to-line
-on each issue and a gutter dot; `EditorSidePanels.tsx` + the editor page.
-Done when an issue takes you to its line and a persona spec covers it.
-**Agent permission envelope (owner decision first):** `.claude/settings.json`
-allows Supabase `execute_sql`/`apply_migration` and Vercel `deploy_to_vercel`
-without prompting, and `tools-and-access.md` §3 justifies it by the
-branch→PR→persona-test workflow — which needs branch protection (§1) to be
-real. Either enable branch protection, or move those three to `ask` until it
-exists. Done when the doc and the settings agree.
 
 
 ---
@@ -327,7 +277,9 @@ on export; formats by project type.
 **To add**: FDX round-trip fidelity tests; Movie Magic Screenwriter, Celtx
 and Highland import; RTF, ePub and HTML export; intercut, montage, series of
 shots and flashback/dream formatting; subtitled lines in another language;
-A/B pages, locked pages with asterisks, manual scene numbers; act breaks for
+A/B pages, locked pages with asterisks, manual scene numbers (the parser
+reads `12A` but `sync_script_scenes` stores the position in the integer
+`scenes.scene_number` — needs a text column); act breaks for
 TV; custom element styles; headers/footers with dynamic content.
 
 ### 4.10 Breakdown and scheduling
@@ -362,10 +314,13 @@ bible's ScriptOS known gaps).
 ### 4.13 Offline and installable
 **Built**: the editor saves to IndexedDB first and syncs (retry, on
 reconnect, tombstones for offline deletes), a conflict prompt (keep mine /
-take theirs), sync state in its header; On set works offline; Capture's
-outbox; a service worker; an installable web app (iPhone polish is 3.13).
-**To add**: an app-wide offline indicator (4.1), sync status per document in
-lists, "sync now", downloading a whole project for offline, an offline queue
+take theirs), sync state in its header, and (2026-10-18) a status-bar chip
+for the script queue — pending scripts and deletes, network, a retry
+countdown with backoff (15 s → 5 min), "Sync now" (`SyncStatusChip`); On set
+works offline; Capture's outbox; a service worker; an installable web app
+(iPhone polish is 3.13).
+**To add**: an app-wide offline indicator (4.1; the chip's `getSyncStatus`
+store is the feed for it), sync status per document in lists, downloading a whole project for offline, an offline queue
 for actions beyond scripts, bandwidth-aware sync, a line-by-line conflict
 view.
 
@@ -386,3 +341,17 @@ loops, notes during playback, comparing reads, scoring from the Soundtrack.
 notes per candidate per role, audition scheduling, decision history, a
 casting sheet PDF.
 
+### 3.24 Voice rooms beyond eight — an SFU — L (found 2026-10-18)
+A voice room is a full mesh and now refuses a 9th person (`lib/webrtc/mesh.ts`: toast + "room is full"). Left: **(a)** an SFU (LiveKit/mediasoup — an outside service and cost, owner's call) so rooms scale past 8; **(b)** order seats by a server timestamp instead of each client's clock (S); **(c)** check the cap before asking for the microphone (S); **(d)** a two-browser e2e for voice (M). Done when a 12-person room works, or the cap is raised on purpose, and a two-browser spec covers the 9th joiner.
+
+### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
+**View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). Left: any other surface that decides ownership itself should read the same store; a "view as this person" for a named crew member (their role and craft) is the next step beyond Crew. **Announcements:** project announcements are built (the hub's "Tell the team" box → the project's announcements channel + each confirmed crew member's bell); left: a platform-wide broadcast (needs email first, 3.15). (`notify()` now returns an error message; the announcement box uses it, the other callers still ignore it — fix them as each is touched.) **Owner dashboard:** the first slice is on Today's "Your projects" — for each project you run: unanswered invites, overdue tasks, the next shoot day and whether its call sheet is issued. Left: who has not acknowledged a call sheet (needs an acknowledgement record), budget overruns, the `/admin` stats beside them for admins. Done when each is in the suite and covered by a persona spec.
+
+### 3.25 Story interview — a guided path from idea to skeleton — M/L (owner idea, 2026-10-20)
+A step-by-step interview that builds the story's skeleton **before** dialogue is written, and teaches a newcomer the workflow as they go. Today `lib/guides` (workflows, steps) teaches *how to use the suite* and `lib/brief` asks the project questions; neither turns answers into structure. Build: a stored, resumable interview (premise, protagonist's want and need, the central conflict, theme, ending, the key turning points) whose answers produce an ordered beat list and a scene skeleton in the editor and the film graph — real rows, editable afterwards, never a mock. Each step explains *why* it is asked. Data: answers per project (RLS through `can_shape_project`), persona-tested (Sam writes, Jordan co-edits, Riley sees nothing). Done when a first-time user can answer the interview and land in the editor with a scene skeleton that persists, and a reload resumes mid-interview.
+
+### 3.26 Story-structure templates — S/M (owner idea, 2026-10-20)
+Selectable structures to lay a skeleton over: three-act, five-act (Freytag), the hero's journey, the story circle, a seven-point outline, a beat sheet, and a free "none". Each template is data (named beats with a suggested position and a one-line purpose), applied from 3.25 or from the outline, and a script can be **checked against** one (which beats have a scene, which do not — a report, never an automatic change). Also worth scoping: branching / non-linear structure for games and interactive stories as its own template type. Done when a template can be chosen, applied, and reported on, and the beats it creates survive a reload.
+
+### 3.27 Open core: the license and the free / paid boundary — M (owner decision; lawyer review)
+The repository is already public (license: proprietary `LICENSE`, all rights reserved). The owner is weighing an open-source core with a paid tier (extended features, storage, project space, AI features). Needs, in order: **(a)** the license decision, with the lawyer (a permissive license, AGPL, or a source-available license such as BSL each answer "may a competitor host a fork" differently); **(b)** a single entitlements layer — one place that answers "may this account do X / how much storage", with plan limits in the database and RLS-safe — today the suite has no plan or limit concept; **(c)** the pre-publication pass: personal data in docs and session notes, third-party assets and fonts that cannot be redistributed, a final secret scan (`secret-scan.yml` already covers history). Done when the license is chosen and committed, a free account hits a real plan limit through the entitlements layer (persona-tested), and the publication checklist is clean.

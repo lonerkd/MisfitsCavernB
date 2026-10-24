@@ -15,7 +15,13 @@ export function typeEnabled(type: string, prefs: NotificationPrefs = DEFAULT_NOT
   return prefs[key] !== false;
 }
 
-/** A stored prefs value (any shape) over the defaults. */
+/** A stored prefs value (any shape) over the defaults. Only real booleans for known keys are taken; anything else keeps the default. */
 export function readPrefs(stored: unknown): NotificationPrefs {
-  return { ...DEFAULT_NOTIFICATION_PREFS, ...((stored && typeof stored === 'object' ? stored : {}) as Partial<NotificationPrefs>) };
+  const prefs = { ...DEFAULT_NOTIFICATION_PREFS };
+  if (!stored || typeof stored !== 'object') return prefs;
+  const src = stored as Record<string, unknown>;
+  for (const key of Object.keys(prefs) as (keyof NotificationPrefs)[]) {
+    if (typeof src[key] === 'boolean') prefs[key] = src[key] as boolean;
+  }
+  return prefs;
 }

@@ -4114,9 +4114,7 @@ export type Database = {
           author_role: string;
           author_username: string;
           content: string;
-          format: string;
           title: string;
-          updated_at: string;
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
@@ -4149,6 +4147,10 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      log_password_breach: {
+        Args: { p_breach_count: number; p_context: string; p_email: string };
+        Returns: undefined;
       };
       log_writing: {
         Args: { p_day: string; p_sprint?: boolean; p_words: number };

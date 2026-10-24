@@ -12,9 +12,10 @@
 // carry their own implications as data.
 
 import { PHASES, type Phase } from '@/lib/os/phases';
-import { sceneList, type Detect, type Evidence } from './script';
+import { sceneList } from './script';
+import type { Detect, Evidence } from './parsers';
 
-export type { Evidence } from './script';
+export type { Evidence } from './parsers';
 
 export interface Implies {
   crafts?: string[];

@@ -2,6 +2,7 @@
 // search. Pure — the page supplies the rows.
 
 import { computeProgress, type ProjectSignals } from './progress';
+import { PHASE_STATUS, type Phase } from './phases';
 
 export interface Readiness {
   phaseLabel: string;
@@ -12,9 +13,13 @@ export interface Readiness {
   overall: number;
 }
 
-export function readinessOf(s: ProjectSignals | undefined | null): Readiness | null {
+/**
+ * `phase` is the phase a card sits in when it differs from the status its
+ * signals were fetched with (a card just moved); the signals are not changed.
+ */
+export function readinessOf(s: ProjectSignals | undefined | null, phase?: Phase): Readiness | null {
   if (!s) return null;
-  const p = computeProgress(s);
+  const p = computeProgress(phase ? { ...s, status: PHASE_STATUS[phase] } : s);
   return {
     phaseLabel: p.current.label,
     done: p.current.done,
@@ -22,6 +27,13 @@ export function readinessOf(s: ProjectSignals | undefined | null): Readiness | n
     next: p.nextSteps[0]?.label ?? null,
     overall: p.totals.total ? p.totals.done / p.totals.total : 0,
   };
+}
+
+/** The progress bar's width, a whole 0–100; null when there is nothing to measure (no milestones, or a bad total). */
+export function percentOf(r: Pick<Readiness, 'done' | 'total'> | null | undefined): number | null {
+  if (!r || !Number.isFinite(r.total) || r.total <= 0) return null;
+  const done = Number.isFinite(r.done) ? r.done : 0;
+  return Math.round(Math.min(1, Math.max(0, done / r.total)) * 100);
 }
 
 export interface BoardCard {

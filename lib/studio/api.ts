@@ -6,7 +6,7 @@
 // so the integration suite exercises this exact code against a real database.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Json, Tables } from '@/lib/supabase/database.types';
+import type { Database, Tables } from '@/lib/supabase/database.types';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
@@ -315,7 +315,7 @@ export function createStudioApi(db: Client) {
       const { error } = await db.rpc('sync_script_scenes', {
         p_script_id: scriptId,
         p_base_ids: plan.baseIds,
-        p_scenes: plan.scenes as unknown as Json,
+        p_scenes: plan.scenes,
       });
       if (!error) return listScenes(scriptId);
       if (error.code !== '40001') fail(error, 'Could not update the scene list');

@@ -1,6 +1,32 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { adminClient, anonClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject, createScript } from './support/project';
+import type { BriefOption } from '@/lib/brief/core';
+import type { Json } from '@/lib/supabase/database.types';
+
+const isStrings = (v: unknown): v is string[] => Array.isArray(v) && v.every((s) => typeof s === 'string');
+
+/**
+ * brief_questions.options is jsonb, so check its shape instead of casting it:
+ * a malformed option or `implies` list throws, which fails the test.
+ */
+function parseOptions(key: string, raw: Json): BriefOption[] {
+  if (!Array.isArray(raw)) throw new Error(`${key}: options is not an array`);
+  return raw.map((o, i) => {
+    if (typeof o !== 'object' || o === null || Array.isArray(o) || typeof o.id !== 'string') throw new Error(`${key}[${i}]: option has no id`);
+    const { implies } = o;
+    if (implies === undefined) return { id: o.id, label: String(o.label ?? '') };
+    if (typeof implies !== 'object' || implies === null || Array.isArray(implies)) throw new Error(`${key}/${o.id}: implies is not an object`);
+    const out: NonNullable<BriefOption['implies']> = {};
+    for (const kind of ['crafts', 'breakdown', 'channels'] as const) {
+      const list = implies[kind];
+      if (list === undefined) continue;
+      if (!isStrings(list)) throw new Error(`${key}/${o.id}: implies.${kind} is not a list of strings`);
+      out[kind] = list;
+    }
+    return { id: o.id, label: String(o.label ?? ''), implies: out };
+  });
+}
 
 // The project brief as personas. Sam owns the project, Jordan is crew (a
 // contributor, production designer), Riley is an outsider, and Vic is added
@@ -34,15 +60,37 @@ describe('the catalogue', () => {
     expect(presets?.map((p) => p.key)).toEqual(expect.arrayContaining(['dailies', 'legal', 'production', 'script-notes']));
   });
 
-  it('only points at crafts that exist', async () => {
-    const [{ data: qs }, { data: crafts }] = await Promise.all([
-      adminClient().from('brief_questions').select('options'),
+  it('only points at crafts, breakdown categories and channels that exist', async () => {
+    const [{ data: qs, error }, { data: crafts }, { data: cats }, { data: presets }] = await Promise.all([
+      adminClient().from('brief_questions').select('key, options'),
       adminClient().from('crafts').select('name'),
+      // Categories are per project, seeded for every project by a trigger.
+      adminClient().from('breakdown_categories').select('key').eq('project_id', projectId),
+      adminClient().from('channel_presets').select('key'),
     ]);
-    const names = new Set(crafts!.map((c) => c.name));
-    const implied = qs!.flatMap((q) => (q.options as Array<{ implies?: { crafts?: string[] } }>).flatMap((o) => o.implies?.crafts ?? []));
-    expect(implied.length).toBeGreaterThan(10);
-    expect(implied.filter((c) => !names.has(c))).toEqual([]);
+    expect(error).toBeNull();
+    const known = {
+      crafts: new Set((crafts ?? []).map((c) => c.name)),
+      breakdown: new Set((cats ?? []).map((c) => c.key)),
+      channels: new Set((presets ?? []).map((p) => p.key)),
+    };
+    expect(known.crafts.size).toBeGreaterThan(0);
+    expect(known.breakdown.size).toBeGreaterThan(0);
+    expect(known.channels.size).toBeGreaterThan(0);
+
+    const refs: Array<{ where: string; kind: keyof typeof known; ref: string }> = [];
+    for (const q of qs ?? []) {
+      const options = parseOptions(q.key, q.options);
+      for (const o of options) {
+        for (const kind of ['crafts', 'breakdown', 'channels'] as const) {
+          for (const ref of o.implies?.[kind] ?? []) refs.push({ where: `${q.key}/${o.id}`, kind, ref });
+        }
+      }
+    }
+    expect(refs.filter((r) => r.kind === 'crafts').length).toBeGreaterThan(10);
+    expect(refs.filter((r) => r.kind === 'breakdown').length).toBeGreaterThan(0);
+    expect(refs.filter((r) => r.kind === 'channels').length).toBeGreaterThan(0);
+    expect(refs.filter((r) => !known[r.kind].has(r.ref)).map((r) => `${r.where} → ${r.kind}:${r.ref}`)).toEqual([]);
   });
 });
 

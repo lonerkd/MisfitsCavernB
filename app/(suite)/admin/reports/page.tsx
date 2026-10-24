@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { ProtectedPage, useCurrentUser } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
-import { closeReportedJob, hideMessage, listReports, readReportedMessage, settleReport, targetHref, type ReportStatus } from '@/lib/supabase/reports';
+import { closeReportedJob, hideMessage, listReports, readReportedMessage, settleReport, suspendReportedUser, targetHref, type ReportStatus } from '@/lib/supabase/reports';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -64,6 +64,14 @@ export default function AdminReportsPage() {
     await settle(id, 'resolved');
   };
 
+  // Suspend the reported person (reversible from /admin/users), then close the report with it.
+  const suspendUser = async (id: string, userId: string) => {
+    if (!(await confirm({ title: 'Suspend this account?', message: 'They can no longer sign in and their sessions end. Nothing is deleted, you can lift it from Users, and it is recorded in the audit log.', confirmLabel: 'Suspend' }))) return;
+    const error = await suspendReportedUser(userId);
+    if (error) { toast(`Could not suspend them: ${error}`, 'error'); return; }
+    await settle(id, 'resolved');
+  };
+
   return (
     <ProtectedPage require="admin">
       <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 24px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
@@ -101,6 +109,7 @@ export default function AdminReportsPage() {
                   {r.status === 'open' && (
                     <div style={{ display: 'flex', gap: 8 }}>
                       {r.kind === 'job' && <Button variant="danger" onClick={() => void closeJob(r.id, r.target_id)}>Close the job</Button>}
+                      {r.kind === 'profile' && <Button variant="danger" onClick={() => void suspendUser(r.id, r.target_id)}>Suspend the account</Button>}
                       <Button onClick={() => void settle(r.id, 'resolved')}>Resolved</Button>
                       <Button variant="ghost" onClick={() => void settle(r.id, 'dismissed')}>Dismiss</Button>
                     </div>

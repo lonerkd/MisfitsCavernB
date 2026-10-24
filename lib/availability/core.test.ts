@@ -27,6 +27,14 @@ describe('who is away', () => {
     expect(c.get(4)!.map((a) => a.user_id)).toEqual(['mara']);
   });
 
+  it('keeps the longest of a person’s overlapping ranges, whatever the input order', () => {
+    const sheets = [{ shoot_day: 1, shoot_date: '2026-10-05' }];
+    const a: Away = { user_id: 'mara', starts_on: '2026-10-05', ends_on: '2026-10-05' };
+    const b: Away = { user_id: 'mara', starts_on: '2026-10-01', ends_on: '2026-10-20' };
+    expect(dayConflicts(sheets, [a, b]).get(1)).toEqual([b]);
+    expect(dayConflicts(sheets, [b, a]).get(1)).toEqual([b]);
+  });
+
   it('upcoming leaves out what has ended', () => {
     expect(upcoming(away, 'june', '2026-09-29')).toEqual([]);
     expect(upcoming(away, 'mara', '2026-09-29').map((a) => a.starts_on)).toEqual(['2026-10-03', '2026-10-04']);

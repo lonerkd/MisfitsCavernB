@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
 import { getPlatformStats } from '@/lib/supabase/stats';
 import { useLoad } from '@/lib/hooks/useLoad';
+import { cached } from '@/lib/hooks/ttlCache';
 import { ProtectedPage } from '@/lib/os';
 import { ArrowLeft, TrendingUp, Users, Zap, Clock } from 'lucide-react';
 
@@ -28,20 +29,37 @@ const EMPTY: Analytics = {
   avgProjectDuration: null,
 };
 
+type Range = 'week' | 'month' | 'year';
+
+/** Switching back to a range inside this window reuses the answers instead of calling the RPCs again. */
+const CACHE_MS = 5 * 60 * 1000;
+
+function rangeStart(range: Range): Date {
+  const d = new Date();
+  if (range === 'week') d.setDate(d.getDate() - 7);
+  else if (range === 'month') d.setMonth(d.getMonth() - 1);
+  else d.setFullYear(d.getFullYear() - 1);
+  return d;
+}
+
+/** A figure, or a block of its size while it loads. */
+function Figure({ loading, children, width, height }: { loading: boolean; children: React.ReactNode; width: number; height: string }) {
+  if (!loading) return <>{children}</>;
+  return <span className="skeleton" role="presentation" style={{ display: 'inline-block', width, height, verticalAlign: 'middle' }} />;
+}
+
 export default function AdminAnalyticsPage() {
-  const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
+  const [timeRange, setTimeRange] = useState<Range>('month');
 
   const { data, loading, error } = useLoad(timeRange, async (): Promise<Analytics> => {
-    const platformStats = await getPlatformStats();
-
-    const rangeStart = new Date();
-    if (timeRange === 'week') rangeStart.setDate(rangeStart.getDate() - 7);
-    else if (timeRange === 'month') rangeStart.setMonth(rangeStart.getMonth() - 1);
-    else rangeStart.setFullYear(rangeStart.getFullYear() - 1);
-
-    const { data: rows, error: e } = await supabase.rpc('admin_platform_analytics', { p_since: rangeStart.toISOString() });
-    if (e) throw e;
-    const row = rows?.[0];
+    const [platformStats, row] = await Promise.all([
+      cached('admin-analytics:platform', CACHE_MS, getPlatformStats),
+      cached(`admin-analytics:${timeRange}`, CACHE_MS, async () => {
+        const { data: rows, error: e } = await supabase.rpc('admin_platform_analytics', { p_since: rangeStart(timeRange).toISOString() });
+        if (e) throw e;
+        return rows?.[0] ?? null;
+      }),
+    ]);
     return {
       totalUsers: platformStats.users,
       activeUsers: Number(row?.active_users ?? 0),
@@ -183,7 +201,7 @@ export default function AdminAnalyticsPage() {
                   </span>
                 </div>
                 <div style={{ fontSize: '2rem', fontFamily: 'var(--display)', fontWeight: 700, color: 'var(--accent)' }}>
-                  {loading ? '...' : stat.value}
+                  <Figure loading={loading} width={72} height="1.6rem">{stat.value}</Figure>
                 </div>
               </div>
             ))}
@@ -205,7 +223,7 @@ export default function AdminAnalyticsPage() {
                     {metric.label}
                   </div>
                   <div style={{ fontFamily: 'var(--display)', fontSize: '1.5rem', fontWeight: 700 }}>
-                    {metric.value}
+                    <Figure loading={loading} width={96} height="1.2rem">{metric.value}</Figure>
                   </div>
                 </div>
               ))}
@@ -214,7 +232,7 @@ export default function AdminAnalyticsPage() {
 
           <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,153,255,0.05)', border: '1px solid rgba(0,153,255,0.2)', borderRadius: 4, fontSize: 11 }}>
             <p style={{ margin: 0, color: 'var(--fg-muted)' }}>
-              Fetched on page load and whenever the time range above changes — not a live/streaming feed.
+              Fetched on page load and whenever the time range above changes, and reused for up to 5 minutes when you switch back — not a live/streaming feed.
             </p>
           </div>
         </div>

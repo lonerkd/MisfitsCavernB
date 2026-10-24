@@ -5,7 +5,7 @@
 // the session-less public client. Shared by link: unlisted, never indexed.
 
 import type { Metadata } from 'next';
-import { publicClient } from '@/lib/supabase/public';
+import { getPortfolioPreview, publicClient } from '@/lib/supabase/public';
 import { videoEmbed } from '@/lib/studio/media-kind';
 import { PortfolioView } from './PortfolioView';
 
@@ -24,20 +24,14 @@ function previewImage(media: { url: string; thumbnail_url: string | null; media_
 
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
   const { token } = await params;
-  const db = publicClient();
-  const { data } = db && token
-    ? await db.from('portfolio_projects')
-      .select('title, description, year, role, profiles(username), portfolio_media(url, thumbnail_url, media_type)')
-      .eq('share_token', token)
-      .maybeSingle()
-    : { data: null };
+  const data = await getPortfolioPreview(publicClient(), token);
   if (!data) return { title: 'The Cavern', robots: { index: false } };
 
-  const by = (data.profiles as { username?: string } | null)?.username;
+  const by = data.profiles?.username;
   const description = data.description?.trim().slice(0, 200)
     || [data.role, data.year, by ? `by ${by}` : null].filter(Boolean).join(' · ')
     || 'A portfolio on The Cavern.';
-  const image = previewImage((data.portfolio_media ?? []) as { url: string; thumbnail_url: string | null; media_type: string | null }[]);
+  const image = previewImage(data.portfolio_media);
   return {
     title: `${data.title} — The Cavern`,
     description,

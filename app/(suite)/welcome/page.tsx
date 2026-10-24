@@ -22,6 +22,8 @@ import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Question } from '@/components/brief/BriefPanel';
 import { loadQuestions, visibleQuestions, type Answers, type BriefQuestion, type BriefValue } from '@/lib/brief';
 import { startProject } from '@/lib/onboarding/onboarding';
+import { splitAnswers } from '@/lib/onboarding/answers';
+import { useConfirm } from '@/components/ui/Confirm';
 import { PHASE_STATUS, type Phase } from '@/lib/os/phases';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
 import { GuideSetup } from '@/components/guides/GuideSetup';
@@ -55,6 +57,7 @@ export default function WelcomePage() {
   useOSGate();
   const router = useRouter();
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { setActiveProject } = useProject();
   const me = useCurrentUser().user;
 
@@ -109,11 +112,22 @@ export default function WelcomePage() {
     if (!title.trim() || creating) return;
     const user = await awaitOSUser();
     if (!user) { toast('Sign in first', 'error'); return; }
+    // Only answers to questions still asked for the chosen format are saved;
+    // say so before discarding any, and let the person back out.
+    const { kept, dropped } = splitAnswers(answers, questions, catalogue);
+    if (dropped.length > 0) {
+      const ok = await confirm({
+        title: 'Some answers don’t apply',
+        message: `These answers are for questions that aren’t asked for ${format}, so they won’t be saved: ${dropped.map((d) => d.label).join(', ')}.`,
+        confirmLabel: 'CLEAR THEM & CREATE',
+        cancelLabel: 'GO BACK',
+        danger: false,
+      });
+      if (!ok) return;
+      setAnswers(kept);
+    }
     setCreating(true);
     try {
-      // Only answers to questions still asked for the chosen format.
-      const asked = new Set(questions.map((q) => q.key));
-      const kept = Object.fromEntries(Object.entries(answers).filter(([k]) => asked.has(k)));
       const phase = STAGES.find((x) => x.id === stage)?.phase ?? 'development';
       const { project, unsaved, href } = await startProject(user.id, { title: title.trim(), format, logline: logline.trim(), answers: kept, status: PHASE_STATUS[phase] });
       setActiveProject(project as never);

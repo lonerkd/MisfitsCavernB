@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { defaultScriptFormat, findFormat, formatPhases, toProjectFormat } from './core';
+import { isScriptFormat, SCRIPT_FORMATS } from './script-formats';
 
 const row = (patch: Record<string, unknown> = {}) => toProjectFormat({
   name: 'Music Video', blurb: '', icon: 'music', script_format: 'treatment',
@@ -26,5 +27,12 @@ describe('project formats', () => {
     expect(defaultScriptFormat(row(), 'haiku')).toBe('treatment');
     expect(defaultScriptFormat(null)).toBe('screenplay');
     expect(defaultScriptFormat(row({ script_format: 'haiku' }))).toBe('screenplay');
+  });
+
+  it('script formats come from the registry; inherited keys are not formats', () => {
+    expect(SCRIPT_FORMATS).toContain('podcast');
+    expect(isScriptFormat('podcast')).toBe(true);
+    expect(isScriptFormat('toString')).toBe(false);
+    expect(defaultScriptFormat(null, 'constructor')).toBe('screenplay');
   });
 });

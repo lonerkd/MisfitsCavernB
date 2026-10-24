@@ -7,6 +7,9 @@ import type { Tables } from './database.types';
 export type SfxAsset = Tables<'sfx_assets'>;
 export type AudioReference = Tables<'project_audio_references'>;
 
+/** The Storage bucket holding sound-effect files, one folder per uploader. */
+export const SFX_BUCKET = 'sfx_library';
+
 /** The project's most recently edited script (title and text), for reading moods; null when it has none. */
 export async function getLatestScript(projectId: string): Promise<{ title: string | null; content: string | null } | null> {
   const { data, error } = await supabase.from('scripts').select('title, content').eq('project_id', projectId)
@@ -25,9 +28,9 @@ export async function listSfx(): Promise<SfxAsset[]> {
 /** Uploads an audio file to the uploader's own folder and lists it under the project. */
 export async function uploadSfx(file: File, userId: string, projectId: string): Promise<void> {
   const path = `${userId}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
-  const { error: uploadError } = await supabase.storage.from('sfx_library').upload(path, file);
+  const { error: uploadError } = await supabase.storage.from(SFX_BUCKET).upload(path, file);
   if (uploadError) throw uploadError;
-  const { data: url } = supabase.storage.from('sfx_library').getPublicUrl(path);
+  const { data: url } = supabase.storage.from(SFX_BUCKET).getPublicUrl(path);
   const { error } = await supabase.from('sfx_assets').insert({
     title: file.name,
     audio_url: url.publicUrl,
@@ -78,7 +81,7 @@ export async function deleteAudioRef(id: string): Promise<void> {
  */
 export function audioRefUrl(uri: string): string {
   if (/^https?:\/\//i.test(uri)) return uri;
-  return supabase.storage.from('sfx_library').getPublicUrl(uri).data.publicUrl;
+  return supabase.storage.from(SFX_BUCKET).getPublicUrl(uri).data.publicUrl;
 }
 
 /** A project's saved Spotify references (newest first), for the player. */

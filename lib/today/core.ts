@@ -6,12 +6,21 @@
 export const localDay = (d: Date = new Date()): string =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-const dayNumber = (iso: string) => {
-  const [y, m, d] = iso.split('-').map(Number);
-  return Math.round(Date.UTC(y, m - 1, d) / 86_400_000);
+/** [year, month, day] of a real "YYYY-MM-DD" calendar day; null for anything else (2026-02-30, "soon", ""). */
+const parseDay = (iso: string): [number, number, number] | null => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso ?? '');
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const t = new Date(Date.UTC(y, mo - 1, d));
+  return t.getUTCMonth() === mo - 1 && t.getUTCDate() === d ? [y, mo, d] : null;
 };
 
-/** Whole days from `today` to `iso` (negative when past). */
+const dayNumber = (iso: string) => {
+  const p = parseDay(iso);
+  return p ? Math.round(Date.UTC(p[0], p[1] - 1, p[2]) / 86_400_000) : NaN;
+};
+
+/** Whole days from `today` to `iso` (negative when past). NaN when either is not a real day. */
 export const daysUntil = (iso: string, today: string): number => dayNumber(iso) - dayNumber(today);
 
 const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -20,10 +29,12 @@ const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'O
 /** "Today", "Tomorrow", "Thu" (this week), "Thu 9 Oct" — how people say a day. */
 export function dayLabel(iso: string, today: string): string {
   const n = daysUntil(iso, today);
+  const p = parseDay(iso);
+  if (!p || Number.isNaN(n)) return iso; // unreadable: show what was stored rather than "undefined NaN"
   if (n === 0) return 'Today';
   if (n === 1) return 'Tomorrow';
   if (n === -1) return 'Yesterday';
-  const [y, m, d] = iso.split('-').map(Number);
+  const [y, m, d] = p;
   const wd = WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return n > 1 && n < 7 ? wd : `${wd} ${d} ${MONTH[m - 1]}`;
 }
@@ -58,12 +69,14 @@ export type Urgency = 'overdue' | 'today' | 'soon' | 'later' | 'undated';
 export function urgency(due: string | null, today: string): Urgency {
   if (!due) return 'undated';
   const n = daysUntil(due, today);
+  if (Number.isNaN(n)) return 'undated'; // an unreadable date is not a deadline we can rank
   return n < 0 ? 'overdue' : n === 0 ? 'today' : n <= 7 ? 'soon' : 'later';
 }
 
 export function dueLabel(due: string | null, today: string): string | null {
   if (!due) return null;
   const n = daysUntil(due, today);
+  if (Number.isNaN(n)) return null;
   if (n < 0) return n === -1 ? 'Overdue · yesterday' : `Overdue · ${-n} days`;
   if (n === 0) return 'Due today';
   return `Due ${dayLabel(due, today).toLowerCase() === 'tomorrow' ? 'tomorrow' : dayLabel(due, today)}`;
