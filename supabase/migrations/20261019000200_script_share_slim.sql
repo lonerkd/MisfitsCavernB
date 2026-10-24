@@ -2,7 +2,8 @@
 -- content and author metadata, and the eco-consolidation test expects exactly
 -- (title, content, author_username, author_avatar_url, author_role).
 
-CREATE OR REPLACE FUNCTION public.get_shared_script(p_token text)
+DROP FUNCTION IF EXISTS public.get_shared_script(text);
+CREATE FUNCTION public.get_shared_script(p_token text)
  RETURNS TABLE(title text, content text, author_username text, author_avatar_url text, author_role text)
  LANGUAGE sql
  STABLE SECURITY DEFINER
@@ -15,3 +16,5 @@ AS $function$
     AND coalesce(p_token, '') <> ''
     AND s.share_token = p_token;
 $function$;
+REVOKE ALL ON FUNCTION public.get_shared_script(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.get_shared_script(text) TO anon, authenticated, postgres, service_role;
