@@ -132,7 +132,7 @@ describe('answering: the transitions', () => {
   });
 
   it('an acceptance is final; the same answer twice is refused and tells nobody twice', async () => {
-    const jobId = await post({ title: 'Focus puller, B camera', role: 'Focus puller' });
+    const jobId = await post({ title: 'Gaffer, B camera', role: 'Gaffer' });
     const appId = await apply(casey, jobId);
     expect((await respond(appId, 'accepted')).error).toBeNull();
     expect((await respond(appId, 'accepted')).error?.message).toMatch(/Already accepted/);
@@ -140,13 +140,13 @@ describe('answering: the transitions', () => {
     // Still on the crew, still accepted, told once.
     expect((await adminClient().from('job_applications').select('status').eq('id', appId).single()).data?.status).toBe('accepted');
     expect((await adminClient().from('project_crew').select('status').eq('project_id', projectId).eq('user_id', casey.id).single()).data?.status).toBe('confirmed');
-    expect(await notesFor(casey, 'Focus puller, B camera')).toBe(1);
+    expect(await notesFor(casey, 'Gaffer, B camera')).toBe(1);
 
-    const otherJob = await post({ title: 'Clapper loader', role: 'Clapper loader' });
+    const otherJob = await post({ title: 'Boom operator', role: 'Boom operator' });
     const declined = await apply(casey, otherJob);
     expect((await respond(declined, 'rejected')).error).toBeNull();
     expect((await respond(declined, 'rejected')).error?.message).toMatch(/Already declined/);
-    expect(await notesFor(casey, 'Clapper loader')).toBe(1);
+    expect(await notesFor(casey, 'Boom operator')).toBe(1);
     await adminClient().from('project_crew').delete().eq('project_id', projectId).eq('user_id', casey.id);
   });
 

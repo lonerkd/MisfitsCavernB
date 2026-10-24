@@ -52,7 +52,7 @@ begin
 
   -- HMAC-SHA256 with the stored secret (case-folded address)
   select secret into v_secret from internal.password_breach_secret limit 1;
-  v_hash := encode(hmac(v_email, v_secret, 'sha256'), 'hex');
+  v_hash := encode(extensions.hmac(v_email::bytea, v_secret, 'sha256'), 'hex');
 
   insert into public.audit_logs (user_id, action, resource_type, details)
   values (
