@@ -146,7 +146,7 @@ export default function SettingsPage() {
     const apply = key === 'replies' ? setNotifyReplies : key === 'jobs' ? setNotifyJobs : setNotifyProduct;
     savePrefs({ [key]: v }, apply, v);
   };
-  const savePref = (key: string, val: boolean) => { try { localStorage.setItem(key, val ? 'on' : 'off'); } catch {} };
+  const savePref = (key: string, val: boolean) => { try { localStorage.setItem(key, val ? 'on' : 'off'); } catch (e) { flash('Could not save that setting', false); } };
 
   const setCursorPref = (v: boolean) => {
     setCursor(v); savePref(PREF_KEYS.cursor, v);
