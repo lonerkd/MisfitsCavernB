@@ -201,7 +201,7 @@ export default function MobileTabBar() {
     let live = true;
     const load = () => getLoungeUnread().then((u) => {
       if (live) setUnread([...Object.values(u.channels), ...Object.values(u.people)].reduce((a, b) => a + b, 0));
-    }).catch(() => {});
+    }).catch(() => { /* Best-effort polling for lounge unread count; transient network errors are safe to ignore. */ });
     load();
     window.addEventListener('focus', load);
     const t = setInterval(load, 60_000);
