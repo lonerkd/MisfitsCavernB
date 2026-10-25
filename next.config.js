@@ -2,6 +2,16 @@
 const path = require('path');
 const { assertPreviewNotProduction } = require('./scripts/preview-env-guard');
 
+// When the preview-specific vars are set (Vercel Preview env), use them in
+// place of the standard names so the guard below sees a non-production ref
+// and the Supabase client initialises against the staging/placeholder project.
+if (process.env.VERCEL_ENV === 'preview') {
+  if (process.env.NEXT_PUBLIC_PREVIEW_SUPABASE_URL)
+    process.env.NEXT_PUBLIC_SUPABASE_URL = process.env.NEXT_PUBLIC_PREVIEW_SUPABASE_URL;
+  if (process.env.NEXT_PREVIEW_SUPABASE_ANON_KEY)
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = process.env.NEXT_PREVIEW_SUPABASE_ANON_KEY;
+}
+
 // A Vercel preview must never run against the production database (ADR 0006).
 assertPreviewNotProduction(process.env);
 

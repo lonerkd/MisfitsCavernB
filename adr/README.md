@@ -21,6 +21,7 @@ rewritten to look different from how it happened.
 | [0003](0003-pwa-before-app-store.md) | Installable PWA first, App Store wrapper later | Accepted |
 | [0004](0004-push-dispatch-from-the-database.md) | Web Push dispatched by the database via `pg_net` | Accepted |
 | [0005](0005-the-film-graph.md) | The film graph: one connected core, reached one tool at a time | Accepted |
+| [0006](0006-staging-environment.md) | Staging environment: preview builds use placeholder Supabase keys | Accepted |
 
 ## Template
 
