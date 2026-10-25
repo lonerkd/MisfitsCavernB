@@ -96,7 +96,7 @@ routes, to decide together:
   `appleWebApp` metadata, the R13 icons (180 px touch icon, 192/512 and
   maskable manifest PNGs), the name, Pocket and the on-set offline cache.
   Missing for iPhone: splash images, "Share → Add to Home Screen" coaching
-  (iOS has no install prompt), and **Web Push** (iOS 16.4+,
+  (iOS has no install prompt), and ~~Web Push~~ (**live 2026-10-25**; iOS 16.4+,
   installed web apps only; needs VAPID keys, a `push_subscriptions` table and
   a sender — an Edge Function — for call sheets, DMs and mentions). iOS
   ignores manifest shortcuts and `share_target`. No App Store review; ships

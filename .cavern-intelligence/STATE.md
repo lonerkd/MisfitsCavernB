@@ -8,9 +8,7 @@
 
 1. **`main` is current.** Start with `git switch main && git pull`; then `node scripts/latest-sessions.js` for what the last PRs did, and `gh pr list` for what is open.
 2. **Production matches `main`** (2026-10-25: schema drift green). Previews run on the staging project `cavern-staging` (ADR 0006); each merged migration goes to production, then staging (`database-and-security.md` §3).
-3. **Then Web Push setup** (BACKLOG 3.13): VAPID keys in Vercel, and the
-   dispatch URL + secret in `internal.push_config`; see
-   `adr/0004-push-dispatch-from-the-database.md` and `lib/push/`.
+3. **Web Push is live in production** (2026-10-25): VAPID keys and `PUSH_DISPATCH_SECRET` in Vercel (Production), `internal.push_config` set; a test notification reached the owner's iPhone (`sent: 1`). Staging has no push config (off, by design).
 4. **Owner's dashboard list for password recovery (3.4, shipped):** a custom
    SMTP sender (Supabase's built-in one only mails team members, so real users
    won't get reset emails); add `https://misfits-cavern-b.vercel.app/**` to
@@ -40,8 +38,7 @@ rows, plus a universal layer so anything attaches to anything. Design:
 Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 [`bible/`](bible/README.md). In order:
 
-1. **Web Push setup** (above).
-2. **Owner, outside the code** (owner: "good for now" — revisit before
+1. **Owner, outside the code** (owner: "good for now" — revisit before
    launch): the SMTP sender and redirect allow-list (above), Supabase usage
    (grace period over — which line?), lawyer review of `/privacy`, `/terms`
    and `LICENSE`, leaked-password protection, the two old Windows stashes,
