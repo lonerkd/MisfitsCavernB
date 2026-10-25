@@ -14,7 +14,7 @@ and for the film. Engineering detail:
 
 ## `/lounge`
 
-`app/(suite)/lounge/page.tsx` (1531 lines), `components/lounge/LoungePanels.tsx`,
+`app/(suite)/lounge/page.tsx` (layout only), `components/lounge/useLounge.ts` (state, data, Realtime, handlers), `LoungeTopBar`, `ChannelRail`, `ChatHeader`, `MessagePane`, `Composer`, `CrewList`, `ThreadPanel`, `components/lounge/LoungePanels.tsx`,
 `lib/lounge/audience.ts`, `lib/webrtc/voice.ts`.
 
 - **Left**: the active project's channels grouped by audience, community

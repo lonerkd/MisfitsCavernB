@@ -5,7 +5,7 @@ full redesign, plus a **platform-wide hub** where Misfits Cavern educates,
 communicates and updates the people who use the suite, and handles
 **incidents**, **case studies** and **support cases**.
 
-Today: one page, `app/(suite)/lounge/page.tsx` (1531 lines), plus
+Before L0: one page, `app/(suite)/lounge/page.tsx` (927 lines), plus
 `components/lounge/*` (~900 lines). Channels with audiences, threads,
 reactions, pins, unread, search, guide channels, voice (mesh, ≤8), Discord
 bridge. Engineering: `lounge-and-audio.md`; screens: `bible/06-lounge-and-sound.md`.
@@ -44,7 +44,7 @@ tests in `tests/integration/` for each table.
 
 | | Slice | Size | Done when |
 |---|---|---|---|
-| **L0** | Take the page apart: split `lounge/page.tsx` into a layout, rail, channel view, composer, thread and voice components with no behaviour change | M | page under 300 lines; existing e2e and unit tests pass unchanged |
+| **L0** ✅ (2026-10-25) | Take the page apart: split `lounge/page.tsx` into a layout, rail, channel view, composer, thread and voice components with no behaviour change | M | page under 300 lines; existing e2e and unit tests pass unchanged |
 | **L1** | Hub as newsletter: *What's new* + *Learn* (`hub_posts` kinds `update`, `guide`), the four audience pages, admin editor at `/admin/hub`, "new" badge, push only for posts marked important; the hub becomes the landing page | M | an admin publishes an update, a member sees the badge and a push; persona test |
 | **L2** | *Status*: incidents (severity, updates, resolved), a banner across the suite while one is open | S | an open incident shows a banner everywhere; resolving clears it |
 | **L3** | *Help*: support cases, admin queue at `/admin/support` | M | a member opens a case, an admin answers, the member is notified; Riley can't read others' |
