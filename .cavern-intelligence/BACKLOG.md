@@ -23,9 +23,10 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal/legal.ts`; Peter Olowude,
   Alberta, Canada).
-- **Optional — branch protection on `main`** with `checks`, `database` and
-  the `e2e-local` shards required. That turns on GitHub auto-merge, so a
-  green PR merges itself instead of waiting for a session to notice.
+- **Optional — branch protection on `main`** with `checks` and `database`
+  required. (`e2e-local` is now a nightly scheduled check, not a PR gate.)
+  Branch protection turns on GitHub auto-merge, so a green PR merges itself
+  instead of waiting for a session to notice.
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
 - **Stashes**: the cloud container's ("legal") is dropped — every line was

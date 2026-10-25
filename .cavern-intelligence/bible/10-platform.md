@@ -113,8 +113,8 @@ ignores manifest shortcuts and `share_target`. BACKLOG 3.13.
   `npm run e2e` (39 specs).
 - CI (`.github/workflows/ci.yml`): `changes` → `checks` (lint, types, unit,
   build) · `database` (rebuild from migrations, drift, types, integration,
-  studio journey) · `e2e-local` (5 shards by timing). Docs-only PRs skip the
-  database and e2e jobs.
+  studio journey). Docs-only PRs skip the database job. Full e2e (5 shards by
+  timing) runs nightly via `e2e-scheduled.yml`, not on every PR.
 - Nightly *Production schema drift* compares production with
   `supabase/schema.fingerprint` (as `drift_reader`).
 - Vercel deploys `main`; previews per PR. Migrations are applied to

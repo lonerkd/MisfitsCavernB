@@ -129,7 +129,7 @@ What guards `main`, and the commands behind each guard:
 | Types, lint, unit tests, build | CI `checks` | `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` |
 | Page weight (first-load JS per page, gzipped) | CI `checks` | `npm run budget` (after a build); `-- --update` rewrites `performance-budget.json` (+10%) — raise a number only on purpose |
 | Schema = migrations; types = schema; persona tests | CI `database` | `npm run db:drift`, `npm run db:types:check`, `npm run test:integration` |
-| Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | CI `e2e-local` | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
+| Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | `e2e-scheduled.yml` (nightly 03:47 UTC + `workflow_dispatch`; not a PR gate) | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
 | Production = committed schema | `production-drift.yml`: nightly and after schema changes land on main. Needs the `PRODUCTION_DB_URL` secret (a read-only role) and **fails without it** | `DRIFT_TARGET_DB_URL=… npm run db:drift -- --target` |
 
 **The production drift login** (working since 2026-10-06). The workflow logs
@@ -166,17 +166,17 @@ annotation says why: a connection error with the target's shape (user, host,
 password length — never its characters), or the differing schema lines. A
 refused login also shows in the Supabase logs (`supavisor_logs`).
 
-- `e2e-local` runs the whole `e2e/` folder; each spec skips itself unless its
-  stack is there, so a new spec is in CI the moment it's added.
-  `scripts/e2e-shard.mjs` deals the files across the 5 shards by
-  `e2e/timings.json` (longest first onto the lightest shard; a spec with no
-  timing counts as the median). Refresh the timings when files are added or
-  get much slower: run the suite with `--reporter=json` into a file, then
-  `node scripts/e2e-shard.mjs --update <file>`. One worker per shard — on 4
-  CPUs, 3 workers ran no faster and timed out.
-- **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip
-  `database` and `e2e-local` (the `changes` job decides); `checks` still runs.
-  Pushes to `main` always run everything.
+- The scheduled e2e suite (`e2e-scheduled.yml`) runs the whole `e2e/` folder
+  nightly; each spec skips itself unless its stack is there, so a new spec is
+  in CI the moment it's added. `scripts/e2e-shard.mjs` deals the files across
+  the 5 shards by `e2e/timings.json` (longest first onto the lightest shard; a
+  spec with no timing counts as the median). Refresh the timings when files are
+  added or get much slower: run the suite with `--reporter=json` into a file,
+  then `node scripts/e2e-shard.mjs --update <file>`. One worker per shard —
+  on 4 CPUs, 3 workers ran no faster and timed out.
+- **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
+  (the `changes` job decides); `checks` still runs. Pushes to `main` run
+  `checks` and `database`.
 - **What to run locally before pushing** (CI runs the rest in parallel,
   ~5 min): `npx tsc --noEmit`, `npm run lint`, `npm test`, `npm run build`,
   plus the e2e specs for the surfaces you changed (and `npm run
