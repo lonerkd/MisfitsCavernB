@@ -9,9 +9,9 @@ verbatim, checked line for line). One added line: `ThreadPanel` returns null
 without a thread (the page already only renders it with one). No behaviour change.
 
 **Verified:** `npm run typecheck` clean; `npm run lint` 0 errors (1 old warning);
-`npm run test` 1551 passed. **Not verified:** `npm run build` — Next.js 16.4.0
-now refuses to build (`SecurityFatalError`: a known vulnerability in this Next
-version; same on `main`, not this change) — upgrade Next.js (new BACKLOG item).
-`e2e/lounge.spec.ts` not run here.
+`npm run test` 1551 passed; `npm run build` succeeds (Next.js 16.4.0 prints a
+known-vulnerability warning and continues — BACKLOG 3.29; one earlier run in the
+container stopped on it, a rerun built). CI green; Vercel preview built.
+**Not verified:** `e2e/lounge.spec.ts` (runs nightly) and a click-through.
 
 **Docs:** `bible/06-lounge-and-sound.md` file list; plan L0 ✅; BACKLOG 3.28.
