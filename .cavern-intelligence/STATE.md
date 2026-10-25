@@ -7,7 +7,7 @@
 ## Resume here (handoff, 2026-10-15)
 
 1. **`main` is current.** Start with `git switch main && git pull`; then `node scripts/latest-sessions.js` for what the last PRs did, and `gh pr list` for what is open.
-2. **Production has all six migrations** (checked 2026-10-15 against the live database: tables `scene_states`, `reading_corrections`, `reports`, column `scenes.story_confirmed`, functions `admin_close_job`, `admin_reported_message`, `admin_hide_message`, `admin_list_users`, `admin_set_suspended`). Still to do: run **Production schema drift** (workflow id 367546497, `gh api -X POST repos/lonerkd/MisfitsCavernB/actions/workflows/367546497/dispatches -f ref=main`) and record it in a session note.
+2. **Production matches `main`** (2026-10-25: schema drift green). Previews run on the staging project `cavern-staging` (ADR 0006); each merged migration goes to production, then staging (`database-and-security.md` §3).
 3. **Then Web Push setup** (BACKLOG 3.13): VAPID keys in Vercel, and the
    dispatch URL + secret in `internal.push_config`; see
    `adr/0004-push-dispatch-from-the-database.md` and `lib/push/`.
@@ -61,16 +61,9 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 ## Known issues
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
-- *Production schema drift* **is failing (since 2026-10-13)**: production's
-  `internal.timesheets_guard()` body no longer matches the committed
-  fingerprint — someone edited that function in production outside a
-  migration between 2026-10-12 15:50 and 10-13 00:52 (the fingerprint line
-  has not changed since PR #81, so the repo did not move). Needs the owner
-  to decide: restore production to the migration's version, or carry the
-  production version in a new migration (`database-and-security.md` §3).
-  The nightly check stays red on purpose until then — it is not noise.
-  It logs in as `drift_reader` (catalog reads + bucket settings only;
-  `tools-and-access.md` §7).
+- *Production schema drift* is **green** (2026-10-25, after the seven
+  migrations of 10-16…10-19 were applied). It logs in as `drift_reader`
+  (catalog reads + bucket settings only; `tools-and-access.md` §7).
 - Supabase free plan: "grace period is over" banner. Database 23 MB, storage
   46 kB, 20 users, ~200 requests/day — all well inside the limits, so the
   overage is something only the dashboard shows (likely egress or Realtime).
