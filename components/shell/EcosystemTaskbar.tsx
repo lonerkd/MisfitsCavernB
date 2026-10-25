@@ -316,7 +316,7 @@ export default function EcosystemTaskbar() {
   // ── The Caps Lock layer: the deck, on keys ───────────────────────────────
   const onDeckKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
-    const key = e.key.toLowerCase();
+    const key = (e.key ?? '').toLowerCase();
     const done = () => { e.preventDefault(); };
 
     if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }

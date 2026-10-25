@@ -27,9 +27,10 @@ account. Data: `profiles` (column-restricted), `ui_prefs`, `notification_prefs`
 - States: idle · submitting · error (inline, validation from
   `lib/validation`) · signed in (redirects away) · `app/(suite)/auth/error.tsx` for a
   crash.
-- **No "forgot password"** — there is no recovery flow (no
-  `resetPasswordForEmail`, no recovery landing). Someone who forgets a
-  password is locked out. BACKLOG 3.4 (launch blocker).
+- **Forgot password** (BACKLOG 3.4, shipped): "Forgot password?" sends a reset
+  email (`resetPasswordForEmail`); the link lands on `/auth/reset` to set a new
+  one. Real users only receive it once a custom SMTP sender is set up — Supabase's
+  built-in sender mails team members only (BACKLOG §1, 3.15).
 
 ## `/welcome` — first run
 
@@ -83,7 +84,7 @@ page. Availability → Studio's schedule and crew views.
 
 ## Known gaps
 
-- No password recovery (above).
+- Password reset emails reach real users only after a custom SMTP sender (above).
 - Leaked-password protection is off in Supabase Auth (owner toggle).
 - Only Discord for social sign-in; no Apple / Google (Apple sign-in becomes
   required if the iPhone app ships in the App Store with any third-party

@@ -67,8 +67,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 - `npm audit`: production deps clean; 7 high in dev tooling only (`braces`
   via Tailwind's watcher and `eslint-config-next`; fix needs upstream) —
   BACKLOG 3.1.
-- Security advisor: `SECURITY DEFINER` RPCs callable by anon (9) and signed-in
-  users (24 more) — the intended API, each gated, reviewed in
+- Security advisor: `SECURITY DEFINER` RPCs callable by anon (11) and signed-in
+  users (39 more, 2026-10-25 advisor) — the intended API, each gated, reviewed in
   `database-and-security.md` §2.D.
 
 ## Latest sessions
