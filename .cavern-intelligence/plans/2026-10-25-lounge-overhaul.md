@@ -14,16 +14,19 @@ bridge. Engineering: `lounge-and-audio.md`; screens: `bible/06-lounge-and-sound.
 
 The Lounge gets three areas behind one left rail:
 
-1. **Hub** (new, platform-wide, opens first for a new person): *What's new*,
-   *Learn*, *Status*, *Case studies*, *Help*.
+1. **Hub** (new, platform-wide; **the landing page**): the Misfits Cavern
+   newsletter — *What's new*, *Learn*, *Status*, *Case studies*, *Help* — with
+   one page per audience: **developers**, **filmmakers**, **buyers** (of
+   projects) and **investors** (in the platform).
 2. **Productions**: the active project's channels and voice, as today.
 3. **People**: DMs and community channels.
 
 ## The hub — data (one new migration per slice, RLS from birth)
 
 - `hub_posts` — `kind` (`update` | `guide` | `incident` | `case_study`),
-  title, body (markdown), cover media, `published_at`, `pinned`, for
-  incidents `severity` + `resolved_at`. **Read:** everyone signed in, published
+  `audience` (`everyone` | `developers` | `filmmakers` | `buyers` |
+  `investors`), `important` (sends a push), title, body (markdown), cover
+  media, `published_at`, `pinned`, for incidents `severity` + `resolved_at`. **Read:** everyone signed in, published
   only. **Write:** admins (`profiles.is_admin`). One SELECT policy.
 - `hub_reads` — who has seen which post (drives the "new" badge and a push for
   `update`/`incident` through the existing notifications → Web Push path).
@@ -42,17 +45,21 @@ tests in `tests/integration/` for each table.
 | | Slice | Size | Done when |
 |---|---|---|---|
 | **L0** | Take the page apart: split `lounge/page.tsx` into a layout, rail, channel view, composer, thread and voice components with no behaviour change | M | page under 300 lines; existing e2e and unit tests pass unchanged |
-| **L1** | Hub: *What's new* + *Learn* (`hub_posts` kinds `update`, `guide`), admin editor at `/admin/hub`, "new" badge, push on publish | M | an admin publishes an update, a member sees the badge and a push; persona test |
+| **L1** | Hub as newsletter: *What's new* + *Learn* (`hub_posts` kinds `update`, `guide`), the four audience pages, admin editor at `/admin/hub`, "new" badge, push only for posts marked important; the hub becomes the landing page | M | an admin publishes an update, a member sees the badge and a push; persona test |
 | **L2** | *Status*: incidents (severity, updates, resolved), a banner across the suite while one is open | S | an open incident shows a banner everywhere; resolving clears it |
 | **L3** | *Help*: support cases, admin queue at `/admin/support` | M | a member opens a case, an admin answers, the member is notified; Riley can't read others' |
 | **L4** | *Case studies*: long-form posts with media, linked to a public production where the owner agreed | S | a case study renders with media and links |
 | **L5** | Redesign: the three-area rail, phone layout, empty states, onboarding into the hub | M | design review on desktop and phone; screens regenerated (`npm run bible:shots`) |
 | **L6** | Move today's read-only guide channels into *Learn* | S | no `type = 'guide'` channels left; links redirect |
 
-## Decisions for the owner
+## Decisions (owner, 2026-10-25)
 
-1. Who writes hub posts: admins only (proposed), or a separate "staff" role?
-2. Push on every *update*, or only ones marked important? (proposed: marked.)
-3. Support: in-app only, or also email the answer (needs the SMTP sender, BACKLOG 3.15)?
-4. Case studies: only productions whose owner opts in (proposed), or picked by admins?
-5. Does the hub replace `/today` as the landing page for new users, or sit beside it?
+1. **Who writes:** admins only, for now. A full model of roles — who reaches
+   which page, in which state, when, and for what — comes later, once the rest
+   of the suite is complete (it needs every surface to exist).
+2. **Push:** only for posts marked important.
+3. **Order:** the newsletter (What's new, Learn, the audience pages) first,
+   then Help. Help answers stay in-app until the email sender exists (3.15).
+4. **Case studies:** not yet decided — proposed: only productions whose owner opts in.
+5. **Landing:** the hub is the landing page. **Today** stays what it is: the
+   offline-first, phone-first view of a project's shoot day — not a landing page.
