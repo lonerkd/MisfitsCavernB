@@ -64,6 +64,7 @@ export default function Home() {
       try {
         // The landing page's live preview: each part shows what loaded.
         const [script, recentMedia, recentMessages] = await Promise.all([
+          // Deliberately ignore errors: this fetches optional preview data for the landing page; if it fails, the page still works fine.
           latestScriptEditedBy(user.id).catch(() => null),
           listRecentMediaTitles(6).catch(() => []),
           listRecentChannelMessages(4).catch(() => []),
