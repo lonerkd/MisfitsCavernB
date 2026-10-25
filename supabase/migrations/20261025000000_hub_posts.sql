@@ -91,7 +91,8 @@ CREATE FUNCTION internal.hub_posts_announce()
  SET search_path TO ''
 AS $function$
 begin
-  if not new.important or new.published_at is null then
+  -- A post scheduled for later isn't announced (nobody could open it yet).
+  if not new.important or new.published_at is null or new.published_at > now() then
     return new;
   end if;
   if tg_op = 'UPDATE' and old.important and old.published_at is not null then

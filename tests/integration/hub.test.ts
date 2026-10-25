@@ -101,6 +101,12 @@ describe('announcing', () => {
     expect((await count()).length).toBe(after.length);
   });
 
+  it('an important post scheduled for later notifies nobody yet', async () => {
+    const id = await post({ title: 'Coming soon', important: true, published_at: new Date(Date.now() + 86_400_000).toISOString() });
+    const { data } = await adminClient().from('notifications').select('id').eq('link', `/hub/${id}`);
+    expect(data).toEqual([]);
+  });
+
   it('a post that is not important notifies nobody', async () => {
     const id = await post({ title: 'Small news', published_at: new Date().toISOString() });
     const { data } = await adminClient().from('notifications').select('id').eq('link', `/hub/${id}`);
