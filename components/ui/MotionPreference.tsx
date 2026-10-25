@@ -2,6 +2,7 @@
 
 import { MotionConfig } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import { useToast } from './Toast';
 
 export const REDUCE_MOTION_KEY = 'mc_reduce_motion';
 export const MOTION_PREF_EVENT = 'mc-motion-pref-change';
@@ -10,12 +11,16 @@ export const MOTION_PREF_EVENT = 'mc-motion-pref-change';
 // stops CSS animations/transitions, MotionConfig stops framer-motion ones.
 // No choice made → follow the OS setting.
 export default function MotionPreference({ children }: { children: React.ReactNode }) {
+  const { toast } = useToast();
   const [pref, setPref] = useState<string | null>(null);
 
   useEffect(() => {
     const read = () => {
       let p: string | null = null;
-      try { p = localStorage.getItem(REDUCE_MOTION_KEY); } catch {}
+      try { p = localStorage.getItem(REDUCE_MOTION_KEY); } catch (err) {
+        toast('Failed to read motion preference from storage', 'error');
+        console.error('Failed to read motion preference:', err);
+      }
       setPref(p);
       const reduce = p === 'on' || (p == null && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
       document.body.classList.toggle('reduce-motion', reduce);
@@ -23,7 +28,7 @@ export default function MotionPreference({ children }: { children: React.ReactNo
     read();
     window.addEventListener(MOTION_PREF_EVENT, read);
     return () => window.removeEventListener(MOTION_PREF_EVENT, read);
-  }, []);
+  }, [toast]);
 
   return <MotionConfig reducedMotion={pref === 'on' ? 'always' : 'user'}>{children}</MotionConfig>;
 }
