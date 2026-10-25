@@ -48,7 +48,12 @@ the "Missing or placeholder Supabase environment" warning already in
 `lib/supabase/client.ts`. Preview deploys are usable for visual review of UI
 changes, not for data-dependent flows.
 
-### Target (when a staging project exists)
+**Superseded the same day:** the staging project below now exists
+(`cavern-staging`, ref `srltiosyxvvtlsitiqqy`, us-west-1, every migration
+applied, row-level security on all 70 public tables). The two Preview
+variables hold its URL and anon key.
+
+### Target (in place 2026-10-25)
 
 Replace the placeholder values with real keys from a dedicated staging Supabase
 project. That project runs the same schema (applied from the same migrations),

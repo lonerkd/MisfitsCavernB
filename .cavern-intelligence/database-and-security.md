@@ -175,5 +175,9 @@ is changed *only* by applying those files — never by ad-hoc SQL.
    By hand: paste the file into the dashboard's SQL editor. Pasting from
    Windows stores function bodies with CRLF line endings; the fingerprint
    drops carriage returns, so that isn't drift.
+8. **Then staging:** apply the same file to the staging project
+   `srltiosyxvvtlsitiqqy` (`cavern-staging`, what Vercel previews use —
+   `adr/0006-staging-environment.md`) the same way. Staging is disposable:
+   if it drifts, recreate it from `supabase/migrations/`.
 
 **No Destructive Operations:** Never drop columns, alter tables, truncate data, or modify existing `SECURITY DEFINER` function parameters on production databases without explicit user consent and testing the rollback paths.
