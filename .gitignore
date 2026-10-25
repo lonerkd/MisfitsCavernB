@@ -36,3 +36,4 @@ e2e/keyboard-audit.json
 # Obsidian vault settings (the vault is .cavern-intelligence/)
 .obsidian/
 .cavern-intelligence/.obsidian/
+.harnesskit/
