@@ -153,7 +153,10 @@ export default function PitchBoardPage() {
               heading: sc.heading,
               excerpt: lines.slice(sc.startIndex, sc.endIndex + 1).map((l: any) => l.text).join('\n').trim().slice(0, 1200),
             })));
-          } catch {  }
+          } catch {
+            // Parsing errors are safe to ignore: we only update scriptScenes if parsing succeeds;
+            // the pitch board still renders with whatever scenes were previously loaded.
+          }
         }
       } catch (e: any) {
         if (alive) setFatal(e.message || 'Failed to load the pitch board.');
