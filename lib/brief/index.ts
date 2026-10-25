@@ -122,7 +122,8 @@ export function useProjectBrief(projectId: string | null | undefined, format: st
     const loadingKey = `${projectId}|${format}|${wantScript}`;
     await Promise.all([
       loadQuestions(), loadAnswers(projectId), loadContext(projectId),
-      wantScript ? loadScriptFacts(projectId, format).catch(() => null) : Promise.resolve(null),
+      // Deliberately ignoring errors here: when wantScript is false, we're not loading script facts at all.
+      wantScript ? loadScriptFacts(projectId, format) : Promise.resolve(null),
     ]).then(
       ([q, a, c, s]) => { setQuestions(q); setAnswers(a); setContext(c); setScript(s); setError(null); },
       (e) => setError(e instanceof Error ? e.message : 'Could not load the brief'),
