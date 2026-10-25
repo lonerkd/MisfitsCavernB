@@ -50,7 +50,9 @@ export default function CustomCursor() {
       if (style.cursor === 'grab' || style.cursor === 'grabbing') return 'grab';
       if (style.cursor === 'help') return 'help';
       if (style.cursor === 'not-allowed') return 'disabled';
-    } catch {}
+    } catch {
+      // Safe to ignore: getComputedStyle can throw on certain elements; we fall back to default cursor handling below.
+    }
 
     if (el.closest('[draggable="true"]')) {
       if (el.closest('[disabled], [aria-disabled="true"]')) return 'disabled';
