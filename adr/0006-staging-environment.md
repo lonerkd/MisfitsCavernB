@@ -28,19 +28,25 @@ exists:
 
 ### Immediate (in place 2026-10-25)
 
-The `preview` target in Vercel's environment variables carries:
+The `preview` target in Vercel's environment variables carries two
+preview-specific vars, and `next.config.js` remaps them onto the names the
+guard and the Supabase client expect before the guard runs:
 
-| Variable | Value |
+| Vercel var (Preview scope) | Remapped to at build time |
 |---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://preview-placeholder.supabase.co` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | A placeholder JWT whose `ref` claim is `preview-placeholder`, not the production ref |
+| `NEXT_PUBLIC_PREVIEW_SUPABASE_URL` | `NEXT_PUBLIC_SUPABASE_URL` |
+| `NEXT_PREVIEW_SUPABASE_ANON_KEY` | `NEXT_PUBLIC_SUPABASE_ANON_KEY` |
 
-The production values for both variables are scoped to **Production** only
-(Preview unchecked). This allows preview builds to compile and render; the
-Supabase client initialises against a non-existent host and all data reads
-fail silently with the "Missing or placeholder Supabase environment" warning
-already in `lib/supabase/client.ts`. Preview deploys are usable for visual
-review of UI changes, not for data-dependent flows.
+Both hold placeholder values (a URL that does not contain the production ref
+and a JWT whose `ref` claim is `preview-placeholder`). The production values
+for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` remain in
+Vercel scoped to **Production** only.
+
+This allows preview builds to compile and render; the Supabase client
+initialises against a non-existent host and all data reads fail silently with
+the "Missing or placeholder Supabase environment" warning already in
+`lib/supabase/client.ts`. Preview deploys are usable for visual review of UI
+changes, not for data-dependent flows.
 
 ### Target (when a staging project exists)
 

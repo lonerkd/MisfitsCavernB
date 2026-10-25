@@ -12,11 +12,13 @@ every build. The fix is a two-step owner action in Vercel dashboard:
    whose `ref` is `preview-placeholder`, not the production ref).
 2. Remove Preview from the scope of the real production vars.
 
-**Owner action required (Vercel dashboard → Project → Settings → Environment Variables):**
-- Add `NEXT_PUBLIC_SUPABASE_URL` for Preview: `https://preview-placeholder.supabase.co`
-- Add `NEXT_PUBLIC_SUPABASE_ANON_KEY` for Preview: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwicmVmIjoicHJldmlldy1wbGFjZWhvbGRlciIsImlhdCI6MTAwMDAwMDAwMCwiZXhwIjo5OTk5OTk5OTk5fQ.cHJldmlldy1wbGFjZWhvbGRlci1zaWc`
-- Find the existing production values for both vars and uncheck "Preview" from their targets.
+**Owner action (done 2026-10-25):** set in Vercel dashboard:
+- `NEXT_PUBLIC_PREVIEW_SUPABASE_URL` (Preview only) = `https://preview-placeholder.supabase.co`
+- `NEXT_PREVIEW_SUPABASE_ANON_KEY` (Preview only) = placeholder JWT with ref `preview-placeholder`
+- Production values for `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` scoped to Production only.
 
-**Not changed:** no app code, no schema, no tests.
+**Also changed:** `next.config.js` — remaps `NEXT_PUBLIC_PREVIEW_SUPABASE_URL` and
+`NEXT_PREVIEW_SUPABASE_ANON_KEY` onto the standard names before the guard runs,
+so the guard sees the placeholder values and passes.
 
 **Verified:** `npm run typecheck` and `npm run lint` clean (docs-only change).
