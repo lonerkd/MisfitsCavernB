@@ -73,7 +73,7 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
    done. Edit `STATE.md` only when the handoff itself changes (a decision,
    work finished or opened, something the owner must do).
 7. **Commit** — clear message, PR from the template, green CI before merge
-   (`checks`, `database`, `e2e-local`, the Vercel preview).
+   (`checks`, `database`, the Vercel preview; `e2e-local` runs nightly via `e2e-scheduled.yml`).
 
 Prioritise: broken > lying UI > missing-but-promised > polish. Reproduce a
 bug before fixing it; prove the fix with the same reproduction.
