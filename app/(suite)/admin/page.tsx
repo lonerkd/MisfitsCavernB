@@ -114,6 +114,18 @@ export default function AdminDashboard() {
               ERRORS
             </Link>
             <Link
+              href="/admin/hub"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              HUB POSTS
+            </Link>
+            <Link
               href="/admin/crafts"
               style={{
                 fontFamily: 'var(--mono)',

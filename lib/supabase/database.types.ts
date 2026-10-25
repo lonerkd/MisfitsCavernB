@@ -1169,6 +1169,79 @@ export type Database = {
           },
         ];
       };
+      hub_posts: {
+        Row: {
+          audience: string;
+          body: string;
+          cover_url: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          important: boolean;
+          kind: string;
+          pinned: boolean;
+          published_at: string | null;
+          title: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          audience?: string;
+          body?: string;
+          cover_url?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          important?: boolean;
+          kind?: string;
+          pinned?: boolean;
+          published_at?: string | null;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          audience?: string;
+          body?: string;
+          cover_url?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          important?: boolean;
+          kind?: string;
+          pinned?: boolean;
+          published_at?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      hub_reads: {
+        Row: {
+          post_id: string;
+          read_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          post_id: string;
+          read_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          post_id?: string;
+          read_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hub_reads_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "hub_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;

@@ -38,6 +38,7 @@ function backTarget(pathname: string): IslandRoute['back'] {
       return third ? project : { label: 'Projects', href: '/projects' };
     case 'studio': case 'editor': case 'lounge': case 'soundtrack':
       return project ?? { label: 'Projects', href: '/projects' };
+    case 'hub': return second ? { label: 'Hub', href: '/hub' } : null;
     case 'crew': return second ? { label: 'Crew', href: '/crew' } : null;
     case 'jobs': return second ? { label: 'Jobs board', href: '/jobs' } : null;
     case 'portfolio': return second ? { label: 'Portfolio', href: '/portfolio' } : null;
@@ -53,6 +54,8 @@ function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back
   switch (first) {
     case '':
       return { title: 'Hub', app: 'home', links: [TODAY, PROJECTS] };
+    case 'hub':
+      return { title: second ? 'Hub post' : 'Hub', app: 'home', links: [TODAY, PROJECTS] };
     case 'today':
       return { title: 'Today', app: 'today', links: [PROJECTS, ...tools] };
     case 'projects':

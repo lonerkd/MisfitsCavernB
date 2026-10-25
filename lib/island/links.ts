@@ -25,6 +25,7 @@ export const SETTINGS = link('go-settings', 'Settings', '/settings');
 export const ADMIN_LINKS: readonly IslandLink[] = [
   link('go-admin-users', 'Users', '/admin/users'),
   link('go-admin-errors', 'Errors', '/admin/errors'),
+  link('go-admin-hub', 'Hub posts', '/admin/hub'),
   link('go-admin-analytics', 'Analytics', '/admin/analytics'),
   link('go-admin-audit', 'Audit log', '/admin/audit-logs'),
 ];
