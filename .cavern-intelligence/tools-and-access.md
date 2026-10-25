@@ -191,7 +191,11 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   on Windows run its steps by hand (`npx supabase status -o json`, build with
   `NEXT_PUBLIC_SUPABASE_URL`/`_ANON_KEY` from it, `npx next start -p 3000`).
 - Git hooks (`.githooks/`, enabled by `npm install` via `prepare`): pre-commit
-  lints staged files; pre-push runs types and unit tests.
+  refuses staged credentials (`scripts/scan-staged.js`: private keys, AWS/GitHub/
+  live API tokens, Supabase server keys and any non-`anon` Supabase JWT; also
+  `gitleaks protect --staged` when gitleaks is installed), then lints staged
+  files; pre-push runs types and unit tests. CI's `secret-scan.yml` is the full
+  gitleaks check.
 - Node is pinned in `.nvmrc` (22) for CI and local; `engines` allows ≥20.
 - Fonts are self-hosted in `app/fonts` (SIL OFL) — builds never fetch Google Fonts.
 - Dependabot opens grouped weekly updates; CODEOWNERS asks the owner to review;

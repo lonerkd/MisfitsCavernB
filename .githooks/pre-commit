@@ -1,5 +1,9 @@
 #!/bin/sh
-# Lint what's being committed (fast). Skip with --no-verify when you must.
+# Refuse staged credentials, then lint what's being committed (fast).
+node scripts/scan-staged.js || exit 1
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner || { echo "pre-commit: gitleaks found a possible secret"; exit 1; }
+fi
 files=$(git diff --cached --name-only --diff-filter=ACMR -- '*.ts' '*.tsx' '*.js' '*.jsx' | grep -v '^\.next/' | tr '\n' ' ')
 [ -z "$files" ] && exit 0
 npx --no-install eslint --quiet $files || { echo "pre-commit: lint failed (fix it, or commit with --no-verify)"; exit 1; }
