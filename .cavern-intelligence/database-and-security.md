@@ -146,6 +146,8 @@ Callable by **signed-in users**:
 | `respond_to_application(app, status, close)` | the job's poster |
 | `has_discord_webhook(channel)` | `can_manage_channel` — false for anyone else (gated in `20261004010000`; before, it answered any signed-in user) |
 
+Definer **trigger** functions in `internal` (not callable through the API; listed because they write rows the caller couldn't): `internal.hub_posts_announce()` — after an admin publishes a post marked important (and not scheduled for later), one `notifications` row per profile, once per post (`20261025000000`).
+
 ---
 
 ## 3. Database Changes — the migration workflow (authoritative)

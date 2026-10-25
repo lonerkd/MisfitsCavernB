@@ -26,11 +26,12 @@ import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 import s from '../island/island.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { useHubUnread } from '@/components/hub/useHubUnread';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/',          color: 'var(--accent)' },
+  { id: 'home',      name: 'Hub',       icon: Home,          path: '/hub',       color: 'var(--accent)' },
   { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
@@ -287,6 +288,7 @@ export default function EcosystemTaskbar() {
   const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
   const condition = useIslandCondition();
   const onSet = useOnSet();
+  const hubUnread = useHubUnread();
   const pathApp = APPS.find(a => (a.path !== '/' ? pathname.startsWith(a.path) : pathname === '/'));
   const app = pathApp ?? APPS.find(a => a.id === route.app);
   const Glyph = app?.icon ?? Compass;
@@ -316,7 +318,7 @@ export default function EcosystemTaskbar() {
   // ── The Caps Lock layer: the deck, on keys ───────────────────────────────
   const onDeckKey = useEffectEvent((e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
-    const key = e.key.toLowerCase();
+    const key = (e.key ?? '').toLowerCase();
     const done = () => { e.preventDefault(); };
 
     if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }
@@ -480,8 +482,9 @@ export default function EcosystemTaskbar() {
                 const isActive = pathApp?.id === a.id;
                 return (
                   <span key={a.id} className={s.slot} data-tip={a.name}>
-                    <Link href={a.path} prefetch={false} className={s.btn} aria-label={a.name} aria-current={isActive ? 'page' : undefined} style={{ '--btn-accent': a.color } as React.CSSProperties}>
+                    <Link href={a.path} prefetch={false} className={s.btn} aria-label={a.id === 'home' && hubUnread ? `${a.name}, ${hubUnread} new` : a.name} aria-current={isActive ? 'page' : undefined} style={{ '--btn-accent': a.color } as React.CSSProperties}>
                       <Icon size={19} strokeWidth={1.5} aria-hidden />{keys && <Key>{i + 1}</Key>}
+                      {a.id === 'home' && hubUnread > 0 && !keys && <span className={s.pip} style={{ background: 'var(--accent)' }} aria-hidden />}
                     </Link>
                   </span>
                 );

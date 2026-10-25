@@ -75,8 +75,8 @@ signalling, presence (who's online, where).
 spoofed, you may notify only people you share a project, job, DM or channel
 with (`internal.can_notify`), links are site-relative. Sources: call sheets
 issued / changed / reminders (pg_cron `call-sheet-reminders`, hourly at :07),
-applications and hiring, castings, replies, mentions. In-app only: no email,
-no push.
+applications and hiring, castings, replies, mentions. In-app, plus Web Push to installed
+apps (live in production since 2026-10-25; `lib/push/`, ADR 0004); no email.
 
 ## Integrations
 
@@ -125,6 +125,6 @@ ignores manifest shortcuts and `share_target`. BACKLOG 3.13.
 - No email delivery of notifications, and auth emails use Supabase's default
   mail sender (low hourly limit) — a custom SMTP sender (Resend, Postmark) is
   needed before launch (3.15).
-- No staging environment: PR previews talk to production data.
+- Staging: PR previews run on the `cavern-staging` Supabase project (ADR 0006); production data is never reached from a preview.
 - Backups: the free plan has none you can restore yourself (Pro has daily).
 - Supabase usage over the free plan (grace period) — owner to check.

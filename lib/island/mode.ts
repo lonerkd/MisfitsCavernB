@@ -44,7 +44,9 @@ export function islandMode(s: IslandSignals): IslandMode {
 export const isDeck = (m: IslandMode) => m === 'open' || m === 'caps';
 
 /** True when a key press is text going into a field, so the island should get out of the way. */
-export function isTypingKey(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; target: unknown }): boolean {
+export function isTypingKey(e: { key?: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; target: unknown }): boolean {
+  // Autofill dispatches keydown events with no key.
+  if (typeof e.key !== 'string') return false;
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
   if (e.key.length !== 1 && e.key !== 'Backspace' && e.key !== 'Enter') return false;
   return isEditable(e.target);

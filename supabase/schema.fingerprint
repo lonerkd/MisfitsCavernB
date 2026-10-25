@@ -200,6 +200,21 @@ column hidden_messages.hidden_at timestamp with time zone default now() not null
 column hidden_messages.hidden_by uuid
 column hidden_messages.message_id uuid not null
 column hidden_messages.original text not null
+column hub_posts.audience text default 'everyone'::text not null
+column hub_posts.body text default ''::text not null
+column hub_posts.cover_url text
+column hub_posts.created_at timestamp with time zone default now() not null
+column hub_posts.created_by uuid default auth.uid()
+column hub_posts.id uuid default gen_random_uuid() not null
+column hub_posts.important boolean default false not null
+column hub_posts.kind text default 'update'::text not null
+column hub_posts.pinned boolean default false not null
+column hub_posts.published_at timestamp with time zone
+column hub_posts.title text not null
+column hub_posts.updated_at timestamp with time zone default now() not null
+column hub_reads.post_id uuid not null
+column hub_reads.read_at timestamp with time zone default now() not null
+column hub_reads.user_id uuid default auth.uid() not null
 column job_applications.applicant_id uuid not null
 column job_applications.applied_at timestamp with time zone default now()
 column job_applications.cover_note text
@@ -810,6 +825,16 @@ constraint guide_progress.guide_progress_workflow_check CHECK (((workflow IS NUL
 constraint hidden_messages.hidden_messages_hidden_by_fkey FOREIGN KEY (hidden_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint hidden_messages.hidden_messages_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
 constraint hidden_messages.hidden_messages_pkey PRIMARY KEY (message_id)
+constraint hub_posts.hub_posts_audience_check CHECK ((audience = ANY (ARRAY['everyone'::text, 'developers'::text, 'filmmakers'::text, 'buyers'::text, 'investors'::text])))
+constraint hub_posts.hub_posts_body_check CHECK ((char_length(body) <= 50000))
+constraint hub_posts.hub_posts_cover_url_check CHECK (((cover_url IS NULL) OR (cover_url ~ '^https://'::text)))
+constraint hub_posts.hub_posts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint hub_posts.hub_posts_kind_check CHECK ((kind = ANY (ARRAY['update'::text, 'guide'::text])))
+constraint hub_posts.hub_posts_pkey PRIMARY KEY (id)
+constraint hub_posts.hub_posts_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
+constraint hub_reads.hub_reads_pkey PRIMARY KEY (user_id, post_id)
+constraint hub_reads.hub_reads_post_id_fkey FOREIGN KEY (post_id) REFERENCES hub_posts(id) ON DELETE CASCADE
+constraint hub_reads.hub_reads_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint job_applications.job_applications_applicant_id_fkey FOREIGN KEY (applicant_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint job_applications.job_applications_job_id_applicant_id_key UNIQUE (job_id, applicant_id)
 constraint job_applications.job_applications_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
@@ -1133,14 +1158,16 @@ function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6
 function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
+function internal.hub_posts_announce() body=282f74b41c54c150e45cc6f61d72a3bf
+function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
 function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469d6e
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
-function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
+function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
@@ -1233,15 +1260,17 @@ grant function internal.channels_default_audience() postgres
 grant function internal.characters_rename() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
+grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
 grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
 grant function internal.is_project_member(pid uuid) authenticated,postgres,service_role
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
 grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
 grant function internal.media_guard() postgres,service_role
+grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
-grant function internal.messages_delete_guard() postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
@@ -1348,6 +1377,9 @@ index CREATE INDEX expenses_receipt_fkey_idx ON public.expenses USING btree (rec
 index CREATE INDEX expenses_vendor_fkey_idx ON public.expenses USING btree (vendor_id, project_id)
 index CREATE INDEX expenses_vendor_idx ON public.expenses USING btree (vendor_id)
 index CREATE INDEX guide_progress_project_idx ON public.guide_progress USING btree (project_id)
+index CREATE INDEX hub_posts_created_by_idx ON public.hub_posts USING btree (created_by)
+index CREATE INDEX hub_posts_published_idx ON public.hub_posts USING btree (published_at DESC) WHERE (published_at IS NOT NULL)
+index CREATE INDEX hub_reads_post_idx ON public.hub_reads USING btree (post_id)
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
 index CREATE INDEX idx_activity_user ON public.activity_feed USING btree (user_id)
 index CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user_id)
@@ -1531,6 +1563,8 @@ index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integratio
 index CREATE UNIQUE INDEX expenses_pkey ON public.expenses USING btree (id)
 index CREATE UNIQUE INDEX guide_progress_pkey ON public.guide_progress USING btree (user_id, project_id)
 index CREATE UNIQUE INDEX hidden_messages_pkey ON public.hidden_messages USING btree (message_id)
+index CREATE UNIQUE INDEX hub_posts_pkey ON public.hub_posts USING btree (id)
+index CREATE UNIQUE INDEX hub_reads_pkey ON public.hub_reads USING btree (user_id, post_id)
 index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfolio_projects USING btree (user_id, source_project_id) WHERE (source_project_id IS NOT NULL)
 index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
 index CREATE UNIQUE INDEX job_applications_pkey ON public.job_applications USING btree (id)
@@ -1658,6 +1692,13 @@ policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to au
 policy public.guide_progress "guide_progress own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.hidden_messages "hidden_messages admin read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
+policy public.hub_posts "hub posts delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.hub_posts "hub posts insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.hub_posts "hub posts read" PERMISSIVE SELECT to authenticated using (((published_at IS NOT NULL) AND (published_at <= now())) OR internal.caller_is_admin()) check -
+policy public.hub_posts "hub posts update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.hub_reads "hub reads delete" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.hub_reads "hub reads insert" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.hub_reads "hub reads read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
 policy public.job_applications "job_applications read" PERMISSIVE SELECT to authenticated using ((applicant_id = ( SELECT auth.uid() AS uid)) OR (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))) check -
@@ -1860,6 +1901,8 @@ rls discord_integrations enabled=true forced=false
 rls expenses enabled=true forced=false
 rls guide_progress enabled=true forced=false
 rls hidden_messages enabled=true forced=false
+rls hub_posts enabled=true forced=false
+rls hub_reads enabled=true forced=false
 rls job_applications enabled=true forced=false
 rls jobs enabled=true forced=false
 rls lounge_reads enabled=true forced=false
@@ -1920,9 +1963,11 @@ trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characte
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER hub_posts_announce AFTER INSERT OR UPDATE OF published_at, important ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_announce()
+trigger CREATE TRIGGER hub_posts_touch BEFORE INSERT OR UPDATE ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_touch()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
-trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
+trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
