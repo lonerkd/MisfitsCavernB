@@ -4,6 +4,7 @@ import React, { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, use
 import { ExternalLink } from 'lucide-react';
 import { videoEmbed, type Media, type PostCut } from '@/lib/studio';
 import s from '../studio.module.css';
+import { useToast } from '@/components/ui/Toast';
 
 export interface CutPlayerHandle {
   /** Current position in seconds, or null when the player can't report it. */
@@ -26,6 +27,7 @@ export const CutPlayer = forwardRef<CutPlayerHandle, {
   const frame = useRef<HTMLIFrameElement>(null);
   const time = useRef<number | null>(null);
   const [live, setLive] = useState(false);
+  const toast = useToast() as unknown as (message: string, type?: 'success' | 'error' | 'info') => void;
 
   const url = cut.url ?? media?.external_url ?? null;
   const embed = useMemo(() => videoEmbed(url), [url]);
@@ -63,12 +65,12 @@ export const CutPlayer = forwardRef<CutPlayerHandle, {
   useImperativeHandle(ref, () => ({
     time: () => (file ? video.current?.currentTime ?? null : time.current),
     seek: (t: number) => {
-      if (file && video.current) { video.current.currentTime = t; void video.current.play().catch(() => {}); return; }
+      if (file && video.current) { video.current.currentTime = t; const playPromise = video.current.play(); playPromise.catch((err) => { toast(String(err), 'error'); console.error('Failed to play video:', err); }); return; }
       if (!embed) return;
       if (embed.provider === 'youtube') frame.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [t, true], id: cut.id, channel: 'widget' }), YT_ORIGIN);
       if (embed.provider === 'vimeo') frame.current?.contentWindow?.postMessage(JSON.stringify({ method: 'setCurrentTime', value: t }), VIMEO_ORIGIN);
     },
-  }), [file, embed, cut.id]);
+  }), [file, embed, cut.id, toast]);
 
   if (file) {
     return <video ref={video} className={s.cutFrame} src={file} controls preload="metadata" />;
