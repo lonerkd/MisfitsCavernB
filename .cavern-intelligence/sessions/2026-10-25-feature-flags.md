@@ -9,11 +9,13 @@ admin-only flag in production); `proxy.ts` 404s a flagged path where it's off
 only on admin-only flagged paths. ADR 0007; `routing-and-surface.md` §1,
 `conventions.md` §9a.
 
-**Flags registered:** `voice_rooms` (on everywhere — registered so the owner
-can switch it; nothing hidden yet), `discord_signin_preview` (the Discord
+**Flags registered:** `discord_signin_preview` (the Discord
 sign-in button and its divider are hidden on previews — Discord isn't set up
 for staging). No flag owns routes yet, so no nav/⌘K/island entries change;
 the hub (PR #260) will be the first.
 
 **Verified:** typecheck, lint (0 errors), 1559 unit tests, build — see PR.
 **Not verified:** a deployed preview showing the Discord button hidden.
+
+**Owner (2026-10-25):** voice rooms stay open (no flag); the hub stays public;
+Vercel preview protection is on (Standard).

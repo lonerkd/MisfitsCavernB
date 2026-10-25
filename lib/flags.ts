@@ -18,13 +18,6 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
-  voice_rooms: {
-    local: true,
-    preview: true,
-    production: 'on',
-    since: '2026-10-25',
-    note: 'Lounge voice rooms (mesh, 8 people). Registered so it can be switched off or made admin-only; the owner has not decided yet.',
-  },
   discord_signin_preview: {
     local: true,
     preview: false,
