@@ -35,6 +35,7 @@ async function load(token: string): Promise<{ project: SharedProject; lookbook: 
   if (!db || !token) return null;
   const [{ data }, lookbook, kit] = await Promise.all([
     db.rpc('get_shared_project', { p_token: token }),
+    // Best-effort lookbook fetch: missing data is safe to ignore; the page renders with empty scenes/references.
     createStudioApi(db).getLookbook(token).catch(() => null),
     db.rpc('get_press_kit', { p_token: token }),
   ]);
