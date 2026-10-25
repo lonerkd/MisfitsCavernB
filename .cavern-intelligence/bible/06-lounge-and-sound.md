@@ -62,6 +62,32 @@ the channel) reads the webhook with the service role and posts;
 `/api/discord/test` checks it. Webhook URLs are re-validated before every
 fetch.
 
+## `/hub` — the newsletter (Lounge overhaul L1)
+
+`app/(suite)/hub/page.tsx`, `app/(suite)/hub/[id]/page.tsx`,
+`app/(suite)/admin/hub/page.tsx`, `lib/hub/posts.ts`, `lib/hub/markdown.ts`,
+`components/hub/`. Data: `hub_posts`, `hub_reads`
+(`20261025000000_hub_posts.sql`).
+
+- **What it is**: Misfits Cavern talking to everyone who uses The Cavern —
+  *What's new* (updates) and *Learn* (guides), each post for everyone or one
+  audience (developers, filmmakers, buyers, investors). Where sign-in lands.
+- **Reading**: tabs for the two sections, audience pills (an audience page
+  shows its posts plus posts for everyone), pinned first then newest, "New"
+  until the post is opened. A post's body is a small markdown subset rendered
+  as React elements — no HTML from a post ever reaches the page; links are
+  http(s) or in-app paths only.
+- **Writing** (`/admin/hub`, admins only): draft, preview, publish now or take
+  back to draft, pin, mark important, delete (confirmed). Publishing an
+  **important** post sends one notification to every account (type `hub`,
+  always on) — and so a push to every installed phone.
+- **Who sees what**: signed in — published posts; admins — drafts too; anon —
+  nothing. Each person's reads are their own. Persona test:
+  `tests/integration/hub.test.ts`.
+- **Known gaps**: no scheduling UI (a future `published_at` works in the data);
+  no image upload (cover is an https link); Status, Help and Case studies are
+  slices L2–L4.
+
 ## `/soundtrack`
 
 `app/(suite)/soundtrack/page.tsx`, `lib/spotify/*`, `GlobalAudioWidget`:

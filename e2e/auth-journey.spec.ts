@@ -64,7 +64,7 @@ test.describe('auth journey (live backend)', () => {
     expect(trace.filter((p) => p.startsWith('/auth')).length, 'should have visited /auth at least once').toBeGreaterThan(0);
     // A new account lands on the welcome steps (onboarding); anywhere in the app is fine.
     const landed = new URL(page.url()).pathname;
-    expect(['/welcome', '/projects', '/today'], `landed on ${landed}`).toContain(landed);
+    expect(['/welcome', '/hub', '/projects', '/today'], `landed on ${landed}`).toContain(landed);
 
     // The real loop test: once we have landed in the app, we must not be sent
     // back to /auth at any point afterwards.

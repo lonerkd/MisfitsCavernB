@@ -68,7 +68,7 @@ export default function AuthPage() {
   const wantsForgot = useSearchParam('forgot') === '1';
   // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the URL, an external system
   useEffect(() => { if (wantsForgot) setMode('forgot'); }, [wantsForgot]);
-  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/projects';
+  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/hub';
 
   // Navigate when the session is actually established in the OS store — not on a
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
@@ -77,7 +77,7 @@ export default function AuthPage() {
   // A new account with nowhere particular to go starts at /welcome.
   const isNewAccount = useRef(false);
   useEffect(() => {
-    if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/projects' ? '/welcome' : redirectTo);
+    if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/hub' ? '/welcome' : redirectTo);
   }, [status, redirectTo, router]);
 
   // Every change (and the submit) takes all the fields from the form itself, not
