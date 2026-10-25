@@ -11,6 +11,7 @@ import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from
 import { usePathname, useRouter } from 'next/navigation';
 import { ArrowRight, Laptop, Smartphone, X } from 'lucide-react';
 import { getScriptMeta } from '@/lib/supabase/scripts';
+import { useToast } from '@/lib/toast';
 import { useProject, useSession } from '@/lib/os';
 import { loadUiPrefs, saveUiPrefs, useUiPrefs } from '@/lib/os/uiPrefs';
 import { ago, placeFor, resumeOffer, worthSaving, type Device, type Place } from '@/lib/pocket/places';
@@ -29,6 +30,7 @@ export const thisDevice = (): Device => (typeof window !== 'undefined' && window
 export function PlaceTracker() {
   const { isAuthenticated } = useSession();
   const { activeProject } = useProject();
+  const toast = useToast();
   const project = useRef(activeProject);
   useLayoutEffect(() => { project.current = activeProject; });
 
@@ -45,8 +47,13 @@ export function PlaceTracker() {
       if (location.pathname === '/editor') {
         const id = search.get('script');
         if (!id) return;
-        const data = await getScriptMeta(id).catch(() => null);
-        proj = data?.project_id ? { id: data.project_id, title: data.title || 'Untitled' } : null;
+        try {
+          const data = await getScriptMeta(id);
+          proj = data?.project_id ? { id: data.project_id, title: data.title || 'Untitled' } : null;
+        } catch (err) {
+          toast({ title: 'Failed to load script metadata', description: String(err), variant: 'error' });
+          return;
+        }
       }
       const place = placeFor(location.pathname, search, proj);
       if (!place) { saved = href; return; }
