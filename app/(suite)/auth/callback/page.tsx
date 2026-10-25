@@ -31,7 +31,7 @@ export default function AuthCallback() {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) finish('/profile', session);
+      if (session) finish('/hub', session);
     });
 
     (async () => {
@@ -39,10 +39,10 @@ export default function AuthCallback() {
       const code = url.searchParams.get('code');
       if (code) {
         const { data } = await supabase.auth.exchangeCodeForSession(code);
-        if (data?.session) { finish('/profile', data.session); return; }
+        if (data?.session) { finish('/hub', data.session); return; }
       }
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) finish('/profile', session);
+      if (session) finish('/hub', session);
     })();
 
     const timeout = setTimeout(() => finish('/auth'), 5000);

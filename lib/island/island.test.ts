@@ -49,6 +49,10 @@ describe('typing', () => {
     expect(isTypingKey(key({ target: { tagName: 'INPUT', type: 'search' } }))).toBe(true);
   });
 
+  it('ignores a key event with no key (browser autofill sends these)', () => {
+    expect(isTypingKey(key({ key: undefined as unknown as string }))).toBe(false);
+  });
+
   it('is not a shortcut, a navigation key, or a key pressed on the page', () => {
     expect(isTypingKey(key({ ctrlKey: true, key: 'k' }))).toBe(false);
     expect(isTypingKey(key({ key: 'ArrowDown' }))).toBe(false);

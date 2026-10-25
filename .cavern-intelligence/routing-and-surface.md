@@ -14,7 +14,7 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 - **PROTECTED** — redirects to `/auth?redirect=<path>` if no valid session:
   `/editor`, `/lounge`, `/studio`, `/projects`, `/crew`, `/jobs`,
   `/portfolio`, `/profile`, `/settings`, `/soundtrack`, `/split`, `/welcome`,
-  `/today`, `/call`.
+  `/today`, `/call`, `/hub`.
 - **ADMIN** — protected **and** server-verifies `profiles.is_admin`; non-admins
   redirect to `/`: `/admin/*`.
 
@@ -54,6 +54,7 @@ hide nav, ⌘K and island entries. Environment: `VERCEL_ENV` /
 | `/welcome` | protected | Onboarding | `app/(suite)/welcome`, `lib/onboarding/onboarding.ts` — a new account's first stop (sign-up and first OAuth sign-in): craft, what they came for, a first project with brief answers; opens the tool for its first step. |
 | `/call/[id]` | protected | Crew call sheet | `app/(suite)/call/[id]` — where call sheet notifications land: the viewer's own call, "Got it" (confirms the issued version), the day, scenes, everyone's calls; RLS-scoped to the production. |
 | `/soundtrack` | protected | Soundtrack | `lib/spotify/*`, `GlobalAudioWidget`, SFX/Audio Bible |
+| `/hub`, `/hub/[id]` | protected | **Hub** | `lib/hub/posts.ts`, `components/hub/` — Misfits Cavern's newsletter: What's new and Learn, filtered by audience (everyone, developers, filmmakers, buyers, investors), pinned first, a "New" mark until opened (`hub_reads`); the taskbar's Hub icon carries an unread pip. **Where sign-in lands** (`/auth` default and the OAuth callback). Admins write at `/admin/hub`. |
 | `/lounge` | protected | **The Lounge** | `lib/supabase/channels.ts`, `messages.ts`, `lib/webrtc/voice.ts` — see `lounge-and-audio.md`. `?channel=<id>` / `?dm=<user>` open a conversation (notifications link there). |
 | `/jobs`, `/jobs/[id]` | protected | Jobs board | `lib/supabase/jobs.ts` |
 | `/crew`, `/crew/[id]` | protected | Crew directory | `lib/supabase/crew-management.ts`, `CrewManagementModal` |
