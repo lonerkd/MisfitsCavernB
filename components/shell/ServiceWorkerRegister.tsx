@@ -9,6 +9,7 @@ export function ServiceWorkerRegister() {
     if (process.env.NODE_ENV !== 'production') return;
     if (!('serviceWorker' in navigator)) return;
 
+    // Best-effort registration: service worker is optional, ignore failures safely.
     const register = () => navigator.serviceWorker.register('/sw.js').catch(() => {});
     if (document.readyState === 'complete') register();
     else window.addEventListener('load', register, { once: true });
