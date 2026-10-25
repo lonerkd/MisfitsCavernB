@@ -61,7 +61,11 @@ export function useBreakdownMemory(projectId: string | null): BreakdownMemory {
   useEffect(() => {
     if (!projectId) return;
     let alive = true;
-    breakdown.memory(projectId).then((rows) => { if (alive) setMemory({ projectId, memory: indexMemory(rows) }); }).catch(() => {});
+    breakdown.memory(projectId).then((rows) => {
+      if (alive) setMemory({ projectId, memory: indexMemory(rows) });
+    }).catch(() => {
+      // best-effort memory fetch; failure just means no suggestions from this project's history
+    });
     return () => { alive = false; };
   }, [projectId]);
   return projectId && memory?.projectId === projectId ? memory.memory : EMPTY_MEMORY;
