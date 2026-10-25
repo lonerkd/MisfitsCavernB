@@ -1,0 +1,47 @@
+name: E2E (scheduled)
+
+# Full 5-shard browser journeys — runs daily on main and on demand.
+# Not required on PRs (too slow). Runs independently of CI so a flaky
+# shard here doesn't block a merge; failures page the feed.
+on:
+  schedule:
+    # Daily at 03:47 UTC (offset from :00 to avoid peak runner traffic).
+    - cron: '47 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  e2e-local:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Local stack + browser
+        run: |
+          npx playwright install --with-deps chromium > /tmp/pw-install.log 2>&1 &
+          PW=$!
+          npm run db:start
+          wait $PW || { cat /tmp/pw-install.log; exit 1; }
+      - name: Journeys (real browser, local stack) — part ${{ matrix.shard }} of 5
+        run: |
+          STATUS=$(npx supabase status -o json)
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+          FILES=$(node scripts/e2e-shard.mjs ${{ matrix.shard }} 5)
+          echo "$FILES" | tr ' ' '\n'
+          E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 npx playwright test $FILES
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: e2e-report-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
