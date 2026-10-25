@@ -1,8 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { flagEnv, routeGate } from '@/lib/flags';
+
+// A flagged route that is off here doesn't exist: the app's 404, never a redirect.
+function flagOff(request: NextRequest, path: string) {
+  if (path.startsWith('/api/')) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  return NextResponse.rewrite(new URL('/__flag-off', request.url), { status: 404 });
+}
 
 export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // ── FEATURE FLAGS (lib/flags.ts, ADR 0007) ──────────────────────────
+  const gate = routeGate(path, flagEnv());
+  if (gate === 'not-found') return flagOff(request, path);
+  const flagNeedsAdmin = gate === 'admin-check';
 
   // ── PUBLIC ROUTES (no auth required) ──────────────────────────────
   const publicPaths = [
@@ -14,7 +26,7 @@ export async function proxy(request: NextRequest) {
     '/favicon.ico',
     '/opengraph-image',
   ];
-  if (publicPaths.some((p) => path === p || path.startsWith(p + '/')) || path.startsWith('/opengraph-image')) {
+  if (!flagNeedsAdmin && (publicPaths.some((p) => path === p || path.startsWith(p + '/')) || path.startsWith('/opengraph-image'))) {
     return NextResponse.next();
   }
 
@@ -37,7 +49,7 @@ export async function proxy(request: NextRequest) {
   const isAdminPath = path.startsWith('/admin');
   const isProtectedPath = protectedPaths.some((p) => path === p || path.startsWith(p + '/'));
 
-  if (!isAdminPath && !isProtectedPath) {
+  if (!isAdminPath && !isProtectedPath && !flagNeedsAdmin) {
     return NextResponse.next();
   }
 
@@ -77,15 +89,18 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
+    if (flagNeedsAdmin && !isAdminPath && !isProtectedPath) return flagOff(request, path);
     const redirectUrl = new URL('/auth', request.url);
     redirectUrl.searchParams.set('redirect', path);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isAdminPath) {
+  if (isAdminPath || flagNeedsAdmin) {
     // is_admin is private; get_my_account returns it to its owner only.
     const { data: account } = await supabase.rpc('get_my_account');
-    if (!account?.[0]?.is_admin) {
+    const admin = !!account?.[0]?.is_admin;
+    if (flagNeedsAdmin && !admin) return flagOff(request, path);
+    if (isAdminPath && !admin) {
       return NextResponse.redirect(new URL('/', request.url));
     }
   }

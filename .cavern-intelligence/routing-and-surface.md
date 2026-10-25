@@ -25,6 +25,17 @@ libs/components behind it. Auth gating is enforced in `proxy.ts` (real
 
 ---
 
+### Feature flags (`lib/flags.ts`, ADR 0007)
+
+Before any tier, `proxy.ts` asks `routeGate(path, flagEnv())`: a path listed in
+a flag's `routes` that is off in this environment returns the app's 404 (API
+paths: JSON 404) — it doesn't exist, it doesn't redirect. A flag set to
+`production: 'admins'` makes the proxy look up the caller (`get_my_account`,
+the same check `/admin` uses) only on that flag's paths; anyone else gets the
+404. In components, `<Flag name>` / `useFlag(name)` (`components/Flag.tsx`)
+hide nav, ⌘K and island entries. Environment: `VERCEL_ENV` /
+`NEXT_PUBLIC_VERCEL_ENV` (`production`, `preview`); anything else is `local`.
+
 ## 2. Page routes
 
 | Route | Tier | Module | Key files |
