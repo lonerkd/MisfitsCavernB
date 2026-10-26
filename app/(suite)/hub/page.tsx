@@ -14,6 +14,8 @@ import {
   type HubAudience, type HubKind, type HubPost,
 } from '@/lib/hub/posts';
 import { plainText } from '@/lib/hub/markdown';
+import { isOpen, sortIncidents, SEVERITY_LABEL } from '@/lib/hub/status';
+import { useFlag } from '@/components/Flag';
 
 const pill = (on: boolean): React.CSSProperties => ({
   padding: '6px 12px', borderRadius: 9999, fontSize: 13, cursor: 'pointer',
@@ -35,9 +37,12 @@ export default function HubPage() {
   });
   const [kind, setKind] = useState<HubKind>('update');
   const [audience, setAudience] = useState<HubAudience>('everyone');
+  const statusOn = useFlag('hub_status');
+  const kinds: HubKind[] = statusOn ? ['update', 'guide', 'incident'] : ['update', 'guide'];
 
   const shown = useMemo(() => {
     const posts = loaded.data?.posts ?? [];
+    if (kind === 'incident') return sortIncidents(posts);
     return forAudience(posts.filter((p) => p.kind === kind), audience);
   }, [loaded.data, kind, audience]);
 
@@ -50,15 +55,16 @@ export default function HubPage() {
         <p style={{ color: 'var(--fg-muted)', margin: '0 0 20px', maxWidth: '60ch' }}>News from Misfits Cavern: what has changed in The Cavern, and how to get the most from it.{isAdmin && <> <Link href="/admin/hub" style={{ color: 'var(--accent)' }}>Write a post</Link></>}</p>
 
         <div role="tablist" aria-label="Section" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-          {(['update', 'guide'] as HubKind[]).map((k) => (
+          {kinds.map((k) => (
             <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} style={pill(kind === k)}>{KIND_LABEL[k]}</button>
           ))}
         </div>
-        <div role="group" aria-label="Audience" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+        {kind !== 'incident' && <div role="group" aria-label="Audience" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
           {HUB_AUDIENCES.map((a) => (
             <button key={a} type="button" aria-pressed={audience === a} onClick={() => setAudience(a)} style={pill(audience === a)}>{AUDIENCE_LABEL[a]}</button>
           ))}
-        </div>
+        </div>}
+        {kind === 'incident' && <div style={{ marginBottom: 24 }} />}
 
         {state === 'loading' && <p style={{ color: 'var(--fg-muted)' }}>Loading…</p>}
         {state === 'error' && (
@@ -67,7 +73,7 @@ export default function HubPage() {
           </p>
         )}
         {state === 'ready' && shown.length === 0 && (
-          <p style={{ color: 'var(--fg-muted)' }}>Nothing here yet{audience !== 'everyone' ? ` for ${AUDIENCE_LABEL[audience].toLowerCase()}` : ''}.</p>
+          <p style={{ color: 'var(--fg-muted)' }}>{kind === 'incident' ? 'All systems normal — no incidents.' : <>Nothing here yet{audience !== 'everyone' ? ` for ${AUDIENCE_LABEL[audience].toLowerCase()}` : ''}.</>}</p>
         )}
         {state === 'ready' && shown.length > 0 && (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 12 }}>
@@ -78,6 +84,7 @@ export default function HubPage() {
                   <Link href={`/hub/${p.id}`} style={{ display: 'block', padding: 16, borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', textDecoration: 'none', color: 'inherit', background: 'var(--glass)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--fg-muted)', marginBottom: 6 }}>
                       {p.pinned && <Pin size={12} aria-label="Pinned" />}
+                      {p.kind === 'incident' && <span style={{ color: isOpen(p) ? 'var(--danger)' : 'var(--fg-muted)', fontWeight: 600 }}>{SEVERITY_LABEL[p.severity ?? 'minor']} · {isOpen(p) ? 'Ongoing' : p.resolved_at ? 'Resolved' : 'Draft'}</span>}
                       <span>{when(p)}</span>
                       {p.audience !== 'everyone' && <span>· {AUDIENCE_LABEL[p.audience]}</span>}
                       {!isPublished(p) && <span style={{ color: 'var(--warn)' }}>· Draft</span>}

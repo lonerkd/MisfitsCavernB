@@ -1169,6 +1169,39 @@ export type Database = {
           },
         ];
       };
+      hub_incident_updates: {
+        Row: {
+          body: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          post_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          post_id: string;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          post_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hub_incident_updates_post_id_fkey";
+            columns: ["post_id"];
+            isOneToOne: false;
+            referencedRelation: "hub_posts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       hub_posts: {
         Row: {
           audience: string;
@@ -1181,6 +1214,8 @@ export type Database = {
           kind: string;
           pinned: boolean;
           published_at: string | null;
+          resolved_at: string | null;
+          severity: string | null;
           title: string;
           updated_at: string;
         };
@@ -1196,6 +1231,8 @@ export type Database = {
           kind?: string;
           pinned?: boolean;
           published_at?: string | null;
+          resolved_at?: string | null;
+          severity?: string | null;
           title: string;
           updated_at?: string;
         };
@@ -1210,6 +1247,8 @@ export type Database = {
           kind?: string;
           pinned?: boolean;
           published_at?: string | null;
+          resolved_at?: string | null;
+          severity?: string | null;
           title?: string;
           updated_at?: string;
         };

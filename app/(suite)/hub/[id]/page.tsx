@@ -10,6 +10,7 @@ import { useLoad } from '@/lib/hooks/useLoad';
 import { getPost, markRead, isPublished, AUDIENCE_LABEL, KIND_LABEL } from '@/lib/hub/posts';
 import { HubMarkdown } from '@/components/hub/HubMarkdown';
 import { emitHubRead } from '@/components/hub/useHubUnread';
+import { IncidentDetail } from '@/components/hub/IncidentDetail';
 
 export default function HubPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -48,6 +49,7 @@ export default function HubPostPage({ params }: { params: Promise<{ id: string }
               <img src={post.cover_url} alt="" style={{ width: '100%', maxHeight: 360, objectFit: 'cover', borderRadius: 14, marginBottom: 20 }} />
             )}
             <HubMarkdown source={post.body} />
+            {post.kind === 'incident' && <IncidentDetail post={post} onChange={loaded.reload} />}
           </article>
         )}
       </main>

@@ -119,3 +119,47 @@ describe('announcing', () => {
     expect(data).toEqual([{ user_id: cast.riley.id }]);
   });
 });
+
+describe('status (incidents)', () => {
+  it('an incident needs a severity; other posts may not have one', async () => {
+    expect((await cast.sam.client.from('hub_posts').insert({ title: 'No sev', kind: 'incident' })).error).not.toBeNull();
+    expect((await cast.sam.client.from('hub_posts').insert({ title: 'Bad sev', kind: 'update', severity: 'minor' })).error).not.toBeNull();
+  });
+
+  it('publishing an incident notifies everyone even when not marked important; resolving does not', async () => {
+    const id = await post({ title: 'Down', kind: 'incident', severity: 'major' });
+    const links = async () => (await adminClient().from('notifications').select('user_id').eq('link', `/hub/${id}`)).data!.map((n) => n.user_id);
+    expect(await links()).toEqual([]);
+    await cast.sam.client.from('hub_posts').update({ published_at: new Date().toISOString() }).eq('id', id);
+    const after = await links();
+    expect(after).toEqual(expect.arrayContaining([cast.jordan.id, cast.riley.id]));
+    await cast.sam.client.from('hub_posts').update({ resolved_at: new Date().toISOString() }).eq('id', id);
+    expect((await links()).length).toBe(after.length);
+  });
+
+  it('members read updates of published incidents only, and never write them', async () => {
+    const live = await post({ title: 'Live', kind: 'incident', severity: 'minor', published_at: new Date().toISOString() });
+    const draft = await post({ title: 'Draft incident', kind: 'incident', severity: 'minor' });
+    for (const id of [live, draft]) {
+      expect((await cast.sam.client.from('hub_incident_updates').insert({ post_id: id, body: `Looking into ${id}` })).error).toBeNull();
+    }
+    for (const who of [cast.jordan, cast.riley]) {
+      const { data } = await who.client.from('hub_incident_updates').select('post_id').in('post_id', [live, draft]);
+      expect(data!.map((r) => r.post_id)).toEqual([live]);
+      expect((await who.client.from('hub_incident_updates').insert({ post_id: live, body: 'Mine' })).error).not.toBeNull();
+      expect((await who.client.from('hub_posts').update({ resolved_at: new Date().toISOString() }).eq('id', live).select('id')).data ?? []).toEqual([]);
+    }
+    const { data: anon } = await anonClient().from('hub_incident_updates').select('id');
+    expect(anon ?? []).toEqual([]);
+  });
+
+  it('the open-incident query returns only published, unresolved incidents', async () => {
+    const open = await post({ title: 'Open', kind: 'incident', severity: 'critical', published_at: new Date().toISOString() });
+    const done = await post({ title: 'Done', kind: 'incident', severity: 'minor', published_at: new Date().toISOString(), resolved_at: new Date().toISOString() });
+    const later = await post({ title: 'Later', kind: 'incident', severity: 'minor', published_at: new Date(Date.now() + 86_400_000).toISOString() });
+    const { data } = await cast.jordan.client.from('hub_posts').select('id')
+      .eq('kind', 'incident').is('resolved_at', null).not('published_at', 'is', null).lte('published_at', new Date().toISOString())
+      .in('id', [open, done, later]);
+    expect(data!.map((r) => r.id)).toEqual([open]);
+  });
+});
