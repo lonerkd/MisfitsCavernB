@@ -8,9 +8,11 @@ import { ProtectedPage } from '@/lib/os';
 import { useCurrentUser } from '@/lib/os';
 import { BarChart3, Users, Settings, Activity } from 'lucide-react';
 import Link from 'next/link';
+import { useFlag } from '@/components/Flag';
 
 export default function AdminDashboard() {
   const { isAdmin } = useCurrentUser();
+  const helpOn = useFlag('hub_help');
   const { data, loading, error } = useLoad('stats', getPlatformStats);
   useEffect(() => { if (error) console.error('Failed to load stats:', error); }, [error]);
   const stats = {
@@ -125,6 +127,18 @@ export default function AdminDashboard() {
             >
               HUB POSTS
             </Link>
+            {helpOn && <Link
+              href="/admin/support"
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: 11,
+                letterSpacing: 'var(--caps-track)',
+                color: 'var(--fg-muted)',
+                textDecoration: 'none',
+              }}
+            >
+              SUPPORT
+            </Link>}
             <Link
               href="/admin/crafts"
               style={{

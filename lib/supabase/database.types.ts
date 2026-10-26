@@ -3695,6 +3695,73 @@ export type Database = {
         };
         Relationships: [];
       };
+      support_case_messages: {
+        Row: {
+          author_id: string | null;
+          body: string;
+          case_id: string;
+          created_at: string;
+          from_admin: boolean;
+          id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          author_id?: string | null;
+          body: string;
+          case_id: string;
+          created_at?: string;
+          from_admin?: boolean;
+          id?: string;
+        };
+        Update: {
+          author_id?: string | null;
+          body?: string;
+          case_id?: string;
+          created_at?: string;
+          from_admin?: boolean;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_case_messages_case_id_fkey";
+            columns: ["case_id"];
+            isOneToOne: false;
+            referencedRelation: "support_cases";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      support_cases: {
+        Row: {
+          created_at: string;
+          id: string;
+          opened_by: string;
+          page: string | null;
+          status: string;
+          subject: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          opened_by?: string;
+          page?: string | null;
+          status?: string;
+          subject: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          opened_by?: string;
+          page?: string | null;
+          status?: string;
+          subject?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       timeline_items: {
         Row: {
           assigned_to: string | null;

@@ -146,7 +146,7 @@ Callable by **signed-in users**:
 | `respond_to_application(app, status, close)` | the job's poster |
 | `has_discord_webhook(channel)` | `can_manage_channel` — false for anyone else (gated in `20261004010000`; before, it answered any signed-in user) |
 
-Definer **trigger** functions in `internal` (not callable through the API; listed because they write rows the caller couldn't): `internal.hub_posts_announce()` — after an admin publishes a post marked important (and not scheduled for later), one `notifications` row per profile, once per post (`20261025000000`); since `20261026000000` an incident counts as important (publishing one always notifies; resolving doesn't).
+Definer **trigger** functions in `internal` (not callable through the API; listed because they write rows the caller couldn't): `internal.hub_posts_announce()` — after an admin publishes a post marked important (and not scheduled for later), one `notifications` row per profile, once per post (`20261025000000`); since `20261026000000` an incident counts as important (publishing one always notifies; resolving doesn't). `internal.support_messages_stamp()` sets `support_case_messages.from_admin` from `internal.caller_is_admin()` (never the client's value); `internal.support_messages_route()` — after each support message, moves the case (`waiting` after an admin's answer, `open` after the opener's) and notifies the other side: the opener, or every admin (`20261027000000`).
 
 ---
 
