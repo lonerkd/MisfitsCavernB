@@ -8,6 +8,7 @@ import { refreshActiveProject } from '@/lib/os';
 import { PROJECT_VISIBILITY, updateProjectVisibility, type ProjectVisibility } from '@/lib/supabase/projects';
 import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
+import { CaseStudyConsent } from './CaseStudyConsent';
 import { SectionHeader, Toggle, cx } from '../ui';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import s from '../studio.module.css';
@@ -103,6 +104,8 @@ export function ShareTab() {
         </div>
         {!isOwner && <p className={s.hint} style={{ marginTop: 10 }}>Only the project owner can change this.</p>}
       </div>
+
+      <CaseStudyConsent projectId={project.id} isOwner={isOwner} />
 
       <div className={s.panel}>
         <div className={s.panelTitle}>Share link</div>
