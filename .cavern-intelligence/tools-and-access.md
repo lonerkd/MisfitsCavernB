@@ -31,7 +31,7 @@ Configured team-wide and auto-approved via `enableAllProjectMcpServers` in
 | Server | Use it for | Live target |
 |---|---|---|
 | **Supabase** | schema (`list_tables`), SQL (`execute_sql`), RLS/persona verification, advisors, logs, migrations, generated types | project `fxsryglwpwcqkfjljbrm` ("The Cavern"), Postgres 17 |
-| **Vercel** | deploy status, build logs, runtime logs/errors, deploys | project `misfits-cavern-b` (team `peters-projects-4575517e`) |
+| **Vercel** | deploy status, build logs, runtime logs/errors, deploys | project `misfits-cavern-b` (the owner's Vercel team) |
 | **GitHub** | PRs, CI checks, issues, code search, reviews | `lonerkd/MisfitsCavernB` |
 | **Google Drive** | read reference docs, briefs, assets | user Drive |
 | **Indeed** | jobs-board reference data | — |
@@ -119,6 +119,28 @@ construct their clients lazily *inside* the handler, so a missing key fails at
 request time with a clean 500 rather than breaking `next build`.
 
 Full template: `.env.example`. Reading `.env*` is `deny`-blocked for agents.
+
+### 6a. The repository is public — what never goes in it
+
+`lonerkd/MisfitsCavernB` is a **public** repository (kept public for GitHub
+Actions minutes, 2026-10-26). Everything committed — code, docs, session notes,
+history — can be read by anyone. Never commit:
+
+- **Credentials**: keys, tokens, passwords, connection strings with a password,
+  VAPID private keys, dispatch secrets. They live in Vercel (per environment),
+  GitHub Actions secrets, or the Supabase vault. The pre-commit hook
+  (`scripts/scan-staged.js`) and CI's gitleaks scan refuse the common ones.
+- **Operational identifiers in prose**: incident numbers, workflow and run ids,
+  the staging project's ref, internal role names, webhook/dispatch URLs, team or
+  organisation ids. Say "the staging project", "the drift check", "a read-only
+  role". Code and workflows keep the values they need to run.
+- **Personal data**: anyone's email, test-account addresses, the owner's name
+  and location outside the legal pages (`lib/legal/legal.ts`, `/privacy`,
+  `/terms`), real users' content or ids.
+- **Fixed test passwords**: e2e specs generate one per run (`randomUUID()`).
+
+Git history is not rewritten for docs; a real credential that reaches a commit
+is **rotated**, not just deleted.
 
 ## 7. CI, checks and local tooling
 

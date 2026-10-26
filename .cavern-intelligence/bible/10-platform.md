@@ -116,7 +116,7 @@ ignores manifest shortcuts and `share_target`. BACKLOG 3.13.
   studio journey). Docs-only PRs skip the database job. Full e2e (5 shards by
   timing) runs nightly via `e2e-scheduled.yml`, not on every PR.
 - Nightly *Production schema drift* compares production with
-  `supabase/schema.fingerprint` (as `drift_reader`).
+  `supabase/schema.fingerprint` (a read-only role).
 - Vercel deploys `main`; previews per PR. Migrations are applied to
   production by hand after merge (`database-and-security.md` §3).
 

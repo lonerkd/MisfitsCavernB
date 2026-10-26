@@ -10,6 +10,6 @@ had the legacy `channel_id` branch (readable by any signed-in user); checked:
 0 of 24 messages were such rows, so nothing was exposed.
 
 **Done (owner OK):** applied the seven, in order, with MCP `apply_migration`.
-Drift run 40175412442: green. Staging already had them (built from `main`).
+The drift check ran green. Staging already had them (built from `main`).
 
 **Changed:** `STATE.md` (known issue removed, Resume here item 2).
