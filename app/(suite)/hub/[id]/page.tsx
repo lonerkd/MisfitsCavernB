@@ -11,12 +11,14 @@ import { getPost, markRead, isPublished, AUDIENCE_LABEL, KIND_LABEL } from '@/li
 import { HubMarkdown } from '@/components/hub/HubMarkdown';
 import { emitHubRead } from '@/components/hub/useHubUnread';
 import { IncidentDetail } from '@/components/hub/IncidentDetail';
+import { getCaseStudyProject } from '@/lib/hub/caseStudies';
 
 export default function HubPostPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { user } = useCurrentUser();
   const loaded = useLoad(user ? `hub-post:${id}` : null, () => getPost(id));
   const post = loaded.data ?? null;
+  const production = useLoad(user && post?.kind === 'case_study' && post.project_id ? `hub-production:${id}` : null, () => getCaseStudyProject(id));
 
   useEffect(() => {
     if (!post || !isPublished(post)) return;
@@ -47,6 +49,13 @@ export default function HubPostPage({ params }: { params: Promise<{ id: string }
             {post.cover_url && (
               // eslint-disable-next-line @next/next/no-img-element -- admin-supplied https image, any host
               <img src={post.cover_url} alt="" style={{ width: '100%', maxHeight: 360, objectFit: 'cover', borderRadius: 14, marginBottom: 20 }} />
+            )}
+            {production.data && (
+              <aside aria-label="The production" style={{ margin: '0 0 20px', padding: 14, borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'var(--glass)' }}>
+                <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>The production — shown with its owner’s agreement</div>
+                <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--fg-strong)' }}>{production.data.title}</div>
+                {production.data.description && <div style={{ color: 'var(--fg-muted)' }}>{production.data.description}</div>}
+              </aside>
             )}
             <HubMarkdown source={post.body} />
             {post.kind === 'incident' && <IncidentDetail post={post} onChange={loaded.reload} />}

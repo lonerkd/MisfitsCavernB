@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  hub_case_studies: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-26',
+    note: 'The hub\'s Case studies tab, the admin editor\'s case-study kind, and the owner\'s "allow a case study" switch in Share. Admin-only in production until the owner has tried it on live data.',
+  },
   hub_help: {
     local: true,
     preview: true,

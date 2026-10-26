@@ -8,7 +8,7 @@ import type { HubPost } from './posts';
 const now = Date.parse('2026-10-26T12:00:00Z');
 const post = (id: string, over: Partial<HubPost>): HubPost => ({
   id, kind: 'incident', audience: 'everyone', title: id, body: '', cover_url: null, important: false, pinned: false,
-  published_at: '2026-10-26T10:00:00Z', severity: 'minor', resolved_at: null,
+  published_at: '2026-10-26T10:00:00Z', severity: 'minor', resolved_at: null, project_id: null,
   created_at: '2026-10-26T10:00:00Z', updated_at: '2026-10-26T10:00:00Z', ...over,
 });
 

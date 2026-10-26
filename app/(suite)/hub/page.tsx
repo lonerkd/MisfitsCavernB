@@ -39,7 +39,8 @@ export default function HubPage() {
   const [audience, setAudience] = useState<HubAudience>('everyone');
   const statusOn = useFlag('hub_status');
   const helpOn = useFlag('hub_help');
-  const kinds: HubKind[] = statusOn ? ['update', 'guide', 'incident'] : ['update', 'guide'];
+  const studiesOn = useFlag('hub_case_studies');
+  const kinds: HubKind[] = ['update', 'guide', ...(statusOn ? (['incident'] as const) : []), ...(studiesOn ? (['case_study'] as const) : [])];
 
   const shown = useMemo(() => {
     const posts = loaded.data?.posts ?? [];

@@ -105,9 +105,20 @@ fetch.
   waiting and notifies the opener (so a push); the opener's message moves it
   back to open and notifies the admins. Persona test:
   `tests/integration/hub-support.test.ts`.
+- **Case studies** (L4, behind flag `hub_case_studies`: on locally and on
+  previews, admins only in production): a hub post of kind `case_study`, which
+  an admin may link to one production — **only if its owner opted in**. The
+  owner flips "Allow a case study about this production" in Studio › Share
+  (`projects.case_study_ok`, default off, creator-only); the post then shows
+  the production's title and logline to signed-in readers
+  (`hub_case_study_project`). Withdrawing consent unlinks every case study
+  about it and takes it back to draft (`20261028000000_hub_case_studies.sql`).
+  Admins pick from consenting productions only (`admin_case_study_projects`).
+  Persona test: `tests/integration/hub-case-studies.test.ts`.
 - **Known gaps**: no scheduling UI (a future `published_at` works in the data);
   no image upload (cover is an https link); Help has no screenshot attachment
-  and no email (in-app and push only until 3.15); Case studies is slice L4.
+  and no email (in-app and push only until 3.15); a case study shows the
+  title and logline only, not the production's media or a link to it.
 
 ## `/soundtrack`
 

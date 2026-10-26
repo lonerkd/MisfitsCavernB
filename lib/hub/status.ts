@@ -37,7 +37,7 @@ export function bannerIncident(posts: HubPost[], now = Date.now()): HubPost | nu
 export async function listOpenIncidents(): Promise<HubPost[]> {
   const { data, error } = await supabase
     .from('hub_posts')
-    .select('id, kind, audience, title, body, cover_url, important, pinned, published_at, severity, resolved_at, created_at, updated_at')
+    .select('id, kind, audience, title, body, cover_url, important, pinned, published_at, severity, resolved_at, project_id, created_at, updated_at')
     .eq('kind', 'incident')
     .is('resolved_at', null)
     .not('published_at', 'is', null)
