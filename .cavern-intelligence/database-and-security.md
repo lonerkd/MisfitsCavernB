@@ -178,7 +178,7 @@ is changed *only* by applying those files — never by ad-hoc SQL.
    Windows stores function bodies with CRLF line endings; the fingerprint
    drops carriage returns, so that isn't drift.
 8. **Then staging:** apply the same file to the staging project
-   `srltiosyxvvtlsitiqqy` (`cavern-staging`, what Vercel previews use —
+   (`cavern-staging`, what Vercel previews use —
    `adr/0006-staging-environment.md`) the same way. Staging is disposable:
    if it drifts, recreate it from `supabase/migrations/`.
 
