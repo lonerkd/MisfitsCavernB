@@ -18,6 +18,14 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  hub_help: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    routes: ['/hub/help', '/admin/support'],
+    since: '2026-10-26',
+    note: 'The hub\'s Help: support cases and the admin queue. Admin-only in production until the owner has tried it on live data.',
+  },
   hub_status: {
     local: true,
     preview: true,

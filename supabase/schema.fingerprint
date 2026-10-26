@@ -644,6 +644,19 @@ column spotify_connections.expires_at bigint not null
 column spotify_connections.refresh_token text not null
 column spotify_connections.updated_at timestamp with time zone default now() not null
 column spotify_connections.user_id uuid not null
+column support_case_messages.author_id uuid default auth.uid()
+column support_case_messages.body text not null
+column support_case_messages.case_id uuid not null
+column support_case_messages.created_at timestamp with time zone default now() not null
+column support_case_messages.from_admin boolean default false not null
+column support_case_messages.id uuid default gen_random_uuid() not null
+column support_cases.created_at timestamp with time zone default now() not null
+column support_cases.id uuid default gen_random_uuid() not null
+column support_cases.opened_by uuid default auth.uid() not null
+column support_cases.page text
+column support_cases.status text default 'open'::text not null
+column support_cases.subject text not null
+column support_cases.updated_at timestamp with time zone default now() not null
 column timeline_items.assigned_to uuid
 column timeline_items.created_at timestamp with time zone default now()
 column timeline_items.created_by uuid
@@ -1111,6 +1124,15 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint support_case_messages.support_case_messages_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint support_case_messages.support_case_messages_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 5000)))
+constraint support_case_messages.support_case_messages_case_id_fkey FOREIGN KEY (case_id) REFERENCES support_cases(id) ON DELETE CASCADE
+constraint support_case_messages.support_case_messages_pkey PRIMARY KEY (id)
+constraint support_cases.support_cases_opened_by_fkey FOREIGN KEY (opened_by) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint support_cases.support_cases_page_check CHECK (((page IS NULL) OR (char_length(page) <= 500)))
+constraint support_cases.support_cases_pkey PRIMARY KEY (id)
+constraint support_cases.support_cases_status_check CHECK ((status = ANY (ARRAY['open'::text, 'waiting'::text, 'resolved'::text])))
+constraint support_cases.support_cases_subject_check CHECK (((char_length(btrim(subject)) >= 1) AND (char_length(btrim(subject)) <= 200)))
 constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
@@ -1196,6 +1218,9 @@ function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76d
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.shoot_days_date_to_call_sheet() body=e4538e1cc3c6d9d0b9db85fb0895308e
+function internal.support_cases_touch() body=158b70a96b36cb267200eea958e42823
+function internal.support_messages_route() body=80bdbf1b14705cbcf694731f79062017
+function internal.support_messages_stamp() body=a7aa6cc02189b9eb6a6cbf130828cfba
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=120e37b024775f62f4ba26fc34af9a54
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
@@ -1298,6 +1323,9 @@ grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.shoot_days_date_to_call_sheet() postgres
+grant function internal.support_cases_touch() postgres
+grant function internal.support_messages_route() postgres
+grant function internal.support_messages_stamp() postgres
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
@@ -1533,6 +1561,10 @@ index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (create
 index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
+index CREATE INDEX support_case_messages_author_idx ON public.support_case_messages USING btree (author_id)
+index CREATE INDEX support_case_messages_case_idx ON public.support_case_messages USING btree (case_id, created_at)
+index CREATE INDEX support_cases_opened_by_idx ON public.support_cases USING btree (opened_by, updated_at DESC)
+index CREATE INDEX support_cases_status_idx ON public.support_cases USING btree (status, updated_at DESC)
 index CREATE INDEX timesheets_decided_by_fkey_idx ON public.timesheets USING btree (decided_by)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
@@ -1646,6 +1678,8 @@ index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
 index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
+index CREATE UNIQUE INDEX support_case_messages_pkey ON public.support_case_messages USING btree (id)
+index CREATE UNIQUE INDEX support_cases_pkey ON public.support_cases USING btree (id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 index CREATE UNIQUE INDEX timesheets_day_key ON public.timesheets USING btree (project_id, user_id, work_date)
 index CREATE UNIQUE INDEX timesheets_pkey ON public.timesheets USING btree (id)
@@ -1835,6 +1869,11 @@ policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DE
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.support_case_messages "support case messages insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))))
+policy public.support_case_messages "support case messages read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))) check -
+policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenticated using - check ((opened_by = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text))
+policy public.support_cases "support cases read" PERMISSIVE SELECT to authenticated using ((opened_by = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
+policy public.support_cases "support cases update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.can_shape_project(project_id))
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
@@ -1965,6 +2004,8 @@ rls sfx_assets enabled=true forced=false
 rls shoot_days enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
+rls support_case_messages enabled=true forced=false
+rls support_cases enabled=true forced=false
 rls timeline_items enabled=true forced=false
 rls timesheets enabled=true forced=false
 rls transcript_lines enabled=true forced=false
@@ -2010,6 +2051,9 @@ trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scr
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER shoot_days_date_to_call_sheet AFTER UPDATE OF shoot_date ON public.shoot_days FOR EACH ROW WHEN (((pg_trigger_depth() < 1) AND (new.shoot_date IS DISTINCT FROM old.shoot_date))) EXECUTE FUNCTION internal.shoot_days_date_to_call_sheet()
 trigger CREATE TRIGGER shoot_days_updated_at BEFORE UPDATE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER support_cases_touch BEFORE INSERT OR UPDATE ON public.support_cases FOR EACH ROW EXECUTE FUNCTION internal.support_cases_touch()
+trigger CREATE TRIGGER support_messages_route AFTER INSERT ON public.support_case_messages FOR EACH ROW EXECUTE FUNCTION internal.support_messages_route()
+trigger CREATE TRIGGER support_messages_stamp BEFORE INSERT ON public.support_case_messages FOR EACH ROW EXECUTE FUNCTION internal.support_messages_stamp()
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
 trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()

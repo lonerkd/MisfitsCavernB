@@ -94,9 +94,20 @@ fetch.
   (`components/hub/IncidentBanner.tsx`) shows the most severe, dismissible per
   incident for the session; it rechecks every 60 s. The Status tab lists open
   incidents first (most severe), then resolved ones.
+- **Help** (L3, behind flag `hub_help`: on locally and on previews, admins only
+  in production): `/hub/help` — a person opens a support case (subject,
+  message, the page they came from via `?from=`) and follows it at
+  `/hub/help/<id>`; admins work the queue at `/admin/support` (needs an answer
+  / waiting on them / resolved). Tables `support_cases` and
+  `support_case_messages` (`20261027000000_hub_support.sql`): only the opener
+  and admins read a case; only admins change its status; whether a message is
+  an admin's is set by the database. An admin's answer moves the case to
+  waiting and notifies the opener (so a push); the opener's message moves it
+  back to open and notifies the admins. Persona test:
+  `tests/integration/hub-support.test.ts`.
 - **Known gaps**: no scheduling UI (a future `published_at` works in the data);
-  no image upload (cover is an https link); Help and Case studies are slices
-  L3–L4.
+  no image upload (cover is an https link); Help has no screenshot attachment
+  and no email (in-app and push only until 3.15); Case studies is slice L4.
 
 ## `/soundtrack`
 

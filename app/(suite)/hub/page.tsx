@@ -38,6 +38,7 @@ export default function HubPage() {
   const [kind, setKind] = useState<HubKind>('update');
   const [audience, setAudience] = useState<HubAudience>('everyone');
   const statusOn = useFlag('hub_status');
+  const helpOn = useFlag('hub_help');
   const kinds: HubKind[] = statusOn ? ['update', 'guide', 'incident'] : ['update', 'guide'];
 
   const shown = useMemo(() => {
@@ -58,6 +59,7 @@ export default function HubPage() {
           {kinds.map((k) => (
             <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} style={pill(kind === k)}>{KIND_LABEL[k]}</button>
           ))}
+          {helpOn && <Link href="/hub/help" style={{ ...pill(false), textDecoration: 'none' }}>Help</Link>}
         </div>
         {kind !== 'incident' && <div role="group" aria-label="Audience" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
           {HUB_AUDIENCES.map((a) => (
