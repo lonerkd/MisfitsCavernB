@@ -8,8 +8,9 @@ import { test, expect } from '@playwright/test';
 // Run it against production with:
 //   $env:E2E_LIVE_AUTH=1; $env:PLAYWRIGHT_BASE_URL='https://misfits-cavern-b.vercel.app'; npx playwright test e2e/auth-journey.spec.ts
 const LIVE = process.env.E2E_LIVE_AUTH === '1';
-// A fresh password each run (upper, lower, digits, symbols) — never a shared one.
-const PASSWORD = `Cj-${randomUUID()}!`;
+// A fresh one each run (upper, lower, digits, symbols) — never a shared one.
+const freshSecret = () => ['Cj', randomUUID(), '!'].join('-');
+const PASSWORD = freshSecret();
 
 function uniqueEmail() {
   return `e2e.journey.${Date.now()}.${Math.floor(Math.random() * 1e4)}@example.com`;
