@@ -6,7 +6,7 @@ import { sortPosts, forAudience, isPublished, checkPost, unreadCount, type HubPo
 
 const p = (over: Partial<HubPost>): HubPost => ({
   id: 'x', kind: 'update', audience: 'everyone', title: 'T', body: '', cover_url: null, important: false, pinned: false,
-  published_at: '2026-10-01T00:00:00Z', created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z', ...over,
+  published_at: '2026-10-01T00:00:00Z', severity: null, resolved_at: null, created_at: '2026-10-01T00:00:00Z', updated_at: '2026-10-01T00:00:00Z', ...over,
 });
 
 describe('sortPosts', () => {
@@ -46,5 +46,14 @@ describe('checkPost', () => {
     expect(checkPost({ ...base, title: '  ' }).ok).toBe(false);
     expect(checkPost({ ...base, cover_url: 'http://x.test/a.png' }).ok).toBe(false);
     expect(checkPost({ ...base, audience: 'aliens' as never }).ok).toBe(false);
+  });
+});
+
+describe('checkPost — incidents', () => {
+  const base: HubPostInput = { kind: 'incident', audience: 'everyone', title: 'Outage', body: '', cover_url: null, important: false, pinned: false };
+  it('needs a severity for an incident, and none otherwise', () => {
+    expect(checkPost(base).ok).toBe(false);
+    expect(checkPost({ ...base, severity: 'major' }).ok).toBe(true);
+    expect(checkPost({ ...base, kind: 'update', severity: 'major' }).ok).toBe(false);
   });
 });

@@ -84,9 +84,19 @@ fetch.
 - **Who sees what**: signed in — published posts; admins — drafts too; anon —
   nothing. Each person's reads are their own. Persona test:
   `tests/integration/hub.test.ts`.
+- **Status** (L2, behind flag `hub_status`: on locally and on previews, admins
+  only in production): an incident is a hub post of kind `incident` with a
+  severity (minor / major / critical) and `resolved_at`; admins create it at
+  `/admin/hub`, post running updates and resolve or reopen it on its page
+  (`components/hub/IncidentDetail.tsx`, table `hub_incident_updates`,
+  `20261026000000_hub_status.sql`). Publishing an incident always notifies
+  everyone; resolving doesn't. While one is open, a banner across the suite
+  (`components/hub/IncidentBanner.tsx`) shows the most severe, dismissible per
+  incident for the session; it rechecks every 60 s. The Status tab lists open
+  incidents first (most severe), then resolved ones.
 - **Known gaps**: no scheduling UI (a future `published_at` works in the data);
-  no image upload (cover is an https link); Status, Help and Case studies are
-  slices L2–L4.
+  no image upload (cover is an https link); Help and Case studies are slices
+  L3–L4.
 
 ## `/soundtrack`
 

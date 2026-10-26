@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  hub_status: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-26',
+    note: 'The hub\'s Status tab (incidents) and the suite-wide incident banner. Admin-only in production until the owner has tried it on live data.',
+  },
   discord_signin_preview: {
     local: true,
     preview: false,
