@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 
 // Live auth journey. This spec is OPT-IN (E2E_LIVE_AUTH=1) because it creates a
@@ -7,7 +8,8 @@ import { test, expect } from '@playwright/test';
 // Run it against production with:
 //   $env:E2E_LIVE_AUTH=1; $env:PLAYWRIGHT_BASE_URL='https://misfits-cavern-b.vercel.app'; npx playwright test e2e/auth-journey.spec.ts
 const LIVE = process.env.E2E_LIVE_AUTH === '1';
-const PASSWORD = 'Cavern-Journey-2026!';
+// A fresh password each run (upper, lower, digits, symbols) — never a shared one.
+const PASSWORD = `Cj-${randomUUID()}!`;
 
 function uniqueEmail() {
   return `e2e.journey.${Date.now()}.${Math.floor(Math.random() * 1e4)}@example.com`;

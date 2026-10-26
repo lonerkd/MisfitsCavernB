@@ -20,7 +20,7 @@ keep it cohesive, get it ready for paying users.
 
 Stack: Next.js 16 App Router (React 19, webpack build) · TypeScript ·
 Tailwind · framer-motion · Supabase (Postgres + RLS, Auth, Realtime,
-Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
+Storage; the production and staging projects are in `tools-and-access.md` §2) · WebRTC · Vercel
 (deploys `main` of `lonerkd/MisfitsCavernB`). Auth gating is `proxy.ts`.
 
 ## Start of every session
