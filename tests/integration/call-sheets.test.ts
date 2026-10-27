@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { adminClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject } from './support/project';
+import { createStudioApi } from '@/lib/studio/api';
 
 // Call sheets reach the crew, as personas: Sam (owner) issues; Jordan (crew,
 // cast as MAYA) gets their own call and confirms; Casey (a viewer) is told
@@ -9,6 +10,7 @@ let cast: Cast;
 let casey: Persona;
 let projectId: string;
 let sheetId: string;
+let sceneId: string;
 
 const notes = async (who: Persona) =>
   (await who.client.from('notifications').select('title, body, link').eq('type', 'call_sheet').order('created_at')).data ?? [];
@@ -20,6 +22,16 @@ beforeAll(async () => {
   const admin = adminClient();
   await admin.from('project_crew').insert({ project_id: projectId, user_id: casey.id, role: 'viewer', status: 'confirmed' });
   await admin.from('character_castings').insert({ project_id: projectId, character_name: 'MAYA', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
+  const scene = await cast.sam.client.from('scenes').insert({
+    project_id: projectId, scene_number: 1, title: 'Scene 1', heading: 'INT. STUDIO - NIGHT', shoot_day: 1, cast_list: 'STALE NAME',
+  }).select('id').single();
+  if (scene.error) throw scene.error;
+  sceneId = scene.data.id;
+  const maya = await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA').single();
+  if (maya.error) throw maya.error;
+  await cast.sam.client.from('scene_characters').delete().eq('scene_id', sceneId);
+  const link = await cast.sam.client.from('scene_characters').insert({ project_id: projectId, scene_id: sceneId, character_id: maya.data.id });
+  if (link.error) throw link.error;
   sheetId = (await cast.sam.client.from('call_sheets')
     .insert({ project_id: projectId, shoot_day: 1, general_call: '06:00', location_address: '12 Harbor Rd' })
     .select('id').single()).data!.id;
@@ -31,6 +43,13 @@ beforeAll(async () => {
 afterAll(async () => { await destroyCast({ ...cast, casey }); });
 
 describe('issuing a call sheet', () => {
+  it('shows scene cast from graph links, not stale scene text', async () => {
+    const view = await createStudioApi(cast.jordan.client).getCallSheetView(sheetId, cast.jordan.id);
+    expect(view?.scenes).toEqual([{
+      id: sceneId, scene_number: 1, heading: 'INT. STUDIO - NIGHT', title: 'Scene 1', cast: ['MAYA'],
+    }]);
+  });
+
   it('needs a date, and only the owner and leads can', async () => {
     expect((await cast.sam.client.rpc('issue_call_sheet', { p_sheet: sheetId })).error?.message).toMatch(/Date the shoot day/);
     await cast.sam.client.from('call_sheets').update({ shoot_date: '2026-11-03' }).eq('id', sheetId);

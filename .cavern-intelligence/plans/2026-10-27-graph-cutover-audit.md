@@ -58,7 +58,7 @@ post a character by name).
 ## Order of work for step 1 (each ships alone, behind no flag where it only changes where the data is read from)
 
 1. **Done (2026-10-27)** — **Stripboard + readiness + call sheet cast** read `scene_characters` through
-   `castOfScene` (`StudioContext.castOf`; also On set, the Scenes tab and the breakdown). Still on the text: the public `/call/[id]` page and `lib/studio/api.ts`'s call-sheet scene query (an outsider surface — needs a data function that returns the graph cast), and `scene-sync.ts` still writes the text. Biggest user-visible win: conflicts
+   `castOfScene` (`StudioContext.castOf`; also On set, the Scenes tab and the breakdown). The public `/call/[id]` page and `lib/studio/api.ts` now read each scene's cast from `scene_characters` and `characters`, keeping the query scoped to the sheet's project; `scene-sync.ts` still writes the old text until its final reader is removed. Biggest user-visible win: conflicts
    and "uncast" stop depending on how a name was typed. **M.**
 2. **Call-sheet calls and castings by `character_id`** (cast on the sheet follows
    the schedule and survives a rename); jobs' casting calls keep the name for
