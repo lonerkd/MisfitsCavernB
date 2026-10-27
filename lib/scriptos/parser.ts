@@ -3,6 +3,7 @@
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
+import { inferDocumentProfile, type DocumentProfile } from './profile';
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -115,6 +116,12 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
+  /** Names repeatedly read as cues in a locked earlier draft; weaker than a human correction. */
+  previousCharacters?: readonly string[];
+  /** Existing project locations, used only to canonicalize a parsed scene location. */
+  places?: readonly string[];
+  /** Human line decisions, keyed to exact trimmed text and its occurrence in the script. */
+  lineOverrides?: readonly { lineText: string; occurrence: number; type: LineType }[];
 }
 
 export interface ParseOptions {
@@ -172,15 +179,32 @@ export class ScriptParser {
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
   private useDecoder: boolean;
   private rejectedNames: Set<string>;
+  private profile: DocumentProfile;
+  private previousNames: Set<string>;
+  private places: string[];
+  private lineOverrides: Map<number, LineType>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
+    this.profile = inferDocumentProfile(text);
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
-    this.learnedNames = new Set([...learnedNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
+    this.previousNames = new Set(upper(options.context?.previousCharacters).map((n) => this.clean(n)).filter((n) => n && !this.rejectedNames.has(n)));
+    this.places = (options.context?.places ?? []).map((name) => name.trim()).filter(Boolean);
+    this.lineOverrides = new Map();
+    const occurrences = new Map<string, number>();
+    for (let i = 0; i < this.rawLines.length; i++) {
+      const lineText = this.rawLines[i].trim();
+      if (!lineText) continue;
+      const occurrence = occurrences.get(lineText) ?? 0;
+      occurrences.set(lineText, occurrence + 1);
+      const override = options.context?.lineOverrides?.find((item) => item.lineText === lineText && item.occurrence === occurrence);
+      if (override) this.lineOverrides.set(i, override.type);
+    }
+    this.learnedNames = new Set([...learnedNames, ...this.profile.cueNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -296,11 +320,20 @@ export class ScriptParser {
       };
 
       const forced = this.preClassify(trim);
+      const override = this.lineOverrides.get(i);
       let analysis: ReturnType<typeof this.analyzeLine>;
       if (forced) {
         analysis = forced;
       } else if (i < 50 && this.isTitlePageContent(trim)) {
         analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
+      } else if (override) {
+        analysis = {
+          type: override,
+          confidence: 100,
+          scores: this.emptyScores(),
+          reasoning: ['Human line override'],
+          meta: override === 'character' ? { characterName: this.clean(trim.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s*\^\s*$/, '')) } : {},
+        };
       } else {
         analysis = this.usesScreenplayGrammar()
           ? this.analyzeLine(trim, context)
@@ -320,9 +353,9 @@ export class ScriptParser {
       } else if (analysis.type === 'character') {
         const charName = analysis.meta?.characterName || trim;
 
-        // Fountain writes dual dialogue as a caret AFTER the second speaker's name
-        // ("STEEL ^"): the speech before it, and this one, are shown side by side.
-        const trailingCaret = /\s\^\s*$/.test(trim);
+        // Fountain writes dual dialogue with a caret after the second speaker's
+        // name: the speech before it, and this one, are shown side by side.
+        const trailingCaret = /\^\s*$/.test(trim);
         if (trailingCaret) { this.markPreviousSpeechDual(); this.requestDual = true; }
         const isDual = trim.startsWith('^') || trailingCaret || this.requestDual;
 
@@ -333,7 +366,8 @@ export class ScriptParser {
         analysis.meta = {
           ...analysis.meta,
           isDualDialogue: isDual,
-          characterName: charName.replace(/^\^/, '').trim(),
+          dualDialogueMarker: trailingCaret || trim.startsWith('^'),
+          characterName: charName.replace(/^\^/, '').replace(/\s*\^\s*$/, '').trim(),
         };
 
         if (isContinued && !charName.includes("CONT'D") && !charName.includes("(CONT'D)")) {
@@ -381,6 +415,9 @@ export class ScriptParser {
     this.learnedNames.forEach(name => {
       const cleanName = this.clean(name);
       if (cleanName && !this.characterStats.has(cleanName)) this.characterStats.set(cleanName, 1);
+    });
+    this.previousNames.forEach((name) => {
+      if (!this.characterStats.has(name)) this.characterStats.set(name, 1);
     });
     this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
@@ -528,6 +565,8 @@ export class ScriptParser {
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      const override = this.lineOverrides.get(i);
+      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {
@@ -535,8 +574,16 @@ export class ScriptParser {
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
       looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)),
-      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
+      isKnownName: (n) => this.characterStats.has(this.clean(n).toUpperCase()) || this.learnedNames.has(this.clean(n).toUpperCase()),
+      isPreviousName: (n) => this.previousNames.has(this.clean(n).toUpperCase()),
+      looksLikeProfileName: (t, pb, n) => this.profile.cueStyle === 'title-case' &&
+        this.profile.cueStyleEvidence >= 2 && pb && !!n && !this.isCaps(t) &&
+        t.length < 60 && !/[.!?…,:;]$/.test(t) &&
+        t.split(/\s+/).length <= 4 &&
+        t.split(/\s+/).every((part) => /^\p{Lu}[\p{Ll}\p{M}'’.-]*$/u.test(part)) &&
+        (/^\p{Lu}/u.test(n) || n.startsWith('(')) &&
+        !this.isCaps(n),
+      isRejectedName: (n) => this.rejectedNames.has(this.clean(n).toUpperCase()),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
     });
   }
@@ -865,9 +912,14 @@ export class ScriptParser {
     const body = this.stripScenePrefix(slug);
 
     const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return body.trim();
-    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
-    return parts.join(' - ');
+    const raw = parts.length === 0 ? body.trim() : (() => {
+      while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
+      return parts.join(' - ');
+    })();
+    const known = this.places.find((place) => place.toUpperCase().replace(/\s+/g, ' ').trim() === raw.toUpperCase().replace(/\s+/g, ' ').trim());
+    if (known) return known;
+    if (parts.length === 0) return raw;
+    return raw;
   }
 
   private parseTime(slug: string): string {

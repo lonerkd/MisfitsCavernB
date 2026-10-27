@@ -36,6 +36,7 @@ export type StoryCharacter = Pick<Tables<'characters'>, 'id' | 'name'>;
 export type SceneState = Tables<'scene_states'>;
 export type SceneCharacter = Pick<Tables<'scene_characters'>, 'scene_id' | 'character_id' | 'project_id'>;
 export type ReadingCorrection = Tables<'reading_corrections'>;
+export type ScriptLineOverride = Tables<'script_line_overrides'>;
 export type Vendor = Tables<'vendors'>;
 export type Expense = Tables<'expenses'>;
 export type Timesheet = Tables<'timesheets'>;
@@ -566,6 +567,25 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not take that back');
   }
 
+  async function listScriptLineOverrides(scriptId: string): Promise<ScriptLineOverride[]> {
+    const { data, error } = await db.from('script_line_overrides').select('*').eq('script_id', scriptId);
+    if (error) fail(error, 'Could not load line corrections');
+    return data;
+  }
+
+  async function setScriptLineOverride(scriptId: string, lineText: string, occurrence: number, lineType: ScriptLineOverride['line_type']): Promise<ScriptLineOverride> {
+    const { data, error } = await db.from('script_line_overrides')
+      .upsert({ script_id: scriptId, line_text: lineText.trim(), occurrence, line_type: lineType }, { onConflict: 'script_id,line_text,occurrence' })
+      .select('*').single();
+    if (error) fail(error, 'Could not save that line correction');
+    return data;
+  }
+
+  async function removeScriptLineOverride(id: string): Promise<void> {
+    const { error } = await db.from('script_line_overrides').delete().eq('id', id);
+    if (error) fail(error, 'Could not remove that line correction');
+  }
+
   /** One record per character per scene; the first save makes it. */
   async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
     const { data, error } = await db.from('scene_states')
@@ -915,7 +935,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listScriptLineOverrides, setScriptLineOverride, removeScriptLineOverride, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

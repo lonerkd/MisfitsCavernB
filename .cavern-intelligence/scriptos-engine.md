@@ -1,23 +1,46 @@
 # ScriptOS — The Screenplay Engine
 
-## 1. Syntax Parsing (Fountain Aware)
-**ScriptOS** is built on the Fountain markup syntax, a plain-text standard for screenplays. The parsing engine parses a plain-text string and structures it into discrete blocks of formatted metadata.
+## 1. Reading and parsing (Fountain aware)
 
-### The Parsing Architecture (`lib/scriptos/parser.ts`)
-- **Dictionary-Driven State Machine:** The parser runs through lines sequentially, categorizing each block based on a predefined set of lexical indicators:
-  - **Scene Headings:** Identified by matching prefixes like `INT.`, `EXT.`, `INT/EXT`, or `EST.`.
-  - **Characters:** All-uppercase lines that do not match scene headings or transitions, and are followed by dialogue.
-  - **Dialogue & Parentheticals:** Lines nested immediately beneath a character block.
-  - **Transitions:** Matches high-frequency patterns like `CUT TO:`, `FADE OUT:`, `DISSOLVE TO:`.
-  - **Action Blocks:** The fallback line type when no other lexical rules trigger.
-- **On the main thread:** there is no parser worker. Pagination, timing (`timing.ts`, eighths of a page)
-  and analysis (`analyze.ts`) run from the same parsed blocks.
+**ScriptOS** reads Fountain and imported plain text as deterministic, explainable
+line types. Exact Fountain syntax is classified before inference; the document
+profile and whole-document decoder handle the remaining lines. PDF import first
+reconstructs lines from page geometry, then uses the same parser.
 
----
+### The reading architecture (`lib/scriptos/`)
 
-### Known gaps in the classifier and the importer
+- **Evidence and profile** (`profile.ts`, `vocabulary.ts`): features include
+  Unicode-aware cue names, heading-number styles, transition endings, and known
+  screenplay vocabulary. Explicit Fountain cues establish document-local
+  conventions.
+- **Whole-document decoder** (`decode.ts`, `parser.ts`): a grammar-constrained
+  best-path decoder resolves uncertain lines using surrounding speech state,
+  evidence, the document profile, and supplied context. It remains deterministic
+  and offline; confidence is exposed per line.
+- **Project context** (`context.ts`): the editor and Studio supply castings,
+  human name corrections, project locations, and repeated confident character
+  cues from the previous draft. Location context canonicalizes an already
+  recognized scene location; it cannot change scene boundaries. Previous-draft
+  names are weaker evidence than castings. The Studio's Character Bible and
+  Casting board use the same context when building their character lists.
+- **Corrections**: `reading_corrections` stores project-level character verdicts.
+  `script_line_overrides` stores a line type by script, exact trimmed text, and
+  zero-based occurrence. These are human decisions, not feedback from the
+  parser's own output. Fountain syntax and title-page rules remain authoritative.
+  See `database-and-security.md` for access control.
+- **Dual dialogue**: `isDualDialogue` identifies both sides of a speech pair;
+  `dualDialogueMarker` records which cue explicitly carried Fountain's caret,
+  so export preserves the marker without adding one to the preceding cue.
+  Carets attached directly to a cue name are accepted.
+- **Review** (`review.ts`, `components/editor/DoubtfulReads.tsx`): the editor
+  asks about low-confidence reads and lets a person save or undo line decisions.
+- **On the main thread**: parsing is deferred while typing; there is no parser
+  worker. Pagination, timing (`timing.ts`, eighths of a page) and analysis
+  (`analyze.ts`) read the same parsed blocks.
 
-Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The current parser keeps what was right about the old one (a rule-based, explainable, offline classifier) and adds a Fountain layer that is never second-guessed, lossless round-trip, other formats, and the breakdown/timing/analysis that read its output. It is *less* complete than the old one in the vocabulary of transitions and numbered headings, and shares its weakest idea: structure is guessed from capitals and neighbours. The PDF importer is the old one's algorithm, ported. Every confirmed gap is pinned as an expected-failure test (, ) and scoped in BACKLOG 3.20.
+See [the deep-brain plan](plans/2026-10-12-the-deep-brain.md) for the measured
+layers, corpus baselines, remaining work, and owner decisions. The generated
+corpus is not an independent substitute for rights-cleared real scripts.
 
 ---
 
@@ -92,4 +115,3 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   best streak, records and a 4-week grid; `badges()` derives what's earned.
   Sprints have a length the writer sets (5–120 min), count their own words
   and log themselves when they end.
-

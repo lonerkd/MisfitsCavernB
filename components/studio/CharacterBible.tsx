@@ -16,9 +16,9 @@ type Draft = { full_name: string; age: string; arc: string; description: string 
 
 /** Character bible for the selected script, with a look-board per character. */
 export function CharacterBible() {
-  const { project, userId, scriptId, media, mediaById } = useStudio();
+  const { project, userId, scriptId, parseContext, media, mediaById } = useStudio();
   const { toast } = useToast();
-  const { chars, status, ensureRow, save } = useScriptCharacters(scriptId, userId);
+  const { chars, status, ensureRow, save } = useScriptCharacters(scriptId, userId, parseContext);
   const looks = useCharacterMedia(project.id);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);

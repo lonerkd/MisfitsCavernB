@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { contextFromCastings, contextFromProject, contextKey } from './context';
+import { parseScript } from './parser';
 
 describe('contextFromCastings', () => {
 	it('extracts character names from castings array', () => {
@@ -101,6 +102,25 @@ describe('contextFromProject', () => {
 		const result = contextFromProject(castings, corrections);
 		expect(result.characters).toEqual(['ALICE', 'BOB']);
 	});
+
+	it('uses repeated confident cues from a previous draft as weaker prior evidence', () => {
+		const previous = 'INT. ROOM - DAY\n\nMAYA\nHello.\n\nMAYA\nAgain.\n';
+		const result = contextFromProject([], [], [], previous);
+		expect(result.previousCharacters).toEqual(['MAYA']);
+		const current = parseScript('INT. ROOM - DAY\n\nMaya\nThird time.\n');
+		const withPrior = parseScript('INT. ROOM - DAY\n\nMaya\nThird time.\n', 'screenplay', undefined, { context: result });
+		expect(current.lines.find((line) => line.text === 'Maya')?.type).toBe('action');
+		expect(withPrior.lines.find((line) => line.text === 'Maya')?.type).toBe('character');
+	});
+
+	it('uses project locations only to canonicalize an already parsed scene location', () => {
+		const source = 'INT. kitchen - DAY\n\nMaya waits.\n';
+		const withPlaces = contextFromProject([], [], [{ name: 'KITCHEN' }]);
+		const plain = parseScript(source);
+		const known = parseScript(source, 'screenplay', undefined, { context: withPlaces });
+		expect(known.scenes.map((scene) => scene.heading)).toEqual(plain.scenes.map((scene) => scene.heading));
+		expect(known.scenes[0].location).toBe('KITCHEN');
+	});
 });
 
 describe('contextKey', () => {
@@ -137,4 +157,9 @@ describe('contextKey', () => {
 		const key = contextKey(context);
 		expect(key).toEqual('#BOB');
 	});
+
+  it('includes locations and previous-draft names in its stable key', () => {
+    expect(contextKey({ places: ['KITCHEN'] })).not.toBe(contextKey({ places: ['OFFICE'] }));
+    expect(contextKey({ previousCharacters: ['MAYA'] })).not.toBe(contextKey({ previousCharacters: ['LEO'] }));
+  });
 });

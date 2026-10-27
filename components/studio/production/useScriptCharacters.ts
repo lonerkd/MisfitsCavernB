@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { addScriptCharacter, listScriptCharacters, updateScriptCharacter } from '@/lib/supabase/scripts';
-import { parseScript } from '@/lib/scriptos/parser';
+import { parseScript, type ParseContext } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
 import type { Tables } from '@/lib/supabase/database.types';
 
@@ -16,13 +16,17 @@ export interface ScriptCharacter {
   row: SavedCharacter | null;
 }
 
+export function scriptCharacterNames(text: string, context?: ParseContext): string[] {
+  return parseScript(text, 'screenplay', undefined, { context }).characters.map((c) => c.name).filter(Boolean);
+}
+
 /**
  * The characters of one script: everyone who speaks in it (parsed) plus anyone
  * with a saved bible entry, merged by name.
  */
 const NO_CHARS: ScriptCharacter[] = [];
 
-export function useScriptCharacters(scriptId: string | null, userId: string) {
+export function useScriptCharacters(scriptId: string | null, userId: string, context?: ParseContext) {
   const [loadedChars, setChars] = useState<ScriptCharacter[]>([]);
   // How the last load for a script went; a script without one is loading.
   const [loaded, setLoaded] = useState<{ scriptId: string; ok: boolean } | null>(null);
@@ -36,7 +40,7 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
       listScriptCharacters(scriptId),
     ]).then(([text, saved]) => {
       const byName = new Map(saved.map((r) => [r.name, r]));
-      const parsed = parseScript(text).characters.map((c) => c.name).filter(Boolean);
+      const parsed = scriptCharacterNames(text, context);
       const names = Array.from(new Set([...parsed, ...saved.map((r) => r.name)]));
       setChars(names.map((name, i) => {
         const row = byName.get(name) ?? null;
@@ -44,7 +48,7 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
       }));
       setLoaded({ scriptId, ok: true });
     }).catch(() => setLoaded({ scriptId, ok: false }));
-  }, [scriptId]);
+  }, [scriptId, context]);
 
   useEffect(() => { void load(); }, [load]);
 

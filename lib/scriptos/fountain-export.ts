@@ -25,8 +25,9 @@ export function serializeLine(l: ScriptLine): string {
 
     case 'character': {
       const name = (l.meta?.characterName as string) || raw.replace(/^[@^]\s*/, '');
-      const inline = raw.match(/\([^)]*\)\s*$/);
-      return `${name.toUpperCase()}${inline ? ' ' + inline[0] : ''}`;
+      const inline = raw.match(/\([^)]*\)(?=\s*\^?\s*$)/);
+      const dual = l.meta?.dualDialogueMarker ? '^' : '';
+      return `${name.toUpperCase()}${inline ? ' ' + inline[0] : ''}${dual}`;
     }
 
     case 'dialogue':

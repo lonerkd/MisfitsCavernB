@@ -5,12 +5,13 @@
 // 90-field untyped context.
 
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
-import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
-import { parseScript } from '@/lib/scriptos/parser';
+import { parseScript, type ParseContext } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { fetchRevisionsDB } from '@/lib/scriptos/revisions';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { useFlag } from '@/components/Flag';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
@@ -26,6 +27,8 @@ import {
   useCharacters,
   useSceneCharacters,
   useReadingCorrections,
+  useProjectLocations,
+  useScriptLineOverrides,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -56,6 +59,8 @@ export interface StudioData {
   scripts: ProjectScript[];
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
+  /** The project context used to read the selected script; absent until its context loads. */
+  parseContext: ParseContext | undefined;
   setScriptId: (id: string) => void;
   scenes: LiveRows<SceneRow>;
   sceneSync: { state: SyncState; error: string | null; run: () => Promise<void> };
@@ -125,15 +130,28 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const syncState: SyncState = !scriptId ? 'idle' : sync?.scriptId === scriptId ? sync.state : 'syncing';
   const syncError = sync?.scriptId === scriptId ? sync.error : null;
   const [parsedScenes, setParsedScenes] = useState<{ scriptId: string; scenes: ScriptLineLite[][] } | null>(null);
+  const [scriptContext, setScriptContext] = useState<{ scriptId: string; context: ParseContext } | null>(null);
   const reloadScenes = scenes.reload; // changes with the script, whose scenes it reloads
   // The cast people have chosen is what the reader knows; the same one the editor reads with.
   const castings = useCastings(projectId);
   const corrections = useReadingCorrections(projectId);
-  const readContextRef = useRef(contextFromProject(castings.rows, corrections.rows));
-  useLayoutEffect(() => { readContextRef.current = contextFromProject(castings.rows, corrections.rows); });
-  const syncScenes = useCallback((id: string) => fetchScriptContent(id)
-    .then(async (text) => {
-      const parsed = parseScript(text, 'screenplay', undefined, { context: readContextRef.current });
+  const locations = useProjectLocations(projectId);
+  const lineOverrides = useScriptLineOverrides(scriptId);
+  const syncScenes = useCallback((id: string) => Promise.all([fetchScriptContent(id), fetchRevisionsDB(id)])
+    .then(async ([text, revisions]) => {
+      const readContext = contextFromProject(
+        castings.rows,
+        corrections.rows,
+        locations.rows,
+        revisions.at(-1)?.snapshot,
+        lineOverrides.rows.map((row) => ({
+          lineText: row.line_text,
+          occurrence: row.occurrence,
+          type: row.line_type as NonNullable<ParseContext['lineOverrides']>[number]['type'],
+        })),
+      );
+      setScriptContext({ scriptId: id, context: readContext });
+      const parsed = parseScript(text, 'screenplay', undefined, { context: readContext });
       setParsedScenes({
         scriptId: id,
         scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),
@@ -145,7 +163,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
       setSync({ scriptId: id, state: 'synced', error: null });
     })
     .catch((e) => setSync({ scriptId: id, state: 'error', error: e instanceof Error ? e.message : 'Could not read the script' })),
-  [projectId, reloadScenes]);
+  [projectId, reloadScenes, castings.rows, corrections.rows, locations.rows, lineOverrides.rows]);
   const run = useCallback(async () => {
     if (!scriptId) return;
     setSync({ scriptId, state: 'syncing', error: null });
@@ -205,6 +223,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const closeCard = useCallback(() => setCardId(null), []);
 
   const viewMode = useViewAs(project.id);
+  const parseContext = scriptContext?.scriptId === scriptId ? scriptContext.context : undefined;
   const value: StudioData = {
     project,
     userId,
@@ -217,6 +236,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     scripts,
     scriptsStatus,
     scriptId,
+    parseContext,
     setScriptId,
     scenes,
     sceneSync: { state: syncState, error: syncError, run },

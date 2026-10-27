@@ -79,7 +79,7 @@ import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
-import { useCharacters, useReadingCorrections, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
+import { useCharacters, useReadingCorrections, useProjectLocations, useScriptLineOverrides, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -128,8 +128,21 @@ export default function EditorPage() {
   const parseSource = useDeferredValue(content);
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
+  const [revisionData, setRevisionData] = useState<{ scriptId: string; rows: Revision[] } | null>(null);
+  const revisions = useMemo(
+    () => revisionData && currentScript && revisionData.scriptId === currentScript.id ? revisionData.rows : [],
+    [revisionData, currentScript],
+  );
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
-  const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
+  const locations = useProjectLocations(currentScript?.project_id ?? null);
+  const lineOverrides = useScriptLineOverrides(currentScript?.id ?? null);
+  const readContext = useMemo(() => contextFromProject(
+    Object.values(castings),
+    corrections.rows,
+    locations.rows,
+    revisions.at(-1)?.snapshot,
+    lineOverrides.rows.map((row) => ({ lineText: row.line_text, occurrence: row.occurrence, type: row.line_type as LineType })),
+  ), [castings, corrections.rows, locations.rows, revisions, lineOverrides.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
     const result = parseScript(parseSource, 'screenplay', undefined, { context: readContext });
@@ -192,7 +205,6 @@ export default function EditorPage() {
     useFindReplace(content, setContent);
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
-  const [revisions, setRevisions] = useState<Revision[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
@@ -334,7 +346,7 @@ export default function EditorPage() {
     (async () => {
       const remote = await fetchRevisionsDB(currentScript.id);
       if (!active) return;
-      setRevisions(remote.length > 0 ? remote : await getRevisions(currentScript.id));
+      setRevisionData({ scriptId: currentScript.id, rows: remote.length > 0 ? remote : await getRevisions(currentScript.id) });
     })();
     return () => { active = false; };
   }, [currentScript]);
@@ -409,12 +421,12 @@ export default function EditorPage() {
     if (!currentScript) return;
     const rev = await createRevisionDB(currentScript.id, content, revisions.length);
     if (rev) {
-      setRevisions(prev => [...prev, rev]);
+      setRevisionData((prev) => ({ scriptId: currentScript.id, rows: [...(prev?.scriptId === currentScript.id ? prev.rows : []), rev] }));
       toast(`Locked as ${rev.label}`, 'success');
     } else {
 
       const { revision } = await createRevision(currentScript.id, content);
-      setRevisions(prev => [...prev, revision]);
+      setRevisionData((prev) => ({ scriptId: currentScript.id, rows: [...(prev?.scriptId === currentScript.id ? prev.rows : []), revision] }));
       toast(`Locked locally as ${revision.label}`, 'info');
     }
   }, [currentScript, content, revisions.length, toast]);
@@ -914,7 +926,15 @@ export default function EditorPage() {
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
-                  readingPanel={<DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />}
+                  readingPanel={<DoubtfulReads
+                    doubts={doubts}
+                    projectId={currentScript?.project_id ?? null}
+                    scriptId={currentScript?.id ?? null}
+                    overrides={lineOverrides.rows}
+                    onSaved={corrections.upsertLocal}
+                    onOverrideSaved={lineOverrides.upsertLocal}
+                    onOverrideRemoved={lineOverrides.removeLocal}
+                  />}
                   breakdownPanel={
                     <BreakdownPanel
                       bd={bd}

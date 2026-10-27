@@ -8,6 +8,7 @@ import type { LineType, ScriptLine } from './types';
 export interface Doubt {
   index: number;
   text: string;
+  occurrence: number;
   type: LineType;
   /** 0–100, how likely the reader thinks its own reading is. */
   confidence: number;
@@ -30,7 +31,11 @@ export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit
   const limit = opts.limit ?? 12;
   const out: Doubt[] = [];
   const seen = new Set<string>();
+  const occurrences = new Map<string, number>();
   for (const l of lines) {
+    const text = l.text.trim();
+    const occurrence = occurrences.get(text) ?? 0;
+    occurrences.set(text, occurrence + 1);
     if (!/Decoded as/.test(l.reasoning ?? '') || l.confidence >= below) continue;
     const alternative = ((l.meta as { alternative?: LineType } | undefined)?.alternative ?? null) as LineType | null;
     const once = /Seen speaking only once/.test(l.reasoning ?? '');
@@ -49,7 +54,7 @@ export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit
     const key = name ? `n:${name}` : `l:${l.index}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push({ index: l.index, text: l.text.trim(), type: l.type, confidence: l.confidence, alternative, name, why });
+    out.push({ index: l.index, text, occurrence, type: l.type, confidence: l.confidence, alternative, name, why });
   }
   // The genuinely ambiguous first; then the names seen once, by position.
   return out.sort((a, b) => a.confidence - b.confidence || a.index - b.index).slice(0, limit);
