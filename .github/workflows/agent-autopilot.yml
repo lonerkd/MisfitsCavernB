@@ -1,0 +1,46 @@
+name: Agent - daily Copilot handoff
+
+on:
+  schedule:
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: agent-autopilot
+  cancel-in-progress: false
+
+jobs:
+  dispatch:
+    if: vars.AGENT_AUTOPILOT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Is the Copilot assignment token set?
+        id: gate
+        env:
+          TOKEN: ${{ secrets.COPILOT_ASSIGN_PAT }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::COPILOT_ASSIGN_PAT is not set; nothing was dispatched. See tools-and-access.md section 8."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          fetch-depth: 1
+
+      - name: Dispatch the next ready issue
+        if: steps.gate.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_ASSIGN_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          AGENT_AUTOPILOT_MAX_OPEN_PRS: ${{ vars.AGENT_AUTOPILOT_MAX_OPEN_PRS }}
+        run: node scripts/agent-autopilot.mjs --dispatch
