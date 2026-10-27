@@ -41,23 +41,28 @@ afterAll(async () => {
 describe('scripts — content round-trips and stays scoped', () => {
   it('the owner saves content and reads back exactly what was written', async () => {
     const content = 'INT. CAVE - NIGHT\n\nSAM\nIt saved.\n';
-    const upd = await cast.sam.client.from('scripts').update({ content, last_edited_by: cast.sam.id }).eq('id', scriptId).select('content').single();
+    const state = 'AQIDBA==';
+    const upd = await cast.sam.client.from('scripts').update({ content, yjs_state: state, last_edited_by: cast.sam.id }).eq('id', scriptId).select('content,yjs_state').single();
     expect(upd.error).toBeNull();
-    const { data } = await cast.sam.client.from('scripts').select('content').eq('id', scriptId).single();
-    expect(data?.content).toBe(content);
+    expect(upd.data).toEqual({ content, yjs_state: state });
   });
 
   it('crew on the project can read and edit the script', async () => {
     const read = await cast.jordan.client.from('scripts').select('id').eq('id', scriptId);
     expect(read.data).toHaveLength(1);
-    const upd = await cast.jordan.client.from('scripts').update({ title: 'Draft One (Jordan pass)', last_edited_by: cast.jordan.id }).eq('id', scriptId).select('id');
+    const upd = await cast.jordan.client.from('scripts').update({ title: 'Draft One (Jordan pass)', yjs_state: 'AQIDBA==', last_edited_by: cast.jordan.id }).eq('id', scriptId).select('id');
     expect(upd.error).toBeNull();
     expect(upd.data).toHaveLength(1);
+    const state = await cast.jordan.client.from('scripts').select('yjs_state').eq('id', scriptId).single();
+    expect(state.data?.yjs_state).toBe('AQIDBA==');
   });
 
   it('an outsider and anon cannot read it', async () => {
-    expect((await cast.riley.client.from('scripts').select('id').eq('id', scriptId)).data).toEqual([]);
+    expect((await cast.riley.client.from('scripts').select('id,yjs_state').eq('id', scriptId)).data).toEqual([]);
     expect((await anonClient().from('scripts').select('id').eq('id', scriptId)).data).toEqual([]);
+    const write = await cast.riley.client.from('scripts').update({ yjs_state: 'outsider-state' }).eq('id', scriptId).select('id');
+    expect(write.error).toBeNull();
+    expect(write.data).toEqual([]);
   });
 });
 

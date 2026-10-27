@@ -18,7 +18,6 @@ import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } fro
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';

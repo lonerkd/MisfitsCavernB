@@ -661,6 +661,7 @@ column scripts.title text not null
 column scripts.title_page jsonb default '{}'::jsonb
 column scripts.updated_at timestamp with time zone default now()
 column scripts.version integer default 1
+column scripts.yjs_state text
 column set_log.at timestamp with time zone default now() not null
 column set_log.body text
 column set_log.call_sheet_id uuid
