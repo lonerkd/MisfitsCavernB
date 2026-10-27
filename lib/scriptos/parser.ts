@@ -3,6 +3,7 @@
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
+import { inferDocumentProfile, type DocumentProfile } from './profile';
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -172,15 +173,17 @@ export class ScriptParser {
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
   private useDecoder: boolean;
   private rejectedNames: Set<string>;
+  private profile: DocumentProfile;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
+    this.profile = inferDocumentProfile(text);
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
-    this.learnedNames = new Set([...learnedNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
+    this.learnedNames = new Set([...learnedNames, ...this.profile.cueNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -535,7 +538,13 @@ export class ScriptParser {
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
       looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)),
+      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.learnedNames.has(this.clean(n)),
+      looksLikeProfileName: (t, pb, n) => this.profile.cueStyle === 'title-case' &&
+        this.profile.cueStyleEvidence >= 2 && pb && !!n && !this.isCaps(t) &&
+        t.length < 60 && !/[.!?…,:;]$/.test(t) &&
+        t.split(/\s+/).length <= 4 &&
+        t.split(/\s+/).every((part) => /^\p{Lu}[\p{Ll}\p{M}'’.-]*$/u.test(part)) &&
+        !this.isCaps(n),
       isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
     });

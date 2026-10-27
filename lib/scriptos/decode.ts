@@ -23,6 +23,8 @@ export interface Evidence {
   looksUncasedName(text: string, prevBlank: boolean, next: string): boolean;
   /** Seen as a speaker elsewhere in the script (or told to us by the project). */
   isKnownName(name: string): boolean;
+  /** Matches this document's observed cue style, if the profile has enough anchors. */
+  looksLikeProfileName?(name: string, prevBlank: boolean, next: string): boolean;
   hasExtension(upper: string): boolean;
   /** A person said this name is not a character. */
   isRejectedName?(name: string): boolean;
@@ -75,7 +77,7 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
   const paren = t.startsWith('(') && t.endsWith(')');
   const namePart = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
   const caps = ev.isCaps(namePart);
-  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
+  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next) || ev.isKnownName(namePart) || ev.looksLikeProfileName?.(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
   const words = namePart.split(/\s+/).filter(Boolean).length;
   const sentenceEnd = /[.!?…]$/.test(namePart);
 

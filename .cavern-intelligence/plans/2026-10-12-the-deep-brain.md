@@ -1,6 +1,6 @@
 # The deep brain — the script engine, built to keep getting better
 
-**Status: direction from the owner, 2026-10-12; measuring stick built (B0); nothing else built.**
+**Status: B0–B3 and B5–B6 built; B7–B9 shipped in first slices; B4 is underway.**
 
 Owner: *"We need a constantly improved, but increasingly intuitive and
 intelligent core — a deep brain of rules and systems. Fully lossless Fountain
@@ -177,12 +177,12 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B1 | **Make it harder to fool** *(built)* | metamorphic tests; layout variants for the PDF renderer (margins, page size, font size); the private-corpus runner | M | the measure's honesty |
 | B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
 | B3 | **Evidence layer (L1)** *(built)* | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
-| B4 | **Document profile (L3)** | how this script writes cues, headings, transitions; used as evidence | M | REAL_WORLD, INTERNATIONAL |
+| B4 | **Document profile (L3)** *(first slice built)* | summarizes explicit cue names/case, heading-number styles, and transition punctuation; explicit cues inform later unmarked reads without overriding Fountain syntax | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
 | B7 | **Context in (L5)** *(first slice built: the cast and rejected names; places and the previous draft still to do)* | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
 | B8 | **Memory and corrections (L6)** *(first slice built: "not a character" / "is a character", per project; line overrides and per-writer memory still to do)* | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
-| B9 | **Reads out with confidence (L7)** | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
+| B9 | **Reads out with confidence (L7)** *(built: editor review of doubtful reads and name corrections)* | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
 
 Order is deliberate: **measure → make the measure hard to fool → complete the
 exact layer → fix the evidence → decode → rebuild the importer on it → then
@@ -217,9 +217,11 @@ happily multiply a bad one.
    suite should call it something (it will surface as "reading", "confidence",
    "review"), say so before B9.
 
-## 9. First step, done
+## 9. Progress
 
-B0 is built and the ratchet is in CI: `lib/scriptos/corpus/` (generator,
-renderers, scorer, runner) and `corpus.test.ts` (the floors). Next is B1, then B2
-and B3, which already have named failing cases (BACKLOG 3.20, `parser-gaps.test.ts`,
-`import-gaps.test.ts`).
+B0–B3 and B5–B6 are built and measured by the ratchet in `lib/scriptos/corpus/`.
+B7–B9 have shipped first slices. B4 now profiles conventions visible in Fountain
+source and feeds explicit cue names back into decoding; broader style inference
+still needs independently labeled scripts to validate it. Remaining slices are
+listed in BACKLOG §3.21. The private corpus remains the independent check and
+requires scripts the owner has the right to use.
