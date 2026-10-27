@@ -43,6 +43,8 @@ const SHORTCUTS: [string, string][] = [
   ['Ctrl + G', 'Go to a scene, page or character'],
   ['Ctrl + ↓ / ↑', 'Next / previous scene'],
   ['Alt + ← / →', 'Back / forward through jumps'],
+  ['Alt + U / L', 'Upper / lower case the selection'],
+  ['Alt + D', 'Duplicate the line (or the selected lines)'],
   ['Ctrl + /', 'Show Shortcuts'],
   ['Tab', 'Smart element insert'],
   ['Escape, then Tab', 'Leave the script (move to the next control)'],

@@ -37,6 +37,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { lineOffset, type GoToTarget } from '@/lib/scriptos/goto';
+import { applySelectionAction } from '@/lib/scriptos/selection';
 import { NO_HISTORY, remember as rememberJump, stepHistory, type HistoryState } from '@/lib/scriptos/history';
 import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
@@ -525,6 +526,30 @@ export default function EditorPage() {
       setContent(edit.next);
       placeCaret(editor, edit.caret);
       return;
+    }
+
+    // Quick actions on a selection: Alt + U / L change its case, Alt + D
+    // duplicates the line (or every line the selection covers).
+    if (e.altKey && !e.ctrlKey && !e.metaKey && editor && (e.code === 'KeyU' || e.code === 'KeyL' || e.code === 'KeyD')) {
+      const action = e.code === 'KeyU' ? 'upper' : e.code === 'KeyL' ? 'lower' : 'duplicate-line';
+      const edit = applySelectionAction(content, editor.selectionStart, editor.selectionEnd, action);
+      if (edit) {
+        e.preventDefault();
+        noteHistoryEdit(content);
+        setContent(edit.next);
+        const { start, end } = edit;
+        setTimeout(() => {
+          const ta = textareaRef.current;
+          if (!ta) return;
+          ta.focus();
+          ta.setSelectionRange(start, end);
+        }, 0);
+        return;
+      }
+      if (action !== 'duplicate-line') {
+        e.preventDefault();
+        toast('Select the text to change its case', 'info');
+      }
     }
 
     if (e.key === 'Enter' && !e.shiftKey && editor && editor.selectionStart === editor.selectionEnd) {
