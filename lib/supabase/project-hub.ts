@@ -13,8 +13,23 @@ export interface TimelineRow { id: string; title: string; start_date: string | n
 export interface CrewRow { id: string; user_id: string; role: string; craft: string | null; profiles?: { username: string } | null }
 export interface PortfolioRow { id: string; title: string; share_token: string }
 export interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
+function isFestivalStatus(status: Json | undefined): status is FestivalRow['status'] {
+  return status === 'planned' || status === 'submitted' || status === 'accepted' || status === 'rejected';
+}
+function festivalRows(list: Json | null | undefined): FestivalRow[] {
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((f) => {
+    if (!f || typeof f !== 'object' || Array.isArray(f)) return [];
+    const { id, name, status } = f;
+    if (typeof id !== 'string' || typeof name !== 'string' || !isFestivalStatus(status)) return [];
+    return [{
+      id, name, status,
+      ...(typeof f.deadline === 'string' ? { deadline: f.deadline } : {}),
+      ...(typeof f.notes === 'string' ? { notes: f.notes } : {}),
+    }];
+  });
+}
 export interface MilestoneRow { id: string; title: string; end_date: string | null; status: string | null }
-const FESTIVAL_STATUSES = new Set<FestivalRow['status']>(['planned', 'submitted', 'accepted', 'rejected']);
 
 type Result = { error: { message: string } | null };
 function check(...results: Result[]) {
@@ -52,24 +67,6 @@ function festivalStatuses(list: Json | null | undefined): string[] {
   return list.flatMap((f) => {
     const status = f && typeof f === 'object' && !Array.isArray(f) ? f.status : undefined;
     return typeof status === 'string' ? [status] : [];
-  });
-}
-
-/** Valid festival rows from `projects.festival_submissions` (a jsonb list with no constraint). */
-function parseFestivalRows(list: Json | null | undefined): FestivalRow[] {
-  if (!Array.isArray(list)) return [];
-  return list.flatMap((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
-    const { id, name, status, deadline, notes } = item;
-    if (typeof id !== 'string' || typeof name !== 'string') return [];
-    if (typeof status !== 'string' || !FESTIVAL_STATUSES.has(status as FestivalRow['status'])) return [];
-    return [{
-      id,
-      name,
-      status: status as FestivalRow['status'],
-      deadline: typeof deadline === 'string' ? deadline : undefined,
-      notes: typeof notes === 'string' ? notes : undefined,
-    }];
   });
 }
 
@@ -145,7 +142,7 @@ export async function getProductionData(projectId: string): Promise<ProductionDa
     crew: (c.data ?? []) as unknown as CrewRow[],
     portfolio: (pf.data ?? []) as PortfolioRow[],
     settings: (proj.data?.settings as unknown as ProjectSettings | null) ?? null,
-    festivals: parseFestivalRows(proj.data?.festival_submissions),
+    festivals: festivalRows(proj.data?.festival_submissions),
     owner,
   };
 }

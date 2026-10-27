@@ -13,6 +13,8 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { useFlag } from '@/components/Flag';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 import { EntityCardHost } from '@/components/film/EntityCard';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
@@ -193,8 +195,13 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
 
   const cardsOn = useFlag('entity_cards');
-  const [cardId, setCardId] = useState<string | null>(null);
+  const wantedCard = new URLSearchParams(useLocationSearch()).get('card');
+  const asCardId = (v: string | null) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v.toLowerCase() : null);
+  // Arriving on /studio?card=<id> (a mention's chip) opens that card at once; a later change opens the new one.
+  const wanted = cardsOn ? asCardId(wantedCard) : null;
+  const [cardId, setCardId] = useState<string | null>(() => wanted);
   const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
+  useOnChange(wanted, () => { if (wanted) setCardId(wanted); });
   const closeCard = useCallback(() => setCardId(null), []);
 
   const viewMode = useViewAs(project.id);

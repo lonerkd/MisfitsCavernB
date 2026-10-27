@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cardOf, type CardInput, type CardScene } from './card';
+import { attachCandidates, cardOf, type CardInput, type CardScene } from './card';
 import type { Entity, Link } from './links';
 
 const scene = (id: string, n: number, over: Partial<CardScene> = {}): CardScene => ({
@@ -60,5 +60,39 @@ describe('cardOf', () => {
 
   it('a link to something that is gone is not shown', () => {
     expect(cardOf('s1', input({ links: [link('s1', 'ghost')] }))!.attached).toEqual([]);
+  });
+});
+
+describe('attachCandidates', () => {
+  const e = (id: string, kind: Entity['kind'], label: string): Entity => ({ id, project_id: 'p', kind, label });
+  const all = [e('s1', 'scene', 'Kitchen'), e('s2', 'scene', 'Roof'), e('t1', 'task', 'Book the van'), e('d1', 'document', 'Permit'), e('m1', 'media', 'Moodboard'), e('c1', 'character', 'Mara')];
+  const link = (from: string, to: string): Link => ({ id: `${from}-${to}`, project_id: 'p', from_entity: from, to_entity: to, kind: 'about', created_by: null, created_at: '' });
+
+  it('offers tasks, documents and media first, never itself, never what is already linked', () => {
+    const got = attachCandidates('s1', all, [link('s1', 't1')], '');
+    expect(got.map((x) => x.id)).toEqual(['d1', 'm1']);
+  });
+
+  it('does not offer graph things to graph things (the graph joins those)', () => {
+    expect(attachCandidates('s1', all, [], '').map((x) => x.kind)).not.toContain('scene');
+    expect(attachCandidates('s1', all, [], '').map((x) => x.kind)).not.toContain('character');
+  });
+
+  it('a task card can be attached to a scene', () => {
+    expect(attachCandidates('t1', all, [], '').map((x) => x.id)).toEqual(expect.arrayContaining(['s1', 's2', 'c1']));
+  });
+
+  it('filters by the typed text, ignoring case and spaces at the ends', () => {
+    expect(attachCandidates('s1', all, [], '  MOOD ').map((x) => x.id)).toEqual(['m1']);
+  });
+
+  it('caps the list and answers nothing for an unknown entity', () => {
+    const many = [e('s1', 'scene', 'A'), ...Array.from({ length: 20 }, (_, i) => e(`t${i}`, 'task', `T${String(i).padStart(2, '0')}`))];
+    expect(attachCandidates('s1', many, [], '', 5)).toHaveLength(5);
+    expect(attachCandidates('nope', all, [], '')).toEqual([]);
+  });
+
+  it('a link in either direction counts as linked', () => {
+    expect(attachCandidates('s1', all, [link('m1', 's1')], '').map((x) => x.id)).toEqual(['t1', 'd1']);
   });
 });

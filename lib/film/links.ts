@@ -6,6 +6,7 @@
 
 import { supabase } from '@/lib/supabase/client';
 import { useLiveRows } from '@/lib/studio/live';
+import { MENTION_KIND, diffMentions, mentionedIds } from './mentions';
 
 export const ENTITY_KINDS = ['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media'] as const;
 export type EntityKind = (typeof ENTITY_KINDS)[number];
@@ -35,8 +36,37 @@ export async function attach(projectId: string, from: string, to: string, kind =
 
 /** Remove a link. Returns an error message, or null. */
 export async function detach(linkId: string): Promise<string | null> {
-  const { error } = await supabase.from('links').delete().eq('id', linkId);
-  return error ? error.message : null;
+  // RLS filters a delete the caller may not make to zero rows without an error, so ask for the row back.
+  const { data, error } = await supabase.from('links').delete().eq('id', linkId).select('id');
+  if (error) return error.message;
+  if (!data || data.length === 0) return 'Only the person who attached it, or someone who shapes the project, can remove it.';
+  return null;
+}
+
+/**
+ * Make a thing's `mentions` links match the tokens in its text: add the new
+ * ones, remove the ones no longer written. Returns an error message, or null.
+ */
+export async function syncMentions(projectId: string, sourceId: string, text: string): Promise<string | null> {
+  const next = mentionedIds(text).filter((id) => id !== sourceId);
+  const { data, error } = await supabase.from('links').select('id, to_entity').eq('from_entity', sourceId).eq('kind', MENTION_KIND);
+  if (error) return error.message;
+  const existing = data ?? [];
+  const { add, remove } = diffMentions(existing.map((l) => l.to_entity), next);
+  if (add.length) {
+    // A link that already exists (made by someone else meanwhile) is skipped, not an error for the rest.
+    const { error: insertError } = await supabase.from('links').upsert(
+      add.map((to) => ({ project_id: projectId, from_entity: sourceId, to_entity: to, kind: MENTION_KIND })),
+      { onConflict: 'from_entity,to_entity,kind', ignoreDuplicates: true },
+    );
+    if (insertError) return insertError.message;
+  }
+  if (remove.length) {
+    const ids = existing.filter((l) => remove.includes(String(l.to_entity).toLowerCase())).map((l) => l.id);
+    const { error: deleteError } = await supabase.from('links').delete().in('id', ids);
+    if (deleteError) return deleteError.message;
+  }
+  return null;
 }
 
 export function useEntities(projectId: string | null) {

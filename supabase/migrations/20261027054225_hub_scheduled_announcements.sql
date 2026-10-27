@@ -1,7 +1,8 @@
 -- Hub posts (3.28a): scheduled loud posts (important + incidents) were never
 -- announced once their publish time passed because the trigger only runs on
 -- insert/update. A pg_cron job now scans every five minutes and sends the
--- missing notifications exactly once per post.
+-- missing notifications exactly once per post. Only posts that went live within
+-- the last day are considered, so the job can never re-announce history.
 
 CREATE OR REPLACE FUNCTION internal.hub_posts_announce_scheduled()
  RETURNS integer
@@ -17,6 +18,7 @@ begin
     from public.hub_posts h
     where h.published_at is not null
       and h.published_at <= now()
+      and h.published_at > now() - interval '1 day'
       and (h.important or h.kind = 'incident')
       and not exists (
         select 1

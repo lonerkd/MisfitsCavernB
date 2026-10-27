@@ -46,6 +46,27 @@ export const STATE_LABEL: Record<VersionState, string> = {
 export const reviewUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/review/${token}`;
 
 /** A link a client can still use. */
+/**
+ * Why a phase that needs the client's approval cannot be left yet, or null when
+ * it can. Mirrors internal.approval_pending: at least one version has been sent,
+ * and for every script that has been sent, its latest sent version is approved
+ * by the client and confirmed by the team.
+ */
+export function approvalBlocker(versions: Array<Pick<VersionRow, 'script_id' | 'number' | 'status' | 'guest_decision' | 'confirmed_at'>>): string | null {
+  const latest = new Map<string, (typeof versions)[number]>();
+  for (const v of versions) {
+    if (v.status !== 'sent') continue;
+    const have = latest.get(v.script_id);
+    if (!have || v.number > have.number) latest.set(v.script_id, v);
+  }
+  if (latest.size === 0) return 'Nothing has been sent to the client yet. Send a version for review first.';
+  const waiting = [...latest.values()].filter((v) => v.guest_decision !== 'approved' || !v.confirmed_at);
+  if (waiting.length === 0) return null;
+  const unapproved = waiting.filter((v) => v.guest_decision !== 'approved').length;
+  if (unapproved > 0) return `The client has not approved ${unapproved === 1 ? 'a piece' : `${unapproved} pieces`} yet.`;
+  return `${waiting.length === 1 ? 'An approval is' : `${waiting.length} approvals are`} waiting for the team to confirm it in Share › Review.`;
+}
+
 export function linkLive(l: Pick<ReviewLinkRow, 'revoked_at' | 'expires_at'>, now = Date.now()): boolean {
   return l.revoked_at === null && (l.expires_at === null || Date.parse(l.expires_at) > now);
 }

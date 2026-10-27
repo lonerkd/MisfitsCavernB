@@ -2641,6 +2641,7 @@ export type Database = {
       };
       project_formats: {
         Row: {
+          approval_gates: string[];
           blurb: string;
           created_at: string;
           icon: string;
@@ -2653,6 +2654,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          approval_gates?: string[];
           blurb?: string;
           created_at?: string;
           icon?: string;
@@ -2664,6 +2666,7 @@ export type Database = {
           skip_phases?: string[];
         };
         Update: {
+          approval_gates?: string[];
           blurb?: string;
           created_at?: string;
           icon?: string;
@@ -4395,7 +4398,18 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      film_graph_ambiguous_names: {
+        Row: {
+          entity_id_a: string | null;
+          entity_id_b: string | null;
+          entity_type: string | null;
+          name_a: string | null;
+          name_b: string | null;
+          project_id: string | null;
+        };
+        ComputedFields: never;
+        Relationships: [];
+      };
     };
     Functions: {
       account_deletion_plan: {

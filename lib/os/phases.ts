@@ -13,6 +13,8 @@ export interface FormatRules {
   phase_labels: Partial<Record<Phase, { label: string; abbr: string }>>;
   skip_phases: Phase[];
   skip_milestones: string[];
+  /** Phases that cannot be left until the client has approved the work. Read from the formats list (lib/formats), not from project_progress(). */
+  approval_gates?: Phase[];
 }
 
 export function mapStatusToPhase(status?: string): Phase {
@@ -59,6 +61,7 @@ export function toFormatRules(raw: unknown): FormatRules | null {
     // The first and last phase are always there.
     skip_phases: strings(r.skip_phases).filter((p): p is Phase => PHASE_IDS.has(p) && p !== 'development' && p !== 'delivery'),
     skip_milestones: strings(r.skip_milestones),
+    approval_gates: strings(r.approval_gates).filter((p): p is Phase => PHASE_IDS.has(p) && p !== 'delivery'),
   };
 }
 

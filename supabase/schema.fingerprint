@@ -195,6 +195,12 @@ column expenses.receipt_media_id uuid
 column expenses.spent_on date default CURRENT_DATE not null
 column expenses.status text default 'committed'::text not null
 column expenses.vendor_id uuid
+column film_graph_ambiguous_names.entity_id_a uuid
+column film_graph_ambiguous_names.entity_id_b uuid
+column film_graph_ambiguous_names.entity_type text
+column film_graph_ambiguous_names.name_a text
+column film_graph_ambiguous_names.name_b text
+column film_graph_ambiguous_names.project_id uuid
 column guide_progress.done text[] default '{}'::text[] not null
 column guide_progress.hidden boolean default false not null
 column guide_progress.project_id uuid not null
@@ -456,6 +462,7 @@ column project_documents.storage_path text
 column project_documents.title text not null
 column project_documents.updated_at timestamp with time zone default now() not null
 column project_documents.vendor_id uuid
+column project_formats.approval_gates text[] default '{}'::text[] not null
 column project_formats.blurb text default ''::text not null
 column project_formats.created_at timestamp with time zone default now() not null
 column project_formats.icon text default 'film'::text not null
@@ -1072,6 +1079,7 @@ constraint project_documents.project_documents_status_check CHECK ((status = ANY
 constraint project_documents.project_documents_text_len CHECK (((char_length(party) <= 200) AND (char_length(notes) <= 2000) AND (char_length(file_name) <= 200)))
 constraint project_documents.project_documents_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
 constraint project_documents.project_documents_vendor_fkey FOREIGN KEY (vendor_id, project_id) REFERENCES vendors(id, project_id) ON DELETE SET NULL (vendor_id)
+constraint project_formats.project_formats_approval_gates_check CHECK ((approval_gates <@ ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text]))
 constraint project_formats.project_formats_blurb_len CHECK ((char_length(blurb) <= 140))
 constraint project_formats.project_formats_icon_check CHECK ((icon ~ '^[a-z-]{1,30}$'::text))
 constraint project_formats.project_formats_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
@@ -1274,6 +1282,7 @@ constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
 function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
+function internal.approval_pending(p_project uuid) body=74550b17ff86f1dc4ab6b56df2790396
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=23684b4bcfd808ab21df2a91536571fa
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -1290,10 +1299,11 @@ function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae2813624527
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
 function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
-function internal.entity_sync() body=1a61fe46c375f7e7eb275f38a1b82904
+function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
+function internal.hub_posts_announce_scheduled() body=aa8aeef07e7fce52094f4238f5a78d51
 function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
@@ -1308,8 +1318,9 @@ function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
-function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=90398618b2ac3fe241f10d137bdbc37d
+function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
+function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
@@ -1317,6 +1328,7 @@ function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb177
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
 function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
+function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
@@ -1394,6 +1406,7 @@ function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
 grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
+grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -1414,6 +1427,7 @@ grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_announce_scheduled() postgres
 grant function internal.hub_posts_check_consent() postgres
 grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
@@ -1430,6 +1444,7 @@ grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
+grant function internal.phase_rank(p_status text) postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
@@ -1437,6 +1452,7 @@ grant function internal.project_documents_sync_permit() postgres
 grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
+grant function internal.projects_approval_gate() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
@@ -1517,7 +1533,6 @@ index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categori
 index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
 index CREATE INDEX breakdown_elements_category_fkey_idx ON public.breakdown_elements USING btree (category_id, project_id)
-index CREATE INDEX breakdown_elements_category_idx ON public.breakdown_elements USING btree (category_id)
 index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
 index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
@@ -1526,14 +1541,14 @@ index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USI
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
 index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls USING btree (call_sheet_id, project_id)
 index CREATE INDEX call_sheets_issued_by_fkey_idx ON public.call_sheets USING btree (issued_by)
+index CREATE INDEX call_sheets_shoot_day_fkey_idx ON public.call_sheets USING btree (shoot_day_id, project_id)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
-index CREATE INDEX character_castings_character_idx ON public.character_castings USING btree (character_id)
+index CREATE INDEX character_castings_character_fkey_idx ON public.character_castings USING btree (character_id, project_id)
 index CREATE INDEX character_castings_created_by_fkey_idx ON public.character_castings USING btree (created_by)
 index CREATE INDEX character_media_created_by_fkey_idx ON public.character_media USING btree (created_by)
 index CREATE INDEX character_media_media_fkey_idx ON public.character_media USING btree (media_id, project_id)
-index CREATE INDEX character_media_media_idx ON public.character_media USING btree (media_id)
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
 index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
@@ -1541,17 +1556,17 @@ index CREATE INDEX crafts_department_idx ON public.crafts USING btree (departmen
 index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
 index CREATE INDEX entities_project_idx ON public.entities USING btree (project_id, kind)
 index CREATE INDEX expenses_budget_item_fkey_idx ON public.expenses USING btree (budget_item_id, project_id)
-index CREATE INDEX expenses_budget_item_idx ON public.expenses USING btree (budget_item_id)
 index CREATE INDEX expenses_created_by_fkey_idx ON public.expenses USING btree (created_by)
 index CREATE INDEX expenses_project_idx ON public.expenses USING btree (project_id)
 index CREATE INDEX expenses_receipt_fkey_idx ON public.expenses USING btree (receipt_media_id)
 index CREATE INDEX expenses_vendor_fkey_idx ON public.expenses USING btree (vendor_id, project_id)
-index CREATE INDEX expenses_vendor_idx ON public.expenses USING btree (vendor_id)
 index CREATE INDEX guide_progress_project_idx ON public.guide_progress USING btree (project_id)
+index CREATE INDEX hidden_messages_hidden_by_fkey_idx ON public.hidden_messages USING btree (hidden_by)
 index CREATE INDEX hub_incident_updates_created_by_idx ON public.hub_incident_updates USING btree (created_by)
 index CREATE INDEX hub_incident_updates_post_idx ON public.hub_incident_updates USING btree (post_id, created_at)
 index CREATE INDEX hub_posts_created_by_idx ON public.hub_posts USING btree (created_by)
 index CREATE INDEX hub_posts_open_incidents_idx ON public.hub_posts USING btree (published_at DESC) WHERE ((kind = 'incident'::text) AND (resolved_at IS NULL) AND (published_at IS NOT NULL))
+index CREATE INDEX hub_posts_project_id_fkey_idx ON public.hub_posts USING btree (project_id)
 index CREATE INDEX hub_posts_project_idx ON public.hub_posts USING btree (project_id) WHERE (project_id IS NOT NULL)
 index CREATE INDEX hub_posts_published_idx ON public.hub_posts USING btree (published_at DESC) WHERE (published_at IS NOT NULL)
 index CREATE INDEX hub_reads_post_idx ON public.hub_reads USING btree (post_id)
@@ -1561,7 +1576,6 @@ index CREATE INDEX idx_audit_logs_user_id ON public.audit_logs USING btree (user
 index CREATE INDEX idx_budget_items_created_by ON public.budget_items USING btree (created_by)
 index CREATE INDEX idx_budget_items_job_id ON public.budget_items USING btree (job_id)
 index CREATE INDEX idx_budget_items_project ON public.budget_items USING btree (project_id)
-index CREATE INDEX idx_call_sheet_calls_sheet ON public.call_sheet_calls USING btree (call_sheet_id)
 index CREATE INDEX idx_call_sheets_project ON public.call_sheets USING btree (project_id)
 index CREATE INDEX idx_campaigns_created_by ON public.campaigns USING btree (created_by)
 index CREATE INDEX idx_campaigns_project ON public.campaigns USING btree (project_id)
@@ -1600,21 +1614,21 @@ index CREATE INDEX idx_scripts_created_by ON public.scripts USING btree (created
 index CREATE INDEX idx_scripts_last_edited_by ON public.scripts USING btree (last_edited_by)
 index CREATE INDEX idx_scripts_project ON public.scripts USING btree (project_id)
 index CREATE INDEX idx_shots_project ON public.shots USING btree (project_id)
-index CREATE INDEX idx_shots_scene ON public.shots USING btree (scene_id)
 index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING btree (assigned_to)
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
 index CREATE INDEX item_versions_confirmed_by_idx ON public.item_versions USING btree (confirmed_by)
 index CREATE INDEX item_versions_created_by_idx ON public.item_versions USING btree (created_by)
 index CREATE INDEX item_versions_project_idx ON public.item_versions USING btree (project_id, created_at DESC)
+index CREATE INDEX item_versions_sent_idx ON public.item_versions USING btree (project_id, script_id, number DESC) WHERE (status = 'sent'::text)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX links_created_by_idx ON public.links USING btree (created_by)
 index CREATE INDEX links_from_project_idx ON public.links USING btree (from_entity, project_id)
 index CREATE INDEX links_project_idx ON public.links USING btree (project_id)
-index CREATE INDEX links_to_idx ON public.links USING btree (to_entity)
 index CREATE INDEX links_to_project_idx ON public.links USING btree (to_entity, project_id)
 index CREATE INDEX lounge_reads_channel_id_fkey_idx ON public.lounge_reads USING btree (channel_id)
 index CREATE INDEX lounge_reads_partner_id_fkey_idx ON public.lounge_reads USING btree (partner_id)
+index CREATE INDEX lounge_reads_user_id_fkey_idx ON public.lounge_reads USING btree (user_id)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
 index CREATE INDEX media_lifecycle_idx ON public.media USING btree (project_id) WHERE (lifecycle = 'archived'::text)
 index CREATE INDEX media_project_created_idx ON public.media USING btree (project_id, created_at DESC)
@@ -1630,9 +1644,9 @@ index CREATE INDEX phase_gates_decided_by_idx ON public.phase_gates USING btree 
 index CREATE INDEX phase_gates_project_idx ON public.phase_gates USING btree (project_id, decided_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
 index CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category)
+index CREATE INDEX portfolio_projects_user_id_fkey_idx ON public.portfolio_projects USING btree (user_id)
 index CREATE INDEX post_cuts_created_by_idx ON public.post_cuts USING btree (created_by)
 index CREATE INDEX post_cuts_media_fkey_idx ON public.post_cuts USING btree (media_id, project_id)
-index CREATE INDEX post_cuts_media_idx ON public.post_cuts USING btree (media_id)
 index CREATE INDEX post_cuts_project_idx ON public.post_cuts USING btree (project_id, created_at)
 index CREATE INDEX post_items_assigned_to_idx ON public.post_items USING btree (assigned_to)
 index CREATE INDEX post_items_created_by_idx ON public.post_items USING btree (created_by)
@@ -1643,7 +1657,6 @@ index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, 
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_fkey_idx ON public.post_notes USING btree (scene_id, project_id)
-index CREATE INDEX post_notes_scene_idx ON public.post_notes USING btree (scene_id)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
 index CREATE INDEX project_audio_references_added_by_fkey_idx ON public.project_audio_references USING btree (added_by)
@@ -1654,7 +1667,6 @@ index CREATE INDEX project_brief_question_idx ON public.project_brief USING btre
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
 index CREATE INDEX project_documents_created_by_fkey_idx ON public.project_documents USING btree (created_by)
 index CREATE INDEX project_documents_location_fkey_idx ON public.project_documents USING btree (location_id, project_id)
-index CREATE INDEX project_documents_location_idx ON public.project_documents USING btree (location_id)
 index CREATE INDEX project_documents_person_idx ON public.project_documents USING btree (person_id)
 index CREATE INDEX project_documents_project_idx ON public.project_documents USING btree (project_id)
 index CREATE INDEX project_documents_vendor_fkey_idx ON public.project_documents USING btree (vendor_id, project_id)
@@ -1663,30 +1675,33 @@ index CREATE INDEX project_locations_project_idx ON public.project_locations USI
 index CREATE INDEX projects_project_type_idx ON public.projects USING btree (project_type)
 index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE is_sample
 index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
+index CREATE INDEX reading_corrections_created_by_fkey_idx ON public.reading_corrections USING btree (created_by)
 index CREATE INDEX reading_corrections_project_idx ON public.reading_corrections USING btree (project_id)
+index CREATE INDEX reports_resolved_by_fkey_idx ON public.reports USING btree (resolved_by)
 index CREATE INDEX reports_status_idx ON public.reports USING btree (status, created_at DESC)
 index CREATE INDEX review_comments_author_idx ON public.review_comments USING btree (author_id)
 index CREATE INDEX review_comments_link_idx ON public.review_comments USING btree (link_id)
 index CREATE INDEX review_comments_version_idx ON public.review_comments USING btree (version_id, created_at)
 index CREATE INDEX review_links_created_by_idx ON public.review_links USING btree (created_by)
 index CREATE INDEX review_links_project_idx ON public.review_links USING btree (project_id)
-index CREATE INDEX scene_characters_character_idx ON public.scene_characters USING btree (character_id)
+index CREATE INDEX scene_characters_character_fkey_idx ON public.scene_characters USING btree (character_id, project_id)
 index CREATE INDEX scene_characters_project_idx ON public.scene_characters USING btree (project_id)
+index CREATE INDEX scene_characters_scene_fkey_idx ON public.scene_characters USING btree (scene_id, project_id)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
 index CREATE INDEX scene_elements_element_fkey_idx ON public.scene_elements USING btree (element_id, project_id)
-index CREATE INDEX scene_elements_element_idx ON public.scene_elements USING btree (element_id)
 index CREATE INDEX scene_elements_project_idx ON public.scene_elements USING btree (project_id)
 index CREATE INDEX scene_elements_scene_fkey_idx ON public.scene_elements USING btree (scene_id, project_id)
 index CREATE INDEX scene_media_created_by_fkey_idx ON public.scene_media USING btree (created_by)
 index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree (media_id, project_id)
-index CREATE INDEX scene_media_media_idx ON public.scene_media USING btree (media_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
-index CREATE INDEX scene_states_character_idx ON public.scene_states USING btree (character_id)
+index CREATE INDEX scene_states_character_fkey_idx ON public.scene_states USING btree (character_id, project_id)
 index CREATE INDEX scene_states_project_idx ON public.scene_states USING btree (project_id)
-index CREATE INDEX scenes_location_idx ON public.scenes USING btree (location_id)
+index CREATE INDEX scene_states_scene_fkey_idx ON public.scene_states USING btree (scene_id, project_id)
+index CREATE INDEX scenes_location_fkey_idx ON public.scenes USING btree (location_id, project_id)
+index CREATE INDEX scenes_script_id_fkey_idx ON public.scenes USING btree (script_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
-index CREATE INDEX scenes_shoot_day_idx ON public.scenes USING btree (shoot_day_id)
+index CREATE INDEX scenes_shoot_day_fkey_idx ON public.scenes USING btree (shoot_day_id, project_id)
 index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
 index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
@@ -1694,19 +1709,14 @@ index CREATE INDEX script_stash_script_idx ON public.script_stash USING btree (s
 index CREATE INDEX scripts_content_search_idx ON public.scripts USING gin (to_tsvector('simple'::regconfig, COALESCE(content, ''::text)))
 index CREATE INDEX set_log_created_by_idx ON public.set_log USING btree (created_by)
 index CREATE INDEX set_log_day_fkey_idx ON public.set_log USING btree (call_sheet_id, project_id)
-index CREATE INDEX set_log_day_idx ON public.set_log USING btree (call_sheet_id)
 index CREATE INDEX set_log_media_fkey_idx ON public.set_log USING btree (media_id, project_id)
-index CREATE INDEX set_log_media_idx ON public.set_log USING btree (media_id)
 index CREATE INDEX set_log_project_idx ON public.set_log USING btree (project_id, at)
 index CREATE INDEX set_log_scene_fkey_idx ON public.set_log USING btree (scene_id, project_id)
-index CREATE INDEX set_log_scene_idx ON public.set_log USING btree (scene_id)
 index CREATE INDEX set_log_shot_fkey_idx ON public.set_log USING btree (shot_id, project_id)
-index CREATE INDEX set_log_shot_idx ON public.set_log USING btree (shot_id)
 index CREATE INDEX sfx_assets_project_id_fkey_idx ON public.sfx_assets USING btree (project_id)
 index CREATE INDEX sfx_assets_user_id_fkey_idx ON public.sfx_assets USING btree (user_id)
 index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (created_by)
 index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
-index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
 index CREATE INDEX support_case_messages_author_idx ON public.support_case_messages USING btree (author_id)
 index CREATE INDEX support_case_messages_case_idx ON public.support_case_messages USING btree (case_id, created_at)
@@ -1719,6 +1729,7 @@ index CREATE INDEX transcript_lines_created_by_idx ON public.transcript_lines US
 index CREATE INDEX transcript_lines_media_fkey_idx ON public.transcript_lines USING btree (media_id, project_id)
 index CREATE INDEX transcript_lines_media_idx ON public.transcript_lines USING btree (media_id, "position")
 index CREATE INDEX transcript_lines_paper_idx ON public.transcript_lines USING btree (project_id, paper_order) WHERE (paper_order IS NOT NULL)
+index CREATE INDEX transcript_lines_project_id_fkey_idx ON public.transcript_lines USING btree (project_id)
 index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
 index CREATE INDEX vendors_created_by_fkey_idx ON public.vendors USING btree (created_by)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
@@ -2240,6 +2251,7 @@ trigger CREATE TRIGGER project_documents_sync_permit AFTER INSERT OR UPDATE ON p
 trigger CREATE TRIGGER project_documents_touch BEFORE INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_touch()
 trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_link_scenes()
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
+trigger CREATE TRIGGER projects_approval_gate BEFORE UPDATE OF status ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_approval_gate()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
@@ -2258,3 +2270,5 @@ trigger CREATE TRIGGER support_messages_stamp BEFORE INSERT ON public.support_ca
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
 trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()
+view film_graph_ambiguous_names d6fc286d42c1d1eed40ff8046b369728
+view-options film_graph_ambiguous_names {security_invoker=true}

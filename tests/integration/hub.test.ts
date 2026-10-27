@@ -129,6 +129,16 @@ describe('announcing', () => {
     expect((await links()).length).toBe(after.length);
   });
 
+  it('the cron pass never re-announces history: a post that went live days ago stays quiet', async () => {
+    const id = await post({ title: 'Old news', important: true, published_at: new Date(Date.now() - 3 * 86_400_000).toISOString() });
+    await adminClient().from('notifications').delete().eq('link', `/hub/${id}`); // as if its notifications were never sent
+    const pg = new Pg({ connectionString: process.env.SUPABASE_TEST_DB_URL });
+    await pg.connect();
+    try { await pg.query('select internal.hub_posts_announce_scheduled()'); } finally { await pg.end(); }
+    const { data } = await adminClient().from('notifications').select('id').eq('link', `/hub/${id}`);
+    expect(data).toEqual([]);
+  });
+
   it('a post that is not important notifies nobody', async () => {
     const id = await post({ title: 'Small news', published_at: new Date().toISOString() });
     const { data } = await adminClient().from('notifications').select('id').eq('link', `/hub/${id}`);

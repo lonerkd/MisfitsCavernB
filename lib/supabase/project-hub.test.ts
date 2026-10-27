@@ -98,19 +98,17 @@ describe('getProductionData', () => {
     expect(d.festivals).toEqual([]);
   });
 
-  it('keeps only valid festivals from jsonb', async () => {
-    useFake({
-      projects: { data: { festival_submissions: [
-        { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-10-01', notes: 'early' },
-        { id: 'f2', name: 'TIFF', status: 'submitted', deadline: null },
-        { id: 3, name: 'Bad id', status: 'planned' },
-        { id: 'f4', name: 'Bad status', status: 'waiting' },
-        null, 'text', [],
-      ] } },
-    });
+  it('keeps only valid festivals when the jsonb list contains malformed entries', async () => {
+    useFake({ projects: { data: { festival_submissions: [
+      { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-12-01', notes: 'Early bird' },
+      { id: 'f6', name: 'Bad optional fields', status: 'submitted', deadline: 7, notes: {} },
+      null, 'festival', [], { id: 'f2', name: 'Unknown status', status: 'pending' },
+      { id: 3, name: 'Wrong id', status: 'submitted' }, { id: 'f4', name: 7, status: 'accepted' },
+      { id: 'f5', name: 'Wrong status', status: 1 },
+    ] } } });
     expect((await getProductionData('p1')).festivals).toEqual([
-      { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-10-01', notes: 'early' },
-      { id: 'f2', name: 'TIFF', status: 'submitted' },
+      { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-12-01', notes: 'Early bird' },
+      { id: 'f6', name: 'Bad optional fields', status: 'submitted' },
     ]);
   });
 

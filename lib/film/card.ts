@@ -31,7 +31,7 @@ export interface CardInput {
   sceneCharacters: Array<{ scene_id: string; character_id: string }>;
 }
 
-export interface CardItem { id: string; label: string; kind: EntityKind }
+export interface CardItem { id: string; label: string; kind: EntityKind; /** The link that attached it (attached groups only) — what Remove deletes. */ linkId?: string }
 export interface CardGroup { title: string; items: CardItem[] }
 export interface Card {
   id: string;
@@ -78,7 +78,7 @@ function attachedTo(id: string, input: CardInput): CardGroup[] {
     if (!e) continue;
     seen.add(other);
     const list = groups.get(e.kind) ?? [];
-    list.push({ id: e.id, label: e.label, kind: e.kind });
+    list.push({ id: e.id, label: e.label, kind: e.kind, linkId: l.id });
     groups.set(e.kind, list);
   }
   return KIND_ORDER.filter((k) => groups.has(k)).map((k) => ({
@@ -150,4 +150,30 @@ export function cardOf(id: string, input: CardInput): Card | null {
 
   // task, document, media: their own tools draw them; the card shows what they are attached to.
   return { ...base, facts: [], connected: [] };
+}
+
+const GRAPH_KINDS: EntityKind[] = ['scene', 'character', 'location', 'shoot_day'];
+
+/**
+ * What can be attached to this entity: any other entity not already linked to
+ * it, except two film-graph things (scenes, characters, places, days are
+ * joined by the graph itself, not by hand). Filtered by the typed text and
+ * ordered tasks, documents, media first.
+ */
+export function attachCandidates(id: string, entities: Entity[], links: Link[], query: string, limit = 8): Entity[] {
+  const self = entities.find((e) => e.id === id);
+  if (!self) return [];
+  const linked = new Set<string>();
+  for (const l of links) {
+    if (l.from_entity === id) linked.add(l.to_entity);
+    else if (l.to_entity === id) linked.add(l.from_entity);
+  }
+  const q = query.trim().toLowerCase();
+  const rank = (k: EntityKind) => KIND_ORDER.indexOf(k);
+  return entities
+    .filter((e) => e.id !== id && !linked.has(e.id))
+    .filter((e) => !(GRAPH_KINDS.includes(self.kind) && GRAPH_KINDS.includes(e.kind)))
+    .filter((e) => !q || e.label.toLowerCase().includes(q))
+    .sort((a, b) => rank(a.kind) - rank(b.kind) || a.label.localeCompare(b.label))
+    .slice(0, limit);
 }
