@@ -11,18 +11,21 @@ import { ProtectedPage } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
 import {
   listPosts, createPost, updatePost, setPublished, deletePost, checkPost, isPublished,
-  HUB_AUDIENCES, HUB_KINDS, AUDIENCE_LABEL, KIND_LABEL, type HubPost, type HubPostInput,
+  HUB_AUDIENCES, HUB_KINDS, AUDIENCE_LABEL, KIND_LABEL, SEVERITIES, type HubPost, type HubPostInput, type Severity,
 } from '@/lib/hub/posts';
 import { HubMarkdown } from '@/components/hub/HubMarkdown';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
+import { useFlag } from '@/components/Flag';
+import { SEVERITY_LABEL } from '@/lib/hub/status';
+import { listConsentingProjects } from '@/lib/hub/caseStudies';
 
 const field: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14, width: '100%' };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--fg-muted)' };
 const EMPTY: HubPostInput = { kind: 'update', audience: 'everyone', title: '', body: '', cover_url: null, important: false, pinned: false };
 
-const toInput = (p: HubPost): HubPostInput => ({ kind: p.kind, audience: p.audience, title: p.title, body: p.body, cover_url: p.cover_url, important: p.important, pinned: p.pinned });
+const toInput = (p: HubPost): HubPostInput => ({ kind: p.kind, audience: p.audience, title: p.title, body: p.body, cover_url: p.cover_url, important: p.important, pinned: p.pinned, severity: p.severity, project_id: p.project_id });
 
 export default function AdminHubPage() {
   const { toast } = useToast();
@@ -33,6 +36,9 @@ export default function AdminHubPage() {
   const [draft, setDraft] = useState<HubPostInput>(EMPTY);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
+  const statusOn = useFlag('hub_status');
+  const studiesOn = useFlag('hub_case_studies');
+  const productions = useLoad(studiesOn ? 'admin-hub-productions' : null, listConsentingProjects);
 
   const open = (p: HubPost | null) => {
     setEditing(p ? p.id : 'new');
@@ -60,8 +66,8 @@ export default function AdminHubPage() {
   };
 
   const publish = async (p: HubPost, on: boolean) => {
-    if (on && p.important) {
-      const ok = await confirm({ title: `Publish “${p.title}”?`, message: 'It is marked important, so everyone gets a notification and a push.', confirmLabel: 'Publish and notify', danger: false });
+    if (on && (p.important || p.kind === 'incident')) {
+      const ok = await confirm({ title: `Publish “${p.title}”?`, message: p.kind === 'incident' ? 'An incident notifies everyone, shows the banner across the suite, and pushes to phones.' : 'It is marked important, so everyone gets a notification and a push.', confirmLabel: 'Publish and notify', danger: false });
       if (!ok) return;
     }
     if (!on) {
@@ -102,10 +108,25 @@ export default function AdminHubPage() {
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <label style={{ ...label, flex: '1 1 160px' }}>Section
-                <select value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value as HubPostInput['kind'] })} style={field}>
-                  {HUB_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+                <select value={draft.kind} onChange={(e) => { const kind = e.target.value as HubPostInput['kind']; setDraft({ ...draft, kind, severity: kind === 'incident' ? draft.severity ?? 'minor' : null, project_id: kind === 'case_study' ? draft.project_id ?? null : null }); }} style={field}>
+                  {HUB_KINDS.filter((k) => (k !== 'incident' || statusOn || draft.kind === 'incident') && (k !== 'case_study' || studiesOn || draft.kind === 'case_study')).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
                 </select>
               </label>
+              {draft.kind === 'incident' && (
+                <label style={{ ...label, flex: '1 1 140px' }}>Severity
+                  <select value={draft.severity ?? 'minor'} onChange={(e) => setDraft({ ...draft, severity: e.target.value as Severity })} style={field}>
+                    {SEVERITIES.map((s) => <option key={s} value={s}>{SEVERITY_LABEL[s]}</option>)}
+                  </select>
+                </label>
+              )}
+              {draft.kind === 'case_study' && (
+                <label style={{ ...label, flex: '2 1 240px' }}>Production (only owners who agreed)
+                  <select value={draft.project_id ?? ''} onChange={(e) => setDraft({ ...draft, project_id: e.target.value || null })} style={field}>
+                    <option value="">None</option>
+                    {(productions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                  </select>
+                </label>
+              )}
               <label style={{ ...label, flex: '1 1 160px' }}>Audience
                 <select value={draft.audience} onChange={(e) => setDraft({ ...draft, audience: e.target.value as HubPostInput['audience'] })} style={field}>
                   {HUB_AUDIENCES.map((a) => <option key={a} value={a}>{AUDIENCE_LABEL[a]}</option>)}

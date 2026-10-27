@@ -6,7 +6,7 @@
 ## Context
 
 Vercel deploys a preview build for every PR. The production Supabase project
-(`fxsryglwpwcqkfjljbrm`) holds real user data. Pointing preview builds at the
+holds real user data. Pointing preview builds at the
 same project creates three risks:
 
 1. **Data corruption** — a preview running migrations or edge-function code
@@ -49,7 +49,7 @@ the "Missing or placeholder Supabase environment" warning already in
 changes, not for data-dependent flows.
 
 **Superseded the same day:** the staging project below now exists
-(`cavern-staging`, ref `srltiosyxvvtlsitiqqy`, us-west-1, every migration
+(`cavern-staging`, every migration
 applied, row-level security on all 70 public tables). The two Preview
 variables hold its URL and anon key.
 

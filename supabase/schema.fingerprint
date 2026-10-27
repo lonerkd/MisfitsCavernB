@@ -200,6 +200,11 @@ column hidden_messages.hidden_at timestamp with time zone default now() not null
 column hidden_messages.hidden_by uuid
 column hidden_messages.message_id uuid not null
 column hidden_messages.original text not null
+column hub_incident_updates.body text not null
+column hub_incident_updates.created_at timestamp with time zone default now() not null
+column hub_incident_updates.created_by uuid default auth.uid()
+column hub_incident_updates.id uuid default gen_random_uuid() not null
+column hub_incident_updates.post_id uuid not null
 column hub_posts.audience text default 'everyone'::text not null
 column hub_posts.body text default ''::text not null
 column hub_posts.cover_url text
@@ -209,7 +214,10 @@ column hub_posts.id uuid default gen_random_uuid() not null
 column hub_posts.important boolean default false not null
 column hub_posts.kind text default 'update'::text not null
 column hub_posts.pinned boolean default false not null
+column hub_posts.project_id uuid
 column hub_posts.published_at timestamp with time zone
+column hub_posts.resolved_at timestamp with time zone
+column hub_posts.severity text
 column hub_posts.title text not null
 column hub_posts.updated_at timestamp with time zone default now() not null
 column hub_reads.post_id uuid not null
@@ -446,6 +454,7 @@ column project_tasks.title text not null
 column projects.accent_color text
 column projects.archived_at timestamp with time zone
 column projects.budget numeric(12,2)
+column projects.case_study_ok boolean default false not null
 column projects.created_at timestamp with time zone default now()
 column projects.creator_id uuid not null
 column projects.description text
@@ -637,6 +646,19 @@ column spotify_connections.expires_at bigint not null
 column spotify_connections.refresh_token text not null
 column spotify_connections.updated_at timestamp with time zone default now() not null
 column spotify_connections.user_id uuid not null
+column support_case_messages.author_id uuid default auth.uid()
+column support_case_messages.body text not null
+column support_case_messages.case_id uuid not null
+column support_case_messages.created_at timestamp with time zone default now() not null
+column support_case_messages.from_admin boolean default false not null
+column support_case_messages.id uuid default gen_random_uuid() not null
+column support_cases.created_at timestamp with time zone default now() not null
+column support_cases.id uuid default gen_random_uuid() not null
+column support_cases.opened_by uuid default auth.uid() not null
+column support_cases.page text
+column support_cases.status text default 'open'::text not null
+column support_cases.subject text not null
+column support_cases.updated_at timestamp with time zone default now() not null
 column timeline_items.assigned_to uuid
 column timeline_items.created_at timestamp with time zone default now()
 column timeline_items.created_by uuid
@@ -825,12 +847,20 @@ constraint guide_progress.guide_progress_workflow_check CHECK (((workflow IS NUL
 constraint hidden_messages.hidden_messages_hidden_by_fkey FOREIGN KEY (hidden_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint hidden_messages.hidden_messages_message_id_fkey FOREIGN KEY (message_id) REFERENCES messages(id) ON DELETE CASCADE
 constraint hidden_messages.hidden_messages_pkey PRIMARY KEY (message_id)
+constraint hub_incident_updates.hub_incident_updates_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 2000)))
+constraint hub_incident_updates.hub_incident_updates_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint hub_incident_updates.hub_incident_updates_pkey PRIMARY KEY (id)
+constraint hub_incident_updates.hub_incident_updates_post_id_fkey FOREIGN KEY (post_id) REFERENCES hub_posts(id) ON DELETE CASCADE
 constraint hub_posts.hub_posts_audience_check CHECK ((audience = ANY (ARRAY['everyone'::text, 'developers'::text, 'filmmakers'::text, 'buyers'::text, 'investors'::text])))
 constraint hub_posts.hub_posts_body_check CHECK ((char_length(body) <= 50000))
 constraint hub_posts.hub_posts_cover_url_check CHECK (((cover_url IS NULL) OR (cover_url ~ '^https://'::text)))
 constraint hub_posts.hub_posts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
-constraint hub_posts.hub_posts_kind_check CHECK ((kind = ANY (ARRAY['update'::text, 'guide'::text])))
+constraint hub_posts.hub_posts_incident_shape CHECK ((((kind = 'incident'::text) AND (severity IS NOT NULL)) OR ((kind <> 'incident'::text) AND (severity IS NULL) AND (resolved_at IS NULL))))
+constraint hub_posts.hub_posts_kind_check CHECK ((kind = ANY (ARRAY['update'::text, 'guide'::text, 'incident'::text, 'case_study'::text])))
 constraint hub_posts.hub_posts_pkey PRIMARY KEY (id)
+constraint hub_posts.hub_posts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+constraint hub_posts.hub_posts_project_only_case_study CHECK (((project_id IS NULL) OR (kind = 'case_study'::text)))
+constraint hub_posts.hub_posts_severity_check CHECK ((severity = ANY (ARRAY['minor'::text, 'major'::text, 'critical'::text])))
 constraint hub_posts.hub_posts_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
 constraint hub_reads.hub_reads_pkey PRIMARY KEY (user_id, post_id)
 constraint hub_reads.hub_reads_post_id_fkey FOREIGN KEY (post_id) REFERENCES hub_posts(id) ON DELETE CASCADE
@@ -1098,6 +1128,15 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint support_case_messages.support_case_messages_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint support_case_messages.support_case_messages_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 5000)))
+constraint support_case_messages.support_case_messages_case_id_fkey FOREIGN KEY (case_id) REFERENCES support_cases(id) ON DELETE CASCADE
+constraint support_case_messages.support_case_messages_pkey PRIMARY KEY (id)
+constraint support_cases.support_cases_opened_by_fkey FOREIGN KEY (opened_by) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint support_cases.support_cases_page_check CHECK (((page IS NULL) OR (char_length(page) <= 500)))
+constraint support_cases.support_cases_pkey PRIMARY KEY (id)
+constraint support_cases.support_cases_status_check CHECK ((status = ANY (ARRAY['open'::text, 'waiting'::text, 'resolved'::text])))
+constraint support_cases.support_cases_subject_check CHECK (((char_length(btrim(subject)) >= 1) AND (char_length(btrim(subject)) <= 200)))
 constraint timeline_items.timeline_items_assigned_to_fkey FOREIGN KEY (assigned_to) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint timeline_items.timeline_items_pkey PRIMARY KEY (id)
@@ -1158,7 +1197,8 @@ function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6
 function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
-function internal.hub_posts_announce() body=282f74b41c54c150e45cc6f61d72a3bf
+function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
+function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
@@ -1177,18 +1217,23 @@ function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d9
 function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
+function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.shoot_days_date_to_call_sheet() body=e4538e1cc3c6d9d0b9db85fb0895308e
+function internal.support_cases_touch() body=158b70a96b36cb267200eea958e42823
+function internal.support_messages_route() body=80bdbf1b14705cbcf694731f79062017
+function internal.support_messages_stamp() body=a7aa6cc02189b9eb6a6cbf130828cfba
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
 function internal.timesheets_guard() body=120e37b024775f62f4ba26fc34af9a54
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
+function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
 function public.admin_hide_message(p_message uuid, p_hidden boolean) body=d02bc5d58f5a432253fa7db071935f8e
 function public.admin_list_users() body=d851a2d7fa39ad8824280d014c77d28d
@@ -1215,6 +1260,7 @@ function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d
 function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
+function public.hub_case_study_project(p_post uuid) body=fec46019f2d6f2c42655f9f6736a8b28
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
 function public.log_password_breach(p_breach_count integer, p_context text, p_email text) body=0a18cd7dd10da49d159bdaa9f158e0ea
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
@@ -1261,6 +1307,7 @@ grant function internal.characters_rename() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_check_consent() postgres
 grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
 grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
@@ -1279,18 +1326,23 @@ grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
+grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
 grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.shoot_days_date_to_call_sheet() postgres
+grant function internal.support_cases_touch() postgres
+grant function internal.support_messages_route() postgres
+grant function internal.support_messages_stamp() postgres
 grant function internal.sync_budget_actual(p_line uuid) postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
 grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
+grant function public.admin_case_study_projects() authenticated,postgres,service_role
 grant function public.admin_close_job(p_job uuid) authenticated,postgres,service_role
 grant function public.admin_hide_message(p_message uuid, p_hidden boolean) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -1317,6 +1369,7 @@ grant function public.get_shared_project(p_token text) anon,authenticated,postgr
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
+grant function public.hub_case_study_project(p_post uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
 grant function public.log_password_breach(p_breach_count integer, p_context text, p_email text) PUBLIC,anon,authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
@@ -1377,7 +1430,11 @@ index CREATE INDEX expenses_receipt_fkey_idx ON public.expenses USING btree (rec
 index CREATE INDEX expenses_vendor_fkey_idx ON public.expenses USING btree (vendor_id, project_id)
 index CREATE INDEX expenses_vendor_idx ON public.expenses USING btree (vendor_id)
 index CREATE INDEX guide_progress_project_idx ON public.guide_progress USING btree (project_id)
+index CREATE INDEX hub_incident_updates_created_by_idx ON public.hub_incident_updates USING btree (created_by)
+index CREATE INDEX hub_incident_updates_post_idx ON public.hub_incident_updates USING btree (post_id, created_at)
 index CREATE INDEX hub_posts_created_by_idx ON public.hub_posts USING btree (created_by)
+index CREATE INDEX hub_posts_open_incidents_idx ON public.hub_posts USING btree (published_at DESC) WHERE ((kind = 'incident'::text) AND (resolved_at IS NULL) AND (published_at IS NOT NULL))
+index CREATE INDEX hub_posts_project_idx ON public.hub_posts USING btree (project_id) WHERE (project_id IS NOT NULL)
 index CREATE INDEX hub_posts_published_idx ON public.hub_posts USING btree (published_at DESC) WHERE (published_at IS NOT NULL)
 index CREATE INDEX hub_reads_post_idx ON public.hub_reads USING btree (post_id)
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
@@ -1517,6 +1574,10 @@ index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (create
 index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
 index CREATE INDEX shots_frame_media_idx ON public.shots USING btree (frame_media_id)
 index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
+index CREATE INDEX support_case_messages_author_idx ON public.support_case_messages USING btree (author_id)
+index CREATE INDEX support_case_messages_case_idx ON public.support_case_messages USING btree (case_id, created_at)
+index CREATE INDEX support_cases_opened_by_idx ON public.support_cases USING btree (opened_by, updated_at DESC)
+index CREATE INDEX support_cases_status_idx ON public.support_cases USING btree (status, updated_at DESC)
 index CREATE INDEX timesheets_decided_by_fkey_idx ON public.timesheets USING btree (decided_by)
 index CREATE INDEX timesheets_project_idx ON public.timesheets USING btree (project_id)
 index CREATE INDEX timesheets_user_idx ON public.timesheets USING btree (user_id)
@@ -1563,6 +1624,7 @@ index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integratio
 index CREATE UNIQUE INDEX expenses_pkey ON public.expenses USING btree (id)
 index CREATE UNIQUE INDEX guide_progress_pkey ON public.guide_progress USING btree (user_id, project_id)
 index CREATE UNIQUE INDEX hidden_messages_pkey ON public.hidden_messages USING btree (message_id)
+index CREATE UNIQUE INDEX hub_incident_updates_pkey ON public.hub_incident_updates USING btree (id)
 index CREATE UNIQUE INDEX hub_posts_pkey ON public.hub_posts USING btree (id)
 index CREATE UNIQUE INDEX hub_reads_pkey ON public.hub_reads USING btree (user_id, post_id)
 index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfolio_projects USING btree (user_id, source_project_id) WHERE (source_project_id IS NOT NULL)
@@ -1629,6 +1691,8 @@ index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
 index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
+index CREATE UNIQUE INDEX support_case_messages_pkey ON public.support_case_messages USING btree (id)
+index CREATE UNIQUE INDEX support_cases_pkey ON public.support_cases USING btree (id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
 index CREATE UNIQUE INDEX timesheets_day_key ON public.timesheets USING btree (project_id, user_id, work_date)
 index CREATE UNIQUE INDEX timesheets_pkey ON public.timesheets USING btree (id)
@@ -1692,6 +1756,9 @@ policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to au
 policy public.guide_progress "guide_progress own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.hidden_messages "hidden_messages admin read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
+policy public.hub_incident_updates "hub incident updates delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.hub_incident_updates "hub incident updates insert" PERMISSIVE INSERT to authenticated using - check (internal.caller_is_admin() AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.hub_incident_updates "hub incident updates read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM hub_posts p WHERE ((p.id = hub_incident_updates.post_id) AND (p.kind = 'incident'::text)))) check -
 policy public.hub_posts "hub posts delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
 policy public.hub_posts "hub posts insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.hub_posts "hub posts read" PERMISSIVE SELECT to authenticated using (((published_at IS NOT NULL) AND (published_at <= now())) OR internal.caller_is_admin()) check -
@@ -1815,6 +1882,11 @@ policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DE
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.support_case_messages "support case messages insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))))
+policy public.support_case_messages "support case messages read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))) check -
+policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenticated using - check ((opened_by = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text))
+policy public.support_cases "support cases read" PERMISSIVE SELECT to authenticated using ((opened_by = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
+policy public.support_cases "support cases update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.can_shape_project(project_id))
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
@@ -1901,6 +1973,7 @@ rls discord_integrations enabled=true forced=false
 rls expenses enabled=true forced=false
 rls guide_progress enabled=true forced=false
 rls hidden_messages enabled=true forced=false
+rls hub_incident_updates enabled=true forced=false
 rls hub_posts enabled=true forced=false
 rls hub_reads enabled=true forced=false
 rls job_applications enabled=true forced=false
@@ -1944,6 +2017,8 @@ rls sfx_assets enabled=true forced=false
 rls shoot_days enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
+rls support_case_messages enabled=true forced=false
+rls support_cases enabled=true forced=false
 rls timeline_items enabled=true forced=false
 rls timesheets enabled=true forced=false
 rls transcript_lines enabled=true forced=false
@@ -1964,6 +2039,7 @@ trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER hub_posts_announce AFTER INSERT OR UPDATE OF published_at, important ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_announce()
+trigger CREATE TRIGGER hub_posts_check_consent BEFORE INSERT OR UPDATE OF project_id ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_check_consent()
 trigger CREATE TRIGGER hub_posts_touch BEFORE INSERT OR UPDATE ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_touch()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
@@ -1981,6 +2057,7 @@ trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.proj
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
@@ -1989,6 +2066,9 @@ trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scr
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER shoot_days_date_to_call_sheet AFTER UPDATE OF shoot_date ON public.shoot_days FOR EACH ROW WHEN (((pg_trigger_depth() < 1) AND (new.shoot_date IS DISTINCT FROM old.shoot_date))) EXECUTE FUNCTION internal.shoot_days_date_to_call_sheet()
 trigger CREATE TRIGGER shoot_days_updated_at BEFORE UPDATE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER support_cases_touch BEFORE INSERT OR UPDATE ON public.support_cases FOR EACH ROW EXECUTE FUNCTION internal.support_cases_touch()
+trigger CREATE TRIGGER support_messages_route AFTER INSERT ON public.support_case_messages FOR EACH ROW EXECUTE FUNCTION internal.support_messages_route()
+trigger CREATE TRIGGER support_messages_stamp BEFORE INSERT ON public.support_case_messages FOR EACH ROW EXECUTE FUNCTION internal.support_messages_stamp()
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
 trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()

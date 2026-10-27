@@ -150,7 +150,7 @@ export function ScenesTab() {
 }
 
 function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote> }) {
-  const { scenes, links, postNotes, followScene, openInScript } = useStudio();
+  const { scenes, links, postNotes, followScene, openInScript, castOf } = useStudio();
   const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
   const { toast } = useToast();
@@ -190,7 +190,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
     }
   };
 
-  const meta = [scene.time_of_day, scene.cast_list, scene.est_duration].filter(Boolean).join(' · ');
+  const meta = [scene.time_of_day, castOf(scene).join(', '), scene.est_duration].filter(Boolean).join(' · ');
   return (
     <article id={`scene-${scene.id}`} className={cx(s.scene, following && s.sceneFollow)} aria-label={`Scene ${scene.scene_number}: ${scene.heading ?? scene.title}`} aria-current={following ? 'location' : undefined}>
       <div className={s.sceneBar} style={scene.color ? { background: scene.color } : undefined} />
