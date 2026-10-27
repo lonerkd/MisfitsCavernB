@@ -27,8 +27,8 @@ in a browser without an account.
 ## The pieces
 
 ### C1 — Deliverables (M)
-A **deliverable** is a script plus its spec: `deliverables(script_id unique,
-project_id, kind, max_chars, max_seconds, notes)`. `kind` is a short list
+A **deliverable** is a script plus its spec: `deliverables(script_id unique, project_id, kind, max_chars, max_seconds, notes)`. Enforce that `script_id` belongs to the same `project_id` with a composite foreign key or equivalent trigger.
+`kind` is a short list
 (`spot_30`, `spot_15`, `spot_6`, `radio`, `poster`, `banner`, `headline`,
 `social`, `other`) with default limits per kind (data in `lib/ad/kinds.ts`,
 overridable per piece). RLS through `can_access_project` / `can_shape_project`
