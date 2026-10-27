@@ -26,7 +26,8 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    [`sessions/`](sessions/README.md) for what the last PRs did (Claude Code
    prints the latest three at start).
 3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
-4. [`INDEX.md`](INDEX.md) — the map: where everything else is.
+4. [`INDEX.md`](INDEX.md) — the map: where everything else is, the playbook
+   included. Nothing else is a required read to start.
 
 ## Non-negotiables
 
