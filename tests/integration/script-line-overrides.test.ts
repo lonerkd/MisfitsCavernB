@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { anonClient, createCast, destroyCast, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { createCrewedProject, createScript } from './support/project';
 
 let cast: Cast;
 let projectId: string;
@@ -9,13 +9,7 @@ let scriptId: string;
 beforeAll(async () => {
   cast = await createCast();
   ({ projectId } = await createCrewedProject(cast, 'Line overrides'));
-  const { data, error } = await cast.sam.client
-    .from('scripts')
-    .insert({ project_id: projectId, title: 'Override test', content: '' })
-    .select('id')
-    .single();
-  if (error || !data) throw error ?? new Error('Could not create test script');
-  scriptId = data.id;
+  scriptId = await createScript(cast, projectId);
 });
 
 afterAll(async () => { await destroyCast(cast); });
@@ -49,6 +43,8 @@ describe('script line overrides', () => {
   it('an outsider and anon cannot see or change another script’s corrections', async () => {
     expect((await cast.riley.client.from('script_line_overrides').select('id').eq('script_id', scriptId)).data).toEqual([]);
     expect((await add('riley', 'action', 4)).error).not.toBeNull();
+    expect((await cast.riley.client.from('script_line_overrides').update({ line_type: 'dialogue' }).eq('script_id', scriptId).select()).data ?? []).toEqual([]);
+    expect((await cast.riley.client.from('script_line_overrides').delete().eq('script_id', scriptId).select()).data ?? []).toEqual([]);
     expect((await anonClient().from('script_line_overrides').select('id').eq('script_id', scriptId)).data ?? []).toEqual([]);
     const { data, error } = await cast.sam.client.from('script_line_overrides').select('id').eq('script_id', scriptId);
     expect(error).toBeNull();
