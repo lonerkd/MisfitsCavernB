@@ -171,17 +171,18 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | Theme | Mode | Look |
 |---|---|---|
 | `default` (Cavern) | dark | near-black, cream text, ember accent |
-| `terminal` | dark | green phosphor, mono type |
-| `blueprint` | dark | drafting blue, sky accent, grid |
+| `paper` (Paper) | light | warm off-white, ink text, rust accent |
+| `vampire` (Vampire) | dark | black, blood red accent |
+| `blueprint` (Blueprint) | dark | drafting blue, sky accent, grid |
+| `terminal` (Terminal) | dark | green phosphor, mono type |
+| `editorial` (Editorial) | light | white, black type, red accent, serif display |
+| `inkrust` (Ink & Rust) | dark | ink-blue night, pale-gold text, muted rust accent |
 | `mono` | dark | black and white |
-| `paper` | light | warm off-white, ink text, rust accent |
-| `editorial` | light | white, black type, red accent, serif display |
 | `glass` | dark | frosted gradients, periwinkle accent |
 | `neon` | dark | violet night, magenta accent |
 | `slate` | dark | cool slate, soft blue accent |
 | `lagoon` | light | pale teal, teal accent |
 | `forest` | dark | deep green, sage accent |
-| `vampire` | dark | black, blood red accent |
 
 Plus **System** (Paper when the device is light, Cavern when dark) and
 **Custom** (a background + an accent; `customTokens()` derives readable text,
