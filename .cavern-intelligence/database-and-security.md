@@ -111,10 +111,11 @@ lines. **A new definer function in `public` is added here, with its gate, in
 the PR that creates it** — anything the advisor lists that isn't here is
 unreviewed. (`internal.*` helpers aren't callable through the API.)
 
-The production-advisor counts recorded on 2026-10-25 were 11 functions
-callable by `anon` and 39 by `authenticated`; those counts reconcile with the
-inventory and gates below. The current list also includes six later additions:
-the three guest-review RPCs, the two case-study RPCs, and `advance_phase`.
+Checked against the live production advisor on 2026-10-27: **14** functions
+callable by `anon` and **45** by signed-in users (the 14 included), and every
+one is in the tables below with its gate. Since the 2026-10-25 run (11 and 39)
+the three guest-review RPCs (anon-callable too), the two case-study RPCs and
+`advance_phase` were added.
 
 Callable by **anyone** (anon + signed in) — public pages:
 
