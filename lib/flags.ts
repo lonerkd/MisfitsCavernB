@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  guest_review: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-27',
+    note: 'Versions and the client review link (Studio › Share › Review). Admin-only in production: the first feature where someone without an account writes, so the owner tries it on live data before it is public.',
+  },
   entity_cards: {
     local: true,
     preview: true,

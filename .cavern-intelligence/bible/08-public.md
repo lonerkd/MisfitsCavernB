@@ -27,6 +27,7 @@ policy on an explicit "published" flag. Security model:
 | `/shared/[token]` | **server**, `force-dynamic`, Open Graph metadata | a project's lookbook: title, logline, creator, published items under their scenes, cast & crew and laurels (press kit) — never notes or unpublished items | `get_shared_project`, `get_shared_lookbook`, `get_press_kit`: exact token + visibility link/public |
 | `/m/[id]` | route handler | a published file: 302 to a fresh signed URL (5 min images, 1 h video/audio), `no-store` | `get_published_media` + storage "shared read" policy |
 | `/p/[token]` | server metadata (link preview) + client view | a portfolio piece as a press kit: media, blocks from the pitch board, credits | `portfolio_projects` / `portfolio_blocks` / `portfolio_media` are readable by everyone (all portfolio work is public by design) |
+| `/review/[token]` | server + client | a client reads the versions sent on the link, comments, approves or asks for changes; never indexed | `get_review(token)` — the exact token while the link is live (an unknown, revoked and expired link look the same); writes only through `add_review_comment` / `decide_review`, capped at 200 comments per link |
 | `/s/[token]` | server | a screenplay, read-only, formatted, with its author; link previews (title, writer); never indexed | `get_shared_script(token)` — the exact token while sharing is on; nobody can list shared scripts or read one by id |
 | `/privacy`, `/terms` | static | the policies; operator, province, contact and effective date from `lib/legal/legal.ts` | — |
 

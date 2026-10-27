@@ -9,6 +9,7 @@ import { PROJECT_VISIBILITY, updateProjectVisibility, type ProjectVisibility } f
 import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { CaseStudyConsent } from './CaseStudyConsent';
+import { ReviewPanel } from './ReviewPanel';
 import { SectionHeader, Toggle, cx } from '../ui';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import s from '../studio.module.css';
@@ -106,6 +107,8 @@ export function ShareTab() {
       </div>
 
       <CaseStudyConsent projectId={project.id} isOwner={isOwner} />
+
+      <ReviewPanel />
 
       <div className={s.panel}>
         <div className={s.panelTitle}>Share link</div>

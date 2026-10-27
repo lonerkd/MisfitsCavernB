@@ -1,6 +1,6 @@
 # Guest review, lifecycle and phases — spec (slice D of the link layer)
 
-Status: **draft for the owner's review** (2026-10-27). Parent: [plans/2026-10-27-link-layer-and-card.md](2026-10-27-link-layer-and-card.md)
+Status: **approved by the owner 2026-10-27 (recommendations accepted); D1 built behind flag `guest_review`** (migration `20261030000000`; D1 covers project **scripts** — the text work; media versions follow). Order inside D: **D1 → D3 → D2**. Parent: [plans/2026-10-27-link-layer-and-card.md](2026-10-27-link-layer-and-card.md)
 (slice D; the owner ordered A → D → B → C). Decided there: layers are team /
 investors-and-guests / public; phases are format templates (film and series
 first, then advertising and copy, then games, music and books); owner or
@@ -123,7 +123,15 @@ the team (Sam, Jordan) reads comments; only a shaper sends.
   working untouched; `/review` is new. Moving them onto one layer model is a
   later, deliberate step, not part of D1.
 
-## Decisions needed from the owner before D1 is built
+## Decided (owner, 2026-10-27: "go with your recommendations")
+
+1. Guest identity: a typed name for now; verification when email exists.
+2. A guest's approval *proposes*; the team confirms (built: `confirmed_at` / `confirmed_by`).
+3. Order: D1 → D3 → D2.
+
+**D1 as built differs from the sketch above in one way:** a version is of a project **script** (`item_versions.script_id`), not a document or media item — `project_documents` are contracts and permits (files), and the copy the client reviews is a script. Media versions need a signed-URL route for guests and are a follow-up.
+
+## Decisions that were needed before D1 (answered above)
 
 1. **Guest identity:** is a typed name enough for the first version (with the
    limits above), or must a guest verify an email first? (Recommendation: a
