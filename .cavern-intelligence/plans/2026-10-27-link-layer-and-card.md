@@ -165,13 +165,32 @@ not started until the owner has decided the questions below.
 2. The card's links are visible to everyone who can see the project; the
    *linked item* still follows its own access.
 
+## Decided for slice D (owner, 2026-10-27)
+
+- **Layers:** team, **investors / guests**, public. "Guest" is anyone invited
+  from outside the team to see the approved material — an investor, a
+  publisher, a reader, a client. Entry is by a link per layer first; accounts
+  later.
+- **Phases are data, not code.** The four phases — pre-production, production,
+  post-production, release — are the **default**, and they work for now. But
+  the suite is for *all* creatives (video games of every style, music videos,
+  music writing, film, series, novels, comics, anime, educational writing,
+  personal writing) and can grow into traditional workflows, so the phase set
+  is a template keyed to the **project format** (the formats already managed at
+  `/admin/formats`): each format names its own phases, may have more or fewer
+  (a personal essay may have two and no gates; a studio game may have
+  alpha/beta/gold), and may turn the approval gate on or off. A new format
+  needs a row, not a deploy.
+- **Words follow the format.** The gate's labels ("pitch", "lock", "wrap")
+  come from the template too, so a novelist is never asked to "wrap
+  production".
+
+Still open: who approves and passes a gate (proposal below).
+
 ## Questions for the owner (slice D)
 
-1. **Phases:** are they exactly pre-production, production, post-production
-   and release, the same for every project — or does the owner set them per
-   project? (Proposal: these four, fixed.)
-2. **Who approves and who passes a gate?** (Proposal: approving an item and
+1. **Who approves and who passes a gate?** (Proposal: approving an item and
    passing a gate are owner/shape-permission actions; anyone can propose.)
-3. **Investor layer:** how does an investor get in — a link like the lookbook
-   share, an invited account, or both? (Proposal: a link per layer first;
-   accounts later.)
+2. **Which formats get a template first?** (Proposal: film and series with the
+   four defaults, then game, music, book/comic — each its own small data
+   change once the model exists.)
