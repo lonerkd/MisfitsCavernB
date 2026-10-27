@@ -177,6 +177,21 @@ describe('the guest', () => {
     expect((await admin().from('review_comments').select('id').eq('link_id', flood.id)).data).toHaveLength(14);
   });
 
+  it('a concurrent burst with two different recipients (owner and version author) neither deadlocks nor exceeds 5 each', async () => {
+    const v = await newVersion(cast.jordan.client);
+    expect(v.error).toBeNull();
+    await send(v.data!.id);
+    const link = (await sam().from('review_links').insert({ project_id: projectId, version_ids: [v.data!.id] }).select('id, token').single()).data!;
+    await admin().from('notifications').delete().in('user_id', [cast.sam.id, cast.jordan.id]).eq('type', 'review');
+    const burst = await Promise.all(Array.from({ length: 10 }, (_, i) => guest().rpc('add_review_comment', { p_token: link.token, p_version: v.data!.id, p_name: 'Bot', p_body: `two ${i}` })));
+    expect(burst.every((b) => b.error === null && b.data === true)).toBe(true);
+    for (const who of [cast.sam, cast.jordan]) {
+      const told = (await admin().from('notifications').select('id').eq('user_id', who.id).eq('type', 'review').like('title', 'New comment%')).data!;
+      expect(told).toHaveLength(5);
+    }
+    expect((await admin().from('review_comments').select('id').eq('link_id', link.id)).data).toHaveLength(10);
+  });
+
   it('decides once for the team to confirm: the team is told, nothing is confirmed before a decision, and a confirmed decision is closed', async () => {
     // Nothing to confirm before the client decides.
     expect((await sam().from('item_versions').update({ confirmed_at: new Date().toISOString() }).eq('id', sent)).error).not.toBeNull();
