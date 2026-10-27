@@ -4488,7 +4488,12 @@ export type Database = {
         Returns: undefined;
       };
       advance_phase: {
-        Args: { p_decisions?: Json; p_project: string; p_to: string };
+        Args: {
+          p_default?: string;
+          p_exceptions?: Json;
+          p_project: string;
+          p_to: string;
+        };
         Returns: Json;
       };
       append_to_script: {

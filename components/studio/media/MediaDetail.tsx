@@ -8,6 +8,7 @@ import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, Toggle, cx } from '../ui';
 import { useCanShape } from '@/lib/brief';
+import { useFlag } from '@/components/Flag';
 import { MediaViewer } from './MediaViewer';
 import { TranscriptPanel } from './TranscriptPanel';
 import { kindLabel } from './MediaThumb';
@@ -25,6 +26,7 @@ type Field = 'title' | 'board' | 'notes';
 export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: () => void }) {
   const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia } = useStudio();
   const canShape = useCanShape(project.id, isOwner);
+  const gatesOn = useFlag('phase_gates');
   const { toast } = useToast();
   const confirm = useConfirm();
   const item = mediaById.get(mediaId);
@@ -183,14 +185,14 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
               <div className={s.row} style={{ justifyContent: 'space-between' }}>
                 <div>
                   <div className={s.optionName}><Globe size={13} /> Include in share link</div>
-                  <div className={s.hint}>{isOwner ? 'Viewers of your share link see this item (never the notes).' : 'Only the project owner decides what is shared.'}</div>
+                  <div className={s.hint}>{item.lifecycle === 'archived' ? 'Archived items are not shared. Restore it first.' : isOwner ? 'Viewers of your share link see this item (never the notes).' : 'Only the project owner decides what is shared.'}</div>
                 </div>
-                <Toggle on={item.shared} disabled={!isOwner} label="Include in share link" onChange={(next) => void save({ shared: next })} />
+                 <Toggle on={item.shared} disabled={!isOwner || item.lifecycle === 'archived'} label="Include in share link" onChange={(next) => void save({ shared: next })} />
               </div>
             </>
           )}
 
-          {canShape && (
+          {canShape && (gatesOn || item.lifecycle === 'archived') && (
             <>
               <div className={s.divider} />
               <div className={s.row} style={{ justifyContent: 'space-between' }}>

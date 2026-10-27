@@ -8,9 +8,9 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { suggestPhase, toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
-import { advancePhase, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
+import { advancePhase, listWorkingMedia, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
 import { useFlag } from '@/components/Flag';
-import { gateItems, type GateDecision, type GateItem } from '@/lib/studio/gate';
+import { gateItems, toBulk, type GateDecision, type GateItem } from '@/lib/studio/gate';
 import dynamic from 'next/dynamic';
 
 // The gate dialog and the library reader load only when the owner moves a project forward.
@@ -125,7 +125,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     if (forward && gatesOn && isOwner) {
       setBusy(true);
       let items: GateItem[] = [];
-      try { const { studio } = await import('@/lib/studio'); items = gateItems(await studio.listMedia(projectId)); }
+      try { items = gateItems(await listWorkingMedia(projectId)); }
       catch (e) { setBusy(false); toast(e instanceof Error ? e.message : 'Could not read the library', 'error'); return; }
       setBusy(false);
       if (items.length) { setGate({ index, items }); return; }
@@ -145,9 +145,11 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   const passGate = async (decisions: GateDecision[]) => {
     if (!gate) return;
     const target = progress.phases[gate.index];
+    const bulk = toBulk(decisions);
+    if (bulk.tooMany) { toast('That is too many separate choices to apply at once — use Carry all or Archive all first, then adjust.', 'error'); return; }
     setBusy(true);
     try {
-      const done = await advancePhase(projectId, target.id, decisions);
+      const done = await advancePhase(projectId, target.id, bulk);
       setGate(null);
       await reload();
       toast(`${target.label} — unlocked.${done.archived ? ` ${done.archived} item${done.archived === 1 ? '' : 's'} archived.` : ''}`, 'success');

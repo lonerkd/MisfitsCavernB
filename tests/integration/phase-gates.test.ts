@@ -37,16 +37,18 @@ afterAll(async () => {
 describe('who can pass a gate', () => {
   it('only the owner: crew who shape the project, viewers and outsiders cannot', async () => {
     for (const who of [cast.jordan, cast.riley]) {
-      const res = await who.client.rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_decisions: [] });
+      const res = await who.client.rpc('advance_phase', { p_project: projectId, p_to: 'pre-production' });
       expect(res.error).not.toBeNull();
     }
-    expect((await anonClient().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_decisions: [] })).error).not.toBeNull();
+    expect((await anonClient().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production' })).error).not.toBeNull();
     expect(await status()).toBe('concept');
   });
 
   it('refuses an unknown phase and a malformed decision, changing nothing', async () => {
-    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'banana', p_decisions: [] })).error).not.toBeNull();
-    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_decisions: [{ id: shelve, action: 'delete' }] })).error).not.toBeNull();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'banana' })).error).not.toBeNull();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_default: 'delete' })).error).not.toBeNull();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_exceptions: ['not-a-uuid'] })).error).not.toBeNull();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'pre-production', p_exceptions: Array.from({ length: 1001 }, () => crypto.randomUUID()) })).error).not.toBeNull();
     expect(await status()).toBe('concept');
     expect((await lifecycle(shelve)).lifecycle).toBe('working');
   });
@@ -56,9 +58,10 @@ describe('passing the gate', () => {
   it('archives what was chosen, carries the rest, moves the phase and records it', async () => {
     const res = await sam().rpc('advance_phase', {
       p_project: projectId, p_to: 'pre-production',
-      p_decisions: [{ id: keep, action: 'carry' }, { id: shelve, action: 'archive' }, { id: published, action: 'archive' }, { id: crypto.randomUUID(), action: 'archive' }],
+      p_default: 'carry', p_exceptions: [shelve, published, crypto.randomUUID(), shelve],
     });
     expect(res.error).toBeNull();
+    // Counts are what really happened: foreign, missing and repeated ids add nothing.
     expect(res.data).toEqual({ archived: 2, carried: 1 });
     expect(await status()).toBe('pre-production');
     expect(await lifecycle(keep)).toEqual({ lifecycle: 'working', shared: false });
@@ -78,10 +81,41 @@ describe('passing the gate', () => {
   it('an item from another project is not touched', async () => {
     const other = (await createCrewedProject(cast, 'Other')).projectId;
     const foreign = (await admin().from('media').insert({ project_id: other, kind: 'link', title: 'x', external_url: 'https://example.com/x', created_by: cast.sam.id }).select('id').single()).data!.id;
-    const res = await sam().rpc('advance_phase', { p_project: projectId, p_to: 'production', p_decisions: [{ id: foreign, action: 'archive' }] });
-    expect(res.data).toEqual({ archived: 0, carried: 0 });
+    const res = await sam().rpc('advance_phase', { p_project: projectId, p_to: 'production', p_default: 'carry', p_exceptions: [foreign] });
+    expect(res.data).toEqual({ archived: 0, carried: 1 });
     expect((await lifecycle(foreign)).lifecycle).toBe('working');
     await admin().from('projects').delete().eq('id', other);
+  });
+});
+
+describe('archive-all with exceptions', () => {
+  it('archives everything working except the listed ids, in one step', async () => {
+    const a = await item('bulk-a');
+    const b = await item('bulk-b');
+    const res = await sam().rpc('advance_phase', { p_project: projectId, p_to: 'post-production', p_default: 'archive', p_exceptions: [b] });
+    expect(res.error).toBeNull();
+    expect((await lifecycle(a)).lifecycle).toBe('archived');
+    expect((await lifecycle(b)).lifecycle).toBe('working');
+    expect((await lifecycle(keep)).lifecycle).toBe('archived');
+    expect(res.data).toMatchObject({ carried: 1 });
+  });
+});
+
+describe('an archived item is never public', () => {
+  it('archiving, republishing and inserting archived all end unshared; only shapers can archive on insert', async () => {
+    const id = await item('shared-one', { shared: true });
+    await admin().from('media').update({ lifecycle: 'archived' }).eq('id', id);
+    expect(await lifecycle(id)).toEqual({ lifecycle: 'archived', shared: false });
+    // Republishing without restoring is undone.
+    await sam().from('media').update({ shared: true }).eq('id', id);
+    expect(await lifecycle(id)).toEqual({ lifecycle: 'archived', shared: false });
+    const born = await item('born-archived', { lifecycle: 'archived', shared: true });
+    expect(await lifecycle(born)).toEqual({ lifecycle: 'archived', shared: false });
+    // A viewer can add ordinary items but not archived ones.
+    await admin().from('project_crew').update({ role: 'viewer' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    expect((await cast.jordan.client.from('media').insert({ project_id: projectId, kind: 'link', title: 'v1', external_url: 'https://example.com/v1', created_by: cast.jordan.id })).error).toBeNull();
+    expect((await cast.jordan.client.from('media').insert({ project_id: projectId, kind: 'link', title: 'v2', external_url: 'https://example.com/v2', lifecycle: 'archived', created_by: cast.jordan.id })).error).not.toBeNull();
+    await admin().from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   });
 });
 
