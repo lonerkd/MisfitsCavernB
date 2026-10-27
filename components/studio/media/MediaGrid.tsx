@@ -23,6 +23,7 @@ export function useMediaFilters(items: Media[]) {
   const [kind, setKind] = useState<KindFilter>('all');
   const [board, setBoard] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [showArchived, setShowArchived] = useState(false);
   const boards = useMemo(() => {
     const counts = new Map<string, number>();
     for (const m of items) if (m.board) counts.set(m.board, (counts.get(m.board) ?? 0) + 1);
@@ -36,12 +37,14 @@ export function useMediaFilters(items: Media[]) {
   // A board filter that no longer exists (renamed by a teammate) falls away.
   const activeBoard = board && boards.some(([b]) => b === board) ? board : null;
   const q = query.trim().toLowerCase();
+  const archivedCount = items.filter((m) => m.lifecycle === 'archived').length;
   const filtered = items.filter((m) =>
+    (showArchived || m.lifecycle !== 'archived') &&
     (kind === 'all' || m.kind === kind) &&
     (!activeBoard || m.board === activeBoard) &&
     (!q || m.title.toLowerCase().includes(q) || (m.board ?? '').toLowerCase().includes(q) || (m.notes ?? '').toLowerCase().includes(q)),
   );
-  return { kind, setKind, board: activeBoard, setBoard, query, setQuery, boards, kindCounts, filtered };
+  return { kind, setKind, board: activeBoard, setBoard, query, setQuery, boards, kindCounts, filtered, showArchived, setShowArchived, archivedCount };
 }
 
 export function MediaFilters({ f }: { f: ReturnType<typeof useMediaFilters> }) {
@@ -61,6 +64,13 @@ export function MediaFilters({ f }: { f: ReturnType<typeof useMediaFilters> }) {
           <input className={s.input} type="search" placeholder="Search titles, boards, notes" value={f.query} onChange={(e) => f.setQuery(e.target.value)} />
         </label>
       </div>
+      {f.archivedCount > 0 && (
+        <div className={s.chips} role="group" aria-label="Archived items">
+          <button type="button" aria-pressed={f.showArchived} className={cx(s.chip, f.showArchived && s.chipOn)} onClick={() => f.setShowArchived(!f.showArchived)}>
+            {f.showArchived ? 'Hide' : 'Show'} archived <span className={s.count}>{f.archivedCount}</span>
+          </button>
+        </div>
+      )}
       {f.boards.length > 0 && (
         <div className={s.chips} role="group" aria-label="Filter by board">
           <button type="button" aria-pressed={!f.board} className={cx(s.chip, !f.board && s.chipOn)} onClick={() => f.setBoard(null)}>All boards</button>

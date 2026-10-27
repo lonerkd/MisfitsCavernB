@@ -258,7 +258,7 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
-  async function updateMedia(id: string, patch: Partial<Pick<Media, 'title' | 'notes' | 'board' | 'shared'>>): Promise<Media> {
+  async function updateMedia(id: string, patch: Partial<Pick<Media, 'title' | 'notes' | 'board' | 'shared' | 'lifecycle'>>): Promise<Media> {
     const clean = { ...patch };
     if (clean.title !== undefined) clean.title = (clean.title || '').trim().slice(0, 200);
     if (clean.board !== undefined) clean.board = clean.board?.trim() || null;

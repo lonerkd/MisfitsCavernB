@@ -7,6 +7,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, Toggle, cx } from '../ui';
+import { useCanShape } from '@/lib/brief';
 import { MediaViewer } from './MediaViewer';
 import { TranscriptPanel } from './TranscriptPanel';
 import { kindLabel } from './MediaThumb';
@@ -23,6 +24,7 @@ type Field = 'title' | 'board' | 'notes';
 /** Everything about one library item: preview, details, scene links, publishing. */
 export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: () => void }) {
   const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia } = useStudio();
+  const canShape = useCanShape(project.id, isOwner);
   const { toast } = useToast();
   const confirm = useConfirm();
   const item = mediaById.get(mediaId);
@@ -58,7 +60,7 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
     );
   }
 
-  const save = async (patch: Partial<Pick<Media, 'title' | 'notes' | 'board' | 'shared'>>) => {
+  const save = async (patch: Partial<Pick<Media, 'title' | 'notes' | 'board' | 'shared' | 'lifecycle'>>) => {
     setSaving(true);
     try {
       media.upsertLocal(await studio.updateMedia(item.id, patch));
@@ -184,6 +186,22 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
                   <div className={s.hint}>{isOwner ? 'Viewers of your share link see this item (never the notes).' : 'Only the project owner decides what is shared.'}</div>
                 </div>
                 <Toggle on={item.shared} disabled={!isOwner} label="Include in share link" onChange={(next) => void save({ shared: next })} />
+              </div>
+            </>
+          )}
+
+          {canShape && (
+            <>
+              <div className={s.divider} />
+              <div className={s.row} style={{ justifyContent: 'space-between' }}>
+                <div>
+                  <div className={s.optionName}>{item.lifecycle === 'archived' ? 'Archived' : 'Archive'}</div>
+                  <div className={s.hint}>{item.lifecycle === 'archived' ? 'Kept, hidden from the library until shown. Restore it to bring it back.' : 'Keeps it, hides it from the library and takes it off the share link. You can restore it.'}</div>
+                </div>
+                <button type="button" className={s.btn} disabled={saving}
+                  onClick={() => void save(item.lifecycle === 'archived' ? { lifecycle: 'working' } : { lifecycle: 'archived', shared: false })}>
+                  {item.lifecycle === 'archived' ? 'Restore' : 'Archive'}
+                </button>
               </div>
             </>
           )}
