@@ -353,9 +353,9 @@ export class ScriptParser {
       } else if (analysis.type === 'character') {
         const charName = analysis.meta?.characterName || trim;
 
-        // Fountain writes dual dialogue as a caret AFTER the second speaker's name
-        // ("STEEL ^"): the speech before it, and this one, are shown side by side.
-        const trailingCaret = /\s\^\s*$/.test(trim);
+        // Fountain writes dual dialogue with a caret after the second speaker's
+        // name: the speech before it, and this one, are shown side by side.
+        const trailingCaret = /\^\s*$/.test(trim);
         if (trailingCaret) { this.markPreviousSpeechDual(); this.requestDual = true; }
         const isDual = trim.startsWith('^') || trailingCaret || this.requestDual;
 
@@ -366,7 +366,8 @@ export class ScriptParser {
         analysis.meta = {
           ...analysis.meta,
           isDualDialogue: isDual,
-          characterName: charName.replace(/^\^/, '').trim(),
+          dualDialogueMarker: trailingCaret || trim.startsWith('^'),
+          characterName: charName.replace(/^\^/, '').replace(/\s*\^\s*$/, '').trim(),
         };
 
         if (isContinued && !charName.includes("CONT'D") && !charName.includes("(CONT'D)")) {

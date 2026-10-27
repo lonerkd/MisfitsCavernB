@@ -62,6 +62,7 @@ function fingerprint(content: string) {
   const p = parseScript(content);
   return {
     types: p.lines.filter((l) => l.type !== 'empty').map((l) => l.type),
+    dual: p.lines.filter((l) => l.type !== 'empty').map((l) => l.meta?.isDualDialogue === true),
     scenes: p.scenes.map((s) => ({ heading: s.heading, number: s.sceneNumber, characters: s.characters })),
     characters: p.characters.map((c) => c.name).sort(),
   };
@@ -86,7 +87,7 @@ function generatedFountain(seed: number): string {
     `@${first}`,
     speech,
     '',
-    `${second} ^`,
+    `${second}^`,
     '(quietly)',
     'I heard that.',
     '',

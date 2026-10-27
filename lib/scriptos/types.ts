@@ -26,6 +26,7 @@ export interface ScriptLineMeta {
   sceneNumber?: string;
   timeOfDay?: string;
   isDualDialogue?: boolean;
+  dualDialogueMarker?: boolean;
   isContinued?: boolean;
   visualDensity?: number;
   classifiedAsShot?: boolean;

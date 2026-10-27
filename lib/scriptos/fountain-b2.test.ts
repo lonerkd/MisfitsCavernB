@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { parseScript } from './parser';
 import { importToContent } from './import';
+import { serializeFountain } from './fountain-export';
 
 // B2 of the deep-brain plan: Fountain handled completely (the exact layer, L0),
 // and a .fountain file imported as written.
@@ -75,6 +76,19 @@ describe('dual dialogue, as Fountain writes it (a caret after the second name)',
   it('the older forms still work (a lone ^ line, a leading ^)', () => {
     expect(parseScript('INT. ROOM - DAY\n\nBRICK\nHi.\n^\nSTEEL\nHello.\n').lines.some((l) => l.meta?.isDualDialogue)).toBe(true);
     expect(parseScript('INT. ROOM - DAY\n\nBRICK\nHi.\n\n^STEEL\nHello.\n').lines.some((l) => l.meta?.isDualDialogue)).toBe(true);
+  });
+
+  it('accepts the spec’s caret immediately after the cue and preserves both speakers on export', () => {
+    const source = 'INT. ROOM - DAY\n\nBRICK^\nHi.\n\nSTEEL^\nHello.\n';
+    const parsed = parseScript(source);
+    const speakers = parsed.lines.filter((line) => line.type === 'character');
+
+    expect(speakers.map((line) => line.meta?.characterName)).toEqual(['BRICK', 'STEEL']);
+    expect(speakers.every((line) => line.meta?.isDualDialogue)).toBe(true);
+    const roundTrip = serializeFountain(parsed.lines);
+    const reparsed = parseScript(roundTrip);
+    expect(reparsed.lines.filter((line) => line.type === 'character').map((line) => line.meta?.isDualDialogue))
+      .toEqual([true, true]);
   });
 });
 
