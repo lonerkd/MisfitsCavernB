@@ -224,10 +224,10 @@ land any time:**
    there; ⌘↓ / ⌘↑ steps to the next / previous scene and stops at the ends;
    Alt + ←/→ walks back and forward through jumps (50 deep, this session).
    **Started slice 2 (2026-10-27):** selection quick actions — Alt + U / L change
-   the selection's case, Alt + D duplicates the line or the lines selected
-   (`lib/scriptos/selection.ts`, tested). Left: stash snippets expanding from a
-   typed trigger, block selection, multi-cursor (waits on the editor split).
-   Tracked as BACKLOG 3.34.
+   the selection's case, Alt + D duplicates the line or the lines selected, Alt + S
+   stashes the selected words (`lib/scriptos/selection.ts`, tested). Left: stash
+   snippets expanding from a typed trigger, block selection, multi-cursor (waits
+   on the editor split). Tracked as BACKLOG 3.34.
 2. Quick actions on a selection; stash snippets expanding from a typed trigger;
    block selection. Multi-cursor is the one genuinely hard item (the editor is a
    textarea + highlight layer) and waits on the editor split, which waits on

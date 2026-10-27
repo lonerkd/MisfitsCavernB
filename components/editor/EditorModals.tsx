@@ -45,6 +45,7 @@ const SHORTCUTS: [string, string][] = [
   ['Alt + ← / →', 'Back / forward through jumps'],
   ['Alt + U / L', 'Upper / lower case the selection'],
   ['Alt + D', 'Duplicate the line (or the selected lines)'],
+  ['Alt + S', 'Stash the selected words'],
   ['Ctrl + /', 'Show Shortcuts'],
   ['Tab', 'Smart element insert'],
   ['Escape, then Tab', 'Leave the script (move to the next control)'],

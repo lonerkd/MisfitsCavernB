@@ -26,7 +26,7 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useScriptStash } from '@/lib/scriptos/stash';
+import { addToStash, useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -525,6 +525,19 @@ export default function EditorPage() {
       const edit = wrapInParens(content, editor.selectionStart, editor.selectionEnd);
       setContent(edit.next);
       placeCaret(editor, edit.caret);
+      return;
+    }
+
+    // Alt + S stashes the selected words beside the script — the side panel's
+    // "+ Add Selected", from the keyboard.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyS' && editor) {
+      e.preventDefault();
+      const selected = content.slice(editor.selectionStart, editor.selectionEnd);
+      if (!selected.trim()) { toast('Select the words to stash', 'info'); return; }
+      if (!currentScript?.id) { toast('Save the script first, then stash from it.', 'error'); return; }
+      addToStash(currentScript.id, selected)
+        .then((row) => { stash.upsertLocal(row); toast('Added to the stash', 'success'); })
+        .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
       return;
     }
 

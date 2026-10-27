@@ -28,3 +28,13 @@ prove). Noted for the next session with the app up.
 **Next:** the rest of slice 2 is BACKLOG 3.34 — snippet triggers need a
 `script_stash.trigger` column (a migration, so it waits for the production
 access decision); block selection and multi-cursor are editor-internal.
+
+---
+
+**Update — Alt + S stashes a selection.** The side panel could save selected
+words to the stash only by click; the keyboard now does it too (`addToStash` →
+`stash.upsertLocal`, the same path as "+ Add Selected"), with the same wording
+the panel uses when there is no script yet or nothing selected. Snippet
+expansion from a typed trigger still needs a `script_stash.trigger` column, so
+that part of 3.34 stays parked behind the migration decision.
+
