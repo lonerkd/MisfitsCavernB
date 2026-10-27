@@ -17,6 +17,9 @@ import { awaitOSUser } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
+import { useFlag } from '@/components/Flag';
+import { useEntities, syncMentions } from '@/lib/film/links';
+import { MentionInput, MentionText } from '@/components/film/Mentions';
 
 const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
 const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
@@ -33,6 +36,8 @@ async function fetchProjectPage(projectId: string) {
 
 export function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
   const { toast } = useToast();
+  const mentionsOn = useFlag('entity_cards');
+  const entities = useEntities(mentionsOn ? projectId : null);
   const [userId, setUserId] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
@@ -91,7 +96,14 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
 
   const addTask = async (title: string) => {
     let row: TaskRow | undefined;
-    if (await attempt(async () => { row = await hub.addTask(projectId, title); })) setTasks(p => [...p, row!]);
+    if (await attempt(async () => { row = await hub.addTask(projectId, title); })) {
+      setTasks(p => [...p, row!]);
+      // A task is its own entity (written by a trigger); what it mentions becomes links.
+      if (mentionsOn && title.includes('@[')) {
+        const problem = await syncMentions(projectId, row!.id, title);
+        if (problem) toast(`The task was added, but its mentions weren’t saved: ${problem}`, 'error');
+      }
+    }
   };
   const toggleTask = async (t: TaskRow) => {
     setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !t.completed } : x));
@@ -239,7 +251,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
               <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{t.title}</span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{mentionsOn ? <MentionText text={t.title} projectId={projectId} entities={entities.rows} /> : t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
             <div style={{ display: 'flex', gap: 6, paddingLeft: 23 }}>
@@ -263,7 +275,17 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             </div>
             </div>
           ))}
-          <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
+          {mentionsOn ? (
+            <MentionInput
+              entities={entities.rows}
+              placeholder="Add a task… (type @ to mention a scene, person or file)"
+              onSubmit={(v) => void addTask(v)}
+              style={{ background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' }}
+              buttonStyle={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
+            />
+          ) : (
+            <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
+          )}
         </Panel>
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>

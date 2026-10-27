@@ -13,6 +13,8 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { useFlag } from '@/components/Flag';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
+import { useOnChange } from '@/lib/hooks/useOnChange';
 import { EntityCardHost } from '@/components/film/EntityCard';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
@@ -195,6 +197,9 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const cardsOn = useFlag('entity_cards');
   const [cardId, setCardId] = useState<string | null>(null);
   const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
+  // A link such as /studio?card=<id> (a mention's chip) opens that card once.
+  const wantedCard = new URLSearchParams(useLocationSearch()).get('card');
+  useOnChange(wantedCard, () => { if (cardsOn && wantedCard && /^[0-9a-f-]{36}$/i.test(wantedCard)) setCardId(wantedCard.toLowerCase()); });
   const closeCard = useCallback(() => setCardId(null), []);
 
   const viewMode = useViewAs(project.id);
