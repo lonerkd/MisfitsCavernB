@@ -21,7 +21,7 @@
    commands — start `dockerd` as a background task, `npm run db:start`
    (mail catcher on :54324), `npx supabase stop` first if it came up from stale
    containers. Never push to `main`; PR from a `claude/*` branch; merge only
-   on the owner's explicit "merge".
+   once checks are green (owner, 2026-10-27: merge without waiting for the word; production follows main; flags are on in production).
 6. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
