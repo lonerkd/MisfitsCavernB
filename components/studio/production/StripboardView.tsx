@@ -15,7 +15,7 @@ import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/st
 import { Sky } from '@/components/film/Sky';
 import { lightNoteBrief } from '@/lib/film/sky';
 import { locationKey } from '@/lib/studio';
-import { buildBoard, castOf, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
+import { buildBoard, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
@@ -37,7 +37,7 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
 export function StripboardView({ elementCounts }: { elementCounts: Map<string, number> }) {
-  const { project, scenes, isOwner } = useStudio();
+  const { project, scenes, isOwner, castOf: castOfScene } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -54,7 +54,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const stripRefs = useRef(new Map<string, HTMLLIElement>());
 
   const list = scenes.rows;
-  const board = useMemo(() => buildBoard(list, capacity), [list, capacity]);
+  const board = useMemo(() => buildBoard(list, capacity, castOfScene), [list, capacity, castOfScene]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
   const film = useMemo(
@@ -137,7 +137,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
     const w = window.open('', '_blank', 'width=860,height=1100');
     if (!w) { toast('Allow pop-ups to print the schedule.', 'info'); return; }
     const body = board.filter((d) => d.scenes.length).map((d) => `<h2>DAY ${d.day}${dateOf.get(d.day) ? ` — ${esc(new Date(`${dateOf.get(d.day)}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}` : ''} · ${pages(d.eighths)} pp${d.locations.length > 1 ? ` · ${d.locations.length} locations` : ''}</h2><table><tr><th>#</th><th>Scene</th><th>I/E · D/N</th><th>Cast</th><th>Pages</th><th>Status</th></tr>${d.scenes
-      .map((sc) => `<tr><td>${sc.scene_number}</td><td>${esc(sc.heading ?? sc.title)}</td><td>${STRIP_LABEL[stripKind(sc)]}</td><td>${esc(castOf(sc).join(', ') || '—')}</td><td>${pages(eighthsOf(sc.est_duration))}</td><td>${esc(sc.status)}</td></tr>`)
+      .map((sc) => `<tr><td>${sc.scene_number}</td><td>${esc(sc.heading ?? sc.title)}</td><td>${STRIP_LABEL[stripKind(sc)]}</td><td>${esc(castOfScene(sc).join(', ') || '—')}</td><td>${pages(eighthsOf(sc.est_duration))}</td><td>${esc(sc.status)}</td></tr>`)
       .join('')}</table>`).join('');
     w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Shooting Schedule</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:22px;letter-spacing:2px;margin:0 0 4px}h2{font-size:11px;letter-spacing:2px;color:#b45309;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:var(--fg-dim);font-size:9px;letter-spacing:1px;border-bottom:1px solid #ccc;padding:4px}td{padding:5px 4px;border-bottom:1px solid #eee}</style></head><body><h1>${esc(project.title).toUpperCase()} — SHOOTING SCHEDULE</h1><div style="color:var(--fg-dim);font-size:11px">${list.length} scenes · ${board.filter((d) => d.scenes.length).length} days · ${pages(totalEighths)} pages</div>${body}<script>window.onload=()=>window.print()</script></body></html>`);
     w.document.close();
@@ -243,7 +243,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                       const e = eighthsOf(sc.est_duration);
                       const status = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
                       const els = elementCounts.get(sc.id) ?? 0;
-                      const cast = castOf(sc);
+                      const cast = castOfScene(sc);
                       return (
                         <React.Fragment key={sc.id}>
                         {moved && <li className={b.moveStrip}><span>Company move</span>{km != null && <em>{km} km</em>}</li>}

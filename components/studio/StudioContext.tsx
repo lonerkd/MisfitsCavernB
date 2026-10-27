@@ -11,6 +11,7 @@ import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { castByScene, castOfScene } from '@/lib/film/cast';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
 import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
@@ -18,6 +19,8 @@ import {
   fetchScriptContent,
   studio,
   useCastings,
+  useCharacters,
+  useSceneCharacters,
   useReadingCorrections,
   useProjectMedia,
   useProjectScripts,
@@ -64,6 +67,8 @@ export interface StudioData {
   sceneLines: Map<string, ScriptLineLite[]>;
   /** Open another Studio tab or view in place (an empty state's next step). */
   goTo: (tab: StudioTab, view?: ProductionView) => void;
+  /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
+  castOf: (scene: Pick<SceneRow, 'id' | 'cast_list'>) => string[];
 }
 
 export interface ScriptLineLite { type: string; text: string }
@@ -175,6 +180,11 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     return map;
   }, [parsedScenes, scriptId, scenes.rows]);
 
+  const storyCharacters = useCharacters(projectId);
+  const sceneCharacterLinks = useSceneCharacters(projectId);
+  const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
+  const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
+
   const viewMode = useViewAs(project.id);
   const value: StudioData = {
     project,
@@ -198,6 +208,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     openInScript,
     sceneLines,
     goTo: onNavigate,
+    castOf,
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

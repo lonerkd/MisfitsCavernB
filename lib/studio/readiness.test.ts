@@ -56,6 +56,16 @@ describe('sceneReadiness', () => {
   });
 });
 
+describe('cast from the graph', () => {
+  it('counts the characters the graph links, not the scene text', () => {
+    const r = sceneReadiness(scene('a', { cast_list: 'MAYA, DEV' }), input({ castOf: () => ['MAYA', 'ZED'] }));
+    const cast = r.checks.find((c) => c.id === 'cast');
+    expect(cast).toMatchObject({ state: 'todo' });
+    expect(cast?.detail).toContain('ZED');
+    expect(cast?.detail).not.toContain('DEV');
+  });
+});
+
 describe('by day', () => {
   const scenes = [scene('a', { shoot_day: 2 }), scene('b', { shoot_day: 1 }), scene('c', { shoot_day: null }), scene('d', { shoot_day: 1, status: 'wrapped' })];
   const days = readinessByDay(scenes, input({ dateOfDay: new Map([[1, '2026-10-01'], [2, '2026-10-03']]) }));
