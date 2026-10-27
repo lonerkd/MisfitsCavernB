@@ -83,3 +83,22 @@ describe('what the context must not do', () => {
     expect(withContext).toEqual(plain);
   });
 });
+
+describe('human line overrides', () => {
+  it('uses the override for the exact text occurrence, with confidence and explanation', () => {
+    const src = `${HEAD}DARKNESS\nMaya waits.\n\nDARKNESS\nAgain.\n`;
+    const result = read(src, {
+      lineOverrides: [{ lineText: 'DARKNESS', occurrence: 1, type: 'action' }],
+    });
+    const darknessLines = result.lines.filter((line) => line.text === 'DARKNESS');
+    expect(darknessLines.map((line) => line.type)).toEqual(['character', 'action']);
+    expect(darknessLines[1]).toMatchObject({ confidence: 100, reasoning: 'Human line override' });
+  });
+
+  it('keeps Fountain-forced syntax authoritative over stored overrides', () => {
+    const result = read(`${HEAD}@MAYA\nHi.\n`, {
+      lineOverrides: [{ lineText: '@MAYA', occurrence: 0, type: 'action' }],
+    });
+    expect(result.lines.find((line) => line.text === '@MAYA')?.type).toBe('character');
+  });
+});

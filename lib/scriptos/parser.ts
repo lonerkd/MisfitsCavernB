@@ -120,6 +120,8 @@ export interface ParseContext {
   previousCharacters?: readonly string[];
   /** Existing project locations, used only to canonicalize a parsed scene location. */
   places?: readonly string[];
+  /** Human line decisions, keyed to exact trimmed text and its occurrence in the script. */
+  lineOverrides?: readonly { lineText: string; occurrence: number; type: LineType }[];
 }
 
 export interface ParseOptions {
@@ -180,6 +182,7 @@ export class ScriptParser {
   private profile: DocumentProfile;
   private previousNames: Set<string>;
   private places: string[];
+  private lineOverrides: Map<number, LineType>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
@@ -191,6 +194,16 @@ export class ScriptParser {
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
     this.previousNames = new Set(upper(options.context?.previousCharacters).map((n) => this.clean(n)).filter((n) => n && !this.rejectedNames.has(n)));
     this.places = (options.context?.places ?? []).map((name) => name.trim()).filter(Boolean);
+    this.lineOverrides = new Map();
+    const occurrences = new Map<string, number>();
+    for (let i = 0; i < this.rawLines.length; i++) {
+      const lineText = this.rawLines[i].trim();
+      if (!lineText) continue;
+      const occurrence = occurrences.get(lineText) ?? 0;
+      occurrences.set(lineText, occurrence + 1);
+      const override = options.context?.lineOverrides?.find((item) => item.lineText === lineText && item.occurrence === occurrence);
+      if (override) this.lineOverrides.set(i, override.type);
+    }
     this.learnedNames = new Set([...learnedNames, ...this.profile.cueNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
     this.characterStats = new Map();
     this.elements = {
@@ -307,11 +320,20 @@ export class ScriptParser {
       };
 
       const forced = this.preClassify(trim);
+      const override = this.lineOverrides.get(i);
       let analysis: ReturnType<typeof this.analyzeLine>;
       if (forced) {
         analysis = forced;
       } else if (i < 50 && this.isTitlePageContent(trim)) {
         analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
+      } else if (override) {
+        analysis = {
+          type: override,
+          confidence: 100,
+          scores: this.emptyScores(),
+          reasoning: ['Human line override'],
+          meta: override === 'character' ? { characterName: this.clean(trim.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s*\^\s*$/, '')) } : {},
+        };
       } else {
         analysis = this.usesScreenplayGrammar()
           ? this.analyzeLine(trim, context)
@@ -542,6 +564,8 @@ export class ScriptParser {
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      const override = this.lineOverrides.get(i);
+      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {

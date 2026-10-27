@@ -3604,6 +3604,45 @@ export type Database = {
           },
         ];
       };
+      script_line_overrides: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          line_text: string;
+          line_type: string;
+          occurrence: number;
+          script_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          line_text: string;
+          line_type: string;
+          occurrence: number;
+          script_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          line_text?: string;
+          line_type?: string;
+          occurrence?: number;
+          script_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "script_line_overrides_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       script_stash: {
         Row: {
           created_at: string;

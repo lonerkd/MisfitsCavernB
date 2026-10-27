@@ -129,8 +129,10 @@ function transitionCost(prev: Cls, s: State, p: Params): number {
   }
 }
 
-const fixedClass = (t: LineType | undefined): Cls =>
-  t === 'character' ? 'character' : t === 'slug' ? 'slug' : t === 'transition' ? 'transition' : 'other';
+const fixedClass = (t: LineType | undefined): Cls => {
+  if (t === 'character' || t === 'slug' || t === 'transition' || t === 'dialogue' || t === 'parenthetical' || t === 'action') return t;
+  return 'other';
+};
 
 export interface Decoded {
   /** The chosen label for each line; null where the line was not the decoder's to decide. */
