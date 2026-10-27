@@ -31,10 +31,10 @@ function castingCallHref(projectTitle: string, character: string, fp: { sceneNum
 
 /** Who plays whom: characters from the selected script, cast from the crew. */
 export function CastingBoard({ crew }: { crew: CrewRow[] }) {
-  const { project, userId, scriptId, scenes, mediaById } = useStudio();
+  const { project, userId, scriptId, parseContext, scenes, mediaById } = useStudio();
   const projectId = project.id;
   const { toast } = useToast();
-  const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId);
+  const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId, parseContext);
   const chars = scriptChars.map((c) => ({ id: c.row?.id, name: c.name, color: c.color }));
   const loading = status === 'loading';
   const [castings, setCastings] = useState<Record<string, Casting>>({});

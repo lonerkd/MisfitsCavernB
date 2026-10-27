@@ -164,7 +164,7 @@ The reader takes a `ParseContext` (`parseScript(text, format, learned, { context
 
 **Only what a person put there goes in.** The `characters` table is derived from the reader's own output, so feeding it back would let one wrong read confirm itself forever. Castings and rejections are human decisions.
 
-The editor and Studio build this context from the same project sources before parsing and syncing the scene index. Tests pin that places and previous-draft evidence do not change scene boundaries. Line corrections are keyed to exact trimmed text plus its occurrence in the script, so edits to the target text stop applying stale decisions.
+The editor and Studio build this context from the same project sources before parsing and syncing the scene index. The Studio's Character Bible and Casting board also use that context when deriving their character lists. Tests pin that places and previous-draft evidence do not change scene boundaries. Line corrections are keyed to exact trimmed text plus its occurrence in the script, so edits to the target text stop applying stale decisions.
 
 ## 6. The route
 

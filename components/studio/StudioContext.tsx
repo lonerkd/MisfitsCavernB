@@ -59,6 +59,8 @@ export interface StudioData {
   scripts: ProjectScript[];
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
+  /** The project context used to read the selected script; absent until its context loads. */
+  parseContext: ParseContext | undefined;
   setScriptId: (id: string) => void;
   scenes: LiveRows<SceneRow>;
   sceneSync: { state: SyncState; error: string | null; run: () => Promise<void> };
@@ -128,6 +130,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const syncState: SyncState = !scriptId ? 'idle' : sync?.scriptId === scriptId ? sync.state : 'syncing';
   const syncError = sync?.scriptId === scriptId ? sync.error : null;
   const [parsedScenes, setParsedScenes] = useState<{ scriptId: string; scenes: ScriptLineLite[][] } | null>(null);
+  const [scriptContext, setScriptContext] = useState<{ scriptId: string; context: ParseContext } | null>(null);
   const reloadScenes = scenes.reload; // changes with the script, whose scenes it reloads
   // The cast people have chosen is what the reader knows; the same one the editor reads with.
   const castings = useCastings(projectId);
@@ -147,6 +150,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
           type: row.line_type as NonNullable<ParseContext['lineOverrides']>[number]['type'],
         })),
       );
+      setScriptContext({ scriptId: id, context: readContext });
       const parsed = parseScript(text, 'screenplay', undefined, { context: readContext });
       setParsedScenes({
         scriptId: id,
@@ -219,6 +223,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const closeCard = useCallback(() => setCardId(null), []);
 
   const viewMode = useViewAs(project.id);
+  const parseContext = scriptContext?.scriptId === scriptId ? scriptContext.context : undefined;
   const value: StudioData = {
     project,
     userId,
@@ -231,6 +236,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     scripts,
     scriptsStatus,
     scriptId,
+    parseContext,
     setScriptId,
     scenes,
     sceneSync: { state: syncState, error: syncError, run },

@@ -21,7 +21,8 @@ reconstructs lines from page geometry, then uses the same parser.
   human name corrections, project locations, and repeated confident character
   cues from the previous draft. Location context canonicalizes an already
   recognized scene location; it cannot change scene boundaries. Previous-draft
-  names are weaker evidence than castings.
+  names are weaker evidence than castings. The Studio's Character Bible and
+  Casting board use the same context when building their character lists.
 - **Corrections**: `reading_corrections` stores project-level character verdicts.
   `script_line_overrides` stores a line type by script, exact trimmed text, and
   zero-based occurrence. These are human decisions, not feedback from the
