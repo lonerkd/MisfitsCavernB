@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { logAuditAction } from './audit';
+import { logActivity } from './activity';
 import { notify } from './notifications';
 
 /** Permission on the project (project_crew.role); what they do is `craft`. */
@@ -44,6 +45,8 @@ export async function assignCrewMember(
     if (error) {
       throw error;
     }
+
+    void logActivity(`assigned a crew member as ${role}`, 'project', projectId);
 
     await logAuditAction(
       currentUserId,
@@ -141,6 +144,8 @@ export async function updateCrewMemberRole(
     if (error) {
       throw error;
     }
+
+    void logActivity(`changed a crew member's role to ${newRole}`, 'project', projectId);
 
     await logAuditAction(
       currentUserId,
