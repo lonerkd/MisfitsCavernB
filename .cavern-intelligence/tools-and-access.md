@@ -222,3 +222,34 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
 - Fonts are self-hosted in `app/fonts` (SIL OFL) — builds never fetch Google Fonts.
 - Dependabot opens grouped weekly updates; CODEOWNERS asks the owner to review;
   the PR template carries the Database / Tests / checklist sections.
+
+---
+
+## 8. Agent workflows (GitHub)
+
+The loop that turns the BACKLOG into pull requests without a person typing each prompt. Everything runs in GitHub; nothing needs a local machine.
+
+```
+BACKLOG.md ──backlog-to-issues──▶ issues (label backlog, size/*, needs-owner)
+   owner reads an issue, adds `agent-ready`
+      ──▶ worker: Claude (agent-claude.yml) or Copilot (assign the issue)
+      ──▶ pull request on a claude/* or copilot/* branch
+      ──▶ CI (checks, database, Vercel preview)  ──▶ the owner merges
+agent-status.yml ──every 6 h──▶ the "Agent status" issue (counts, agent PRs and their CI, main's CI)
+```
+
+| Piece | What it does |
+|---|---|
+| `scripts/backlog-to-issues.mjs` | Makes one issue per open BACKLOG §3 item. Dry run by default; `--create` makes them and the labels. Idempotent (a hidden `backlog-id` marker); never edits or closes anything. |
+| `.github/workflows/agent-status.yml` | Rewrites one issue with real data: issues by label, open agent PRs with CI state, last merges, main's CI. No AI, no secrets. |
+| `.github/workflows/agent-claude.yml` | When the **repository owner** adds `agent-ready` to an issue, Claude (Anthropic's `claude-code-action`) works it and opens a PR. Dormant until the secret below exists. |
+
+Labels: `backlog`, `size/S|M|L|XL`, `needs-owner` (waiting on a decision), `agent-ready` (read by the owner; an agent may take it), `agent-working`, `agent-status`.
+
+**Turn on the Claude worker** (owner, once): install the Claude GitHub App on the repository; run `claude setup-token` locally and store the result with `gh secret set CLAUDE_CODE_OAUTH_TOKEN`; then label an issue `agent-ready`. It runs on the owner's Claude plan, so it shares that plan's limits; each run is capped (`--max-turns 40`, 45 minutes, one run at a time).
+
+**Turn on the Copilot worker** (owner, when a Copilot plan that includes the coding agent exists): assign the issue to Copilot. No workflow is needed; `.github/copilot-instructions.md` already points it at the rules.
+
+**Safety.** The repository is public, so issue and comment text is untrusted: only the owner's label starts a run, the prompt tells the agent to treat issue text as a description, and the allowed commands cannot push anywhere except `claude/*` branches. Agents never merge and never push `main`; the owner's merge and CI are the gate.
+
+**What does not exist any more.** GitHub Models (the free model quota for Actions) was retired on 2026-07-30, and the earlier local daemon was removed, so there is no free AI worker; the pipeline around it is free.
