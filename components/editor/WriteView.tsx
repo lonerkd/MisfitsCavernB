@@ -54,6 +54,7 @@ import { CutNoteMarkers } from './CutNoteMarkers';
 import { SceneGutter } from './SceneGutter';
 import { CueCardOverlay } from './CueCardOverlay';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { CopyEditor } from '@/components/ad/CopyEditor';
 
 const EDITOR_CHAR_WIDTH = 9.6; // Courier Prime at 16px
 
@@ -151,6 +152,9 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
   };
 
   const { annotationDraft, annotations, broadcastCursor, content, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, highlightRef, lines, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, setAnnotationDraft, setCursorLine, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, typewriterMode } = ctx;
+  if (ctx.currentScript?.format === 'copy' && ctx.currentScript.project_id) {
+    return <CopyEditor projectId={ctx.currentScript.project_id} scriptId={ctx.currentScript.id} content={content} onChange={ctx.handleCopyChange} />;
+  }
   return (
 
             <div style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>

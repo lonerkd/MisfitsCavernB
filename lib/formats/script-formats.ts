@@ -10,6 +10,7 @@ export const SCRIPT_FORMAT_REGISTRY = {
   treatment: { label: 'Treatment' },
   podcast: { label: 'Podcast Script' },
   'doc-outline': { label: 'Documentary Outline' },
+  copy: { label: 'Copy' },
 } as const satisfies Record<string, { label: string }>;
 
 export type ScriptFormat = keyof typeof SCRIPT_FORMAT_REGISTRY;

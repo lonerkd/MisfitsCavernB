@@ -2,7 +2,7 @@
 // saved. The database enforces the same limits; this says them in words. Pure.
 
 export const FORMAT_ICONS = ['film', 'clapperboard', 'tv', 'globe', 'music', 'video', 'megaphone', 'mic', 'sparkles'] as const;
-export const FORMAT_SCRIPTS = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline'] as const;
+export const FORMAT_SCRIPTS = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy'] as const;
 export const SKIPPABLE_PHASES = ['pre-production', 'production', 'post-production'] as const;
 /** Phases whose exit can wait for the client's approval (not the last one). */
 export const GATEABLE_PHASES = ['development', 'pre-production', 'production', 'post-production'] as const;

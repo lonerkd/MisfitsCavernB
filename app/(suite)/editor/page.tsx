@@ -126,20 +126,22 @@ export default function EditorPage() {
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
   const parseSource = useDeferredValue(content);
+  const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
-    const result = parseScript(parseSource, 'screenplay', undefined, { context: readContext });
+    // Only copy has its own reading here; every other script is read as before (BACKLOG: let podcast and outline scripts use theirs).
+    const result = parseScript(parseSource, scriptFormat === 'copy' ? 'copy' : 'screenplay', undefined, { context: readContext });
     return {
       lines: result.lines,
       parsedScenes: result.scenes,
       charStats: analyzeCharacters(result.lines, result.scenes),
       lintIssues: validateScript(result.lines, result.scenes, result.characters),
     };
-  }, [parseSource, readContext]);
+  }, [parseSource, readContext, scriptFormat]);
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
@@ -573,6 +575,17 @@ export default function EditorPage() {
     }
   };
 
+  // The copy editor hands over whole text, with no textarea behind it — so no
+  // autocomplete and no caret to place.
+  const handleCopyChange = (val: string) => {
+    const typed = typedWords(content, val);
+    if (typed) { writing.add(typed); sprint.onType(typed); }
+    noteHistoryEdit(content);
+    setContent(val);
+    noteLocalEdit();
+    setShowAutocomplete(false);
+  };
+
   // Scene index, notes and colours (public.scenes for project scripts; this
   // device for personal ones) — see components/editor/useEditorScenes.
   const sceneIndex = useEditorScenes(currentScript, parsedScenes, (msg) => toastRef.current(msg, 'error'));
@@ -765,7 +778,7 @@ export default function EditorPage() {
   const scriptProjectId = currentScript?.project_id ?? null;
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
-  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>

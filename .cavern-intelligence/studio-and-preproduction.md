@@ -165,7 +165,34 @@ pitch boards and portfolios.
   status, due date and owner; "Set up the standard pipeline" seeds
   `STANDARD_POST`.
 
-## 7. Tests
+## 7. Advertising and copywriting
+
+An Advertising/Copywriting project is the campaign; each script is a
+deliverable. A database trigger creates one deliverable row per script and an
+entity with the script's id/title. `deliverables` pins `(script_id, project_id)`
+to a script in that same project and stores the piece kind, character/time
+limits and editable spoken-word pace. The Share tab's Deliverables panel shows
+the latest version state and can send existing drafts together on one review
+link. The approval gate waits for every deliverable's latest version to be
+sent, client-approved and confirmed by the team.
+
+The `copy` format keeps `scripts.content` as marked text (`# HEADLINE`,
+`# VISUAL`, `# VO`, `# SFX`, `# BODY`, `# CTA`). The editor provides picture
+and sound fields side by side, counts Unicode characters, estimates spoken
+time from VO/body at the deliverable's rate, and checks required/forbidden
+phrases. The public review page renders those same sections, without exposing
+the project's rules.
+
+The project owner writes and approves brief/brand-guideline references in
+`ad_references`; approved references are immutable and can be attached to a
+deliverable with a `reference` entity link. The project owner also owns
+`brand_rules`; only project shapers can read them. Required and forbidden
+literal phrases are checked on each copy draft; tone notes are displayed as
+guidance. The feature UI is behind `ad_copywriting` (on everywhere, including production, since 2026-10-27). The existing five-phase engine remains: the
+client-approval gate sits after Concept & copy and before Production.
+`public.campaigns` remains the unrelated Promos distribution plan.
+
+## 8. Tests
 
 - `lib/studio/*.test.ts` — alignment, classification (incl. YouTube/Vimeo/Drive embeds), scheduling, shot numbering, timecodes.
 - `tests/integration/{media-library,scene-index,share-lookbook,realtime,activity-feed,production-records,post-production,cut-note-lines,transcripts,privacy}.test.ts`
