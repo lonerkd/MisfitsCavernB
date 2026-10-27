@@ -11,8 +11,7 @@ CREATE INDEX scene_states_scene_fkey_idx ON public.scene_states USING btree (sce
 CREATE INDEX scenes_location_fkey_idx ON public.scenes USING btree (location_id, project_id);
 CREATE INDEX scenes_shoot_day_fkey_idx ON public.scenes USING btree (shoot_day_id, project_id);
 
--- These were missed by the advisor because an existing index was partial or
--- had the foreign-key column after another key.
+-- Cover additional public foreign keys the advisor did not report.
 CREATE INDEX hub_posts_project_id_fkey_idx ON public.hub_posts USING btree (project_id);
 CREATE INDEX lounge_reads_user_id_fkey_idx ON public.lounge_reads USING btree (user_id);
 CREATE INDEX portfolio_projects_user_id_fkey_idx ON public.portfolio_projects USING btree (user_id);
