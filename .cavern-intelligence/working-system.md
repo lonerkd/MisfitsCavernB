@@ -61,11 +61,14 @@ manifest, and verifies the bundle before claiming success. Target is
   restores history and every branch. That was tested, not assumed: the restored clone
   came back with all 5 branches, 1405 files, and `claude/eco-consolidation` at
   `c6857c6` — byte-identical SHA to the live repo. 630 commits on that branch.
-- **It captures branches that exist nowhere else.** Both `origin/claude/eco-*` branches
-  are gone from GitHub. That work lived only on this disk until this backup existed.
 - **It captures what git ignores.** `.env.local`, `.perch/mcp.json` (the CourtListener
   key), `.claude/settings.local.json`, the wiki, the Obsidian config. None of these can
-  be regenerated from the repository.
+  be regenerated from the repository. This is the main reason the script exists.
+- **It captures local-only branches.** A branch that was never pushed has no remote
+  copy. Note the converse, which is the useful signal: **a deleted remote branch means
+  the work was merged or scrapped** — GitHub deletes the branch when a PR merges, and
+  an abandoned branch gets cleaned up. A missing remote branch is not a disaster; it is
+  a status. Do not treat it as one.
 
 Runtime: ~2.6 seconds. Size: ~17 MB per run.
 
@@ -80,16 +83,19 @@ directory records the branch, HEAD and the branch list.
 
 ### Schedule it
 
-Run it before anything risky, and on a schedule. A weekly task is enough given the
-remote is the primary copy:
+**Not scheduled, on purpose.** Nothing runs on a timer without you asking for it.
+
+Run it by hand before anything risky:
 
 ```
-schtasks /Create /TN "Cavern backup" /SC WEEKLY /D SUN /ST 20:00 ^
-  /TR "powershell -ExecutionPolicy Bypass -File C:\Users\kings\Desktop\MisfitsCavernB\scripts\cavern-backup.ps1 -Prune"
+powershell -ExecutionPolicy Bypass -File scripts\cavern-backup.ps1
 ```
 
 `-Prune` removes runs older than 30 days. It is opt-in so a manual run never deletes
 anything.
+
+If you do want it automatic later, that is your call to make — the command is in the
+script header. It is not on a timer now.
 
 ### What this does not cover
 
@@ -186,7 +192,7 @@ The existing split is right. Here it is as one table, with the reasoning.
 | full browser journeys (5 shards) | `e2e-scheduled` | daily 03:47 UTC | ~32 min. Too slow to block every PR. |
 | SBOM + licences | `sbom` | weekly + main | Due diligence, not a gate. |
 | agent status | `agent-status` | every 6 h | Read-only report. |
-| backup | local scheduled task | weekly | See §2. |
+| backup | local, by hand | when you choose | See §2. Nothing runs on a timer. |
 
 **The one gap worth closing.** `e2e-scheduled` runs daily on `main` and uploads
 artifacts on failure, but nothing tells you. A red nightly is invisible until you go
@@ -312,7 +318,7 @@ Worth clearing out.
 1. **Push the branch and open the PR** for the Perch adapter. Done: PR #346.
 2. **Fix the Node mismatch.** One line, and it removes a whole class of confusing bug.
 3. **Add `.gitattributes`** (done) and then renormalise line endings in its own commit.
-4. **Schedule the backup.** One `schtasks` command, weekly.
+4. **Run the backup by hand** before anything risky. Not on a timer; that is your call.
 5. **Start Docker and run the database job locally once.** Confirm the persona tests
    pass on this machine, so you are not trusting CI for something you cannot reproduce.
 6. **Decide the wiki's fate** — commit it or accept it as scratch. Do not leave it
