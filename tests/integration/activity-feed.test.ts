@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { createCast, destroyCast, type Cast, type Persona } from './support/personas';
+import { adminClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject, setVisibility } from './support/project';
 import type { Json } from '@/lib/supabase/database.types';
 
@@ -7,15 +7,18 @@ import type { Json } from '@/lib/supabase/database.types';
 // readable only by the author and by people with access to the project named
 // in metadata.project_id — never by everyone (the pre-fix behaviour).
 let cast: Cast;
+let casey: Persona;
 let projectId: string;
 
 beforeAll(async () => {
   cast = await createCast();
+  casey = await createPersona('casey');
   ({ projectId } = await createCrewedProject(cast, 'Activity'));
+  await adminClient().from('project_crew').insert({ project_id: projectId, user_id: casey.id, role: 'viewer', status: 'confirmed' });
 });
 
 afterAll(async () => {
-  await destroyCast(cast);
+  await destroyCast({ ...cast, casey });
 });
 
 async function log(who: Persona, action: string, metadata: Record<string, unknown>) {
@@ -40,6 +43,18 @@ describe('activity feed', () => {
     expect(await sees(cast.sam, data!.id)).toBe(true);
     expect(await sees(cast.jordan, data!.id)).toBe(false);
     expect(await sees(cast.riley, data!.id)).toBe(false);
+  });
+
+  it('paperwork activity is visible only to shapers and its author', async () => {
+    const { data, error } = await log(cast.sam, 'updated production paperwork', { project_id: projectId, audience: 'shapers' });
+    expect(error).toBeNull();
+    expect(await sees(cast.sam, data!.id)).toBe(true);
+    expect(await sees(cast.jordan, data!.id)).toBe(true);
+    expect(await sees(casey, data!.id)).toBe(false);
+    expect(await sees(cast.riley, data!.id)).toBe(false);
+
+    const denied = await log(casey, 'updated production paperwork', { project_id: projectId, audience: 'shapers' });
+    expect(denied.error).not.toBeNull();
   });
 
   it('a private project’s activity is the owner’s alone', async () => {

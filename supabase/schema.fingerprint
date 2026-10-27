@@ -1599,7 +1599,10 @@ grant function public.transfer_project(p_project uuid, p_to uuid) authenticated,
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
+index CREATE INDEX ad_references_approved_by_idx ON public.ad_references USING btree (approved_by)
+index CREATE INDEX ad_references_created_by_idx ON public.ad_references USING btree (created_by)
 index CREATE INDEX ad_references_project_idx ON public.ad_references USING btree (project_id, status, kind)
+index CREATE INDEX brand_rules_created_by_idx ON public.brand_rules USING btree (created_by)
 index CREATE INDEX brand_rules_project_idx ON public.brand_rules USING btree (project_id, kind)
 index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categories USING btree (project_id, "position")
 index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
@@ -1940,8 +1943,8 @@ index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
-policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
-policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
+policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))) AND (((metadata ->> 'audience'::text) IS DISTINCT FROM 'shapers'::text) OR internal.can_shape_project(internal.activity_project_id(metadata))))
+policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR CASE WHEN ((metadata ->> 'audience'::text) = 'shapers'::text) THEN internal.can_shape_project(internal.activity_project_id(metadata)) ELSE internal.can_access_project(internal.activity_project_id(metadata)) END) check -
 policy public.ad_references "ad references delete" PERMISSIVE DELETE to authenticated using ((status = 'draft'::text) AND (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid)))))) check -
 policy public.ad_references "ad references insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))))
 policy public.ad_references "ad references read" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -

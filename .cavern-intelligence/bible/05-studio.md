@@ -41,6 +41,11 @@ Production, `?view=`; the project is the active one (`mc_active_project`) or
 | **Pitch** | the pitch deck: logline, look, characters, scenes — presentable full-screen | project + media |
 | **Share** | visibility (Private · Team · Anyone with the link · Public), which items are published, the link | `projects.visibility`, `media.shared` |
 
+The Overview's Recent activity shows project library additions/uploads, crew
+invitations and role changes, locked script revisions, and issued call sheets
+to project members. Paperwork activity is restricted to shapers; its feed text
+does not include document titles, filenames or personal details.
+
 ## Production views
 
 | View | What it does |

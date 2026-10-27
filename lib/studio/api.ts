@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
+import { logActivity } from '@/lib/supabase/activity';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
@@ -183,6 +184,7 @@ export function createStudioApi(db: Client) {
       .select('*')
       .single();
     if (error) fail(error, 'Could not add the link');
+    void logActivity('added an item to the library', 'media', data.id, { project_id: projectId });
     return data;
   }
 
@@ -197,6 +199,7 @@ export function createStudioApi(db: Client) {
       .select('*')
       .single();
     if (error) fail(error, 'Could not save the note');
+    void logActivity('added an item to the library', 'media', data.id, { project_id: projectId });
     return data;
   }
 
@@ -211,6 +214,7 @@ export function createStudioApi(db: Client) {
     }));
     const { data, error } = await db.from('media').insert(rows).select('*');
     if (error) fail(error, 'Could not add the pins');
+    for (const media of data) void logActivity('added an item to the library', 'media', media.id, { project_id: projectId });
     return data;
   }
 
@@ -255,6 +259,7 @@ export function createStudioApi(db: Client) {
       await db.storage.from(MEDIA_BUCKET).remove([path]);
       fail(error, 'Could not save the upload');
     }
+    void logActivity('uploaded an item to the library', 'media', data.id, { project_id: projectId });
     return data;
   }
 
@@ -430,6 +435,7 @@ export function createStudioApi(db: Client) {
   async function issueCallSheet(sheetId: string, note?: string): Promise<CallSheet> {
     const { data, error } = await db.rpc('issue_call_sheet', { p_sheet: sheetId, p_note: note?.trim() || undefined });
     if (error) fail(error, 'Could not issue the call sheet');
+    void logActivity(`issued the call sheet for day ${data.shoot_day} (v${data.version})`, 'call_sheet', data.id, { project_id: data.project_id });
     return data as CallSheet;
   }
 
@@ -709,18 +715,21 @@ export function createStudioApi(db: Client) {
   async function addDocument(projectId: string, fields: DocumentFields & Pick<ProjectDocument, 'kind' | 'title'>): Promise<ProjectDocument> {
     const { data, error } = await db.from('project_documents').insert({ project_id: projectId, ...fields }).select('*').single();
     if (error) fail(error, 'Could not add the document');
+    void logActivity('added production paperwork', 'project_document', data.id, { project_id: projectId, audience: 'shapers' });
     return data;
   }
 
   async function updateDocument(id: string, patch: DocumentFields): Promise<ProjectDocument> {
     const { data, error } = await db.from('project_documents').update(patch).eq('id', id).select('*').single();
     if (error) fail(error, 'Could not update the document');
+    void logActivity('updated production paperwork', 'project_document', data.id, { project_id: data.project_id, audience: 'shapers' });
     return data;
   }
 
-  async function deleteDocument(doc: Pick<ProjectDocument, 'id' | 'storage_path'>): Promise<void> {
+  async function deleteDocument(doc: Pick<ProjectDocument, 'id' | 'project_id' | 'storage_path'>): Promise<void> {
     const { error } = await db.from('project_documents').delete().eq('id', doc.id);
     if (error) fail(error, 'Could not remove the document');
+    void logActivity('removed production paperwork', 'project_document', doc.id, { project_id: doc.project_id, audience: 'shapers' });
     if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
   }
 
@@ -740,6 +749,7 @@ export function createStudioApi(db: Client) {
       fail(error, 'Could not save the file');
     }
     if (doc.storage_path) await db.storage.from(PAPERS_BUCKET).remove([doc.storage_path]);
+    void logActivity('attached a file to production paperwork', 'project_document', data.id, { project_id: doc.project_id, audience: 'shapers' });
     return data;
   }
 

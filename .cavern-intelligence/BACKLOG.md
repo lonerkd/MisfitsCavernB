@@ -85,13 +85,6 @@ A layered, deterministic, explainable reading engine: lossless Fountain first, t
 ### 3.22 The reader's context: places, the previous draft — M (B7 follow-ups; rejections shipped in B8)
 (a) **Done (B8):** a stored per-project "not a character" / "is a character" list (`reading_corrections`), a "Not a character" action in the Character Bible with a way back, obeyed by the editor and the Studio. (b) **Places and the previous draft as evidence**, once every surface that writes the scene index reads with one shared context (today the editor and the Studio do; public share, export, pitch and brief pages parse without it). (c) Context for the other callers where it does not affect scenes. Done when a rejected name survives a reload and both surfaces agree on the scene index.
 
-### 3.5 Activity feed completeness — M (needs a product call)
-`logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,
-projects, scenes and wraps; not for media uploads, crew invites/role
-changes, script revisions, call sheets issued or documents. Decide what the
-feed should show (and to whom), then add the calls. Done when each chosen
-event appears in the feed for the right audience (persona-tested).
-
 ### 3.13 The Cavern on iPhone — installable app — M/L (owner: a must)
 Owner decision (2026-10-06): an installable phone app, on iOS for sure. Two
 routes, to decide together:

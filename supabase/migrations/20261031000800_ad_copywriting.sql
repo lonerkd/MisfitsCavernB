@@ -58,6 +58,8 @@ CREATE TABLE public.ad_references (
   CHECK ((status = 'approved') = (approved_at IS NOT NULL))
 );
 CREATE INDEX ad_references_project_idx ON public.ad_references (project_id, status, kind);
+CREATE INDEX ad_references_created_by_idx ON public.ad_references (created_by);
+CREATE INDEX ad_references_approved_by_idx ON public.ad_references (approved_by);
 
 ALTER TABLE public.ad_references ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "ad references read" ON public.ad_references FOR SELECT TO authenticated
@@ -91,6 +93,7 @@ CREATE TABLE public.brand_rules (
   UNIQUE (id, project_id)
 );
 CREATE INDEX brand_rules_project_idx ON public.brand_rules (project_id, kind);
+CREATE INDEX brand_rules_created_by_idx ON public.brand_rules (created_by);
 
 ALTER TABLE public.brand_rules ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "brand rules read" ON public.brand_rules FOR SELECT TO authenticated
