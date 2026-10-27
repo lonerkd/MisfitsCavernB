@@ -12,7 +12,7 @@ import { breakdown, costByCategory, useBreakdown, ELEMENT_STATUSES, type Breakdo
 import { useProject } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { eighthsOf } from '@/lib/studio/shoot-days';
-import { castOf, pages, stripKind, STRIP_LABEL } from '@/lib/studio/stripboard';
+import { pages, stripKind, STRIP_LABEL } from '@/lib/studio/stripboard';
 import type { SceneRow } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, cx } from '../ui';
@@ -30,7 +30,7 @@ const esc = (x: unknown) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
 import { BriefHints } from '@/components/brief/BriefHints';
 
 export function BreakdownView({ crew }: { crew: Array<{ user_id: string; username: string }> }) {
-  const { project, scenes, scriptId, isOwner } = useStudio();
+  const { project, scenes, scriptId, isOwner, castOf: castOfScene } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const bd = useBreakdown(project.id);
@@ -88,7 +88,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
       const ids = new Set(bd.tags.rows.filter((t) => t.scene_id === sc.id).map((t) => t.element_id));
       const boxes = ordered.map((c) => {
         const names = elements.filter((e) => ids.has(e.id) && e.category_id === c.id).map((e) => esc(e.name));
-        if (c.key === 'cast') names.unshift(...castOf(sc).map(esc));
+        if (c.key === 'cast') names.unshift(...castOfScene(sc).map(esc));
         return names.length ? `<div class="box" style="border-color:${c.color}"><div class="lbl" style="color:${c.color}">${esc(c.label)}</div>${names.join('<br>')}</div>` : '';
       }).join('');
       return `<section><header><b>${sc.scene_number}</b> ${esc(sc.heading ?? sc.title)}<span>${STRIP_LABEL[stripKind(sc)]} · ${pages(eighthsOf(sc.est_duration))} pp · Day ${sc.shoot_day ?? 1}</span></header><div class="grid">${boxes || '<i>Nothing tagged</i>'}</div>${sc.note ? `<p class="note">${esc(sc.note)}</p>` : ''}</section>`;
@@ -188,7 +188,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
               <div className={v.sheets}>
                 {scenes.rows.map((sc) => {
                   const ids = new Set(bd.tags.rows.filter((t) => t.scene_id === sc.id).map((t) => t.element_id));
-                  const cast = castOf(sc);
+                  const cast = castOfScene(sc);
                   const castCat = categories.find((c) => c.key === 'cast');
                   const boxes = [...categories].sort((a, b) => a.position - b.position)
                     .map((c) => ({ c, items: elements.filter((e) => ids.has(e.id) && e.category_id === c.id && visible(e)) }))

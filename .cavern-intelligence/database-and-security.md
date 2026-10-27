@@ -136,6 +136,8 @@ Callable by **signed-in users**:
 | `admin_reported_message(report)` | `internal.caller_is_admin()`; returns the words of a message **only if someone reported it** (even in a channel the admin is not in); never any other message |
 | `admin_hide_message(message, hidden)` | `internal.caller_is_admin()`; replaces the words with a notice and keeps the original in `hidden_messages` (admin-only read); bring-back restores it; audit-logged |
 | `admin_set_suspended(user, suspended)` | `internal.caller_is_admin()`; not yourself, not another admin; sets the auth service's ban (`auth.users.banned_until`, 100 years out — not `infinity`, which the auth service cannot parse), ends their sessions, sets `profiles.suspended_at`; audit-logged. `admin_list_users()` returns `suspended` |
+| `admin_case_study_projects()` | `internal.caller_is_admin()` (raises otherwise); lists id and title of productions whose owner set `case_study_ok` — nothing else of the project |
+| `hub_case_study_project(post)` | returns the linked production's title and logline only for a `case_study` post the caller can read (published, or caller is admin) whose owner still consents |
 | `admin_close_job(job)` | `internal.caller_is_admin()`; sets `status = 'closed'` (deletes nothing) and writes an `audit_logs` row |
 | `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
 | `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |
@@ -146,7 +148,7 @@ Callable by **signed-in users**:
 | `respond_to_application(app, status, close)` | the job's poster |
 | `has_discord_webhook(channel)` | `can_manage_channel` — false for anyone else (gated in `20261004010000`; before, it answered any signed-in user) |
 
-Definer **trigger** functions in `internal` (not callable through the API; listed because they write rows the caller couldn't): `internal.hub_posts_announce()` — after an admin publishes a post marked important (and not scheduled for later), one `notifications` row per profile, once per post (`20261025000000`).
+Definer **trigger** functions in `internal` (not callable through the API; listed because they write rows the caller couldn't): `internal.hub_posts_announce()` — after an admin publishes a post marked important (and not scheduled for later), one `notifications` row per profile, once per post (`20261025000000`); since `20261026000000` an incident counts as important (publishing one always notifies; resolving doesn't). `internal.support_messages_stamp()` sets `support_case_messages.from_admin` from `internal.caller_is_admin()` (never the client's value); `internal.support_messages_route()` — after each support message, moves the case (`waiting` after an admin's answer, `open` after the opener's) and notifies the other side: the opener, or every admin (`20261027000000`). `internal.hub_posts_check_consent()` refuses to link a case study to a production whose owner hasn't set `case_study_ok`; `internal.projects_withdraw_case_study()` — when the owner withdraws, unlinks and unpublishes its case studies (`20261028000000`).
 
 ---
 
@@ -178,7 +180,7 @@ is changed *only* by applying those files — never by ad-hoc SQL.
    Windows stores function bodies with CRLF line endings; the fingerprint
    drops carriage returns, so that isn't drift.
 8. **Then staging:** apply the same file to the staging project
-   `srltiosyxvvtlsitiqqy` (`cavern-staging`, what Vercel previews use —
+   (`cavern-staging`, what Vercel previews use —
    `adr/0006-staging-environment.md`) the same way. Staging is disposable:
    if it drifts, recreate it from `supabase/migrations/`.
 

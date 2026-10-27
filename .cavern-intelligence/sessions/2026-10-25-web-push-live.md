@@ -3,8 +3,7 @@
 **Done:** generated VAPID keys and a 64-hex dispatch secret; the owner set
 `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` and
 `PUSH_DISPATCH_SECRET` in Vercel (Production only). Inserted the
-`internal.push_config` row (dispatch URL
-`https://misfits-cavern-b.vercel.app/api/push/dispatch`). The owner enabled push
+`internal.push_config` row (the production dispatch route). The owner enabled push
 in Settings on an installed iPhone app; a test notification went
 database → `pg_net` → `/api/push/dispatch` → device: `{"sent":1}`.
 

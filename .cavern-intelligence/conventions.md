@@ -134,6 +134,17 @@ The `verify` skill can drive this end-to-end.
 
 ---
 
+## 9a. Feature flags — unfinished work stays off production
+
+A feature that isn't ready for real users ships behind a flag in
+`lib/flags.ts` (ADR 0007): `local`, `preview` (on/off) and `production`
+(`'off'` · `'admins'` · `'on'`), its `routes` (path prefixes the proxy 404s
+where it's off), `since` and a `note`. Use `<Flag name>` / `useFlag` to hide
+its entry points. Migrations still apply everywhere; RLS guards the tables.
+**Graduating:** set `production: 'on'` in a one-line PR; once it has held,
+delete the flag and every `<Flag>`/`useFlag`/route entry for it.
+`lib/flags.test.ts` fails on a flag fully on for more than 30 days.
+
 ## 10. State and effects (the React Compiler lint rules)
 
 `eslint.config.mjs` runs the React Compiler rules (`react-hooks` v7) as
