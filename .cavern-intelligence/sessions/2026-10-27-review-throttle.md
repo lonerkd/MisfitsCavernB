@@ -10,3 +10,8 @@ Migration `20261031000200_review_comment_throttle.sql`, persona test
 
 **Not done:** a per-IP limit (an edge/proxy layer); the database load of 200
 comments per link is bounded but not per-visitor.
+
+**Follow-up (Copilot, after the merge):** the count-then-insert was not atomic;
+`20261031000300_review_throttle_lock.sql` serialises it per recipient with a
+transaction advisory lock, and the test now fires a simultaneous burst and
+asserts all 14 comments are stored while the notifications stay at 5.

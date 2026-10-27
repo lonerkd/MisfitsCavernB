@@ -161,13 +161,17 @@ describe('the guest', () => {
   });
 
   it('a flood of comments is kept but tells the team at most 5 times in 10 minutes', async () => {
-    const flood = (await sam().from('review_links').insert({ project_id: projectId, version_ids: [sent] }).select('token').single()).data!;
+    const flood = (await sam().from('review_links').insert({ project_id: projectId, version_ids: [sent] }).select('id, token').single()).data!;
     await admin().from('notifications').delete().eq('user_id', cast.sam.id).eq('type', 'review');
     for (let i = 0; i < 8; i++) {
       expect((await guest().rpc('add_review_comment', { p_token: flood.token, p_version: sent, p_name: 'Bot', p_body: `spam ${i}` })).data).toBe(true);
     }
+    // A simultaneous burst can't slip past the count either.
+    const burst = await Promise.all(Array.from({ length: 6 }, (_, i) => guest().rpc('add_review_comment', { p_token: flood.token, p_version: sent, p_name: 'Bot', p_body: `burst ${i}` })));
+    expect(burst.every((b) => b.data === true)).toBe(true);
     const told = (await admin().from('notifications').select('id').eq('user_id', cast.sam.id).eq('type', 'review').like('title', 'New comment%')).data!;
     expect(told).toHaveLength(5);
+    expect((await admin().from('review_comments').select('id').eq('link_id', flood.id)).data).toHaveLength(14);
   });
 
   it('decides once for the team to confirm: the team is told, nothing is confirmed before a decision, and a confirmed decision is closed', async () => {
