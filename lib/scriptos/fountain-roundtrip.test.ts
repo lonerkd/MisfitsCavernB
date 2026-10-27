@@ -67,6 +67,47 @@ function fingerprint(content: string) {
   };
 }
 
+function generatedFountain(seed: number): string {
+  const pick = <T,>(values: readonly T[], offset: number) => values[(seed * 7 + offset * 11) % values.length];
+  const heading = pick(['INT. ROOM - DAY', '.EXT. PIER - NIGHT', '12A INT. KITCHEN - LATER'], 0);
+  const first = pick(['MAYA', 'BRICK', 'DR. LEE'], 1);
+  const second = pick(['STEEL', 'JOSÉ', 'OFFICER 2'], 2);
+  const action = pick(['!THE LIGHTS GO OUT.', 'A lamp flickers.', '_The door_ opens slowly.'], 3);
+  const transition = pick(['> CUT TO:', 'FADE OUT.', 'DISSOLVE TO'], 4);
+  const speech = pick(['“Stay here.”', 'Don’t move.', 'We can do this.'], 5);
+  return [
+    `Title: Story ${seed}`,
+    'Author: The writer',
+    '',
+    heading,
+    '',
+    action,
+    '',
+    `@${first}`,
+    speech,
+    '',
+    `${second} ^`,
+    '(quietly)',
+    'I heard that.',
+    '',
+    '> CENTERED WORDS <',
+    '~A short lyric',
+    '=The story turns',
+    '## Act One',
+    '[[Keep this note]]',
+    '/* old line',
+    'still in the boneyard',
+    '*/',
+    transition,
+    '===',
+    'EXT. ROAD - DAWN',
+    '',
+    `${first}`,
+    'We made it.',
+    '',
+  ].join('\n');
+}
+
 describe('Fountain round-trip', () => {
   it('serialize → parse preserves the structural fingerprint', () => {
     const original = fingerprint(SAMPLE);
@@ -94,6 +135,17 @@ describe('Fountain round-trip', () => {
     expect(out).toContain('===');
     expect(out).toContain('^');
     expect(out).toContain('/* this whole block is boneyard */');
+  });
+
+  it('preserves the structural fingerprint across deterministic Fountain variants', () => {
+    for (let seed = 0; seed < 32; seed++) {
+      const source = generatedFountain(seed);
+      const emitted = serializeFountain(parseScript(source).lines);
+
+      expect(fingerprint(emitted), `round-trip seed ${seed}`).toEqual(fingerprint(source));
+      const canonical = canonicalizeFountain(source);
+      expect(canonicalizeFountain(canonical), `canonical seed ${seed}`).toBe(canonical);
+    }
   });
 
   it('keeps an ALL-CAPS action as action (never falls to character)', () => {

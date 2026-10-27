@@ -175,7 +175,7 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 |---|---|---|---|---|
 | B0 | **The measure** *(built)* | corpus, scorer, ratchet, baseline | M | — |
 | B1 | **Make it harder to fool** *(built)* | metamorphic tests; layout variants for the PDF renderer (margins, page size, font size); the private-corpus runner | M | the measure's honesty |
-| B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue; still to do: the spec's own example suite, round-trip as a property test)* | trailing-caret dual dialogue, title-page keys, every Fountain construct in the spec's own examples; Fountain *import* as-is (no rewriting); round-trip as a property test | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
+| B2 | **L0 complete** *(built: import as written, title page, trailing-caret dual dialogue, generated structural round-trip property; still to do: validate against the spec's own example suite)* | trailing-caret dual dialogue, title-page keys, Fountain *import* as-is (no rewriting); generated structural round-trip and canonicalization invariants | M | Fountain gaps (BACKLOG 3.20 #2 and the `^` gap) |
 | B3 | **Evidence layer (L1)** *(built)* | unicode-aware case and names; a vocabulary module (transitions, time words, extensions, camera cues, structural markers) merged from both old and new; the numbered-heading fix; names kept as written (`DR. LEE`, `OFFICER 2`) | M | dotNumbers, periodTransitions, bareTransitions, nonLatin, cast found |
 | B4 | **Document profile (L3)** *(first slice built)* | summarizes explicit cue names/case, heading-number styles, and transition punctuation; explicit cues inform later unmarked reads without overriding Fountain syntax | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
@@ -220,6 +220,9 @@ happily multiply a bad one.
 ## 9. Progress
 
 B0–B3 and B5–B6 are built and measured by the ratchet in `lib/scriptos/corpus/`.
+B2 also checks structural round-trip and canonicalization fixed-point invariants
+across 32 deterministic documents covering the supported Fountain constructs;
+the official example suite remains to be checked independently.
 B4 profiles the explicit conventions available in Fountain source; broader
 inference still needs independently labeled scripts. B7's first slice feeds
 castings, rejections, places, and previous-draft names into the shared editor
