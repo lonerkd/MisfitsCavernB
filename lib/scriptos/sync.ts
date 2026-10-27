@@ -10,6 +10,7 @@ import {
   encodeScriptTextUpdate,
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
+  mapThroughDelta,
   REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
   SCRIPT_TEXT_FIELD,
@@ -31,7 +32,7 @@ const YJS_UPDATE_EVENT = 'yjs_update';
 const YJS_SYNC_REQUEST_EVENT = 'yjs_sync_request';
 const YJS_SYNC_EVENT = 'yjs_sync';
 
-export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string) => void) {
+export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string, mapIndex?: (index: number) => number) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncedAt, setLastSyncedAt] = useState<Date | null>(null);
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
@@ -46,7 +47,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
   const lastCursorSentRef = useRef(0);
   useLayoutEffect(() => { localContentRef.current = localContent; });
 
-  const applyRemote = useEffectEvent((content: string) => onRemoteChange(content));
+  const applyRemote = useEffectEvent((content: string, mapIndex?: (index: number) => number) => onRemoteChange(content, mapIndex));
 
   useEffect(() => {
     if (!scriptId) return;
@@ -60,9 +61,9 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     let baseContent = '';
     pendingContentRef.current = null;
 
-    const publish = (content: string) => {
+    const publish = (content: string, mapIndex?: (index: number) => number) => {
       pendingContentRef.current = content;
-      applyRemote(content);
+      applyRemote(content, mapIndex);
     };
 
     const sendUpdate = (update: Uint8Array) => {
@@ -175,9 +176,11 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       textRef.current = text;
       undoManagerRef.current = undoManager;
 
-      const onTextChange = () => {
+      const onTextChange = (event: Y.YTextEvent, transaction: Y.Transaction) => {
         const content = text!.toString();
-        if (content !== localContentRef.current) publish(content);
+        // A change from another writer moves the text under this one's caret.
+        const mapIndex = transaction.origin === REMOTE_EDIT_ORIGIN ? (i: number) => mapThroughDelta(event.delta, i) : undefined;
+        if (content !== localContentRef.current) publish(content, mapIndex);
       };
       text.observe(onTextChange);
       doc.on('update', (update) => {

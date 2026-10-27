@@ -115,6 +115,7 @@ export default function EditorPage() {
   const toastRef = useRef(toast);
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const caretAfterRemote = useRef<[number, number] | null>(null);
   // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
   const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -123,8 +124,21 @@ export default function EditorPage() {
   const { isSyncing, collaborators, broadcastCursor, undo, redo, stopUndoCapturing } = useScriptSync(
     currentScript?.id || '',
     content,
-    setContent,
+    (next, mapIndex) => {
+      // Someone else's words land in the text: keep this writer's caret where it was.
+      const ta = textareaRef.current;
+      if (mapIndex && ta && document.activeElement === ta) {
+        caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
+      }
+      setContent(next);
+    },
   );
+  useLayoutEffect(() => {
+    const caret = caretAfterRemote.current;
+    const ta = textareaRef.current;
+    caretAfterRemote.current = null;
+    if (caret && ta && document.activeElement === ta) ta.setSelectionRange(caret[0], caret[1]);
+  }, [content]);
   const stash = useScriptStash(currentScript?.id ?? null);
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.

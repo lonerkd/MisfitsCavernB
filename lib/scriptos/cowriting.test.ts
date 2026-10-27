@@ -7,6 +7,7 @@ import {
   encodeScriptTextUpdate,
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
+  mapThroughDelta,
   restoreScriptTextState,
   SCRIPT_TEXT_FIELD,
   seedScriptText,
@@ -96,5 +97,28 @@ describe('ScriptOS CRDT co-writing', () => {
     expect(restored.text.toString()).toBe(BASE);
     source.doc.destroy();
     restored.doc.destroy();
+  });
+});
+
+describe('mapThroughDelta', () => {
+  const caretAfter = (base: string, edit: (t: Y.Text) => void, index: number) => {
+    const doc = new Y.Doc();
+    const t = doc.getText('t');
+    t.insert(0, base);
+    let mapped = index;
+    t.observe((e) => { mapped = mapThroughDelta(e.delta, index); });
+    edit(t);
+    return { mapped, text: t.toString() };
+  };
+  it('moves a caret right of an insertion and leaves one left of it', () => {
+    expect(caretAfter('hello world', (t) => t.insert(0, 'XX'), 5).mapped).toBe(7);
+    expect(caretAfter('hello world', (t) => t.insert(8, 'XX'), 5).mapped).toBe(5);
+  });
+  it('keeps a caret before text inserted exactly at it', () => {
+    expect(caretAfter('hello', (t) => t.insert(5, ' there'), 5).mapped).toBe(5);
+  });
+  it('pulls a caret back across a deletion, and to its start when inside it', () => {
+    expect(caretAfter('hello world', (t) => t.delete(0, 3), 8).mapped).toBe(5);
+    expect(caretAfter('hello world', (t) => t.delete(2, 6), 5).mapped).toBe(2);
   });
 });

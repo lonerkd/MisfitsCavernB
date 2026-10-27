@@ -100,3 +100,27 @@ export function restoreScriptTextState(doc: Y.Doc, state: PersistedScriptText): 
 export function applyScriptUpdate(doc: Y.Doc, update: Uint8Array, origin: unknown = REMOTE_EDIT_ORIGIN): void {
   Y.applyUpdate(doc, update, origin);
 }
+
+/**
+ * Where an index in the old text lands after a change, so a caret survives
+ * someone else typing. An insertion exactly at the index leaves it before the
+ * new text (the other writer's words go in front of where you are about to type).
+ */
+export function mapThroughDelta(
+  delta: ReadonlyArray<{ insert?: unknown; delete?: number; retain?: number }>,
+  index: number,
+): number {
+  let old = 0;
+  let shift = 0;
+  for (const op of delta) {
+    if (old > index) break;
+    if (op.retain) old += op.retain;
+    else if (op.insert !== undefined) {
+      if (old < index) shift += typeof op.insert === 'string' ? op.insert.length : 1;
+    } else if (op.delete) {
+      shift -= Math.min(op.delete, Math.max(0, index - old));
+      old += op.delete;
+    }
+  }
+  return index + shift;
+}
