@@ -58,3 +58,21 @@ four touched suites (45 tests) green; full suite and build re-run before the
 push (see the commit). Still not watched in a browser — the page jump's caret
 position depends on the textarea's line height, which only a real render shows.
 
+---
+
+**Update 3 — command history, so a jump is never one-way.** Every jump (scene,
+page, character, the ⌘↓/⌘↑ stepper) now remembers the line it left in an
+in-session stack; **Alt + ← / →** walks back and forward through those places
+(50 deep, nothing persisted). Pure stacks in `lib/scriptos/history.ts`
+(`remember`, `stepHistory`) with unit tests; the page wires them through effect
+events so the key listener is bound once and still sees the current caret.
+
+With that, BACKLOG 3.33 is done and deleted: 4.7's slice 1 — go to a scene, a
+page or a character, step scene by scene, and walk back — needs no mouse. What
+remains of 4.7 is slice 2 (selection actions, snippets, block selection;
+multi-cursor waits on the editor split).
+
+**Verified:** `npx tsc --noEmit` clean, `npx eslint` clean on the touched files,
+`history.test.ts` 4 tests green.
+
+

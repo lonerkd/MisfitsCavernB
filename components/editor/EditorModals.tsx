@@ -42,6 +42,7 @@ const SHORTCUTS: [string, string][] = [
   ['Ctrl + E', 'Toggle Focus Mode'],
   ['Ctrl + G', 'Go to a scene, page or character'],
   ['Ctrl + ↓ / ↑', 'Next / previous scene'],
+  ['Alt + ← / →', 'Back / forward through jumps'],
   ['Ctrl + /', 'Show Shortcuts'],
   ['Tab', 'Smart element insert'],
   ['Escape, then Tab', 'Leave the script (move to the next control)'],

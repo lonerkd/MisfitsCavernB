@@ -37,6 +37,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { lineOffset, type GoToTarget } from '@/lib/scriptos/goto';
+import { NO_HISTORY, remember as rememberJump, stepHistory, type HistoryState } from '@/lib/scriptos/history';
 import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
@@ -215,6 +216,7 @@ export default function EditorPage() {
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
+  const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
@@ -602,7 +604,11 @@ export default function EditorPage() {
 
   const scenePositions = useMemo(() => positionsOfScenes(scenesList, content), [scenesList, content]);
 
-  const jumpToScene = (sceneIndex: number) => {
+  /** Where the caret was before a jump, for Alt + ← / →. */
+  const rememberPlace = () => setNavHistory((h) => rememberJump(h, cursorLine));
+
+  const jumpToScene = (sceneIndex: number, remember = true) => {
+    if (remember) rememberPlace();
     setActiveView('write');
     setTimeout(() => {
       const textarea = textareaRef.current;
@@ -618,7 +624,8 @@ export default function EditorPage() {
   };
 
   /** Put the caret on a line (a page jump lands on the page's first line). */
-  const jumpToLine = (lineIndex: number) => {
+  const jumpToLine = (lineIndex: number, remember = true) => {
+    if (remember) rememberPlace();
     setActiveView('write');
     setTimeout(() => {
       const textarea = textareaRef.current;
@@ -676,14 +683,26 @@ export default function EditorPage() {
   useLayoutEffect(() => { jumpRef.current = jumpToScene; });
 
   // Ctrl/⌘ + ↓ / ↑ walks the script scene by scene from wherever the caret is,
-  // stopping at the first and last scene (never wrapping). An effect event so
-  // the listener is bound once and still reads the current scene.
+  // stopping at the first and last scene (never wrapping); Alt + ← / → walks
+  // back and forward through the places the editor jumped from. Effect events
+  // so the listener is bound once and still reads the current caret and stacks.
   const stepToScene = useEffectEvent((direction: -1 | 1) => {
     const next = stepScene(currentSceneIdx, scenesList.length, direction);
     if (next !== null) jumpToScene(next);
   });
+  const walkHistory = useEffectEvent((direction: -1 | 1) => {
+    const step = stepHistory(navHistory, cursorLine, direction);
+    if (step.place == null) return;
+    setNavHistory(step.state);
+    jumpToLine(step.place, false);
+  });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        walkHistory(e.key === 'ArrowLeft' ? -1 : 1);
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey) || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
       e.preventDefault();
       stepToScene(e.key === 'ArrowDown' ? 1 : -1);

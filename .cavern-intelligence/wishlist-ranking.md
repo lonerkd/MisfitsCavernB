@@ -218,11 +218,13 @@ Cheap, daily, and it makes the editor feel professional. **Quick wins that can
 land any time:**
 1. Go to scene number / page number / a character's scenes (⌘G, with the
    command palette); next/previous scene; command history and repeat.
-   **Built (2026-10-27):** Go to (⌘G) really jumps and takes a scene number, a
-   page (`p12`) or a character's name — their next scene, then the next on
-   Enter (wrapping), previewing the heading and refusing what isn't there;
-   ⌘↓ / ⌘↑ steps to the next / previous scene and stops at the ends. Left:
-   command history and repeat. Tracked as BACKLOG 3.33.
+   **Built (2026-10-27), all of slice 1:** Go to (⌘G) really jumps and takes a
+   scene number, a page (`p12`) or a character's name — their next scene, then
+   the next on Enter (wrapping), previewing the heading and refusing what isn't
+   there; ⌘↓ / ⌘↑ steps to the next / previous scene and stops at the ends;
+   Alt + ←/→ walks back and forward through jumps (50 deep, this session).
+   Left: slice 2 (selection actions, snippets, block selection; multi-cursor
+   waits on the editor split).
 2. Quick actions on a selection; stash snippets expanding from a typed trigger;
    block selection. Multi-cursor is the one genuinely hard item (the editor is a
    textarea + highlight layer) and waits on the editor split, which waits on
