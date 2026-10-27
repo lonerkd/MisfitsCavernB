@@ -13,6 +13,9 @@ ALTER TABLE public.project_formats
   CONSTRAINT project_formats_approval_gates_check
     CHECK (approval_gates <@ ARRAY['development', 'pre-production', 'production', 'post-production']);
 
+-- The latest sent version per script is read on every gated move.
+CREATE INDEX item_versions_sent_idx ON public.item_versions (project_id, script_id, number DESC) WHERE status = 'sent';
+
 -- How many things the client still owes: scripts whose latest sent version is not
 -- approved and confirmed, or 1 when nothing has been sent at all.
 CREATE FUNCTION internal.approval_pending(p_project uuid)

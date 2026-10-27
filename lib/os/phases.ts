@@ -13,7 +13,7 @@ export interface FormatRules {
   phase_labels: Partial<Record<Phase, { label: string; abbr: string }>>;
   skip_phases: Phase[];
   skip_milestones: string[];
-  /** Phases that cannot be left until the client has approved the work. */
+  /** Phases that cannot be left until the client has approved the work. Read from the formats list (lib/formats), not from project_progress(). */
   approval_gates?: Phase[];
 }
 

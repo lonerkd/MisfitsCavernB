@@ -115,6 +115,13 @@ describe('leaving a gated phase', () => {
     expect(await status()).toBe('concept');
   });
 
+  it('an unrecognised status is no way round it: it counts as the earliest phase', async () => {
+    expect((await move('zz-not-a-phase')).error).toBeNull(); // sideways/back is free
+    expect((await move('post-production')).error).not.toBeNull(); // forward from "earliest" meets every gate
+    expect((await move('concept')).error).toBeNull();
+    expect(await status()).toBe('concept');
+  });
+
   it('only gates the phases the format names: a later phase can be left freely', async () => {
     await admin().from('projects').update({ status: 'pre-production' }).eq('id', projectId); // system update: not a person
     expect((await move('production')).error).toBeNull(); // leaving pre-production is not gated here

@@ -27,3 +27,12 @@ the format check in unit tests.
 deliverables, brand rules as approved references (BACKLOG 3.32 b–e); the
 projects-board drag shows the database's refusal as a generic error; games, music
 and books formats; gates on items other than scripts (media versions).
+
+**After Copilot's review (three findings):** (1) "unknown status bypasses the gate"
+— traced, not an exploit: an unrecognised status counts as the earliest phase, the
+strictest place to start from, and approval is a property of the project, so
+there is no route around it (a test proves a forward move from one is still
+blocked); no change. (2) `project_progress()` does not return `approval_gates` —
+nothing reads it from there (the phase panel reads the formats list); documented
+in `FormatRules`, the function not rewritten. (3) a partial index on sent
+versions for the per-move query — added to the (still unapplied) migration.

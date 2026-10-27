@@ -1615,6 +1615,7 @@ index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btr
 index CREATE INDEX item_versions_confirmed_by_idx ON public.item_versions USING btree (confirmed_by)
 index CREATE INDEX item_versions_created_by_idx ON public.item_versions USING btree (created_by)
 index CREATE INDEX item_versions_project_idx ON public.item_versions USING btree (project_id, created_at DESC)
+index CREATE INDEX item_versions_sent_idx ON public.item_versions USING btree (project_id, script_id, number DESC) WHERE (status = 'sent'::text)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX links_created_by_idx ON public.links USING btree (created_by)
 index CREATE INDEX links_from_project_idx ON public.links USING btree (from_entity, project_id)
