@@ -18,7 +18,7 @@ export function loadFormats(force = false): Promise<ProjectFormat[]> {
     cache = (async () => {
       const { data, error } = await supabase
         .from('project_formats')
-        .select('name, blurb, icon, script_format, phase_labels, skip_phases, skip_milestones, position')
+        .select('name, blurb, icon, script_format, phase_labels, skip_phases, skip_milestones, approval_gates, position')
         .order('position');
       if (error) { cache = null; throw new Error(error.message || 'Could not load project formats'); }
       return data.map(toProjectFormat);

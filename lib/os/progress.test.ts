@@ -113,6 +113,7 @@ describe('toSignals', () => {
       phase_labels: { production: { label: 'Shoot', abbr: 'SHOOT' }, 'post-production': { label: 'Edit', abbr: 'EDIT' } },
       skip_phases: ['pre-production'],
       skip_milestones: ['shots'],
+      approval_gates: [],
     });
   });
 });

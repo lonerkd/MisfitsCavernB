@@ -12,7 +12,7 @@ import { ProtectedPage } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
 import { loadFormats } from '@/lib/formats/formats';
 import { addFormat, removeFormat } from '@/lib/supabase/admin-formats';
-import { checkFormat, FORMAT_ICONS, FORMAT_SCRIPTS, SKIPPABLE_PHASES, type FormatInput } from '@/lib/formats/check';
+import { checkFormat, FORMAT_ICONS, FORMAT_SCRIPTS, GATEABLE_PHASES, SKIPPABLE_PHASES, type FormatInput } from '@/lib/formats/check';
 import { FormatIcon } from '@/components/formats/FormatPicker';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -20,7 +20,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 
 const field: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14 };
 const label: React.CSSProperties = { display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, color: 'var(--fg-muted)' };
-const EMPTY: FormatInput = { name: '', blurb: '', icon: 'film', script_format: 'screenplay', skip_phases: [] };
+const EMPTY: FormatInput = { name: '', blurb: '', icon: 'film', script_format: 'screenplay', skip_phases: [], approval_gates: [] };
 
 export default function AdminFormatsPage() {
   const { toast } = useToast();
@@ -53,6 +53,11 @@ export default function AdminFormatsPage() {
   const toggleSkip = (p: (typeof SKIPPABLE_PHASES)[number]) =>
     setDraft({ ...draft, skip_phases: draft.skip_phases.includes(p) ? draft.skip_phases.filter((x) => x !== p) : [...draft.skip_phases, p] });
 
+  const toggleGate = (p: (typeof GATEABLE_PHASES)[number]) => {
+    const gates = draft.approval_gates ?? [];
+    setDraft({ ...draft, approval_gates: gates.includes(p) ? gates.filter((x) => x !== p) : [...gates, p] });
+  };
+
   return (
     <ProtectedPage require="admin">
       <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 24px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
@@ -79,6 +84,12 @@ export default function AdminFormatsPage() {
               <label key={p} style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><input type="checkbox" checked={draft.skip_phases.includes(p)} onChange={() => toggleSkip(p)} /> {p}</label>
             ))}
           </fieldset>
+          <fieldset style={{ border: 'none', margin: 0, padding: 0, display: 'flex', gap: 10, alignItems: 'center', fontSize: 13 }}>
+            <legend style={{ fontSize: 12, color: 'var(--fg-muted)', padding: 0, marginBottom: 4 }}>Client must approve before leaving</legend>
+            {GATEABLE_PHASES.map((p) => (
+              <label key={p} style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }}><input type="checkbox" checked={(draft.approval_gates ?? []).includes(p)} onChange={() => toggleGate(p)} /> {p}</label>
+            ))}
+          </fieldset>
           <Button type="submit" disabled={busy}><Plus size={14} aria-hidden /> {busy ? 'Adding…' : 'Add format'}</Button>
         </form>
 
@@ -92,7 +103,7 @@ export default function AdminFormatsPage() {
               <li key={f.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 14 }}>
                 <FormatIcon icon={f.icon} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14 }}>{f.name} <span style={{ color: 'var(--fg-muted)', fontSize: 12 }}>· {f.script_format}{f.rules.skip_phases.length ? ` · skips ${f.rules.skip_phases.join(', ')}` : ''}</span></div>
+                  <div style={{ fontSize: 14 }}>{f.name} <span style={{ color: 'var(--fg-muted)', fontSize: 12 }}>· {f.script_format}{f.rules.skip_phases.length ? ` · skips ${f.rules.skip_phases.join(', ')}` : ''}{f.rules.approval_gates?.length ? ` · client approves ${f.rules.approval_gates.join(', ')}` : ''}</span></div>
                   {f.blurb && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{f.blurb}</div>}
                 </div>
                 <button type="button" aria-label={`Remove ${f.name}`} onClick={() => void remove(f.name)} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', padding: 4 }}><Trash2 size={14} aria-hidden /></button>
