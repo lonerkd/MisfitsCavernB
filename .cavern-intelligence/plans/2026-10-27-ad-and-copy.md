@@ -32,10 +32,10 @@ project_id, kind, max_chars, max_seconds, notes)`. `kind` is a short list
 (`spot_30`, `spot_15`, `spot_6`, `radio`, `poster`, `banner`, `headline`,
 `social`, `other`) with default limits per kind (data in `lib/ad/kinds.ts`,
 overridable per piece). RLS through `can_access_project` / `can_shape_project`
-(the same as scripts); a persona test. UI: a **Deliverables** panel in the
+(the same as scripts). Because the row stores both ids, it needs a **same-project guarantee**: a unique `(id, project_id)` on `scripts` and a composite foreign key `(script_id, project_id)` → `scripts (id, project_id)` (the pattern slice A used for `links`), so a shaper of project A cannot point a deliverable at project B's script. Persona test: Sam writes, Jordan scoped, Riley nothing, and a cross-project script is refused. UI: a **Deliverables** panel in the
 Studio's Scenes/Share area listing every piece with its state — *draft · with the
 client · approved · changes requested* (from `item_versions`) — and "send all
-drafts for review". Entity kind `deliverable` so the card can show and attach.
+drafts for review". Entity kind `deliverable` (a trigger-written row like the others, label = the piece's title; the kind list and `entity_sync` get one entry) so the card can show and attach. The approval gate already covers every piece, since it looks at every sent script; a deliverable with no sent version blocks it only once something has been sent for others — if a gate should wait for *all* pieces, C1 adds that rule (decision 4 below).
 
 ### C2 — The copy format and editor (L)
 Add `copy` to the script-format registry. Keep `scripts.content` a **string**
@@ -55,6 +55,7 @@ limit meter (characters for static, seconds at a reading pace for spots). The
 review page renders the same blocks. No new storage format.
 
 ### C3 — Brand rules (M)
+Security: rules are visible and writable only by people who shape the project (`can_shape_project`); a guest sees only the result of the check on the review page, never the rule list; cross-project references use the same composite-key pattern as C1.
 `brand_rules(project_id, kind, text, severity)` with kinds *must include*, *never
 say*, *tone note*, *legal line*. A pure checker runs over a piece's text and
 lists breaches next to the limit meter and on the deliverables panel ("3 of 7
@@ -77,3 +78,4 @@ one the copywriter lives in.
    voice-over pace) as the default, editable per piece — fine?
 3. **Brand rules**: owner-set only (recommended), or may the client add rules
    through their review link?
+4. **Gate scope**: today the approval gate waits for every script that *has been sent*; should it wait for **every deliverable** to be sent and approved (stricter, recommended for ad work)?
