@@ -50,9 +50,9 @@ overlays the page; `--taskbar-height` is its resting footprint only.
 
 `components/mobile/MobileTabBar.tsx` (the file keeps its old name): **one pill at the foot** — the project (with its colour), the page, and an unread count — and **Capture** beside it, one tap. The pill opens the **Everything** sheet: Today · Projects · Lounge first (the Lounge with its unread badge), then the page's own controls under "On this page", search, every tool, and the project to work on. It replaced a five-tab bar. Hidden on the editor, split, auth and public pages; slides away while a field has focus.
 
-### ⌘K command palette
+### Command palette (search)
 
-`components/shell/CommandPalette.tsx`. Navigation and actions filtered as you type,
+`components/shell/CommandPalette.tsx`. **Opened from the Caps Lock deck with `/`**, from the island's search button, the phone's Everything sheet or Today's search button — there is no ⌘K / Ctrl K binding (owner, 2026-10-27: Caps Lock unlocks the layer of keyboard control). Navigation and actions filtered as you type,
 and `search_suite` results grouped by kind (project, script incl. its text,
 scene, character, media, location, document, task, post note, job, person),
 each opening where it lives. `?` opens the shortcuts overlay

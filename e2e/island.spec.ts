@@ -78,7 +78,7 @@ test.describe('The island (local Supabase)', () => {
     for (const name of ['Hub', 'Today', 'ScriptOS', 'Studio', 'Lounge', 'Portfolio', 'Profile', 'Settings']) {
       await expect(island(page).getByRole('link', { name, exact: true })).toBeVisible();
     }
-    await expect(page.getByRole('button', { name: 'Search (Command-K)' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Search (Caps Lock, then slash)' })).toBeVisible();
     await page.waitForTimeout(600);
     const open = (await surface(page).boundingBox())!;
     expect(open.width).toBeGreaterThan(rest.width + 200);
@@ -90,7 +90,7 @@ test.describe('The island (local Supabase)', () => {
 
     // Its control does the real thing. (Pointing at the strip first: a press where the pill
     // was, in the moment after it opens, keeps the island open rather than pressing a control.)
-    await page.getByRole('button', { name: 'Search (Command-K)' }).hover();
+    await page.getByRole('button', { name: 'Search (Caps Lock, then slash)' }).hover();
     await controls.getByRole('button', { name: '+ New Project' }).click();
     await expect(page.getByRole('heading', { name: 'Start a project' })).toBeVisible();
     await page.keyboard.press('Escape');
