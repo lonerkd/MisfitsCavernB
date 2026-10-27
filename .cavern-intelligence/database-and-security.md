@@ -27,7 +27,7 @@ The Cavern is powered by a relational PostgreSQL database hosted on Supabase. Ro
 - **`scripts`**: Stores script content, linked to a project (optional) and creator; formats include Fountain screenplay and structured `copy`. A project script belongs to the project: access follows `can_access_project` (not who created or last saved it). A personal script (`project_id` null) belongs to its `created_by`. `shared = true` makes it readable by anyone.
 - **Advertising/Copywriting** (`deliverables`, `ad_references`, `brand_rules`): one deliverable per ad-project script, composite FK `(script_id, project_id)` prevents cross-project links, and deliverable entities follow script titles. Shapers read deliverables and references; only the owner manages references/rules, and only shapers read rules. Approved references are immutable. Reference links use `links`' same-project entity FKs. `ad_deliverable_for_script`, `ad_deliverables_for_project`, `ad_deliverable_title` and `ad_entity_sync` are internal definer triggers; `ad_reference_guard` and `ad_touch_updated_at` are invoker triggers. `approval_pending(project)` requires every ad deliverable's latest sent version to be guest-approved and team-confirmed; other formats retain the existing sent-script rule (`20261031000700`).
 - **`script_metadata`**: Houses `title_page` JSONB and `character_bible` JSONB, preventing co-writers from overriding offline states.
-- **Film graph**: `shoot_days`, `characters`, `scene_characters`, `scene_states` (RLS `internal.can_access_project`, Realtime). `scenes` carries `location_id`, `shoot_day_id`, and (step 3) `story_day` (>= 1), `story_time` (<= 60 chars) and `story_confirmed` — a person's setting is confirmed and a later read of the script leaves it. `scene_states` is one row per character per scene (`look`, `notes`), composite FKs to the same project, cascading with the scene or character. The script sync writes none of it.
+- **Film graph**: `shoot_days`, `characters`, `scene_characters`, `scene_states` (RLS `internal.can_access_project`, Realtime). `scenes` carries `location_id`, `shoot_day_id`, and (step 3) `story_day` (>= 1), `story_time` (<= 60 chars) and `story_confirmed` — a person's setting is confirmed and a later read of the script leaves it. `scene_states` is one row per character per scene (`look`, `notes`), composite FKs to the same project, cascading with the scene or character. `film_graph_ambiguous_names` is a read-only security-invoker view over locations and characters; it lists same-project pairs differing only in punctuation or whitespace, under the source tables' RLS. The script sync writes none of it.
 - **`hidden_messages`**: the original words of a message an admin hid (`message_id` → `messages`, cascade on delete); one SELECT policy, admins only. `messages.hidden_at` marks a hidden message; its `content` is the notice "[Removed by an admin]", so no client ever receives the words. `edit_message` refuses a hidden message, and neither its sender nor a channel manager can delete it (account deletion still removes the person's DMs).
 - **`reports`** (moderation, first slice): what a person reports — `kind` is `message`, `job` or `profile`, `target_id` the thing, `reason` 1–500 chars, `status` `open`/`resolved`/`dismissed`; `unique (reporter_id, kind, target_id)` (one report per person per thing). `reporter_id` defaults to and must equal the caller; one SELECT policy (your own, or all if `internal.caller_is_admin()`); only an admin updates (settles) one; nobody deletes. It hides nothing by itself.
 - **`reading_corrections`** (the deep brain, B8): what a person tells the script reader, per project — one verdict per name (`kind` is `not_character` or `character`; the name is upper-case, 1–200 chars; `unique (project_id, name)`, so saying the opposite replaces the old verdict). RLS `internal.can_access_project` (owner and confirmed crew), Realtime, `created_by` defaults to the caller. Only what a person put here is ever fed back to the reader as fact — never its own output (the derived `characters` table is not).
@@ -103,7 +103,7 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
 
-### D. The definer-function allowlist (reviewed 2026-10-03)
+### D. The definer-function allowlist (reconciled 2026-10-27)
 
 The security advisor warns about every `SECURITY DEFINER` function in
 `public` that `anon` or `authenticated` can call (lints 0028/0029). These are
@@ -111,6 +111,11 @@ the app's intended RPC surface; each checks access itself, in its first
 lines. **A new definer function in `public` is added here, with its gate, in
 the PR that creates it** — anything the advisor lists that isn't here is
 unreviewed. (`internal.*` helpers aren't callable through the API.)
+
+The production-advisor counts recorded on 2026-10-25 were 11 functions
+callable by `anon` and 39 by `authenticated`; those counts reconcile with the
+inventory and gates below. The current list also includes six later additions:
+the three guest-review RPCs, the two case-study RPCs, and `advance_phase`.
 
 Callable by **anyone** (anon + signed in) — public pages:
 
@@ -145,7 +150,9 @@ Callable by **signed-in users**:
 | `advance_phase(project, to, default, exceptions)` | `internal.is_project_creator` (owner only; raises otherwise); `to` must be a known status; `default` `carry` archives the listed ids, `archive` archives every working item except them (≤ 1000 ids); locks the project row so gates run one at a time; moves `projects.status` and writes a `phase_gates` row with the counts of what really changed, all in one transaction (`20261031000100`; the first version in `20261031000000` took a list of decisions and was replaced) |
 | `admin_close_job(job)` | `internal.caller_is_admin()`; sets `status = 'closed'` (deletes nothing) and writes an `audit_logs` row |
 | `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
-| `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |
+| `edit_message(message, content)` | caller is the sender; in a channel, caller can still post; hidden messages cannot be edited |
+| `pin_message(message, pinned)` | channel manager, or either participant in a DM |
+| `toggle_message_reaction(message, emoji)` | caller can view the channel message or is a DM participant; emoji validated |
 | `lounge_unread()`, `mark_lounge_read(channel, partner)` | channels filtered by `internal.can_view_channel`; DMs the caller is in |
 | `ack_call_sheet(sheet)`, `issue_call_sheet(sheet, note)` | `internal.can_access_project`; issuing also `can_shape_project` |
 | `project_availability(project, from, to)` | `internal.can_shape_project`; dates only, never notes |

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Client as Pg } from 'pg';
-import { createCast, destroyCast, type Cast } from './support/personas';
+import { anonClient, createCast, destroyCast, type Cast } from './support/personas';
 import { createCrewedProject } from './support/project';
 
 // The film graph's backfill (spec §6 step 2): fill places, days and characters
@@ -12,6 +12,7 @@ import { createCrewedProject } from './support/project';
 // transaction that is rolled back, and reads what it made.
 let cast: Cast;
 let projectId: string;
+let otherProjectId: string;
 
 const migration = (name: string) => readFileSync(path.join(__dirname, '../../supabase/migrations', name), 'utf8');
 // The block between the "What's already there" and "Keeping them in step" banners.
@@ -27,6 +28,7 @@ const PEOPLE = backfillOf(migration('20261011010000_film_graph_people_in_scenes.
 beforeAll(async () => {
   cast = await createCast();
   ({ projectId } = await createCrewedProject(cast, 'Film graph backfill'));
+  ({ projectId: otherProjectId } = await createCrewedProject(cast, 'Another film graph backfill'));
 });
 afterAll(async () => { await destroyCast(cast); });
 
@@ -54,6 +56,17 @@ async function backfill(scenes: Legacy[], run: (pg: Pg, ids: string[]) => Promis
     await pg.query('rollback').catch(() => undefined);
     await pg.end();
   }
+}
+let sceneNumber = 9900;
+async function addScene(cast_list: string, location: string, project = projectId) {
+  const { error } = await cast.sam.client.from('scenes').insert({
+    project_id: project,
+    scene_number: sceneNumber++,
+    title: 'Ambiguous name candidate',
+    cast_list,
+    location,
+  });
+  if (error) throw error;
 }
 const names = async (pg: Pg, table: 'project_locations' | 'characters') =>
   (await pg.query(`select name from public.${table} where project_id = $1 order by name`, [projectId])).rows.map((r) => r.name as string);
@@ -116,9 +129,61 @@ describe('backfill of characters', () => {
 });
 
 describe('listing ambiguous matches for a person to settle', () => {
-  // Spec §6 and §8 promise a list. Neither migration builds one: the backfill
-  // only avoids merging. These stay pending until the listing exists
-  // (BACKLOG 3.18) — they are not passing mocks.
-  it.todo('lists near-identical place names (COFFEE SHOP / COFFEE  SHOP) for review');
-  it.todo('lists cues that may be the same character (DR. SMITH / DR SMITH) for review');
+  it('lists near-identical place names (COFFEE SHOP / COFFEE  SHOP) for review', async () => {
+    await backfill([{ location: 'COFFEE SHOP' }, { location: 'COFFEE  SHOP' }], async (pg) => {
+      expect(await names(pg, 'project_locations')).toEqual(['COFFEE  SHOP', 'COFFEE SHOP']);
+      const { rows } = await pg.query(
+        "select entity_type, name_a, name_b from public.film_graph_ambiguous_names where project_id = $1 and entity_type = 'location'",
+        [projectId],
+      );
+      expect(rows.map((r) => [r.entity_type, ...[r.name_a, r.name_b].sort()])).toEqual([
+        ['location', 'COFFEE  SHOP', 'COFFEE SHOP'],
+      ]);
+    });
+  });
+
+  it('lists cues that may be the same character (DR. SMITH / DR SMITH) for review', async () => {
+    await backfill([{ cast_list: 'DR. SMITH' }, { cast_list: 'DR SMITH' }], async (pg) => {
+      expect(await names(pg, 'characters')).toEqual(['DR SMITH', 'DR. SMITH']);
+      const { rows } = await pg.query(
+        "select entity_type, name_a, name_b from public.film_graph_ambiguous_names where project_id = $1 and entity_type = 'character'",
+        [projectId],
+      );
+      expect(rows.map((r) => [r.entity_type, ...[r.name_a, r.name_b].sort()])).toEqual([
+        ['character', 'DR SMITH', 'DR. SMITH'],
+      ]);
+    });
+  });
+
+  it('shows each project report only to its owner and crew', async () => {
+    await addScene('DR. SMITH', 'COFFEE SHOP');
+    await addScene('DR SMITH', 'COFFEE  SHOP');
+    await addScene('OTHER', 'OLD ROOM', otherProjectId);
+    await addScene('OTHER.', 'OLD  ROOM', otherProjectId);
+
+    const report = async (client: typeof cast.sam.client, id: string) => {
+      const { data, error } = await client
+        .from('film_graph_ambiguous_names')
+        .select('project_id, entity_type, name_a, name_b')
+        .eq('project_id', id)
+        .order('entity_type');
+      if (error) throw error;
+      return data;
+    };
+
+    const expected = [
+      { project_id: projectId, entity_type: 'character', name_a: 'DR SMITH', name_b: 'DR. SMITH' },
+      { project_id: projectId, entity_type: 'location', name_a: 'COFFEE  SHOP', name_b: 'COFFEE SHOP' },
+    ];
+    expect(await report(cast.sam.client, projectId)).toEqual(expected);
+    expect(await report(cast.jordan.client, projectId)).toEqual(expected);
+    expect(await report(cast.riley.client, projectId)).toEqual([]);
+    expect(await report(cast.sam.client, otherProjectId)).toEqual([
+      { project_id: otherProjectId, entity_type: 'character', name_a: 'OTHER', name_b: 'OTHER.' },
+      { project_id: otherProjectId, entity_type: 'location', name_a: 'OLD  ROOM', name_b: 'OLD ROOM' },
+    ]);
+
+    const { error } = await anonClient().from('film_graph_ambiguous_names').select('project_id');
+    expect(error).not.toBeNull();
+  });
 });
