@@ -66,7 +66,9 @@ A link is stored once, in the direction it was made; the card reads both
 directions.
 
 **RLS (from birth, one SELECT policy each):** read — `internal.can_access_project(project_id)`;
-insert/update/delete on `links` — `internal.can_shape_project(project_id)`;
+insert on `links` — `internal.can_access_project(project_id)` (**anyone on the
+project may attach**, owner's answer 2026-10-27) with `created_by` = the caller;
+delete — the link's creator, or `internal.can_shape_project(project_id)`;
 `entities` has **no** write policy for any role (triggers only).
 
 **Realtime:** `links` joins the publication; the card refreshes when a link
@@ -116,10 +118,60 @@ changes.
 Money lines, elements, shots, people; mentions in the editor; card layouts per
 tool (that is step 3 of the redesign order and builds on this).
 
-## Questions for the owner
+## Phases, status and layers (owner, 2026-10-27) — designed here, built as slice D
 
-1. Is "everyone who can see the project can see every link" right, or should a
-   link to a private document hide from crew who can't open the document? (Default
-   here: links are visible; the *linked item* still follows its own access.)
-2. Should crew (Jordan) be able to attach, or only people who shape the project?
-   (Default here: shape only.)
+The owner's description of how work really moves, in their words condensed:
+a film passes through **pre-production → production → post-production** (and
+release). Inside each phase there are iterations where references and material
+come in and go out. When something is **locked and approved** it moves on and
+becomes part of the project's **official resources / references**. What gets
+*pitched to get a budget approved* is different from everything that was
+considered to reach that point (internal vs external). **At each phase change**
+the team decides what is useful to carry into the next phase; the rest is
+**archived or removed**. In production, because it is real footage, usually
+everything is kept — so it is **archived**. And there are **layers of
+audience: public, investor and team.**
+
+What that means for the model (not built in A–C; A is designed so none of it
+needs a rewrite):
+
+- **Status on linked material.** Media, documents and (later) other things
+  carry a lifecycle: `working` (in iteration) → `approved` (locked, official) →
+  `archived`. A link inherits the status of what it points at; the card shows
+  official items first and working ones as "in progress".
+- **Phase gates.** The project has a `phase`. Moving to the next phase opens a
+  gate: a list of everything `working` or `approved` from the phase ending, and
+  for each the owner chooses *carry forward*, *archive* or *remove*. Archive is
+  the default in production and after (real footage is kept); remove is only
+  offered for material nobody else links to (or after a confirm that lists who
+  does). The gate is a real action with an audit entry, never a notice.
+- **Layers.** Each *approved* item has an audience: `team` (default), `investor`
+  or `public`. Team sees everything it can access today; the investor layer is
+  the pitch — what was approved for that audience, not the working trail;
+  public is what the shared lookbook already is (`media.shared`), generalized.
+  This builds on, and must not break, the existing share links and the
+  `/shared/[token]` page.
+- **Where it lives.** Status and audience are columns on the shared things
+  (starting with `media` and `project_documents`), not on `links`, so one
+  rule answers "is this official?" everywhere.
+
+This is its own spec (**slice D**) because it changes what outsiders (investors,
+the public) are allowed to read — the highest-risk surface in the suite. It is
+not started until the owner has decided the questions below.
+
+## Decided (owner, 2026-10-27)
+
+1. Anyone on the project can attach a link (done in the RLS above).
+2. The card's links are visible to everyone who can see the project; the
+   *linked item* still follows its own access.
+
+## Questions for the owner (slice D)
+
+1. **Phases:** are they exactly pre-production, production, post-production
+   and release, the same for every project — or does the owner set them per
+   project? (Proposal: these four, fixed.)
+2. **Who approves and who passes a gate?** (Proposal: approving an item and
+   passing a gate are owner/shape-permission actions; anyone can propose.)
+3. **Investor layer:** how does an investor get in — a link like the lookbook
+   share, an invited account, or both? (Proposal: a link per layer first;
+   accounts later.)
