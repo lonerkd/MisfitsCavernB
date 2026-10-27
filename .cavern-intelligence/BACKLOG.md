@@ -59,9 +59,6 @@ fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
 changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
 
-### 3.29 Upgrade Next.js — 16.4.0 has a known vulnerability — S (found 2026-10-25)
-`npm run build` warns `Your version of Next.js is affected by a known security vulnerability` (Next 16.4.0) and continues; one run in a cloud container stopped with `SecurityFatalError`, a rerun built fine. Upgrade `next` (and `eslint-config-next`) to the patched release, then typecheck, lint, test, build and a Vercel preview. Done when the build prints no vulnerability warning and the preview is green.
-
 ### 3.30 Definer allowlist: reconcile with the advisor — S (found 2026-10-25)
 The security advisor lists 11 `SECURITY DEFINER` functions callable by anon and 39 by signed-in users; `database-and-security.md` §2.D was written against 9 + 24. List the advisor's functions, find each one not in §2.D, read its first lines for the gate, and add it (or fix it if ungated). Done when every advisor entry is in §2.D with its gate.
 
@@ -70,11 +67,6 @@ The security advisor lists 11 `SECURITY DEFINER` functions callable by anon and 
 
 ### 3.32 Conflict-free co-writing (ADR 0008) — M/L (accepted by the owner, 2026-10-14)
 **What**: a Yjs `Y.Text` for the script, synced over the existing `script_${id}` Supabase Realtime channel as the transport (no new WebSocket server); `scripts.content` stays the persisted truth; presence and cursors stay as they are. This is rung E3 of 3.18(d). **Where**: `lib/scriptos/sync.ts` (the provider lives beside it), the write surface in `components/editor/WriteView.tsx`, a scoped Yjs undo manager (local author only), then delete the conflict heuristic and its UI. **Done when**: two simultaneous sessions editing the same paragraph keep both edits word-level (an integration test with two simulated authors plus an e2e two-browser spec), offline capture reconciles through the CRDT on reconnect, and the conflict prompt is gone from the editor. Read `adr/0008-conflict-free-co-writing.md` first; it is the design.
-
-### 3.33 Editor navigation — the rest of 4.7's quick wins — S/M (found 2026-10-27)
-Shipped 2026-10-27: **Go to** (⌘G) now really jumps and takes a scene number, a **page** (`p12` / `page 12`, landing on the page's first line) or a **character's name** (their next scene; pressing Enter again stays open and walks their scenes in order, wrapping at the end). The box previews the heading or the scene a page opens in before Enter, and refuses anything outside the script (`No scene 9`, `No page 9`, `No scene, page or character “front”`, ambiguous names say "keep typing"). **⌘↓ / ⌘↑** steps to the next / previous scene and stops at the ends without wrapping. Pure logic: `lib/scriptos/goto.ts` (`resolveGoTo`, `speakingCast`, `lineOffset`) and `lib/scriptos/timing.ts` (`lineAtPage`), unit-tested, plus a jsdom test for the dialog. Left: **command history and repeat** (the last caret moves, replayed from the keyboard). Done when a writer can move by scene, page or character, and repeat the last move, without touching the mouse.
-
-
 
 ### 3.18 Film graph — what's left after steps 1–3 — L (owner: the editor gets cut over)
 Done: days and places (1), characters and sides (2), story time and continuity (3). Left, in order: **(a)** the app reads `scene_characters` / `call_sheet_calls.character_id` instead of `cast_list` / `character_name` text (S–M) — **started 2026-10-13**: `lib/film/cast.ts`, Continuity and the Casting board read the links; **(2026-10-27)** the Studio's stripboard, readiness, call-sheet cast, On set, Scenes tab and breakdown now read the links (`StudioContext.castOf`); still on the text: the public `/call` page (`lib/studio/api.ts`) and `character_name` on calls (plan: [plans/2026-10-27-graph-cutover-audit.md](plans/2026-10-27-graph-cutover-audit.md)); **(b)** continuity extras — a photo and wardrobe/prop elements on a look, a wardrobe/make-up sheet (PDF), shoot order beside story order, the look-change warning on the call sheet (M); **(c)** step 4 entities and links, the card, mentions (L); **(d)** the editor on the graph — **a major expansion, not a thinning** (owner, 2026-10-11): planned rung by rung in [plans/2026-10-11-editor-integration.md](plans/2026-10-11-editor-integration.md) (E0 safety net → E1 take the page apart → E2 read the graph → E3 CRDT → E4 write the graph → E5 margin links → E6 contract; XL overall, decisions for the owner in §6); **(e)** step 5 money, step 6 my day, step 7 drop the text columns. Done when nothing reads `scenes.cast_list`, `scenes.location` or `character_name` and the old columns are gone.
@@ -96,9 +88,6 @@ A layered, deterministic, explainable reading engine: lossless Fountain first, t
 
 ### 3.22 The reader's context: places, the previous draft — M (B7 follow-ups; rejections shipped in B8)
 (a) **Done (B8):** a stored per-project "not a character" / "is a character" list (`reading_corrections`), a "Not a character" action in the Character Bible with a way back, obeyed by the editor and the Studio. (b) **Places and the previous draft as evidence**, once every surface that writes the scene index reads with one shared context (today the editor and the Studio do; public share, export, pitch and brief pages parse without it). (c) Context for the other callers where it does not affect scenes. Done when a rejected name survives a reload and both surfaces agree on the scene index.
-
-### 3.24 Production manager trusts the festival jsonb — S (found 2026-10-16)
-`getProductionData` (`lib/supabase/project-hub.ts`) casts `projects.festival_submissions` to `FestivalRow[]` without checking it; `ProductionManager` then reads `f.status` / `f.id` on each entry, so a `null` or non-object entry breaks the panel. Keep only object entries with a string `id`, `name` and a known `status` (the overview's counts already skip malformed entries). Done when a malformed list renders the valid festivals and a unit test proves it.
 
 ### 3.5 Activity feed completeness — M (needs a product call)
 `logActivity` (`lib/supabase/activity.ts`) is called for jobs, portfolio,

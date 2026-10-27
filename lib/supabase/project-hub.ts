@@ -45,6 +45,36 @@ export interface ProjectOverview {
   campaigns: number;
 }
 
+/** The statuses a festival entry may hold; anything else is not shown. */
+const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
+
+/**
+ * The project's festivals for the production manager: `festival_submissions` is
+ * a jsonb list with no constraint, so an entry may be anything a hand edit or an
+ * old write left there. Keep only the entries the panel can draw — an id, a name
+ * and a known status — rather than trusting the column's shape.
+ */
+export function festivalRows(list: Json | null | undefined): FestivalRow[] {
+  if (!Array.isArray(list)) return [];
+  const rows: FestivalRow[] = [];
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue;
+    const f = entry as Record<string, unknown>;
+    if (typeof f.id !== 'string' || !f.id.trim()) continue;
+    if (typeof f.name !== 'string' || !f.name.trim()) continue;
+    const status = FESTIVAL_STATUSES.find((s) => s === f.status);
+    if (!status) continue;
+    rows.push({
+      id: f.id,
+      name: f.name,
+      status,
+      ...(typeof f.deadline === 'string' && f.deadline ? { deadline: f.deadline } : {}),
+      ...(typeof f.notes === 'string' && f.notes ? { notes: f.notes } : {}),
+    });
+  }
+  return rows;
+}
+
 /** Statuses on `projects.festival_submissions` (a jsonb list with no constraint): anything that isn't an entry with a status counts as nothing. */
 function festivalStatuses(list: Json | null | undefined): string[] {
   if (!Array.isArray(list)) return [];
@@ -126,7 +156,7 @@ export async function getProductionData(projectId: string): Promise<ProductionDa
     crew: (c.data ?? []) as unknown as CrewRow[],
     portfolio: (pf.data ?? []) as PortfolioRow[],
     settings: (proj.data?.settings as unknown as ProjectSettings | null) ?? null,
-    festivals: (proj.data?.festival_submissions as unknown as FestivalRow[] | null) ?? [],
+    festivals: festivalRows(proj.data?.festival_submissions),
     owner,
   };
 }

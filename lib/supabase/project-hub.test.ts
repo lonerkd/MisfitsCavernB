@@ -111,6 +111,28 @@ describe('getProductionData', () => {
     useFake({ projects: { data: { creator_id: 'o1' } }, profiles: { error: boom } });
     await expect(getProductionData('p1')).rejects.toBe(boom);
   });
+
+  it('keeps the festivals it can draw and drops anything malformed', async () => {
+    useFake({ projects: { data: { creator_id: null, festival_submissions: [
+      { id: 'f1', name: 'Sundance', status: 'submitted', deadline: '2027-01-15', notes: 'shorts' },
+      { id: 'f2', name: 'TIFF', status: 'wat' },
+      { id: 'f3', status: 'accepted' },
+      { name: 'No id', status: 'planned' },
+      { id: 'f4', name: '', status: 'planned' },
+      { id: 'f5', name: 'Whistler', status: 'planned', notes: 3, deadline: null },
+      null, 'Sundance', [], 7,
+    ] } } });
+    const d = await getProductionData('p1');
+    expect(d.festivals).toEqual([
+      { id: 'f1', name: 'Sundance', status: 'submitted', deadline: '2027-01-15', notes: 'shorts' },
+      { id: 'f5', name: 'Whistler', status: 'planned' },
+    ]);
+  });
+
+  it('has no festivals when the column is not a list', async () => {
+    useFake({ projects: { data: { creator_id: null, festival_submissions: { oops: true } } } });
+    expect((await getProductionData('p1')).festivals).toEqual([]);
+  });
 });
 
 describe('writes', () => {
