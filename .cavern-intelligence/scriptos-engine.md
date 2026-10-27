@@ -28,6 +28,10 @@ reconstructs lines from page geometry, then uses the same parser.
   zero-based occurrence. These are human decisions, not feedback from the
   parser's own output. Fountain syntax and title-page rules remain authoritative.
   See `database-and-security.md` for access control.
+- **Dual dialogue**: `isDualDialogue` identifies both sides of a speech pair;
+  `dualDialogueMarker` records which cue explicitly carried Fountain's caret,
+  so export preserves the marker without adding one to the preceding cue.
+  Carets attached directly to a cue name are accepted.
 - **Review** (`review.ts`, `components/editor/DoubtfulReads.tsx`): the editor
   asks about low-confidence reads and lets a person save or undo line decisions.
 - **On the main thread**: parsing is deferred while typing; there is no parser

@@ -36,7 +36,7 @@ sure it is, and be the thing the rest of the suite stands on.
 
 | | Layer | Does | Today |
 |---|---|---|---|
-| L0 | **Lossless Fountain** | Spec syntax is classified exactly, never guessed; the text round-trips byte for byte | Mostly built (`preClassify`; round-trip tests). Gaps: trailing-caret dual dialogue; title-page keys read as action |
+| L0 | **Lossless Fountain** | Spec syntax is classified exactly, never guessed; the text round-trips byte for byte | Mostly built (`preClassify`; round-trip tests). Trailing-caret dual dialogue now has structural round-trip coverage; full spec completeness is not independently verified |
 | L1 | **Evidence** | Per-line features, unicode-aware: case, length, punctuation, vocabulary, indent (PDF), position | Thin: `isCaps` is a–z only; vocabulary sets are small; features are inline in one function |
 | L2 | **Structure passes** | Blocks, speech state, scene segmentation, title page vs body, dual dialogue | One forward pass with a few flags |
 | L3 | **Document profile** | What *this* script's conventions are: how it writes cues, numbers headings, punctuates transitions, indents | First slice: explicit cue names/case, heading numbers, transition endings |

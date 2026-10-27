@@ -90,6 +90,16 @@ describe('dual dialogue, as Fountain writes it (a caret after the second name)',
     expect(reparsed.lines.filter((line) => line.type === 'character').map((line) => line.meta?.isDualDialogue))
       .toEqual([true, true]);
   });
+
+  it('keeps a cue parenthetical before an attached dual-dialogue caret', () => {
+    const source = 'INT. ROOM - DAY\n\nBRICK\nHi.\n\nSTEEL (quietly)^\nHello.\n';
+    const parsed = parseScript(source);
+    const emitted = serializeFountain(parsed.lines);
+
+    expect(emitted).toContain('STEEL (quietly)^');
+    expect(parseScript(emitted).lines.find((line) => line.type === 'character' && line.meta?.characterName === 'STEEL')?.meta?.isDualDialogue)
+      .toBe(true);
+  });
 });
 
 describe('importing a .fountain file', () => {

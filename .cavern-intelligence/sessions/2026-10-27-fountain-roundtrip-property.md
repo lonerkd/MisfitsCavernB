@@ -10,9 +10,15 @@ The Studio now also reuses its selected script's project context for the
 Character Bible and Casting board character lists, keeping those readers aligned
 with the editor and scene-index sync.
 
-**Verified:** 1,725 unit tests passed; all 515 integration tests passed (one
-expected failure and two todos); typecheck and production build passed. Lint
-passed with one pre-existing warning in `lib/hooks/useProjectProgress.ts`.
+The dual-dialogue tests also cover the spec-style no-space cue caret, keep cue
+names free of the marker, and round-trip cue parentheticals. `isDualDialogue`
+tracks both sides of the speech pair, while a separate marker flag ensures
+export writes only the caret that was actually present.
+
+**Verified:** 1,727 unit tests passed (one file skipped); 515 integration tests
+passed (one expected failure and two todos); typecheck and production build
+passed. Lint passed with one pre-existing warning in
+`lib/hooks/useProjectProgress.ts`.
 
 The private corpus and per-writer memory remain blocked on owner-provided
 rights-cleared scripts and the memory-scope decision. The official Fountain
