@@ -1004,6 +1004,39 @@ export type Database = {
           },
         ];
       };
+      entities: {
+        Row: {
+          id: string;
+          kind: string;
+          label: string;
+          project_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id: string;
+          kind: string;
+          label?: string;
+          project_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: string;
+          label?: string;
+          project_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entities_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       expenses: {
         Row: {
           amount: number;
@@ -1410,6 +1443,59 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "crafts";
             referencedColumns: ["name"];
+          },
+        ];
+      };
+      links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          from_entity: string;
+          id: string;
+          kind: string;
+          project_id: string;
+          to_entity: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          from_entity: string;
+          id?: string;
+          kind?: string;
+          project_id: string;
+          to_entity: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          from_entity?: string;
+          id?: string;
+          kind?: string;
+          project_id?: string;
+          to_entity?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "links_from_fkey";
+            columns: ["from_entity", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "entities";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "links_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "links_to_fkey";
+            columns: ["to_entity", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "entities";
+            referencedColumns: ["id", "project_id"];
           },
         ];
       };

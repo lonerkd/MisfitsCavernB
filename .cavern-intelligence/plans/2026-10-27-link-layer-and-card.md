@@ -1,6 +1,6 @@
 # The link layer and the card — spec (film-graph step 4)
 
-Status: **draft for the owner's review** (2026-10-27). Parent design, already
+Status: **approved by the owner 2026-10-27; slice A built behind flag `entity_cards`** (migration `20261029000000`, `lib/film/links.ts`, `lib/film/card.ts`, `components/film/EntityCard.tsx`; opened from a stripboard strip and the call sheet's scene list). Parent design, already
 approved: [film-graph-spec.md](../film-graph-spec.md) §2b and §3. Order agreed
 with the owner (2026-10-27): graph cutover → this → navigation and tool layouts →
 the editor on the graph. Slices **A → B → C** below were agreed in chat.
@@ -222,7 +222,14 @@ cannot work without. The owner confirms the order.
 
 Still open: who approves and passes a gate (proposal below).
 
-## Questions for the owner (slice D)
+## Decided (owner, 2026-10-27, second round)
+
+- Who approves and passes a gate: owner / shape-permission; anyone can propose.
+- **Format templates, in this order:** film and series first; advertising and
+  copy second; then games, music and books.
+- **Slice order:** A → D (guest review with versions and approval) → B → C.
+
+## Questions for the owner (slice D) — answered above
 
 1. **Who approves and who passes a gate?** (Proposal: approving an item and
    passing a gate are owner/shape-permission actions; anyone can propose.)
