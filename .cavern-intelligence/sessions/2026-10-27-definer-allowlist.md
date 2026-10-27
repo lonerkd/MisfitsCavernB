@@ -12,3 +12,5 @@ advisor run. Removed completed BACKLOG 3.30.
 Verification: compared the §2.D inventory with `supabase/schema.fingerprint`
 and inspected the corresponding migration definitions. No database or
 application behavior changed.
+
+**Verified against the live advisor (Claude, taking over, 2026-10-27):** the production security advisor lists 14 anon-callable and 45 signed-in-callable definer functions; all 45 names appear in §2.D. The 2026-10-25 counts (11 / 39) plus the six later additions reconcile exactly. Replaced the counts with the live ones.
