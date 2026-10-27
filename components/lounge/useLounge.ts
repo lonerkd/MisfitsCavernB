@@ -184,7 +184,11 @@ export function useLounge() {
       const user = await awaitOSUser();
       if (user && mounted) {
         setCurrentUser(user);
-        const mine = await getProfile(user.id).catch(() => null);
+        const mine = await getProfile(user.id).catch((e) => {
+          console.error('Failed to load profile:', e);
+          reportError('Could not load your profile.');
+          return null;
+        });
         if (mounted) setMyProfile(mine);
       }
     })();
