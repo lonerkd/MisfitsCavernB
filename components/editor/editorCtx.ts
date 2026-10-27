@@ -33,6 +33,7 @@ export interface EditorCtx {
   cursorLine: any;
   focusMode: any;
   handleEditorChange: any;
+  handleCopyChange: (value: string) => void;
   handleEditorKeyDown: any;
   handleExport: any;
   handleLockRevision: any;

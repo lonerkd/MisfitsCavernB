@@ -142,6 +142,8 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
 
   if (error) throw error;
 
+  void logActivity(`invited a crew member as ${role}`, 'project', projectId);
+
   try {
     const { data: proj } = await supabase.from('projects').select('title').eq('id', projectId).single();
     await supabase.from('notifications').insert({
@@ -152,7 +154,6 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
       link: '/projects',
       read: false,
     });
-    void logActivity(`invited a crew member as ${role}`, 'project', projectId);
   } catch {  }
   return data;
 }

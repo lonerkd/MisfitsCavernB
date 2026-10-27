@@ -10,6 +10,9 @@ import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { CaseStudyConsent } from './CaseStudyConsent';
 import { ReviewPanel } from './ReviewPanel';
+import { DeliverablesPanel } from '@/components/ad/DeliverablesPanel';
+import { BrandKitPanel } from '@/components/ad/BrandKitPanel';
+import { useFlag } from '@/components/Flag';
 import { SectionHeader, Toggle, cx } from '../ui';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import s from '../studio.module.css';
@@ -28,6 +31,7 @@ const ICON: Record<ProjectVisibility, React.ReactNode> = {
  */
 export function ShareTab() {
   const { project, isOwner, media, scenesByMedia, goTo } = useStudio();
+  const adCopyOn = useFlag('ad_copywriting');
   const { toast } = useToast();
   const [changing, setChanging] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -109,6 +113,12 @@ export function ShareTab() {
       <CaseStudyConsent projectId={project.id} isOwner={isOwner} />
 
       <ReviewPanel />
+      {adCopyOn && (project.project_type === 'Advertising' || project.project_type === 'Copywriting') && (
+        <>
+          <DeliverablesPanel />
+          <BrandKitPanel />
+        </>
+      )}
 
       <div className={s.panel}>
         <div className={s.panelTitle}>Share link</div>

@@ -11,6 +11,17 @@ column activity_feed.metadata jsonb
 column activity_feed.target_id uuid
 column activity_feed.target_type text
 column activity_feed.user_id uuid not null
+column ad_references.approved_at timestamp with time zone
+column ad_references.approved_by uuid
+column ad_references.content text not null
+column ad_references.created_at timestamp with time zone default now() not null
+column ad_references.created_by uuid default auth.uid()
+column ad_references.id uuid default gen_random_uuid() not null
+column ad_references.kind text not null
+column ad_references.project_id uuid not null
+column ad_references.status text default 'draft'::text not null
+column ad_references.title text not null
+column ad_references.updated_at timestamp with time zone default now() not null
 column audit_logs.action text not null
 column audit_logs.created_at timestamp with time zone default now()
 column audit_logs.details jsonb default '{}'::jsonb
@@ -20,6 +31,14 @@ column audit_logs.resource_id text
 column audit_logs.resource_type text not null
 column audit_logs.user_agent text
 column audit_logs.user_id uuid
+column brand_rules.created_at timestamp with time zone default now() not null
+column brand_rules.created_by uuid default auth.uid()
+column brand_rules.id uuid default gen_random_uuid() not null
+column brand_rules.kind text not null
+column brand_rules.project_id uuid not null
+column brand_rules.severity text default 'blocker'::text not null
+column brand_rules.text text not null
+column brand_rules.updated_at timestamp with time zone default now() not null
 column breakdown_categories.color text not null
 column breakdown_categories.created_at timestamp with time zone default now() not null
 column breakdown_categories.id uuid default gen_random_uuid() not null
@@ -172,6 +191,16 @@ column crafts.created_at timestamp with time zone default now() not null
 column crafts.department text not null
 column crafts.name text not null
 column crafts.position integer default 0 not null
+column deliverables.created_at timestamp with time zone default now() not null
+column deliverables.kind text default 'other'::text not null
+column deliverables.max_chars integer
+column deliverables.max_seconds integer
+column deliverables.notes text default ''::text not null
+column deliverables.project_id uuid not null
+column deliverables.script_id uuid not null
+column deliverables.title text not null
+column deliverables.updated_at timestamp with time zone default now() not null
+column deliverables.words_per_second numeric(4,2) default 2.5 not null
 column discord_integrations.channel_id uuid not null
 column discord_integrations.created_at timestamp with time zone default now()
 column discord_integrations.created_by uuid
@@ -776,8 +805,26 @@ column writing_days.user_id uuid not null
 column writing_days.words integer default 0 not null
 constraint activity_feed.activity_feed_pkey PRIMARY KEY (id)
 constraint activity_feed.activity_feed_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint ad_references.ad_references_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint ad_references.ad_references_check CHECK (((status = 'approved'::text) = (approved_at IS NOT NULL)))
+constraint ad_references.ad_references_content_check CHECK (((char_length(btrim(content)) >= 1) AND (char_length(btrim(content)) <= 20000)))
+constraint ad_references.ad_references_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint ad_references.ad_references_id_project_id_key UNIQUE (id, project_id)
+constraint ad_references.ad_references_kind_check CHECK ((kind = ANY (ARRAY['brief'::text, 'brand_guidelines'::text])))
+constraint ad_references.ad_references_pkey PRIMARY KEY (id)
+constraint ad_references.ad_references_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint ad_references.ad_references_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'approved'::text])))
+constraint ad_references.ad_references_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 160)))
 constraint audit_logs.audit_logs_pkey PRIMARY KEY (id)
 constraint audit_logs.audit_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint brand_rules.brand_rules_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint brand_rules.brand_rules_id_project_id_key UNIQUE (id, project_id)
+constraint brand_rules.brand_rules_kind_check CHECK ((kind = ANY (ARRAY['must_include'::text, 'never_say'::text, 'tone_note'::text, 'legal_line'::text])))
+constraint brand_rules.brand_rules_pkey PRIMARY KEY (id)
+constraint brand_rules.brand_rules_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint brand_rules.brand_rules_project_id_kind_text_key UNIQUE (project_id, kind, text)
+constraint brand_rules.brand_rules_severity_check CHECK ((severity = ANY (ARRAY['blocker'::text, 'warning'::text, 'note'::text])))
+constraint brand_rules.brand_rules_text_check CHECK (((char_length(btrim(text)) >= 1) AND (char_length(btrim(text)) <= 500)))
 constraint breakdown_categories.breakdown_categories_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint breakdown_categories.breakdown_categories_id_project_key UNIQUE (id, project_id)
 constraint breakdown_categories.breakdown_categories_key_check CHECK ((key ~ '^[a-z0-9_-]{1,40}$'::text))
@@ -885,11 +932,21 @@ constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
 constraint crafts.crafts_pkey PRIMARY KEY (name)
+constraint deliverables.deliverables_kind_check CHECK ((kind = ANY (ARRAY['spot_30'::text, 'spot_15'::text, 'spot_6'::text, 'radio'::text, 'poster'::text, 'banner'::text, 'headline'::text, 'social'::text, 'other'::text])))
+constraint deliverables.deliverables_max_chars_check CHECK (((max_chars IS NULL) OR ((max_chars >= 1) AND (max_chars <= 100000))))
+constraint deliverables.deliverables_max_seconds_check CHECK (((max_seconds IS NULL) OR ((max_seconds >= 1) AND (max_seconds <= 3600))))
+constraint deliverables.deliverables_notes_check CHECK ((char_length(notes) <= 2000))
+constraint deliverables.deliverables_pkey PRIMARY KEY (script_id)
+constraint deliverables.deliverables_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint deliverables.deliverables_script_id_project_id_key UNIQUE (script_id, project_id)
+constraint deliverables.deliverables_script_project_fkey FOREIGN KEY (script_id, project_id) REFERENCES scripts(id, project_id) ON DELETE CASCADE
+constraint deliverables.deliverables_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
+constraint deliverables.deliverables_words_per_second_check CHECK (((words_per_second >= 0.5) AND (words_per_second <= (5)::numeric)))
 constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
 constraint entities.entities_id_project_id_key UNIQUE (id, project_id)
-constraint entities.entities_kind_check CHECK ((kind = ANY (ARRAY['scene'::text, 'character'::text, 'location'::text, 'shoot_day'::text, 'task'::text, 'document'::text, 'media'::text])))
+constraint entities.entities_kind_check CHECK ((kind = ANY (ARRAY['scene'::text, 'character'::text, 'location'::text, 'shoot_day'::text, 'task'::text, 'document'::text, 'media'::text, 'deliverable'::text, 'ad_reference'::text, 'brand_rule'::text])))
 constraint entities.entities_pkey PRIMARY KEY (id)
 constraint entities.entities_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint expenses.expenses_amount_check CHECK (((amount >= (0)::numeric) AND (amount < (100000000)::numeric)))
@@ -1085,7 +1142,7 @@ constraint project_formats.project_formats_icon_check CHECK ((icon ~ '^[a-z-]{1,
 constraint project_formats.project_formats_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
 constraint project_formats.project_formats_phase_labels_check CHECK (((jsonb_typeof(phase_labels) = 'object'::text) AND ((phase_labels - ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text]) = '{}'::jsonb)))
 constraint project_formats.project_formats_pkey PRIMARY KEY (name)
-constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
+constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text])))
 constraint project_formats.project_formats_skip_phases_check CHECK ((skip_phases <@ ARRAY['pre-production'::text, 'production'::text, 'post-production'::text]))
 constraint project_locations.project_locations_coordinates_check CHECK ((((latitude IS NULL) = (longitude IS NULL)) AND ((latitude IS NULL) OR (((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)) AND ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))))
 constraint project_locations.project_locations_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
@@ -1196,7 +1253,8 @@ constraint script_stash.script_stash_pkey PRIMARY KEY (id)
 constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
 constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
-constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text])))
+constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text])))
+constraint scripts.scripts_id_project_key UNIQUE (id, project_id)
 constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_pkey PRIMARY KEY (id)
 constraint scripts.scripts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -1281,8 +1339,14 @@ constraint writing_days.writing_days_user_id_fkey FOREIGN KEY (user_id) REFERENC
 constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words <= 100000)))
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
+function internal.ad_deliverable_for_script() body=eef3adc1e4aaa15e584a7dae0c1ce42b
+function internal.ad_deliverable_title() body=64c15d0a6999cb9ee09e021df7385671
+function internal.ad_deliverables_for_project() body=c21d025116261be307f42342360856dd
+function internal.ad_entity_sync() body=791b47b93fc94fb76a724933a0441664
+function internal.ad_reference_guard() body=9aa5085a86d5c218a0ced89f78749cd4
+function internal.ad_touch_updated_at() body=120910df096ee3401de6a8d5b6799429
 function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
-function internal.approval_pending(p_project uuid) body=74550b17ff86f1dc4ab6b56df2790396
+function internal.approval_pending(p_project uuid) body=e710b529b87414a1e3c455cc490486ee
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=23684b4bcfd808ab21df2a91536571fa
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -1372,7 +1436,7 @@ function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a25
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
 function public.get_recent_work(p_limit integer) body=d2c23183a53dc8b9a97c74a9782fe80d
-function public.get_review(p_token text) body=62de25f96b7a353778c737290ba9fea7
+function public.get_review(p_token text) body=911a1941cb14915110ffeec34a9f9513
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
@@ -1405,6 +1469,12 @@ function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba7
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
+grant function internal.ad_deliverable_for_script() postgres
+grant function internal.ad_deliverable_title() postgres
+grant function internal.ad_deliverables_for_project() postgres
+grant function internal.ad_entity_sync() postgres
+grant function internal.ad_reference_guard() postgres
+grant function internal.ad_touch_updated_at() postgres
 grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
 grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
@@ -1529,6 +1599,11 @@ grant function public.transfer_project(p_project uuid, p_to uuid) authenticated,
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
+index CREATE INDEX ad_references_approved_by_idx ON public.ad_references USING btree (approved_by)
+index CREATE INDEX ad_references_created_by_idx ON public.ad_references USING btree (created_by)
+index CREATE INDEX ad_references_project_idx ON public.ad_references USING btree (project_id, status, kind)
+index CREATE INDEX brand_rules_created_by_idx ON public.brand_rules USING btree (created_by)
+index CREATE INDEX brand_rules_project_idx ON public.brand_rules USING btree (project_id, kind)
 index CREATE INDEX breakdown_categories_project_idx ON public.breakdown_categories USING btree (project_id, "position")
 index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismissals USING btree (created_by)
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
@@ -1553,6 +1628,7 @@ index CREATE INDEX character_media_project_idx ON public.character_media USING b
 index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
+index CREATE INDEX deliverables_project_idx ON public.deliverables USING btree (project_id)
 index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
 index CREATE INDEX entities_project_idx ON public.entities USING btree (project_id, kind)
 index CREATE INDEX expenses_budget_item_fkey_idx ON public.expenses USING btree (budget_item_id, project_id)
@@ -1733,7 +1809,12 @@ index CREATE INDEX transcript_lines_project_id_fkey_idx ON public.transcript_lin
 index CREATE INDEX unavailability_user_idx ON public.unavailability USING btree (user_id, starts_on)
 index CREATE INDEX vendors_created_by_fkey_idx ON public.vendors USING btree (created_by)
 index CREATE UNIQUE INDEX activity_feed_pkey ON public.activity_feed USING btree (id)
+index CREATE UNIQUE INDEX ad_references_id_project_id_key ON public.ad_references USING btree (id, project_id)
+index CREATE UNIQUE INDEX ad_references_pkey ON public.ad_references USING btree (id)
 index CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)
+index CREATE UNIQUE INDEX brand_rules_id_project_id_key ON public.brand_rules USING btree (id, project_id)
+index CREATE UNIQUE INDEX brand_rules_pkey ON public.brand_rules USING btree (id)
+index CREATE UNIQUE INDEX brand_rules_project_id_kind_text_key ON public.brand_rules USING btree (project_id, kind, text)
 index CREATE UNIQUE INDEX breakdown_categories_id_project_key ON public.breakdown_categories USING btree (id, project_id)
 index CREATE UNIQUE INDEX breakdown_categories_pkey ON public.breakdown_categories USING btree (id)
 index CREATE UNIQUE INDEX breakdown_categories_project_key ON public.breakdown_categories USING btree (project_id, key)
@@ -1765,6 +1846,8 @@ index CREATE UNIQUE INDEX characters_name_key ON public.characters USING btree (
 index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
+index CREATE UNIQUE INDEX deliverables_pkey ON public.deliverables USING btree (script_id)
+index CREATE UNIQUE INDEX deliverables_script_id_project_id_key ON public.deliverables USING btree (script_id, project_id)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
 index CREATE UNIQUE INDEX entities_id_project_id_key ON public.entities USING btree (id, project_id)
 index CREATE UNIQUE INDEX entities_pkey ON public.entities USING btree (id)
@@ -1838,6 +1921,7 @@ index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_
 index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
 index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
 index CREATE UNIQUE INDEX script_stash_pkey ON public.script_stash USING btree (id)
+index CREATE UNIQUE INDEX scripts_id_project_key ON public.scripts USING btree (id, project_id)
 index CREATE UNIQUE INDEX scripts_pkey ON public.scripts USING btree (id)
 index CREATE UNIQUE INDEX scripts_share_token_key ON public.scripts USING btree (share_token)
 index CREATE UNIQUE INDEX set_log_pkey ON public.set_log USING btree (id)
@@ -1859,10 +1943,18 @@ index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
-policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
-policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
+policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))) AND (((metadata ->> 'audience'::text) IS DISTINCT FROM 'shapers'::text) OR internal.can_shape_project(internal.activity_project_id(metadata))))
+policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR CASE WHEN ((metadata ->> 'audience'::text) = 'shapers'::text) THEN internal.can_shape_project(internal.activity_project_id(metadata)) ELSE internal.can_access_project(internal.activity_project_id(metadata)) END) check -
+policy public.ad_references "ad references delete" PERMISSIVE DELETE to authenticated using ((status = 'draft'::text) AND (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid)))))) check -
+policy public.ad_references "ad references insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))))
+policy public.ad_references "ad references read" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
+policy public.ad_references "ad references update" PERMISSIVE UPDATE to authenticated using (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))) check (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = ad_references.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid)))))
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
+policy public.brand_rules "brand rules delete" PERMISSIVE DELETE to authenticated using (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = brand_rules.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))) check -
+policy public.brand_rules "brand rules insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = brand_rules.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))))
+policy public.brand_rules "brand rules read" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
+policy public.brand_rules "brand rules update" PERMISSIVE UPDATE to authenticated using (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = brand_rules.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid))))) check (EXISTS ( SELECT 1 FROM projects p WHERE ((p.id = brand_rules.project_id) AND (p.creator_id = ( SELECT auth.uid() AS uid)))))
 policy public.breakdown_categories "breakdown_categories delete" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
 policy public.breakdown_categories "breakdown_categories insert" PERMISSIVE INSERT to authenticated using - check internal.can_access_project(project_id)
 policy public.breakdown_categories "breakdown_categories update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -1904,10 +1996,13 @@ policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated us
 policy public.crafts "crafts admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.crafts "crafts admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
+policy public.deliverables "deliverables insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
+policy public.deliverables "deliverables read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.deliverables "deliverables update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
-policy public.entities "entities read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.entities "entities read" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND ((kind <> 'brand_rule'::text) OR internal.can_shape_project(project_id))) check -
 policy public.expenses "expenses shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.guide_progress "guide_progress delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
@@ -1937,6 +2032,7 @@ policy public.jobs "Jobs readable" PERMISSIVE SELECT to public using ((created_b
 policy public.links "links delete" PERMISSIVE DELETE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
 policy public.links "links insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.links "links read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.links "reference links delete" PERMISSIVE DELETE to authenticated using ((kind = 'reference'::text) AND internal.can_shape_project(project_id)) check -
 policy public.lounge_reads "lounge_reads own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
@@ -2085,6 +2181,8 @@ policy storage.objects "sfx_library: delete own" PERMISSIVE DELETE to authentica
 policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))
 realtime public.activity_feed
+realtime public.ad_references
+realtime public.brand_rules
 realtime public.breakdown_categories
 realtime public.breakdown_dismissals
 realtime public.breakdown_elements
@@ -2096,6 +2194,7 @@ realtime public.campaigns
 realtime public.character_castings
 realtime public.character_media
 realtime public.characters
+realtime public.deliverables
 realtime public.expenses
 realtime public.links
 realtime public.media
@@ -2124,7 +2223,9 @@ realtime public.timeline_items
 realtime public.timesheets
 realtime public.transcript_lines
 rls activity_feed enabled=true forced=false
+rls ad_references enabled=true forced=false
 rls audit_logs enabled=true forced=false
+rls brand_rules enabled=true forced=false
 rls breakdown_categories enabled=true forced=false
 rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
@@ -2142,6 +2243,7 @@ rls character_media enabled=true forced=false
 rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
 rls crafts enabled=true forced=false
+rls deliverables enabled=true forced=false
 rls discord_integrations enabled=true forced=false
 rls entities enabled=true forced=false
 rls expenses enabled=true forced=false
@@ -2206,6 +2308,17 @@ rls vendors enabled=true forced=false
 rls writing_days enabled=true forced=false
 schema internal
 schema public
+trigger CREATE TRIGGER ad_deliverable_entity_delete AFTER DELETE ON public.deliverables FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER ad_deliverable_entity_sync AFTER INSERT OR UPDATE OF project_id, kind, title ON public.deliverables FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER ad_deliverable_for_script AFTER INSERT ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.ad_deliverable_for_script()
+trigger CREATE TRIGGER ad_deliverable_title AFTER UPDATE OF title ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.ad_deliverable_title()
+trigger CREATE TRIGGER ad_deliverables_for_project AFTER UPDATE OF project_type ON public.projects FOR EACH ROW WHEN ((new.project_type IS DISTINCT FROM old.project_type)) EXECUTE FUNCTION internal.ad_deliverables_for_project()
+trigger CREATE TRIGGER ad_reference_entity_delete AFTER DELETE ON public.ad_references FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER ad_reference_entity_sync AFTER INSERT OR UPDATE OF project_id, title ON public.ad_references FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER ad_reference_guard BEFORE INSERT OR UPDATE ON public.ad_references FOR EACH ROW EXECUTE FUNCTION internal.ad_reference_guard()
+trigger CREATE TRIGGER brand_rule_entity_delete AFTER DELETE ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER brand_rule_entity_sync AFTER INSERT OR UPDATE OF project_id, kind ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
+trigger CREATE TRIGGER brand_rules_touch_updated_at BEFORE UPDATE ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
@@ -2214,6 +2327,7 @@ trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheet
 trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()
+trigger CREATE TRIGGER deliverables_touch_updated_at BEFORE UPDATE ON public.deliverables FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF day_number ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.characters FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
