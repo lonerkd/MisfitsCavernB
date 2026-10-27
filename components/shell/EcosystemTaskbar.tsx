@@ -463,8 +463,8 @@ export default function EcosystemTaskbar() {
         >
           {/* The suite. Always mounted — the audio player lives here and must keep playing — and shown on the deck. */}
           <motion.div ref={navRef} layout="position" className={s.nav}>
-            <span className={s.slot} data-tip="Search · ⌘K">
-              <button type="button" className={s.btn} aria-label="Search (Command-K)" onClick={openSearch}>
+            <span className={s.slot} data-tip="Search · Caps Lock, then /">
+              <button type="button" className={s.btn} aria-label="Search (Caps Lock, then slash)" onClick={openSearch}>
                 <Search size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>/</Key>}
               </button>
             </span>
