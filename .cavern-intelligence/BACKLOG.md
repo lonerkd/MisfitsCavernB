@@ -57,9 +57,6 @@ fix is `--force` (Tailwind 4, breaking). On Windows, check a lockfile bump
 changed only the package's own lines: npm there strips the `libc` fields. Re-run `npm audit` when Tailwind or `eslint-config-next`
 release; take the plain fix then. Done when `npm audit` reports 0.
 
-### 3.30 Definer allowlist: reconcile with the advisor — S (found 2026-10-25)
-The security advisor lists 11 `SECURITY DEFINER` functions callable by anon and 39 by signed-in users; `database-and-security.md` §2.D was written against 9 + 24. List the advisor's functions, find each one not in §2.D, read its first lines for the gate, and add it (or fix it if ungated). Done when every advisor entry is in §2.D with its gate.
-
 ### 3.31 Index hygiene — S (found 2026-10-25, performance advisor, all INFO)
 11 foreign keys without a covering index — mostly composite `(…_id, project_id)` keys whose leading column already has a single-column index (`call_sheets` shoot day, `character_castings`/`scene_characters`/`scene_states` character and scene, `scenes` location and shoot day, plus `hidden_messages.hidden_by`, `reading_corrections.created_by`, `reports.resolved_by`) — and 89 indexes never used, several duplicates (e.g. `scene_states_character_idx`, `*_fkey_idx` beside an older index on the same column). At 23 MB nothing is slow. In one migration: replace each single-column index with the composite one the advisor wants, add the three single ones, and drop exact duplicates (never a unique or PK index). Done when the advisor shows 0 unindexed FKs and no duplicate indexes, and the schema drift check is green.
 
