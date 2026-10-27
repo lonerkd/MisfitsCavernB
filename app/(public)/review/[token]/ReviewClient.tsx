@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { guestComment, guestDecide, type GuestReview, type GuestVersion } from '@/lib/review/versions';
+import { parseCopy } from '@/lib/ad/copy';
 
 const field: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 15, width: '100%' };
 const btn = (primary: boolean): React.CSSProperties => ({
@@ -21,6 +22,7 @@ function VersionCard({ token, v, name }: { token: string; v: GuestVersion; name:
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const copy = v.script_format === 'copy' ? parseCopy(v.snapshot) : null;
 
   const needName = () => {
     if (!name.trim()) { setNote('Add your name first, so the team knows who you are.'); return true; }
@@ -54,7 +56,24 @@ function VersionCard({ token, v, name }: { token: string; v: GuestVersion; name:
         <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', margin: 0 }}>{v.script_title}</h2>
         <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>Version {v.number}{v.label ? ` · ${v.label}` : ''}{v.sent_at ? ` · sent ${stamp(v.sent_at)}` : ''}</div>
       </header>
-      <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--script)', fontSize: 15, lineHeight: 1.5, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, padding: 14, margin: '0 0 16px', overflowX: 'auto' }}>{v.snapshot || '(empty)'}</pre>
+      {copy ? (
+        <div style={{ display: 'grid', gap: 12, marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+            {(['VISUAL', 'VO', 'SFX'] as const).map((section) => (
+              <section key={section} style={{ background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, padding: 12 }}>
+                <h3 style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--fg-muted)' }}>{section === 'VISUAL' ? 'Picture' : section === 'VO' ? 'Voice-over' : 'Sound effects'}</h3>
+                <div style={{ whiteSpace: 'pre-wrap' }}>{copy[section] || '—'}</div>
+              </section>
+            ))}
+          </div>
+          {(['HEADLINE', 'BODY', 'CTA'] as const).map((section) => copy[section] && (
+            <section key={section} style={{ background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, padding: 12 }}>
+              <h3 style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--fg-muted)' }}>{section === 'CTA' ? 'Call to action' : section === 'BODY' ? 'Body copy' : 'Headline'}</h3>
+              <div style={{ whiteSpace: 'pre-wrap' }}>{copy[section]}</div>
+            </section>
+          ))}
+        </div>
+      ) : <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'var(--script)', fontSize: 15, lineHeight: 1.5, background: 'rgba(var(--ink-rgb), 0.04)', borderRadius: 8, padding: 14, margin: '0 0 16px', overflowX: 'auto' }}>{v.snapshot || '(empty)'}</pre>}
 
       {decision && (
         <p role="status" style={{ margin: '0 0 12px', fontWeight: 600, color: decision === 'approved' ? 'var(--ok, var(--accent))' : 'var(--warn)' }}>

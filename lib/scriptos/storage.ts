@@ -8,6 +8,7 @@ export interface StoredScript {
   id: string;
   title: string;
   content: string;
+  format?: string;
   createdAt: string;
   updatedAt: string;
   user_id?: string;
@@ -119,6 +120,7 @@ export async function syncPendingScripts() {
             id: script.id,
             title: script.title,
             content: script.content,
+            format: script.format,
             last_edited_by: user.id,
             updated_at: script.updatedAt,
             project_id: script.project_id
@@ -216,6 +218,7 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
     id: s.id,
     title: s.title,
     content: s.content ?? '',
+    format: s.format ?? undefined,
     createdAt: s.created_at ?? '',
     updatedAt: s.updated_at ?? '',
     user_id: s.created_by ?? undefined,
@@ -231,7 +234,7 @@ export async function getAllScripts(projectId?: string): Promise<StoredScript[]>
       // Unsynced local edits are newer than the server copy: show them, never
       // the stale server text (which the next autosave would then write back
       // over the writer's work).
-      scripts[i] = local;
+      scripts[i] = { ...local, format: local.format ?? s.format };
     } else {
       await set(`script_${s.id}`, s);
     }
@@ -275,6 +278,7 @@ export async function getScript(id: string): Promise<StoredScript | null> {
     id: data.id,
     title: data.title,
     content: data.content ?? '',
+    format: data.format ?? undefined,
     createdAt: data.created_at ?? '',
     updatedAt: data.updated_at ?? '',
     user_id: data.created_by ?? undefined,
@@ -296,15 +300,17 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
   const isNew = !script.id;
   const scriptId = script.id || crypto.randomUUID();
   const now = new Date().toISOString();
+  const existing = isNew ? null : await get<StoredScript>(`script_${scriptId}`);
 
   const unifiedData: StoredScript = {
     id: scriptId,
-    title: script.title || 'Untitled',
-    content: script.content || '',
-    createdAt: script.createdAt || now,
+    title: script.title ?? existing?.title ?? 'Untitled',
+    content: script.content ?? existing?.content ?? '',
+    format: script.format ?? existing?.format,
+    createdAt: script.createdAt ?? existing?.createdAt ?? now,
     updatedAt: now,
-    user_id: script.user_id || user.id,
-    project_id: script.project_id,
+    user_id: script.user_id ?? existing?.user_id ?? user.id,
+    project_id: script.project_id ?? existing?.project_id,
     syncPending: true
   };
 
@@ -315,6 +321,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       id: unifiedData.id,
       title: unifiedData.title,
       content: unifiedData.content,
+      format: unifiedData.format,
       last_edited_by: user.id,
       updated_at: unifiedData.updatedAt,
       project_id: unifiedData.project_id
