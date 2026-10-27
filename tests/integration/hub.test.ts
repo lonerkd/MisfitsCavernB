@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { Client as Pg } from 'pg';
 import { adminClient, anonClient, createCast, destroyCast, type Cast } from './support/personas';
 
 // The hub (hub_posts, hub_reads): everyone signed in reads published posts;
@@ -105,6 +106,27 @@ describe('announcing', () => {
     const id = await post({ title: 'Coming soon', important: true, published_at: new Date(Date.now() + 86_400_000).toISOString() });
     const { data } = await adminClient().from('notifications').select('id').eq('link', `/hub/${id}`);
     expect(data).toEqual([]);
+  });
+
+  it('announces a scheduled important post once it goes live (cron pass)', async () => {
+    const id = await post({ title: 'Soon', important: true, published_at: new Date(Date.now() + 1_000).toISOString() });
+    const links = async () => (await adminClient().from('notifications').select('user_id').eq('link', `/hub/${id}`)).data!.map((n) => n.user_id);
+    const runCronPass = async () => {
+      const pg = new Pg({ connectionString: process.env.SUPABASE_TEST_DB_URL });
+      await pg.connect();
+      try {
+        await pg.query('select internal.hub_posts_announce_scheduled()');
+      } finally {
+        await pg.end();
+      }
+    };
+    expect(await links()).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 1_200));
+    await runCronPass();
+    const after = await links();
+    expect(after).toEqual(expect.arrayContaining([cast.sam.id, cast.jordan.id, cast.riley.id]));
+    await runCronPass();
+    expect((await links()).length).toBe(after.length);
   });
 
   it('a post that is not important notifies nobody', async () => {
