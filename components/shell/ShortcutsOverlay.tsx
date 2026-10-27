@@ -29,10 +29,16 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
   {
     title: 'ScriptOS editor',
     items: [
+      ['Ctrl/⌘ + S', 'Save the script'],
+      ['Ctrl/⌘ + G', 'Go to a scene, a page or a character'],
+      ['Ctrl/⌘ + ↓ ↑', 'Next / previous scene'],
+      ['Alt + ← →', 'Back / forward through your jumps'],
+      ['Alt + U L D', 'Case the selection · duplicate the line'],
       ['Tab', 'Smart element insert (scene / dialogue)'],
       ['↑ ↓ · Enter', 'Navigate & accept autocomplete'],
       ['(', 'Auto-close parenthetical'],
       ['Enter', 'Auto-format a scene heading'],
+      ['Ctrl/⌘ + /', 'The editor’s full shortcut list'],
     ],
   },
   {
