@@ -78,6 +78,7 @@ decision). Promote, don't duplicate.
   unlike the Next you remember, read `package.json` before your memory.
 - **Green is four gates**, not one: `checks`, `database`, `e2e-local`, the
   Vercel preview. A passing typecheck is not a passing PR.
+- **Run `npm ci` after pulling `main`.** A container's `node_modules` can be older than the lockfile; with Next 16.4.0 installed the build stops with `SecurityFatalError` ("affected by a known security vulnerability") even though `package.json` asks for a patched Next. It looked intermittent; it was stale installs.
 - **Cloud containers:** Docker dies between commands — start `dockerd` as a
   background task and `npm run db:start` before integration/e2e work.
 
