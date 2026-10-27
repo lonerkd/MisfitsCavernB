@@ -160,6 +160,16 @@ describe('the guest', () => {
     expect((await guest().rpc('add_review_comment', { p_token: small.token, p_version: sent, p_name: 'Casey', p_body: 'the 201st' })).data).toBe(false);
   });
 
+  it('a flood of comments is kept but tells the team at most 5 times in 10 minutes', async () => {
+    const flood = (await sam().from('review_links').insert({ project_id: projectId, version_ids: [sent] }).select('token').single()).data!;
+    await admin().from('notifications').delete().eq('user_id', cast.sam.id).eq('type', 'review');
+    for (let i = 0; i < 8; i++) {
+      expect((await guest().rpc('add_review_comment', { p_token: flood.token, p_version: sent, p_name: 'Bot', p_body: `spam ${i}` })).data).toBe(true);
+    }
+    const told = (await admin().from('notifications').select('id').eq('user_id', cast.sam.id).eq('type', 'review').like('title', 'New comment%')).data!;
+    expect(told).toHaveLength(5);
+  });
+
   it('decides once for the team to confirm: the team is told, nothing is confirmed before a decision, and a confirmed decision is closed', async () => {
     // Nothing to confirm before the client decides.
     expect((await sam().from('item_versions').update({ confirmed_at: new Date().toISOString() }).eq('id', sent)).error).not.toBeNull();
