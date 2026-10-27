@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  ad_copywriting: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-27',
+    note: 'Advertising deliverables, copy editing, approved references and brand-rule checks. Admins can validate it in production before it opens to clients.',
+  },
   phase_gates: {
     local: true,
     preview: true,

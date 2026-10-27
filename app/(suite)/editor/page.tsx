@@ -35,6 +35,7 @@ import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { useOSGate } from '@/lib/os';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
+import { isScriptFormat } from '@/lib/formats/script-formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
@@ -126,20 +127,21 @@ export default function EditorPage() {
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
   const parseSource = useDeferredValue(content);
+  const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
-    const result = parseScript(parseSource, 'screenplay', undefined, { context: readContext });
+    const result = parseScript(parseSource, isScriptFormat(scriptFormat) ? scriptFormat : 'screenplay', undefined, { context: readContext });
     return {
       lines: result.lines,
       parsedScenes: result.scenes,
       charStats: analyzeCharacters(result.lines, result.scenes),
       lintIssues: validateScript(result.lines, result.scenes, result.characters),
     };
-  }, [parseSource, readContext]);
+  }, [parseSource, readContext, scriptFormat]);
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {

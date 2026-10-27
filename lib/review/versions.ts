@@ -98,6 +98,21 @@ export async function sendVersion(id: string): Promise<string | null> {
   const { error } = await supabase.from('item_versions').update({ status: 'sent' }).eq('id', id);
   return error ? error.message : null;
 }
+/** Send every existing draft for the selected deliverables and make one client link. */
+export async function sendDraftsForReview(projectId: string, scriptIds: string[], label: string): Promise<{ link: ReviewLinkRow } | { error: string }> {
+  if (!scriptIds.length) return { error: 'There are no deliverables to send.' };
+  const { data: drafts, error } = await supabase.from('item_versions')
+    .select(VERSION_COLUMNS).eq('project_id', projectId).eq('status', 'draft').in('script_id', scriptIds);
+  if (error) return { error: error.message };
+  if (!drafts?.length) return { error: 'Save a draft version for each piece before sending.' };
+  if (drafts.length > 50) return { error: 'A review link can include at most 50 versions.' };
+
+  for (const version of drafts) {
+    const sendError = await sendVersion(version.id);
+    if (sendError) return { error: `Some drafts may already have been sent. ${sendError}` };
+  }
+  return createLink(projectId, drafts.map((version) => version.id), label);
+}
 export async function deleteDraft(id: string): Promise<string | null> {
   const { error } = await supabase.from('item_versions').delete().eq('id', id);
   return error ? error.message : null;
@@ -133,7 +148,7 @@ export async function revokeLink(id: string): Promise<string | null> {
 
 export type GuestComment = { name: string; from_team: boolean; body: string; at: string };
 export type GuestVersion = {
-  id: string; number: number; label: string; script_title: string; snapshot: string; sent_at: string | null;
+  id: string; number: number; label: string; script_title: string; script_format: string; snapshot: string; sent_at: string | null;
   decision: 'approved' | 'changes_requested' | null; decided_at: string | null; decided_by: string | null; comments: GuestComment[];
 };
 export type GuestReview = { layer: 'guest' | 'investor'; label: string; versions: GuestVersion[] };

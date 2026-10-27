@@ -32,7 +32,7 @@ vi.mock('@/lib/supabase/client', () => ({
 }));
 
 import {
-  getSyncStatus, refreshSyncStatus, retryDelayMs, scheduleScriptSync, syncPendingScripts, deleteScript,
+  getSyncStatus, refreshSyncStatus, retryDelayMs, scheduleScriptSync, syncPendingScripts, deleteScript, saveScript,
 } from './storage';
 
 const pendingScript = (id: string, updatedAt = 'T1') => ({
@@ -63,6 +63,31 @@ describe('retryDelayMs', () => {
 });
 
 describe('sync status — the offline queue the footer shows', () => {
+  it('preserves format and project when saving partial offline edits', async () => {
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+    idb.set('script_s1', {
+      ...pendingScript('old text'),
+      format: 'copy',
+      project_id: 'project-1',
+    });
+
+    const saved = await saveScript({ id: 's1', title: 'Draft', content: 'new text' });
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
+
+    expect(saved).toMatchObject({
+      format: 'copy',
+      project_id: 'project-1',
+      content: 'new text',
+      syncPending: true,
+    });
+    expect(idb.get('script_s1')).toMatchObject({
+      format: 'copy',
+      project_id: 'project-1',
+      content: 'new text',
+      syncPending: true,
+    });
+  });
+
   it('counts pending scripts and offline deletes', async () => {
     idb.set('script_a', pendingScript('a'));
     idb.set('script_b', { ...pendingScript('b'), syncPending: false });
@@ -75,6 +100,20 @@ describe('sync status — the offline queue the footer shows', () => {
     idb.set('script_a', pendingScript('a'));
     await syncPendingScripts();
     expect(getSyncStatus()).toMatchObject({ pending: 0, syncing: false, attempts: 0, nextRetryAt: null });
+  });
+
+  it('sends a queued script format to the server', async () => {
+    idb.set('script_s1', {
+      ...pendingScript('copy text'),
+      format: 'copy',
+      project_id: 'project-1',
+    });
+
+    await syncPendingScripts();
+
+    expect(server.upsert).toHaveBeenCalledWith([
+      expect.objectContaining({ format: 'copy', project_id: 'project-1' }),
+    ]);
   });
 
   it('a failed pass keeps the script pending and schedules a retry with backoff', async () => {
