@@ -153,11 +153,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
 
   const { annotationDraft, annotations, broadcastCursor, content, cursorLine, focusMode, handleEditorChange, handleEditorKeyDown, highlightRef, lines, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, setAnnotationDraft, setCursorLine, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, typewriterMode } = ctx;
   if (ctx.currentScript?.format === 'copy' && ctx.currentScript.project_id) {
-    const updateCopy = (value: string) => {
-      const target = { value, selectionStart: value.length } as HTMLTextAreaElement;
-      handleEditorChange({ target } as React.ChangeEvent<HTMLTextAreaElement>);
-    };
-    return <CopyEditor projectId={ctx.currentScript.project_id} scriptId={ctx.currentScript.id} content={content} onChange={updateCopy} />;
+    return <CopyEditor projectId={ctx.currentScript.project_id} scriptId={ctx.currentScript.id} content={content} onChange={ctx.handleCopyChange} />;
   }
   return (
 

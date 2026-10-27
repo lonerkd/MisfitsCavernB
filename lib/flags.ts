@@ -21,9 +21,9 @@ export const FLAGS = {
   ad_copywriting: {
     local: true,
     preview: true,
-    production: 'admins',
+    production: 'on',
     since: '2026-10-27',
-    note: 'Advertising deliverables, copy editing, approved references and brand-rule checks. Admins can validate it in production before it opens to clients.',
+    note: 'Advertising deliverables, copy editing, approved references and brand-rule checks. On for everyone in production (owner, 2026-10-27).',
   },
   phase_gates: {
     local: true,

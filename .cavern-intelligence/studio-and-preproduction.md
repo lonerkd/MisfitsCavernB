@@ -188,8 +188,7 @@ The project owner writes and approves brief/brand-guideline references in
 deliverable with a `reference` entity link. The project owner also owns
 `brand_rules`; only project shapers can read them. Required and forbidden
 literal phrases are checked on each copy draft; tone notes are displayed as
-guidance. The feature UI is behind `ad_copywriting` (local/preview on,
-production admins only). The existing five-phase engine remains: the
+guidance. The feature UI is behind `ad_copywriting` (on everywhere, including production, since 2026-10-27). The existing five-phase engine remains: the
 client-approval gate sits after Concept & copy and before Production.
 `public.campaigns` remains the unrelated Promos distribution plan.
 

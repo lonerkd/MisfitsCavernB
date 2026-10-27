@@ -95,6 +95,25 @@ describe('advertising deliverables and references', () => {
     await admin().from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   });
 
+  it('a reference can be linked to a piece by anyone on the project but unlinked only by people who shape it', async () => {
+    const ref = await sam().from('ad_references').insert({ project_id: projectId, kind: 'brand_guidelines', title: 'Guidelines', content: 'Warm. Direct.' }).select('id').single();
+    expect(ref.error).toBeNull();
+    const link = await sam().from('links').insert({ project_id: projectId, from_entity: scriptIds[0], to_entity: ref.data!.id, kind: 'reference' }).select('id').single();
+    expect(link.error).toBeNull();
+    await admin().from('project_crew').update({ role: 'viewer' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    expect((await cast.jordan.client.from('links').delete().eq('id', link.data!.id).select('id')).data).toEqual([]);
+    expect((await cast.riley.client.from('links').delete().eq('id', link.data!.id).select('id')).data).toEqual([]);
+    await admin().from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    expect((await cast.jordan.client.from('links').delete().eq('id', link.data!.id).select('id')).data).toHaveLength(1);
+  });
+
+  it('an ad project with no deliverables yet cannot pass the gate', async () => {
+    const { projectId: empty } = await createCrewedProject(cast, 'Empty campaign');
+    await admin().from('projects').update({ project_type: 'Advertising', status: 'pre-production' }).eq('id', empty);
+    expect((await sam().from('projects').update({ status: 'production' }).eq('id', empty)).error).not.toBeNull();
+    await admin().from('projects').delete().eq('id', empty);
+  });
+
   it('requires every ad deliverable to have a client-approved and team-confirmed version before leaving the gated phase', async () => {
     expect((await sam().from('projects').update({ status: 'pre-production' }).eq('id', projectId)).error).toBeNull();
     expect((await sam().from('projects').update({ status: 'production' }).eq('id', projectId)).error).not.toBeNull();

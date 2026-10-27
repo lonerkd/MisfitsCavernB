@@ -289,8 +289,15 @@ CREATE TRIGGER brand_rule_entity_sync AFTER INSERT OR UPDATE OF project_id, kind
 CREATE TRIGGER brand_rule_entity_delete AFTER DELETE ON public.brand_rules
   FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync();
 
+-- Whoever shapes the project may unlink an approved reference from a piece
+-- (the creator or a shaper could already remove their own links).
 CREATE POLICY "reference links delete" ON public.links FOR DELETE TO authenticated
-  USING (kind = 'reference' AND internal.can_access_project(project_id));
+  USING (kind = 'reference' AND internal.can_shape_project(project_id));
+
+-- A format may now open its scripts in the copy format.
+ALTER TABLE public.project_formats DROP CONSTRAINT project_formats_script_format_check;
+ALTER TABLE public.project_formats ADD CONSTRAINT project_formats_script_format_check
+  CHECK (script_format IN ('screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy'));
 
 -- Existing scripts in an advertising project become copy pieces without changing their text.
 UPDATE public.project_formats SET script_format = 'copy' WHERE name IN ('Advertising', 'Copywriting');
@@ -337,7 +344,11 @@ begin
     ) latest on true
     where d.project_id = p_project
       and (latest.guest_decision is distinct from 'approved' or latest.confirmed_at is null);
-    return greatest(outstanding, 1);
+    -- No deliverables at all means nothing has been approved: still blocked.
+    if not exists (select 1 from public.deliverables d where d.project_id = p_project) then
+      return 1;
+    end if;
+    return outstanding;
   end if;
   with latest as (
     select distinct on (script_id) script_id, guest_decision, confirmed_at

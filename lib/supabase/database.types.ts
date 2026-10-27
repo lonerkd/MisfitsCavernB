@@ -48,6 +48,57 @@ export type Database = {
           },
         ];
       };
+      ad_references: {
+        Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          content: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          project_id: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          content: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          project_id: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          content?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          project_id?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ad_references_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       audit_logs: {
         Row: {
           action: string;
@@ -93,64 +144,41 @@ export type Database = {
           },
         ];
       };
-      ad_references: {
+      brand_rules: {
         Row: {
-          approved_at: string | null;
-          approved_by: string | null;
-          content: string;
           created_at: string;
           created_by: string | null;
           id: string;
           kind: string;
           project_id: string;
-          status: string;
-          title: string;
+          severity: string;
+          text: string;
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
-          approved_at?: string | null;
-          approved_by?: string | null;
-          content: string;
           created_at?: string;
           created_by?: string | null;
           id?: string;
           kind: string;
           project_id: string;
-          status?: string;
-          title: string;
+          severity?: string;
+          text: string;
           updated_at?: string;
         };
         Update: {
-          approved_at?: string | null;
-          approved_by?: string | null;
-          content?: string;
           created_at?: string;
           created_by?: string | null;
           id?: string;
           kind?: string;
           project_id?: string;
-          status?: string;
-          title?: string;
+          severity?: string;
+          text?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: "ad_references_approved_by_fkey";
-            columns: ["approved_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "ad_references_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "ad_references_project_id_fkey";
+            foreignKeyName: "brand_rules_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "projects";
@@ -410,55 +438,6 @@ export type Database = {
           },
           {
             foreignKeyName: "budget_items_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      brand_rules: {
-        Row: {
-          created_at: string;
-          created_by: string | null;
-          id: string;
-          kind: string;
-          project_id: string;
-          severity: string;
-          text: string;
-          updated_at: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          kind: string;
-          project_id: string;
-          severity?: string;
-          text: string;
-          updated_at?: string;
-        };
-        Update: {
-          created_at?: string;
-          created_by?: string | null;
-          id?: string;
-          kind?: string;
-          project_id?: string;
-          severity?: string;
-          text?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "brand_rules_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "brand_rules_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "projects";
@@ -1078,46 +1057,6 @@ export type Database = {
         };
         Relationships: [];
       };
-      discord_integrations: {
-        Row: {
-          channel_id: string;
-          created_at: string | null;
-          created_by: string | null;
-          updated_at: string | null;
-          webhook_url: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          channel_id: string;
-          created_at?: string | null;
-          created_by?: string | null;
-          updated_at?: string | null;
-          webhook_url: string;
-        };
-        Update: {
-          channel_id?: string;
-          created_at?: string | null;
-          created_by?: string | null;
-          updated_at?: string | null;
-          webhook_url?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "discord_integrations_channel_id_fkey";
-            columns: ["channel_id"];
-            isOneToOne: true;
-            referencedRelation: "channels";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "discord_integrations_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       deliverables: {
         Row: {
           created_at: string;
@@ -1170,6 +1109,46 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: "scripts";
             referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
+      discord_integrations: {
+        Row: {
+          channel_id: string;
+          created_at: string | null;
+          created_by: string | null;
+          updated_at: string | null;
+          webhook_url: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          channel_id: string;
+          created_at?: string | null;
+          created_by?: string | null;
+          updated_at?: string | null;
+          webhook_url: string;
+        };
+        Update: {
+          channel_id?: string;
+          created_at?: string | null;
+          created_by?: string | null;
+          updated_at?: string | null;
+          webhook_url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "discord_integrations_channel_id_fkey";
+            columns: ["channel_id"];
+            isOneToOne: true;
+            referencedRelation: "channels";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "discord_integrations_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
           },
         ];
       };
