@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
+import { castByScene } from '@/lib/film/cast';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
@@ -20,7 +21,7 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
-export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null }
+export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; cast: string[] }
 export interface CallSheetPerson { id: string; username: string; craft: string | null }
 export interface CallSheetView {
   sheet: CallSheet;
@@ -459,13 +460,24 @@ export function createStudioApi(db: Client) {
     const [p, cl, sc, crew, cast, ack] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
+      db.from('scenes').select('id, scene_number, heading, title')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
       db.from('character_castings').select('character_name').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
       db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
     ]);
     for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
+    const sceneCast = sc.data?.length
+      ? await db.from('scene_characters')
+        .select('scene_id, character_id, character:characters!scene_characters_character_fkey(id, name)')
+        .eq('project_id', sheet.project_id).in('scene_id', sc.data.map((scene) => scene.id))
+      : { data: [], error: null };
+    if (sceneCast.error) fail(sceneCast.error, 'Could not load the call sheet');
+    const linkedCast = sceneCast.data ?? [];
+    const castBySceneId = castByScene(
+      linkedCast.map(({ scene_id, character_id }) => ({ scene_id, character_id })),
+      linkedCast.flatMap(({ character }) => character ? [character] : []),
+    );
     const people = new Map<string, CallSheetPerson>();
     for (const m of crew.data ?? []) people.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
     if (p.data && !people.has(p.data.creator_id)) {
@@ -477,7 +489,13 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []) as CallSheetScene[],
+      scenes: (sc.data ?? []).map((scene) => ({
+        id: scene.id,
+        scene_number: scene.scene_number,
+        heading: scene.heading,
+        title: scene.title,
+        cast: castBySceneId.get(scene.id) ?? [],
+      })),
       people,
       castAs: (cast.data ?? []).map((r) => r.character_name),
       acked: ack.data?.version ?? null,

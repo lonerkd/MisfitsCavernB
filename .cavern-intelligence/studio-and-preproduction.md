@@ -98,7 +98,8 @@ pitch boards and portfolios.
   auto-schedule (`packShootDays`) at the day length; Day out of days;
   print. **Sides** (the call sheet's Sides button; `lib/film/sides.ts`, `sides-print.ts`): one printed page per called actor with lines that day — the day's scenes in shooting order, the actor's own cue and speeches highlighted, from the script's saved text. Call sheets (saved per shoot day: date, calls, wrap, address,
   weather, notes, per-person call times — `call_sheets`, `call_sheet_calls`);
-  the board shows each day's call-sheet date.
+  the board shows each day's call-sheet date. The crew view's scene cast is
+  read from `scene_characters` and `characters`, not `scenes.cast_list`.
 - **Shot list**: per scene in Scenes (`shots`); also created by "Shot" margin
   notes in ScriptOS (`add_script_annotation`).
 - **Story**: beat board; character bible with a look-board per character
