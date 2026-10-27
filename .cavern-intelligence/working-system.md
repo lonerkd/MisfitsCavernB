@@ -339,6 +339,61 @@ permission and is unaffected.
 Lesson worth keeping: "there is no config file" is not evidence that a capability is
 absent. Check the running system.
 
+### The Claude worker: armed, but it has never actually worked
+
+I triggered it. It failed, and the failure is informative.
+
+**What happened.** Labelling #326 `agent-ready` started run `40605267861` at 23:54. It
+failed in 14 seconds. The result payload:
+
+```
+"subtype": "success", "is_error": true,
+"num_turns": 1, "total_cost_usd": 0, "modelUsage": {}
+```
+
+`num_turns: 1` with `total_cost_usd: 0` and an empty `modelUsage` means the model was
+never reached. The CLI initialised (`"model": "claude-sonnet-5-5"`) and then errored
+before its first turn.
+
+**The run history is the real finding.** All 30 runs of `agent-claude.yml`:
+
+- 27 runs at 04:26 — **skipped**. The workflow's own guard: the label must be added by
+  the repository owner. These were added by something else.
+- 1 run at 06:01 — **"success", but it did nothing.** Its log says
+  `::notice::CLAUDE_CODE_OAUTH_TOKEN is not set, so nothing was started.` The token was
+  set at 06:17, sixteen minutes *after* that run. A green tick for a run that never
+  started.
+- 1 run at 23:54 — **failure**, the one above. This is the only run that ever reached
+  the Claude CLI.
+
+So the worker has never completed a task. The earlier note that it "fired successfully
+on #315" was wrong: that run was the 06:01 no-op, and I read its green conclusion as
+work. A `success` conclusion on a job that skipped its own work is not evidence of
+anything.
+
+**What is left behind.** The failed run added `agent-working` to #326 and then died, so
+the issue sat labelled as in-progress with no branch and no PR. That label is a
+deadlock: `agent-autopilot` excludes `agent-working` issues, so the issue would never be
+picked up again. Removed by hand.
+
+**What to check next, in order:**
+
+1. **Is the token still valid?** It was set 2026-10-27 06:17 and the CLI errored before
+   its first turn. An OAuth token that has expired or been revoked fails exactly this
+   way. Re-run `claude setup-token` and `gh secret set CLAUDE_CODE_OAUTH_TOKEN`.
+2. **Does the Claude GitHub App still have access to the repository?** The action mints
+   an app token; if the app was uninstalled or its access revoked, the same early error
+   follows.
+3. **Then re-label #326** and watch. The label is still on it, so removing and re-adding
+   it is what fires a fresh run.
+
+**The design lesson, and it is the same one as the MCP rules.** A green check is not
+evidence that work happened. `agent-claude.yml` sets `enabled=false` and exits 0 when
+the token is missing, so "success" and "did nothing" look identical on the run list. If
+you want the difference visible, make that path fail instead of notice — a check that
+cannot run must not look green. `production-drift.yml` already gets this right, and says
+so in its own comment.
+
 ### `.claude/settings.local.json` has grown into a junk drawer
 
 It holds 93 allow entries, 15 of them one-off commands from past sessions with absolute
