@@ -1304,6 +1304,7 @@ function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
+function internal.hub_posts_announce_scheduled() body=aa8aeef07e7fce52094f4238f5a78d51
 function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
@@ -1427,6 +1428,7 @@ grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_announce_scheduled() postgres
 grant function internal.hub_posts_check_consent() postgres
 grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
@@ -1858,8 +1860,8 @@ index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
-policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
-policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
+policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))) AND (((metadata ->> 'audience'::text) IS DISTINCT FROM 'shapers'::text) OR internal.can_shape_project(internal.activity_project_id(metadata))))
+policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR CASE WHEN ((metadata ->> 'audience'::text) = 'shapers'::text) THEN internal.can_shape_project(internal.activity_project_id(metadata)) ELSE internal.can_access_project(internal.activity_project_id(metadata)) END) check -
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.breakdown_categories "breakdown_categories delete" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -

@@ -403,7 +403,7 @@ export default function EditorPage() {
 
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
-    const rev = await createRevisionDB(currentScript.id, content, revisions.length);
+    const rev = await createRevisionDB(currentScript.id, content, revisions.length, undefined, currentScript.project_id);
     if (rev) {
       setRevisions(prev => [...prev, rev]);
       toast(`Locked as ${rev.label}`, 'success');

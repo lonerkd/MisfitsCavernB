@@ -4,6 +4,7 @@ import { setCacheItem, getCacheItem } from '@/lib/storage/cache-versioning';
 import { supabase } from '@/lib/supabase/client';
 import * as DiffLib from 'diff';
 import { awaitOSUser } from '@/lib/os';
+import { logActivity } from '@/lib/supabase/activity';
 
 export const REVISION_COLORS = [
   { name: 'White',     color: '#ffffff', bg: 'rgba(255,255,255,0.05)' },
@@ -84,7 +85,7 @@ export async function fetchRevisionsDB(scriptId: string): Promise<Revision[]> {
   return data.map((r: any) => ({ id: r.id, colorIndex: r.color_index, date: r.created_at, label: r.label, snapshot: r.snapshot }));
 }
 
-export async function createRevisionDB(scriptId: string, content: string, existingCount: number, label?: string): Promise<Revision | null> {
+export async function createRevisionDB(scriptId: string, content: string, existingCount: number, label?: string, projectId?: string): Promise<Revision | null> {
   const colorIndex = existingCount % REVISION_COLORS.length;
   const user = await awaitOSUser();
   const { data, error } = await supabase
@@ -93,6 +94,7 @@ export async function createRevisionDB(scriptId: string, content: string, existi
     .select('id,color_index,label,snapshot,created_at')
     .single();
   if (error || !data) return null;
+  if (projectId) void logActivity('locked a script revision', 'script', scriptId, { project_id: projectId });
   return { id: data.id, colorIndex: data.color_index, date: data.created_at ?? '', label: data.label, snapshot: data.snapshot };
 }
 

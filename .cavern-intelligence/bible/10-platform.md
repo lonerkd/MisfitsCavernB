@@ -36,8 +36,8 @@ Every table has RLS. Project scope through `internal.can_access_project`;
 planning through `internal.can_shape_project`; scripts through
 `internal.can_access_script`; Lounge through `internal.can_view_channel`.
 Definer functions in `public` are an allowlist with their gates
-(`database-and-security.md` §2.D — 9 callable by anyone, 24 by signed-in
-users). Persona tests (Sam, Jordan, Riley, anon) run every PR:
+(`database-and-security.md` §2.D). Persona tests (Sam, Jordan, Riley, anon)
+run every PR:
 `tests/integration/*` (289 tests, 40+ files).
 
 ## Realtime

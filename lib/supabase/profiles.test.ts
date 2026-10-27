@@ -8,7 +8,11 @@ vi.mock('./client', () => ({
   supabase: {
     from: (table: string) => ({
       select: () => ({ eq: () => ({ single: async () => ({ data: existing, error: null }) }) }),
-      insert: async (payload: unknown) => { calls.push({ op: 'insert', table, payload }); return { error: null }; },
+      insert: (payload: unknown) => {
+        calls.push({ op: 'insert', table, payload });
+        if (table === 'project_crew') return { select: () => ({ single: async () => ({ data: { id: 'crew-row' }, error: null }) }) };
+        return Promise.resolve({ error: null });
+      },
       update: (payload: unknown) => ({
         eq: async (_col: string, id: string) => { calls.push({ op: 'update', table, payload, id }); return { error: null }; },
       }),
@@ -17,7 +21,8 @@ vi.mock('./client', () => ({
 }));
 vi.mock('./activity', () => ({ logActivity: vi.fn() }));
 
-import { buildProfileFields, ensureProfile } from './profiles';
+import { logActivity } from './activity';
+import { buildProfileFields, ensureProfile, inviteToCrew } from './profiles';
 
 function session(over: Record<string, unknown> = {}): Session {
   return { user: { id: 'u1', email: 'maya.k@example.com', user_metadata: {}, identities: [], ...over } } as unknown as Session;
@@ -45,8 +50,19 @@ describe('buildProfileFields', () => {
   });
 });
 
+describe('inviteToCrew', () => {
+  beforeEach(() => { calls.length = 0; vi.mocked(logActivity).mockClear(); });
+
+  it('records the invitation as project activity after inserting crew', async () => {
+    await inviteToCrew('project-1', 'user-2', 'contributor');
+
+    expect(calls).toContainEqual(expect.objectContaining({ op: 'insert', table: 'project_crew' }));
+    expect(logActivity).toHaveBeenCalledWith('invited a crew member as contributor', 'project', 'project-1');
+  });
+});
+
 describe('ensureProfile', () => {
-  beforeEach(() => { calls.length = 0; existing = null; });
+  beforeEach(() => { calls.length = 0; existing = null; vi.mocked(logActivity).mockClear(); });
 
   it('creates the profile on first sign-in', async () => {
     await ensureProfile(session());
