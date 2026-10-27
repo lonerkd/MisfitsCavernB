@@ -62,9 +62,6 @@ release; take the plain fix then. Done when `npm audit` reports 0.
 ### 3.29 Upgrade Next.js — 16.4.0 has a known vulnerability — S (found 2026-10-25)
 `npm run build` warns `Your version of Next.js is affected by a known security vulnerability` (Next 16.4.0) and continues; one run in a cloud container stopped with `SecurityFatalError`, a rerun built fine. Upgrade `next` (and `eslint-config-next`) to the patched release, then typecheck, lint, test, build and a Vercel preview. Done when the build prints no vulnerability warning and the preview is green.
 
-### 3.30 Definer allowlist: reconcile with the advisor — S (found 2026-10-25)
-The security advisor lists 11 `SECURITY DEFINER` functions callable by anon and 39 by signed-in users; `database-and-security.md` §2.D was written against 9 + 24. List the advisor's functions, find each one not in §2.D, read its first lines for the gate, and add it (or fix it if ungated). Done when every advisor entry is in §2.D with its gate.
-
 ### 3.33 Conflict-free co-writing (ADR 0008) — M/L (accepted by the owner, 2026-10-14)
 **What**: a Yjs `Y.Text` for the script, synced over the existing `script_${id}` Supabase Realtime channel as the transport (no new WebSocket server); `scripts.content` stays the persisted truth; presence and cursors stay as they are. This is rung E3 of 3.18(d). **Where**: `lib/scriptos/sync.ts` (the provider lives beside it), the write surface in `components/editor/WriteView.tsx`, a scoped Yjs undo manager (local author only), then delete the conflict heuristic and its UI. **Done when**: two simultaneous sessions editing the same paragraph keep both edits word-level (an integration test with two simulated authors plus an e2e two-browser spec), offline capture reconciles through the CRDT on reconnect, and the conflict prompt is gone from the editor. Read `adr/0008-conflict-free-co-writing.md` first; it is the design.
 
