@@ -141,6 +141,12 @@ The destination is one normalised core. The route is one tool at a time:
 4. **Cut tools over** — each tool moves to `lib/film` in its own PR.
 5. **Contract** — when nothing reads a text column, drop it.
 
+`public.film_graph_ambiguous_names` is the read-only report for step 2. It
+lists same-project location and character pairs whose names match after
+punctuation and whitespace are removed. It only flags candidates; it never
+merges them, and its security-invoker view respects the source tables' project
+access rules.
+
 Each step is a migration with the drift gate, persona tests (owner, crew,
 outsider, anonymous) and e2e, as every schema change here already is.
 
