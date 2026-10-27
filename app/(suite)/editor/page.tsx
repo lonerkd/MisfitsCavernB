@@ -63,7 +63,9 @@ import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 
 // The revision diff (and its diff library) loads the first time it's opened.
+// The two-version comparison and the revision diff load the first time they open.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
+const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -216,6 +218,7 @@ export default function EditorPage() {
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
+  const [showCompare, setShowCompare] = useState(false);
   const [cursorLine, setCursorLine] = useState(0);
   const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1008,6 +1011,7 @@ export default function EditorPage() {
                   chars={chars} charStats={charStats}
                   handleLockRevision={handleLockRevision} revisions={revisions}
                   onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
+                  onCompare={() => setShowCompare(true)}
                   setContent={setContent} toast={toast}
                   showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
                   showWatermark={showWatermark} setShowWatermark={setShowWatermark}
@@ -1059,6 +1063,15 @@ export default function EditorPage() {
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
       />}
+
+      {showCompare && (
+        <CompareVersions
+          isOpen={showCompare}
+          onClose={() => setShowCompare(false)}
+          revisions={revisions}
+          draft={content}
+        />
+      )}
 
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{

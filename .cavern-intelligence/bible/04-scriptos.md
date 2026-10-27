@@ -61,7 +61,7 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 | Breakdown tagging | select text → category; suggestions from your other projects (`breakdown_memory`) | `breakdown_elements`, `scene_elements` |
 | Characters | the character bible (description, backstory, motivation, arc, notes) | `script_metadata.character_bible`, `script_characters` |
 | Margin notes | Shot / Beat / To-do notes create the shot, beat or task (`add_script_annotation`) | `script_annotations` |
-| Revisions | lock a draft; later changes are coloured pages (`REVISION_COLORS`); diff view | `script_revisions` (`lib/scriptos/revisions.ts`) |
+| Revisions | lock a draft; later changes are coloured pages (`REVISION_COLORS`); a revision opens in the diff view; **Compare** (`components/editor/CompareVersions.tsx`) puts any two versions — a revision, another revision, or the draft — side by scene: added / cut / changed with line counts, and each scene opens to show the lines that went in and out (`lib/scriptos/version-diff.ts`) | `script_revisions` (`lib/scriptos/revisions.ts`) |
 | Table read | the browser reads it aloud, a voice per character; scene times saved | `scenes.read_seconds` |
 | Runtime | eighths of a page per scene (`timing.ts`), table-read time when known | `scenes.est_duration` |
 | Stash | snippets beside the script | `script_stash` |

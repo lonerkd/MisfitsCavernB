@@ -43,6 +43,8 @@ export interface EditorRightPanelsProps {
   handleLockRevision: () => void;
   revisions: Revision[];
   onViewRevision: (revisionId: string) => void;
+  /** Open the two-version comparison (any revision against another or the draft). */
+  onCompare?: () => void;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
   showSceneNumbers: boolean;
@@ -102,7 +104,7 @@ export function EditorRightPanels({
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
   writingPanel, wordCount,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
+  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
   referencesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
@@ -337,7 +339,12 @@ export function EditorRightPanels({
                         open={revisionsOpen}
                         onToggle={() => setRevisionsOpen(o => !o)}
                         right={(
-                          <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {revisions.length > 0 && onCompare && (
+                              <button onClick={(e) => { e.stopPropagation(); onCompare(); }} title="Compare two versions" style={{ fontSize: 11, background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-muted)', cursor: 'pointer' }}>Compare</button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
+                          </div>
                         )}
                       />
                       {revisionsOpen && (
