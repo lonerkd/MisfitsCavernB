@@ -195,6 +195,12 @@ column expenses.receipt_media_id uuid
 column expenses.spent_on date default CURRENT_DATE not null
 column expenses.status text default 'committed'::text not null
 column expenses.vendor_id uuid
+column film_graph_ambiguous_names.entity_id_a uuid
+column film_graph_ambiguous_names.entity_id_b uuid
+column film_graph_ambiguous_names.entity_type text
+column film_graph_ambiguous_names.name_a text
+column film_graph_ambiguous_names.name_b text
+column film_graph_ambiguous_names.project_id uuid
 column guide_progress.done text[] default '{}'::text[] not null
 column guide_progress.hidden boolean default false not null
 column guide_progress.project_id uuid not null
@@ -2284,3 +2290,5 @@ trigger CREATE TRIGGER support_messages_stamp BEFORE INSERT ON public.support_ca
 trigger CREATE TRIGGER timeline_items_updated_at BEFORE UPDATE ON public.timeline_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER timesheets_guard BEFORE INSERT OR UPDATE ON public.timesheets FOR EACH ROW EXECUTE FUNCTION internal.timesheets_guard()
 trigger CREATE TRIGGER transcript_lines_touch BEFORE INSERT OR UPDATE ON public.transcript_lines FOR EACH ROW EXECUTE FUNCTION internal.transcript_lines_touch()
+view film_graph_ambiguous_names d6fc286d42c1d1eed40ff8046b369728
+view-options film_graph_ambiguous_names {security_invoker=true}
