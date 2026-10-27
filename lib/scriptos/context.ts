@@ -7,7 +7,7 @@
 // project knows the place would make the editor and the Studio disagree about
 // where scenes begin, and scene identity hangs on that.
 
-import type { ParseContext } from './parser';
+import { parseScript, type ParseContext } from './parser';
 
 /** The characters people have cast (`character_castings.character_name`). */
 export function contextFromCastings(castings: ReadonlyArray<{ character_name: string }>, rejectedNames: readonly string[] = []): ParseContext {
@@ -22,13 +22,28 @@ export function contextFromCastings(castings: ReadonlyArray<{ character_name: st
 export function contextFromProject(
   castings: ReadonlyArray<{ character_name: string }>,
   corrections: ReadonlyArray<{ kind: string; name: string }>,
+  locations: ReadonlyArray<{ name: string }> = [],
+  previousDraft?: string,
 ): ParseContext {
   const confirmed = corrections.filter((c) => c.kind === 'character').map((c) => ({ character_name: c.name }));
-  return contextFromCastings([...castings, ...confirmed], corrections.filter((c) => c.kind === 'not_character').map((c) => c.name));
+  const characters = contextFromCastings([...castings, ...confirmed], corrections.filter((c) => c.kind === 'not_character').map((c) => c.name));
+  const previous = previousDraft ? parseScript(previousDraft).lines : [];
+  const priorCounts = new Map<string, number>();
+  for (const line of previous) {
+    if (line.type !== 'character' || line.confidence < 75) continue;
+    const name = String(line.meta?.characterName ?? line.text).trim().toUpperCase();
+    if (name) priorCounts.set(name, (priorCounts.get(name) ?? 0) + 1);
+  }
+  const previousCharacters = [...priorCounts].filter(([, count]) => count >= 2).map(([name]) => name);
+  const places = [...new Set(locations.map((location) => location.name.trim()).filter(Boolean))];
+  return { ...characters, previousCharacters, places };
 }
 
 /** A stable key for a context, so a consumer can tell whether it changed. */
 export function contextKey(context: ParseContext | undefined): string {
   if (!context) return '';
-  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}`;
+  let key = `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}`;
+  if (context.previousCharacters?.length) key += `#P:${context.previousCharacters.join('|')}`;
+  if (context.places?.length) key += `#L:${context.places.join('|')}`;
+  return key;
 }

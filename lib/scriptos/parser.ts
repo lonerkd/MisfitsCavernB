@@ -116,6 +116,10 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
+  /** Names repeatedly read as cues in a locked earlier draft; weaker than a human correction. */
+  previousCharacters?: readonly string[];
+  /** Existing project locations, used only to canonicalize a parsed scene location. */
+  places?: readonly string[];
 }
 
 export interface ParseOptions {
@@ -174,6 +178,8 @@ export class ScriptParser {
   private useDecoder: boolean;
   private rejectedNames: Set<string>;
   private profile: DocumentProfile;
+  private previousNames: Set<string>;
+  private places: string[];
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
@@ -183,6 +189,8 @@ export class ScriptParser {
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
+    this.previousNames = new Set(upper(options.context?.previousCharacters).map((n) => this.clean(n)).filter((n) => n && !this.rejectedNames.has(n)));
+    this.places = (options.context?.places ?? []).map((name) => name.trim()).filter(Boolean);
     this.learnedNames = new Set([...learnedNames, ...this.profile.cueNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
     this.characterStats = new Map();
     this.elements = {
@@ -385,6 +393,9 @@ export class ScriptParser {
       const cleanName = this.clean(name);
       if (cleanName && !this.characterStats.has(cleanName)) this.characterStats.set(cleanName, 1);
     });
+    this.previousNames.forEach((name) => {
+      if (!this.characterStats.has(name)) this.characterStats.set(name, 1);
+    });
     this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
       const prevBlank = idx === 0 || !this.rawLines[idx - 1].trim();
@@ -538,14 +549,15 @@ export class ScriptParser {
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
       looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.learnedNames.has(this.clean(n)),
+      isKnownName: (n) => this.characterStats.has(this.clean(n).toUpperCase()) || this.learnedNames.has(this.clean(n).toUpperCase()),
+      isPreviousName: (n) => this.previousNames.has(this.clean(n).toUpperCase()),
       looksLikeProfileName: (t, pb, n) => this.profile.cueStyle === 'title-case' &&
         this.profile.cueStyleEvidence >= 2 && pb && !!n && !this.isCaps(t) &&
         t.length < 60 && !/[.!?…,:;]$/.test(t) &&
         t.split(/\s+/).length <= 4 &&
         t.split(/\s+/).every((part) => /^\p{Lu}[\p{Ll}\p{M}'’.-]*$/u.test(part)) &&
         !this.isCaps(n),
-      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
+      isRejectedName: (n) => this.rejectedNames.has(this.clean(n).toUpperCase()),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
     });
   }
@@ -874,9 +886,14 @@ export class ScriptParser {
     const body = this.stripScenePrefix(slug);
 
     const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return body.trim();
-    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
-    return parts.join(' - ');
+    const raw = parts.length === 0 ? body.trim() : (() => {
+      while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
+      return parts.join(' - ');
+    })();
+    const known = this.places.find((place) => place.toUpperCase().replace(/\s+/g, ' ').trim() === raw.toUpperCase().replace(/\s+/g, ' ').trim());
+    if (known) return known;
+    if (parts.length === 0) return raw;
+    return raw;
   }
 
   private parseTime(slug: string): string {

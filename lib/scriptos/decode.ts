@@ -23,6 +23,8 @@ export interface Evidence {
   looksUncasedName(text: string, prevBlank: boolean, next: string): boolean;
   /** Seen as a speaker elsewhere in the script (or told to us by the project). */
   isKnownName(name: string): boolean;
+  /** Seen as a speaker in a locked earlier draft. */
+  isPreviousName?(name: string): boolean;
   /** Matches this document's observed cue style, if the profile has enough anchors. */
   looksLikeProfileName?(name: string, prevBlank: boolean, next: string): boolean;
   hasExtension(upper: string): boolean;
@@ -43,7 +45,7 @@ export interface Observation {
 
 /** The weights. Lower cost is a better fit. Tuned on the corpus (lib/scriptos/corpus); change one, re-measure. */
 export interface Params {
-  cue: number; knownName: number; rejectedName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
+  cue: number; knownName: number; previousName: number; rejectedName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
   dialogue: number; dialogueCaps: number;
   action: number; actionProse: number; actionCaps: number;
   /** Grammar. */
@@ -55,7 +57,7 @@ export interface Params {
 }
 
 export const DEFAULT_PARAMS: Params = {
-  cue: 6, knownName: 12, rejectedName: 60, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
+  cue: 6, knownName: 12, previousName: 5, rejectedName: 60, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
   dialogue: 4, dialogueCaps: 6,
   action: 10, actionProse: 8, actionCaps: 12,
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
@@ -77,7 +79,7 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
   const paren = t.startsWith('(') && t.endsWith(')');
   const namePart = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
   const caps = ev.isCaps(namePart);
-  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next) || ev.isKnownName(namePart) || ev.looksLikeProfileName?.(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
+  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next) || ev.isKnownName(namePart) || ev.isPreviousName?.(namePart) || ev.looksLikeProfileName?.(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
   const words = namePart.split(/\s+/).filter(Boolean).length;
   const sentenceEnd = /[.!?…]$/.test(namePart);
 
@@ -89,6 +91,7 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
   if (nameShape && !heading && !isTransition && !paren) {
     character = p.cue;
     if (ev.isKnownName(namePart)) character -= p.knownName;
+    else if (ev.isPreviousName?.(namePart)) character -= p.previousName;
     if (ev.hasExtension(upper)) character -= p.extension;
     if (ev.isRejectedName?.(namePart)) character += p.rejectedName;
     if (!o.next) character += p.noSpeechUnder;
