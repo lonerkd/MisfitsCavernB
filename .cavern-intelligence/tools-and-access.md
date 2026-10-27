@@ -16,6 +16,7 @@ duplicated — adapters are thin pointers.
 |---|---|---|
 | **Claude Code** | `CLAUDE.md` | `AGENTS.md` + `.cavern-intelligence/` |
 | **GitHub Copilot** | `.github/copilot-instructions.md` | `AGENTS.md` |
+| **Perch** | `.perch/PERCH.md` | `AGENTS.md` (read natively) + `.cavern-intelligence/` |
 | Cursor / Windsurf / Cline / Zed / Codex / Gemini | `AGENTS.md` (native) | `.cavern-intelligence/` |
 
 Start-of-session routing: **`INDEX.md`** (this directory) is the front door —
