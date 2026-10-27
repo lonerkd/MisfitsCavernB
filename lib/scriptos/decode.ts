@@ -79,7 +79,7 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
   const paren = t.startsWith('(') && t.endsWith(')');
   const namePart = t.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s*\^\s*$/, '').trim();
   const caps = ev.isCaps(namePart);
-  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next) || ev.isKnownName(namePart) || ev.isPreviousName?.(namePart) || ev.looksLikeProfileName?.(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
+  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next) || ev.isKnownName(namePart) || ev.isPreviousName?.(namePart) || (ev.looksLikeProfileName?.(namePart, o.prevBlank, o.next) && hasLower(o.next))) && namePart.length >= 1 && namePart.length < 60;
   const words = namePart.split(/\s+/).filter(Boolean).length;
   const sentenceEnd = /[.!?…]$/.test(namePart);
 
