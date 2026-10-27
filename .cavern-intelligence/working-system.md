@@ -283,17 +283,30 @@ Note `scripts/dev-stack.sh` is a bash script. On Windows it needs Git Bash or WS
 PowerShell. Since you are on Windows, `npm run stack:up` will not work from PowerShell
 as written.
 
-### The MCP permissions that gate nothing
+### The MCP permissions: 38 dead rules, 45 live ones
 
-`.claude/settings.json` sets `enableAllProjectMcpServers: true` and carries **83
-`mcp__` permission rules** — 38 GitHub, 19 Supabase, 16 Vercel, 6 Google Drive, 4
-Indeed (160 allow entries in total). There is no `.mcp.json` in the repo and no
-`mcpServers` entry in `~/.claude.json`. Those servers do not exist, so all 83 rules
-grant nothing.
+`.claude/settings.json` sets `enableAllProjectMcpServers: true` and carried **83
+`mcp__` permission rules** (160 allow entries in total).
 
-Two valid answers: write a real `.mcp.json` with the servers you actually use, or
-delete the rules. Leaving them is the one option that is purely misleading — it reads
-like a configured capability and is not.
+**I got this wrong the first time.** I said all 83 gate servers that do not exist,
+because there is no `.mcp.json` in the repo and no `mcpServers` entry in
+`~/.claude.json`. That reasoning was incomplete: Claude Code also reads servers from
+the account and from installed plugins. `claude mcp list` shows the truth:
+
+| Server | Rules | State |
+|---|---|---|
+| Supabase | 19 | connected |
+| Vercel | 16 | connected |
+| Google Drive | 6 | connected |
+| Indeed | 4 | connected |
+| GitHub | 38 | **no such server** |
+
+So 45 rules were live and doing real work, and 38 were dead. The 38 `mcp__github__*`
+rules have been removed. GitHub is reached through the `gh` CLI, which is a separate
+permission and is unaffected.
+
+Lesson worth keeping: "there is no config file" is not evidence that a capability is
+absent. Check the running system.
 
 ### `.claude/settings.local.json` has grown into a junk drawer
 
@@ -326,6 +339,6 @@ Worth clearing out.
 7. **Feed the agent loop.** Label one issue `agent-ready` and watch `agent-claude`
    complete it end to end. You have seen it fire; you have not seen it finish.
 8. **Make the nightly e2e failure visible** by having it write to an issue.
-9. **Clear the MCP permissions** or make them real.
+9. **MCP permissions** — done: the 38 dead `mcp__github__*` rules are removed, the 45 live ones stay.
 10. **Then, and only then**, consider a local model — for review and bulk work, not as
     a daemon.
