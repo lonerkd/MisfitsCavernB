@@ -185,12 +185,49 @@ not started until the owner has decided the questions below.
   come from the template too, so a novelist is never asked to "wrap
   production".
 
+### Ad writing and copywriting (owner, 2026-10-27: "probably the main one")
+
+Advertising and copy is a first-class format, and it changes the weight of
+this slice. What is different about the work:
+
+- **A client is in the loop.** Work is made *for* someone who approves it.
+  That is the **investors / guests layer** with an approval attached: the client
+  reviews a version, comments, approves or sends it back. Rounds of revision are
+  the normal case, not an exception, so a version has a number and a status
+  (`working` → `sent` → `approved` / `changes requested`).
+- **One idea, many deliverables.** A campaign is a set: a 30 s, a 15 s and a 6 s
+  spot; a poster, a banner, a landing-page headline, radio, social posts. Each
+  deliverable has its own constraints (length, characters, platform, aspect) and
+  its own version trail, grouped under the campaign.
+- **A brief and brand rules.** The client brief, tone of voice, mandatory lines
+  and "never say" claims are *references* every piece is checked against — the
+  same `approved` references this spec's lifecycle makes official.
+- **Copy is not a screenplay.** Spots are written two-column (picture / sound)
+  and copy is plain structured text; ScriptOS today knows screenplay formats.
+  That is a separate editor project (BACKLOG), not part of slices A–D, but the
+  card and links must treat a *deliverable* as an entity like any other.
+
+What this adds to the data design, none of it built yet: entity kinds
+`deliverable` and `brief` (after the first seven), a **version** concept on
+documents (a numbered, immutable snapshot with a status), and the approval
+state on the guest layer. A format template for advertising names its phases
+(brief → concept → copy → client review → production → delivery) and turns the
+client-approval gate on by default.
+
+**Priority consequence (recommended):** because the guest layer with approval
+is central to ad work, build **slice D's guest review (versions, send, comment,
+approve) right after slice A**, ahead of attach (B) and mentions (C). Slices B
+and C are about internal convenience; D is what a paying advertising user
+cannot work without. The owner confirms the order.
+
 Still open: who approves and passes a gate (proposal below).
 
 ## Questions for the owner (slice D)
 
 1. **Who approves and who passes a gate?** (Proposal: approving an item and
    passing a gate are owner/shape-permission actions; anyone can propose.)
-2. **Which formats get a template first?** (Proposal: film and series with the
-   four defaults, then game, music, book/comic — each its own small data
-   change once the model exists.)
+2. **Which formats get a template first?** (Proposal: advertising and copy, and
+   film and series with the four defaults, then game, music, book/comic — each
+   its own small data change once the model exists.)
+3. **Slice order:** A → D (guest review with versions and approval) → B → C,
+   as recommended above, or the original A → B → C → D?
