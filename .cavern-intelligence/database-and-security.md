@@ -102,7 +102,7 @@ Anonymous, logged-out users are identified under the Postgres `anon` role. For s
 - **Showcase** (`get_public_showcase`) lists published media of `public` projects only. **Platform totals** come from `get_platform_stats` (counts only) — counting through RLS shows each person their own numbers.
 
 
-### D. The definer-function allowlist (reviewed 2026-10-03)
+### D. The definer-function allowlist (reconciled 2026-10-27)
 
 The security advisor warns about every `SECURITY DEFINER` function in
 `public` that `anon` or `authenticated` can call (lints 0028/0029). These are
@@ -110,6 +110,11 @@ the app's intended RPC surface; each checks access itself, in its first
 lines. **A new definer function in `public` is added here, with its gate, in
 the PR that creates it** — anything the advisor lists that isn't here is
 unreviewed. (`internal.*` helpers aren't callable through the API.)
+
+The production-advisor counts recorded on 2026-10-25 were 11 functions
+callable by `anon` and 39 by `authenticated`; those counts reconcile with the
+inventory and gates below. The current list also includes six later additions:
+the three guest-review RPCs, the two case-study RPCs, and `advance_phase`.
 
 Callable by **anyone** (anon + signed in) — public pages:
 
@@ -144,7 +149,9 @@ Callable by **signed-in users**:
 | `advance_phase(project, to, default, exceptions)` | `internal.is_project_creator` (owner only; raises otherwise); `to` must be a known status; `default` `carry` archives the listed ids, `archive` archives every working item except them (≤ 1000 ids); locks the project row so gates run one at a time; moves `projects.status` and writes a `phase_gates` row with the counts of what really changed, all in one transaction (`20261031000100`; the first version in `20261031000000` took a list of decisions and was replaced) |
 | `admin_close_job(job)` | `internal.caller_is_admin()`; sets `status = 'closed'` (deletes nothing) and writes an `audit_logs` row |
 | `can_manage_channel(id)`, `can_post_channel(id)` | answer for the caller only (booleans) |
-| `edit_message`, `pin_message`, `toggle_message_reaction` | sender only / channel managers or either side of a DM / messages the caller can see |
+| `edit_message(message, content)` | caller is the sender; in a channel, caller can still post; hidden messages cannot be edited |
+| `pin_message(message, pinned)` | channel manager, or either participant in a DM |
+| `toggle_message_reaction(message, emoji)` | caller can view the channel message or is a DM participant; emoji validated |
 | `lounge_unread()`, `mark_lounge_read(channel, partner)` | channels filtered by `internal.can_view_channel`; DMs the caller is in |
 | `ack_call_sheet(sheet)`, `issue_call_sheet(sheet, note)` | `internal.can_access_project`; issuing also `can_shape_project` |
 | `project_availability(project, from, to)` | `internal.can_shape_project`; dates only, never notes |
