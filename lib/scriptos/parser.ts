@@ -580,6 +580,7 @@ export class ScriptParser {
         t.length < 60 && !/[.!?…,:;]$/.test(t) &&
         t.split(/\s+/).length <= 4 &&
         t.split(/\s+/).every((part) => /^\p{Lu}[\p{Ll}\p{M}'’.-]*$/u.test(part)) &&
+        (/^\p{Lu}/u.test(n) || n.startsWith('(')) &&
         !this.isCaps(n),
       isRejectedName: (n) => this.rejectedNames.has(this.clean(n).toUpperCase()),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),

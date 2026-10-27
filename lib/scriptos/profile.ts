@@ -19,17 +19,21 @@ const TRANSITIONS = [
   'SLAM TO BLACK', 'RESET TO',
 ];
 
+const HEADING_PREFIX = String.raw`(?:INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b`;
+const NUMBERED_HEADING = new RegExp(String.raw`^\s*(\d+[A-Z]?)(\.?)\s+(?=${HEADING_PREFIX})`, 'i');
+const SCENE_HEADING = new RegExp(String.raw`^\s*(?:\d+[A-Z]?\.?\s+)?${HEADING_PREFIX}`, 'i');
+
 function cueCase(name: string): Exclude<CueStyle, 'unknown'> {
   const cased = [...name].filter((c) => c.toLowerCase() !== c.toUpperCase());
   if (!cased.length) return 'uncased';
   if (cased.every((c) => c === c.toUpperCase())) return 'uppercase';
   if (cased.every((c) => c === c.toLowerCase())) return 'lowercase';
-  if (cased[0] === cased[0].toUpperCase() && cased.slice(1).every((c) => c === c.toLowerCase())) return 'title-case';
+  if (name.trim().split(/\s+/).every((word) => /^\p{Lu}[\p{Ll}\p{M}'’.-]*$/u.test(word))) return 'title-case';
   return 'mixed';
 }
 
 function headingNumberStyle(text: string): HeadingNumberStyle {
-  const match = text.match(/^\s*(\d+[A-Z]?)(\.?)\s+(?=(?:INT|EXT|EST|I\/E|E\/I)\b)/i);
+  const match = NUMBERED_HEADING.exec(text);
   if (!match) return 'unnumbered';
   const hasLetter = /[A-Z]$/i.test(match[1]);
   if (hasLetter) return match[2] ? 'letter-period' : 'letter';
@@ -37,7 +41,7 @@ function headingNumberStyle(text: string): HeadingNumberStyle {
 }
 
 function isHeading(text: string): boolean {
-  return /^\s*(?:\d+[A-Z]?\.?\s+)?(?:INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.test(text);
+  return SCENE_HEADING.test(text);
 }
 
 function transitionEnding(text: string): TransitionEnding | null {
