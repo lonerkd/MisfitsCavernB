@@ -36,7 +36,8 @@ import { useOSGate } from '@/lib/os';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
-import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
+import { lineOffset, type GoToTarget } from '@/lib/scriptos/goto';
+import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
 import { useBriefAnswer } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
@@ -616,6 +617,33 @@ export default function EditorPage() {
     }, 60);
   };
 
+  /** Put the caret on a line (a page jump lands on the page's first line). */
+  const jumpToLine = (lineIndex: number) => {
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const idx = lineOffset(content, lineIndex);
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      setCursorLine(lineIndex);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (lineIndex - 3) * lh);
+    }, 60);
+  };
+
+  /** Each page's first line and the scene it opens in (1-based; 0 before the first heading). */
+  const scriptPages = useMemo(() => {
+    const rows: { page: number; line: number; scene: number }[] = [];
+    const total = Math.max(1, Math.ceil(timing.pages));
+    for (let p = 1; p <= total; p++) {
+      const line = lineAtPage(lines, p);
+      if (line == null) break;
+      rows.push({ page: p, line, scene: sceneAtCaret(lines, scenesList, line) + 1 });
+    }
+    return rows;
+  }, [lines, scenesList, timing.pages]);
+
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -1108,14 +1136,29 @@ export default function EditorPage() {
             <GoToSceneModal
               sceneCount={scenesList.length}
               headings={scenesList.map((s) => s.text)}
+              pages={scriptPages}
+              perScene={sceneCharMap}
+              currentScene={currentSceneIdx}
               value={goToSceneNum}
               onChange={setGoToSceneNum}
-              onJump={(num) => {
-                setShowGoToScene(false);
-                setGoToSceneNum('');
-                // The dialog says "jump" — put the caret on that scene's heading,
-                // scroll to it, and go back to Write if another view was open.
-                jumpToScene(num - 1);
+              onJump={(target: GoToTarget) => {
+                // A scene or a page is a destination: go, and put the box away.
+                if (target.kind === 'scene') {
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  jumpToScene(target.scene - 1);
+                  return;
+                }
+                if (target.kind === 'page') {
+                  const row = scriptPages.find((p) => p.page === target.page);
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  if (row) jumpToLine(row.line);
+                  return;
+                }
+                // A character's scenes come one after another: stay open, so
+                // Enter again (the caret now in that scene) takes the next one.
+                jumpToScene(target.scene);
               }}
               onClose={() => setShowGoToScene(false)}
             />

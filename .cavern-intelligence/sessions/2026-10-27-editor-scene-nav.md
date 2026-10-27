@@ -34,3 +34,27 @@ middle of a script, press ⌘G → 4 → Enter (caret lands on scene 4's heading
 
 **Next:** the rest of 4.7's quick wins are scoped as BACKLOG 3.33 (page number,
 a character's scenes, command history).
+
+---
+
+**Update, same branch — the rest of it, not just scene numbers.** While the box
+was open, it now also takes:
+
+- **a page** — `p12`, `p.12`, `pg12` or `page 12` — and lands on that page's
+  first printed line (the same 55-lines-a-page measure the page count uses, via
+  the new `lineAtPage` in `timing.ts`; `printedLines` was split into
+  `printedLineRuns` so both read one implementation). It previews the scene the
+  page opens in.
+- **a character's name** (exact, or a unique beginning, any case). Enter goes to
+  *their* next scene after the caret; the box stays open, so Enter again walks
+  their scenes in order and wraps at the end. Two names that share a beginning
+  say "keep typing"; nothing matching says so instead of doing nothing.
+- Page and character resolution is pure in `lib/scriptos/goto.ts`
+  (`resolveGoTo`, `speakingCast`, `lineOffset`), so the label and the target are
+  unit-tested; the dialog has a jsdom test per kind.
+
+**Verified (second pass):** `npx tsc --noEmit` clean; `npx vitest run` on the
+four touched suites (45 tests) green; full suite and build re-run before the
+push (see the commit). Still not watched in a browser — the page jump's caret
+position depends on the textarea's line height, which only a real render shows.
+

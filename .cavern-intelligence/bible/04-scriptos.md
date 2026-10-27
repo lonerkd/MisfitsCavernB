@@ -33,11 +33,15 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
   length), **History** (revisions), **Audio** (soundtrack).
 - **Footer** (`WriteFooter`): page / scene / word count, focus and
   typewriter modes.
-- **Moving through the script**: **Ctrl/⌘ + G** opens Go to scene — type a
-  number and the box shows the heading it would land on (or "No scene 9") before
-  Enter takes the caret there; **Ctrl/⌘ + ↓ / ↑** steps to the next / previous
-  scene from wherever the caret is, stopping at the first and last (no wrap).
-  The scene list's own Alt + ↑/↓ still reorders rather than moves the caret.
+- **Moving through the script**: **Ctrl/⌘ + G** opens **Go to** — a scene number
+  (`12`), a page (`p12`, `page 12`), or a character's name (`maya`, or a unique
+  beginning of it). The box previews what Enter would land on before it does:
+  the scene's heading, the scene a page opens in, or *their* next scene — and a
+  character stays open, so Enter again walks that character's scenes in order
+  (wrapping at the end). Numbers outside the script are refused ("No scene 9").
+  **Ctrl/⌘ + ↓ / ↑** steps to the next / previous scene from wherever the caret
+  is, stopping at the first and last (no wrap). The scene list's own Alt + ↑/↓
+  still reorders rather than moves the caret.
 - Margins: cut notes on their lines (`CutNoteMarkers`, live) and script
   annotations. **Left margin — the scene gutter** (`SceneGutter`, `lib/film/gutter.ts`): beside each scene heading, its story day and time (read from the script's headings and shown in italics, or the person's own setting from Studio › Continuity) and, once its shoot day has a date, `Shoot N`. Read only (it takes no clicks or caret); hidden when the page is under 720px wide. The right panel's **Now Writing** card shows the same for the scene being written. **Cue card** (`CueCardOverlay`, `lib/film/cue.ts`): with the caret on a character's cue, a card in the right margin — who plays them, their look in this scene (Studio › Continuity), their speeches and scenes. Follows the caret, read only.
 

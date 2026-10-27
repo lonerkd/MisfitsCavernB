@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { eighthsOf, formatEighths, formatRuntime, printedLines, timeCharacters, timeScript, wrappedLines, type TimedLine } from './timing';
+import { eighthsOf, formatEighths, formatRuntime, lineAtPage, printedLines, timeCharacters, timeScript, wrappedLines, type TimedLine } from './timing';
 
 const L = (type: string, text = ''): TimedLine => ({ type, text });
 
@@ -21,6 +21,21 @@ describe('layout', () => {
   it('a scene is at least an eighth; a full page is 8/8', () => {
     expect(eighthsOf([L('slug', 'INT. CAVE - NIGHT')])).toBe(1);
     expect(eighthsOf(Array(55).fill(L('action', 'x')))).toBe(8);
+  });
+
+  it('finds the first line printed on a page, and refuses pages that do not exist', () => {
+    // One line per page with a shortened page height: 1 → [0,1,2], 2 → [3,4], 3 → [5,6]
+    const seven = Array.from({ length: 7 }, (_, i) => L('action', `line ${i}`));
+    expect(lineAtPage(seven, 1, 2)).toBe(0);
+    expect(lineAtPage(seven, 2, 2)).toBe(2);
+    expect(lineAtPage(seven, 3, 2)).toBe(4);
+    expect(lineAtPage(seven, 4, 2)).toBe(6);
+    expect(lineAtPage(seven, 5, 2)).toBeNull();
+    expect(lineAtPage(seven, 0, 2)).toBeNull();
+    expect(lineAtPage([], 1)).toBeNull();
+    // Pages agree with the count `timeScript` reports.
+    const t = timeScript(Array.from({ length: 120 }, (_, i) => L('action', `line ${i}`)));
+    expect(lineAtPage(Array.from({ length: 120 }, (_, i) => L('action', `line ${i}`)), Math.ceil(t.pages))).not.toBeNull();
   });
 });
 

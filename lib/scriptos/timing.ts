@@ -36,19 +36,43 @@ export function wrappedLines(text: string, width: number): number {
   return lines;
 }
 
-/** Printed lines for a run of script lines; runs of blank lines count once. */
-export function printedLines(lines: TimedLine[]): number {
+/** Printed lines accumulated after each script line — the page a line prints on. */
+export function printedLineRuns(lines: TimedLine[]): number[] {
+  const runs: number[] = [];
   let total = 0;
   let prevBlank = false;
   for (const l of lines) {
-    if (SILENT.has(l.type)) continue;
-    const blank = l.type === 'empty' || !l.text.trim();
-    if (blank) { if (!prevBlank) total += 1; prevBlank = true; continue; }
-    prevBlank = false;
-    total += wrappedLines(l.text, WIDTH[l.type] ?? WIDTH.action);
+    if (!SILENT.has(l.type)) {
+      const blank = l.type === 'empty' || !l.text.trim();
+      if (blank) { if (!prevBlank) total += 1; prevBlank = true; }
+      else { prevBlank = false; total += wrappedLines(l.text, WIDTH[l.type] ?? WIDTH.action); }
+    }
+    runs.push(total);
   }
-  return total;
+  return runs;
 }
+
+/** Printed lines for a run of script lines; runs of blank lines count once. */
+export function printedLines(lines: TimedLine[]): number {
+  const runs = printedLineRuns(lines);
+  return runs.length ? runs[runs.length - 1] : 0;
+}
+
+/**
+ * The index of the first script line printed on `page` (1-based), or null when
+ * the script has no such page. The inverse of the page count: page `n` starts
+ * at printed line `(n - 1) × linesPerPage`.
+ */
+export function lineAtPage(lines: TimedLine[], page: number, linesPerPage = LINES_PER_PAGE): number | null {
+  const runs = printedLineRuns(lines);
+  const total = runs.length ? runs[runs.length - 1] : 0;
+  if (page < 1 || total === 0) return null;
+  if (page > Math.ceil(total / linesPerPage)) return null;
+  const from = (page - 1) * linesPerPage;
+  for (let i = 0; i < runs.length; i++) if (runs[i] > from) return i;
+  return null;
+}
+
 
 /** A scene's length in eighths of a page — the unit schedules use — never less than 1/8. */
 export function eighthsOf(lines: TimedLine[]): number {
