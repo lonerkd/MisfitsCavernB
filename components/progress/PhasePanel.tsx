@@ -10,9 +10,11 @@ import { suggestPhase, toolsOpenedAt, type Place, type ProjectProgress, type Too
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
 import { advancePhase, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
 import { useFlag } from '@/components/Flag';
-import { studio } from '@/lib/studio';
 import { gateItems, type GateDecision, type GateItem } from '@/lib/studio/gate';
-import { PhaseGate } from './PhaseGate';
+import dynamic from 'next/dynamic';
+
+// The gate dialog and the library reader load only when the owner moves a project forward.
+const PhaseGate = dynamic(() => import('./PhaseGate').then((m) => m.PhaseGate));
 import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
 import { UnlockReveal } from './UnlockReveal';
@@ -123,7 +125,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     if (forward && gatesOn && isOwner) {
       setBusy(true);
       let items: GateItem[] = [];
-      try { items = gateItems(await studio.listMedia(projectId)); }
+      try { const { studio } = await import('@/lib/studio'); items = gateItems(await studio.listMedia(projectId)); }
       catch (e) { setBusy(false); toast(e instanceof Error ? e.message : 'Could not read the library', 'error'); return; }
       setBusy(false);
       if (items.length) { setGate({ index, items }); return; }
