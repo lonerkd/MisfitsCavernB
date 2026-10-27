@@ -8,6 +8,8 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { suggestPhase, toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
+import { listVersions, approvalBlocker } from '@/lib/review/versions';
+import { findFormat, useFormats } from '@/lib/formats/formats';
 import { advancePhase, listWorkingMedia, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
 import { useFlag } from '@/components/Flag';
 import { gateItems, toBulk, type GateDecision, type GateItem } from '@/lib/studio/gate';
@@ -57,6 +59,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
 }) {
   const confirm = useConfirm();
   const { toast } = useToast();
+  const { formats } = useFormats();
   const { progress, signals, loading, error, reload } = state;
   const [selected, setSelected] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,6 +110,19 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   const moveTo = async (index: number) => {
     const target = progress.phases[index];
     const forward = index > progress.currentIndex;
+    // A phase the client has to sign off cannot be left until they have (the database enforces it too).
+    if (forward && signals) {
+      const gates = findFormat(formats, signals.project_type)?.rules.approval_gates ?? [];
+      const leaving = progress.phases.slice(progress.currentIndex, index).map((ph) => ph.id);
+      if (leaving.some((id) => gates.includes(id))) {
+        setBusy(true);
+        let blocker: string | null = null;
+        try { blocker = approvalBlocker(await listVersions(projectId)); }
+        catch (e) { setBusy(false); toast(e instanceof Error ? e.message : 'Could not check the client’s approval', 'error'); return; }
+        setBusy(false);
+        if (blocker) { toast(`Not yet: ${blocker}`, 'error'); return; }
+      }
+    }
     if (forward) {
       const left = progress.phases.slice(0, index).reduce((n, ph) => n + (ph.total - ph.done), 0);
       if (left > 0 && !await confirm({

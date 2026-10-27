@@ -456,6 +456,7 @@ column project_documents.storage_path text
 column project_documents.title text not null
 column project_documents.updated_at timestamp with time zone default now() not null
 column project_documents.vendor_id uuid
+column project_formats.approval_gates text[] default '{}'::text[] not null
 column project_formats.blurb text default ''::text not null
 column project_formats.created_at timestamp with time zone default now() not null
 column project_formats.icon text default 'film'::text not null
@@ -1072,6 +1073,7 @@ constraint project_documents.project_documents_status_check CHECK ((status = ANY
 constraint project_documents.project_documents_text_len CHECK (((char_length(party) <= 200) AND (char_length(notes) <= 2000) AND (char_length(file_name) <= 200)))
 constraint project_documents.project_documents_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
 constraint project_documents.project_documents_vendor_fkey FOREIGN KEY (vendor_id, project_id) REFERENCES vendors(id, project_id) ON DELETE SET NULL (vendor_id)
+constraint project_formats.project_formats_approval_gates_check CHECK ((approval_gates <@ ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text]))
 constraint project_formats.project_formats_blurb_len CHECK ((char_length(blurb) <= 140))
 constraint project_formats.project_formats_icon_check CHECK ((icon ~ '^[a-z-]{1,30}$'::text))
 constraint project_formats.project_formats_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
@@ -1274,6 +1276,7 @@ constraint writing_days.writing_days_words_check CHECK (((words >= 0) AND (words
 event-trigger ensure_rls ddl_command_end rls_auto_enable
 function internal.activity_project_id(meta jsonb) body=150ab382daa40f01dacef67d33cffbd0
 function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
+function internal.approval_pending(p_project uuid) body=74550b17ff86f1dc4ab6b56df2790396
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=23684b4bcfd808ab21df2a91536571fa
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -1310,6 +1313,7 @@ function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
+function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
@@ -1317,6 +1321,7 @@ function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb177
 function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d94
 function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
+function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
@@ -1394,6 +1399,7 @@ function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
 grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
+grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -1430,6 +1436,7 @@ grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
+grant function internal.phase_rank(p_status text) postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
@@ -1437,6 +1444,7 @@ grant function internal.project_documents_sync_permit() postgres
 grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
+grant function internal.projects_approval_gate() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
@@ -1607,6 +1615,7 @@ index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btr
 index CREATE INDEX item_versions_confirmed_by_idx ON public.item_versions USING btree (confirmed_by)
 index CREATE INDEX item_versions_created_by_idx ON public.item_versions USING btree (created_by)
 index CREATE INDEX item_versions_project_idx ON public.item_versions USING btree (project_id, created_at DESC)
+index CREATE INDEX item_versions_sent_idx ON public.item_versions USING btree (project_id, script_id, number DESC) WHERE (status = 'sent'::text)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX links_created_by_idx ON public.links USING btree (created_by)
 index CREATE INDEX links_from_project_idx ON public.links USING btree (from_entity, project_id)
@@ -2240,6 +2249,7 @@ trigger CREATE TRIGGER project_documents_sync_permit AFTER INSERT OR UPDATE ON p
 trigger CREATE TRIGGER project_documents_touch BEFORE INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.project_documents_touch()
 trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_link_scenes()
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
+trigger CREATE TRIGGER projects_approval_gate BEFORE UPDATE OF status ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_approval_gate()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()

@@ -2641,6 +2641,7 @@ export type Database = {
       };
       project_formats: {
         Row: {
+          approval_gates: string[];
           blurb: string;
           created_at: string;
           icon: string;
@@ -2653,6 +2654,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          approval_gates?: string[];
           blurb?: string;
           created_at?: string;
           icon?: string;
@@ -2664,6 +2666,7 @@ export type Database = {
           skip_phases?: string[];
         };
         Update: {
+          approval_gates?: string[];
           blurb?: string;
           created_at?: string;
           icon?: string;

@@ -5,7 +5,7 @@ const base: FormatInput = { name: ' Live  Event ', blurb: 'A one-night show.', i
 
 describe('checkFormat', () => {
   it('accepts a good format, tidied', () => {
-    expect(checkFormat(base)).toEqual({ ok: true, value: { ...base, name: 'Live Event' } });
+    expect(checkFormat(base)).toEqual({ ok: true, value: { ...base, name: 'Live Event', approval_gates: [] } });
   });
   it('says what is wrong, in words', () => {
     expect(checkFormat({ ...base, name: ' ' })).toEqual({ ok: false, error: 'Give the format a name.' });
@@ -19,5 +19,19 @@ describe('checkFormat', () => {
   it('keeps only the phases a format may skip, once each', () => {
     const r = checkFormat({ ...base, skip_phases: ['production', 'production', 'pre-production', 'delivery' as never] });
     expect(r).toMatchObject({ ok: true, value: { skip_phases: ['pre-production', 'production'] } });
+  });
+});
+
+describe('approval gates', () => {
+  it('keeps gates in phase order and drops duplicates and unknown phases', () => {
+    const r = checkFormat({ ...base, skip_phases: [], approval_gates: ['production', 'pre-production', 'production', 'delivery' as never] });
+    expect(r).toMatchObject({ ok: true, value: { approval_gates: ['pre-production', 'production'] } });
+  });
+  it('drops a gate on a phase the format skips, since it would never be reached', () => {
+    const r = checkFormat({ ...base, skip_phases: ['production'], approval_gates: ['production', 'pre-production'] });
+    expect(r).toMatchObject({ ok: true, value: { approval_gates: ['pre-production'] } });
+  });
+  it('no gates by default', () => {
+    expect(checkFormat(base)).toMatchObject({ ok: true, value: { approval_gates: [] } });
   });
 });
