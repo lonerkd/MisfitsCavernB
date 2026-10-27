@@ -1303,6 +1303,7 @@ function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
+function internal.hub_posts_announce_scheduled() body=aa8aeef07e7fce52094f4238f5a78d51
 function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
@@ -1426,6 +1427,7 @@ grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_announce_scheduled() postgres
 grant function internal.hub_posts_check_consent() postgres
 grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
