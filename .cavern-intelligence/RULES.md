@@ -15,7 +15,7 @@ keep it cohesive, get it ready for paying users.
 
 Stack: Next.js 16 App Router (React 19, webpack build) · TypeScript ·
 Tailwind · framer-motion · Supabase (Postgres + RLS, Auth, Realtime,
-Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
+Storage; the production and staging projects are in `tools-and-access.md` §2) · WebRTC · Vercel
 (deploys `main` of `lonerkd/MisfitsCavernB`). Auth gating is `proxy.ts`.
 
 ## Start of every session
@@ -26,7 +26,8 @@ Storage; production project `fxsryglwpwcqkfjljbrm`) · WebRTC · Vercel
    [`sessions/`](sessions/README.md) for what the last PRs did (Claude Code
    prints the latest three at start).
 3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
-4. [`INDEX.md`](INDEX.md) — the map: where everything else is.
+4. [`INDEX.md`](INDEX.md) — the map: where everything else is, the playbook
+   included. Nothing else is a required read to start.
 
 ## Non-negotiables
 

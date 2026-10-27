@@ -12,9 +12,9 @@
 4. **Owner's dashboard list for password recovery (3.4, shipped):** a custom
    SMTP sender (Supabase's built-in one only mails team members, so real users
    won't get reset emails); add `https://misfits-cavern-b.vercel.app/**` to
-   Auth › URL Configuration › Redirect URLs; mark GitGuardian incidents
-   37942181 and 37942439 false positives (test fixtures); delete the two
-   accounts `e2e.recover.*@example.com` an earlier session made in production.
+   Auth › URL Configuration › Redirect URLs; mark the two open GitGuardian incidents
+   (test fixtures) false positives; delete the two throwaway e2e accounts an
+   earlier session made in production (Authentication › Users).
 5. **Local setup**: `npm ci`; `.claude/skills/` has three real skills
    (`run-misfits-cavern`, `supabase`, `supabase-postgres-best-practices`);
    context loads from `CLAUDE.md`. In a cloud container Docker dies between
@@ -59,8 +59,8 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
 
 - Leaked-password protection is off (owner toggle; security advisor WARN).
 - *Production schema drift* is **green** (2026-10-25, after the seven
-  migrations of 10-16…10-19 were applied). It logs in as `drift_reader`
-  (catalog reads + bucket settings only; `tools-and-access.md` §7).
+  migrations of 10-16…10-19 were applied). It logs in with a read-only
+  catalog role (`tools-and-access.md` §7).
 - Supabase free plan: "grace period is over" banner. Database 23 MB, storage
   46 kB, 20 users, ~200 requests/day — all well inside the limits, so the
   overage is something only the dashboard shows (likely egress or Realtime).

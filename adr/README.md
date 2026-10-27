@@ -22,6 +22,8 @@ rewritten to look different from how it happened.
 | [0004](0004-push-dispatch-from-the-database.md) | Web Push dispatched by the database via `pg_net` | Accepted |
 | [0005](0005-the-film-graph.md) | The film graph: one connected core, reached one tool at a time | Accepted |
 | [0006](0006-staging-environment.md) | Staging environment: preview builds use placeholder Supabase keys | Accepted |
+| [0007](0007-feature-flags.md) | Feature flags: a typed registry in code | Accepted |
+| [0008](0008-conflict-free-co-writing.md) | Conflict-free co-writing: a CRDT for the script text only | Accepted |
 
 ## Template
 

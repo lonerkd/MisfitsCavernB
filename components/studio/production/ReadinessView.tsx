@@ -39,7 +39,7 @@ const fmtDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(
  * here is ticked by hand: it all follows the project's data, live.
  */
 export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => boolean }) {
-  const { project, scenes, shots, mediaByScene, scriptId, followScene, openInScript } = useStudio();
+  const { project, scenes, shots, mediaByScene, scriptId, followScene, openInScript, castOf } = useStudio();
   const bd = useBreakdown(project.id);
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
@@ -68,8 +68,8 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const refsByScene = new Map(Array.from(mediaByScene.entries()).map(([id, list]) => [id, list.length]));
     const dateOfDay = new Map(sheets.rows.filter((c) => c.shoot_date).map((c) => [c.shoot_day, c.shoot_date as string]));
     const locationMap = new Map(locations.rows.map((l) => [locationKey(l.name), { status: l.status, permit: l.permit }]));
-    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
-  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, castings.rows, locations.rows]);
+    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
+  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, castings.rows, locations.rows, castOf]);
 
   const days = useMemo(() => readinessByDay(scenes.rows, input), [scenes.rows, input]);
   const all = useMemo(() => days.flatMap((d) => d.scenes), [days]);
@@ -90,7 +90,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const notReady = new Set<string>();
     for (const x of open) {
       const sc = headingOf.get(x.sceneId);
-      for (const name of (sc?.cast_list ?? '').split(',').map((n) => n.trim().toUpperCase()).filter(Boolean)) if (!input.cast.has(name)) uncast.add(name);
+      for (const name of sc ? castOf(sc) : []) if (!input.cast.has(name)) uncast.add(name);
       for (const e of input.elementsByScene.get(x.sceneId) ?? []) if (e.status !== 'ready') notReady.add(e.name);
     }
     const unbroken = open.filter((x) => (input.elementsByScene.get(x.sceneId) ?? []).length === 0).length;
@@ -106,7 +106,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     if (undatedDays.length) items.push({ id: 'date', text: `Date day${undatedDays.length === 1 ? '' : 's'} ${undatedDays.slice(0, 5).join(', ')}${undatedDays.length > 5 ? '…' : ''}`, scenes: of('date').length - unscheduled });
     if (unscheduled) items.push({ id: 'date', text: `Schedule ${unscheduled} scene${unscheduled === 1 ? '' : 's'}`, scenes: unscheduled });
     return items.sort((a, b) => b.scenes - a.scenes);
-  }, [all, headingOf, input]);
+  }, [all, headingOf, input, castOf]);
 
   const matches = (x: SceneReadiness) =>
     filter === 'all' || (filter === 'blocked' && x.state === 'blocked') || (filter === 'ready' && x.state === 'ready') || (filter === 'done' && (x.state === 'shot' || x.state === 'wrapped'));

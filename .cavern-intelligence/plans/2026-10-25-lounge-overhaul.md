@@ -46,9 +46,9 @@ tests in `tests/integration/` for each table.
 |---|---|---|---|
 | **L0** ✅ (2026-10-25) | Take the page apart: split `lounge/page.tsx` into a layout, rail, channel view, composer, thread and voice components with no behaviour change | M | page under 300 lines; existing e2e and unit tests pass unchanged |
 | **L1** ✅ (2026-10-25) | Hub as newsletter: *What's new* + *Learn* (`hub_posts` kinds `update`, `guide`), the four audience pages, admin editor at `/admin/hub`, "new" badge, push only for posts marked important; the hub becomes the landing page | M | an admin publishes an update, a member sees the badge and a push; persona test |
-| **L2** | *Status*: incidents (severity, updates, resolved), a banner across the suite while one is open | S | an open incident shows a banner everywhere; resolving clears it |
-| **L3** | *Help*: support cases, admin queue at `/admin/support` | M | a member opens a case, an admin answers, the member is notified; Riley can't read others' |
-| **L4** | *Case studies*: long-form posts with media, linked to a public production where the owner agreed | S | a case study renders with media and links |
+| **L2** ✅ (2026-10-26, behind flag `hub_status`) | *Status*: incidents (severity, updates, resolved), a banner across the suite while one is open | S | an open incident shows a banner everywhere; resolving clears it |
+| **L3** ✅ (2026-10-26) | *Help*: support cases, admin queue at `/admin/support` | M | a member opens a case, an admin answers, the member is notified; Riley can't read others' |
+| **L4** ✅ (2026-10-26) | *Case studies*: long-form posts with media, linked to a public production where the owner agreed | S | a case study renders with media and links |
 | **L5** | Redesign: the three-area rail, phone layout, empty states, onboarding into the hub | M | design review on desktop and phone; screens regenerated (`npm run bible:shots`) |
 | **L6** | Move today's read-only guide channels into *Learn* | S | no `type = 'guide'` channels left; links redirect |
 
@@ -60,6 +60,6 @@ tests in `tests/integration/` for each table.
 2. **Push:** only for posts marked important.
 3. **Order:** the newsletter (What's new, Learn, the audience pages) first,
    then Help. Help answers stay in-app until the email sender exists (3.15).
-4. **Case studies:** not yet decided — proposed: only productions whose owner opts in.
+4. **Case studies:** only productions whose owner opts in (decided 2026-10-26).
 5. **Landing:** the hub is the landing page. **Today** stays what it is: the
    offline-first, phone-first view of a project's shoot day — not a landing page.

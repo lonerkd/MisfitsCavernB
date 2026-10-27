@@ -84,9 +84,41 @@ fetch.
 - **Who sees what**: signed in — published posts; admins — drafts too; anon —
   nothing. Each person's reads are their own. Persona test:
   `tests/integration/hub.test.ts`.
+- **Status** (L2, behind flag `hub_status`: on locally and on previews, admins
+  only in production): an incident is a hub post of kind `incident` with a
+  severity (minor / major / critical) and `resolved_at`; admins create it at
+  `/admin/hub`, post running updates and resolve or reopen it on its page
+  (`components/hub/IncidentDetail.tsx`, table `hub_incident_updates`,
+  `20261026000000_hub_status.sql`). Publishing an incident always notifies
+  everyone; resolving doesn't. While one is open, a banner across the suite
+  (`components/hub/IncidentBanner.tsx`) shows the most severe, dismissible per
+  incident for the session; it rechecks every 60 s. The Status tab lists open
+  incidents first (most severe), then resolved ones.
+- **Help** (L3, behind flag `hub_help`: on locally and on previews, admins only
+  in production): `/hub/help` — a person opens a support case (subject,
+  message, the page they came from via `?from=`) and follows it at
+  `/hub/help/<id>`; admins work the queue at `/admin/support` (needs an answer
+  / waiting on them / resolved). Tables `support_cases` and
+  `support_case_messages` (`20261027000000_hub_support.sql`): only the opener
+  and admins read a case; only admins change its status; whether a message is
+  an admin's is set by the database. An admin's answer moves the case to
+  waiting and notifies the opener (so a push); the opener's message moves it
+  back to open and notifies the admins. Persona test:
+  `tests/integration/hub-support.test.ts`.
+- **Case studies** (L4, behind flag `hub_case_studies`: on locally and on
+  previews, admins only in production): a hub post of kind `case_study`, which
+  an admin may link to one production — **only if its owner opted in**. The
+  owner flips "Allow a case study about this production" in Studio › Share
+  (`projects.case_study_ok`, default off, creator-only); the post then shows
+  the production's title and logline to signed-in readers
+  (`hub_case_study_project`). Withdrawing consent unlinks every case study
+  about it and takes it back to draft (`20261028000000_hub_case_studies.sql`).
+  Admins pick from consenting productions only (`admin_case_study_projects`).
+  Persona test: `tests/integration/hub-case-studies.test.ts`.
 - **Known gaps**: no scheduling UI (a future `published_at` works in the data);
-  no image upload (cover is an https link); Status, Help and Case studies are
-  slices L2–L4.
+  no image upload (cover is an https link); Help has no screenshot attachment
+  and no email (in-app and push only until 3.15); a case study shows the
+  title and logline only, not the production's media or a link to it.
 
 ## `/soundtrack`
 

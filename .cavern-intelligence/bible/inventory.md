@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**43 pages · 6 API routes · 72 tables · 54 database functions · 69 e2e specs**
+**46 pages · 6 API routes · 75 tables · 56 database functions · 69 e2e specs**
 
 ## Routes
 
@@ -20,20 +20,23 @@
 | `/admin/crafts` | admin | `app/(suite)/admin/crafts/page.tsx` (103) | 34 files · components: ui · lib: auth, crafts, formats, hooks, os, push, supabase, types, validation | accessibility, admin-crafts |
 | `/admin/errors` | admin | `app/(suite)/admin/errors/page.tsx` (132) | 30 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | errors |
 | `/admin/formats` | admin | `app/(suite)/admin/formats/page.tsx` (107) | 35 files · components: formats, ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-formats |
-| `/admin/hub` | admin | `app/(suite)/admin/hub/page.tsx` (164) | 33 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
-| `/admin` | admin | `app/(suite)/admin/page.tsx` (286) | 29 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, keyboard-audit |
+| `/admin/hub` | admin | `app/(suite)/admin/hub/page.tsx` (185) | 39 files · components: Flag, hub, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/admin` | admin | `app/(suite)/admin/page.tsx` (300) | 33 files · components: Flag, ui · lib: auth, flags, formats, hooks, os, push, supabase, types, validation | accessibility, keyboard-audit |
 | `/admin/reports` | admin | `app/(suite)/admin/reports/page.tsx` (126) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, hide-message, reports |
+| `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 31 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (275) | 28 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (481) | 35 files · components: ui · lib: account, auth, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, continuity, credits, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, guides, hide-message, hiring, install, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, password-recovery, phases, project-manager, projects-keyboard-phase, readiness, reading-corrections, real-data, reports, route-smoke, script-share, search, shot-designer, split, spotify-connect, studio-journey, suspend-user, table-read, themes, today-owner, transcripts, view-as, writing-loop, your-data |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (484) | 39 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, continuity, credits, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, guides, hide-message, hiring, install, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, password-recovery, phases, project-manager, projects-keyboard-phase, readiness, reading-corrections, real-data, reports, route-smoke, script-share, search, shot-designer, split, spotify-connect, studio-journey, suspend-user, table-read, themes, today-owner, transcripts, view-as, writing-loop, your-data |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 33 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (226) | 49 files · components: projects, ui · lib: auth, brief, formats, os, push, scriptos, studio, supabase, types, validation | call-sheets, push |
 | `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (364) | 41 files · components: ui · lib: auth, credits, formats, hooks, os, push, studio, supabase, types, util, validation | accessibility, credits, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 41 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1193) | 163 files · components: breakdown, editor, studio, ui · lib: auth, breakdown, brief, errors, film, formats, guides, hooks, integrations, notifications, os, pocket, push, scriptos, split, spotify, storage, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, cut-notes, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, emphasis, keyboard-audit, layout, mobile, onboarding, phases, reading-corrections, route-smoke, script-share, split, studio-journey, table-read, writing-loop |
-| `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (57) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
-| `/hub` | signed in | `app/(suite)/hub/page.tsx` (98) | 30 files · components: ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | auth-journey |
+| `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (68) | 37 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/hub/help/[id]` | signed in | `app/(suite)/hub/help/[id]/page.tsx` (44) | 31 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/hub/help` | signed in | `app/(suite)/hub/help/page.tsx` (86) | 30 files · components: ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/hub` | signed in | `app/(suite)/hub/page.tsx` (108) | 35 files · components: Flag, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | auth-journey |
 | `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (552) | 34 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (440) | 49 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, reports, route-smoke |
 | `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 76 files · components: lounge, projects, ui · lib: auth, brief, formats, hooks, lounge, notifications, os, push, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community, hide-message, island, keyboard-audit, layout, lounge, mobile, route-smoke |
@@ -49,7 +52,7 @@
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (462) | 41 files · components: ui · lib: auth, errors, formats, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (232) | 4 files · components: — · lib: hooks, split | split |
-| `/studio` | signed in | `app/(suite)/studio/page.tsx` (229) | 169 files · components: breakdown, brief, film, formats, progress, projects, studio, ui · lib: auth, availability, breakdown, brief, film, formats, guides, hooks, integrations, lounge, notifications, os, pocket, push, references, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, availability, beat-to-script, breakdown, call-sheets, continuity, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, hiring, keyboard-audit, layout, locations, mobile, money, on-set, onset-offline, phases, project-manager, readiness, reading-corrections, real-data, route-smoke, search, shot-designer, split, studio-journey, transcripts |
+| `/studio` | signed in | `app/(suite)/studio/page.tsx` (229) | 173 files · components: Flag, breakdown, brief, film, formats, progress, projects, studio, ui · lib: auth, availability, breakdown, brief, film, flags, formats, guides, hooks, hub, integrations, lounge, notifications, os, pocket, push, references, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, availability, beat-to-script, breakdown, call-sheets, continuity, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, hiring, keyboard-audit, layout, locations, mobile, money, on-set, onset-offline, phases, project-manager, readiness, reading-corrections, real-data, route-smoke, search, shot-designer, split, studio-journey, transcripts |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (284) | 46 files · components: mobile, ui · lib: auth, formats, guides, hooks, notifications, os, pocket, push, pwa, supabase, themes, today, types, util, validation | auth-journey, errors, install, island, layout, mobile, today-owner |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 62 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
@@ -128,13 +131,13 @@
 
 ### `/admin/hub`
 
-- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `hub_posts`, `hub_reads`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
-- **Functions:** `get_my_account`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scripts`, `timeline_items`
+- **Functions:** `admin_case_study_projects`, `get_my_account`, `hub_case_study_project`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin`
 
-- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scripts`, `timeline_items`
 - **Functions:** `get_my_account`, `get_platform_stats`
 - **Realtime:** `project`, `projects:list`
 
@@ -142,6 +145,12 @@
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `timeline_items`
 - **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`
+- **Realtime:** `project`, `projects:list`
+
+### `/admin/support`
+
+- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `support_case_messages`, `support_cases`, `timeline_items`
+- **Functions:** `get_my_account`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin/users`
@@ -158,7 +167,7 @@
 
 ### `/auth`
 
-- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scripts`, `timeline_items`
 - **Functions:** `get_my_account`, `log_password_breach`
 - **Realtime:** `project`, `projects:list`
 
@@ -199,13 +208,25 @@
 
 ### `/hub/[id]`
 
-- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `hub_posts`, `hub_reads`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
+- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
+- **Functions:** `admin_case_study_projects`, `get_my_account`, `hub_case_study_project`
+- **Realtime:** `project`, `projects:list`
+
+### `/hub/help/[id]`
+
+- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `support_case_messages`, `support_cases`, `timeline_items`
+- **Functions:** `get_my_account`
+- **Realtime:** `project`, `projects:list`
+
+### `/hub/help`
+
+- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `support_case_messages`, `support_cases`, `timeline_items`
 - **Functions:** `get_my_account`
 - **Realtime:** `project`, `projects:list`
 
 ### `/hub`
 
-- **Tables:** `audit_logs`, `budget_items`, `campaigns`, `hub_posts`, `hub_reads`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scripts`, `timeline_items`
 - **Functions:** `get_my_account`
 - **Realtime:** `project`, `projects:list`
 
@@ -299,7 +320,7 @@
 ### `/studio`
 
 - **Tables:** `activity_feed`, `audit_logs`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `character_castings`, `character_media`, `characters`, `discord_integrations`, `expenses`, `jobs`, `media`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `project_tasks`, `projects`, `push_subscriptions`, `reading_corrections`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `set_log`, `shoot_days`, `shots`, `timeline_items`, `timesheets`, `transcript_lines`, `unavailability`, `vendors`
-- **Functions:** `ack_call_sheet`, `append_to_script`, `breakdown_memory`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `get_shared_lookbook`, `has_discord_webhook`, `issue_call_sheet`, `project_availability`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
+- **Functions:** `ack_call_sheet`, `admin_case_study_projects`, `append_to_script`, `breakdown_memory`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `get_shared_lookbook`, `has_discord_webhook`, `hub_case_study_project`, `issue_call_sheet`, `project_availability`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
 - **Realtime:** `activity`, `live`, `lounge-presence`, `project`, `projects:list`, `script`
 
 ### `/today`
@@ -338,17 +359,17 @@
 
 | Table | Used by |
 |---|---|
-| `activity_feed` | `/p/[token]`, `/auth/callback`, `/crew/[id]`, `/crew`, `/jobs`, `/lounge`, `/profile`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/studio`, `/welcome` |
-| `audit_logs` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `activity_feed` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/hub`, `/jobs`, `/lounge`, `/profile`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/studio`, `/welcome` |
+| `audit_logs` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `breakdown_categories` | `/editor`, `/projects/[id]`, `/studio` |
 | `breakdown_dismissals` | `/editor`, `/projects/[id]`, `/studio` |
 | `breakdown_elements` | `/editor`, `/projects/[id]`, `/studio` |
 | `brief_questions` | `/admin/brief-questions`, `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
-| `budget_items` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `budget_items` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `call_sheet_acks` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `call_sheet_calls` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio`, `/today` |
 | `call_sheets` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio`, `/today` |
-| `campaigns` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `campaigns` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `channel_members` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `channel_presets` | `/admin/brief-questions`, `/admin/channel-presets`, `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `channels` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/today`, `/welcome`, `/api/discord/notify` |
@@ -361,31 +382,32 @@
 | `expenses` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `guide_progress` | `/projects/[id]` |
 | `hidden_messages` | **no route** (server-side, triggers or functions only) |
+| `hub_incident_updates` | `/admin/hub`, `/hub/[id]`, `/hub` |
 | `hub_posts` | `/admin/hub`, `/hub/[id]`, `/hub` |
 | `hub_reads` | `/admin/hub`, `/hub/[id]`, `/hub` |
 | `job_applications` | `/jobs/[id]`, `/jobs`, `/`, `/projects/[id]` |
-| `jobs` | `/p/[token]`, `/auth/callback`, `/crew/[id]`, `/crew`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/settings`, `/studio`, `/welcome` |
+| `jobs` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/settings`, `/studio`, `/welcome` |
 | `lounge_reads` | **no route** (server-side, triggers or functions only) |
 | `media` | `/p/[token]`, `/shared/[token]`, `/call/[id]`, `/crew/[id]`, `/editor`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/studio`, `/today` |
 | `messages` | `/lounge`, `/`, `/projects/[id]`, `/today` |
-| `notifications` | `/p/[token]`, `/auth/callback`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/today`, `/welcome`, `/api/push/dispatch` |
+| `notifications` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/editor`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/today`, `/welcome`, `/api/push/dispatch` |
 | `portfolio_blocks` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
 | `portfolio_media` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
 | `portfolio_projects` | `/p/[token]`, `/s/[token]`, `/shared/[token]`, `/crew/[id]`, `/lounge`, `/m/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/today` |
 | `post_cuts` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `post_items` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `post_notes` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
-| `profiles` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome`, `/api/discord/notify`, `/api/push/dispatch` |
+| `profiles` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome`, `/api/discord/notify`, `/api/push/dispatch` |
 | `project_audio_references` | `/editor`, `/settings`, `/soundtrack` |
-| `project_beats` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `project_beats` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `project_brief` | `/admin/brief-questions`, `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
-| `project_crew` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `project_crew` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `project_documents` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `project_formats` | `/admin/brief-questions`, `/admin/formats`, `/call/[id]`, `/editor`, `/lounge`, `/portfolio/manage`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `project_locations` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `project_tasks` | `/lounge`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/studio`, `/today`, `/welcome` |
-| `projects` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
-| `push_subscriptions` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome`, `/api/push/dispatch` |
+| `projects` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `push_subscriptions` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome`, `/api/push/dispatch` |
 | `reading_corrections` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `reports` | `/admin/reports`, `/crew/[id]`, `/jobs`, `/lounge` |
 | `scene_characters` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
@@ -398,13 +420,15 @@
 | `script_metadata` | `/editor` |
 | `script_revisions` | `/editor` |
 | `script_stash` | `/editor` |
-| `scripts` | `/p/[token]`, `/admin/brief-questions`, `/auth/callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `scripts` | `/p/[token]`, `/admin/brief-questions`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `set_log` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `sfx_assets` | `/editor`, `/settings`, `/soundtrack` |
 | `shoot_days` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `shots` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `spotify_connections` | `/auth/spotify-callback`, `/editor`, `/soundtrack` |
-| `timeline_items` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
+| `support_case_messages` | `/admin/support`, `/hub/help/[id]`, `/hub/help` |
+| `support_cases` | `/admin/support`, `/hub/help/[id]`, `/hub/help` |
+| `timeline_items` | `/p/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `timesheets` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `transcript_lines` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `unavailability` | `/profile`, `/studio` |
@@ -418,6 +442,7 @@
 | `account_deletion_plan` | called from a route |
 | `ack_call_sheet` | called from a route |
 | `add_script_annotation` | called from a route |
+| `admin_case_study_projects` | called from a route |
 | `admin_close_job` | called from a route |
 | `admin_hide_message` | called from a route |
 | `admin_list_users` | called from a route |
@@ -444,6 +469,7 @@
 | `get_shared_script` | called from a route |
 | `handle_new_user` | internal (policies, triggers, other functions) |
 | `has_discord_webhook` | called from a route |
+| `hub_case_study_project` | called from a route |
 | `issue_call_sheet` | called from a route |
 | `log_password_breach` | called from a route |
 | `log_writing` | called from a route |

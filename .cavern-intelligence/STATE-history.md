@@ -31,7 +31,7 @@ No migration.
 - **`/auth/reset`**: the email link signs the person in with a recovery session; they choose a new password (common-password, email-based and leaked-password checks, confirmation) via `updateUser`. An expired, used or foreign-browser link says so and offers a new one. Logic in `lib/auth/recovery.ts` (tested).
 - `supabase/config.toml` allows `/auth/reset` on any local port. **Owner**: add the production URL to Auth › URL Configuration (BACKLOG §1).
 - Test: `e2e/password-recovery.spec.ts` reads the email from the local mail catcher (request → email → new password → old one refused → new one signs in), plus unknown address, bad email, expired link.
-- Process: my first e2e runs used the shared folder's `.env.local` and created two throwaway accounts (`e2e.recover.*@example.com`) in production; they are left for the owner to delete. Run e2e from a worktree with the local stack's keys (`supabase status -o env`).
+- Process: my first e2e runs used the shared folder's `.env.local` and created two throwaway accounts in production; they are left for the owner to delete. Run e2e from a worktree with the local stack's keys (`supabase status -o env`).
 
 ## Earlier — Data access through `lib/`, and lint keeps it there (PR #137)
 
