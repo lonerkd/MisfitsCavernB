@@ -166,7 +166,10 @@ describe('the guest', () => {
     for (let i = 0; i < 8; i++) {
       expect((await guest().rpc('add_review_comment', { p_token: flood.token, p_version: sent, p_name: 'Bot', p_body: `spam ${i}` })).data).toBe(true);
     }
-    // A simultaneous burst can't slip past the count either.
+    const sequential = (await admin().from('notifications').select('id').eq('user_id', cast.sam.id).eq('type', 'review').like('title', 'New comment%')).data!;
+    expect(sequential).toHaveLength(5);
+    // A simultaneous burst can't slip past the count either (start from an empty quota).
+    await admin().from('notifications').delete().eq('user_id', cast.sam.id).eq('type', 'review');
     const burst = await Promise.all(Array.from({ length: 6 }, (_, i) => guest().rpc('add_review_comment', { p_token: flood.token, p_version: sent, p_name: 'Bot', p_body: `burst ${i}` })));
     expect(burst.every((b) => b.data === true)).toBe(true);
     const told = (await admin().from('notifications').select('id').eq('user_id', cast.sam.id).eq('type', 'review').like('title', 'New comment%')).data!;

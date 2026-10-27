@@ -15,3 +15,9 @@ comments per link is bounded but not per-visitor.
 `20261031000300_review_throttle_lock.sql` serialises it per recipient with a
 transaction advisory lock, and the test now fires a simultaneous burst and
 asserts all 14 comments are stored while the notifications stay at 5.
+
+**Second follow-up (Copilot):** the per-recipient locks could be taken in
+opposite orders by two overlapping calls — `20261031000400_review_lock_order.sql`
+takes them `ORDER BY id`. The burst test now starts from an empty quota, so it
+exercises the race. Lesson: wait for Copilot's review (≈3–4 min after CI) before
+merging, so its findings land in one PR, not three.
