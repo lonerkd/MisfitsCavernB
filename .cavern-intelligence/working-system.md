@@ -200,6 +200,39 @@ looking. Cheapest fix: have it open or comment on an issue on failure, the way
 `agent-status` already writes an issue. Then a broken journey shows up where you
 already look.
 
+**The bigger gap: production migrations are applied by hand, and nothing enforces it.**
+
+No workflow in this repository applies migrations to production. The only
+production-touching workflow is `production-drift`, and it is read-only. So applying a
+merged migration is a manual step, and the drift check is the only thing that notices
+when it is forgotten.
+
+This is not theoretical. On 2026-10-27:
+
+- `5fc126b` (#345, deliverables / copy editor / brand rules) landed on `main` at 23:22.
+- `production-drift` failed at 23:22 **on that exact commit**: production was missing
+  `ad_references`, `brand_rules`, `deliverables`, their RLS policies, triggers and
+  realtime entries, plus `approval_pending` and `get_review`.
+- At 23:30 the **same commit** passed. Production had gained all of it.
+
+Same SHA, opposite results, eight minutes apart. The code did not change; production
+did. Someone applied the migration by hand in that window.
+
+That is the system working as designed, and it is also the fragility: a merged
+migration that nobody applies leaves production behind, and the gate goes red on the
+next push to `main`. It self-healed here because a person was still in the loop. It
+will not always be.
+
+Two things worth doing, in this order:
+
+1. **Write the apply step down** as a runbook: which command, which role, what to check
+   afterwards. Right now it lives in someone's head. The drift check is the safety net,
+   but a net is not a procedure.
+2. **Then decide whether to automate it.** A workflow that applies migrations on merge
+   to `main` removes the manual step and the failure mode with it, at the cost of
+   letting CI change production unattended. That is a real trade and the owner's call,
+   not a default.
+
 **Do not add to PR CI.** It is already thorough and the repo is public, so it is free
 but not instant. Adding more to the PR path trades your attention for nothing.
 
