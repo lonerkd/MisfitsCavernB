@@ -63,6 +63,11 @@ decision). Promote, don't duplicate.
 - **Production lags `main`:** migrations are pasted into the dashboard by the
   owner, by hand, in order (STATE.md "Resume here"). Before diagnosing a
   "broken" production feature, check whether its migration was applied.
+- **Apply a migration byte for byte.** The drift check hashes each function's
+  exact text, comments included. Dropping a `--` comment line inside a
+  function body when pasting it makes the drift run fail on that function (it
+  did on 2026-10-27, `add_review_comment` / `decide_review`). Copy the file
+  as merged; if a body does differ, `CREATE OR REPLACE` it from the file.
 - **The Supabase connector reads production but times out on writes** — a
   tool limit, not a bug; don't "fix" it.
 - **Entry files are generated.** After touching RULES.md, run
