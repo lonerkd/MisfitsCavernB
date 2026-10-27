@@ -200,38 +200,36 @@ looking. Cheapest fix: have it open or comment on an issue on failure, the way
 `agent-status` already writes an issue. Then a broken journey shows up where you
 already look.
 
-**The bigger gap: production migrations are applied by hand, and nothing enforces it.**
+**Production migrations are applied by hand, on purpose, and the procedure is documented.**
 
-No workflow in this repository applies migrations to production. The only
-production-touching workflow is `production-drift`, and it is read-only. So applying a
-merged migration is a manual step, and the drift check is the only thing that notices
-when it is forgotten.
+I first wrote here that this step "lives in someone's head" and needed a runbook. That was
+wrong, and wrong in the same way as the MCP claim: I asserted a gap without looking for
+the thing that filled it. The procedure exists, in three places:
 
-This is not theoretical. On 2026-10-27:
+- `database-and-security.md` §3 is the authoritative migration workflow. Step 7: *"After
+  merge: apply the same migration file to production, then run the Production schema drift
+  workflow — it must be green."*
+- `PLAYBOOK.md` (Pitfalls): *"Production lags `main`: migrations are pasted into the
+  dashboard by the owner, by hand, in order."*
+- `conventions.md` §8 points at §3 and adds the destructive-change rule.
 
-- `5fc126b` (#345, deliverables / copy editor / brand rules) landed on `main` at 23:22.
-- `production-drift` failed at 23:22 **on that exact commit**: production was missing
-  `ad_references`, `brand_rules`, `deliverables`, their RLS policies, triggers and
-  realtime entries, plus `approval_pending` and `get_review`.
-- At 23:30 the **same commit** passed. Production had gained all of it.
+So the 23:22 → 23:30 sequence was not a gap. It was the documented procedure being
+followed: migration merged, production applied by hand, drift re-run, green. The system
+worked.
 
-Same SHA, opposite results, eight minutes apart. The code did not change; production
-did. Someone applied the migration by hand in that window.
+What is actually true, and worth keeping:
 
-That is the system working as designed, and it is also the fragility: a merged
-migration that nobody applies leaves production behind, and the gate goes red on the
-next push to `main`. It self-healed here because a person was still in the loop. It
-will not always be.
-
-Two things worth doing, in this order:
-
-1. **Write the apply step down** as a runbook: which command, which role, what to check
-   afterwards. Right now it lives in someone's head. The drift check is the safety net,
-   but a net is not a procedure.
-2. **Then decide whether to automate it.** A workflow that applies migrations on merge
-   to `main` removes the manual step and the failure mode with it, at the cost of
-   letting CI change production unattended. That is a real trade and the owner's call,
-   not a default.
+- **It is manual by design, and the drift check is the enforcement.** A merged migration
+  that nobody applies leaves production behind and turns the gate red on the next push to
+  `main`. That is the intended safety net, not a defect.
+- **The real operational risk is documented too.** Apply the file byte for byte: the
+  fingerprint hashes each function's exact text, comments included. On 2026-10-27 a dropped
+  `--` comment line inside a function body made drift fail on `add_review_comment` /
+  `decide_review`. Copy the file as merged.
+- **The open question is not "write it down."** It is whether to keep applying by hand or
+  automate it. A workflow that applies migrations on merge to `main` removes the manual
+  step and the failure mode with it, at the cost of letting CI change production
+  unattended. That is a real trade and the owner's call, not a default.
 
 **Do not add to PR CI.** It is already thorough and the repo is public, so it is free
 but not instant. Adding more to the PR path trades your attention for nothing.
@@ -363,6 +361,7 @@ Worth clearing out.
 
 1. **Push the branch and open the PR** for the Perch adapter. Done: PR #346.
 2. **Fix the Node mismatch.** One line, and it removes a whole class of confusing bug.
+   CI reads `.nvmrc` (22); this machine runs Node 24.14.0.
 3. **Add `.gitattributes`** (done) and then renormalise line endings in its own commit.
 4. **Run the backup by hand** before anything risky. Not on a timer; that is your call.
 5. **Start Docker and run the database job locally once.** Confirm the persona tests
@@ -375,3 +374,8 @@ Worth clearing out.
 9. **MCP permissions** — done: the 38 dead `mcp__github__*` rules are removed, the 45 live ones stay.
 10. **Then, and only then**, consider a local model — for review and bulk work, not as
     a daemon.
+
+**Not on the list, deliberately:** production migrations. The procedure is documented
+(`database-and-security.md` §3) and the drift check enforces it. The only open question
+there is whether to keep applying by hand or automate it, and that is a decision rather
+than a task.
