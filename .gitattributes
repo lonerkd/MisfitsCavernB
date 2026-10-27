@@ -1,0 +1,35 @@
+# Line endings.
+#
+# Without this, `core.autocrlf` checks files out as CRLF on Windows while the
+# generators (`sync-intel`, `bible`) write LF. Git then reports a file as
+# modified, `git diff` shows nothing, and the working tree looks dirty for no
+# reason. Declaring the normal form here settles it.
+#
+# Text files are stored and checked out as LF everywhere.
+* text=auto eol=lf
+
+# Binary: never touch these.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.mjs  text
+*.zip  binary
+*.bundle binary
+
+# The lockfile is generated; keep it byte-stable across platforms.
+package-lock.json text eol=lf -diff
+
+# Shell scripts must keep LF or they break on Linux (CI) and in Git Bash.
+*.sh text eol=lf
+
+# Windows scripts keep CRLF so they open correctly in Notepad and PowerShell ISE.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf

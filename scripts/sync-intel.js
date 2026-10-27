@@ -203,6 +203,9 @@ function writeAdapters() {
   const written = Object.entries(adapters());
   for (const [rel, body] of written) {
     fs.mkdirSync(path.dirname(path.join(ROOT_DIR, rel)), { recursive: true });
+    // Written as LF, matching the committed form (see .gitattributes). The
+    // churn this used to cause came from `core.autocrlf=true` converting these
+    // files to CRLF on checkout, not from this write.
     fs.writeFileSync(path.join(ROOT_DIR, rel), body, 'utf-8');
   }
   console.log(`Agent entry files written: ${written.map(([rel]) => rel).join(', ')}`);
