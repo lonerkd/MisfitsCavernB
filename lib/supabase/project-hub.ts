@@ -14,6 +14,7 @@ export interface CrewRow { id: string; user_id: string; role: string; craft: str
 export interface PortfolioRow { id: string; title: string; share_token: string }
 export interface FestivalRow { id: string; name: string; deadline?: string; status: 'planned' | 'submitted' | 'accepted' | 'rejected'; notes?: string }
 export interface MilestoneRow { id: string; title: string; end_date: string | null; status: string | null }
+const FESTIVAL_STATUSES = new Set<FestivalRow['status']>(['planned', 'submitted', 'accepted', 'rejected']);
 
 type Result = { error: { message: string } | null };
 function check(...results: Result[]) {
@@ -51,6 +52,24 @@ function festivalStatuses(list: Json | null | undefined): string[] {
   return list.flatMap((f) => {
     const status = f && typeof f === 'object' && !Array.isArray(f) ? f.status : undefined;
     return typeof status === 'string' ? [status] : [];
+  });
+}
+
+/** Valid festival rows from `projects.festival_submissions` (a jsonb list with no constraint). */
+function parseFestivalRows(list: Json | null | undefined): FestivalRow[] {
+  if (!Array.isArray(list)) return [];
+  return list.flatMap((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return [];
+    const { id, name, status, deadline, notes } = item;
+    if (typeof id !== 'string' || typeof name !== 'string') return [];
+    if (typeof status !== 'string' || !FESTIVAL_STATUSES.has(status as FestivalRow['status'])) return [];
+    return [{
+      id,
+      name,
+      status: status as FestivalRow['status'],
+      deadline: typeof deadline === 'string' ? deadline : undefined,
+      notes: typeof notes === 'string' ? notes : undefined,
+    }];
   });
 }
 
@@ -126,7 +145,7 @@ export async function getProductionData(projectId: string): Promise<ProductionDa
     crew: (c.data ?? []) as unknown as CrewRow[],
     portfolio: (pf.data ?? []) as PortfolioRow[],
     settings: (proj.data?.settings as unknown as ProjectSettings | null) ?? null,
-    festivals: (proj.data?.festival_submissions as unknown as FestivalRow[] | null) ?? [],
+    festivals: parseFestivalRows(proj.data?.festival_submissions),
     owner,
   };
 }

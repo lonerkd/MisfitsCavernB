@@ -98,6 +98,22 @@ describe('getProductionData', () => {
     expect(d.festivals).toEqual([]);
   });
 
+  it('keeps only valid festivals from jsonb', async () => {
+    useFake({
+      projects: { data: { festival_submissions: [
+        { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-10-01', notes: 'early' },
+        { id: 'f2', name: 'TIFF', status: 'submitted', deadline: null },
+        { id: 3, name: 'Bad id', status: 'planned' },
+        { id: 'f4', name: 'Bad status', status: 'waiting' },
+        null, 'text', [],
+      ] } },
+    });
+    expect((await getProductionData('p1')).festivals).toEqual([
+      { id: 'f1', name: 'Sundance', status: 'planned', deadline: '2026-10-01', notes: 'early' },
+      { id: 'f2', name: 'TIFF', status: 'submitted' },
+    ]);
+  });
+
   it('has no owner when their profile is gone, and reads no profile without a creator', async () => {
     const f = useFake({ projects: { data: { creator_id: 'o1' } }, profiles: { data: null } });
     expect((await getProductionData('p1')).owner).toBeNull();
