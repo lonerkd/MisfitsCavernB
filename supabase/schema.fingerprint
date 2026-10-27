@@ -1857,8 +1857,8 @@ index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
-policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))))
-policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(internal.activity_project_id(metadata))) check -
+policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))) AND (((metadata ->> 'audience'::text) IS DISTINCT FROM 'shapers'::text) OR internal.can_shape_project(internal.activity_project_id(metadata))))
+policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR CASE WHEN ((metadata ->> 'audience'::text) = 'shapers'::text) THEN internal.can_shape_project(internal.activity_project_id(metadata)) ELSE internal.can_access_project(internal.activity_project_id(metadata)) END) check -
 policy public.audit_logs "audit_logs admins read" PERMISSIVE SELECT to authenticated using internal.caller_is_admin() check -
 policy public.audit_logs "audit_logs insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.breakdown_categories "breakdown_categories delete" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
