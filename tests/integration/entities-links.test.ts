@@ -37,6 +37,10 @@ describe('entities follow their source rows', () => {
     expect(await label(sceneId)).toBe('1. INT. CAVE - NIGHT');
     expect(await label(characterId)).toBe('MAYA');
     expect(await label(taskId)).toBe('Lock the cave');
+    // A title carrying mention tokens is labelled with plain @Names.
+    const tokenised = (await admin().from('project_tasks').insert({ project_id: projectId, title: `Prep @[Kitchen set](${sceneId}) and @[Van](${taskId}) today` }).select('id').single()).data!.id;
+    expect(await label(tokenised)).toBe('Prep @Kitchen set and @Van today');
+    await admin().from('project_tasks').delete().eq('id', tokenised);
   });
 
   it('a rename changes the label; a delete removes the entity and its links', async () => {

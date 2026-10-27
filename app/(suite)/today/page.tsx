@@ -7,6 +7,7 @@
 // script, Studio and schedule. Everything comes from what the suite already
 // holds, so it's the same work the desk sees.
 
+import { plain } from '@/lib/film/mentions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -198,9 +199,9 @@ export default function TodayPage() {
               const p = projectById.get(task.project_id);
               return (
                 <li key={task.id} className={t.task}>
-                  <button type="button" className={t.check} onClick={() => void complete(task)} aria-label={`Mark done: ${task.title}`}><Circle size={20} aria-hidden /></button>
+                  <button type="button" className={t.check} onClick={() => void complete(task)} aria-label={`Mark done: ${plain(task.title)}`}><Circle size={20} aria-hidden /></button>
                   <Link href={`/projects/${task.project_id}`} className={t.taskText}>
-                    <span className={t.taskTitle}>{task.title}</span>
+                    <span className={t.taskTitle}>{plain(task.title)}</span>
                     <span className={`${t.taskMeta} ${u === 'overdue' ? t.overdue : u === 'today' ? t.dueToday : ''}`}>
                       {[p?.title, dueLabel(task.due_date, today)].filter(Boolean).join(' · ')}
                     </span>

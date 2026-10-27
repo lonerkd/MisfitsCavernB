@@ -54,8 +54,12 @@ export async function syncMentions(projectId: string, sourceId: string, text: st
   const existing = data ?? [];
   const { add, remove } = diffMentions(existing.map((l) => l.to_entity), next);
   if (add.length) {
-    const { error: insertError } = await supabase.from('links').insert(add.map((to) => ({ project_id: projectId, from_entity: sourceId, to_entity: to, kind: MENTION_KIND })));
-    if (insertError && insertError.code !== '23505') return insertError.message;
+    // A link that already exists (made by someone else meanwhile) is skipped, not an error for the rest.
+    const { error: insertError } = await supabase.from('links').upsert(
+      add.map((to) => ({ project_id: projectId, from_entity: sourceId, to_entity: to, kind: MENTION_KIND })),
+      { onConflict: 'from_entity,to_entity,kind', ignoreDuplicates: true },
+    );
+    if (insertError) return insertError.message;
   }
   if (remove.length) {
     const ids = existing.filter((l) => remove.includes(String(l.to_entity).toLowerCase())).map((l) => l.id);

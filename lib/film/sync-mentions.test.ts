@@ -11,13 +11,14 @@ let selectError: Err;
 let insertError: Err;
 let deleteError: Err;
 const inserted: unknown[][] = [];
+let upsertOptions: unknown;
 const deletedIds: string[][] = [];
 
 vi.mock('@/lib/supabase/client', () => ({
   supabase: {
     from: () => ({
       select: () => ({ eq: () => ({ eq: async () => ({ data: selectError ? null : existing, error: selectError }) }) }),
-      insert: async (rows: unknown[]) => { inserted.push(rows); return { error: insertError }; },
+      upsert: async (rows: unknown[], opts: unknown) => { inserted.push(rows); upsertOptions = opts; return { error: insertError }; },
       delete: () => ({ in: async (_col: string, ids: string[]) => { deletedIds.push(ids); return { error: deleteError }; } }),
     }),
   },
@@ -37,6 +38,8 @@ describe('syncMentions', () => {
       { project_id: 'p', from_entity: SRC, to_entity: B, kind: 'mentions' },
     ]]);
     expect(deletedIds).toEqual([]);
+    // existing links are skipped without failing the new ones
+    expect(upsertOptions).toEqual({ onConflict: 'from_entity,to_entity,kind', ignoreDuplicates: true });
   });
 
   it('keeps links that are still written and removes the rest', async () => {
@@ -53,14 +56,12 @@ describe('syncMentions', () => {
     expect(deletedIds).toEqual([]);
   });
 
-  it('returns the database error instead of throwing; a duplicate race is fine', async () => {
+  it('returns the database error instead of throwing', async () => {
     selectError = { message: 'down' };
     expect(await syncMentions('p', SRC, token(A, 'Kitchen'))).toBe('down');
     selectError = null;
     insertError = { message: 'nope' };
     expect(await syncMentions('p', SRC, token(A, 'Kitchen'))).toBe('nope');
-    insertError = { message: 'dupe', code: '23505' };
-    expect(await syncMentions('p', SRC, token(A, 'Kitchen'))).toBeNull();
     insertError = null; existing = [{ id: 'l1', to_entity: A }]; deleteError = { message: 'rls' };
     expect(await syncMentions('p', SRC, 'nothing')).toBe('rls');
   });

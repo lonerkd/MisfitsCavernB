@@ -20,6 +20,7 @@ import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
 import { MentionInput, MentionText } from '@/components/film/Mentions';
+import { plain } from '@/lib/film/mentions';
 
 const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
 const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
@@ -113,7 +114,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
     setTasks(p => p.map(x => x.id === t.id ? { ...x, ...patch } : x));
     if (!await attempt(() => hub.updateTask(t.id, patch))) { setTasks(p => p.map(x => x.id === t.id ? t : x)); return; }
     if (patch.assigned_to && patch.assigned_to !== t.assigned_to) {
-      notify(patch.assigned_to, { type: 'task', title: `You were assigned “${t.title}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
+      notify(patch.assigned_to, { type: 'task', title: `You were assigned “${plain(t.title)}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
     }
   };
   const delTask = async (id: string) => {
@@ -259,14 +260,14 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
                   type="date"
                   value={t.due_date ?? ''}
                   onChange={e => setTaskField(t, { due_date: e.target.value || null })}
-                  aria-label={`Due date for ${t.title}`}
+                  aria-label={`Due date for ${plain(t.title)}`}
                   title="Due date"
                   style={{ ...MINI_INPUT, width: 104, color: !t.completed && t.due_date && t.due_date < new Date().toISOString().slice(0, 10) ? '#ff6b6b' : 'var(--fg-dim)' }}
                 />
                 <select
                   value={t.assigned_to ?? ''}
                   onChange={e => setTaskField(t, { assigned_to: e.target.value || null })}
-                  aria-label={`Assignee for ${t.title}`}
+                  aria-label={`Assignee for ${plain(t.title)}`}
                   style={{ ...MINI_INPUT, width: 92 }}
                 >
                   <option value="">Unassigned</option>

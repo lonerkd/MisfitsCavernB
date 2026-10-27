@@ -52,6 +52,9 @@ describe('activeQuery', () => {
     expect(activeQuery('@a\nb', 4)).toBeNull();
     expect(activeQuery('@' + 'x'.repeat(41), 42)).toBeNull();
     expect(activeQuery('no at sign', 5)).toBeNull();
+    // a finished pick leaves a trailing space: the list closes, so Enter submits
+    expect(activeQuery('@Kitchen ', 9)).toBeNull();
+    expect(activeQuery('@Kitchen s', 10)).toEqual({ start: 0, query: 'Kitchen s' });
   });
 });
 
@@ -87,6 +90,9 @@ describe('tokenize', () => {
   it('leaves text alone when the pick was edited away or nothing was picked', () => {
     expect(tokenize('Book the kitchen', [{ id: A, label: 'Kitchen' }])).toBe('Book the kitchen');
     expect(tokenize('plain', [])).toBe('plain');
+  });
+  it('does not touch a longer word that starts with a picked label', () => {
+    expect(tokenize('@Rooftop and @Roof', [{ id: B, label: 'Roof' }])).toBe(`@Rooftop and ${token(B, 'Roof')}`);
   });
   it('round-trips through mentionedIds', () => {
     expect(mentionedIds(tokenize('See @Kitchen twice: @Kitchen', [{ id: A, label: 'Kitchen' }]))).toEqual([A]);

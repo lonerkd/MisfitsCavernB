@@ -195,11 +195,13 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
 
   const cardsOn = useFlag('entity_cards');
-  const [cardId, setCardId] = useState<string | null>(null);
-  const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
-  // A link such as /studio?card=<id> (a mention's chip) opens that card once.
   const wantedCard = new URLSearchParams(useLocationSearch()).get('card');
-  useOnChange(wantedCard, () => { if (cardsOn && wantedCard && /^[0-9a-f-]{36}$/i.test(wantedCard)) setCardId(wantedCard.toLowerCase()); });
+  const asCardId = (v: string | null) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v.toLowerCase() : null);
+  // Arriving on /studio?card=<id> (a mention's chip) opens that card at once; a later change opens the new one.
+  const wanted = cardsOn ? asCardId(wantedCard) : null;
+  const [cardId, setCardId] = useState<string | null>(() => wanted);
+  const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
+  useOnChange(wanted, () => { if (wanted) setCardId(wanted); });
   const closeCard = useCallback(() => setCardId(null), []);
 
   const viewMode = useViewAs(project.id);

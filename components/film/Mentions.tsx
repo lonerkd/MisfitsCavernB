@@ -85,7 +85,8 @@ export function MentionInput({ entities, placeholder, onSubmit, style, buttonSty
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={open}
-        aria-controls="mention-options"
+        aria-controls={open ? 'mention-options' : undefined}
+        aria-activedescendant={open ? `mention-option-${highlight}` : undefined}
         onChange={(e) => { setText(e.target.value); setCaret(e.target.selectionStart ?? e.target.value.length); setHighlight(0); }}
         onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
         onKeyDown={(e) => {
@@ -101,8 +102,8 @@ export function MentionInput({ entities, placeholder, onSubmit, style, buttonSty
       {open && (
         <ul id="mention-options" role="listbox" aria-label="Mention" style={{ position: 'absolute', left: 0, right: 0, top: '100%', zIndex: 20, margin: '4px 0 0', padding: 4, listStyle: 'none', background: 'var(--bg-2)', border: '1px solid var(--border-2)', borderRadius: 8, display: 'grid', gap: 2 }}>
           {options.map((o, i) => (
-            <li key={o.id} role="option" aria-selected={i === highlight}>
-              <button type="button" onMouseDown={(ev) => { ev.preventDefault(); pick(o); }} style={{ width: '100%', textAlign: 'left', background: i === highlight ? 'rgba(var(--ink-rgb), 0.08)' : 'none', border: 'none', borderRadius: 8, padding: '6px 8px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 12 }}>
+            <li key={o.id} role="presentation">
+              <button type="button" id={`mention-option-${i}`} role="option" aria-selected={i === highlight} tabIndex={-1} onMouseDown={(ev) => { ev.preventDefault(); pick(o); }} style={{ width: '100%', textAlign: 'left', background: i === highlight ? 'rgba(var(--ink-rgb), 0.08)' : 'none', border: 'none', borderRadius: 8, padding: '6px 8px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 12 }}>
                 <span style={{ color: 'var(--fg-muted)', marginRight: 8 }}>{KIND_NAME[o.kind]}</span>{o.label}
               </button>
             </li>

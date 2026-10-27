@@ -52,6 +52,8 @@ export function activeQuery(text: string, caret: number): { start: number; query
   if (at > 0 && !/\s/.test(before[at - 1])) return null;
   const query = before.slice(at + 1);
   if (query.length > 40 || query.includes('\n') || query.includes('[')) return null;
+  // A trailing space ends the mention being typed (a finished pick leaves `@Label ` behind).
+  if (/\s$/.test(query)) return null;
   return { start: at, query };
 }
 
@@ -72,8 +74,8 @@ export function diffMentions(existing: string[], next: string[]): { add: string[
 
 /**
  * Turn what the person sees (`@Kitchen`) back into stored tokens, using the
- * entities they picked while typing. A pick whose `@Label` was edited away is
- * ignored; longer labels are matched first so `@Kitchen sink` beats `@Kitchen`.
+ * entities they picked while typing. A pick whose `@Label` was edited away, or
+ * continues into a longer word, is ignored; longer labels are matched first so `@Kitchen sink` beats `@Kitchen`.
  */
 export function tokenize(display: string, picked: Array<{ id: string; label: string }>): string {
   const byLength = [...picked].sort((a, b) => b.label.length - a.label.length);
@@ -84,6 +86,8 @@ export function tokenize(display: string, picked: Array<{ id: string; label: str
     for (;;) {
       const i = out.indexOf(needle, from);
       if (i < 0) break;
+      // `@Roof` inside `@Rooftop` is a different word.
+      if (/[\p{L}\p{N}_]/u.test(out[i + needle.length] ?? '')) { from = i + needle.length; continue; }
       const t = token(p.id, p.label);
       out = out.slice(0, i) + t + out.slice(i + needle.length);
       from = i + t.length;
