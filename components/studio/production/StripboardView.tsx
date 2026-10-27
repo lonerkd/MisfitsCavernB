@@ -2,7 +2,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, Calendar, Minus, Plus, Printer, Sun, Wand2 } from 'lucide-react';
+import { AlertTriangle, Calendar, Minus, PanelRightOpen, Plus, Printer, Sun, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
@@ -37,7 +37,7 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
 export function StripboardView({ elementCounts }: { elementCounts: Map<string, number> }) {
-  const { project, scenes, isOwner, castOf: castOfScene } = useStudio();
+  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -271,6 +271,11 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                             {cast.length > 0 && <span>{cast.length} cast</span>}
                             {els > 0 && <span>{els} element{els === 1 ? '' : 's'}</span>}
                           </span>
+                          {cardsOn && (
+                            <button type="button" aria-label={`Open the card for scene ${sc.scene_number}`} title="Open the card" onClick={() => openCard(sc.id)} draggable={false} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 4, minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
+                              <PanelRightOpen size={14} aria-hidden />
+                            </button>
+                          )}
                           <button type="button" className={b.statusBtn} aria-label={`Scene ${sc.scene_number} is ${status} — mark ${STATUS_ORDER[(STATUS_ORDER.indexOf(status) + 1) % 3]}`} title={`${status} — click for ${STATUS_ORDER[(STATUS_ORDER.indexOf(status) + 1) % 3]}`} onClick={() => void cycleStatus(row)} draggable={false}>
                             <span className={cx(b.dot, b[`dot_${status}`])} aria-hidden />
                           </button>
