@@ -1305,7 +1305,7 @@ function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
 function internal.live_review_link(p_token text) body=971884db2ab87ec35d014433112e3758
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
-function internal.media_lifecycle_guard() body=974b3a96df8688e6283d654160ddb7d7
+function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=90398618b2ac3fe241f10d137bdbc37d
@@ -1343,7 +1343,7 @@ function public.admin_list_users() body=d851a2d7fa39ad8824280d014c77d28d
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
 function public.admin_reported_message(p_report uuid) body=0a1074376d43971880f63e936fa00ece
 function public.admin_set_suspended(p_user uuid, p_suspended boolean) body=8de2d5ac2e011a78ab23a69ca1da8628
-function public.advance_phase(p_project uuid, p_to text, p_decisions jsonb) body=257c087f8438d48aa06d6c10d6b43ab4
+function public.advance_phase(p_project uuid, p_to text, p_default text, p_exceptions jsonb) body=054c8cc7bc044bfe72b0007bdb9cc449
 function public.append_to_script(p_script uuid, p_text text) body=2f0ee0349c99fd212a171f033d4ff8a1
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
@@ -1463,7 +1463,7 @@ grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
 grant function public.admin_reported_message(p_report uuid) authenticated,postgres,service_role
 grant function public.admin_set_suspended(p_user uuid, p_suspended boolean) authenticated,postgres,service_role
-grant function public.advance_phase(p_project uuid, p_to text, p_decisions jsonb) authenticated,postgres,service_role
+grant function public.advance_phase(p_project uuid, p_to text, p_default text, p_exceptions jsonb) authenticated,postgres,service_role
 grant function public.append_to_script(p_script uuid, p_text text) authenticated,postgres,service_role
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
@@ -2226,7 +2226,7 @@ trigger CREATE TRIGGER hub_posts_touch BEFORE INSERT OR UPDATE ON public.hub_pos
 trigger CREATE TRIGGER item_versions_guard BEFORE UPDATE ON public.item_versions FOR EACH ROW EXECUTE FUNCTION internal.item_versions_guard()
 trigger CREATE TRIGGER item_versions_prepare BEFORE INSERT ON public.item_versions FOR EACH ROW EXECUTE FUNCTION internal.item_versions_prepare()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
-trigger CREATE TRIGGER media_lifecycle_guard BEFORE UPDATE OF lifecycle ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_lifecycle_guard()
+trigger CREATE TRIGGER media_lifecycle_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_lifecycle_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
 trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
