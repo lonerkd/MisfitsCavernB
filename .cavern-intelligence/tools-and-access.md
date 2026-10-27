@@ -243,12 +243,15 @@ agent-status.yml ──every 6 h──▶ the "Agent status" issue (counts, agen
 | `scripts/backlog-to-issues.mjs` | Makes one issue per open BACKLOG §3 item. Dry run by default; `--create` makes them and the labels. Idempotent (a hidden `backlog-id` marker); never edits or closes anything. |
 | `.github/workflows/agent-status.yml` | Rewrites one issue with real data: issues by label, open agent PRs with CI state, last merges, main's CI. No AI, no secrets. |
 | `.github/workflows/agent-claude.yml` | When the **repository owner** adds `agent-ready` to an issue, Claude (Anthropic's `claude-code-action`) works it and opens a PR. Dormant until the secret below exists. |
+| `.github/workflows/agent-autopilot.yml` | Once explicitly enabled, daily dispatches at most one owner-approved issue to Copilot, stopping at the configured active-issue or open-agent-PR cap. |
 
 Labels: `backlog`, `size/S|M|L|XL`, `needs-owner` (waiting on a decision), `agent-ready` (read by the owner; an agent may take it), `agent-working`, `agent-status`.
 
 **Turn on the Claude worker** (owner, once): install the Claude GitHub App on the repository; run `claude setup-token` locally and store the result with `gh secret set CLAUDE_CODE_OAUTH_TOKEN`; then label an issue `agent-ready`. It runs on the owner's Claude plan, so it shares that plan's limits; each run is capped (`--max-turns 40`, 45 minutes, one run at a time).
 
 **Turn on the Copilot worker** (owner, when a Copilot plan that includes the coding agent exists): assign the issue to Copilot. No workflow is needed; `.github/copilot-instructions.md` already points it at the rules.
+
+**Optional daily Copilot autopilot** (only after the owner trusts a successful end-to-end trial): add a fine-grained token from a Copilot-licensed account as the `COPILOT_ASSIGN_PAT` Actions secret (Issues: read and write), then set the `AGENT_AUTOPILOT_ENABLED` repository variable to `true`. `GITHUB_TOKEN` cannot start Copilot assignments. The workflow runs daily at 14:00 UTC; it only picks an unassigned open issue carrying both `backlog` and `agent-ready`, and excludes `needs-owner` and `agent-working`. It assigns `@copilot` and adds `agent-working`. The cap defaults to one; set `AGENT_AUTOPILOT_MAX_OPEN_PRS` to an integer from 1–100 to change it. Dispatch stops when either that many agent-working issues or agent PRs are open. The workflow is inert until the owner enables the variable, and can be run manually after enabling.
 
 **Safety.** The repository is public, so issue and comment text is untrusted: only the owner's label starts a run, the prompt tells the agent to treat issue text as a description, and the allowed commands cannot push anywhere except `claude/*` branches. Agents never merge and never push `main`; the owner's merge and CI are the gate.
 
