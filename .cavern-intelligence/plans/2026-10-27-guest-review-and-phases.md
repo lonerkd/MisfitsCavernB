@@ -88,7 +88,23 @@ the team (Sam, Jordan) reads comments; only a shaper sends.
   over deliberately.
 - The card (slice A) shows an item's lifecycle and audience.
 
-## D3 — phase templates and gates (M)
+## D3 — phase templates and gates (M) — **revised when built (2026-10-27)**
+
+**The phase engine already exists** (`lib/os/phases.ts`): five phases —
+Development, Pre-Production, Production, Post-Production, Delivery — that a
+project format (`project_formats`) can **rename** (`phase_labels`) and **skip**
+(`skip_phases`, `skip_milestones`), stored in `projects.status`. So D3 does *not*
+add a `format_phases` table; the owner's "phases are data per format" is already
+true, and a new format (advertising: Brief → Concept → Copy → Client review →
+Delivery) is a row in `/admin/formats`, not code. D3 adds only the **gate**: on
+the PhasePanel, moving a project forward asks what the library carries on
+(`media.lifecycle` `working` | `archived`, `advance_phase`, `phase_gates`).
+Archive is non-destructive; **removing** stays the library's own delete (it needs
+the Storage API). Passing the gate is **owner-only** (a subset of the agreed
+"owner or shape permission"). Limit to note: a format gets the five phases at
+most — fewer by skipping, never more.
+
+*Original sketch (superseded by the above):*
 
 - `format_phases` — `format_id` (the project formats already managed at
   `/admin/formats`), `position`, `key`, `label`, `gate` (does leaving this

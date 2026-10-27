@@ -1626,6 +1626,7 @@ export type Database = {
           height: number | null;
           id: string;
           kind: string;
+          lifecycle: string;
           mime_type: string | null;
           notes: string | null;
           project_id: string;
@@ -1646,6 +1647,7 @@ export type Database = {
           height?: number | null;
           id?: string;
           kind: string;
+          lifecycle?: string;
           mime_type?: string | null;
           notes?: string | null;
           project_id: string;
@@ -1665,6 +1667,7 @@ export type Database = {
           height?: number | null;
           id?: string;
           kind?: string;
+          lifecycle?: string;
           mime_type?: string | null;
           notes?: string | null;
           project_id?: string;
@@ -1828,6 +1831,48 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      phase_gates: {
+        Row: {
+          archived: number;
+          carried: number;
+          decided_at: string;
+          decided_by: string | null;
+          from_status: string;
+          id: string;
+          project_id: string;
+          to_status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          archived?: number;
+          carried?: number;
+          decided_at?: string;
+          decided_by?: string | null;
+          from_status: string;
+          id?: string;
+          project_id: string;
+          to_status: string;
+        };
+        Update: {
+          archived?: number;
+          carried?: number;
+          decided_at?: string;
+          decided_by?: string | null;
+          from_status?: string;
+          id?: string;
+          project_id?: string;
+          to_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "phase_gates_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
             referencedColumns: ["id"];
           },
         ];
@@ -4441,6 +4486,10 @@ export type Database = {
       admin_set_suspended: {
         Args: { p_suspended: boolean; p_user: string };
         Returns: undefined;
+      };
+      advance_phase: {
+        Args: { p_decisions?: Json; p_project: string; p_to: string };
+        Returns: Json;
       };
       append_to_script: {
         Args: { p_script: string; p_text: string };

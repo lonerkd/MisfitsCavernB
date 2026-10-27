@@ -8,7 +8,11 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { suggestPhase, toolsOpenedAt, type Place, type ProjectProgress, type ToolState } from '@/lib/os/progress';
 import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
-import { setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
+import { advancePhase, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
+import { useFlag } from '@/components/Flag';
+import { studio } from '@/lib/studio';
+import { gateItems, type GateDecision, type GateItem } from '@/lib/studio/gate';
+import { PhaseGate } from './PhaseGate';
 import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
 import { UnlockReveal } from './UnlockReveal';
@@ -56,6 +60,8 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   const [busy, setBusy] = useState(false);
   const [reveal, setReveal] = useState<{ label: string; tools: ToolState[] } | null>(null);
   const [formatDraft, setFormatDraft] = useState<string | null>(null);
+  const gatesOn = useFlag('phase_gates');
+  const [gate, setGate] = useState<{ index: number; items: GateItem[] } | null>(null);
   const style = accentVars(accent);
   const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
 
@@ -113,6 +119,15 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
       confirmLabel: `Back to ${target.label}`,
       danger: false,
     })) return;
+    // Leaving a phase for the next one: the owner decides what the library carries on.
+    if (forward && gatesOn && isOwner) {
+      setBusy(true);
+      let items: GateItem[] = [];
+      try { items = gateItems(await studio.listMedia(projectId)); }
+      catch (e) { setBusy(false); toast(e instanceof Error ? e.message : 'Could not read the library', 'error'); return; }
+      setBusy(false);
+      if (items.length) { setGate({ index, items }); return; }
+    }
     setBusy(true);
     try {
       await setProjectPhase(projectId, target.id);
@@ -120,6 +135,22 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
       toast(`${target.label} — ${forward ? 'unlocked' : 'set as the current phase'}.`, 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not change the phase', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const passGate = async (decisions: GateDecision[]) => {
+    if (!gate) return;
+    const target = progress.phases[gate.index];
+    setBusy(true);
+    try {
+      const done = await advancePhase(projectId, target.id, decisions);
+      setGate(null);
+      await reload();
+      toast(`${target.label} — unlocked.${done.archived ? ` ${done.archived} item${done.archived === 1 ? '' : 's'} archived.` : ''}`, 'success');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not pass the gate', 'error');
     } finally {
       setBusy(false);
     }
@@ -261,6 +292,17 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
         </div>
       </div>
 
+      {gate && (
+        <PhaseGate
+          fromPhase={progress.phases[progress.currentIndex].id}
+          fromLabel={progress.phases[progress.currentIndex].label}
+          toLabel={progress.phases[gate.index].label}
+          items={gate.items}
+          busy={busy}
+          onCancel={() => setGate(null)}
+          onPass={(d) => void passGate(d)}
+        />
+      )}
       {reveal && (
         <UnlockReveal phaseLabel={reveal.label} tools={reveal.tools} projectId={projectId} style={style} onNavigate={onNavigate} onClose={() => setReveal(null)} />
       )}

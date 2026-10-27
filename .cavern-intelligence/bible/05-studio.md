@@ -33,7 +33,7 @@ Production, `?view=`; the project is the active one (`mc_active_project`) or
 | Tab | What it's for | Key data |
 |---|---|---|
 | **Overview** | the project at a glance: phase, what's next, counts | `project_progress` |
-| **Library** | every reference: uploads (images, video, audio, PDF ≤ 50 MB), links (YouTube/Vimeo embeds, Pinterest boards via `/api/links`), Openverse search with credit; boards; transcripts and the paper edit for recordings | `media`, `transcript_lines`, bucket `project-media` |
+| **Library** | (items can be **archived** — kept, hidden by default behind a "Show archived" chip, off the share link; restorable by people who shape the project; the owner is asked what to carry on or archive when moving the project forward a phase, flag `phase_gates`) every reference: uploads (images, video, audio, PDF ≤ 50 MB), links (YouTube/Vimeo embeds, Pinterest boards via `/api/links`), Openverse search with credit; boards; transcripts and the paper edit for recordings | `media`, `transcript_lines`, bucket `project-media` |
 | **Scenes** | one card per scene heading: references, note, colour, shoot day, status, shot list with the **shot designer** (size, angle, movement, lens, framing diagram, a storyboard frame), open post notes | `scenes`, `scene_media`, `shots` |
 | **Production** | Story · Breakdown · Readiness · Schedule · On set · Cast & crew · Locations · Money · Paperwork (below) | |
 | **Post** | Cut review (link or library video, timecoded notes by department, tied to scenes and script lines, `CutPlayer` seeks YouTube/Vimeo/`<video>`), Paper edit, Pipeline & deliverables | `post_cuts`, `post_notes`, `post_items` |

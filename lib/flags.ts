@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  phase_gates: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-27',
+    note: 'The gate when the owner moves a project forward a phase: carry library items on or archive them. Admin-only in production until the owner has tried it on a live project.',
+  },
   guest_review: {
     local: true,
     preview: true,

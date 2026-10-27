@@ -59,6 +59,19 @@ export async function setProjectPhase(projectId: string, phase: Phase): Promise<
   announceProgressChange(projectId);
 }
 
+/**
+ * Owner only: pass a phase gate — carry the listed library items forward or
+ * archive them, and move the project to `phase`, in one step (the
+ * advance_phase function). Returns how many were archived and carried.
+ */
+export async function advancePhase(projectId: string, phase: Phase, decisions: Array<{ id: string; action: 'carry' | 'archive' }>): Promise<{ archived: number; carried: number }> {
+  const { data, error } = await supabase.rpc('advance_phase', { p_project: projectId, p_to: PHASE_STATUS[phase], p_decisions: decisions });
+  if (error) throw new Error(error.message || 'Could not pass the gate');
+  announceProgressChange(projectId);
+  const out = (data ?? {}) as { archived?: number; carried?: number };
+  return { archived: out.archived ?? 0, carried: out.carried ?? 0 };
+}
+
 /** Owner only (RLS): the project's format (public.project_formats). */
 export async function setProjectFormat(projectId: string, format: string): Promise<void> {
   const { data, error } = await supabase.from('projects').update({ project_type: format }).eq('id', projectId).select('id');
