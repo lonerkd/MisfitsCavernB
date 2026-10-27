@@ -228,6 +228,21 @@ column hub_posts.updated_at timestamp with time zone default now() not null
 column hub_reads.post_id uuid not null
 column hub_reads.read_at timestamp with time zone default now() not null
 column hub_reads.user_id uuid default auth.uid() not null
+column item_versions.confirmed_at timestamp with time zone
+column item_versions.confirmed_by uuid
+column item_versions.created_at timestamp with time zone default now() not null
+column item_versions.created_by uuid default auth.uid()
+column item_versions.guest_decided_at timestamp with time zone
+column item_versions.guest_decision text
+column item_versions.guest_name text
+column item_versions.id uuid default gen_random_uuid() not null
+column item_versions.label text default ''::text not null
+column item_versions.number integer default 0 not null
+column item_versions.project_id uuid not null
+column item_versions.script_id uuid not null
+column item_versions.sent_at timestamp with time zone
+column item_versions.snapshot text default ''::text not null
+column item_versions.status text default 'draft'::text not null
 column job_applications.applicant_id uuid not null
 column job_applications.applied_at timestamp with time zone default now()
 column job_applications.cover_note text
@@ -505,6 +520,23 @@ column reports.resolved_at timestamp with time zone
 column reports.resolved_by uuid
 column reports.status text default 'open'::text not null
 column reports.target_id uuid not null
+column review_comments.author_id uuid default auth.uid()
+column review_comments.body text not null
+column review_comments.created_at timestamp with time zone default now() not null
+column review_comments.guest_name text
+column review_comments.id uuid default gen_random_uuid() not null
+column review_comments.link_id uuid
+column review_comments.version_id uuid not null
+column review_links.created_at timestamp with time zone default now() not null
+column review_links.created_by uuid default auth.uid()
+column review_links.expires_at timestamp with time zone
+column review_links.id uuid default gen_random_uuid() not null
+column review_links.label text default ''::text not null
+column review_links.layer text default 'guest'::text not null
+column review_links.project_id uuid not null
+column review_links.revoked_at timestamp with time zone
+column review_links.token text default replace(((gen_random_uuid())::text || (gen_random_uuid())::text), '-'::text, ''::text) not null
+column review_links.version_ids uuid[] not null
 column scene_characters.character_id uuid not null
 column scene_characters.created_at timestamp with time zone default now() not null
 column scene_characters.project_id uuid not null
@@ -881,6 +913,16 @@ constraint hub_posts.hub_posts_title_check CHECK (((char_length(btrim(title)) >=
 constraint hub_reads.hub_reads_pkey PRIMARY KEY (user_id, post_id)
 constraint hub_reads.hub_reads_post_id_fkey FOREIGN KEY (post_id) REFERENCES hub_posts(id) ON DELETE CASCADE
 constraint hub_reads.hub_reads_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint item_versions.item_versions_confirmed_by_fkey FOREIGN KEY (confirmed_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint item_versions.item_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint item_versions.item_versions_guest_decision_check CHECK ((guest_decision = ANY (ARRAY['approved'::text, 'changes_requested'::text])))
+constraint item_versions.item_versions_id_project_id_key UNIQUE (id, project_id)
+constraint item_versions.item_versions_label_check CHECK ((char_length(label) <= 120))
+constraint item_versions.item_versions_pkey PRIMARY KEY (id)
+constraint item_versions.item_versions_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint item_versions.item_versions_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint item_versions.item_versions_script_id_number_key UNIQUE (script_id, number)
+constraint item_versions.item_versions_status_check CHECK ((status = ANY (ARRAY['draft'::text, 'sent'::text])))
 constraint job_applications.job_applications_applicant_id_fkey FOREIGN KEY (applicant_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint job_applications.job_applications_job_id_applicant_id_key UNIQUE (job_id, applicant_id)
 constraint job_applications.job_applications_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE CASCADE
@@ -1064,6 +1106,22 @@ constraint reports.reports_reason_check CHECK (((char_length(btrim(reason)) >= 1
 constraint reports.reports_reporter_id_fkey FOREIGN KEY (reporter_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint reports.reports_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint reports.reports_status_check CHECK ((status = ANY (ARRAY['open'::text, 'resolved'::text, 'dismissed'::text])))
+constraint review_comments.review_comments_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint review_comments.review_comments_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 2000)))
+constraint review_comments.review_comments_guest_name_check CHECK (((guest_name IS NULL) OR ((char_length(btrim(guest_name)) >= 1) AND (char_length(btrim(guest_name)) <= 80))))
+constraint review_comments.review_comments_link_id_fkey FOREIGN KEY (link_id) REFERENCES review_links(id) ON DELETE CASCADE
+constraint review_comments.review_comments_one_author CHECK (((guest_name IS NULL) OR (author_id IS NULL)))
+constraint review_comments.review_comments_pkey PRIMARY KEY (id)
+constraint review_comments.review_comments_version_id_fkey FOREIGN KEY (version_id) REFERENCES item_versions(id) ON DELETE CASCADE
+constraint review_links.review_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint review_links.review_links_id_project_id_key UNIQUE (id, project_id)
+constraint review_links.review_links_label_check CHECK ((char_length(label) <= 120))
+constraint review_links.review_links_layer_check CHECK ((layer = ANY (ARRAY['guest'::text, 'investor'::text])))
+constraint review_links.review_links_pkey PRIMARY KEY (id)
+constraint review_links.review_links_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint review_links.review_links_token_check CHECK ((char_length(token) >= 32))
+constraint review_links.review_links_token_key UNIQUE (token)
+constraint review_links.review_links_version_ids_check CHECK (((cardinality(version_ids) >= 1) AND (cardinality(version_ids) <= 50)))
 constraint scene_characters.scene_characters_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE CASCADE
 constraint scene_characters.scene_characters_pkey PRIMARY KEY (scene_id, character_id)
 constraint scene_characters.scene_characters_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
@@ -1229,10 +1287,14 @@ function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b755
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
 function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469d6e
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
+function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
+function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
+function internal.live_review_link(p_token text) body=971884db2ab87ec35d014433112e3758
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
+function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=90398618b2ac3fe241f10d137bdbc37d
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
@@ -1244,6 +1306,7 @@ function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
@@ -1257,6 +1320,7 @@ function internal.timesheets_guard() body=120e37b024775f62f4ba26fc34af9a54
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
+function public.add_review_comment(p_token text, p_version uuid, p_name text, p_body text) body=3a6a11d7a2d079ffaaf42e4fc6fdd43d
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
@@ -1269,6 +1333,7 @@ function public.append_to_script(p_script uuid, p_text text) body=2f0ee0349c99fd
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
+function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) body=d1d2ebb963760eda860a803bc767ebd7
 function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=a2e6caca798669ed8d994d672b1b472f
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
@@ -1280,6 +1345,7 @@ function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a25
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
 function public.get_recent_work(p_limit integer) body=d2c23183a53dc8b9a97c74a9782fe80d
+function public.get_review(p_token text) body=62de25f96b7a353778c737290ba9fea7
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
@@ -1339,10 +1405,14 @@ grant function internal.in_project_audience(pid uuid, aud text) authenticated,po
 grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
 grant function internal.is_project_member(pid uuid) authenticated,postgres,service_role
 grant function internal.is_shared_media_object(object_name text) anon,authenticated,postgres,service_role
+grant function internal.item_versions_guard() postgres
+grant function internal.item_versions_prepare() postgres
 grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
+grant function internal.live_review_link(p_token text) postgres
 grant function internal.media_guard() postgres,service_role
 grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
+grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.profiles_guard() postgres,service_role
@@ -1354,6 +1424,7 @@ grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
+grant function internal.review_links_check() postgres
 grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
@@ -1367,6 +1438,7 @@ grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
 grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
+grant function public.add_review_comment(p_token text, p_version uuid, p_name text, p_body text) anon,authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_case_study_projects() authenticated,postgres,service_role
 grant function public.admin_close_job(p_job uuid) authenticated,postgres,service_role
@@ -1379,6 +1451,7 @@ grant function public.append_to_script(p_script uuid, p_text text) authenticated
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
+grant function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) anon,authenticated,postgres,service_role
 grant function public.delete_my_account(p_confirm text) authenticated,postgres,service_role
 grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
@@ -1390,6 +1463,7 @@ grant function public.get_press_kit(p_token text) anon,authenticated,postgres,se
 grant function public.get_public_showcase(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role
 grant function public.get_recent_work(p_limit integer) anon,authenticated,postgres,service_role
+grant function public.get_review(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
@@ -1513,6 +1587,9 @@ index CREATE INDEX idx_shots_scene ON public.shots USING btree (scene_id)
 index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING btree (assigned_to)
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
+index CREATE INDEX item_versions_confirmed_by_idx ON public.item_versions USING btree (confirmed_by)
+index CREATE INDEX item_versions_created_by_idx ON public.item_versions USING btree (created_by)
+index CREATE INDEX item_versions_project_idx ON public.item_versions USING btree (project_id, created_at DESC)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
 index CREATE INDEX links_created_by_idx ON public.links USING btree (created_by)
 index CREATE INDEX links_from_project_idx ON public.links USING btree (from_entity, project_id)
@@ -1568,6 +1645,11 @@ index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE
 index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
 index CREATE INDEX reading_corrections_project_idx ON public.reading_corrections USING btree (project_id)
 index CREATE INDEX reports_status_idx ON public.reports USING btree (status, created_at DESC)
+index CREATE INDEX review_comments_author_idx ON public.review_comments USING btree (author_id)
+index CREATE INDEX review_comments_link_idx ON public.review_comments USING btree (link_id)
+index CREATE INDEX review_comments_version_idx ON public.review_comments USING btree (version_id, created_at)
+index CREATE INDEX review_links_created_by_idx ON public.review_links USING btree (created_by)
+index CREATE INDEX review_links_project_idx ON public.review_links USING btree (project_id)
 index CREATE INDEX scene_characters_character_idx ON public.scene_characters USING btree (character_id)
 index CREATE INDEX scene_characters_project_idx ON public.scene_characters USING btree (project_id)
 index CREATE INDEX scene_elements_created_by_idx ON public.scene_elements USING btree (created_by)
@@ -1662,6 +1744,9 @@ index CREATE UNIQUE INDEX hub_incident_updates_pkey ON public.hub_incident_updat
 index CREATE UNIQUE INDEX hub_posts_pkey ON public.hub_posts USING btree (id)
 index CREATE UNIQUE INDEX hub_reads_pkey ON public.hub_reads USING btree (user_id, post_id)
 index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfolio_projects USING btree (user_id, source_project_id) WHERE (source_project_id IS NOT NULL)
+index CREATE UNIQUE INDEX item_versions_id_project_id_key ON public.item_versions USING btree (id, project_id)
+index CREATE UNIQUE INDEX item_versions_pkey ON public.item_versions USING btree (id)
+index CREATE UNIQUE INDEX item_versions_script_id_number_key ON public.item_versions USING btree (script_id, number)
 index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
 index CREATE UNIQUE INDEX job_applications_pkey ON public.job_applications USING btree (id)
 index CREATE UNIQUE INDEX jobs_pkey ON public.jobs USING btree (id)
@@ -1704,6 +1789,10 @@ index CREATE UNIQUE INDEX reading_corrections_pkey ON public.reading_corrections
 index CREATE UNIQUE INDEX reading_corrections_project_name_key ON public.reading_corrections USING btree (project_id, name)
 index CREATE UNIQUE INDEX reports_once_key ON public.reports USING btree (reporter_id, kind, target_id)
 index CREATE UNIQUE INDEX reports_pkey ON public.reports USING btree (id)
+index CREATE UNIQUE INDEX review_comments_pkey ON public.review_comments USING btree (id)
+index CREATE UNIQUE INDEX review_links_id_project_id_key ON public.review_links USING btree (id, project_id)
+index CREATE UNIQUE INDEX review_links_pkey ON public.review_links USING btree (id)
+index CREATE UNIQUE INDEX review_links_token_key ON public.review_links USING btree (token)
 index CREATE UNIQUE INDEX scene_characters_pkey ON public.scene_characters USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
@@ -1803,6 +1892,10 @@ policy public.hub_posts "hub posts update" PERMISSIVE UPDATE to authenticated us
 policy public.hub_reads "hub reads delete" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.hub_reads "hub reads insert" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.hub_reads "hub reads read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.item_versions "versions delete" PERMISSIVE DELETE to authenticated using (internal.can_shape_project(project_id) AND (status = 'draft'::text)) check -
+policy public.item_versions "versions insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.item_versions "versions read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.item_versions "versions update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.job_applications "Job owners can update application status" PERMISSIVE UPDATE to authenticated using (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid)))) check (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))
 policy public.job_applications "Users can apply for jobs" PERMISSIVE INSERT to authenticated using - check (( SELECT auth.uid() AS uid) = applicant_id)
 policy public.job_applications "job_applications read" PERMISSIVE SELECT to authenticated using ((applicant_id = ( SELECT auth.uid() AS uid)) OR (job_id IN ( SELECT jobs.id FROM jobs WHERE (jobs.created_by = ( SELECT auth.uid() AS uid))))) check -
@@ -1881,6 +1974,12 @@ policy public.reading_corrections "reading_corrections access" PERMISSIVE ALL to
 policy public.reports "reports insert" PERMISSIVE INSERT to authenticated using - check ((reporter_id = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text) AND (resolved_by IS NULL))
 policy public.reports "reports settle" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.reports "reports view" PERMISSIVE SELECT to authenticated using ((reporter_id = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
+policy public.review_comments "review comments insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (guest_name IS NULL) AND (link_id IS NULL) AND (EXISTS ( SELECT 1 FROM item_versions v WHERE ((v.id = review_comments.version_id) AND (v.status = 'sent'::text)))))
+policy public.review_comments "review comments read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM item_versions v WHERE (v.id = review_comments.version_id))) check -
+policy public.review_links "review links delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.review_links "review links insert" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.review_links "review links read" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
+policy public.review_links "review links update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.scene_characters "scene_characters access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_elements "scene_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
@@ -2018,6 +2117,7 @@ rls hidden_messages enabled=true forced=false
 rls hub_incident_updates enabled=true forced=false
 rls hub_posts enabled=true forced=false
 rls hub_reads enabled=true forced=false
+rls item_versions enabled=true forced=false
 rls job_applications enabled=true forced=false
 rls jobs enabled=true forced=false
 rls links enabled=true forced=false
@@ -2044,6 +2144,8 @@ rls projects enabled=true forced=false
 rls push_subscriptions enabled=true forced=false
 rls reading_corrections enabled=true forced=false
 rls reports enabled=true forced=false
+rls review_comments enabled=true forced=false
+rls review_links enabled=true forced=false
 rls scene_characters enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
@@ -2098,6 +2200,8 @@ trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_p
 trigger CREATE TRIGGER hub_posts_announce AFTER INSERT OR UPDATE OF published_at, important ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_announce()
 trigger CREATE TRIGGER hub_posts_check_consent BEFORE INSERT OR UPDATE OF project_id ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_check_consent()
 trigger CREATE TRIGGER hub_posts_touch BEFORE INSERT OR UPDATE ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_touch()
+trigger CREATE TRIGGER item_versions_guard BEFORE UPDATE ON public.item_versions FOR EACH ROW EXECUTE FUNCTION internal.item_versions_guard()
+trigger CREATE TRIGGER item_versions_prepare BEFORE INSERT ON public.item_versions FOR EACH ROW EXECUTE FUNCTION internal.item_versions_prepare()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
 trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
@@ -2115,6 +2219,7 @@ trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
+trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()

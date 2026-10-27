@@ -65,6 +65,7 @@ hide nav, ⌘K and island entries. Environment: `VERCEL_ENV` /
 | `/privacy`, `/terms` | public | Legal | `app/(public)/privacy`, `app/(public)/terms`, `components/legal/LegalPage`, `lib/legal/legal.ts` (operator, province, contact, effective date) — linked from the landing footer, sign-up and Settings; no dock or tab bar |
 | `/p/[token]` | **public** | Portfolio share | logged-out; RLS-gated on `is_public`/token |
 | `/s/[token]` | **public** | Script share | logged-out; RLS-gated on `shared = true` (not on the token — BACKLOG 3.3; no control in the app sets `shared` yet) |
+| `/review/[token]` | **public** | Client review | server-rendered, never indexed; `get_review` (exact token, live link); the client comments and approves / asks for changes through `add_review_comment` / `decide_review` — no account, only a typed name (`app/(public)/review/`, `lib/review/versions.ts`) |
 | `/shared/[token]` | **public** | Project lookbook | server-rendered (`force-dynamic`, Open Graph metadata); `get_shared_project` / `get_shared_lookbook` / `get_press_kit` — exact token, visibility link/public |
 | `/admin` | admin | Admin | dashboard |
 | `/admin/users` | admin | Admin | user management |

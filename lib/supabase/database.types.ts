@@ -1325,6 +1325,76 @@ export type Database = {
           },
         ];
       };
+      item_versions: {
+        Row: {
+          confirmed_at: string | null;
+          confirmed_by: string | null;
+          created_at: string;
+          created_by: string | null;
+          guest_decided_at: string | null;
+          guest_decision: string | null;
+          guest_name: string | null;
+          id: string;
+          label: string;
+          number: number;
+          project_id: string;
+          script_id: string;
+          sent_at: string | null;
+          snapshot: string;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          guest_decided_at?: string | null;
+          guest_decision?: string | null;
+          guest_name?: string | null;
+          id?: string;
+          label?: string;
+          number?: number;
+          project_id: string;
+          script_id: string;
+          sent_at?: string | null;
+          snapshot?: string;
+          status?: string;
+        };
+        Update: {
+          confirmed_at?: string | null;
+          confirmed_by?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          guest_decided_at?: string | null;
+          guest_decision?: string | null;
+          guest_name?: string | null;
+          id?: string;
+          label?: string;
+          number?: number;
+          project_id?: string;
+          script_id?: string;
+          sent_at?: string | null;
+          snapshot?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "item_versions_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "item_versions_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       job_applications: {
         Row: {
           applicant_id: string;
@@ -2881,6 +2951,100 @@ export type Database = {
           },
         ];
       };
+      review_comments: {
+        Row: {
+          author_id: string | null;
+          body: string;
+          created_at: string;
+          guest_name: string | null;
+          id: string;
+          link_id: string | null;
+          version_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          author_id?: string | null;
+          body: string;
+          created_at?: string;
+          guest_name?: string | null;
+          id?: string;
+          link_id?: string | null;
+          version_id: string;
+        };
+        Update: {
+          author_id?: string | null;
+          body?: string;
+          created_at?: string;
+          guest_name?: string | null;
+          id?: string;
+          link_id?: string | null;
+          version_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_comments_link_id_fkey";
+            columns: ["link_id"];
+            isOneToOne: false;
+            referencedRelation: "review_links";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "review_comments_version_id_fkey";
+            columns: ["version_id"];
+            isOneToOne: false;
+            referencedRelation: "item_versions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      review_links: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          expires_at: string | null;
+          id: string;
+          label: string;
+          layer: string;
+          project_id: string;
+          revoked_at: string | null;
+          token: string;
+          version_ids: string[];
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          label?: string;
+          layer?: string;
+          project_id: string;
+          revoked_at?: string | null;
+          token?: string;
+          version_ids: string[];
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          label?: string;
+          layer?: string;
+          project_id?: string;
+          revoked_at?: string | null;
+          token?: string;
+          version_ids?: string[];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_links_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       scene_characters: {
         Row: {
           character_id: string;
@@ -4194,6 +4358,15 @@ export type Database = {
         Returns: Json;
       };
       ack_call_sheet: { Args: { p_sheet: string }; Returns: number };
+      add_review_comment: {
+        Args: {
+          p_body: string;
+          p_name: string;
+          p_token: string;
+          p_version: string;
+        };
+        Returns: boolean;
+      };
       add_script_annotation: {
         Args: {
           p_line: number;
@@ -4283,6 +4456,16 @@ export type Database = {
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
       can_post_channel: { Args: { cid: string }; Returns: boolean };
+      decide_review: {
+        Args: {
+          p_decision: string;
+          p_name: string;
+          p_note?: string;
+          p_token: string;
+          p_version: string;
+        };
+        Returns: boolean;
+      };
       delete_my_account: { Args: { p_confirm: string }; Returns: undefined };
       edit_message: {
         Args: { p_content: string; p_message: string };
@@ -4381,6 +4564,7 @@ export type Database = {
           year: number;
         }[];
       };
+      get_review: { Args: { p_token: string }; Returns: Json };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };
       get_shared_project: {
         Args: { p_token: string };
