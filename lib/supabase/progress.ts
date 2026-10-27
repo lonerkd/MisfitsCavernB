@@ -76,12 +76,16 @@ export async function advancePhase(projectId: string, phase: Phase, choice: { de
 export async function listWorkingMedia(projectId: string): Promise<Array<{ id: string; title: string; kind: string; shared: boolean; lifecycle: string }>> {
   const out: Array<{ id: string; title: string; kind: string; shared: boolean; lifecycle: string }> = [];
   const PAGE = 1000;
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase.from('media').select('id, title, kind, shared, lifecycle')
-      .eq('project_id', projectId).eq('lifecycle', 'working').order('id').range(from, from + PAGE - 1);
+  let after: string | null = null;
+  // Keyset pages (id > last id): each page costs the same however far in, unlike OFFSET.
+  for (;;) {
+    let q = supabase.from('media').select('id, title, kind, shared, lifecycle').eq('project_id', projectId).eq('lifecycle', 'working').order('id').limit(PAGE);
+    if (after) q = q.gt('id', after);
+    const { data, error } = await q;
     if (error) throw new Error(error.message || 'Could not read the library');
     out.push(...(data ?? []));
     if (!data || data.length < PAGE) break;
+    after = data[data.length - 1].id;
   }
   return out;
 }

@@ -137,3 +137,12 @@ describe('restoring and the library', () => {
     expect(rows).toEqual([{ id: published, lifecycle: 'archived' }]);
   });
 });
+
+describe('a null argument is refused, not treated as the default', () => {
+  it('null phase or null default changes nothing', async () => {
+    const before = await status();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: null as never })).error).not.toBeNull();
+    expect((await sam().rpc('advance_phase', { p_project: projectId, p_to: 'production', p_default: null as never })).error).not.toBeNull();
+    expect(await status()).toBe(before);
+  });
+});

@@ -52,10 +52,10 @@ begin
   if not internal.is_project_creator(p_project) then
     raise exception 'Only the project owner can pass a phase gate' using errcode = '42501';
   end if;
-  if p_to not in ('concept', 'pre-production', 'production', 'post-production', 'completed') then
+  if p_to is null or p_to not in ('concept', 'pre-production', 'production', 'post-production', 'completed') then
     raise exception 'Unknown phase' using errcode = '22023';
   end if;
-  if p_default not in ('carry', 'archive') then
+  if p_default is null or p_default not in ('carry', 'archive') then
     raise exception 'The default must be carry or archive' using errcode = '22023';
   end if;
   if jsonb_typeof(coalesce(p_exceptions, '[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(p_exceptions, '[]'::jsonb)) > 1000 then
