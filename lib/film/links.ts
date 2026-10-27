@@ -35,8 +35,11 @@ export async function attach(projectId: string, from: string, to: string, kind =
 
 /** Remove a link. Returns an error message, or null. */
 export async function detach(linkId: string): Promise<string | null> {
-  const { error } = await supabase.from('links').delete().eq('id', linkId);
-  return error ? error.message : null;
+  // RLS filters a delete the caller may not make to zero rows without an error, so ask for the row back.
+  const { data, error } = await supabase.from('links').delete().eq('id', linkId).select('id');
+  if (error) return error.message;
+  if (!data || data.length === 0) return 'Only the person who attached it, or someone who shapes the project, can remove it.';
+  return null;
 }
 
 export function useEntities(projectId: string | null) {

@@ -24,7 +24,8 @@ type Field = 'title' | 'board' | 'notes';
 
 /** Everything about one library item: preview, details, scene links, publishing. */
 export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: () => void }) {
-  const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia } = useStudio();
+  const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia, openCard } = useStudio();
+  const cardsOn = useFlag('entity_cards');
   const canShape = useCanShape(project.id, isOwner);
   const gatesOn = useFlag('phase_gates');
   const { toast } = useToast();
@@ -123,6 +124,11 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
       actions={
         <>
           {saving && <span className={cx(s.hint)} aria-live="polite">Saving…</span>}
+          {cardsOn && (
+            <button type="button" className={cx(s.btn, s.small)} onClick={() => { onClose(); openCard(item.id); }}>
+              Card
+            </button>
+          )}
           {src && (
             <a className={cx(s.btn, s.small)} href={src} target="_blank" rel="noopener noreferrer">
               <ExternalLink size={12} /> Open original

@@ -10,8 +10,9 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useStudio } from '@/components/studio/StudioContext';
 import { useCharacters, useSceneCharacters, useProjectLocations, useShootDays } from '@/lib/studio';
-import { useEntities, useLinks, type EntityKind } from '@/lib/film/links';
-import { cardOf, type CardScene } from '@/lib/film/card';
+import { attach, detach, useEntities, useLinks, type EntityKind } from '@/lib/film/links';
+import { attachCandidates, cardOf, type CardScene } from '@/lib/film/card';
+import { useToast } from '@/components/ui/Toast';
 
 const KIND_NAME: Record<EntityKind, string> = {
   scene: 'Scene', character: 'Character', location: 'Location', shoot_day: 'Shoot day',
@@ -34,9 +35,13 @@ export function EntityCardHost() {
   const [trail, setTrail] = useState<string[]>([]);
   const current = trail[trail.length - 1] ?? cardId;
   const panel = useRef<HTMLElement>(null);
+  const { toast } = useToast();
+  const [picking, setPicking] = useState(false);
+  const [query, setQuery] = useState('');
 
   // A new card opened from outside starts a fresh trail.
   useOnChange(cardId, () => setTrail([]));
+  useOnChange(current, () => { setPicking(false); setQuery(''); });
   useEffect(() => {
     if (!open) return;
     panel.current?.focus();
@@ -59,7 +64,24 @@ export function EntityCardHost() {
     });
   }, [current, entities.rows, links.rows, scenes.rows, characters.rows, places.rows, days.rows, castOf, sceneCharacters.rows]);
 
+  const candidates = useMemo(
+    () => (current && picking ? attachCandidates(current, entities.rows, links.rows, query) : []),
+    [current, picking, entities.rows, links.rows, query],
+  );
+
   if (!open) return null;
+
+  const doAttach = async (otherId: string) => {
+    if (!current) return;
+    const res = await attach(project.id, current, otherId);
+    if ('error' in res) { toast(`Could not attach it: ${res.error}`, 'error'); return; }
+    void links.reload();
+  };
+  const doDetach = async (linkId: string) => {
+    const error = await detach(linkId);
+    if (error) { toast(`Could not remove it: ${error}`, 'error'); return; }
+    void links.reload();
+  };
   const loading = entities.status === 'loading';
   const failed = entities.status === 'error';
 
@@ -105,10 +127,13 @@ export function EntityCardHost() {
               <h3 style={groupTitle}>{g.title}</h3>
               <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 4 }}>
                 {g.items.map((item) => (
-                  <li key={item.id}>
+                  <li key={item.id} style={{ display: 'flex', gap: 6 }}>
                     {OPENS.has(item.kind) ? (
-                      <button type="button" onClick={() => setTrail((t) => [...t, item.id])} style={{ width: '100%', textAlign: 'left', background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 14 }}>{item.label}</button>
-                    ) : item.label}
+                      <button type="button" onClick={() => setTrail((t) => [...t, item.id])} style={{ flex: 1, textAlign: 'left', background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 14 }}>{item.label}</button>
+                    ) : <span style={{ flex: 1 }}>{item.label}</span>}
+                    {item.linkId && (
+                      <button type="button" aria-label={`Remove ${item.label}`} onClick={() => void doDetach(item.linkId!)} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0 10px', color: 'var(--fg-muted)', cursor: 'pointer' }}><X size={14} aria-hidden /></button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -117,6 +142,32 @@ export function EntityCardHost() {
           {card.connected.length === 0 && card.attached.length === 0 && card.facts.length === 0 && (
             <p style={{ color: 'var(--fg-muted)' }}>Nothing is connected to this yet.</p>
           )}
+          <section aria-label="Attach" style={{ marginTop: 16 }}>
+            {!picking ? (
+              <button type="button" onClick={() => setPicking(true)} style={{ background: 'none', border: '1px dashed var(--border-2)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 14 }}>+ Attach</button>
+            ) : (
+              <div style={{ display: 'grid', gap: 8 }}>
+                <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>
+                  Attach a task, document, media item…
+                  <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name" style={{ background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: 8, color: 'var(--fg-strong)' }} />
+                </label>
+                {candidates.length === 0 ? (
+                  <p style={{ margin: 0, color: 'var(--fg-muted)', fontSize: 14 }}>{query.trim() ? 'Nothing matches.' : 'Nothing left to attach.'}</p>
+                ) : (
+                  <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 4 }}>
+                    {candidates.map((c) => (
+                      <li key={c.id}>
+                        <button type="button" onClick={() => void doAttach(c.id)} style={{ width: '100%', textAlign: 'left', background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', color: 'var(--fg-strong)', cursor: 'pointer', fontSize: 14 }}>
+                          <span style={{ color: 'var(--fg-muted)', marginRight: 8 }}>{KIND_NAME[c.kind]}</span>{c.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div><button type="button" onClick={() => { setPicking(false); setQuery(''); }} style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', textDecoration: 'underline' }}>Done</button></div>
+              </div>
+            )}
+          </section>
         </>
       )}
     </aside>
