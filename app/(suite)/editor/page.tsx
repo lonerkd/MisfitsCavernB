@@ -574,9 +574,7 @@ export default function EditorPage() {
   const handleCopyChange = (val: string) => {
     const typed = typedWords(content, val);
     if (typed) { writing.add(typed); sprint.onType(typed); }
-    noteHistoryEdit(content);
-    setContent(val);
-    noteLocalEdit();
+    setContent(val); // the sync layer turns this into a tracked local edit (undo included)
     setShowAutocomplete(false);
   };
 
