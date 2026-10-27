@@ -12,6 +12,8 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
+import { useFlag } from '@/components/Flag';
+import { EntityCardHost } from '@/components/film/EntityCard';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import type { ProductionView, StudioTab } from '@/lib/os/progress';
 import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
@@ -69,6 +71,11 @@ export interface StudioData {
   goTo: (tab: StudioTab, view?: ProductionView) => void;
   /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
   castOf: (scene: Pick<SceneRow, 'id' | 'cast_list'>) => string[];
+  /** The card (flag `entity_cards`): which entity is open, how to open and close it. `cardsOn` is false where the flag is off. */
+  cardsOn: boolean;
+  cardId: string | null;
+  openCard: (entityId: string) => void;
+  closeCard: () => void;
 }
 
 export interface ScriptLineLite { type: string; text: string }
@@ -185,6 +192,11 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
   const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
 
+  const cardsOn = useFlag('entity_cards');
+  const [cardId, setCardId] = useState<string | null>(null);
+  const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
+  const closeCard = useCallback(() => setCardId(null), []);
+
   const viewMode = useViewAs(project.id);
   const value: StudioData = {
     project,
@@ -209,6 +221,10 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     sceneLines,
     goTo: onNavigate,
     castOf,
+    cardsOn,
+    cardId,
+    openCard,
+    closeCard,
   };
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={value}>{children}{cardsOn && <EntityCardHost />}</Ctx.Provider>;
 }

@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  entity_cards: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-10-27',
+    note: 'The link layer\'s card: open a scene, character, location or shoot day from the stripboard and call sheet. Admin-only in production until the owner has tried it on live data.',
+  },
   hub_case_studies: {
     local: true,
     preview: true,

@@ -177,6 +177,11 @@ column discord_integrations.created_at timestamp with time zone default now()
 column discord_integrations.created_by uuid
 column discord_integrations.updated_at timestamp with time zone default now()
 column discord_integrations.webhook_url text not null
+column entities.id uuid not null
+column entities.kind text not null
+column entities.label text default ''::text not null
+column entities.project_id uuid not null
+column entities.updated_at timestamp with time zone default now() not null
 column expenses.amount numeric(12,2) not null
 column expenses.budget_item_id uuid
 column expenses.created_at timestamp with time zone default now() not null
@@ -242,6 +247,13 @@ column jobs.role text not null
 column jobs.status text default 'open'::text
 column jobs.title text not null
 column jobs.updated_at timestamp with time zone default now()
+column links.created_at timestamp with time zone default now() not null
+column links.created_by uuid default auth.uid()
+column links.from_entity uuid not null
+column links.id uuid default gen_random_uuid() not null
+column links.kind text default 'about'::text not null
+column links.project_id uuid not null
+column links.to_entity uuid not null
 column lounge_reads.channel_id uuid
 column lounge_reads.id uuid default gen_random_uuid() not null
 column lounge_reads.last_read_at timestamp with time zone default now() not null
@@ -828,6 +840,10 @@ constraint crafts.crafts_pkey PRIMARY KEY (name)
 constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
+constraint entities.entities_id_project_id_key UNIQUE (id, project_id)
+constraint entities.entities_kind_check CHECK ((kind = ANY (ARRAY['scene'::text, 'character'::text, 'location'::text, 'shoot_day'::text, 'task'::text, 'document'::text, 'media'::text])))
+constraint entities.entities_pkey PRIMARY KEY (id)
+constraint entities.entities_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint expenses.expenses_amount_check CHECK (((amount >= (0)::numeric) AND (amount < (100000000)::numeric)))
 constraint expenses.expenses_budget_item_fkey FOREIGN KEY (budget_item_id, project_id) REFERENCES budget_items(id, project_id) ON DELETE SET NULL (budget_item_id)
 constraint expenses.expenses_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
@@ -878,6 +894,14 @@ constraint jobs.jobs_project_id_fkey FOREIGN KEY (project_id) REFERENCES project
 constraint jobs.jobs_rate_type_check CHECK ((rate_type = ANY (ARRAY['hourly'::text, 'fixed'::text])))
 constraint jobs.jobs_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE
 constraint jobs.jobs_status_check CHECK ((status = ANY (ARRAY['open'::text, 'in-progress'::text, 'closed'::text])))
+constraint links.links_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint links.links_distinct CHECK ((from_entity <> to_entity))
+constraint links.links_from_fkey FOREIGN KEY (from_entity, project_id) REFERENCES entities(id, project_id) ON DELETE CASCADE
+constraint links.links_kind_check CHECK (((char_length(kind) >= 1) AND (char_length(kind) <= 40)))
+constraint links.links_pkey PRIMARY KEY (id)
+constraint links.links_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint links.links_to_fkey FOREIGN KEY (to_entity, project_id) REFERENCES entities(id, project_id) ON DELETE CASCADE
+constraint links.links_unique UNIQUE (from_entity, to_entity, kind)
 constraint lounge_reads.lounge_reads_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint lounge_reads.lounge_reads_one_target CHECK (((channel_id IS NULL) <> (partner_id IS NULL)))
 constraint lounge_reads.lounge_reads_partner_id_fkey FOREIGN KEY (partner_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -1195,6 +1219,7 @@ function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae2813624527
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
 function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
+function internal.entity_sync() body=1a61fe46c375f7e7eb275f38a1b82904
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
@@ -1304,6 +1329,7 @@ grant function internal.can_view_channel(cid uuid) authenticated,postgres,servic
 grant function internal.castings_link_character() postgres
 grant function internal.channels_default_audience() postgres
 grant function internal.characters_rename() postgres
+grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
@@ -1422,6 +1448,7 @@ index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
 index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
+index CREATE INDEX entities_project_idx ON public.entities USING btree (project_id, kind)
 index CREATE INDEX expenses_budget_item_fkey_idx ON public.expenses USING btree (budget_item_id, project_id)
 index CREATE INDEX expenses_budget_item_idx ON public.expenses USING btree (budget_item_id)
 index CREATE INDEX expenses_created_by_fkey_idx ON public.expenses USING btree (created_by)
@@ -1487,6 +1514,11 @@ index CREATE INDEX idx_timeline_items_assigned_to ON public.timeline_items USING
 index CREATE INDEX idx_timeline_items_created_by ON public.timeline_items USING btree (created_by)
 index CREATE INDEX idx_timeline_items_project ON public.timeline_items USING btree (project_id)
 index CREATE INDEX jobs_role_idx ON public.jobs USING btree (role)
+index CREATE INDEX links_created_by_idx ON public.links USING btree (created_by)
+index CREATE INDEX links_from_project_idx ON public.links USING btree (from_entity, project_id)
+index CREATE INDEX links_project_idx ON public.links USING btree (project_id)
+index CREATE INDEX links_to_idx ON public.links USING btree (to_entity)
+index CREATE INDEX links_to_project_idx ON public.links USING btree (to_entity, project_id)
 index CREATE INDEX lounge_reads_channel_id_fkey_idx ON public.lounge_reads USING btree (channel_id)
 index CREATE INDEX lounge_reads_partner_id_fkey_idx ON public.lounge_reads USING btree (partner_id)
 index CREATE INDEX media_created_by_idx ON public.media USING btree (created_by)
@@ -1621,6 +1653,8 @@ index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
+index CREATE UNIQUE INDEX entities_id_project_id_key ON public.entities USING btree (id, project_id)
+index CREATE UNIQUE INDEX entities_pkey ON public.entities USING btree (id)
 index CREATE UNIQUE INDEX expenses_pkey ON public.expenses USING btree (id)
 index CREATE UNIQUE INDEX guide_progress_pkey ON public.guide_progress USING btree (user_id, project_id)
 index CREATE UNIQUE INDEX hidden_messages_pkey ON public.hidden_messages USING btree (message_id)
@@ -1631,6 +1665,8 @@ index CREATE UNIQUE INDEX idx_portfolio_projects_source_unique ON public.portfol
 index CREATE UNIQUE INDEX job_applications_job_id_applicant_id_key ON public.job_applications USING btree (job_id, applicant_id)
 index CREATE UNIQUE INDEX job_applications_pkey ON public.job_applications USING btree (id)
 index CREATE UNIQUE INDEX jobs_pkey ON public.jobs USING btree (id)
+index CREATE UNIQUE INDEX links_pkey ON public.links USING btree (id)
+index CREATE UNIQUE INDEX links_unique ON public.links USING btree (from_entity, to_entity, kind)
 index CREATE UNIQUE INDEX lounge_reads_channel_key ON public.lounge_reads USING btree (user_id, channel_id) WHERE (channel_id IS NOT NULL)
 index CREATE UNIQUE INDEX lounge_reads_partner_key ON public.lounge_reads USING btree (user_id, partner_id) WHERE (partner_id IS NOT NULL)
 index CREATE UNIQUE INDEX lounge_reads_pkey ON public.lounge_reads USING btree (id)
@@ -1750,6 +1786,7 @@ policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
+policy public.entities "entities read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.expenses "expenses shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.guide_progress "guide_progress delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
@@ -1772,6 +1809,9 @@ policy public.job_applications "job_applications read" PERMISSIVE SELECT to auth
 policy public.jobs "Authenticated users create jobs" PERMISSIVE INSERT to authenticated using - check ((( SELECT auth.uid() AS uid) IS NOT NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((project_id IS NULL) OR internal.can_shape_project(project_id)))
 policy public.jobs "Job creators can update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check -
 policy public.jobs "Jobs readable" PERMISSIVE SELECT to public using ((created_by = ( SELECT auth.uid() AS uid)) OR ((status = 'open'::text) AND internal.job_listed(created_by, project_id)) OR internal.applied_to(id)) check -
+policy public.links "links delete" PERMISSIVE DELETE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
+policy public.links "links insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.links "links read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.lounge_reads "lounge_reads own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.media "media delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.media "media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
@@ -1925,6 +1965,7 @@ realtime public.character_castings
 realtime public.character_media
 realtime public.characters
 realtime public.expenses
+realtime public.links
 realtime public.media
 realtime public.messages
 realtime public.notifications
@@ -1970,6 +2011,7 @@ rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
 rls crafts enabled=true forced=false
 rls discord_integrations enabled=true forced=false
+rls entities enabled=true forced=false
 rls expenses enabled=true forced=false
 rls guide_progress enabled=true forced=false
 rls hidden_messages enabled=true forced=false
@@ -1978,6 +2020,7 @@ rls hub_posts enabled=true forced=false
 rls hub_reads enabled=true forced=false
 rls job_applications enabled=true forced=false
 rls jobs enabled=true forced=false
+rls links enabled=true forced=false
 rls lounge_reads enabled=true forced=false
 rls media enabled=true forced=false
 rls messages enabled=true forced=false
@@ -2035,6 +2078,20 @@ trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheet
 trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF day_number ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.characters FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF scene_number, heading, title ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.media FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.project_tasks FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.characters FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_tasks FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()

@@ -253,7 +253,7 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
   onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onPrintSides: () => void; onClose: () => void;
 }) {
-  const { project } = useStudio();
+  const { project, cardsOn, openCard } = useStudio();
   const { toast } = useToast();
 
   const saveSheet = async (patch: CallSheetPatch): Promise<CallSheet | null> => {
@@ -364,7 +364,9 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
           <div key={sc.id} className={c.scene} style={{ ['--k' as string]: STRIP_COLOR[stripKind(sc)] }}>
             <u aria-hidden />
             <i>{sc.scene_number}</i>
-            <span>{sc.heading ?? sc.title}</span>
+            {cardsOn
+              ? <span><button type="button" onClick={() => openCard(sc.id)} title="Open the card" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', textDecoration: 'underline dotted' }}>{sc.heading ?? sc.title}</button></span>
+              : <span>{sc.heading ?? sc.title}</span>}
             <em>{String(sc.est_duration || '').match(/\d+\s*\/\s*8/)?.[0]?.replace(/\s/g, '') ?? ''}</em>
           </div>
         ))}
