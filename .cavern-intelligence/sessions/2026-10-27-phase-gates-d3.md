@@ -8,12 +8,21 @@ D3 became the **gate** only, and the spec was revised to say so.
 **Built:** migration `20261031000000_phase_gates.sql` — `media.lifecycle`
 (`working` | `archived`, changed only by people who shape the project, enforced
 by `media_lifecycle_guard`), `phase_gates` (a record of each gate; no write grants)
-and `advance_phase(project, to, decisions)` (owner only; archives the chosen
+and `advance_phase(project, to, default, exceptions)` (owner only; archives the chosen
 items — also taking them off the public share link — and moves the phase, in one
 transaction). UI: the PhasePanel asks, when the owner moves forward, what each
 library item does (`PhaseGate`; production and later default to archive, earlier
 phases to carry on); the Library hides archived items behind "Show archived";
 MediaDetail has Archive / Restore for people who shape the project.
+
+**After review (Copilot, six findings, all real) — #319 was merged before these landed, so they are a follow-up (`20261031000100_phase_gates_fixes.sql`; the first migration was never applied anywhere):** archived ⇒ unshared is now a
+trigger invariant on every write (and the share toggles are disabled for archived
+items); the guard also runs on insert; `advance_phase` takes a default plus
+exceptions (one atomic step for any library size; the gate reads the whole
+working library, paged) instead of an id per item; it locks the project row so
+gates run serially; the recorded counts are what really changed; the Archive /
+Restore control respects the flag. The page-size budget failure was fixed by
+loading the gate dialog lazily.
 
 **Flag:** `phase_gates` — local and preview on, production admins only.
 

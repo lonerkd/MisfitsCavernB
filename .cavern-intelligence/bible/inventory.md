@@ -46,7 +46,7 @@
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (239) | 35 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility |
 | `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (486) | 34 files · components: ui · lib: auth, formats, os, push, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 40 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, your-data |
-| `/projects/[id]` | signed in | `app/(suite)/projects/[id]/page.tsx` (407) | 104 files · components: Flag, brief, crafts, formats, guides, progress, projects, studio, ui · lib: auth, breakdown, brief, crafts, flags, formats, guides, hooks, lounge, notifications, os, pocket, push, scriptos, studio, supabase, themes, types, util, validation, writing | accessibility, announcements, brief, guides, keyboard-audit, layout, mobile, phases, project-manager, table-read, themes, view-as |
+| `/projects/[id]` | signed in | `app/(suite)/projects/[id]/page.tsx` (407) | 98 files · components: Flag, brief, crafts, formats, guides, progress, projects, studio, ui · lib: auth, breakdown, brief, crafts, flags, formats, guides, hooks, lounge, notifications, os, pocket, push, scriptos, studio, supabase, themes, types, util, validation, writing | accessibility, announcements, brief, guides, keyboard-audit, layout, mobile, phases, project-manager, table-read, themes, view-as |
 | `/projects/[id]/pitch` | signed in | `app/(suite)/projects/[id]/pitch/page.tsx` (611) | 39 files · components: ui · lib: auth, formats, notifications, os, push, scriptos, supabase, types, util, validation | accessibility, project-manager |
 | `/projects` | signed in | `app/(suite)/projects/page.tsx` (668) | 55 files · components: brand, formats, ui · lib: auth, brief, formats, hooks, lounge, onboarding, os, push, scriptos, supabase, types, util, validation | accessibility, auth-journey, island, keyboard-audit, layout, login-smoke, mobile, onboarding, projects-keyboard-phase, route-smoke, search, themes |
 | `/settings` | signed in | `app/(suite)/settings/page.tsx` (337) | 46 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, supabase, themes, types, validation | accessibility, account-deletion, auth-journey, island, keyboard-audit, mobile, phases, route-smoke, themes, your-data |
@@ -298,7 +298,7 @@
 
 ### `/projects`
 
-- **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `discord_integrations`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `discord_integrations`, `media`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
 - **Functions:** `advance_phase`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `has_discord_webhook`, `project_context`, `project_progress`, `projects_progress`
 - **Realtime:** `project`, `projects:list`
 
@@ -337,7 +337,7 @@
 
 ### `/welcome`
 
-- **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `crafts`, `discord_integrations`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `crafts`, `discord_integrations`, `jobs`, `media`, `notifications`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
 - **Functions:** `advance_phase`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `has_discord_webhook`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`
 - **Realtime:** `project`, `projects:list`
 
@@ -397,7 +397,7 @@
 | `jobs` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/settings`, `/studio`, `/welcome` |
 | `links` | `/studio` |
 | `lounge_reads` | **no route** (server-side, triggers or functions only) |
-| `media` | `/p/[token]`, `/shared/[token]`, `/call/[id]`, `/crew/[id]`, `/editor`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/studio`, `/today` |
+| `media` | `/p/[token]`, `/shared/[token]`, `/call/[id]`, `/crew/[id]`, `/editor`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/studio`, `/today`, `/welcome` |
 | `messages` | `/lounge`, `/`, `/projects/[id]`, `/today` |
 | `notifications` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/editor`, `/hub`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/today`, `/welcome`, `/api/push/dispatch` |
 | `phase_gates` | **no route** (server-side, triggers or functions only) |

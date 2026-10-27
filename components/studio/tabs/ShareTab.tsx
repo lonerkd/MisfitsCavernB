@@ -38,7 +38,7 @@ export function ShareTab() {
   const url = project.share_token && typeof window !== 'undefined' ? `${window.location.origin}/shared/${project.share_token}` : '';
 
   const published = media.rows.filter((m) => m.shared);
-  const linkedUnpublished = media.rows.filter((m) => !m.shared && (scenesByMedia.get(m.id)?.length ?? 0) > 0);
+  const linkedUnpublished = media.rows.filter((m) => !m.shared && m.lifecycle !== 'archived' && (scenesByMedia.get(m.id)?.length ?? 0) > 0);
   const signed = useSignedUrls(media.rows.map((m) => (m.kind === 'image' || m.kind === 'video' ? m.storage_path : null)));
   const ordered = useMemo(() => [...media.rows].sort((a, b) => Number(b.shared) - Number(a.shared) || a.title.localeCompare(b.title)), [media.rows]);
 
@@ -153,7 +153,7 @@ export function ShareTab() {
                     <div className={s.cardTitle}>{m.title || 'Untitled'}</div>
                     <div className={s.hint}>{n ? `Linked to ${n} scene${n === 1 ? '' : 's'}` : 'Not linked to a scene — appears under “More references”'}</div>
                   </div>
-                  <Toggle on={m.shared} disabled={!isOwner || busyIds.has(m.id)} label={`Include ${m.title || 'item'} in the lookbook`} onChange={(next) => void setShared([m], next)} />
+                  <Toggle on={m.shared} disabled={!isOwner || busyIds.has(m.id) || m.lifecycle === 'archived'} label={`Include ${m.title || 'item'} in the lookbook`} onChange={(next) => void setShared([m], next)} />
                 </div>
               );
             })}

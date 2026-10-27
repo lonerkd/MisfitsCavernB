@@ -64,12 +64,30 @@ export async function setProjectPhase(projectId: string, phase: Phase): Promise<
  * archive them, and move the project to `phase`, in one step (the
  * advance_phase function). Returns how many were archived and carried.
  */
-export async function advancePhase(projectId: string, phase: Phase, decisions: Array<{ id: string; action: 'carry' | 'archive' }>): Promise<{ archived: number; carried: number }> {
-  const { data, error } = await supabase.rpc('advance_phase', { p_project: projectId, p_to: PHASE_STATUS[phase], p_decisions: decisions });
+export async function advancePhase(projectId: string, phase: Phase, choice: { default: 'carry' | 'archive'; exceptions: string[] }): Promise<{ archived: number; carried: number }> {
+  const { data, error } = await supabase.rpc('advance_phase', { p_project: projectId, p_to: PHASE_STATUS[phase], p_default: choice.default, p_exceptions: choice.exceptions });
   if (error) throw new Error(error.message || 'Could not pass the gate');
   announceProgressChange(projectId);
   const out = (data ?? {}) as { archived?: number; carried?: number };
   return { archived: out.archived ?? 0, carried: out.carried ?? 0 };
+}
+
+/** Every library item still working, all of them (the read is paged past the 1,000-row cap), for the gate. */
+export async function listWorkingMedia(projectId: string): Promise<Array<{ id: string; title: string; kind: string; shared: boolean; lifecycle: string }>> {
+  const out: Array<{ id: string; title: string; kind: string; shared: boolean; lifecycle: string }> = [];
+  const PAGE = 1000;
+  let after: string | null = null;
+  // Keyset pages (id > last id): each page costs the same however far in, unlike OFFSET.
+  for (;;) {
+    let q = supabase.from('media').select('id, title, kind, shared, lifecycle').eq('project_id', projectId).eq('lifecycle', 'working').order('id').limit(PAGE);
+    if (after) q = q.gt('id', after);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message || 'Could not read the library');
+    out.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+    after = data[data.length - 1].id;
+  }
+  return out;
 }
 
 /** Owner only (RLS): the project's format (public.project_formats). */
