@@ -621,6 +621,13 @@ column script_characters.relationships text
 column script_characters.script_id uuid not null
 column script_characters.updated_at timestamp with time zone default now()
 column script_characters.updated_by uuid
+column script_line_overrides.created_at timestamp with time zone default now() not null
+column script_line_overrides.created_by uuid default auth.uid()
+column script_line_overrides.id uuid default gen_random_uuid() not null
+column script_line_overrides.line_text text not null
+column script_line_overrides.line_type text not null
+column script_line_overrides.occurrence integer not null
+column script_line_overrides.script_id uuid not null
 column script_metadata.character_bible jsonb default '[]'::jsonb not null
 column script_metadata.script_id uuid not null
 column script_metadata.title_page jsonb default '{}'::jsonb not null
@@ -1179,6 +1186,13 @@ constraint script_characters.script_characters_pkey PRIMARY KEY (id)
 constraint script_characters.script_characters_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_characters.script_characters_script_id_name_key UNIQUE (script_id, name)
 constraint script_characters.script_characters_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint script_line_overrides.script_line_overrides_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint script_line_overrides.script_line_overrides_line_text_check CHECK ((((char_length(line_text) >= 1) AND (char_length(line_text) <= 2000)) AND (line_text = btrim(line_text))))
+constraint script_line_overrides.script_line_overrides_occurrence_check CHECK ((occurrence >= 0))
+constraint script_line_overrides.script_line_overrides_pkey PRIMARY KEY (id)
+constraint script_line_overrides.script_line_overrides_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint script_line_overrides.script_line_overrides_script_line_key UNIQUE (script_id, line_text, occurrence)
+constraint script_line_overrides.script_line_overrides_type_check CHECK ((line_type = ANY (ARRAY['slug'::text, 'transition'::text, 'character'::text, 'parenthetical'::text, 'dialogue'::text, 'action'::text])))
 constraint script_metadata.script_metadata_pkey PRIMARY KEY (script_id)
 constraint script_metadata.script_metadata_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_metadata.script_metadata_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES auth.users(id) ON DELETE SET NULL
@@ -1833,6 +1847,8 @@ index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
 index CREATE UNIQUE INDEX script_annotations_pkey ON public.script_annotations USING btree (id)
 index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USING btree (id)
 index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
+index CREATE UNIQUE INDEX script_line_overrides_pkey ON public.script_line_overrides USING btree (id)
+index CREATE UNIQUE INDEX script_line_overrides_script_line_key ON public.script_line_overrides USING btree (script_id, line_text, occurrence)
 index CREATE UNIQUE INDEX script_metadata_pkey ON public.script_metadata USING btree (script_id)
 index CREATE UNIQUE INDEX script_revisions_pkey ON public.script_revisions USING btree (id)
 index CREATE UNIQUE INDEX script_stash_pkey ON public.script_stash USING btree (id)
@@ -2026,6 +2042,10 @@ policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE t
 policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.script_characters "script_characters access" PERMISSIVE ALL to authenticated using internal.can_access_script(script_id) check internal.can_access_script(script_id)
+policy public.script_line_overrides "Script members can add line overrides" PERMISSIVE INSERT to authenticated using - check internal.can_access_script(script_id)
+policy public.script_line_overrides "Script members can read line overrides" PERMISSIVE SELECT to authenticated using internal.can_access_script(script_id) check -
+policy public.script_line_overrides "Script members can remove line overrides" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
+policy public.script_line_overrides "Script members can update line overrides" PERMISSIVE UPDATE to authenticated using internal.can_access_script(script_id) check internal.can_access_script(script_id)
 policy public.script_metadata "metadata delete by script members" PERMISSIVE DELETE to authenticated using internal.can_access_script(script_id) check -
 policy public.script_metadata "metadata insert by script members" PERMISSIVE INSERT to authenticated using - check internal.can_access_script(script_id)
 policy public.script_metadata "metadata readable by script members" PERMISSIVE SELECT to public using internal.can_access_script(script_id) check -
@@ -2113,6 +2133,7 @@ realtime public.scene_elements
 realtime public.scene_media
 realtime public.scene_states
 realtime public.scenes
+realtime public.script_line_overrides
 realtime public.script_stash
 realtime public.scripts
 realtime public.set_log
@@ -2185,6 +2206,7 @@ rls scene_states enabled=true forced=false
 rls scenes enabled=true forced=false
 rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
+rls script_line_overrides enabled=true forced=false
 rls script_metadata enabled=true forced=false
 rls script_revisions enabled=true forced=false
 rls script_stash enabled=true forced=false

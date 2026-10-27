@@ -3,9 +3,8 @@
 // one read can never confirm itself in the next: the cast comes from castings
 // someone made, and rejections from names someone said are not characters.
 //
-// Places are deliberately NOT here yet. A heading recognised only because the
-// project knows the place would make the editor and the Studio disagree about
-// where scenes begin, and scene identity hangs on that.
+// Places only canonicalize an already-recognized scene location; project
+// knowledge must never change where the editor and Studio place scene bounds.
 
 import { parseScript, type ParseContext } from './parser';
 import type { LineType } from './types';
@@ -17,8 +16,8 @@ export function contextFromCastings(castings: ReadonlyArray<{ character_name: st
 }
 
 /**
- * Everything a person has told the project about its characters: the cast they
- * chose, the names they confirmed, the names they rejected.
+ * The project's reading context: human character decisions, location names for
+ * canonicalization, weaker cues from the previous draft, and saved line reads.
  */
 export function contextFromProject(
   castings: ReadonlyArray<{ character_name: string }>,

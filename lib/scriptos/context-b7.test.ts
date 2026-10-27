@@ -101,4 +101,11 @@ describe('human line overrides', () => {
     });
     expect(result.lines.find((line) => line.text === '@MAYA')?.type).toBe('character');
   });
+
+  it('keeps title-page rules authoritative over stored overrides', () => {
+    const result = read('Written by Jane Doe\n', {
+      lineOverrides: [{ lineText: 'Written by Jane Doe', occurrence: 0, type: 'action' }],
+    });
+    expect(result.lines[0]).toMatchObject({ type: 'title', confidence: 100 });
+  });
 });

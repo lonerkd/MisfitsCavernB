@@ -1,6 +1,6 @@
 # The deep brain — the script engine, built to keep getting better
 
-**Status: B0–B3 and B5–B6 built; B7–B9 shipped in first slices; B4 is underway.**
+**Status: B0–B3 and B5–B6 built; B4's first slice and B7–B9's first slices shipped.**
 
 Owner: *"We need a constantly improved, but increasingly intuitive and
 intelligent core — a deep brain of rules and systems. Fully lossless Fountain
@@ -39,10 +39,10 @@ sure it is, and be the thing the rest of the suite stands on.
 | L0 | **Lossless Fountain** | Spec syntax is classified exactly, never guessed; the text round-trips byte for byte | Mostly built (`preClassify`; round-trip tests). Gaps: trailing-caret dual dialogue; title-page keys read as action |
 | L1 | **Evidence** | Per-line features, unicode-aware: case, length, punctuation, vocabulary, indent (PDF), position | Thin: `isCaps` is a–z only; vocabulary sets are small; features are inline in one function |
 | L2 | **Structure passes** | Blocks, speech state, scene segmentation, title page vs body, dual dialogue | One forward pass with a few flags |
-| L3 | **Document profile** | What *this* script's conventions are: how it writes cues, numbers headings, punctuates transitions, indents | None |
+| L3 | **Document profile** | What *this* script's conventions are: how it writes cues, numbers headings, punctuates transitions, indents | First slice: explicit cue names/case, heading numbers, transition endings |
 | L4 | **Decoder** | The best labelling of the *whole document* given the screenplay grammar and all evidence — a Viterbi-style search, not a greedy threshold per line | None (greedy, so one weak line can corrupt the next) |
-| L5 | **Context** | The project's graph as priors: known characters and aliases, cast, places, last draft, format, crew vocabulary | `learnedNames` only |
-| L6 | **Memory and corrections** | Confirmed names, rejected names, line overrides become priors and rules, per project and per writer | None (`manualOverride` was an unused field) |
+| L5 | **Context** | The project's graph as priors: known characters and aliases, cast, places, last draft, format, crew vocabulary | Cast/rejections, place canonicalization, repeated previous-draft cues |
+| L6 | **Memory and corrections** | Confirmed names, rejected names, line overrides become priors and rules, per project and per writer | Project name corrections and script-scoped line overrides |
 | L7 | **Reads out** | Scenes, cast, story time, locations, breakdown, timing, sides — and the confidence of each | Built, and the consumers trust every field equally (several fields are stubs: see BACKLOG 3.20) |
 
 The importers (PDF, FDX, Fountain, plain text) feed L1/L3 with their own
@@ -160,11 +160,11 @@ Every text cell 1.000 (was 0.886–0.959); every PDF cell 0.995+ (was 0.826–0.
 
 ### B7, and one rule that shapes it
 
-The reader now takes a `ParseContext` (`parseScript(text, format, learned, { context })`): the characters a person has cast, and names a person has rejected. A known name is believed even when it is too long to look like one; a rejected name is never a cue. The editor and the Studio both read with the project's castings, so the scene index is built from one reading.
+The reader takes a `ParseContext` (`parseScript(text, format, learned, { context })`): cast characters, rejected names, project locations, repeated confident character cues from the previous draft, and saved line decisions. A known name is believed even when it is too long to look like one; a rejected name is never a cue. Previous-draft names are weaker evidence than castings. Known locations only canonicalize the location of an already-recognized scene; context cannot create or remove a scene boundary.
 
 **Only what a person put there goes in.** The `characters` table is derived from the reader's own output, so feeding it back would let one wrong read confirm itself forever. Castings and rejections are human decisions.
 
-**Places are held back on purpose.** A heading recognised only because the project knows the place would make the editor and the Studio disagree about where scenes begin, and scene identity hangs on that. They need one shared context provider first (every surface that writes the scene index reading with the same knowledge); a test (`context-b7.test.ts`) pins that context never changes where scenes begin.
+The editor and Studio build this context from the same project sources before parsing and syncing the scene index. Tests pin that places and previous-draft evidence do not change scene boundaries. Line corrections are keyed to exact trimmed text plus its occurrence in the script, so edits to the target text stop applying stale decisions.
 
 ## 6. The route
 
@@ -180,8 +180,8 @@ hour or two · M ≈ a session · L ≈ several sessions · XL = a project.
 | B4 | **Document profile (L3)** *(first slice built)* | summarizes explicit cue names/case, heading-number styles, and transition punctuation; explicit cues inform later unmarked reads without overriding Fountain syntax | M | REAL_WORLD, INTERNATIONAL |
 | B5 | **The decoder (L4)** *(built)* | grammar-constrained best-path labelling; calibrated confidence; replaces the greedy classifier **only when it beats it on the whole matrix** (the old classifier stays as the fallback until then) | L | shouting, traps, parentheticals, PLAIN |
 | B6 | **The PDF reader rebuilt** *(built)* | geometry-first: cluster x-positions into the document's own columns (not 180–350); respect vertical gaps; page-edge artifacts (page numbers, CONTINUED, MORE) by position; scanned-PDF detection with a message; the reader feeds the same decoder | L | every PDF cell |
-| B7 | **Context in (L5)** *(first slice built: the cast and rejected names; places and the previous draft still to do)* | `parseScript(text, { context })` fed from the graph: cast, aliases, places, last draft; the editor and the Studio supply it | L | cast found, scenes exact on the hardest styles |
-| B8 | **Memory and corrections (L6)** *(first slice built: "not a character" / "is a character", per project; line overrides and per-writer memory still to do)* | per-project memory table; line overrides and renames as rules; the editor's corrections feed it | L | long-tail accuracy, measured on the private corpus |
+| B7 | **Context in (L5)** *(first slice built: cast, rejected names, places, previous draft)* | `parseScript(text, { context })` fed from the graph; editor and Studio share it when reading and syncing scenes | L | cast found, scenes exact on the hardest styles |
+| B8 | **Memory and corrections (L6)** *(first slices built: project name corrections and script-scoped line overrides; private per-writer memory remains undecided)* | project-level name verdicts and script-scoped line decisions become durable priors/rules; the editor can set and undo line decisions | L | long-tail accuracy, measured on the private corpus |
 | B9 | **Reads out with confidence (L7)** *(built: editor review of doubtful reads and name corrections)* | consumers use confidence; a reading-review screen asks about only the doubtful lines; stubs removed | M | trust, not an F1 |
 
 Order is deliberate: **measure → make the measure hard to fool → complete the
@@ -220,8 +220,11 @@ happily multiply a bad one.
 ## 9. Progress
 
 B0–B3 and B5–B6 are built and measured by the ratchet in `lib/scriptos/corpus/`.
-B7–B9 have shipped first slices. B4 now profiles conventions visible in Fountain
-source and feeds explicit cue names back into decoding; broader style inference
-still needs independently labeled scripts to validate it. Remaining slices are
-listed in BACKLOG §3.21. The private corpus remains the independent check and
-requires scripts the owner has the right to use.
+B4 profiles the explicit conventions available in Fountain source; broader
+inference still needs independently labeled scripts. B7's first slice feeds
+castings, rejections, places, and previous-draft names into the shared editor
+and Studio context without changing scene boundaries. B8 has project-scoped
+name corrections and script-scoped line overrides with undo; private per-writer
+memory remains an owner decision. B9's editor review surfaces doubtful reads.
+Remaining work is listed in BACKLOG §3.21. The private corpus remains the
+independent check and requires scripts the owner has the right to use.

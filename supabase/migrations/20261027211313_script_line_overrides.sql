@@ -17,10 +17,19 @@ CREATE TABLE public.script_line_overrides (
 );
 
 ALTER TABLE public.script_line_overrides ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Script members can manage line overrides" ON public.script_line_overrides
-  FOR ALL TO authenticated
+CREATE POLICY "Script members can read line overrides" ON public.script_line_overrides
+  FOR SELECT TO authenticated
+  USING (internal.can_access_script(script_id));
+CREATE POLICY "Script members can add line overrides" ON public.script_line_overrides
+  FOR INSERT TO authenticated
+  WITH CHECK (internal.can_access_script(script_id));
+CREATE POLICY "Script members can update line overrides" ON public.script_line_overrides
+  FOR UPDATE TO authenticated
   USING (internal.can_access_script(script_id))
   WITH CHECK (internal.can_access_script(script_id));
+CREATE POLICY "Script members can remove line overrides" ON public.script_line_overrides
+  FOR DELETE TO authenticated
+  USING (internal.can_access_script(script_id));
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.script_line_overrides TO authenticated;
 REVOKE ALL ON public.script_line_overrides FROM anon;
 ALTER PUBLICATION supabase_realtime ADD TABLE public.script_line_overrides;
