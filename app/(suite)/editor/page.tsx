@@ -15,7 +15,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
-import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
+import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, stepScene, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
@@ -646,6 +646,23 @@ export default function EditorPage() {
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
   useLayoutEffect(() => { jumpRef.current = jumpToScene; });
+
+  // Ctrl/⌘ + ↓ / ↑ walks the script scene by scene from wherever the caret is,
+  // stopping at the first and last scene (never wrapping). An effect event so
+  // the listener is bound once and still reads the current scene.
+  const stepToScene = useEffectEvent((direction: -1 | 1) => {
+    const next = stepScene(currentSceneIdx, scenesList.length, direction);
+    if (next !== null) jumpToScene(next);
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey) || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
+      e.preventDefault();
+      stepToScene(e.key === 'ArrowDown' ? 1 : -1);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
   // A cut note to open once its line is placed (?note=, or from the Studio pane).
   const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
@@ -1090,13 +1107,15 @@ export default function EditorPage() {
           {showGoToScene && (
             <GoToSceneModal
               sceneCount={scenesList.length}
+              headings={scenesList.map((s) => s.text)}
               value={goToSceneNum}
               onChange={setGoToSceneNum}
               onJump={(num) => {
-                setActiveView('write');
                 setShowGoToScene(false);
                 setGoToSceneNum('');
-                toast(`Jumped to Scene ${num}`, 'success');
+                // The dialog says "jump" — put the caret on that scene's heading,
+                // scroll to it, and go back to Write if another view was open.
+                jumpToScene(num - 1);
               }}
               onClose={() => setShowGoToScene(false)}
             />

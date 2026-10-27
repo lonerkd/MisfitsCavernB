@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
+import { sceneNumberFromInput } from '@/lib/scriptos/sceneviews';
 
 // ── Find & Replace bar (drops down under the toolbar) ──────────────────────
 export function FindReplaceBar({
@@ -39,7 +40,8 @@ const SHORTCUTS: [string, string][] = [
   ['Ctrl + S', 'Save script'],
   ['Ctrl + F', 'Find & Replace'],
   ['Ctrl + E', 'Toggle Focus Mode'],
-  ['Ctrl + G', 'Go to Scene'],
+  ['Ctrl + G', 'Go to scene (by number)'],
+  ['Ctrl + ↓ / ↑', 'Next / previous scene'],
   ['Ctrl + /', 'Show Shortcuts'],
   ['Tab', 'Smart element insert'],
   ['Escape, then Tab', 'Leave the script (move to the next control)'],
@@ -72,25 +74,36 @@ export function ShortcutsModal({ onClose }: { onClose: () => void }) {
 
 // ── Go-to-Scene quick dialog ───────────────────────────────────────────────
 export function GoToSceneModal({
-  sceneCount, value, onChange, onJump, onClose,
+  sceneCount, headings = [], value, onChange, onJump, onClose,
 }: {
   sceneCount: number;
+  headings?: string[];
   value: string;
   onChange: (v: string) => void;
   onJump: (sceneNum: number) => void;
   onClose: () => void;
 }) {
+  const typed = sceneNumberFromInput(value, sceneCount);
+  const heading = typed != null ? headings[typed - 1] : undefined;
   return (
     <motion.div initial={{ opacity: 0, y: -12, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.96 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={{ position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'var(--surface)', backdropFilter: 'blur(24px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 14, padding: '16px 20px', width: 320, boxShadow: '0 20px 60px rgba(0,0,0,0.6)' }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 8 }}>Go to Scene</div>
-      <input autoFocus type="number" min={1} max={sceneCount} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => {
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 8 }}>Go to scene</div>
+      <input autoFocus type="text" inputMode="numeric" aria-label="Scene number" aria-describedby="go-to-scene-hint" aria-invalid={value.trim() !== '' && typed == null} value={value} onChange={e => onChange(e.target.value)} onKeyDown={e => {
         if (e.key === 'Enter') {
-          const num = parseInt(value);
-          if (num >= 1 && num <= sceneCount) onJump(num);
+          const num = sceneNumberFromInput(value, sceneCount);
+          if (num != null) onJump(num);
         }
         if (e.key === 'Escape') onClose();
-      }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
-      <div style={{ fontSize: 11, color: 'var(--fg-muted)', marginTop: 6 }}>{sceneCount} scenes · Press Enter to jump</div>
+      }} placeholder={`1 - ${sceneCount}`} style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.05)', border: `1px solid ${value.trim() !== '' && typed == null ? 'var(--danger)' : 'rgba(var(--ink-rgb), 0.1)'}`, borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 14, outline: 'none', fontFamily: 'var(--mono)' }} />
+      {/* What Enter would land on, before it does: the heading itself. */}
+      <div id="go-to-scene-hint" style={{ fontSize: 11, color: typed == null && value.trim() !== '' ? 'var(--danger)' : 'var(--fg-muted)', marginTop: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {typed == null
+          ? (value.trim() === '' ? `${sceneCount} scenes · Press Enter to jump` : `No scene ${value.trim()} · 1 - ${sceneCount}`)
+          : (heading || `Scene ${typed} of ${sceneCount}`)}
+      </div>
+      {typed != null && heading && (
+        <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2 }}>Scene {typed} of {sceneCount}</div>
+      )}
     </motion.div>
   );
 }

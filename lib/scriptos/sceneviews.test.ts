@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseScript } from './parser';
-import { actStructure, filterScenes, reorderScenes, sceneAtCaret, sceneCharacters, scenePositions, sceneWordCounts } from './sceneviews';
+import { actStructure, filterScenes, reorderScenes, sceneAtCaret, sceneCharacters, sceneNumberFromInput, scenePositions, sceneWordCounts, stepScene } from './sceneviews';
 
 const SRC = 'Title: X\n\nINT. KITCHEN - DAY\n\nMAYA\nHi there.\n\nEXT. STREET - NIGHT\n\nLEO\nHey.\n\nINT. HALL - DAY\n\nMaya waits.\n';
 const lines = () => parseScript(SRC, 'screenplay').lines;
@@ -47,6 +47,36 @@ describe('scene views', () => {
     const words = sceneWordCounts(l, h);
     expect(words).toHaveLength(3);
     expect(words[0]).toBeGreaterThan(words[2] - 1);
+  });
+});
+
+describe('stepping through scenes and typing a scene number', () => {
+  it('steps down and up, and stops at the ends', () => {
+    expect(stepScene(0, 3, 1)).toBe(1);
+    expect(stepScene(1, 3, -1)).toBe(0);
+    expect(stepScene(2, 3, 1)).toBeNull(); // already the last scene
+    expect(stepScene(0, 3, -1)).toBeNull(); // already the first scene
+    expect(stepScene(0, 1, 1)).toBeNull(); // a one-scene script has nowhere to go
+    expect(stepScene(0, 0, 1)).toBeNull();
+  });
+
+  it('steps into the script from before the first heading', () => {
+    expect(stepScene(-1, 3, 1)).toBe(0); // down from the title page is scene 1
+    expect(stepScene(-1, 3, -1)).toBe(2); // up from the title page is the last scene
+    expect(stepScene(-1, 0, -1)).toBeNull();
+  });
+
+  it('accepts only a whole scene number inside the script', () => {
+    expect(sceneNumberFromInput('1', 12)).toBe(1);
+    expect(sceneNumberFromInput(' 12 ', 12)).toBe(12);
+    expect(sceneNumberFromInput('13', 12)).toBeNull();
+    expect(sceneNumberFromInput('0', 12)).toBeNull();
+    expect(sceneNumberFromInput('', 12)).toBeNull();
+    expect(sceneNumberFromInput('3a', 12)).toBeNull();
+    expect(sceneNumberFromInput('1e3', 12)).toBeNull();
+    expect(sceneNumberFromInput('2.5', 12)).toBeNull();
+    expect(sceneNumberFromInput('-2', 12)).toBeNull();
+    expect(sceneNumberFromInput('4', 0)).toBeNull();
   });
 });
 

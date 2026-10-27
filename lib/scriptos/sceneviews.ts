@@ -69,6 +69,31 @@ export function sceneAtCaret(lines: ScriptLine[], headings: ScriptLine[], caretL
   return last;
 }
 
+/**
+ * The scene to step to from `current` (0-based, -1 before the first heading):
+ * the scene below for 1, above for -1. null when there is none that way, so a
+ * keypress at either end does nothing instead of wrapping around the script.
+ */
+export function stepScene(current: number, count: number, direction: -1 | 1): number | null {
+  if (count <= 0) return null;
+  // Before the first heading, down is the first scene and up the last one.
+  const from = current < 0 ? (direction === 1 ? -1 : count) : current;
+  const next = from + direction;
+  return next >= 0 && next < count ? next : null;
+}
+
+/**
+ * The scene number typed into Go to Scene: a whole number inside 1…count, or
+ * null. Deliberately strict — "3a" or "1e3" is not scene 3 or scene 1000, and
+ * a number outside the script never jumps.
+ */
+export function sceneNumberFromInput(value: string, count: number): number | null {
+  const trimmed = value.trim();
+  if (!/^\d+$/.test(trimmed)) return null;
+  const num = Number(trimmed);
+  return Number.isSafeInteger(num) && num >= 1 && num <= count ? num : null;
+}
+
 export interface Acts { [key: string]: number; act1End: number; act2End: number; act2Start: number; act3Start: number }
 
 /** A three-act split by words: the act breaks fall near 25% and 75% of the script's words (scene numbers, 1-based). */

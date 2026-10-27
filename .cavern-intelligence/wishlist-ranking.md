@@ -218,6 +218,11 @@ Cheap, daily, and it makes the editor feel professional. **Quick wins that can
 land any time:**
 1. Go to scene number / page number / a character's scenes (⌘G, with the
    command palette); next/previous scene; command history and repeat.
+   **Built (2026-10-27):** Go to scene (⌘G) really jumps — it takes the caret to
+   the heading, scrolls it into view, and shows the heading it would land on as
+   you type; ⌘↓ / ⌘↑ steps to the next / previous scene and stops at the ends.
+   Left: page number, a character's scenes, command history and repeat. Tracked
+   as BACKLOG 3.33.
 2. Quick actions on a selection; stash snippets expanding from a typed trigger;
    block selection. Multi-cursor is the one genuinely hard item (the editor is a
    textarea + highlight layer) and waits on the editor split, which waits on
