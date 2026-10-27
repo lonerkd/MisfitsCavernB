@@ -253,7 +253,7 @@ export function TranscriptPanel({ item, player }: { item: Media; player: HTMLMed
             return (
               <li key={l.id} className={cx(t.line, playing === l.id && t.now, selected && t.picked)} aria-current={playing === l.id ? 'time' : undefined}>
                 {player && l.start_ms !== null ? (
-                  <button type="button" className={t.time} onClick={() => { player.currentTime = l.start_ms! / 1000; void player.play().catch(() => {}); }} aria-label={`Play from ${formatStamp(l.start_ms)}`}>
+                  <button type="button" className={t.time} onClick={async () => { player.currentTime = l.start_ms! / 1000; await player.play().catch((e) => toast(e instanceof Error ? e.message : 'Could not play', 'error')); }} aria-label={`Play from ${formatStamp(l.start_ms)}`}>
                     {formatStamp(l.start_ms)}
                   </button>
                 ) : <span className={t.time}>{formatStamp(l.start_ms)}</span>}
