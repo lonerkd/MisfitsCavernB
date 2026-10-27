@@ -4,12 +4,12 @@
 
 import { supabase } from '@/lib/supabase/client';
 
-export const HUB_KINDS = ['update', 'guide', 'incident'] as const;
+export const HUB_KINDS = ['update', 'guide', 'incident', 'case_study'] as const;
 export type HubKind = (typeof HUB_KINDS)[number];
 export const HUB_AUDIENCES = ['everyone', 'developers', 'filmmakers', 'buyers', 'investors'] as const;
 export type HubAudience = (typeof HUB_AUDIENCES)[number];
 
-export const KIND_LABEL: Record<HubKind, string> = { update: "What's new", guide: 'Learn', incident: 'Status' };
+export const KIND_LABEL: Record<HubKind, string> = { update: "What's new", guide: 'Learn', incident: 'Status', case_study: 'Case studies' };
 export const SEVERITIES = ['minor', 'major', 'critical'] as const;
 export type Severity = (typeof SEVERITIES)[number];
 export const AUDIENCE_LABEL: Record<HubAudience, string> = {
@@ -28,6 +28,7 @@ export interface HubPost {
   published_at: string | null;
   severity: Severity | null;
   resolved_at: string | null;
+  project_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -41,9 +42,11 @@ export interface HubPostInput {
   important: boolean;
   pinned: boolean;
   severity?: Severity | null;
+  /** A case study's production — only one whose owner agreed (the database checks). */
+  project_id?: string | null;
 }
 
-const COLUMNS = 'id, kind, audience, title, body, cover_url, important, pinned, published_at, severity, resolved_at, created_at, updated_at';
+const COLUMNS = 'id, kind, audience, title, body, cover_url, important, pinned, published_at, severity, resolved_at, project_id, created_at, updated_at';
 
 /** Pinned first, then newest published (drafts, for admins, after by last edit). */
 export function sortPosts(posts: HubPost[]): HubPost[] {
@@ -68,9 +71,10 @@ export function checkPost(input: HubPostInput): { ok: true; value: HubPostInput 
   if (input.body.length > 50000) return { ok: false, error: 'The body is too long (50,000 characters at most).' };
   const cover = input.cover_url?.trim() || null;
   if (cover && !/^https:\/\//.test(cover)) return { ok: false, error: 'The cover image must be an https:// link.' };
-  if (!HUB_KINDS.includes(input.kind)) return { ok: false, error: 'Pick What’s new, Learn or Status.' };
+  if (!HUB_KINDS.includes(input.kind)) return { ok: false, error: 'Pick What’s new, Learn, Status or Case studies.' };
   if (input.kind === 'incident' && !(input.severity && SEVERITIES.includes(input.severity))) return { ok: false, error: 'Pick how severe the incident is.' };
   if (input.kind !== 'incident' && input.severity) return { ok: false, error: 'Only an incident has a severity.' };
+  if (input.kind !== 'case_study' && input.project_id) return { ok: false, error: 'Only a case study can name a production.' };
   if (!HUB_AUDIENCES.includes(input.audience)) return { ok: false, error: 'Pick an audience.' };
   return { ok: true, value: { ...input, title, cover_url: cover } };
 }

@@ -214,6 +214,7 @@ column hub_posts.id uuid default gen_random_uuid() not null
 column hub_posts.important boolean default false not null
 column hub_posts.kind text default 'update'::text not null
 column hub_posts.pinned boolean default false not null
+column hub_posts.project_id uuid
 column hub_posts.published_at timestamp with time zone
 column hub_posts.resolved_at timestamp with time zone
 column hub_posts.severity text
@@ -453,6 +454,7 @@ column project_tasks.title text not null
 column projects.accent_color text
 column projects.archived_at timestamp with time zone
 column projects.budget numeric(12,2)
+column projects.case_study_ok boolean default false not null
 column projects.created_at timestamp with time zone default now()
 column projects.creator_id uuid not null
 column projects.description text
@@ -854,8 +856,10 @@ constraint hub_posts.hub_posts_body_check CHECK ((char_length(body) <= 50000))
 constraint hub_posts.hub_posts_cover_url_check CHECK (((cover_url IS NULL) OR (cover_url ~ '^https://'::text)))
 constraint hub_posts.hub_posts_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint hub_posts.hub_posts_incident_shape CHECK ((((kind = 'incident'::text) AND (severity IS NOT NULL)) OR ((kind <> 'incident'::text) AND (severity IS NULL) AND (resolved_at IS NULL))))
-constraint hub_posts.hub_posts_kind_check CHECK ((kind = ANY (ARRAY['update'::text, 'guide'::text, 'incident'::text])))
+constraint hub_posts.hub_posts_kind_check CHECK ((kind = ANY (ARRAY['update'::text, 'guide'::text, 'incident'::text, 'case_study'::text])))
 constraint hub_posts.hub_posts_pkey PRIMARY KEY (id)
+constraint hub_posts.hub_posts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+constraint hub_posts.hub_posts_project_only_case_study CHECK (((project_id IS NULL) OR (kind = 'case_study'::text)))
 constraint hub_posts.hub_posts_severity_check CHECK ((severity = ANY (ARRAY['minor'::text, 'major'::text, 'critical'::text])))
 constraint hub_posts.hub_posts_title_check CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
 constraint hub_reads.hub_reads_pkey PRIMARY KEY (user_id, post_id)
@@ -1194,6 +1198,7 @@ function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
+function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
@@ -1212,6 +1217,7 @@ function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d9
 function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
+function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
@@ -1227,6 +1233,7 @@ function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
+function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
 function public.admin_hide_message(p_message uuid, p_hidden boolean) body=d02bc5d58f5a432253fa7db071935f8e
 function public.admin_list_users() body=d851a2d7fa39ad8824280d014c77d28d
@@ -1253,6 +1260,7 @@ function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d
 function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
+function public.hub_case_study_project(p_post uuid) body=fec46019f2d6f2c42655f9f6736a8b28
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
 function public.log_password_breach(p_breach_count integer, p_context text, p_email text) body=0a18cd7dd10da49d159bdaa9f158e0ea
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
@@ -1299,6 +1307,7 @@ grant function internal.characters_rename() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
 grant function internal.hub_posts_announce() postgres
+grant function internal.hub_posts_check_consent() postgres
 grant function internal.hub_posts_touch() postgres
 grant function internal.in_project_audience(pid uuid, aud text) authenticated,postgres
 grant function internal.is_project_creator(pid uuid) authenticated,postgres,service_role
@@ -1317,6 +1326,7 @@ grant function internal.project_documents_touch() postgres
 grant function internal.project_locations_link_scenes() postgres
 grant function internal.project_locations_touch() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
+grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
 grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
@@ -1332,6 +1342,7 @@ grant function internal.transcript_lines_touch() postgres
 grant function public.account_deletion_plan() authenticated,postgres,service_role
 grant function public.ack_call_sheet(p_sheet uuid) authenticated,postgres,service_role
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
+grant function public.admin_case_study_projects() authenticated,postgres,service_role
 grant function public.admin_close_job(p_job uuid) authenticated,postgres,service_role
 grant function public.admin_hide_message(p_message uuid, p_hidden boolean) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
@@ -1358,6 +1369,7 @@ grant function public.get_shared_project(p_token text) anon,authenticated,postgr
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
+grant function public.hub_case_study_project(p_post uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
 grant function public.log_password_breach(p_breach_count integer, p_context text, p_email text) PUBLIC,anon,authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
@@ -1422,6 +1434,7 @@ index CREATE INDEX hub_incident_updates_created_by_idx ON public.hub_incident_up
 index CREATE INDEX hub_incident_updates_post_idx ON public.hub_incident_updates USING btree (post_id, created_at)
 index CREATE INDEX hub_posts_created_by_idx ON public.hub_posts USING btree (created_by)
 index CREATE INDEX hub_posts_open_incidents_idx ON public.hub_posts USING btree (published_at DESC) WHERE ((kind = 'incident'::text) AND (resolved_at IS NULL) AND (published_at IS NOT NULL))
+index CREATE INDEX hub_posts_project_idx ON public.hub_posts USING btree (project_id) WHERE (project_id IS NOT NULL)
 index CREATE INDEX hub_posts_published_idx ON public.hub_posts USING btree (published_at DESC) WHERE (published_at IS NOT NULL)
 index CREATE INDEX hub_reads_post_idx ON public.hub_reads USING btree (post_id)
 index CREATE INDEX idx_activity_created ON public.activity_feed USING btree (created_at)
@@ -2026,6 +2039,7 @@ trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER hub_posts_announce AFTER INSERT OR UPDATE OF published_at, important ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_announce()
+trigger CREATE TRIGGER hub_posts_check_consent BEFORE INSERT OR UPDATE OF project_id ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_check_consent()
 trigger CREATE TRIGGER hub_posts_touch BEFORE INSERT OR UPDATE ON public.hub_posts FOR EACH ROW EXECUTE FUNCTION internal.hub_posts_touch()
 trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
@@ -2043,6 +2057,7 @@ trigger CREATE TRIGGER project_locations_link_scenes AFTER INSERT ON public.proj
 trigger CREATE TRIGGER project_locations_touch BEFORE INSERT OR UPDATE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.project_locations_touch()
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()

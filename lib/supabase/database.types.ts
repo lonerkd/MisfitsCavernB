@@ -1213,6 +1213,7 @@ export type Database = {
           important: boolean;
           kind: string;
           pinned: boolean;
+          project_id: string | null;
           published_at: string | null;
           resolved_at: string | null;
           severity: string | null;
@@ -1230,6 +1231,7 @@ export type Database = {
           important?: boolean;
           kind?: string;
           pinned?: boolean;
+          project_id?: string | null;
           published_at?: string | null;
           resolved_at?: string | null;
           severity?: string | null;
@@ -1246,13 +1248,22 @@ export type Database = {
           important?: boolean;
           kind?: string;
           pinned?: boolean;
+          project_id?: string | null;
           published_at?: string | null;
           resolved_at?: string | null;
           severity?: string | null;
           title?: string;
           updated_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "hub_posts_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       hub_reads: {
         Row: {
@@ -2585,6 +2596,7 @@ export type Database = {
           accent_color: string | null;
           archived_at: string | null;
           budget: number | null;
+          case_study_ok: boolean;
           created_at: string | null;
           creator_id: string;
           description: string | null;
@@ -2606,6 +2618,7 @@ export type Database = {
           accent_color?: string | null;
           archived_at?: string | null;
           budget?: number | null;
+          case_study_ok?: boolean;
           created_at?: string | null;
           creator_id: string;
           description?: string | null;
@@ -2626,6 +2639,7 @@ export type Database = {
           accent_color?: string | null;
           archived_at?: string | null;
           budget?: number | null;
+          case_study_ok?: boolean;
           created_at?: string | null;
           creator_id?: string;
           description?: string | null;
@@ -4122,6 +4136,13 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      admin_case_study_projects: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          id: string;
+          title: string;
+        }[];
+      };
       admin_close_job: { Args: { p_job: string }; Returns: undefined };
       admin_hide_message: {
         Args: { p_hidden: boolean; p_message: string };
@@ -4297,6 +4318,13 @@ export type Database = {
         }[];
       };
       has_discord_webhook: { Args: { cid: string }; Returns: boolean };
+      hub_case_study_project: {
+        Args: { p_post: string };
+        Returns: {
+          description: string;
+          title: string;
+        }[];
+      };
       issue_call_sheet: {
         Args: { p_note?: string; p_sheet: string };
         Returns: {

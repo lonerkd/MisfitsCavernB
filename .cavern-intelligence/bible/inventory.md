@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**46 pages · 6 API routes · 75 tables · 54 database functions · 69 e2e specs**
+**46 pages · 6 API routes · 75 tables · 56 database functions · 69 e2e specs**
 
 ## Routes
 
@@ -20,7 +20,7 @@
 | `/admin/crafts` | admin | `app/(suite)/admin/crafts/page.tsx` (103) | 34 files · components: ui · lib: auth, crafts, formats, hooks, os, push, supabase, types, validation | accessibility, admin-crafts |
 | `/admin/errors` | admin | `app/(suite)/admin/errors/page.tsx` (132) | 30 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | errors |
 | `/admin/formats` | admin | `app/(suite)/admin/formats/page.tsx` (107) | 35 files · components: formats, ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-formats |
-| `/admin/hub` | admin | `app/(suite)/admin/hub/page.tsx` (174) | 38 files · components: Flag, hub, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/admin/hub` | admin | `app/(suite)/admin/hub/page.tsx` (185) | 39 files · components: Flag, hub, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/admin` | admin | `app/(suite)/admin/page.tsx` (300) | 33 files · components: Flag, ui · lib: auth, flags, formats, hooks, os, push, supabase, types, validation | accessibility, keyboard-audit |
 | `/admin/reports` | admin | `app/(suite)/admin/reports/page.tsx` (126) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, hide-message, reports |
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 31 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
@@ -33,10 +33,10 @@
 | `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (364) | 41 files · components: ui · lib: auth, credits, formats, hooks, os, push, studio, supabase, types, util, validation | accessibility, credits, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 41 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1193) | 163 files · components: breakdown, editor, studio, ui · lib: auth, breakdown, brief, errors, film, formats, guides, hooks, integrations, notifications, os, pocket, push, scriptos, split, spotify, storage, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, cut-notes, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, emphasis, keyboard-audit, layout, mobile, onboarding, phases, reading-corrections, route-smoke, script-share, split, studio-journey, table-read, writing-loop |
-| `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (59) | 36 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
+| `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (68) | 37 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/hub/help/[id]` | signed in | `app/(suite)/hub/help/[id]/page.tsx` (44) | 31 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/hub/help` | signed in | `app/(suite)/hub/help/page.tsx` (86) | 30 files · components: ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
-| `/hub` | signed in | `app/(suite)/hub/page.tsx` (107) | 35 files · components: Flag, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | auth-journey |
+| `/hub` | signed in | `app/(suite)/hub/page.tsx` (108) | 35 files · components: Flag, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | auth-journey |
 | `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (552) | 34 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (440) | 49 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, reports, route-smoke |
 | `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 76 files · components: lounge, projects, ui · lib: auth, brief, formats, hooks, lounge, notifications, os, push, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community, hide-message, island, keyboard-audit, layout, lounge, mobile, route-smoke |
@@ -52,7 +52,7 @@
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (462) | 41 files · components: ui · lib: auth, errors, formats, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (232) | 4 files · components: — · lib: hooks, split | split |
-| `/studio` | signed in | `app/(suite)/studio/page.tsx` (229) | 169 files · components: breakdown, brief, film, formats, progress, projects, studio, ui · lib: auth, availability, breakdown, brief, film, formats, guides, hooks, integrations, lounge, notifications, os, pocket, push, references, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, availability, beat-to-script, breakdown, call-sheets, continuity, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, hiring, keyboard-audit, layout, locations, mobile, money, on-set, onset-offline, phases, project-manager, readiness, reading-corrections, real-data, route-smoke, search, shot-designer, split, studio-journey, transcripts |
+| `/studio` | signed in | `app/(suite)/studio/page.tsx` (229) | 173 files · components: Flag, breakdown, brief, film, formats, progress, projects, studio, ui · lib: auth, availability, breakdown, brief, film, flags, formats, guides, hooks, hub, integrations, lounge, notifications, os, pocket, push, references, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, availability, beat-to-script, breakdown, call-sheets, continuity, cut-notes, daylight, documents, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-project-script, editor-safety-net, editor-undo, hiring, keyboard-audit, layout, locations, mobile, money, on-set, onset-offline, phases, project-manager, readiness, reading-corrections, real-data, route-smoke, search, shot-designer, split, studio-journey, transcripts |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (284) | 46 files · components: mobile, ui · lib: auth, formats, guides, hooks, notifications, os, pocket, push, pwa, supabase, themes, today, types, util, validation | auth-journey, errors, install, island, layout, mobile, today-owner |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 62 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
@@ -132,7 +132,7 @@
 ### `/admin/hub`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`
+- **Functions:** `admin_case_study_projects`, `get_my_account`, `hub_case_study_project`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin`
@@ -209,7 +209,7 @@
 ### `/hub/[id]`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `timeline_items`
-- **Functions:** `get_my_account`
+- **Functions:** `admin_case_study_projects`, `get_my_account`, `hub_case_study_project`
 - **Realtime:** `project`, `projects:list`
 
 ### `/hub/help/[id]`
@@ -320,7 +320,7 @@
 ### `/studio`
 
 - **Tables:** `activity_feed`, `audit_logs`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `character_castings`, `character_media`, `characters`, `discord_integrations`, `expenses`, `jobs`, `media`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `project_tasks`, `projects`, `push_subscriptions`, `reading_corrections`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `set_log`, `shoot_days`, `shots`, `timeline_items`, `timesheets`, `transcript_lines`, `unavailability`, `vendors`
-- **Functions:** `ack_call_sheet`, `append_to_script`, `breakdown_memory`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `get_shared_lookbook`, `has_discord_webhook`, `issue_call_sheet`, `project_availability`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
+- **Functions:** `ack_call_sheet`, `admin_case_study_projects`, `append_to_script`, `breakdown_memory`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `get_shared_lookbook`, `has_discord_webhook`, `hub_case_study_project`, `issue_call_sheet`, `project_availability`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
 - **Realtime:** `activity`, `live`, `lounge-presence`, `project`, `projects:list`, `script`
 
 ### `/today`
@@ -442,6 +442,7 @@
 | `account_deletion_plan` | called from a route |
 | `ack_call_sheet` | called from a route |
 | `add_script_annotation` | called from a route |
+| `admin_case_study_projects` | called from a route |
 | `admin_close_job` | called from a route |
 | `admin_hide_message` | called from a route |
 | `admin_list_users` | called from a route |
@@ -468,6 +469,7 @@
 | `get_shared_script` | called from a route |
 | `handle_new_user` | internal (policies, triggers, other functions) |
 | `has_discord_webhook` | called from a route |
+| `hub_case_study_project` | called from a route |
 | `issue_call_sheet` | called from a route |
 | `log_password_breach` | called from a route |
 | `log_writing` | called from a route |

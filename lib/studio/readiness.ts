@@ -44,6 +44,8 @@ export interface ReadinessScene {
 export interface ReadinessInput {
   /** Character names (upper case) that have someone cast. */
   cast: Set<string>;
+  /** Who is in a scene (graph first). Defaults to the scene's cast text. */
+  castOf?: (scene: ReadinessScene) => string[];
   /** Breakdown element statuses tagged in each scene. */
   elementsByScene: Map<string, Array<{ name: string; status: 'needed' | 'sourcing' | 'ready' }>>;
   shotsByScene: Map<string, number>;
@@ -65,7 +67,7 @@ function locationCheck(scene: ReadinessScene, input: ReadinessInput): ReadinessC
 }
 
 export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): SceneReadiness {
-  const characters = castOf(scene);
+  const characters = (input.castOf ?? castOf)(scene);
   const uncast = characters.filter((c) => !input.cast.has(c));
   const elements = input.elementsByScene.get(scene.id) ?? [];
   const pending = elements.filter((e) => e.status !== 'ready');

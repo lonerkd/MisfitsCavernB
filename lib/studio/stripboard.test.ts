@@ -29,6 +29,12 @@ describe('buildBoard', () => {
     expect(board[2]).toMatchObject({ eighths: 6, locations: ['CAVE'], over: false });
   });
 
+  it('takes the cast from the graph when given, not from the text', () => {
+    const fromGraph = (s: StripScene) => (s.scene_number === 1 ? ['DEV'] : castOf(s));
+    const board = buildBoard(scenes, 40, fromGraph);
+    expect(board[0].cast).toEqual(['DEV', 'SAM']);
+  });
+
   it('builds the day out of days: start, hold, finish, same-day start-finish', () => {
     const dood = dayOutOfDays(buildBoard(scenes, 40));
     expect(dood).toEqual([
