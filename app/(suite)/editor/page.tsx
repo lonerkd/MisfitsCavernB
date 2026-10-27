@@ -1,5 +1,6 @@
 'use client';
 
+import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
@@ -130,7 +131,11 @@ export default function EditorPage() {
       if (mapIndex && ta && document.activeElement === ta) {
         caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
       }
-      setContent(next);
+      // A collaborator's edit is already in the shared text; put it on screen at
+      // once, so a key pressed a moment later is measured against what the
+      // writer sees and cannot wipe the edit out.
+      if (mapIndex) flushSync(() => setContent(next));
+      else setContent(next);
     },
   );
   useLayoutEffect(() => {
