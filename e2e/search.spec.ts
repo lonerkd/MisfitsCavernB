@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Suite-wide search in a real browser against a local stack: ⌘K finds a line
+// Suite-wide search in a real browser against a local stack: it finds a line
 // written inside a script and opens it in the editor, and finds a location
 // and opens Studio › Locations on its project. Opt-in: E2E_LOCAL_STACK=1.
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
@@ -48,7 +48,7 @@ test.describe('Suite-wide search (local Supabase)', () => {
     await admin.auth.admin.deleteUser(owner.id);
   });
 
-  test('⌘K finds words inside a script and a location, and opens them', async ({ page }) => {
+  test('Search finds words inside a script and a location, and opens them', async ({ page }) => {
     test.setTimeout(120_000);
     await page.goto('/auth');
     await page.fill('input[name="email"]', owner.email);
@@ -58,10 +58,10 @@ test.describe('Suite-wide search (local Supabase)', () => {
     await page.goto('/projects');
 
     // A word written in the script, found by its start. The island's search
-    // button opens the same palette as ⌘K: reach for the island, then click it.
+    // button opens the palette (Caps Lock, then /): reach for the island, then click it.
     const openSearch = async () => {
       await page.locator('[data-taskbar] .mc-taskbar').hover({ timeout: 30_000 });
-      await page.getByRole('button', { name: 'Search (Command-K)' }).click({ timeout: 30_000 });
+      await page.getByRole('button', { name: 'Search (Caps Lock, then slash)' }).click({ timeout: 30_000 });
     };
     await openSearch();
     const palette = page.getByRole('dialog', { name: 'Search the suite' });
