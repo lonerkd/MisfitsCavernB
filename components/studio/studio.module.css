@@ -195,6 +195,7 @@
   background: var(--panel-2); color: var(--fg-muted); border: 1px solid var(--border);
 }
 .tagShared { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.1); }
+.tagArchived { color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
 .tagStudio { color: var(--violet); border-color: var(--studio-line); background: var(--studio-dim); }
 .check {
   position: absolute; top: 8px; right: 8px;
