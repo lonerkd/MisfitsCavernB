@@ -1,5 +1,6 @@
 'use client';
 
+import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
@@ -48,7 +49,6 @@ import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCen
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
-import { useEditUndo } from '@/components/editor/useEditUndo';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
 import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
@@ -116,12 +116,34 @@ export default function EditorPage() {
   const toastRef = useRef(toast);
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const caretAfterRemote = useRef<[number, number] | null>(null);
   // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
   const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
-  const { noteEdit: noteHistoryEdit, commit: commitHistory, undo, redo } = useEditUndo(currentScript?.id, content, setContent);
+  const { isSyncing, collaborators, broadcastCursor, undo, redo, stopUndoCapturing } = useScriptSync(
+    currentScript?.id || '',
+    content,
+    (next, mapIndex) => {
+      // Someone else's words land in the text: keep this writer's caret where it was.
+      const ta = textareaRef.current;
+      if (mapIndex && ta && document.activeElement === ta) {
+        caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
+      }
+      // A collaborator's edit is already in the shared text; put it on screen at
+      // once, so a key pressed a moment later is measured against what the
+      // writer sees and cannot wipe the edit out.
+      if (mapIndex) flushSync(() => setContent(next));
+      else setContent(next);
+    },
+  );
+  useLayoutEffect(() => {
+    const caret = caretAfterRemote.current;
+    const ta = textareaRef.current;
+    caretAfterRemote.current = null;
+    if (caret && ta && document.activeElement === ta) ta.setSelectionRange(caret[0], caret[1]);
+  }, [content]);
   const stash = useScriptStash(currentScript?.id ?? null);
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
@@ -217,13 +239,6 @@ export default function EditorPage() {
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
-
-    if (newContent !== content) {
-      setContent(newContent);
-    }
-  });
 
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
@@ -402,10 +417,10 @@ export default function EditorPage() {
     const normalized = canonicalizeFountain(content);
     if (normalized === content) { toast('Already in canonical Fountain form.', 'info'); return; }
     // Committed history entry so Normalize is a single click away from undo.
-    commitHistory(content);
+    stopUndoCapturing();
     setContent(normalized);
     toast('Formatting normalized to canonical Fountain.', 'success');
-  }, [content, toast, commitHistory]);
+  }, [content, toast, stopUndoCapturing]);
 
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
@@ -552,10 +567,8 @@ export default function EditorPage() {
     const val = e.target.value;
     const typed = typedWords(content, val);
     if (typed) { writing.add(typed); sprint.onType(typed); }
-    noteHistoryEdit(content);
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
-    noteLocalEdit();
     broadcastCursor(e.target.selectionStart);
 
     const ta = e.target;
@@ -580,9 +593,7 @@ export default function EditorPage() {
   const handleCopyChange = (val: string) => {
     const typed = typedWords(content, val);
     if (typed) { writing.add(typed); sprint.onType(typed); }
-    noteHistoryEdit(content);
-    setContent(val);
-    noteLocalEdit();
+    setContent(val); // the sync layer turns this into a tracked local edit (undo included)
     setShowAutocomplete(false);
   };
 
@@ -1179,19 +1190,6 @@ export default function EditorPage() {
           </span>
         </div>
       </div>
-
-      {conflict.detected && (
-        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 'var(--w-form)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', textTransform: 'var(--caps)', marginBottom: 3 }}>Edit conflict</div>
-            <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>KEEP MINE</button>
-            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', fontWeight: 700 }}>TAKE THEIRS</button>
-          </div>
-        </div>
-      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }

@@ -3811,6 +3811,7 @@ export type Database = {
           title_page: Json | null;
           updated_at: string | null;
           version: number | null;
+          yjs_state: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -3831,6 +3832,7 @@ export type Database = {
           title_page?: Json | null;
           updated_at?: string | null;
           version?: number | null;
+          yjs_state?: string | null;
         };
         Update: {
           content?: string | null;
@@ -3850,6 +3852,7 @@ export type Database = {
           title_page?: Json | null;
           updated_at?: string | null;
           version?: number | null;
+          yjs_state?: string | null;
         };
         Relationships: [
           {

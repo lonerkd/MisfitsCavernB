@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
+import { scriptTextStateKey } from './cowriting';
 
 export interface StoredScript {
   id: string;
@@ -353,6 +354,7 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
 export async function deleteScript(id: string): Promise<boolean> {
   await del(`script_${id}`);
+  await del(scriptTextStateKey(id));
   // Record the intent so the server-side delete is replayed on next sync.
   const tombstones = await getDeletedIds();
   if (!tombstones.includes(id)) await setDeletedIds([...tombstones, id]);

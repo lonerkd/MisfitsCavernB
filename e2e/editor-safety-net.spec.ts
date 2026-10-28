@@ -6,8 +6,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 // The safety net for changing how the editor stores and syncs a script (the
 // editor-on-the-graph plan, E0): what co-writing and offline do TODAY, pinned
 // down so a change to either (the CRDT, E3) can't quietly lose a writer's text.
-// Each spec says what it guards. Two are known gaps, marked `test.fail`: they
-// pass while the gap exists and FAIL when it is fixed — delete the marker then.
+// Each spec says what it guards. The co-writing case takes one browser offline
+// while the other edits, then checks that the CRDT reconciles on reconnect.
 // Opt-in: E2E_LOCAL_STACK=1.
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
@@ -88,31 +88,41 @@ test.describe.serial('Editor safety net (local Supabase)', () => {
     await b.ctx.close();
   });
 
-  test('KNOWN GAP — two writers at once in different scenes: both edits should survive', async ({ browser }) => {
-    test.fail(true, 'Whole-document last-writer-wins: the later broadcast replaces the other writer\'s unsaved typing. Fixed by the CRDT (E3) — remove this marker then.');
+  test('two writers edit the same paragraph across a reconnect: both edits survive', async ({ browser }) => {
     test.setTimeout(150_000);
     await reset();
     const a = await writer(browser, 0);
     const b = await writer(browser, 1);
-    await expect(a.script).toHaveValue(BASE, { timeout: 30_000 });
-    await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
+    try {
+      await expect(a.script).toHaveValue(BASE, { timeout: 30_000 });
+      await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
 
-    // A types in the first scene; B, a moment later, in the last. Their saves cross.
-    await a.script.click();
-    await a.page.keyboard.press('Control+Home');
-    await a.page.keyboard.press('End');
-    await a.page.keyboard.type(' ALPHA');
-    await b.page.waitForTimeout(300);
-    await b.script.click();
-    await b.page.keyboard.press('Control+End');
-    await b.page.keyboard.type('\nB wrote this.');
+      await b.ctx.setOffline(true);
+      await expect.poll(() => b.page.evaluate(() => navigator.onLine)).toBe(false);
 
-    const want = (v: string) => v.includes('ALPHA') && v.includes('B wrote this.');
-    await expect.poll(async () => want(await saved()), { timeout: 30_000 }).toBe(true);
-    await expect.poll(async () => want(await a.script.inputValue()), { timeout: 10_000 }).toBe(true);
-    await expect.poll(async () => want(await b.script.inputValue()), { timeout: 10_000 }).toBe(true);
-    await a.ctx.close();
-    await b.ctx.close();
+      const paragraph = BASE.indexOf('Still up.');
+      await a.script.evaluate((el, at) => {
+        const textarea = el as HTMLTextAreaElement;
+        textarea.focus();
+        textarea.setSelectionRange(at, at);
+      }, paragraph + 'Still '.length);
+      await a.page.keyboard.type('really ');
+      await b.script.evaluate((el, at) => {
+        const textarea = el as HTMLTextAreaElement;
+        textarea.focus();
+        textarea.setSelectionRange(at, at);
+      }, paragraph + 'Still up.'.length);
+      await b.page.keyboard.type(' Still listening');
+
+      await b.ctx.setOffline(false);
+      await expect.poll(() => b.page.evaluate(() => navigator.onLine)).toBe(true);
+      const want = (v: string) => v.includes('really') && v.includes('Still listening');
+      await expect.poll(async () => want(await saved()), { timeout: 30_000 }).toBe(true);
+      await expect.poll(async () => want(await a.script.inputValue()), { timeout: 10_000 }).toBe(true);
+      await expect.poll(async () => want(await b.script.inputValue()), { timeout: 10_000 }).toBe(true);
+    } finally {
+      await Promise.all([a.ctx.close(), b.ctx.close()]);
+    }
   });
 
   test('offline: typing is kept on the device, and reaches the server when the connection returns', async ({ browser }) => {

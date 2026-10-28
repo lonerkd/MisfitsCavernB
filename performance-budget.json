@@ -1,7 +1,7 @@
 {
   "note": "First-load JS per page, kB gzipped. Raise a number only on purpose.",
   "routes": {
-    "/editor": 441,
+    "/editor": 482,
     "/projects/[id]/pitch": 425,
     "/projects/[id]": 414,
     "/studio": 362,

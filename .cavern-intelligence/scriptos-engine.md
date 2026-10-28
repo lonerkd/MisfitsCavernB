@@ -23,24 +23,19 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
 
 ## 2. Realtime co-writing (`lib/scriptos/sync.ts`)
 
-- **One channel per script** (`script_<id>`): Supabase Realtime broadcast
-  (`content_update`) plus presence (who's in, their line, a colour each).
-  Carets are broadcast too (`broadcastCursor`).
-- **Saving**: 1.5 s after typing stops, the writer broadcasts the whole text
-  and updates `scripts.content` (`last_edited_by`, `updated_at`). Others apply
-  a remote version when it differs from theirs.
-- **Conflict rule**: when a remote version arrives and both your text and
-  theirs differ from the last shared version, the two are merged by line
-  against that version (`mergeScript`, `lib/scriptos/merge.ts` — a pure
-  three-way merge, tested in `merge.test.ts`). Edits in different places all
-  survive and the merged text is applied (the normal save then carries it).
-  Only when both sides changed the *same lines* differently is nothing applied:
-  the editor shows **KEEP MINE / TAKE THEIRS** (`resolveConflict`, banner at
-  the foot of `app/(suite)/editor/page.tsx`). With no shared version yet
-  (first remote message) the remote text is taken. This is a line-level
-  three-way merge, not a CRDT: no per-character merge within one line, and the
-  base is the last text this client saw, so a third simultaneous writer can
-  still hit the prompt. A real CRDT (BACKLOG 3.18 d, E3) would remove both limits.
+- **One channel per script** (`script_<id>`): Supabase Realtime broadcasts
+  incremental Yjs `Y.Text` updates; presence still carries each writer's line
+  and username, and carets use `broadcastCursor`.
+- **Durable state**: the editor persists the serialized text in
+  `scripts.content` and the companion Yjs state in `scripts.yjs_state`. New
+  sessions load the row's state, while IndexedDB keeps each device's Yjs state
+  available offline. Reconnecting exchanges CRDT updates; it does not replace
+  a document with a collaborator's text snapshot.
+- **Undo**: a `Y.UndoManager` tracks only this writer's local transactions, so
+  undoing a change cannot remove another writer's words.
+- There is no conflict heuristic or keep-mine/take-theirs prompt. Independent
+  edits to the same paragraph merge as text operations; the normal save keeps
+  `scripts.content` current for the rest of the suite.
 
 ---
 
@@ -92,4 +87,3 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   best streak, records and a 4-week grid; `badges()` derives what's earned.
   Sprints have a length the writer sets (5–120 min), count their own words
   and log themselves when they end.
-
