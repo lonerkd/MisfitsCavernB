@@ -16,6 +16,9 @@ jobs:
   # still runs. The database job runs when the schema or its callers change; the
   # browser journeys when anything a person can see or do changes. Pushes to main
   # run the database tests only (the PR already ran the journeys on the same code).
+  # Workflows that cannot change the app or the schema (agent-*, release, sbom,
+  # secret-scan) count as prose too; only ci.yml itself (and e2e-scheduled for the
+  # journeys) re-runs the heavy jobs.
   changes:
     runs-on: ubuntu-latest
     outputs:
@@ -36,11 +39,11 @@ jobs:
           CHANGED=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }})
           echo "$CHANGED"
           # Anything that is not prose or repo furniture can change behaviour.
-          if echo "$CHANGED" | grep -qvE '\.md$|^\.cavern-intelligence/|^\.github/(ISSUE_TEMPLATE|pull_request_template|CODEOWNERS)|^\.env\.example$|^LICENSE$'; then CODE=true; else CODE=false; fi
+          if echo "$CHANGED" | grep -qvE '\.md$|^\.cavern-intelligence/|^\.github/(ISSUE_TEMPLATE|pull_request_template|CODEOWNERS)|^\.github/workflows/(agent-[a-z]+|release|sbom|secret-scan)\.yml$|^\.env\.example$|^LICENSE$'; then CODE=true; else CODE=false; fi
           # The schema and what talks to it.
-          if echo "$CHANGED" | grep -qE '^supabase/|^tests/integration/|^lib/supabase/|^lib/studio/|^package(-lock)?\.json$|^\.github/workflows/'; then DB=true; else DB=false; fi
+          if echo "$CHANGED" | grep -qE '^supabase/|^tests/integration/|^lib/supabase/|^lib/studio/|^package(-lock)?\.json$|^\.github/workflows/ci\.yml$'; then DB=true; else DB=false; fi
           # What a person can do in a browser: pages, components, the engine, the specs.
-          if echo "$CHANGED" | grep -qE '^(app|components|lib|public|e2e|supabase)/|^proxy\.ts$|^(next|playwright|tailwind|postcss)\.config|^package(-lock)?\.json$|^\.github/workflows/'; then APP=true; else APP=false; fi
+          if echo "$CHANGED" | grep -qE '^(app|components|lib|public|e2e|supabase)/|^proxy\.ts$|^(next|playwright|tailwind|postcss)\.config|^package(-lock)?\.json$|^\.github/workflows/(ci|e2e-scheduled)\.yml$'; then APP=true; else APP=false; fi
           { echo "code=$CODE"; echo "db=$DB"; echo "app=$APP"; } | tee -a "$GITHUB_OUTPUT"
 
   checks:
