@@ -1,0 +1,5 @@
+# Session — 2026-10-28: Vercel skips builds for changes that cannot affect the app
+
+The Vercel free plan allows 100 deployments a day (counted 2026-10-28: 100 in 24 h — 80 previews from Claude and Copilot branches, 20 production deploys). Past it, every preview and production deploy fails ("retry in 24 hours"). Owner agreed to skip builds that cannot change the app: `vercel.json` now has an `ignoreCommand` that exits 0 (skip) when the last commit touched only Markdown, `.cavern-intelligence/` or `.github/`, and non-zero (build) for anything else. If `HEAD^` is not available Vercel builds, which is the safe default.
+
+**Verified** on real commits: the agent-workflow-plus-note commit (#354) and the CI-filter commit (#351) exit 0 (skip); the Archived-badge commit (#353) and the one that added `scripts/agent-push.sh` (#352) exit 1 (build). A commit that is skipped changes no code, so the preview the previous commit built still matches. The next docs-only or workflow-only PR is the live proof (no new deployment).
