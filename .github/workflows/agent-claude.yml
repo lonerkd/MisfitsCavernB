@@ -41,6 +41,14 @@ jobs:
         with:
           fetch-depth: 1
 
+      - uses: actions/setup-node@v7
+        if: steps.gate.outputs.enabled == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+        if: steps.gate.outputs.enabled == 'true'
+
       - name: Mark the issue as being worked
         if: steps.gate.outputs.enabled == 'true'
         env:
@@ -63,4 +71,4 @@ jobs:
           claude_args: |
             --model sonnet
             --max-turns 40
-            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git checkout -b claude/*),Bash(git push -u origin claude/*),Bash(git push origin claude/*),Bash(gh pr create:*),Bash(gh issue comment:*),Bash(npm run typecheck),Bash(npm run lint),Bash(npm run test),Bash(npx tsc:*),Bash(npx vitest:*),Bash(npx eslint:*),Bash(node scripts/sync-intel.js:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git checkout -b claude/*),Bash(git push -u origin claude/*),Bash(git push origin claude/*),Bash(gh pr create:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(npm run typecheck),Bash(npm run lint),Bash(npm run test),Bash(npx tsc:*),Bash(npx vitest:*),Bash(npx eslint:*),Bash(node scripts/sync-intel.js:*)"
