@@ -44,16 +44,26 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    and `LICENSE`, leaked-password protection, the two old Windows stashes,
    branch protection on `main` (`pr-title`, `checks`, `database` required),
    signed commits, the first `v*` tag, the domain.
+2. **Owner, one decision — the migration path** (2026-10-27): production
+   migrations are still pasted by hand because the only production credential
+   CI has is the read-only `drift_reader`. Either `supabase db push --linked`
+   from your machine, or a `migrate-production.yml` (workflow_dispatch) with a
+   write-capable role. Until then every schema task below waits, and the
+   code-only work carries on around it.
 3. **Next code work**: restructure
    phases 7–8 (`restructure-proposal.md`: thin pages, optional Studio
    routes); admin catalogues + moderation (3.14); email (3.15);
    activity feed (3.5, product call); dev-toolchain advisories
-   (3.1, watch upstream).
+   (3.1, watch upstream). Editor: 3.34 (snippet triggers — needs a migration;
+   block selection, multi-cursor) and 3.35 (version compare's rest).
 4. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
-   Chromium.
+   Chromium; and in a browser, the 2026-10-27 editor work (go-to, jump history,
+   selection actions, Compare versions) — unit/jsdom-tested, never watched.
 5. **Wishlist** (owner, 2026-10-07): ranked and scoped in
-   `wishlist-ranking.md` — start with the island's live activities (slice 1:
-   the engine, network/sync, timers), then money, version compare, interchange.
+   `wishlist-ranking.md`. Started 2026-10-27: 4.7's slice 1 is built and
+   **version compare (4.12) is in** — any two drafts, scene by scene. Next by
+   the ranking: the island's live activities (4.1), money (4.6), then the rest
+   of compare (side by side, review mode, change report).
 
 ## Known issues
 
