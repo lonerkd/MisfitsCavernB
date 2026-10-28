@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { changedScenes, summarizeVersions } from './version-diff';
+import { changedRowIndexes, changedScenes, inlineRows, summarizeVersions } from './version-diff';
 
 const V1 = `Title: Brick & Steel
 
@@ -97,3 +97,40 @@ describe('comparing two versions of a script', () => {
     expect(summarizeVersions('', '')).toMatchObject({ added: 0, removed: 0, identical: true });
   });
 });
+
+describe('side by side, line by line', () => {
+  it('pairs a reworded line and marks only the words that changed', () => {
+    const rows = inlineRows('MAYA\nHi there.', 'MAYA\nHi there, again.');
+    expect(rows.map((r) => r.kind)).toEqual(['same', 'changed']);
+    const changed = rows[1];
+    expect(changed.left).toBe('Hi there.');
+    expect(changed.right).toBe('Hi there, again.');
+    expect(changed.leftParts!.filter((p) => p.changed).map((p) => p.text).join('')).not.toContain('again');
+    expect(changed.rightParts!.filter((p) => p.changed).map((p) => p.text).join('')).toContain('again');
+    expect(changed.leftParts!.map((p) => p.text).join('')).toBe('Hi there.');
+  });
+
+  it('gives a wholly different line one row, words marked, and extra lines their own side', () => {
+    const rows = inlineRows('a\nb\nc', 'a\nZebra\nc\nd');
+    // Whatever survives is its own row; the rest pair up in order as changed rows.
+    expect(rows.map((r) => r.kind)).toEqual(['same', 'changed', 'changed', 'added']);
+    const zebra = rows.find((r) => r.right === 'Zebra')!;
+    expect(zebra.kind).toBe('changed');
+    // "b" is on the left, "Zebra" on the right, and the right's words are the changed ones.
+    expect(zebra.left).toBe('b');
+    expect(zebra.rightParts!.filter((p) => p.changed).map((p) => p.text).join('')).toContain('Zebra');
+    expect(zebra.leftParts!.filter((p) => p.changed).map((p) => p.text).join('')).not.toContain('Zebra');
+    expect([rows[3].left, rows[3].right]).toEqual(['', 'd']);
+  });
+
+  it('is all same rows for an identical text, and empty for two empty ones', () => {
+    expect(inlineRows('x\ny', 'x\ny').every((r) => r.kind === 'same')).toBe(true);
+    expect(inlineRows('', '')).toEqual([]);
+  });
+
+  it('finds the rows that changed, for next / previous', () => {
+    expect(changedRowIndexes(inlineRows('a\nb\nc', 'a\nB\nc'))).toEqual([1]);
+    expect(changedRowIndexes(inlineRows('x', 'x'))).toEqual([]);
+  });
+});
+

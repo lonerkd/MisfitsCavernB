@@ -49,4 +49,15 @@ describe('Compare versions', () => {
     expect(screen.getByText('EXT. STREET - NIGHT')).toBeTruthy();
     expect(screen.getAllByText('INT. HALL - DAY').length).toBeGreaterThan(0);
   });
+
+  it('switches to side by side and walks the changes', () => {
+    open([rev('r1', 'First draft', '2026-10-01T10:00:00Z', V1)], V2);
+    fireEvent.click(screen.getByRole('button', { name: 'Side by side' }));
+    expect(screen.getByText(/of \d+ changes?$/)).toBeTruthy();
+    const next = screen.getByRole('button', { name: 'Next change' });
+    fireEvent.click(next);
+    fireEvent.click(screen.getByRole('button', { name: 'Previous change' }));
+    // both versions are on the page at once
+    expect(screen.getAllByText(/Hi there/).length).toBeGreaterThan(0);
+  });
 });

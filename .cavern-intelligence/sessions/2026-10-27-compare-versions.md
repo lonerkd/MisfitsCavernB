@@ -35,3 +35,22 @@ change, filters, an imported script as a side, and aligning characters so a
 renamed character reads as renamed. Then 4.12's slices 2 (review mode) and 3
 (change report); review mode writes a new revision, so it is the natural next
 feature-sized step.
+
+---
+
+**Update — side by side, word-level, next/previous change.** The same modal now
+has a **Scenes** / **Side by side** switch. Side by side lays both versions out
+line for line; a run of removed and added lines is paired in order, so a reworded
+line is one row with only the changed words marked (`inlineRows` in
+`lib/scriptos/version-diff.ts`, built on `diffWords`), never a deletion stacked on
+an insertion. **Next / previous change** counts the changed rows, cycles and
+scrolls to each (`changedRowIndexes`). The per-scene view uses the same pairing,
+so it highlights inside a line too.
+
+**Verified:** 12 unit tests in `version-diff.test.ts` and 5 jsdom tests in
+`CompareVersions.test.tsx` green; `npx tsc --noEmit` and `npx eslint` clean on
+the touched files; full suite and build re-run before the push. Still not
+watched in a browser — the two-column grid and `scrollIntoView` are jsdom-blind.
+
+**Left of slice 1:** filters (dialogue / action / scenes), an imported script as
+a side, and aligning characters so a rename reads as a rename (BACKLOG 3.35).

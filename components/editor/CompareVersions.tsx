@@ -8,8 +8,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronDown, ChevronRight, X } from 'lucide-react';
-import * as Diff from 'diff';
-import { changedScenes, summarizeVersions, type SceneChangeStatus, type VersionScene } from '@/lib/scriptos/version-diff';
+import { changedRowIndexes, changedScenes, inlineRows, summarizeVersions, type SceneChangeStatus, type VersionScene } from '@/lib/scriptos/version-diff';
 import type { Revision } from '@/lib/scriptos/revisions';
 
 const DRAFT = 'draft';
@@ -26,29 +25,89 @@ function when(iso: string): string {
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-/** One scene's before/after, line by line. */
+/** The scene's lines as inline marks (added green, removed red and struck). */
 export function SceneLines({ scene }: { scene: VersionScene }) {
-  const parts = useMemo(() => Diff.diffLines(scene.before, scene.after), [scene.before, scene.after]);
+  const rows = useMemo(() => inlineRows(scene.before, scene.after), [scene.before, scene.after]);
   return (
     <div style={{ fontFamily: 'var(--script)', fontSize: 12, lineHeight: 1.5, padding: '6px 0 10px 22px', whiteSpace: 'pre-wrap' }}>
-      {parts.map((part, i) => {
-        const rows = part.value.split('\n');
-        if (rows[rows.length - 1] === '') rows.pop();
-        return rows.map((line, k) => (
-          <div
-            key={`${i}-${k}`}
-            style={{
-              color: part.added ? 'var(--ok)' : part.removed ? 'var(--danger)' : 'var(--fg-dim)',
-              background: part.added ? 'rgba(16,185,129,0.08)' : part.removed ? 'rgba(239,68,68,0.08)' : 'transparent',
-              textDecoration: part.removed ? 'line-through' : undefined,
-              padding: '0 6px',
-              borderRadius: 4,
-            }}
-          >
-            {part.added ? '+' : part.removed ? '−' : ' '} {line || '\u00a0'}
+      {rows.filter((r) => r.kind !== 'same').map((row, i) => {
+        if (row.kind === 'changed') {
+          return (
+            <div key={i} style={{ padding: '0 6px', borderRadius: 4 }}>
+              <div style={{ color: 'var(--danger)', background: 'rgba(239,68,68,0.08)', textDecoration: 'line-through', textDecorationColor: 'rgba(239,68,68,0.55)' }}>
+                − {markedWords(row.leftParts!, 'removed')}
+              </div>
+              <div style={{ color: 'var(--ok)', background: 'rgba(16,185,129,0.08)' }}>
+                + {markedWords(row.rightParts!, 'added')}
+              </div>
+            </div>
+          );
+        }
+        const added = row.kind === 'added';
+        return (
+          <div key={i} style={{ padding: '0 6px', borderRadius: 4, color: added ? 'var(--ok)' : 'var(--danger)', background: added ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)' }}>
+            {added ? '+' : '−'} {(added ? row.right : row.left) || '\u00a0'}
           </div>
-        ));
+        );
       })}
+    </div>
+  );
+}
+
+/** Words with only the changed ones emphasised (already coloured by the row). */
+function markedWords(parts: { text: string; changed: boolean }[], side: 'added' | 'removed') {
+  return parts.filter((p) => !(side === 'added' && p.text === '') && !(side === 'removed' && p.text === '')).map((p, i) => (
+    p.changed
+      ? <span key={i} style={{ background: side === 'added' ? 'rgba(16,185,129,0.28)' : 'rgba(239,68,68,0.28)', borderRadius: 4, padding: '0 1px' }}>{p.text}</span>
+      : <span key={i}>{p.text}</span>
+  ));
+}
+
+/** Two versions side by side, line for line, the changed words inside a line marked. */
+export function SideBySide({ before, after }: { before: string; after: string }) {
+  const rows = useMemo(() => inlineRows(before, after), [before, after]);
+  const changes = useMemo(() => changedRowIndexes(rows), [rows]);
+  const [cursor, setCursor] = useState(0);
+  const at = changes.length ? Math.min(cursor, changes.length - 1) : -1;
+  const jump = (delta: number) => {
+    if (!changes.length) return;
+    const next = (at + delta + changes.length) % changes.length;
+    setCursor(next);
+    document.getElementById(`compare-row-${changes[next]}`)?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+  };
+
+  const cell = (row: typeof rows[number], side: 'left' | 'right') => {
+    const isChange = row.kind !== 'same';
+    const key = row.kind === 'added' ? 'added' : row.kind === 'removed' ? 'removed' : row.kind;
+    const bg = key === 'added' ? 'rgba(16,185,129,0.10)' : key === 'removed' ? 'rgba(239,68,68,0.10)' : key === 'changed' ? 'rgba(245,158,11,0.08)' : 'transparent';
+    const parts = side === 'left' ? row.leftParts : row.rightParts;
+    const text = side === 'left' ? row.left : row.right;
+    return (
+      <div style={{ background: bg, padding: '0 8px', borderLeft: isChange ? (key === 'added' ? '2px solid var(--ok)' : key === 'removed' ? '2px solid var(--danger)' : '2px solid var(--warn)') : '2px solid transparent', minHeight: '1.5em', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+        {row.kind === 'changed' && parts && parts.some((p) => p.changed)
+          ? markedWords(parts, side === 'left' ? 'removed' : 'added')
+          : (text || '\u00a0')}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px 10px', position: 'sticky', top: 0, background: 'var(--bg-2)', zIndex: 1 }}>
+        <button onClick={() => jump(-1)} disabled={!changes.length} aria-label="Previous change" style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 10px', color: 'var(--fg-strong)', cursor: changes.length ? 'pointer' : 'default' }}>↑ Change</button>
+        <button onClick={() => jump(1)} disabled={!changes.length} aria-label="Next change" style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, padding: '4px 10px', color: 'var(--fg-strong)', cursor: changes.length ? 'pointer' : 'default' }}>Change ↓</button>
+        <span role="status" style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--fg-muted)' }}>
+          {changes.length ? `${at + 1} of ${changes.length} changes` : 'No changes'}
+        </span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', fontFamily: 'var(--script)', fontSize: 12, lineHeight: 1.5 }}>
+        {rows.map((row, i) => (
+          <div key={i} id={`compare-row-${i}`} style={{ display: 'contents' }}>
+            {cell(row, 'left')}
+            {cell(row, 'right')}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -69,6 +128,7 @@ export function CompareVersions({
   const [fromId, setFromId] = useState<string>(() => versions[0]?.id ?? DRAFT);
   const [toId, setToId] = useState<string>(DRAFT);
   const [showSame, setShowSame] = useState(false);
+  const [mode, setMode] = useState<'scenes' | 'side'>('scenes');
   const [openScene, setOpenScene] = useState<string | null>(null);
 
   const textOf = (id: string) => (id === DRAFT ? draft : revisions.find((r) => r.id === id)?.snapshot ?? '');
@@ -127,17 +187,33 @@ export function CompareVersions({
             <ArrowRight size={14} style={{ color: 'var(--fg-dim)' }} aria-hidden />
             {select(toId, setToId, 'To')}
             <span style={{ flex: 1 }} />
-            <button
-              onClick={() => setShowSame((v) => !v)}
-              aria-pressed={showSame}
-              style={{ fontSize: 11, background: showSame ? 'rgba(var(--ink-rgb), 0.12)' : 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: '5px 10px', color: 'var(--fg-muted)', cursor: 'pointer' }}
-            >
-              {showSame ? 'Only what changed' : 'Show every scene'}
-            </button>
+            <div role="group" aria-label="View" style={{ display: 'flex', background: 'rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: 2 }}>
+              {([['scenes', 'Scenes'], ['side', 'Side by side']] as const).map(([id, label]) => (
+                <button
+                  key={id}
+                  onClick={() => setMode(id)}
+                  aria-pressed={mode === id}
+                  style={{ fontSize: 11, background: mode === id ? 'rgba(var(--ink-rgb), 0.12)' : 'transparent', border: 'none', borderRadius: 4, padding: '4px 10px', color: mode === id ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer' }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {mode === 'scenes' && (
+              <button
+                onClick={() => setShowSame((v) => !v)}
+                aria-pressed={showSame}
+                style={{ fontSize: 11, background: showSame ? 'rgba(var(--ink-rgb), 0.12)' : 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: '5px 10px', color: 'var(--fg-muted)', cursor: 'pointer' }}
+              >
+                {showSame ? 'Only what changed' : 'Show every scene'}
+              </button>
+            )}
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px 16px' }}>
-            {summary.identical ? (
+            {mode === 'side' ? (
+              <SideBySide before={fromText} after={toText} />
+            ) : summary.identical ? (
               <div style={{ padding: 28, textAlign: 'center', fontSize: 13, color: 'var(--fg-muted)' }}>
                 No changes between {nameOf(fromId)} and {nameOf(toId)}.
               </div>

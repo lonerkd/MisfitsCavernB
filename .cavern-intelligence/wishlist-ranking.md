@@ -147,10 +147,10 @@ LCS, so a scene that moved stays the same scene; 13 unit + jsdom tests).
    not deleted-and-added. *Done when:* two drafts with a renamed character and a
    reordered scene show those as such.
    **Partly built:** the scene-aligned pure diff and the two-version picker
-   (revision ↔ revision ↔ draft) exist; the per-scene view is line-level. Left:
-   side by side, word-level inside a line, next/previous change, filters, an
-   imported script as a side, and a renamed character reading as renamed rather
-   than removed-and-added. Tracked as BACKLOG 3.35.
+   (revision ↔ revision ↔ draft); **side by side** with **word-level inside a
+   line**, and **next / previous change**. Left: filters (dialogue / action /
+   scenes), an imported script as a side, and a renamed character reading as
+   renamed rather than removed-and-added. Tracked as BACKLOG 3.35.
 2. **Review mode.** Accept / reject per change into a working draft, with
    change statistics. *Done when:* rejecting a change restores the old text
    and the draft saves as a new revision.

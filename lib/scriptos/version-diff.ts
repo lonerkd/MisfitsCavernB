@@ -158,3 +158,67 @@ export function summarizeVersions(before: string, after: string): VersionSummary
 export function changedScenes(summary: VersionSummary): VersionScene[] {
   return summary.scenes.filter((s) => s.status !== 'same');
 }
+
+
+/** One line of a two-pane comparison. */
+export interface InlineRow {
+  kind: 'same' | 'changed' | 'added' | 'removed';
+  /** The line on the left / right; '' where that side has nothing. */
+  left: string;
+  right: string;
+  /** Only for a changed pair: the words, side by side, with what changed marked. */
+  leftParts?: { text: string; changed: boolean }[];
+  rightParts?: { text: string; changed: boolean }[];
+}
+
+/**
+ * Pair two texts line by line for a side-by-side view. Unchanged lines sit on
+ * both sides; a run of removed and added lines is paired in order, so a reworded
+ * line is one row with the words that changed highlighted rather than a deletion
+ * stacked on an insertion. Extra lines on either side follow as removed / added.
+ */
+export function inlineRows(before: string, after: string): InlineRow[] {
+  const changes = Diff.diffLines(before, after);
+  const rows: InlineRow[] = [];
+  let removed: string[] = [];
+  let added: string[] = [];
+
+  const flush = () => {
+    const pairs = Math.min(removed.length, added.length);
+    for (let i = 0; i < pairs; i++) {
+      const leftParts: { text: string; changed: boolean }[] = [];
+      const rightParts: { text: string; changed: boolean }[] = [];
+      for (const part of Diff.diffWords(removed[i], added[i])) {
+        if (part.added) rightParts.push({ text: part.value, changed: true });
+        else if (part.removed) leftParts.push({ text: part.value, changed: true });
+        else {
+          leftParts.push({ text: part.value, changed: false });
+          rightParts.push({ text: part.value, changed: false });
+        }
+      }
+      rows.push({ kind: 'changed', left: removed[i], right: added[i], leftParts, rightParts });
+    }
+    for (let i = pairs; i < removed.length; i++) rows.push({ kind: 'removed', left: removed[i], right: '' });
+    for (let i = pairs; i < added.length; i++) rows.push({ kind: 'added', left: '', right: added[i] });
+    removed = [];
+    added = [];
+  };
+
+  for (const part of changes) {
+    const lines = part.value.split('\n');
+    if (lines[lines.length - 1] === '') lines.pop();
+    if (part.removed) { removed.push(...lines); continue; }
+    if (part.added) { added.push(...lines); continue; }
+    flush();
+    for (const line of lines) rows.push({ kind: 'same', left: line, right: line });
+  }
+  flush();
+  return rows;
+}
+
+/** The indexes of the rows that are not identical — for next / previous change. */
+export function changedRowIndexes(rows: InlineRow[]): number[] {
+  const out: number[] = [];
+  rows.forEach((r, i) => { if (r.kind !== 'same') out.push(i); });
+  return out;
+}
