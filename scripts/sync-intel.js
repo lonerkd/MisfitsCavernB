@@ -182,15 +182,33 @@ Short version: no mocks; verify with typecheck, lint, tests and build; toasts
 and the confirm dialog, never \`alert\`/\`confirm\`; RLS on every table;
 migrations are the schema; feature branches and PRs, never \`main\`.
 `,
+    '.perch/PERCH.md': `${NOTE}
+
+# The Cavern — instructions for Perch
+
+Perch reads this project manual, and it also reads [\`AGENTS.md\`](../AGENTS.md)
+at the root as instructions, so the full rules arrive either way. The one
+source is [\`.cavern-intelligence/RULES.md\`](../.cavern-intelligence/RULES.md).
+Current work: \`.cavern-intelligence/STATE.md\` and \`BACKLOG.md\`. The map:
+\`.cavern-intelligence/INDEX.md\`.
+
+Short version: no mocks; verify with typecheck, lint, tests and build; toasts
+and the confirm dialog, never \`alert\`/\`confirm\`; RLS on every table;
+migrations are the schema; feature branches and PRs, never \`main\`.
+`,
   };
 }
 
 function writeAdapters() {
-  for (const [rel, body] of Object.entries(adapters())) {
+  const written = Object.entries(adapters());
+  for (const [rel, body] of written) {
     fs.mkdirSync(path.dirname(path.join(ROOT_DIR, rel)), { recursive: true });
+    // Written as LF, matching the committed form (see .gitattributes). The
+    // churn this used to cause came from `core.autocrlf=true` converting these
+    // files to CRLF on checkout, not from this write.
     fs.writeFileSync(path.join(ROOT_DIR, rel), body, 'utf-8');
   }
-  console.log('Agent entry files written: AGENTS.md, CLAUDE.md, .github/copilot-instructions.md');
+  console.log(`Agent entry files written: ${written.map(([rel]) => rel).join(', ')}`);
 }
 
 function checkAdapters() {

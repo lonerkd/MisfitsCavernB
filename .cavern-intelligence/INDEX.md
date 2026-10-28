@@ -37,6 +37,7 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 | Claude Code (local and cloud) | `CLAUDE.md` | `@`-imports `RULES.md`, `STATE.md`, `BACKLOG.md` and `INDEX.md`, plus Claude-only notes — generated |
 | Codex, Cursor, Cline, Windsurf, Zed, Gemini, Jules, Copilot's agent | `AGENTS.md` | a generated mirror of `RULES.md` |
 | GitHub Copilot chat | `.github/copilot-instructions.md` | a generated pointer here |
+| Perch | `.perch/PERCH.md` | a generated pointer here; Perch also reads root `AGENTS.md` as instructions, so it gets the full rules |
 | People | `README.md` | setup and commands; points here |
 | **Agents, any tool, any session** | [`PLAYBOOK.md`](PLAYBOOK.md) | how to consume this system fast and leave it smarter: the fast start, search-first, the skip list, the learning loop, the living pitfalls |
 
