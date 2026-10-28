@@ -72,3 +72,15 @@ jobs:
             --model sonnet
             --max-turns 40
             --allowedTools "Read,Write,Edit,Glob,Grep,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git switch -c claude/*),Bash(git checkout -b claude/*),Bash(git push -u origin claude/*),Bash(git push origin claude/*),Bash(gh pr create:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(npm run typecheck),Bash(npm run lint),Bash(npm run test),Bash(npx tsc:*),Bash(npx vitest:*),Bash(npx eslint:*),Bash(node scripts/sync-intel.js:*)"
+
+      # Which tool calls the allow-list refused (name and the first 200 characters of the input,
+      # nothing the commands printed), so the list can be widened on facts, not guesses.
+      - name: Show the denied tool calls
+        if: always() && steps.gate.outputs.enabled == 'true'
+        run: |
+          f="$RUNNER_TEMP/claude-execution-output.json"
+          if [ -f "$f" ]; then
+            jq -r '.[] | select(.type=="result") | .permission_denials[]? | "DENIED \(.tool_name): \((.tool_input | tostring)[0:200])"' "$f" || true
+          else
+            echo "no execution log"
+          fi
