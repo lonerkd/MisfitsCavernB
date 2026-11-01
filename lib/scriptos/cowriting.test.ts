@@ -8,6 +8,8 @@ import {
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
   mapThroughDelta,
+  mergeServerIntoLocal,
+  REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
   SCRIPT_TEXT_FIELD,
   seedScriptText,
@@ -120,5 +122,68 @@ describe('mapThroughDelta', () => {
   it('pulls a caret back across a deletion, and to its start when inside it', () => {
     expect(caretAfter('hello world', (t) => t.delete(0, 3), 8).mapped).toBe(5);
     expect(caretAfter('hello world', (t) => t.delete(2, 6), 5).mapped).toBe(2);
+  });
+});
+
+describe('mergeServerIntoLocal', () => {
+  const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. PIER - DAY\n\nBoats come in.\n';
+
+  /** A device's saved state for a script it has edited. */
+  const device = (edit: (text: Y.Text) => void) => {
+    const doc = new Y.Doc();
+    seedScriptText(doc, BASE);
+    edit(doc.getText(SCRIPT_TEXT_FIELD));
+    return { doc, persisted: encodeScriptTextState(doc, BASE) };
+  };
+  const insertAfter = (text: Y.Text, anchor: string, add: string) => text.insert(text.toString().indexOf(anchor) + anchor.length, add);
+
+  it('keeps both sides\' edits: the offline writer\'s and the one the server already holds', () => {
+    const offline = device((t) => insertAfter(t, 'Still up.', ' Alpha was offline.'));
+    const online = device((t) => insertAfter(t, 'Boats come in.', ' Bravo stayed online.'));
+    const merged = mergeServerIntoLocal(offline.persisted, encodeScriptTextUpdate(online.doc))!;
+    expect(merged.content).toContain('Still up. Alpha was offline.');
+    expect(merged.content).toContain('Boats come in. Bravo stayed online.');
+    expect(merged.content.match(/Still up\./g)).toHaveLength(1); // no duplicated baseline
+  });
+
+  it('returns a state that spells exactly the merged text, on the server\'s side and the device\'s', () => {
+    const offline = device((t) => insertAfter(t, 'Still up.', ' Alpha.'));
+    const online = device((t) => insertAfter(t, 'Boats come in.', ' Bravo.'));
+    const merged = mergeServerIntoLocal(offline.persisted, encodeScriptTextUpdate(online.doc))!;
+    const server = new Y.Doc();
+    Y.applyUpdate(server, decodeScriptTextUpdate(merged.yjsState)!);
+    expect(server.getText(SCRIPT_TEXT_FIELD).toString()).toBe(merged.content);
+    const again = new Y.Doc();
+    restoreScriptTextState(again, merged.persisted);
+    expect(again.getText(SCRIPT_TEXT_FIELD).toString()).toBe(merged.content);
+    expect(merged.persisted.baseContent).toBe(BASE);
+  });
+
+  it('is the same either way round, and merging the result again changes nothing', () => {
+    const a = device((t) => insertAfter(t, 'Still up.', ' Alpha.'));
+    const b = device((t) => insertAfter(t, 'Boats come in.', ' Bravo.'));
+    const ab = mergeServerIntoLocal(a.persisted, encodeScriptTextUpdate(b.doc))!;
+    const ba = mergeServerIntoLocal(b.persisted, encodeScriptTextUpdate(a.doc))!;
+    expect(ab.content).toBe(ba.content);
+    expect(mergeServerIntoLocal(ab.persisted, ab.yjsState)!.content).toBe(ab.content);
+  });
+
+  it('keeps an edit to the same paragraph from both sides', () => {
+    const a = device((t) => insertAfter(t, 'Still up.', ' Alpha.'));
+    const b = device((t) => insertAfter(t, 'Still up.', ' Bravo.'));
+    const merged = mergeServerIntoLocal(a.persisted, encodeScriptTextUpdate(b.doc))!;
+    expect(merged.content).toContain('Alpha.');
+    expect(merged.content).toContain('Bravo.');
+  });
+
+  it('does not merge what it cannot merge safely: no saved state here, none on the server, or unreadable ones', () => {
+    const offline = device((t) => insertAfter(t, 'Still up.', ' Alpha.'));
+    const server = encodeScriptTextUpdate(device(() => {}).doc);
+    expect(mergeServerIntoLocal(undefined, server)).toBeNull();
+    expect(mergeServerIntoLocal({ state: [], baseContent: BASE }, server)).toBeNull();
+    expect(mergeServerIntoLocal(offline.persisted, null)).toBeNull();
+    expect(mergeServerIntoLocal(offline.persisted, '')).toBeNull();
+    expect(mergeServerIntoLocal(offline.persisted, '%%% not base64 %%%')).toBeNull();
+    expect(mergeServerIntoLocal({ state: [1, 2, 3], baseContent: BASE }, server)).toBeNull();
   });
 });

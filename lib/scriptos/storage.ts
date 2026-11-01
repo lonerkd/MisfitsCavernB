@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
-import { scriptTextStateKey } from './cowriting';
+import { mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
 
 export interface StoredScript {
   id: string;
@@ -91,6 +91,49 @@ export async function refreshSyncStatus(): Promise<void> {
 
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
+const sameBytes = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+/**
+ * A script this device holds a shared document for (co-writing, ADR 0008) is merged with the server's, never
+ * written over it: a collaborator may have written since this device went offline, and the plain text upload
+ * below would erase their edits. 'plain' means there is nothing to merge with (a script the server has not
+ * seen, or one never written as a shared document): the plain upload is right. 'failed' means try again later.
+ */
+async function reconcileWithServer(script: StoredScript, userId: string): Promise<'merged' | 'plain' | 'failed'> {
+  const stateKey = scriptTextStateKey(script.id);
+  const local = await get<PersistedScriptText>(stateKey);
+  if (!local?.state?.length) return 'plain';
+
+  // Three tries: if somebody writes between our read and our write, read again and merge theirs in too.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data: row, error } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', script.id).maybeSingle();
+    if (error) { console.error(`[Offline Sync] Could not read ${script.id} to merge with:`, error); return 'failed'; }
+    if (!row) return 'plain';
+    const merged = mergeServerIntoLocal(local, row.yjs_state);
+    if (!merged) return 'plain';
+
+    const write = supabase.from('scripts').update({
+      title: script.title,
+      content: merged.content,
+      yjs_state: merged.yjsState,
+      format: script.format,
+      last_edited_by: userId,
+      updated_at: new Date().toISOString(),
+    }).eq('id', script.id);
+    const { data: written, error: writeError } = await (row.updated_at ? write.eq('updated_at', row.updated_at) : write).select('id');
+    if (writeError) { console.error(`[Offline Sync] Failed to sync ${script.id}:`, writeError); return 'failed'; }
+    if (!written?.length) continue;
+
+    // Keep this device in step with the server, unless the writer has gone on since (their newer copy is the truth here).
+    const current = await get<PersistedScriptText>(stateKey);
+    if (current && sameBytes(current.state, local.state)) await set(stateKey, merged.persisted);
+    const latest = await get<StoredScript>(`script_${script.id}`);
+    if (latest && latest.updatedAt === script.updatedAt) await set(`script_${script.id}`, { ...latest, content: merged.content, syncPending: false });
+    return 'merged';
+  }
+  return 'failed';
+}
+
 export async function syncPendingScripts() {
   const user = await awaitOSUser();
   if (!user) return;
@@ -116,6 +159,9 @@ export async function syncPendingScripts() {
       if (typeof k === 'string' && k.startsWith('script_')) {
         const script = await get<StoredScript>(k);
         if (script && script.syncPending) {
+          const how = await reconcileWithServer(script, user.id);
+          if (how === 'failed') { failed = true; continue; }
+          if (how === 'merged') continue;
           const baseData = {
             id: script.id,
             title: script.title,

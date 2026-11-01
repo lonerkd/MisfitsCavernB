@@ -168,6 +168,16 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
         expect(both(row.content), 'the stored text has both edits').toBe(true);
         expect(!!row.yjs_state && textOfState(row.yjs_state) === row.content, 'the stored text equals the stored state').toBe(true);
       } finally { await c.ctx.close(); }
+
+      // B never heard about A's sync (it wasn't broadcast) and keeps typing: B's next save must merge with the
+      // server's text, not overwrite it, so A's offline words survive a third edit.
+      await caretAt(b, (await b.script.inputValue()).length);
+      await b.page.keyboard.type(' Bravo again.');
+      await expect.poll(async () => (await stored()).content.includes('Bravo again.'), { timeout: 30_000 }).toBe(true);
+      const final = await stored();
+      expect(final.content, 'A\'s offline edit survives B going on').toContain('Still up. Alpha was offline.');
+      expect(final.content).toContain('Bravo stayed online.');
+      expect(!!final.yjs_state && textOfState(final.yjs_state) === final.content, 'the stored text equals the stored state').toBe(true);
     } finally {
       await Promise.all([a.ctx.close(), b.ctx.close()]);
     }

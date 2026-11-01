@@ -103,21 +103,44 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         .catch((error) => console.warn('[Script Sync] Could not persist local Yjs state:', error));
     };
 
+    /**
+     * Write the script, merging in what the server holds first: another writer (the offline queue run from some
+     * other page, another device) may have written since we last heard, and our copy alone would erase it.
+     * If somebody writes between our read and our write the write finds out and we read again; after three
+     * tries it writes regardless, so a save is never lost to a timestamp that will not match.
+     */
+    const writeMerged = async (userId: string): Promise<{ message: string } | null> => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (cancelled || !doc || !text) return null;
+        const { data: row, error: readError } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', scriptId).maybeSingle();
+        if (readError) return readError;
+        const serverState = decodeScriptTextUpdate(row?.yjs_state ?? null);
+        if (serverState) {
+          try { Y.applyUpdate(doc, serverState, REMOTE_EDIT_ORIGIN); }
+          catch (error) { console.warn('[Script Sync] Ignored invalid stored Yjs state:', error); }
+        }
+        const write = supabase.from('scripts').update({
+          content: text.toString(),
+          yjs_state: encodeScriptTextUpdate(doc),
+          updated_at: new Date().toISOString(),
+          last_edited_by: userId,
+        }).eq('id', scriptId);
+        const { data: written, error } = await (row?.updated_at && attempt < 2 ? write.eq('updated_at', row.updated_at) : write).select('id');
+        if (error) return error;
+        if (written?.length) return null;
+      }
+      return null;
+    };
+
     const saveContent = () => {
       if (saveTimer) clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         if (!text || cancelled) return;
-        const content = text.toString();
         const user = await awaitOSUser();
         if (!user || cancelled) return;
         setIsSyncing(true);
         try {
-          const { error } = await supabase.from('scripts').update({
-            content,
-            yjs_state: encodeScriptTextUpdate(doc!),
-            updated_at: new Date().toISOString(),
-            last_edited_by: user.id,
-          }).eq('id', scriptId);
+          const error = await writeMerged(user.id);
           if (cancelled) return;
           if (error) console.warn('[Script Sync] Could not save the merged script:', error);
           else setLastSyncedAt(new Date());

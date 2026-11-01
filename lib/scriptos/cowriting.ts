@@ -124,3 +124,40 @@ export function mapThroughDelta(
   }
   return index + shift;
 }
+
+export interface MergedScript {
+  /** The merged text. */
+  content: string;
+  /** The merged shared-document state, as the server stores it (`scripts.yjs_state`). */
+  yjsState: string;
+  /** The same state, as this device keeps it. */
+  persisted: PersistedScriptText;
+}
+
+/**
+ * A writer's edits that waited on the device (offline, tab closed) meeting what the server holds now.
+ * The two shared documents are merged, so both sides' edits survive; neither overwrites the other.
+ *
+ * Null when it cannot be merged safely, and the caller must not guess: this device has no saved shared
+ * document for the script, the server has none (a script only ever written as plain text), or either is
+ * unreadable.
+ */
+export function mergeServerIntoLocal(local: PersistedScriptText | undefined, serverYjsState: string | null): MergedScript | null {
+  if (!local?.state?.length) return null;
+  const remote = decodeScriptTextUpdate(serverYjsState);
+  if (!remote) return null;
+  const doc = new Y.Doc();
+  try {
+    restoreScriptTextState(doc, local);
+    Y.applyUpdate(doc, remote, REMOTE_EDIT_ORIGIN);
+    return {
+      content: doc.getText(SCRIPT_TEXT_FIELD).toString(),
+      yjsState: encodeScriptTextUpdate(doc),
+      persisted: encodeScriptTextState(doc, local.baseContent),
+    };
+  } catch {
+    return null;
+  } finally {
+    doc.destroy();
+  }
+}
