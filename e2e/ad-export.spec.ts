@@ -40,8 +40,11 @@ test.describe('Ad export (local Supabase)', () => {
     if (userId) await admin.auth.admin.deleteUser(userId);
   });
 
-  test('a piece as text, the whole set as text, and a PDF each download with the real copy in them', async ({ page }) => {
+  test('a piece as text, the whole set as text, and a PDF each download with the real copy in them', async ({ browser }) => {
     test.setTimeout(120_000);
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, acceptDownloads: true });
+    const page = await ctx.newPage();
+    try {
     await page.goto('/auth');
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', PASSWORD);
@@ -77,5 +80,6 @@ test.describe('Ad export (local Supabase)', () => {
     const pdf = readFileSync((await download.path())!);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
     expect(pdf.toString('latin1')).toContain('Big spring sale');
+    } finally { await ctx.close(); }
   });
 });
