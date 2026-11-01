@@ -7,11 +7,22 @@ import { DELIVERABLE_KINDS, isDeliverableKind } from '@/lib/ad/kinds';
 import { listBrandRules, listDeliverables, updateDeliverable, type Deliverable } from '@/lib/ad/api';
 import { checkBrandRules, type BrandRule, type BrandRuleKind, type BrandRuleSeverity } from '@/lib/ad/brand-rules';
 import { copyText, parseCopy } from '@/lib/ad/copy';
+import { describePiece, exportFileName, needsPdfFallback, pieceToText, setToText, type ExportPiece } from '@/lib/ad/export';
 import { fetchScriptContent } from '@/lib/studio';
 import { sendDraftsForReview, listVersions, reviewUrl, STATE_LABEL, versionState } from '@/lib/review/versions';
 import { useToast } from '@/components/ui/Toast';
 import { useStudio } from '@/components/studio/StudioContext';
 import s from '@/components/studio/studio.module.css';
+
+/** Hand a file to the browser's download. */
+function download(blob: Blob, name: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
 
 export function DeliverablesPanel() {
   const { project, isOwner, scripts } = useStudio();
@@ -61,6 +72,46 @@ export function DeliverablesPanel() {
     else deliverables.reload();
   };
 
+  /** The working text of the chosen pieces (what the editor holds now), with where each one stands in review. */
+  const gather = async (items: Deliverable[]): Promise<ExportPiece[]> => Promise.all(items.map(async (item) => {
+    const version = latest.get(item.script_id);
+    return {
+      title: titleOf.get(item.script_id) ?? item.title,
+      kind: item.kind,
+      status: version ? STATE_LABEL[versionState(version)] : 'Draft',
+      content: await fetchScriptContent(item.script_id),
+      maxChars: item.max_chars,
+      maxSeconds: item.max_seconds,
+      wordsPerSecond: item.words_per_second,
+      notes: item.notes ?? '',
+    };
+  }));
+
+  /** Export one piece (`only`) or the whole set, as plain text or a PDF. */
+  const exportPieces = async (only: Deliverable | null, format: 'txt' | 'pdf') => {
+    const items = only ? [only] : (deliverables.data ?? []);
+    if (items.length === 0) return;
+    setBusy(true);
+    try {
+      const views = (await gather(items)).map(describePiece);
+      const name = exportFileName(project.title, only ? views[0].title : null, format);
+      if (format === 'txt') {
+        const text = only ? pieceToText(views[0]) : setToText(project.title, views, new Date().toISOString().slice(0, 10));
+        download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name);
+      } else {
+        const { buildPdf } = await import('@/lib/ad/exportPdf');
+        const doc = await buildPdf(project.title, views);
+        download(doc.output('blob'), name);
+        const everything = views.flatMap((view) => [view.title, ...view.sections.map((section) => section.text), view.notes]).join('\n');
+        if (needsPdfFallback(everything)) toast('Some characters this PDF font cannot print are shown as “?”. The plain-text export keeps every character.', 'info');
+      }
+    } catch (error) {
+      toast(`Could not export: ${error instanceof Error ? error.message : 'try again'}`, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sendAll = async () => {
     setBusy(true);
     const result = await sendDraftsForReview(project.id, scriptIds, project.title);
@@ -95,6 +146,10 @@ export function DeliverablesPanel() {
                       <div className={s.hint}>{stateLabel}{breached.has(item.script_id) ? ' · Brand rule breach' : ''}</div>
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }} role="group" aria-label={`Export ${item.title}`}>
+                        <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'txt')}>Text</button>
+                        <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'pdf')}>PDF</button>
+                      </div>
                       <label className={s.hint}>Piece type
                         <select aria-label={`Piece type for ${item.title}`} className={s.input} value={item.kind} disabled={!canShape || busy}
                           onChange={(event) => {
@@ -135,6 +190,13 @@ export function DeliverablesPanel() {
                 );
               })}
             </div>}
+          {deliverables.data.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }} role="group" aria-label="Export the whole campaign">
+              <span className={s.hint}>Export all {deliverables.data.length} pieces</span>
+              <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(null, 'txt')}>Text</button>
+              <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(null, 'pdf')}>PDF</button>
+            </div>
+          )}
           {canShape && (
             <button type="button" className={s.btnPrimary} style={{ marginTop: 12 }} onClick={() => void sendAll()} disabled={busy || drafts.length === 0}>
               Send all {drafts.length || ''} draft version{drafts.length === 1 ? '' : 's'} for review

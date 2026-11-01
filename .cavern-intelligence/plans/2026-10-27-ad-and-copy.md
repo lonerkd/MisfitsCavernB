@@ -1,6 +1,6 @@
 # Plan — advertising and copywriting (BACKLOG 3.32 b–e)
 
-Status: **C1–C3 built 2026-10-27 behind `ad_copywriting`; C4 remains open.**
+Status: **C1–C3 built 2026-10-27 and C4 (export) built 2026-11-01, all behind `ad_copywriting`.**
 Parent: [guest-review-and-phases](2026-10-27-guest-review-and-phases.md). Done
 already: the `Advertising` and `Copywriting` formats and client-approval gates
 (`20261031000600`); the client review link and numbered versions (D1).
@@ -67,7 +67,7 @@ attaches them to each piece through `links` and sees the approved text in the
 copy editor.
 
 ### C4 — Export (S/M)
-A piece or the whole set as a PDF and as plain text for the client's own tools.
+A piece or the whole set as a PDF and as plain text for the client's own tools. **Built 2026-11-01:** `lib/ad/export.ts` (pure layout and text), `lib/ad/exportPdf.ts` (jsPDF, loaded only when a PDF is asked for), buttons on the deliverables panel.
 
 ## Order and sizes
 C1 → C2 → C3 → C4. C1 is the base everything hangs on; C2 is the biggest and the
@@ -87,4 +87,4 @@ one the copywriter lives in.
    remains Brief → Concept & copy → Production → Finishing → Delivered; client
    review is the approval gate before production. Splitting this into six phase
    IDs requires revisiting the phase-engine decision in the parent plan.
-6. C4 export is intentionally still open and is not required for this slice.
+6. C4 export was left open for this slice and built afterwards (2026-11-01).
