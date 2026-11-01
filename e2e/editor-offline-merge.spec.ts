@@ -126,4 +126,50 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       await Promise.all([a.ctx.close(), b.ctx.close()]);
     }
   });
+  test('the queue syncs from a page that is not the editor (the tab was closed offline): a collaborator\'s edit is not lost', async ({ browser }) => {
+    test.setTimeout(240_000);
+    await reset();
+    const a = await writer(browser, 0);
+    const b = await writer(browser, 1);
+    try {
+      await expect(a.script).toHaveValue(BASE, { timeout: 30_000 });
+      await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
+      await a.page.waitForTimeout(3000);
+
+      // A loses the connection, writes in the kitchen scene, and closes the tab with the text still waiting on the device.
+      await a.ctx.setOffline(true);
+      await expect.poll(() => a.page.evaluate(() => navigator.onLine)).toBe(false);
+      await caretAt(a, BASE.indexOf('Still up.') + 'Still up.'.length);
+      await a.page.keyboard.type(' Alpha was offline.');
+      await a.page.waitForTimeout(2500);
+      await a.page.close();
+
+      // B, online, writes on the pier.
+      await caretAt(b, BASE.indexOf('Boats come in.') + 'Boats come in.'.length);
+      await b.page.keyboard.type(' Bravo stayed online.');
+      await expect.poll(async () => (await stored()).content.includes('Bravo stayed online.'), { timeout: 30_000 }).toBe(true);
+
+      // A comes back and opens the Today page, not the editor, and syncs from the island.
+      await a.ctx.setOffline(false);
+      const today = await a.ctx.newPage();
+      await today.goto('/today');
+      const island = today.getByRole('navigation', { name: 'Suite' });
+      await expect(island.getByText(/waiting to sync|saved on this device/)).toBeVisible({ timeout: 30_000 });
+      await island.getByRole('button', { name: 'Sync now' }).click();
+      await expect(island.getByText(/waiting to sync|saved on this device|Syncing/)).toHaveCount(0, { timeout: 45_000 });
+
+      // Whoever opens the script next — on any device — must find both edits, and the server must agree with itself.
+      const both = (v: string) => v.includes('Still up. Alpha was offline.') && v.includes('Boats come in. Bravo stayed online.');
+      const c = await writer(browser, 2);
+      try {
+        await c.page.waitForTimeout(6000);
+        const row = await stored();
+        expect(both(await c.script.inputValue()), 'a fresh device opens on both edits').toBe(true);
+        expect(both(row.content), 'the stored text has both edits').toBe(true);
+        expect(!!row.yjs_state && textOfState(row.yjs_state) === row.content, 'the stored text equals the stored state').toBe(true);
+      } finally { await c.ctx.close(); }
+    } finally {
+      await Promise.all([a.ctx.close(), b.ctx.close()]);
+    }
+  });
 });
