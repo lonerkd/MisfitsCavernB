@@ -158,6 +158,9 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       await island.getByRole('button', { name: 'Sync now' }).click();
       await expect(island.getByText(/waiting to sync|saved on this device|Syncing/)).toHaveCount(0, { timeout: 45_000 });
 
+      // (diagnostic) what the server holds the moment the queue has synced
+      { const r = await stored(); console.log('ROW-AFTER-SYNC content=', JSON.stringify(r.content), ' state=', JSON.stringify(r.yjs_state ? textOfState(r.yjs_state) : null)); }
+
       // Whoever opens the script next — on any device — must find both edits, and the server must agree with itself.
       const both = (v: string) => v.includes('Still up. Alpha was offline.') && v.includes('Boats come in. Bravo stayed online.');
       const c = await writer(browser, 2);
