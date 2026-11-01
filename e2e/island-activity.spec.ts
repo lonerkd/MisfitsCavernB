@@ -123,4 +123,35 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
       await expect(island(page).getByText(/saved on this device|waiting to sync|Syncing/)).toHaveCount(0, { timeout: 30_000 });
     } finally { await ctx.close(); }
   });
+  test('a queue still waiting after a reload is on the island again (the page counts what the device holds)', async ({ browser }) => {
+    test.setTimeout(150_000);
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const page = await ctx.newPage();
+    try {
+      await openEditor(page);
+      const script = page.getByLabel('Script', { exact: true });
+      await expect(script).toHaveValue(/Still up\./, { timeout: 30_000 });
+      await page.waitForTimeout(3000);
+
+      // The server stops answering (the app itself is still served), and the writer keeps going.
+      await page.route(/\/rest\/v1\//, (route) => route.abort());
+      await script.click();
+      await page.keyboard.press('Control+End');
+      await page.keyboard.type('\nWritten while the server was away.');
+      await page.mouse.move(5, 5);
+      await expect(island(page).getByText(/waiting to sync|saved on this device|Can’t reach the server/)).toBeVisible({ timeout: 30_000 });
+
+      // A reload starts the page from nothing but what is on the device: the island must still know.
+      await page.reload();
+      await expect(page.getByLabel('Script', { exact: true })).toBeVisible({ timeout: 30_000 });
+      await page.mouse.move(5, 5);
+      await expect(island(page).getByText(/waiting to sync|saved on this device|Can’t reach the server/)).toBeVisible({ timeout: 30_000 });
+      await shot(page, '4-queue-after-reload');
+
+      // The server is back: it syncs and the island lets go.
+      await page.unroute(/\/rest\/v1\//);
+      await expect.poll(async () => (await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content, { timeout: 60_000 }).toContain('Written while the server was away.');
+      await expect(island(page).getByText(/waiting to sync|saved on this device|Can’t reach the server|Syncing/)).toHaveCount(0, { timeout: 45_000 });
+    } finally { await ctx.close(); }
+  });
 });
