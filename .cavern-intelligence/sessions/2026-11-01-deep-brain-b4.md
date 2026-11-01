@@ -10,6 +10,8 @@
 
 **Caught while tuning:** my first version of the fix (cue penalty 2) broke "action directly before a cue" in the same script, because the decoder had been deciding that case through the cue's penalty. Coupled decisions like that are why the numbers, not the single example, decide.
 
+**Copilot's review (1 inline finding, real, fixed):** a script ending in a newline carries one synthetic blank line, so a blank-free script of 10–19 lines was not profiled as tight; the blank lines before the first and after the last element no longer count. Its summary also hinted that a time card should depend on context: a time card is now dearer as speech instead of impossible, so the grammar decides. **Known limit:** a one-word reply that is itself a time card (`LATER.`) directly under a cue can be read as narration, because `WOMAN` + `LATER.` is also a valid caps-action line plus a time card; rare, and not worth a weight that would cost the common cases.
+
 **Verified:** 12 focused tests (`profile-b4.test.ts`), the hand-written set (7 scripts), the three new floors, and every older floor held; typecheck, lint, 1901 unit tests, build and the bundle budget clean. **Not verified:** any real script (the private corpus is still empty), and the editor in a browser (the change is in the reader, which the editor calls; no UI changed).
 
 **Left (BACKLOG 3.21):** the rest of B4, B7 places and the previous draft, B8, B9. The honest limit: with no blank lines, action under a speech is found at F1 ≈ 0.6 and no weight fixes it; it needs the previous draft or a person's correction. **Owner:** real scripts for `.private-corpus/`.

@@ -16,6 +16,11 @@ describe('the document profile: does this script use blank lines at all?', () =>
   it('a script with none (pasted from another editor) is tight', () => {
     expect(documentProfile(obs('A\nB\nC\nD\nE\nF\nG\nH\nI\nJ\nK\nL')).tight).toBe(true);
   });
+  it('a trailing newline (a final empty line) does not count against a script with no blank lines', () => {
+    expect(documentProfile(obs('A\nB\nC\nD\nE\nF\nG\nH\nI\nJ\n')).tight).toBe(true);
+    expect(documentProfile(obs('\nA\nB\nC\nD\nE\nF\nG\nH\nI\nJ\n\n')).tight).toBe(true);
+    expect(documentProfile(obs('A\nB\nC\nD\nE\n\nF\nG\nH\nI\nJ\n')).tight).toBe(false); // a real blank line in the middle still counts
+  });
   it('a short snippet is never called tight: there is too little to tell', () => {
     expect(documentProfile(obs('A\nB\nC')).tight).toBe(false);
   });

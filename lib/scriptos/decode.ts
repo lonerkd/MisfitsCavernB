@@ -104,8 +104,10 @@ export function emission(o: Observation, ev: Evidence, p: Params, tight = false)
     if (words > 6) character += p.cueLong;
   }
 
-  const strong = heading || isTransition || paren || timeCard;
-  const dialogue = strong ? p.impossible : p.dialogue + (ev.isCaps(t) ? p.dialogueCaps : 0);
+  const strong = heading || isTransition || paren;
+  // A time card is narration, but "LATER." can also be the whole of someone's reply: so it is dearer as speech
+  // rather than impossible, and the grammar decides (under a cue it stays speech; after a speech it ends it).
+  const dialogue = strong ? p.impossible : p.dialogue + (ev.isCaps(t) ? p.dialogueCaps : 0) + (timeCard ? 4 : 0);
 
   let action = p.action;
   if (heading || isTransition) action = 40;
@@ -156,9 +158,15 @@ export interface Decoded {
  * and the rest of the evidence (the name's shape, the extension, what follows) decides.
  */
 export function documentProfile(obs: Observation[]): { tight: boolean; blankShare: number } {
-  const free = obs.filter((o) => o.kind !== 'empty').length;
-  const blank = obs.length - free;
-  const blankShare = obs.length ? blank / obs.length : 0;
+  // The blank lines before the first and after the last element are not "between elements": a script that ends
+  // with a newline has one synthetic empty line at the end, which must not count against a blank-free script.
+  let from = 0;
+  let to = obs.length;
+  while (from < to && obs[from].kind === 'empty') from++;
+  while (to > from && obs[to - 1].kind === 'empty') to--;
+  const span = obs.slice(from, to);
+  const free = span.filter((o) => o.kind !== 'empty').length;
+  const blankShare = span.length ? (span.length - free) / span.length : 0;
   return { tight: free >= 10 && blankShare < 0.05, blankShare };
 }
 
