@@ -37,7 +37,7 @@ export function ActivityControls({ activity, count, onCycle }: { activity: Activ
   const controls = activity.controls ?? [];
   if (controls.length === 0 && count < 2) return null;
   return (
-    <span className={s.activityControls} role="group" aria-label={`${activity.title} — controls`}>
+    <span className={s.activityControls} data-activity-controls role="group" aria-label={`${activity.title} — controls`}>
       {controls.map((c) => (
         <button key={c.id} type="button" className={s.activityBtn} onClick={c.run}>{c.label}</button>
       ))}

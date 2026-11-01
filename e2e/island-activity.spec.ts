@@ -71,8 +71,10 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
       const first = await clock.textContent();
       await expect.poll(async () => clock.textContent(), { timeout: 10_000 }).not.toBe(first); // it ticks
 
+      // Pointing at a button never opens the island out from under it — one click does the job…
       await island(page).getByRole('button', { name: 'Pause', exact: true }).click();
       await expect(island(page).getByText(/paused/)).toBeVisible();
+      await expect(page.locator('nav[aria-label="Suite"]')).toHaveAttribute('data-island', 'activity');
       await expect(page.getByRole('button', { name: 'Start sprint' })).toBeVisible(); // the panel followed
       await shot(page, '2-sprint-paused');
       const frozen = await clock.textContent();
@@ -81,6 +83,12 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
 
       await island(page).getByRole('button', { name: 'Resume', exact: true }).click();
       await expect(island(page).getByRole('button', { name: 'Pause', exact: true })).toBeVisible();
+
+      // …but the island still opens for a pointer that comes to rest on it, and goes back when it leaves.
+      await island(page).getByText(/Sprint \d\d:\d\d/).hover();
+      await expect(page.locator('nav[aria-label="Suite"]')).toHaveAttribute('data-island', 'open', { timeout: 5000 });
+      await page.mouse.move(400, 300);
+      await expect(page.locator('nav[aria-label="Suite"]')).toHaveAttribute('data-island', 'activity', { timeout: 5000 });
 
       await island(page).getByRole('button', { name: 'Reset', exact: true }).click();
       await expect(island(page).getByText(/Sprint \d\d:\d\d/)).toHaveCount(0); // let go
