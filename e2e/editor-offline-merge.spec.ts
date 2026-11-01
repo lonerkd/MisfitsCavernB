@@ -130,10 +130,9 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
     test.setTimeout(240_000);
     await reset();
     const a = await writer(browser, 0);
-    const b = await writer(browser, 1);
+    let b: Awaited<ReturnType<typeof writer>> | null = null;
     try {
       await expect(a.script).toHaveValue(BASE, { timeout: 30_000 });
-      await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
       await a.page.waitForTimeout(3000);
 
       // A loses the connection, writes in the kitchen scene, and closes the tab with the text still waiting on the device.
@@ -144,7 +143,11 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       await a.page.waitForTimeout(2500);
       await a.page.close();
 
-      // B, online, writes on the pier.
+      // B opens the script only now, so nothing A typed can have reached B over a connection that was still open
+      // (going offline does not close an established websocket). B writes on the pier.
+      b = await writer(browser, 1);
+      await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
+      expect((await stored()).content, 'A\'s offline words never reached the server').not.toContain('Alpha was offline.');
       await caretAt(b, BASE.indexOf('Boats come in.') + 'Boats come in.'.length);
       await b.page.keyboard.type(' Bravo stayed online.');
       await expect.poll(async () => (await stored()).content.includes('Bravo stayed online.'), { timeout: 30_000 }).toBe(true);
@@ -157,9 +160,6 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       await expect(island.getByText(/waiting to sync|saved on this device/)).toBeVisible({ timeout: 30_000 });
       await island.getByRole('button', { name: 'Sync now' }).click();
       await expect(island.getByText(/waiting to sync|saved on this device|Syncing/)).toHaveCount(0, { timeout: 45_000 });
-
-      // (diagnostic) what the server holds the moment the queue has synced
-      { const r = await stored(); console.log('ROW-AFTER-SYNC content=', JSON.stringify(r.content), ' state=', JSON.stringify(r.yjs_state ? textOfState(r.yjs_state) : null)); }
 
       // Whoever opens the script next — on any device — must find both edits, and the server must agree with itself.
       const both = (v: string) => v.includes('Still up. Alpha was offline.') && v.includes('Boats come in. Bravo stayed online.');
@@ -182,7 +182,7 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       expect(final.content).toContain('Bravo stayed online.');
       expect(!!final.yjs_state && textOfState(final.yjs_state) === final.content, 'the stored text equals the stored state').toBe(true);
     } finally {
-      await Promise.all([a.ctx.close(), b.ctx.close()]);
+      await Promise.all([a.ctx.close(), b?.ctx.close()]);
     }
   });
 });
