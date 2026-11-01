@@ -19,6 +19,9 @@ import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
 import { ON_SET_HREF } from '@/lib/island/onset';
 import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
+import { useActivities } from '@/lib/island/activities';
+import { useSyncActivity } from '@/lib/island/useSyncActivity';
+import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/components/island/IslandActivity';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
@@ -43,6 +46,8 @@ const MORPH = { type: 'spring', stiffness: 420, damping: 34, mass: 0.9 } as cons
 /** How close the pointer gets before the island leans in. */
 const NEAR = 90;
 const LEAVE_MS = 260;
+/** How long a pointer rests on a pill that holds an activity before the island opens. */
+const INTENT_MS = 350;
 /** After the pill opens under the pointer, a click where the pill was still means "open", not whatever slid in there. */
 const ARRIVE_MS = 700;
 const TYPING_MS = 2500;
@@ -199,6 +204,7 @@ export default function EcosystemTaskbar() {
   const islandRef = useRef<HTMLDivElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const leaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const arrival = useRef<{ at: number; pill: DOMRect } | null>(null);
   const swallowClick = useRef(false);
   const [hover, setHover] = useState(false);
@@ -211,16 +217,26 @@ export default function EcosystemTaskbar() {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
+  // What is running (a sprint, the offline queue…) is held on the island; "+N" shows the next when there are several.
+  useSyncActivity();
+  const activities = useActivities();
+  const [pick, setPick] = useState(0);
+  const shownIndex = activities.length ? pick % activities.length : 0;
+  const activity = activities[shownIndex] ?? null;
+
   const mode = islandMode({
     caps: kbActive, capsDismissed, typing,
     engaged: hover || held || kbFocus || pinned || projectsOpen,
-    zone: zoneActive, live: !!transient,
+    zone: zoneActive, live: !!transient, activity: !!activity,
   });
   const deck = isDeck(mode);
   /** Every control on the deck answers to a key while Caps Lock is on. */
   const keys = deck && kbActive && !capsDismissed;
 
-  useEffect(() => () => { if (leaveTimer.current) clearTimeout(leaveTimer.current); }, []);
+  useEffect(() => () => {
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    if (intentTimer.current) clearTimeout(intentTimer.current);
+  }, []);
   useOnChange(kbActive, (on) => { if (!on) setCapsDismissed(false); });
 
   // A new page: put the island away.
@@ -348,12 +364,27 @@ export default function EcosystemTaskbar() {
 
   if (noDock) return null;
 
-  const onEnter = (e: React.PointerEvent) => {
-    if (e.pointerType === 'touch') return;
-    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+  const openFromPointer = () => {
     if (!deck && islandRef.current) arrival.current = { at: performance.now(), pill: islandRef.current.getBoundingClientRect() };
     setHover(true);
     setTyping(false);
+  };
+  const clearIntent = () => {
+    if (intentTimer.current) { clearTimeout(intentTimer.current); intentTimer.current = null; }
+  };
+  // While an activity is held its buttons are for pressing, so a pointer going to one must not open the island
+  // out from under it (the deck puts the suite's apps where those buttons were). The island opens for a pointer
+  // that comes to rest on it, off the buttons; one still moving, or on a button, leaves it as it is.
+  const pointAtActivity = (e: { clientX: number; clientY: number }) => {
+    clearIntent();
+    if (document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-activity-controls]')) return;
+    intentTimer.current = setTimeout(() => { intentTimer.current = null; openFromPointer(); }, INTENT_MS);
+  };
+  const onEnter = (e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return;
+    if (leaveTimer.current) clearTimeout(leaveTimer.current);
+    if (mode === 'activity') { pointAtActivity(e); return; }
+    openFromPointer();
   };
   // The pill opens as the pointer arrives, and its controls land where the pill was. A press
   // aimed at the pill must not land on one of them: it keeps the island open instead. (On
@@ -381,6 +412,7 @@ export default function EcosystemTaskbar() {
   };
   const onLeave = (e: React.PointerEvent) => {
     if (e.pointerType === 'touch') return;
+    clearIntent();
     if (leaveTimer.current) clearTimeout(leaveTimer.current);
     leaveTimer.current = setTimeout(() => {
       // A menu left open (notifications, audio) keeps the island open until you click away.
@@ -447,17 +479,18 @@ export default function EcosystemTaskbar() {
           transition={MORPH}
           className={`mc-taskbar ${s.island}`}
           data-mode={mode}
+          data-busy={activity?.tone === 'busy'}
           data-deck={deck}
           data-near={near && !deck && mode !== 'dot'}
-          style={{ borderRadius: 28, '--island-accent': accent } as React.CSSProperties}
+          style={{ borderRadius: 28, '--island-accent': (mode === 'activity' || mode === 'dot') && activity?.tone ? ACTIVITY_TONE_COLOR[activity.tone] : accent } as React.CSSProperties}
           onPointerEnter={onEnter}
           onPointerLeave={onLeave}
           onPointerDownCapture={onPress}
-          onPointerMove={(e) => { if (arrival.current) arriving(e); }}
+          onPointerMove={(e) => { if (arrival.current) arriving(e); else if (mode === 'activity' && e.pointerType !== 'touch') pointAtActivity(e); }}
           onClickCapture={onPressedClick}
           // A click on the island itself (between its controls, or as it morphs under the pointer) keeps it open.
           onClick={(e) => { if (!(e.target as HTMLElement).closest('a, button, input')) setPinned(true); }}
-          onFocusCapture={(e) => { if ((e.target as HTMLElement).matches(':focus-visible')) setKbFocus(true); }}
+          onFocusCapture={(e) => { const t = e.target as HTMLElement; if (t.matches(':focus-visible') && !t.closest('[data-activity-controls]')) setKbFocus(true); }}
           onBlurCapture={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setKbFocus(false); }}
           onKeyDown={(e) => { if (e.key === 'Escape' && deck) { e.stopPropagation(); close(); } }}
         >
@@ -546,6 +579,7 @@ export default function EcosystemTaskbar() {
               aria-label={pinned ? 'Close the island' : deck ? 'Keep the island open' : `Open the island — ${[
                 title,
                 mode === 'live' && transient ? transient.label : '',
+                mode === 'activity' && activity ? [activity.title, activity.detail].filter(Boolean).join(', ') : '',
                 condition.label && mode !== 'dot' ? condition.label : '',
                 mode === 'rest' && lead ? `${lead.label} ${lead.value}` : '',
               ].filter(Boolean).join(' ')}`}
@@ -555,12 +589,14 @@ export default function EcosystemTaskbar() {
             >
               <span className={s.dot} data-pinned={pinned} aria-hidden />
               {mode === 'live' && transient && <span className={s.label} role="status">{transient.label}</span>}
+              {mode === 'activity' && activity && <ActivityLabel activity={activity} />}
               {/* One slot each, so what's under the pointer survives the change of shape. */}
               {mode === 'rest' && <span className={s.glyph}><Glyph size={15} strokeWidth={1.6} aria-hidden /></span>}
               {(mode === 'rest' || mode === 'context' || deck) && ((mode !== 'rest' && crumbs) || <span className={s.title}>{title}</span>)}{' '}
               {condition.label && mode !== 'dot' && <span className={s.condition} data-kind={condition.kind} role="status">{condition.label}</span>}{' '}
               {mode === 'rest' && lead && <span className={s.lead}><small>{lead.label}</small>{' '}<span style={lead.color ? { color: readable(lead.color) } : undefined}>{lead.value}</span></span>}
             </button>
+            {mode === 'activity' && activity && <ActivityControls activity={activity} count={activities.length} onCycle={() => setPick(shownIndex + 1)} />}
             {onSet && mode === 'rest' && (
                 <span className={s.onset}>
                   <Link href={ON_SET_HREF} prefetch={false} className={s.onsetLink}>{onSet.label}</Link>
