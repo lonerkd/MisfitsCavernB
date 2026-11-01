@@ -117,8 +117,6 @@ test.describe.serial('Co-writing with Yjs (local Supabase)', () => {
     await reset();
     const a = await writer(browser, 0);
     const b = await writer(browser, 1);
-    const logs: string[] = [];
-    for (const [n, w] of [['A', a], ['B', b]] as const) w.page.on('console', (m) => { if (/Script Sync|Offline Sync|Error|error/.test(m.text())) logs.push(`${n} ${Date.now() % 100000} ${m.type()} ${m.text().slice(0, 300)}`); });
     try {
       await expect(a.script).toHaveValue(BASE, { timeout: 30_000 });
       await expect(b.script).toHaveValue(BASE, { timeout: 30_000 });
@@ -136,7 +134,6 @@ test.describe.serial('Co-writing with Yjs (local Supabase)', () => {
         const s = await stored();
         return both(s.content) && !!s.yjs_state && textOfState(s.yjs_state) === s.content && s.content === (await a.script.inputValue());
       }, { timeout: 30_000 }).toBe(true);
-    } catch (e) { console.log('DEBUGLOGS\n' + logs.join('\n')); throw e;
     } finally {
       await Promise.all([a.ctx.close(), b.ctx.close()]);
     }
