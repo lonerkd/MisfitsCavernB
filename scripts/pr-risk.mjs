@@ -34,11 +34,12 @@ const HIGH = [
   [/^\.github\/workflows\//, 'CI and the agent workflows'],
   [/^\.github\/CODEOWNERS$/, 'who owns what'],
   [/^scripts\/agent-push\.sh$/, 'the agent push boundary'],
+  [/^scripts\/pr-risk\.mjs$/, 'the risk classifier itself'],
   [/^(CLAUDE|AGENTS)\.md$|^\.github\/copilot-instructions\.md$|^\.cavern-intelligence\/RULES\.md$/, 'the rules the agents follow'],
   [/^package(-lock)?\.json$/, 'dependencies'],
   [/^vercel\.json$/, 'deployment'],
   [/^\.env/, 'environment settings'],
-  [/^(LICENSE|SECURITY\.md)$|^lib\/legal\//, 'legal text'],
+  [/^(LICENSE|SECURITY\.md)$|^lib\/legal\/|^app\/\(public\)\/(terms|privacy)\//, 'legal text'],
 ];
 
 /** Anything here, and not high, is low risk: it cannot change what the app does. */
@@ -119,10 +120,17 @@ function upsertComment(pr, body) {
   else gh(['api', '-X', 'POST', `repos/${REPO}/issues/${pr}/comments`, '-f', `body=${body}`]);
 }
 
-/** Ask Copilot for its review, once: not when it has reviewed this pull request already. */
+/** Is this login Copilot's reviewer (it appears under more than one name)? */
+export const isCopilot = (login) => /^copilot(-pull-request-reviewer)?(\[bot\])?$/i.test(String(login ?? ''));
+
+/**
+ * Ask Copilot for its review, once: not when it has reviewed this pull request already, and not
+ * while an earlier request is still waiting (the reviews list holds only submitted reviews).
+ */
 function requestCopilot(pr) {
-  const reviewers = lines(gh(['api', `repos/${REPO}/pulls/${pr}/reviews`, '--paginate', '--jq', '.[].user.login']));
-  if (reviewers.includes(COPILOT)) return false;
+  const reviewed = lines(gh(['api', `repos/${REPO}/pulls/${pr}/reviews`, '--paginate', '--jq', '.[].user.login']));
+  const waiting = lines(gh(['api', `repos/${REPO}/pulls/${pr}/requested_reviewers`, '--jq', '.users[].login']));
+  if ([...reviewed, ...waiting].some(isCopilot)) return false;
   try {
     gh(['api', '-X', 'POST', `repos/${REPO}/pulls/${pr}/requested_reviewers`, '-f', `reviewers[]=${COPILOT}`]);
     return true;

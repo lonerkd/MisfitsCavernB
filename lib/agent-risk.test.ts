@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { classify, classifyFile, commentBody } from '../scripts/pr-risk.mjs';
+import { classify, classifyFile, commentBody, isCopilot } from '../scripts/pr-risk.mjs';
 
 describe('classifyFile', () => {
   it.each([
@@ -29,6 +29,10 @@ describe('classifyFile', () => {
     ['.env.example', 'high'],
     ['LICENSE', 'high'],
     ['lib/legal/legal.ts', 'high'],
+    ['app/(public)/terms/page.tsx', 'high'],
+    ['app/(public)/privacy/page.tsx', 'high'],
+    ['scripts/pr-risk.mjs', 'high'],
+    ['scripts/agent-status.mjs', 'medium'],
   ])('%s is %s', (path, tier) => {
     expect(classifyFile(path).tier).toBe(tier);
   });
@@ -94,5 +98,19 @@ describe('commentBody', () => {
   it('pluralises the file count', () => {
     expect(commentBody(classify(['README.md']))).toContain('1 changed file;');
     expect(commentBody(classify(['README.md', 'a.md']))).toContain('2 changed files;');
+  });
+});
+
+describe('isCopilot', () => {
+  it('knows Copilot\'s reviewer under each name GitHub shows it by', () => {
+    for (const login of ['Copilot', 'copilot', 'copilot-pull-request-reviewer', 'copilot-pull-request-reviewer[bot]']) {
+      expect(isCopilot(login)).toBe(true);
+    }
+  });
+
+  it('does not mistake a person or another bot for it', () => {
+    for (const login of ['lonerkd', 'github-actions[bot]', 'copilot-fan', '', null, undefined]) {
+      expect(isCopilot(login)).toBe(false);
+    }
   });
 });

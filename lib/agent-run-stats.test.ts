@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregate, commentBody, parseMarker, summarize } from '../scripts/agent-run-stats.mjs';
+import { aggregate, commentBody, parseArgs, parseMarker, summarize } from '../scripts/agent-run-stats.mjs';
 
 const log = [
   { type: 'system', subtype: 'init', model: 'claude-sonnet-5-5' },
@@ -93,5 +93,22 @@ describe('aggregate', () => {
 
   it('is all zeros for no runs, without dividing by zero', () => {
     expect(aggregate([])).toEqual({ runs: 0, failed: 0, turns: 0, costUsd: 0, denials: 0, avgTurns: 0, avgCostUsd: 0 });
+  });
+});
+
+describe('parseArgs', () => {
+  it('takes the log path alone, which is how the script is documented', () => {
+    expect(parseArgs(['out.json'])).toEqual({ file: 'out.json', runUrl: null });
+  });
+
+  it('takes the path and the run url in either order', () => {
+    expect(parseArgs(['out.json', '--run-url', 'https://x/1'])).toEqual({ file: 'out.json', runUrl: 'https://x/1' });
+    expect(parseArgs(['--run-url', 'https://x/1', 'out.json'])).toEqual({ file: 'out.json', runUrl: 'https://x/1' });
+  });
+
+  it('does not take the url for the path, and copes with a flag that has no value', () => {
+    expect(parseArgs(['--run-url', 'https://x/1'])).toEqual({ file: null, runUrl: 'https://x/1' });
+    expect(parseArgs(['out.json', '--run-url'])).toEqual({ file: 'out.json', runUrl: null });
+    expect(parseArgs([])).toEqual({ file: null, runUrl: null });
   });
 });

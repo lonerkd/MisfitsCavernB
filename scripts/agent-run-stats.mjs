@@ -91,10 +91,19 @@ export function aggregate(runs) {
   };
 }
 
+/** The log path (the one positional argument) and the optional `--run-url <url>`, in any order. */
+export function parseArgs(argv) {
+  let file = null;
+  let runUrl = null;
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--run-url') runUrl = argv[++i] ?? null;
+    else if (!argv[i].startsWith('--') && file === null) file = argv[i];
+  }
+  return { file, runUrl };
+}
+
 function main() {
-  const args = process.argv.slice(2);
-  const file = args.find((a) => !a.startsWith('--') && a !== args[args.indexOf('--run-url') + 1]);
-  const runUrl = args.includes('--run-url') ? args[args.indexOf('--run-url') + 1] : null;
+  const { file, runUrl } = parseArgs(process.argv.slice(2));
   if (!file) return;
   let stats = null;
   try { stats = summarize(JSON.parse(readFileSync(file, 'utf8'))); } catch { /* no usable log */ }
