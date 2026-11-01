@@ -29,8 +29,9 @@ test.describe('Ad export (local Supabase)', () => {
     ] as const;
     for (const [title, content] of copy) {
       const script = (await admin.from('scripts').insert({ title, content, format: 'copy', project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!;
-      const { error } = await admin.from('deliverables').insert({ script_id: script.id, project_id: projectId, title, kind: title.startsWith('Radio') ? 'spot_30' : 'poster', notes: 'Keep it warm.' });
-      if (error) throw new Error(`deliverable: ${error.message}`);
+      // A copy script in an Advertising project becomes a deliverable on its own; set its kind and notes.
+      const { data, error } = await admin.from('deliverables').update({ kind: title.startsWith('Radio') ? 'spot_30' : 'poster', notes: 'Keep it warm.' }).eq('script_id', script.id).select('script_id');
+      if (error || !data?.length) throw new Error(`deliverable: ${error?.message ?? 'no row was created for the copy script'}`);
     }
   });
   test.afterAll(async () => {
