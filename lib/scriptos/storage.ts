@@ -369,11 +369,14 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
   await set(`script_${scriptId}`, unifiedData);
 
-  // While the editor holds this script's shared document open it is the one writer to the server; this copy
-  // stays flagged until that writer reports it saved (`markScriptSynced`), so nothing is lost if it fails.
+  // While the editor holds this script's shared document open it is the one writer to the server (it merges and
+  // saves, and flags this copy as waiting again if a save fails: `markScriptPending`), so this copy counts as
+  // synced; flagging it here would show "waiting to sync" for a script that is being saved live.
   if (!isNew && navigator.onLine && isScriptLive(scriptId)) {
+    unifiedData.syncPending = false;
+    await set(`script_${scriptId}`, unifiedData);
     await refreshSyncStatus();
-    return { ...unifiedData, syncPending: false };
+    return unifiedData;
   }
 
   if (navigator.onLine) {
@@ -470,6 +473,15 @@ export async function importScriptFromText(text: string, title: string, projectI
     content: text,
     project_id: projectId
   });
+}
+
+/** The live editor could not save this script to the server: it is waiting again, and the island says so. */
+export async function markScriptPending(id: string): Promise<void> {
+  const local = await get<StoredScript>(`script_${id}`);
+  if (local && !local.syncPending) {
+    await set(`script_${id}`, { ...local, syncPending: true });
+    await refreshSyncStatus();
+  }
 }
 
 /** The live editor wrote this script to the server: clear its waiting flag if the device holds nothing newer. */

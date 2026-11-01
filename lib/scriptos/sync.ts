@@ -3,7 +3,7 @@ import { get, set } from 'idb-keyval';
 import * as Y from 'yjs';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
-import { markScriptSynced } from './storage';
+import { markScriptPending, markScriptSynced } from './storage';
 import {
   holdScriptLive,
   applyScriptText,
@@ -162,6 +162,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           if (error) {
             console.warn('[Script Sync] Could not save the merged script:', error);
             // Nothing else would save this text if the writer stops typing now: try again, a few times.
+            void markScriptPending(scriptId);
             if (saveRetries++ < 3) saveContent();
           } else {
             saveRetries = 0;
