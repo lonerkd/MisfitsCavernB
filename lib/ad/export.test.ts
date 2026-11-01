@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describePiece, exportFileName, needsPdfFallback, pdfSafe, pieceToText, setToText, type ExportPiece } from './export';
+import { describePiece, exportFileName, needsPdfFallback, pdfSafe, pdfSourceText, pieceToText, setToText, type ExportPiece } from './export';
 
 const piece = (over: Partial<ExportPiece> = {}): ExportPiece => ({
   title: 'Spring radio 30',
@@ -86,5 +86,15 @@ describe('PDF safety', () => {
   it('turns tabs into spaces and normalises line endings', () => {
     expect(pdfSafe('a\tb\r\nc')).toBe('a    b\nc');
     expect(needsPdfFallback('a\tb\r\nc')).toBe(false);
+  });
+});
+
+describe('pdfSourceText', () => {
+  it('holds everything a PDF prints, the campaign name included, so the fallback notice cannot miss it', () => {
+    const views = [describePiece(piece({ title: 'Plain', status: 'Draft', maxSeconds: 5, notes: 'a note' }))];
+    const text = pdfSourceText('世界 campaign', views);
+    for (const part of ['世界 campaign', 'Plain', 'Draft', 'Spoken:', 'Headline', 'Fresh start', 'Voice-over', 'a note']) expect(text).toContain(part);
+    expect(needsPdfFallback(text)).toBe(true);
+    expect(needsPdfFallback(pdfSourceText('Spring', views))).toBe(false);
   });
 });

@@ -7,12 +7,23 @@ import { DELIVERABLE_KINDS, isDeliverableKind } from '@/lib/ad/kinds';
 import { listBrandRules, listDeliverables, updateDeliverable, type Deliverable } from '@/lib/ad/api';
 import { checkBrandRules, type BrandRule, type BrandRuleKind, type BrandRuleSeverity } from '@/lib/ad/brand-rules';
 import { copyText, parseCopy } from '@/lib/ad/copy';
-import { describePiece, exportFileName, needsPdfFallback, pieceToText, setToText, type ExportPiece } from '@/lib/ad/export';
+import { describePiece, exportFileName, needsPdfFallback, pdfSourceText, pieceToText, setToText, type ExportPiece } from '@/lib/ad/export';
+import { getScript } from '@/lib/scriptos/storage';
 import { fetchScriptContent } from '@/lib/studio';
 import { sendDraftsForReview, listVersions, reviewUrl, STATE_LABEL, versionState } from '@/lib/review/versions';
 import { useToast } from '@/components/ui/Toast';
 import { useStudio } from '@/components/studio/StudioContext';
 import s from '@/components/studio/studio.module.css';
+
+/** The newest review version of each script. */
+function latestByScript<T extends { script_id: string; number: number }>(list: readonly T[]): Map<string, T> {
+  const out = new Map<string, T>();
+  for (const version of list) {
+    const current = out.get(version.script_id);
+    if (!current || current.number < version.number) out.set(version.script_id, version);
+  }
+  return out;
+}
 
 /** Hand a file to the browser's download. */
 function download(blob: Blob, name: string) {
@@ -38,11 +49,7 @@ export function DeliverablesPanel() {
   const titleOf = useMemo(() => new Map(scripts.map((script) => [script.id, script.title])), [scripts]);
   const scriptIds = useMemo(() => (deliverables.data ?? []).map((item) => item.script_id), [deliverables.data]);
   const drafts = useMemo(() => (versions.data ?? []).filter((item) => item.status === 'draft' && scriptIds.includes(item.script_id)), [versions.data, scriptIds]);
-  const latest = new Map<string, NonNullable<typeof versions.data>[number]>();
-  for (const version of versions.data ?? []) {
-    const current = latest.get(version.script_id);
-    if (!current || current.number < version.number) latest.set(version.script_id, version);
-  }
+  const latest = latestByScript(versions.data ?? []);
 
   useEffect(() => {
     if (!deliverables.data || !rules.data) return;
@@ -73,19 +80,26 @@ export function DeliverablesPanel() {
   };
 
   /** The working text of the chosen pieces (what the editor holds now), with where each one stands in review. */
-  const gather = async (items: Deliverable[]): Promise<ExportPiece[]> => Promise.all(items.map(async (item) => {
-    const version = latest.get(item.script_id);
-    return {
-      title: titleOf.get(item.script_id) ?? item.title,
-      kind: item.kind,
-      status: version ? STATE_LABEL[versionState(version)] : 'Draft',
-      content: await fetchScriptContent(item.script_id),
-      maxChars: item.max_chars,
-      maxSeconds: item.max_seconds,
-      wordsPerSecond: item.words_per_second,
-      notes: item.notes ?? '',
-    };
-  }));
+  const gather = async (items: Deliverable[]): Promise<ExportPiece[]> => {
+    // Fresh from the server at the moment of export: the panel's own list can lag behind a version sent from the
+    // review panel, and a failed read must reach the person, not turn into "Draft".
+    const newest = latestByScript(await listVersions(project.id));
+    return Promise.all(items.map(async (item) => {
+      const version = newest.get(item.script_id);
+      // The device's copy first when it holds unsynced edits (or the network is down), as the editor itself opens it.
+      const content = (await getScript(item.script_id).catch(() => null))?.content ?? await fetchScriptContent(item.script_id);
+      return {
+        title: titleOf.get(item.script_id) ?? item.title,
+        kind: item.kind,
+        status: version ? STATE_LABEL[versionState(version)] : 'Draft',
+        content,
+        maxChars: item.max_chars,
+        maxSeconds: item.max_seconds,
+        wordsPerSecond: item.words_per_second,
+        notes: item.notes ?? '',
+      };
+    }));
+  };
 
   /** Export one piece (`only`) or the whole set, as plain text or a PDF. */
   const exportPieces = async (only: Deliverable | null, format: 'txt' | 'pdf') => {
@@ -102,8 +116,7 @@ export function DeliverablesPanel() {
         const { buildPdf } = await import('@/lib/ad/exportPdf');
         const doc = await buildPdf(project.title, views);
         download(doc.output('blob'), name);
-        const everything = views.flatMap((view) => [view.title, ...view.sections.map((section) => section.text), view.notes]).join('\n');
-        if (needsPdfFallback(everything)) toast('Some characters this PDF font cannot print are shown as “?”. The plain-text export keeps every character.', 'info');
+        if (needsPdfFallback(pdfSourceText(project.title, views))) toast('Some characters this PDF font cannot print are shown as “?”. The plain-text export keeps every character.', 'info');
       }
     } catch (error) {
       toast(`Could not export: ${error instanceof Error ? error.message : 'try again'}`, 'error');

@@ -106,3 +106,8 @@ export function pdfSafe(text: string): string {
 
 /** True when pdfSafe would have to replace something, so the panel can say so. */
 export const needsPdfFallback = (text: string): boolean => pdfSafe(text) !== text.replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
+
+/** Everything a PDF of these pieces would print, so the panel can tell whether any of it needs the fallback. */
+export function pdfSourceText(campaign: string, views: PieceView[]): string {
+  return [campaign, ...views.flatMap((view) => [view.title, view.kindLabel, view.status, ...view.limits, ...view.sections.flatMap((section) => [section.label, section.text]), view.notes])].join('\n');
+}
