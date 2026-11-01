@@ -56,7 +56,7 @@ test.describe('Ad export (local Supabase)', () => {
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
     await page.goto(`/studio?project=${projectId}&tab=share`);
     await expect(page.getByText('Campaign deliverables')).toBeVisible({ timeout: 30_000 });
-    await expect(page.getByText('Radio 30').first()).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Export Radio 30' })).toBeVisible();
 
     // One piece, plain text.
     let [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('group', { name: 'Export Radio 30' }).getByRole('button', { name: 'Text' }).click()]);
