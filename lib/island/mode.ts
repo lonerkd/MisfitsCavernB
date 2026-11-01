@@ -2,6 +2,8 @@
 // here, from what the person is doing right now — not by a setting.
 
 export type IslandMode =
+  /** Something is running (a sprint, a queue waiting for the network): held on the island until it ends. */
+  | 'activity'
   /** Typing: a dot, out of the way of the words. */
   | 'dot'
   /** Nothing going on: where you are, and the one number that matters there. */
@@ -28,6 +30,8 @@ export interface IslandSignals {
   zone: boolean;
   /** A live event is on show. */
   live: boolean;
+  /** An activity is running (lib/island/activities). */
+  activity: boolean;
 }
 
 export function islandMode(s: IslandSignals): IslandMode {
@@ -36,7 +40,9 @@ export function islandMode(s: IslandSignals): IslandMode {
   if (s.typing) return 'dot';
   if (s.caps && !s.capsDismissed) return 'caps';
   if (s.live) return 'live';
+  // What the pointer is on beats what is merely running; both beat resting.
   if (s.zone) return 'context';
+  if (s.activity) return 'activity';
   return 'rest';
 }
 

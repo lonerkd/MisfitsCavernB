@@ -4,7 +4,7 @@ import { islandCondition } from './condition';
 import { CONTROL_KEYS, islandRoute } from './routes';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, clampIslandScale, islandReserve } from './scale';
 
-const idle: IslandSignals = { caps: false, capsDismissed: false, typing: false, engaged: false, zone: false, live: false };
+const idle: IslandSignals = { caps: false, capsDismissed: false, typing: false, engaged: false, zone: false, live: false, activity: false };
 
 describe('islandMode', () => {
   it('rests when nothing is going on', () => {
@@ -137,5 +137,23 @@ describe('islandCondition', () => {
   });
   it('says it is sending when back online with items waiting', () => {
     expect(islandCondition({ online: true, waiting: 2 })).toEqual({ kind: 'syncing', label: 'Sending 2' });
+  });
+});
+
+describe('islandMode — a running activity', () => {
+  it('holds the island when nothing else is going on', () => {
+    expect(islandMode({ ...idle, activity: true })).toBe('activity');
+  });
+
+  it('gives way to everything that is about what the person is doing right now', () => {
+    expect(islandMode({ ...idle, activity: true, engaged: true })).toBe('open');
+    expect(islandMode({ ...idle, activity: true, typing: true })).toBe('dot');
+    expect(islandMode({ ...idle, activity: true, caps: true })).toBe('caps');
+    expect(islandMode({ ...idle, activity: true, live: true })).toBe('live');
+    expect(islandMode({ ...idle, activity: true, zone: true })).toBe('context');
+  });
+
+  it('is not a deck: its buttons are on the island itself', () => {
+    expect(isDeck('activity')).toBe(false);
   });
 });
