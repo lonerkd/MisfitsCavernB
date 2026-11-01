@@ -3,7 +3,9 @@ import { get, set } from 'idb-keyval';
 import * as Y from 'yjs';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
+import { markScriptPending, markScriptSynced } from './storage';
 import {
+  holdScriptLive,
   applyScriptText,
   decodeScriptTextUpdate,
   encodeScriptUpdate,
@@ -59,6 +61,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     let undoManager: Y.UndoManager | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let baseContent = '';
+    let releaseLive: (() => void) | null = null;
     pendingContentRef.current = null;
 
     const publish = (content: string, mapIndex?: (index: number) => number) => {
@@ -103,24 +106,69 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         .catch((error) => console.warn('[Script Sync] Could not persist local Yjs state:', error));
     };
 
+    /**
+     * Write the script, merging in what the server holds first: another writer (the offline queue run from some
+     * other page, another device) may have written since we last heard, and our copy alone would erase it.
+     * The merge happens in a scratch copy, never in the live document: the live one is being typed into and
+     * already gets other writers' edits through the channel. If somebody writes between our read and our write
+     * the write finds out and we read again; after three tries it writes regardless, so a save is never lost
+     * to a timestamp that will not match.
+     */
+    const writeMerged = async (userId: string): Promise<{ message: string } | null> => {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (cancelled || !doc || !text) return null;
+        const { data: row, error: readError } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', scriptId).maybeSingle();
+        if (readError) return readError;
+        if (cancelled || !doc || !text) return null;
+        const scratch = new Y.Doc();
+        Y.applyUpdate(scratch, Y.encodeStateAsUpdate(doc));
+        if (row?.yjs_state) {
+          // A stored shared document we cannot read is not ours to overwrite: report it and write nothing.
+          const serverState = decodeScriptTextUpdate(row.yjs_state);
+          try {
+            if (!serverState) throw new Error('unreadable');
+            Y.applyUpdate(scratch, serverState);
+          } catch {
+            scratch.destroy();
+            return { message: 'The shared document stored for this script cannot be read; not saving over it.' };
+          }
+        }
+        const write = supabase.from('scripts').update({
+          content: scratch.getText(SCRIPT_TEXT_FIELD).toString(),
+          yjs_state: encodeScriptTextUpdate(scratch),
+          updated_at: new Date().toISOString(),
+          last_edited_by: userId,
+        }).eq('id', scriptId);
+        scratch.destroy();
+        // Guarded on every attempt (a null timestamp is guarded with `is null`): losing the race means read again.
+        const { data: written, error } = await (row?.updated_at ? write.eq('updated_at', row.updated_at) : write.is('updated_at', null)).select('id');
+        if (error) return error;
+        if (written?.length) return null;
+      }
+      return { message: 'The script kept changing under this save; it will be tried again.' };
+    };
+
+    let saveRetries = 0;
     const saveContent = () => {
       if (saveTimer) clearTimeout(saveTimer);
       saveTimer = setTimeout(async () => {
         if (!text || cancelled) return;
-        const content = text.toString();
         const user = await awaitOSUser();
         if (!user || cancelled) return;
         setIsSyncing(true);
         try {
-          const { error } = await supabase.from('scripts').update({
-            content,
-            yjs_state: encodeScriptTextUpdate(doc!),
-            updated_at: new Date().toISOString(),
-            last_edited_by: user.id,
-          }).eq('id', scriptId);
+          const error = await writeMerged(user.id);
           if (cancelled) return;
-          if (error) console.warn('[Script Sync] Could not save the merged script:', error);
-          else setLastSyncedAt(new Date());
+          if (error) {
+            console.warn('[Script Sync] Could not save the merged script:', error);
+            // Nothing else would save this text if the writer stops typing now: try again, a few times.
+            void markScriptPending(scriptId);
+            if (saveRetries++ < 3) saveContent();
+          } else {
+            saveRetries = 0;
+            setLastSyncedAt(new Date());
+            void markScriptSynced(scriptId, text?.toString() ?? '');
+          }
         } catch (error) {
           if (!cancelled) console.warn('[Script Sync] Could not save the merged script:', error);
         } finally {
@@ -192,6 +240,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       const initialContent = text.toString();
       if (initialContent !== localContentRef.current) publish(initialContent);
       readyRef.current = true;
+      releaseLive = holdScriptLive(scriptId);
       persist();
 
       const username = profileResult.data?.username || user.email?.split('@')[0] || 'Anonymous';
@@ -249,6 +298,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     return () => {
       cancelled = true;
       readyRef.current = false;
+      releaseLive?.();
       subscribed = false;
       if (saveTimer) clearTimeout(saveTimer);
       if (channel) void supabase.removeChannel(channel);

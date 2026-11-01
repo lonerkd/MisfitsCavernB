@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
-import { scriptTextStateKey } from './cowriting';
+import { decodeScriptTextUpdate, isScriptLive, mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
 
 export interface StoredScript {
   id: string;
@@ -91,6 +91,56 @@ export async function refreshSyncStatus(): Promise<void> {
 
 let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
+const sameBytes = (a: number[], b: number[]) => a.length === b.length && a.every((v, i) => v === b[i]);
+
+/**
+ * A script this device holds a shared document for (co-writing, ADR 0008) is merged with the server's, never
+ * written over it: a collaborator may have written since this device went offline, and the plain text upload
+ * below would erase their edits. 'plain' means there is nothing to merge with (a script the server has not
+ * seen, or one never written as a shared document): the plain upload is right. 'failed' means try again later.
+ */
+async function reconcileWithServer(script: StoredScript, userId: string): Promise<'merged' | 'plain' | 'failed'> {
+  const stateKey = scriptTextStateKey(script.id);
+  const local = await get<PersistedScriptText>(stateKey);
+  if (!local?.state?.length) return 'plain';
+
+  // Three tries: if somebody writes between our read and our write, read again and merge theirs in too.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data: row, error } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', script.id).maybeSingle();
+    if (error) { console.error(`[Offline Sync] Could not read ${script.id} to merge with:`, error); return 'failed'; }
+    if (!row) return 'plain';
+    // A shared document the server holds but this device cannot read is not "nothing to merge with": writing the
+    // queued text over it would erase what the document says. Keep the script queued instead.
+    if (row.yjs_state && !decodeScriptTextUpdate(row.yjs_state)) {
+      console.error(`[Offline Sync] The shared document stored for ${script.id} cannot be read; keeping the script queued.`);
+      return 'failed';
+    }
+    const merged = mergeServerIntoLocal(local, row.yjs_state);
+    if (!merged) return 'plain';
+
+    const write = supabase.from('scripts').update({
+      title: script.title,
+      content: merged.content,
+      yjs_state: merged.yjsState,
+      format: script.format,
+      last_edited_by: userId,
+      updated_at: new Date().toISOString(),
+    }).eq('id', script.id);
+    // The row's timestamp is nullable: a null one is still a guard (`is null`), never "no guard".
+    const { data: written, error: writeError } = await (row.updated_at ? write.eq('updated_at', row.updated_at) : write.is('updated_at', null)).select('id');
+    if (writeError) { console.error(`[Offline Sync] Failed to sync ${script.id}:`, writeError); return 'failed'; }
+    if (!written?.length) continue;
+
+    // Keep this device in step with the server, unless the writer has gone on since (their newer copy is the truth here).
+    const current = await get<PersistedScriptText>(stateKey);
+    if (current && sameBytes(current.state, local.state)) await set(stateKey, merged.persisted);
+    const latest = await get<StoredScript>(`script_${script.id}`);
+    if (latest && latest.updatedAt === script.updatedAt) await set(`script_${script.id}`, { ...latest, content: merged.content, syncPending: false });
+    return 'merged';
+  }
+  return 'failed';
+}
+
 export async function syncPendingScripts() {
   const user = await awaitOSUser();
   if (!user) return;
@@ -115,7 +165,10 @@ export async function syncPendingScripts() {
     for (const k of allKeys) {
       if (typeof k === 'string' && k.startsWith('script_')) {
         const script = await get<StoredScript>(k);
-        if (script && script.syncPending) {
+        if (script && script.syncPending && !isScriptLive(script.id)) {
+          const how = await reconcileWithServer(script, user.id);
+          if (how === 'failed') { failed = true; continue; }
+          if (how === 'merged') continue;
           const baseData = {
             id: script.id,
             title: script.title,
@@ -316,6 +369,16 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
   await set(`script_${scriptId}`, unifiedData);
 
+  // While the editor holds this script's shared document open it is the one writer to the server (it merges and
+  // saves, and flags this copy as waiting again if a save fails: `markScriptPending`), so this copy counts as
+  // synced; flagging it here would show "waiting to sync" for a script that is being saved live.
+  if (!isNew && navigator.onLine && isScriptLive(scriptId)) {
+    unifiedData.syncPending = false;
+    await set(`script_${scriptId}`, unifiedData);
+    await refreshSyncStatus();
+    return unifiedData;
+  }
+
   if (navigator.onLine) {
     const baseData = {
       id: unifiedData.id,
@@ -326,6 +389,22 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       updated_at: unifiedData.updatedAt,
       project_id: unifiedData.project_id
     };
+
+    // A script this device holds a shared document for is merged with the server's, never written over it: the
+    // editor's autosave would otherwise put plain text beside a shared document that disagrees with it.
+    if (!isNew) {
+      const how = await reconcileWithServer(unifiedData, user.id);
+      if (how === 'merged') {
+        unifiedData.syncPending = false;
+        await refreshSyncStatus();
+        return unifiedData;
+      }
+      if (how === 'failed') {
+        scheduleScriptSync();
+        await refreshSyncStatus();
+        return unifiedData;
+      }
+    }
 
     let error;
     if (isNew) {
@@ -394,4 +473,22 @@ export async function importScriptFromText(text: string, title: string, projectI
     content: text,
     project_id: projectId
   });
+}
+
+/** The live editor could not save this script to the server: it is waiting again, and the island says so. */
+export async function markScriptPending(id: string): Promise<void> {
+  const local = await get<StoredScript>(`script_${id}`);
+  if (local && !local.syncPending) {
+    await set(`script_${id}`, { ...local, syncPending: true });
+    await refreshSyncStatus();
+  }
+}
+
+/** The live editor wrote this script to the server: clear its waiting flag if the device holds nothing newer. */
+export async function markScriptSynced(id: string, content: string): Promise<void> {
+  const local = await get<StoredScript>(`script_${id}`);
+  if (local?.syncPending && local.content === content) {
+    await set(`script_${id}`, { ...local, syncPending: false });
+    await refreshSyncStatus();
+  }
 }
