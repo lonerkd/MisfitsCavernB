@@ -161,3 +161,21 @@ export function mergeServerIntoLocal(local: PersistedScriptText | undefined, ser
     doc.destroy();
   }
 }
+
+const liveScripts = new Map<string, number>();
+
+/**
+ * While an editor holds a script's shared document open it is the one writer to the server (it merges and
+ * saves, see `useScriptSync`). The autosave and the offline queue must not write the same row beside it.
+ * Returns the function that lets go.
+ */
+export function holdScriptLive(scriptId: string): () => void {
+  liveScripts.set(scriptId, (liveScripts.get(scriptId) ?? 0) + 1);
+  return () => {
+    const left = (liveScripts.get(scriptId) ?? 1) - 1;
+    if (left <= 0) liveScripts.delete(scriptId);
+    else liveScripts.set(scriptId, left);
+  };
+}
+
+export const isScriptLive = (scriptId: string): boolean => liveScripts.has(scriptId);

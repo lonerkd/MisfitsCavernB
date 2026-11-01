@@ -3,7 +3,9 @@ import { get, set } from 'idb-keyval';
 import * as Y from 'yjs';
 import { supabase } from '@/lib/supabase/client';
 import { awaitOSUser } from '@/lib/os';
+import { markScriptSynced } from './storage';
 import {
+  holdScriptLive,
   applyScriptText,
   decodeScriptTextUpdate,
   encodeScriptUpdate,
@@ -59,6 +61,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     let undoManager: Y.UndoManager | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let baseContent = '';
+    let releaseLive: (() => void) | null = null;
     pendingContentRef.current = null;
 
     const publish = (content: string, mapIndex?: (index: number) => number) => {
@@ -163,6 +166,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           } else {
             saveRetries = 0;
             setLastSyncedAt(new Date());
+            void markScriptSynced(scriptId, text?.toString() ?? '');
           }
         } catch (error) {
           if (!cancelled) console.warn('[Script Sync] Could not save the merged script:', error);
@@ -235,6 +239,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       const initialContent = text.toString();
       if (initialContent !== localContentRef.current) publish(initialContent);
       readyRef.current = true;
+      releaseLive = holdScriptLive(scriptId);
       persist();
 
       const username = profileResult.data?.username || user.email?.split('@')[0] || 'Anonymous';
@@ -292,6 +297,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     return () => {
       cancelled = true;
       readyRef.current = false;
+      releaseLive?.();
       subscribed = false;
       if (saveTimer) clearTimeout(saveTimer);
       if (channel) void supabase.removeChannel(channel);

@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
-import { decodeScriptTextUpdate, mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
+import { decodeScriptTextUpdate, isScriptLive, mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
 
 export interface StoredScript {
   id: string;
@@ -165,7 +165,7 @@ export async function syncPendingScripts() {
     for (const k of allKeys) {
       if (typeof k === 'string' && k.startsWith('script_')) {
         const script = await get<StoredScript>(k);
-        if (script && script.syncPending) {
+        if (script && script.syncPending && !isScriptLive(script.id)) {
           const how = await reconcileWithServer(script, user.id);
           if (how === 'failed') { failed = true; continue; }
           if (how === 'merged') continue;
@@ -369,6 +369,13 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
 
   await set(`script_${scriptId}`, unifiedData);
 
+  // While the editor holds this script's shared document open it is the one writer to the server; this copy
+  // stays flagged until that writer reports it saved (`markScriptSynced`), so nothing is lost if it fails.
+  if (!isNew && navigator.onLine && isScriptLive(scriptId)) {
+    await refreshSyncStatus();
+    return { ...unifiedData, syncPending: false };
+  }
+
   if (navigator.onLine) {
     const baseData = {
       id: unifiedData.id,
@@ -463,4 +470,13 @@ export async function importScriptFromText(text: string, title: string, projectI
     content: text,
     project_id: projectId
   });
+}
+
+/** The live editor wrote this script to the server: clear its waiting flag if the device holds nothing newer. */
+export async function markScriptSynced(id: string, content: string): Promise<void> {
+  const local = await get<StoredScript>(`script_${id}`);
+  if (local?.syncPending && local.content === content) {
+    await set(`script_${id}`, { ...local, syncPending: false });
+    await refreshSyncStatus();
+  }
 }
