@@ -90,3 +90,17 @@ jobs:
           else
             echo "no execution log"
           fi
+
+      # What the run cost, as a comment on the issue (scripts/agent-run-stats.mjs). On a subscription
+      # the dollar figure is a measure of size, not a bill. Prints nothing if the log is unusable.
+      - name: Record what the run cost
+        if: always() && steps.gate.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body="$(node scripts/agent-run-stats.mjs "$RUNNER_TEMP/claude-execution-output.json" --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}")"
+          if [ -n "$body" ]; then
+            gh api "repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments" -f body="$body" > /dev/null
+          else
+            echo "no usable execution log, nothing recorded"
+          fi

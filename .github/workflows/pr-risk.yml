@@ -1,0 +1,43 @@
+name: PR risk
+
+# Sorts every pull request into low / medium / high risk from the files it changes, labels it, and keeps
+# one comment current (scripts/pr-risk.mjs). No AI, no secrets, no cost beyond a few seconds of runner.
+#
+# Copilot's own review is requested for a medium-risk pull request only when the repository variable
+# PR_RISK_REQUEST_COPILOT is `true`. Set it after turning Copilot's *automatic* review off, or it reviews
+# every pull request twice over.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: pr-risk-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  risk:
+    # A fork's token cannot write labels or comments; only same-repository pull requests are sorted.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # The script comes from the base branch, never from the pull request being sorted.
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+      - name: Label the pull request and update its comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          REQUEST_COPILOT: ${{ vars.PR_RISK_REQUEST_COPILOT }}
+        run: |
+          if [ ! -f scripts/pr-risk.mjs ]; then echo "scripts/pr-risk.mjs is not on the base branch yet (this is the pull request that adds it)"; exit 0; fi
+          flags="--apply"
+          if [ "$REQUEST_COPILOT" = "true" ]; then flags="$flags --request-copilot"; fi
+          node scripts/pr-risk.mjs --pr "${{ github.event.pull_request.number }}" $flags

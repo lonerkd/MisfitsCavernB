@@ -6,6 +6,7 @@
 //   node scripts/agent-status.mjs           print the report
 //   node scripts/agent-status.mjs --write   create or update the status issue
 import { execFileSync } from 'node:child_process';
+import { aggregate, parseMarker } from './agent-run-stats.mjs';
 
 const REPO = process.env.GITHUB_REPOSITORY || 'lonerkd/MisfitsCavernB';
 const write = process.argv.includes('--write');
@@ -23,6 +24,37 @@ const ago = (iso) => {
   const h = Math.round((Date.now() - new Date(iso).getTime()) / 36e5);
   return h < 48 ? `${h}h ago` : `${Math.round(h / 24)}d ago`;
 };
+
+/** The worker runs of the last two weeks, from the comments the worker workflow leaves on its issues. */
+function workerRuns() {
+  const since = new Date(Date.now() - 14 * 864e5).toISOString();
+  // Page through every comment of the window and keep only the worker's own, on GitHub's side, so Vercel's
+  // constantly edited comments cannot crowd them out. Only the Actions bot counts: anyone can write a marker
+  // into a comment on a public repo.
+  const out = gh(['api', `repos/${REPO}/issues/comments?since=${since}&per_page=100`, '--paginate', '--jq',
+    '.[] | select(.user.login == "github-actions[bot]" and (.body | contains("<!-- agent-run:"))) | {url: .html_url, body: .body}']);
+  return out.split('\n').filter(Boolean).map((line) => {
+    const c = JSON.parse(line);
+    return { url: c.url, stats: parseMarker(c.body) };
+  }).filter((r) => r.stats);
+}
+
+function workerSection() {
+  let runs;
+  try { runs = workerRuns(); } catch { return ['_Worker runs: could not be read just now._']; }
+  if (!runs.length) return ['_No Claude worker runs in the last 14 days._'];
+  const t = aggregate(runs.map((r) => r.stats));
+  return [
+    '| Last 14 days | |',
+    '| --- | --- |',
+    `| runs (failed) | ${t.runs} (${t.failed}) |`,
+    `| turns, total / per run | ${t.turns} / ${t.avgTurns} |`,
+    `| size at API prices, total / per run | $${t.costUsd.toFixed(2)} / $${t.avgCostUsd.toFixed(2)} |`,
+    `| tool calls refused | ${t.denials} |`,
+    '',
+    '_On a Claude subscription a run draws on its usage limits; the dollar figure only says how big it was._',
+  ];
+}
 
 function report() {
   const issues = json(['issue', 'list', '--repo', REPO, '--state', 'open', '--limit', '500', '--json', 'number,title,labels']);
@@ -62,6 +94,9 @@ function report() {
     '',
     `### Agent pull requests (${agentPrs.length})`,
     agentPrs.length ? agentPrs.map((p) => `- #${p.number} ${p.title} — CI ${ciState(p.statusCheckRollup)}${p.isDraft ? ', draft' : ''}, updated ${ago(p.updatedAt)}`).join('\n') : '_None open._',
+    '',
+    '### Claude worker runs',
+    ...workerSection(),
     '',
     '### Last merged',
     merged.map((p) => `- #${p.number} ${p.title} (${ago(p.mergedAt)})`).join('\n') || '_None._',
