@@ -106,25 +106,31 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     /**
      * Write the script, merging in what the server holds first: another writer (the offline queue run from some
      * other page, another device) may have written since we last heard, and our copy alone would erase it.
-     * If somebody writes between our read and our write the write finds out and we read again; after three
-     * tries it writes regardless, so a save is never lost to a timestamp that will not match.
+     * The merge happens in a scratch copy, never in the live document: the live one is being typed into and
+     * already gets other writers' edits through the channel. If somebody writes between our read and our write
+     * the write finds out and we read again; after three tries it writes regardless, so a save is never lost
+     * to a timestamp that will not match.
      */
     const writeMerged = async (userId: string): Promise<{ message: string } | null> => {
       for (let attempt = 0; attempt < 3; attempt++) {
         if (cancelled || !doc || !text) return null;
         const { data: row, error: readError } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', scriptId).maybeSingle();
         if (readError) return readError;
+        if (cancelled || !doc || !text) return null;
+        const scratch = new Y.Doc();
+        Y.applyUpdate(scratch, Y.encodeStateAsUpdate(doc));
         const serverState = decodeScriptTextUpdate(row?.yjs_state ?? null);
         if (serverState) {
-          try { Y.applyUpdate(doc, serverState, REMOTE_EDIT_ORIGIN); }
+          try { Y.applyUpdate(scratch, serverState); }
           catch (error) { console.warn('[Script Sync] Ignored invalid stored Yjs state:', error); }
         }
         const write = supabase.from('scripts').update({
-          content: text.toString(),
-          yjs_state: encodeScriptTextUpdate(doc),
+          content: scratch.getText(SCRIPT_TEXT_FIELD).toString(),
+          yjs_state: encodeScriptTextUpdate(scratch),
           updated_at: new Date().toISOString(),
           last_edited_by: userId,
         }).eq('id', scriptId);
+        scratch.destroy();
         const { data: written, error } = await (row?.updated_at && attempt < 2 ? write.eq('updated_at', row.updated_at) : write).select('id');
         if (error) return error;
         if (written?.length) return null;
