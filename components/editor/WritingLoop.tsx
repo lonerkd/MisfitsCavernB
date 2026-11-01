@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Award, Check, Flame, Minus, Pause, Pencil, Play, Plus, RotateCcw, Target, X } from 'lucide-react';
 import type { WritingLoop } from '@/lib/writing';
+import { mmss } from '@/lib/writing/clock';
 
 type Toast = (msg: string, kind?: 'success' | 'error' | 'info') => void;
 
@@ -49,7 +50,6 @@ export function useSprint(loop: WritingLoop, toast: Toast) {
 }
 export type Sprint = ReturnType<typeof useSprint>;
 
-const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const card: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 12, borderRadius: 8 };
 const title: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 };
 const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };

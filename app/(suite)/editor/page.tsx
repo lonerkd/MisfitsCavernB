@@ -79,6 +79,8 @@ import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
+import { useActivity } from '@/lib/island/activities';
+import { sprintActivity } from '@/lib/island/sprintActivity';
 import { useCharacters, useReadingCorrections, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
@@ -394,6 +396,7 @@ export default function EditorPage() {
   // The writing loop: words typed today, the streak, sprints (lib/writing).
   const writing = useWritingLoop(sessionUser?.id ?? null);
   const sprint = useSprint(writing, toast);
+  useActivity(sprintActivity(sprint)); // a running sprint is held on the island, with pause and reset
 
   const handleSave = useCallback(async () => {
     if (!currentScript) return;

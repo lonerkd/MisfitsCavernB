@@ -101,7 +101,8 @@ describe('CrewPage', () => {
 
     expect(await screen.findByText("Couldn't load this project's crew")).toBeTruthy();
     expect(screen.getByText('boom')).toBeTruthy();
-    expect(console.error).toHaveBeenCalled();
+    // The page logs it from an effect, which runs just after the message first renders.
+    await waitFor(() => expect(console.error).toHaveBeenCalled());
 
     h.getProjectCrew.mockResolvedValueOnce([member()]);
     fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
