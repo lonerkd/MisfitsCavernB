@@ -37,13 +37,15 @@ vi.mock('@/lib/supabase/client', () => ({
         eq: () => ({
           eq: (_column: string, value: string) => ({ select: () => server.write(patch, value) }),
           select: () => server.write(patch, undefined),
+          // .eq('id', …).is('updated_at', null).select('id')
+          is: (_column: string, value: null) => ({ select: () => server.write(patch, value) }),
         }),
       }),
     }),
   },
 }));
 
-import { getSyncStatus, syncPendingScripts } from './storage';
+import { getSyncStatus, saveScript, syncPendingScripts } from './storage';
 import {
   decodeScriptTextUpdate, encodeScriptTextState, encodeScriptTextUpdate, SCRIPT_TEXT_FIELD, scriptTextStateKey, seedScriptText,
   type PersistedScriptText,
@@ -174,6 +176,23 @@ describe('syncPendingScripts — a script the device holds a shared document for
     expect(getSyncStatus().attempts).toBe(1);
   });
 
+  it('guards a null server timestamp too (is null), instead of writing unguarded', async () => {
+    queueOfflineScript();
+    serverHolds(collaboratorState(), null);
+    await syncPendingScripts();
+    expect(server.write).toHaveBeenCalledTimes(1);
+    expect(server.write.mock.calls[0][1]).toBeNull();
+  });
+
+  it('keeps the script queued, and writes nothing, when the server holds a shared document that cannot be read', async () => {
+    queueOfflineScript();
+    serverHolds('not-a-valid-shared-document');
+    await syncPendingScripts();
+    expect(server.write).not.toHaveBeenCalled();
+    expect(server.upsert).not.toHaveBeenCalled();
+    expect(idb.get('script_s1').syncPending).toBe(true);
+  });
+
   it('keeps the script waiting when the write itself fails', async () => {
     queueOfflineScript();
     serverHolds(collaboratorState());
@@ -230,5 +249,29 @@ describe('syncPendingScripts — when there is nothing to merge with, the plain 
     await syncPendingScripts();
     expect(server.read).not.toHaveBeenCalled();
     expect(server.upsert).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('saveScript — the editor\'s autosave goes through the same merge', () => {
+  it('merges with the server\'s shared document instead of writing its text beside it', async () => {
+    queueOfflineScript(offlineDoc(), { syncPending: false });
+    serverHolds(collaboratorState());
+
+    const saved = await saveScript({ id: 's1', title: 'Kitchen', content: offlineDoc().getText(SCRIPT_TEXT_FIELD).toString() });
+
+    expect(server.write).toHaveBeenCalledTimes(1); // the merged write, which carries the shared document
+    expect(server.write.mock.calls[0][0].content).toContain('Bravo stayed online.');
+    expect(textOf(server.write.mock.calls[0][0].yjs_state)).toBe(server.write.mock.calls[0][0].content);
+    expect(saved?.syncPending).toBe(false);
+  });
+
+  it('stays queued, not reported saved, when the merge cannot be completed', async () => {
+    queueOfflineScript(offlineDoc(), { syncPending: false });
+    server.read.mockResolvedValue({ data: null, error: { message: 'timeout' } });
+
+    const saved = await saveScript({ id: 's1', title: 'Kitchen', content: 'whatever the editor holds' });
+
+    expect(server.write).not.toHaveBeenCalled();
+    expect(saved?.syncPending).toBe(true);
   });
 });

@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
-import { mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
+import { decodeScriptTextUpdate, mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
 
 export interface StoredScript {
   id: string;
@@ -109,6 +109,12 @@ async function reconcileWithServer(script: StoredScript, userId: string): Promis
     const { data: row, error } = await supabase.from('scripts').select('yjs_state, updated_at').eq('id', script.id).maybeSingle();
     if (error) { console.error(`[Offline Sync] Could not read ${script.id} to merge with:`, error); return 'failed'; }
     if (!row) return 'plain';
+    // A shared document the server holds but this device cannot read is not "nothing to merge with": writing the
+    // queued text over it would erase what the document says. Keep the script queued instead.
+    if (row.yjs_state && !decodeScriptTextUpdate(row.yjs_state)) {
+      console.error(`[Offline Sync] The shared document stored for ${script.id} cannot be read; keeping the script queued.`);
+      return 'failed';
+    }
     const merged = mergeServerIntoLocal(local, row.yjs_state);
     if (!merged) return 'plain';
 
@@ -120,7 +126,8 @@ async function reconcileWithServer(script: StoredScript, userId: string): Promis
       last_edited_by: userId,
       updated_at: new Date().toISOString(),
     }).eq('id', script.id);
-    const { data: written, error: writeError } = await (row.updated_at ? write.eq('updated_at', row.updated_at) : write).select('id');
+    // The row's timestamp is nullable: a null one is still a guard (`is null`), never "no guard".
+    const { data: written, error: writeError } = await (row.updated_at ? write.eq('updated_at', row.updated_at) : write.is('updated_at', null)).select('id');
     if (writeError) { console.error(`[Offline Sync] Failed to sync ${script.id}:`, writeError); return 'failed'; }
     if (!written?.length) continue;
 
@@ -372,6 +379,22 @@ export async function saveScript(script: Partial<StoredScript>): Promise<StoredS
       updated_at: unifiedData.updatedAt,
       project_id: unifiedData.project_id
     };
+
+    // A script this device holds a shared document for is merged with the server's, never written over it: the
+    // editor's autosave would otherwise put plain text beside a shared document that disagrees with it.
+    if (!isNew) {
+      const how = await reconcileWithServer(unifiedData, user.id);
+      if (how === 'merged') {
+        unifiedData.syncPending = false;
+        await refreshSyncStatus();
+        return unifiedData;
+      }
+      if (how === 'failed') {
+        scheduleScriptSync();
+        await refreshSyncStatus();
+        return unifiedData;
+      }
+    }
 
     let error;
     if (isNew) {
