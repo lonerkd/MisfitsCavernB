@@ -24,6 +24,8 @@ export interface Evidence {
   /** Seen as a speaker elsewhere in the script (or told to us by the project). */
   isKnownName(name: string): boolean;
   hasExtension(upper: string): boolean;
+  /** The line opens with a name seen speaking, then a verb-like lowercase word ("Maya ducks."): narration about a character, not their speech. */
+  opensWithKnownName?(text: string): boolean;
   /** A person said this name is not a character. */
   isRejectedName?(name: string): boolean;
 }
@@ -43,7 +45,7 @@ export interface Observation {
 export interface Params {
   cue: number; knownName: number; rejectedName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
   dialogue: number; dialogueCaps: number;
-  action: number; actionProse: number; actionCaps: number;
+  action: number; actionProse: number; actionCaps: number; actionNamesSomeone: number;
   /** Grammar. */
   dialogueOutsideSpeech: number; parentheticalOutsideSpeech: number; parentheticalAfterParenthetical: number;
   cueAfterCue: number; cueAfterSpeechNoBlank: number; actionInsideSpeech: number;
@@ -55,7 +57,7 @@ export interface Params {
 export const DEFAULT_PARAMS: Params = {
   cue: 6, knownName: 12, rejectedName: 60, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
   dialogue: 4, dialogueCaps: 6,
-  action: 10, actionProse: 8, actionCaps: 12,
+  action: 10, actionProse: 8, actionCaps: 12, actionNamesSomeone: 5,
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
   cueAfterCue: 40, cueAfterSpeechNoBlank: 14, actionInsideSpeech: 16,
   impossible: 80,
@@ -66,16 +68,23 @@ type Cls = State | 'empty' | 'other';
 
 const hasLower = (t: string) => [...t].some((c) => c !== c.toUpperCase() && c === c.toLowerCase());
 
+/**
+ * A time card on a line of its own ("TWO HOURS LATER", "MOMENTS LATER", "THE NEXT MORNING", "MEANWHILE"): it
+ * narrates, and it ends a speech. Matched on the whole line, so "SEE YOU LATER." shouted in dialogue is not one.
+ */
+const TIME_CARD = /^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DAYS?|WEEKS?|MONTHS?|YEARS?) (?:LATER|EARLIER|BEFORE|AFTER)|(?:MOMENTS|SECONDS|MINUTES|HOURS|DAYS|WEEKS|MONTHS|YEARS) (?:LATER|EARLIER)|LATER|EARLIER|MEANWHILE|SAME TIME|THE NEXT (?:DAY|MORNING|NIGHT|AFTERNOON|EVENING)|THAT NIGHT|THAT MORNING|CONTINUOUS|MOMENTS LATER)[.:]?$/;
+
 /** How badly the line, alone, fits each label. */
-export function emission(o: Observation, ev: Evidence, p: Params): Record<State, number> {
+export function emission(o: Observation, ev: Evidence, p: Params, tight = false): Record<State, number> {
   const t = o.text;
   const upper = t.toUpperCase();
   const heading = ev.isHeading(t);
   const isTransition = ev.isTransition(upper);
+  const timeCard = TIME_CARD.test(upper.trim());
   const paren = t.startsWith('(') && t.endsWith(')');
   const namePart = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
   const caps = ev.isCaps(namePart);
-  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank, o.next)) && namePart.length >= 1 && namePart.length < 60;
+  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank || tight, o.next)) && namePart.length >= 1 && namePart.length < 60;
   const words = namePart.split(/\s+/).filter(Boolean).length;
   const sentenceEnd = /[.!?…]$/.test(namePart);
 
@@ -84,22 +93,24 @@ export function emission(o: Observation, ev: Evidence, p: Params): Record<State,
   const parenthetical = paren ? 0 : (t.startsWith('(') ? 30 : p.impossible);
 
   let character = p.impossible;
-  if (nameShape && !heading && !isTransition && !paren) {
+  if (nameShape && !heading && !isTransition && !paren && !timeCard) {
     character = p.cue;
     if (ev.isKnownName(namePart)) character -= p.knownName;
     if (ev.hasExtension(upper)) character -= p.extension;
     if (ev.isRejectedName?.(namePart)) character += p.rejectedName;
-    if (!o.next) character += p.noSpeechUnder;
+    // Nothing under it, or a scene heading or transition under it: nobody can be speaking.
+    if (!o.next || ev.isHeading(o.next) || ev.isTransition(o.next.toUpperCase())) character += p.noSpeechUnder;
     if (sentenceEnd) character += p.cueSentence;
     if (words > 6) character += p.cueLong;
   }
 
-  const strong = heading || isTransition || paren;
+  const strong = heading || isTransition || paren || timeCard;
   const dialogue = strong ? p.impossible : p.dialogue + (ev.isCaps(t) ? p.dialogueCaps : 0);
 
   let action = p.action;
   if (heading || isTransition) action = 40;
-  else if (hasLower(t)) action = p.actionProse;
+  else if (timeCard) action = 0;
+  else if (hasLower(t)) action = p.actionProse - (ev.opensWithKnownName?.(t) ? p.actionNamesSomeone : 0);
   else if (ev.isCaps(t)) action = p.actionCaps;
 
   return { slug, transition, character, parenthetical, dialogue, action };
@@ -136,8 +147,25 @@ export interface Decoded {
   alternatives: Array<State | null>;
 }
 
-export function decodeLabels(obs: Observation[], ev: Evidence, p: Params = DEFAULT_PARAMS): Decoded {
+/**
+ * The document profile (L3 of the plan), first piece: does this script separate its elements with blank lines at
+ * all? Fountain asks for a blank line before a cue, so a caps line straight after a speech is read as more
+ * speech. But a script pasted from another editor often has no blank lines anywhere, and there the missing blank
+ * says nothing about whether a cue starts: judging every cue "without a blank" would punish the whole script.
+ * So when blank lines are rare across the document, the cost of a cue right after a speech drops to nearly nothing
+ * and the rest of the evidence (the name's shape, the extension, what follows) decides.
+ */
+export function documentProfile(obs: Observation[]): { tight: boolean; blankShare: number } {
+  const free = obs.filter((o) => o.kind !== 'empty').length;
+  const blank = obs.length - free;
+  const blankShare = obs.length ? blank / obs.length : 0;
+  return { tight: free >= 10 && blankShare < 0.05, blankShare };
+}
+
+export function decodeLabels(obs: Observation[], ev: Evidence, base: Params = DEFAULT_PARAMS): Decoded {
   const n = obs.length;
+  const tight = documentProfile(obs).tight;
+  const p: Params = tight ? { ...base, cueAfterSpeechNoBlank: Math.min(base.cueAfterSpeechNoBlank, 4) } : base;
   const states: Array<State | null> = new Array(n).fill(null);
   const confidence: number[] = new Array(n).fill(100);
   const alternatives: Array<State | null> = new Array(n).fill(null);
@@ -148,7 +176,7 @@ export function decodeLabels(obs: Observation[], ev: Evidence, p: Params = DEFAU
   const cands: Cand[][] = obs.map((o) => {
     if (o.kind === 'empty') return [{ cls: 'empty' as Cls, state: null, cost: 0 }];
     if (o.kind === 'fixed') return [{ cls: fixedClass(o.fixed), state: null, cost: 0 }];
-    const e = emission(o, ev, p);
+    const e = emission(o, ev, p, tight);
     return STATES.map((s) => ({ cls: s as Cls, state: s, cost: e[s] }));
   });
 

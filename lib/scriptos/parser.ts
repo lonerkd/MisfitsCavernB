@@ -4,6 +4,12 @@ import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
 
+/**
+ * The "… TO BLACK / WHITE" family, which writers qualify in many ways (SMASH CUT TO BLACK, MATCH CUT TO WHITE,
+ * HARD CUT TO BLACK, DISSOLVE TO WHITE, SLOW FADE TO BLACK) and no list will hold. A pattern says it once.
+ */
+const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
+
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
     'INT.', 'EXT.', 'INT', 'EXT', 'INT./EXT.', 'EXT./INT.', 'INT/EXT', 'EXT/INT',
@@ -217,7 +223,7 @@ export class ScriptParser {
   /** Is this line a transition, with or without its colon or full stop? */
   private isTransitionText(upper: string): boolean {
     const bare = upper.replace(/[:.]+$/, '').trim();
-    return KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, '')) || KNOWLEDGE.TRANSITION_BARE.has(bare);
+    return KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, '')) || KNOWLEDGE.TRANSITION_BARE.has(bare) || TRANSITION_TO_COLOUR.test(bare);
   }
 
   private clean(text: string): string {
@@ -538,7 +544,19 @@ export class ScriptParser {
       isKnownName: (n) => this.characterStats.has(this.clean(n)),
       isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
+      opensWithKnownName: (t) => this.opensWithKnownName(t),
     });
+  }
+
+  /** "Maya ducks.": the line opens with a name seen speaking and a lowercase word, not a comma ("Maya, wait."), so it narrates. */
+  private opensWithKnownName(text: string): boolean {
+    const words = text.split(/\s+/);
+    for (let n = Math.min(3, words.length - 1); n >= 1; n--) {
+      const name = words.slice(0, n).join(' ').replace(/[^\p{L}\p{N}'#. -]+$/u, '');
+      const next = words[n];
+      if (this.characterStats.has(name.toUpperCase()) && /^\p{Ll}/u.test(next) && !/[,?]$/.test(words[n - 1])) return true;
+    }
+    return false;
   }
 
   /** The decoder's label replaces the line's own; the rest of what the line was found to be stays. */
