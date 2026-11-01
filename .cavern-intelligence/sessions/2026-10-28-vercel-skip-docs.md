@@ -4,4 +4,4 @@ The Vercel free plan allows 100 deployments a day (counted 2026-10-28: 100 in 24
 
 **Verified** on real commits: the agent-workflow-plus-note commit (#354) and the CI-filter commit (#351) exit 0 (skip); the Archived-badge commit (#353) and the one that added `scripts/agent-push.sh` (#352) exit 1 (build). A commit that is skipped changes no code, so the preview the previous commit built still matches. The next docs-only or workflow-only PR is the live proof (no new deployment).
 
-**Live check (2026-11-01):** this paragraph is a docs-only commit on its own PR, to see what Vercel does with it (expected: no deployment for the PR's head commit).
+**Live check (2026-11-01, #357):** a docs-only commit on its own PR. Vercel's PR comment read "1 Skipped Deployment … Ignored" and no build ran; #355's own merge commit (it changes `vercel.json`) built and deployed normally. So the rule skips what it should and still builds code.
