@@ -241,6 +241,7 @@ agent-status.yml ──every 6 h──▶ the "Agent status" issue (counts, agen
 | Piece | What it does |
 |---|---|
 | `scripts/backlog-to-issues.mjs` | Makes one issue per open BACKLOG §3 item. Dry run by default; `--create` makes them and the labels. Idempotent (a hidden `backlog-id` marker); never edits or closes anything. |
+| `scripts/check-bookkeeping.mjs` | Is the paperwork still true? Reports done-but-open `[BACKLOG x]` issues, BACKLOG items with no issue, duplicate numbers, a STATE.md handoff older than the newest session note, a stale "Last audited". Advice (exit 0) unless `--strict`; `--offline` skips GitHub. Run it at the start of a session. |
 | `.github/workflows/agent-status.yml` | Rewrites one issue with real data: issues by label, open agent PRs with CI state, last merges, main's CI. No AI, no secrets. |
 | `.github/workflows/agent-claude.yml` | When the **repository owner** adds `agent-ready` to an issue, Claude (Anthropic's `claude-code-action`) works it and opens a PR. Dormant until the secret below exists. |
 | `.github/workflows/agent-autopilot.yml` | Once explicitly enabled, daily dispatches at most one owner-approved issue to Copilot, stopping at the configured active-issue or open-agent-PR cap. |

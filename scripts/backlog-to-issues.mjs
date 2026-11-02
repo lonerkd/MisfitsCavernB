@@ -37,10 +37,9 @@ export function parseBacklog(text) {
   const lines = text.split(/\r?\n/);
   const items = [];
   let cur = null;
-  let in3 = false;
   for (const line of lines) {
-    if (/^## /.test(line)) { in3 = /^## 3\./.test(line); cur = null; continue; }
-    if (!in3) continue;
+    // Any `### 3.N` heading is an item wherever it sits (some were added after §4 and were never synced).
+    if (/^## /.test(line)) { cur = null; continue; }
     const h = /^### (3\.\d+[a-z]?) (.+)$/.exec(line);
     if (h) {
       const rest = h[2];

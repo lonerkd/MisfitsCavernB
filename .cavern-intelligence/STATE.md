@@ -4,7 +4,7 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
-## Resume here (handoff, 2026-10-15)
+## Resume here (handoff, 2026-11-02)
 
 1. **`main` is current.** Start with `git switch main && git pull`; then `node scripts/latest-sessions.js` for what the last PRs did, and `gh pr list` for what is open.
 2. **Production matches `main`** (2026-10-25: schema drift green). Previews run on the staging project `cavern-staging` (ADR 0006); each merged migration goes to production, then staging (`database-and-security.md` §3).
@@ -25,13 +25,14 @@
 6. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
+7. **Last built (2026-11-01/02):** the offline queue merges instead of overwriting; ad export; the deep brain reads scripts with no blank lines and title-case cues, and the cast is the names read as cues; the island holds a voice call (who is speaking, a Room button) and the music; a two-browser voice spec. Open for the island: recording, uploads with progress, the On set day clock (BACKLOG 4.1).
 
 ## Direction (owner, 2026-10-10)
 
 The suite becomes one connected core — **the film graph**: scenes, characters,
 locations, shoot days, story days, elements, shots and people as real linked
 rows, plus a universal layer so anything attaches to anything. Design:
-[film-graph-spec.md](film-graph-spec.md) (approved; steps 1 (days and places → daylight) and 2 (characters, who is in each scene, casting by id) are built; next is step 3). This comes before the wishlist ranking.
+[film-graph-spec.md](film-graph-spec.md) (approved; steps 1 (days and places → daylight), 2 (characters, who is in each scene, casting by id) and 3 (story time and continuity) are built; what is left is BACKLOG 3.18). This comes before the wishlist ranking.
 
 ## Open work — start here
 
