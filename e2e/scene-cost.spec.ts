@@ -83,6 +83,12 @@ test.describe('Cost by scene and day (local Supabase)', () => {
       await expect(section).toContainText('Another $7 is on elements not tagged in any scene.');
       await expect(section).toContainText('Project total $147.');
       if (process.env.COST_SHOT) await section.screenshot({ path: process.env.COST_SHOT });
+
+      // The same figures sit on the stripboard: on each strip (and in its accessible name) and in each day's totals.
+      await page.goto('/studio?tab=production&view=schedule');
+      await expect(page.getByRole('listitem', { name: /^Scene 1,.*costs \$90/ })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole('listitem', { name: /^Scene 2,.*costs \$50/ })).toBeVisible();
+      await expect(page.getByRole('region', { name: 'Day 1' }).getByText('$90', { exact: true }).first()).toBeVisible();
     } finally { await ctx.close(); await browser.close(); }
   });
 });
