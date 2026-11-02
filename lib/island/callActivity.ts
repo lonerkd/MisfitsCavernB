@@ -1,11 +1,11 @@
-// What the island says while you are in a voice call: the room, who is in it, and Mute / Leave under your
-// thumb, on every page. Pure: the call's state in, an activity out (the same shape as syncActivity).
+// What the island says while you are in a voice call: the room, who is in it and who is speaking, and Mute,
+// Room (back to the call's room; offered anywhere but the Lounge) and Leave under your thumb, on every page. Pure: the call's state in, an activity out (the same shape as syncActivity).
 import type { VoiceCall } from '@/lib/webrtc/VoiceCall';
 import type { Activity } from './activities';
 
 const people = (n: number) => `${n} ${n === 1 ? 'person' : 'people'}`;
 
-/** Who is talking right now, short enough for the island: "Ana speaking", "Ana, Ben speaking", "you're speaking". */
+/** Who is talking right now, short enough for the island: "Ana speaking", "Ana and Ben speaking", "Ana, Ben +1 speaking", "you're speaking". */
 export function whoSpeaks(call: Pick<VoiceCall, 'peers' | 'muted' | 'speaking'>): string {
   const you = call.speaking && !call.muted;
   const others = call.peers.filter((p) => p.speaking).map((p) => p.name).filter(Boolean);
