@@ -64,16 +64,21 @@ describe('spread and conditional entries', () => {
 });
 
 describe('deckKeys', () => {
-  it('numbers toggles then actions along the deck keys, marking what a conditional control moves', () => {
-    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'a', label: 'Find' }, { id: 'b', label: 'Go' }] })).toEqual({ toggles: ['Q'], actions: ['W', 'E'] });
+  it('fills unslotted controls with free keys, toggles then actions, marking what a conditional control moves', () => {
+    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'a', label: 'Open' }, { id: 'b', label: 'Go' }] })).toEqual({ toggles: ['Q'], actions: ['W', 'E'] });
     expect(deckKeys({ toggles: [], actions: [{ id: 'a', label: 'One (conditional)' }, { id: 'b', label: 'Two' }] })).toEqual({ toggles: [], actions: ['Q', '~W'] });
+  });
+
+  it('gives a slotted action its slot key on any page, and the unslotted ones the keys left', () => {
+    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'f', label: 'Find', slot: 'find' }] })).toEqual({ toggles: ['Q'], actions: ['E'] });
+    expect(deckKeys({ toggles: [], actions: [{ id: 'f', label: 'Find', slot: 'find' }] })).toEqual({ toggles: [], actions: ['E'] });
   });
 });
 
-describe('a ternary between arrays', () => {
-  it('reads the branch that has the control, marked conditional (ProductionManager: `posted ? [] : [{ post-job }]`)', () => {
-    const [r] = registrationsIn('a.tsx', "usePillZone({ module: 'm', title: 'T', actions: posted ? [] : [{ id: 'post-job', label: 'Post' }] });");
-    expect(r.actions).toEqual([{ id: 'post-job', label: 'Post (conditional)' }]);
+describe('slots in a registration', () => {
+  it('are read from the source, including a literal typed `as const`', () => {
+    const [r] = registrationsIn('a.tsx', "usePillStage({ module: 'm', title: 'T', actions: [{ id: 'a', slot: 'create', label: 'New', onClick: x }, ...(y ? [{ id: 'b', slot: 'view' as const, label: 'See', onClick: z }] : [])] });");
+    expect(r.actions).toEqual([{ id: 'a', label: 'New', slot: 'create' }, { id: 'b', label: 'See (conditional)', slot: 'view' }]);
   });
 });
 

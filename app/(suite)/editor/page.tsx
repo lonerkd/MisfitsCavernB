@@ -768,7 +768,7 @@ export default function EditorPage() {
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
       actions: [
-        { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
       ],
     }
   );

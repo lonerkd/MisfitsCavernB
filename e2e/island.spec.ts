@@ -144,8 +144,8 @@ test.describe('The island (local Supabase)', () => {
     await shape(page, 'caps');
     await expect(surface(page)).toContainText('put away');
     await expect(island(page).getByRole('link', { name: 'Today', exact: true })).toBeVisible();
-    // Q is the first control on show — here, the Lounge's message search.
-    await capsKey(page, 'Q');
+    // E is Find on every page that has one (a slot, not a position) — here, the Lounge's message search.
+    await capsKey(page, 'E');
     await expect(page.getByRole('dialog', { name: 'Search the Lounge' })).toBeVisible();
     await capsKey(page, 'Escape');
     await shape(page, 'rest'); // put away with Escape…
