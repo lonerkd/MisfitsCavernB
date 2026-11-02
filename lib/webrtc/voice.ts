@@ -126,22 +126,26 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
 
     (async () => {
 
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
-        if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
-        streamRef.current = stream;
-        setMicError(null);
-        attachSpeakingMeter(stream, setSpeaking);
-      } catch (err: any) {
-        setMicError(err?.name === 'NotAllowedError' ? 'Microphone permission denied — you are in listen-only mode.' : 'No microphone found — you are in listen-only mode.');
-      }
-
       if (cancelled) return;
       const turnAway = () => {
         if (turnedAwayHere || cancelled) return;
         turnedAwayHere = true;
         setTurnedAway(true);
         roomFull();
+      };
+
+      // The microphone is asked for only once there is a seat for us: someone turned away from a full room
+      // never sees a permission prompt for a call they cannot join.
+      const acquireMic = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+          if (cancelled) { stream.getTracks().forEach(t => t.stop()); return; }
+          streamRef.current = stream;
+          setMicError(null);
+          attachSpeakingMeter(stream, setSpeaking);
+        } catch (err: any) {
+          setMicError(err?.name === 'NotAllowedError' ? 'Microphone permission denied — you are in listen-only mode.' : 'No microphone found — you are in listen-only mode.');
+        }
       };
 
       const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: meId }, broadcast: { self: false } } });
@@ -195,6 +199,8 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
           // Full mesh does not scale: turn away before opening a single connection.
           const others = Object.keys(ch.presenceState()).filter(k => k !== meId);
           if (!canJoinVoiceRoom(others.length)) { turnAway(); return; }
+          await acquireMic();
+          if (cancelled || turnedAwayHere) return;
           await ch.track(myPresence(Date.now()));
           if (cancelled || turnedAwayHere) return;
 
