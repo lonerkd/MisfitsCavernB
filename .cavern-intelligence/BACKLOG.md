@@ -239,8 +239,9 @@ prefer Openverse); AI mood suggestions (service).
 expenses committed/paid with receipts from the library, timesheets,
 breakdown costs and per-category rates → "Push to budget" (`Breakdown · …`
 lines).
+**Built 2026-11-02 (slice 1):** cost by scene and by shoot day in Studio › Production › Money, read from the breakdown (`lib/studio/scene-cost.ts`: an element's cost, or its category's default; something used in several scenes is paid once, so it is split between them and the scenes add up to the total; the table says how much rests on a default and how many elements have no price at all). Left on the slice: the same figure on the stripboard strips and the scene cards.
 **To add**: budget templates (micro, low, indie, studio) and above/below the
-line; per-scene cost (roll up the breakdown's costs per scene); cast and crew
+line; cast and crew
 day rates × days (Day out of days exists); location costs from Locations;
 equipment rental; invoices; cash-flow projection; currencies (none today —
 every amount is plain dollars) and tax jurisdictions; cost alerts; financial
