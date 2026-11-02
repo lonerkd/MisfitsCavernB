@@ -40,6 +40,8 @@ test.describe('Two people in a voice room (local Supabase)', () => {
 
   const island = (page: Page) => page.getByRole('navigation', { name: 'Suite' });
 
+  const launch = () => chromium.launch({ executablePath: process.env.MC_LOCAL_CHROMIUM, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+
   async function enter(browser: Browser, who: number): Promise<{ ctx: BrowserContext; page: Page }> {
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, permissions: ['microphone'] });
     const page = await ctx.newPage();
@@ -58,10 +60,13 @@ test.describe('Two people in a voice room (local Supabase)', () => {
 
   test('each hears the other join, speak and leave on the island', async () => {
     test.setTimeout(180_000);
-    const browser = await chromium.launch({ executablePath: process.env.MC_LOCAL_CHROMIUM, args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
-    const a = await enter(browser, 0);
-    const b = await enter(browser, 1);
+    // One Chromium process per person, so nothing but the network is shared between them.
+    const browsers: Browser[] = [];
     try {
+      const [ba, bb] = [await launch(), await launch()];
+      browsers.push(ba, bb);
+      const a = await enter(ba, 0);
+      const b = await enter(bb, 1);
       await a.page.getByRole('button', { name: /JOIN VOICE/ }).click();
       await expect(island(a.page).getByText(`In voice · ${room}`)).toBeVisible({ timeout: 30_000 });
       await expect(island(a.page).getByText('1 person')).toBeVisible();
@@ -86,6 +91,6 @@ test.describe('Two people in a voice room (local Supabase)', () => {
       await expect(island(b.page).getByText(/In voice/)).toHaveCount(0);
       await expect(island(a.page).getByText('1 person')).toBeVisible({ timeout: 30_000 });
       await expect(island(a.page).getByText(/2 people/)).toHaveCount(0);
-    } finally { await a.ctx.close(); await b.ctx.close(); await browser.close(); }
+    } finally { await Promise.all(browsers.map((br) => br.close().catch(() => undefined))); }
   });
 });
