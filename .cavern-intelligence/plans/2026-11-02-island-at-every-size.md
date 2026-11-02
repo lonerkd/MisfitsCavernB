@@ -29,7 +29,7 @@ For each surface class, define the zones and who owns them — tool header, cont
 
 ## Order
 
-0. **Audit, as generated data (S):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
+0. **Audit, as generated data (S) — first part built 2026-11-02 ([`island-coverage.md`](../island-coverage.md)):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
 1. **Compact dock for narrow non-touch (S–M):** the quickest real win: under 760 px with a fine pointer or a keyboard, show a compact dock instead of nothing.
 2. **One core, three presentations (M):** fold the pill into the core; activities, on-set line and search on the pill (this also makes the recording activity worth building: BACKLOG 4.1).
 3. **Action registry and command grammar (M–L):** every tool registers actions with keys; the palette and Caps deck read it; generated reference and a help overlay.
@@ -45,7 +45,7 @@ The island merged them into one surface that changes shape, in seven shapes (`li
 
 ## What the island has to work with today (coverage, counted in the code)
 
-The island is only as deep as what pages tell it. Pages register with `usePillStage` (the page's own pill) or `usePillZone` (a hover/focus zone): **5 pages** do (Studio, Projects, Portfolio, Jobs, Editor) and **3 zones** (the editor's centre views, the crew boards, the production manager). Every other area (Today, Hub, Lounge, Soundtrack, Settings, Profile, Crew, Admin, Split, the call page) gets only a fallback name and next places from `lib/island/routes.ts`. The Studio is one stage for dozens of views (Schedule, Readiness, Locations, Money, On set, Cast & crew…), none with a zone of its own. So the work of "design every inch" is first **data**: a generated island-coverage reference (like the parser reference) listing, per route and per view, its stage, its zones, its actions and their keys, and what is missing — so the design is argued from what is there, not from memory.
+The island is only as deep as what pages tell it. Pages register with `usePillStage` (the page's own pill) or `usePillZone` (a hover/focus zone): **6 stages** do (Studio, Projects, Portfolio, Jobs, Editor, and the Lounge through `useLounge`) and **3 zones** (the editor's centre views, the crew boards, the production manager). Every other area (Today, Hub, Soundtrack, Settings, Profile, Crew, Admin, Split, the call page) gets only a fallback name and next places from `lib/island/routes.ts`. The Studio is one stage for dozens of views (Schedule, Readiness, Locations, Money, On set, Cast & crew…), none with a zone of its own. So the work of "design every inch" is first **data**: a generated island-coverage reference (like the parser reference) listing, per route and per view, its stage, its zones, its actions and their keys, and what is missing — so the design is argued from what is there, not from memory.
 
 ## Owner answers so far (2026-11-02)
 
