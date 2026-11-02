@@ -80,3 +80,15 @@ This is a draft to be corrected by use, not a final: step 0 (the generated cover
 ## What is still the owner's, after trying it
 
 Whether the island replaces the tab bar on phones is leaning yes (owner, 2026-11-02), confirmed or reversed after trying `island_v2`; everything above is a default that the owner can change.
+
+## The key model (owner, 2026-11-02) — three layers, one grammar
+
+The owner's rule, recorded as a design decision (the owner delegated the open details):
+
+1. **Ctrl/⌘ chords are global and mean the same in every tool.** Undo (⌘Z) and redo (⇧⌘Z / ⌘Y), save (⌘S), find (⌘F), new (⌘N), command palette (⌘K), go-to (⌘G), help (⌘/) — one meaning everywhere; a tool that cannot do one says so in the island rather than ignoring the key. A tool's own chords are added on top, never in conflict.
+2. **Without Caps Lock, the island is the hover/context layer:** the controls of whatever the pointer or focus is on (the stage and zones pages register), the "screen-backed" controls.
+3. **Caps Lock on adds the suite layer on top of 1 and 2:** the app switcher (every tool, project, place), the ten-slot deck, and everything the hover context offers — "all of that plus more". Nothing in the context layer disappears when Caps Lock is on.
+
+**What the code does today (found 2026-11-02):** Caps Lock only toggles the deck (`kbActive`, `lib/os/PillContext.tsx`). Ctrl/⌘ chords are page-local: only the editor has them (`app/(suite)/editor/page.tsx`: ⌘S, F, E, G, /, and its own undo/redo bound to its textarea); the Split view has ⌘\; the Studio and the rest have no ⌘Z at all, and the shortcuts overlay (`ShortcutsOverlay.tsx`) lists what the editor and taskbar do, not a single table.
+
+**Build order:** (a) one chord registry (`lib/os/chords.ts`: the global chords, who handles them now, a conflict test — no tool may bind a global chord to something else), with the editor's bindings moved onto it; (b) a suite-wide undo stack for non-text actions (delete, move, rename, status change) so ⌘Z is real outside the editor — each action registers its inverse, nothing is undone that cannot truly be undone; (c) the island shows the keys beside every action it offers (the coverage reference gains a keys column); (d) the shortcuts overlay is generated from the registry. Done when ⌘Z undoes the last action in the Studio, Projects and Jobs as it does in the editor, a test fails when two tools bind one chord differently, and Caps Lock shows the switcher plus the hover context together.
