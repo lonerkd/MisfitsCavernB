@@ -115,26 +115,26 @@ A language is named after a verb phrase: `/\b(?:in|speaking|speaks|spoken in|sin
 
 Costs: lower is a better fit. Tuned on the corpus (`lib/scriptos/corpus`); change one, re-measure (`npm run test` runs the ratchet).
 
-| Weight | Cost | What it prices |
-| --- | ---: | --- |
-| `cue` | 6 | a line that looks like a character cue (capitals, short, followed by speech) |
-| `knownName` | 12 | a cue whose name was already seen speaking, or told to us by the project (a discount) |
-| `rejectedName` | 60 | a cue whose name a person said is not a character (a heavy penalty) |
-| `extension` | 6 | a cue with an extension such as (V.O.) or (CONT'D) (a discount) |
-| `noSpeechUnder` | 30 | a cue with nothing after it to speak |
-| `cueSentence` | 25 | a "cue" that reads as a sentence |
-| `cueLong` | 15 | a "cue" that is too long to be a name |
-| `dialogue` | 4 | ordinary speech |
-| `dialogueCaps` | 6 | speech written in capitals (shouting) |
-| `action` | 10 | ordinary action |
-| `actionProse` | 8 | action that reads as prose |
-| `actionCaps` | 12 | action written in capitals |
-| `actionNamesSomeone` | 5 | action that opens with a known speaker's name and a verb ("Maya ducks.") |
-| `dialogueOutsideSpeech` | 45 | speech with no cue before it |
-| `parentheticalOutsideSpeech` | 6 | a parenthetical with no speech around it |
-| `parentheticalAfterParenthetical` | 10 | two parentheticals in a row |
-| `cueAfterCue` | 40 | a cue straight after a cue |
-| `cueAfterSpeechNoBlank` | 14 | a cue straight after speech with no blank line between |
-| `actionInsideSpeech` | 16 | action in the middle of a speech |
-| `impossible` | 80 | a sequence the grammar forbids |
-| `temperature` | 3 | how sharply costs become certainty (lower is more decisive) |
+| Weight | Value | Effect | What it prices |
+| --- | ---: | --- | --- |
+| `cue` | 6 | adds (raising it penalises) | a line that looks like a character cue (capitals, short, followed by speech) |
+| `knownName` | 12 | subtracts (raising it favours) | a cue whose name was already seen speaking, or told to us by the project (a discount) |
+| `rejectedName` | 60 | adds (raising it penalises) | a cue whose name a person said is not a character (a heavy penalty) |
+| `extension` | 6 | subtracts (raising it favours) | a cue with an extension such as (V.O.) or (CONT'D) (a discount) |
+| `noSpeechUnder` | 30 | adds (raising it penalises) | a cue with nothing after it to speak |
+| `cueSentence` | 25 | adds (raising it penalises) | a "cue" that reads as a sentence |
+| `cueLong` | 15 | adds (raising it penalises) | a "cue" that is too long to be a name |
+| `dialogue` | 4 | adds (raising it penalises) | ordinary speech |
+| `dialogueCaps` | 6 | adds (raising it penalises) | speech written in capitals (shouting) |
+| `action` | 10 | adds (raising it penalises) | ordinary action |
+| `actionProse` | 8 | adds (raising it penalises) | action that reads as prose |
+| `actionCaps` | 12 | adds (raising it penalises) | action written in capitals |
+| `actionNamesSomeone` | 5 | adds (raising it penalises) | action that opens with a known speaker's name and a verb ("Maya ducks.") |
+| `dialogueOutsideSpeech` | 45 | adds (raising it penalises) | speech with no cue before it |
+| `parentheticalOutsideSpeech` | 6 | adds (raising it penalises) | a parenthetical with no speech around it |
+| `parentheticalAfterParenthetical` | 10 | adds (raising it penalises) | two parentheticals in a row |
+| `cueAfterCue` | 40 | adds (raising it penalises) | a cue straight after a cue |
+| `cueAfterSpeechNoBlank` | 14 | adds (raising it penalises) | a cue straight after speech with no blank line between |
+| `actionInsideSpeech` | 16 | adds (raising it penalises) | action in the middle of a speech |
+| `impossible` | 80 | adds (raising it penalises) | a sequence the grammar forbids |
+| `temperature` | 3 | scale | how sharply costs become certainty (lower is more decisive) |

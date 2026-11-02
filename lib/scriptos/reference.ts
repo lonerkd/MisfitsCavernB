@@ -3,7 +3,7 @@
 
 import { BREAKDOWN_STOPWORDS, KNOWLEDGE, TRANSITION_TO_COLOUR } from './parser';
 import { DEFAULT_PARAMS, TIME_CARD, type Params } from './decode';
-import { TIMES, FILLER, NUMBER_WORDS, MONTHS, DAYS_OF_WEEK, FRAME_TAG, YEAR, CLOCK } from './heading';
+import { TIMES, FILLER, NUMBER_WORDS, MONTHS, DAYS_OF_WEEK, HEADING_PATTERNS } from './heading';
 import { SYNONYMS, VERBS } from './languages';
 
 /** What each decoder weight means. A new weight with no line here fails the test, so the reference stays whole. */
@@ -37,6 +37,9 @@ const sorted = (set: ReadonlySet<string>) => Array.from(set).sort(byCodePoint);
 const re = (r: RegExp) => `/${r.source}/${r.flags}`;
 const list = (items: string[]) => items.map((i) => `\`${i}\``).join(' · ');
 
+/** Weights the decoder subtracts from a cost (a discount); every other weight is added. */
+const DISCOUNTS: ReadonlySet<keyof Params> = new Set(['knownName', 'extension']);
+
 export function buildReference(): string {
   const out: string[] = [];
   out.push('# The parser reference');
@@ -46,9 +49,10 @@ export function buildReference(): string {
   out.push('## Word lists (`KNOWLEDGE`, `lib/scriptos/parser.ts`)');
   out.push('');
   for (const [name, set] of Object.entries(KNOWLEDGE)) {
-    out.push(`### ${name} (${(set as Set<string>).size})`);
+    if (!(set instanceof Set)) throw new Error(`KNOWLEDGE.${name} is not a Set: the parser reference lists word lists only; teach lib/scriptos/reference.ts about it`);
+    out.push(`### ${name} (${set.size})`);
     out.push('');
-    out.push(list(sorted(set as Set<string>)));
+    out.push(list(sorted(set)));
     out.push('');
   }
   out.push(`### BREAKDOWN_STOPWORDS (${BREAKDOWN_STOPWORDS.size})`);
@@ -67,9 +71,9 @@ export function buildReference(): string {
   }
   out.push('### Patterns');
   out.push('');
-  out.push(`- \`FRAME_TAG\` — layers of a story told in layers: \`${re(FRAME_TAG)}\``);
-  out.push(`- \`YEAR\` — a year or a decade in a heading: \`${re(YEAR)}\``);
-  out.push(`- \`CLOCK\` — a clock time standing in for a time of day: \`${re(CLOCK)}\``);
+  out.push(`- \`FRAME_TAG\` — layers of a story told in layers: \`${HEADING_PATTERNS.FRAME_TAG}\``);
+  out.push(`- \`YEAR\` — a year or a decade in a heading: \`${HEADING_PATTERNS.YEAR}\``);
+  out.push(`- \`CLOCK\` — a clock time standing in for a time of day: \`${HEADING_PATTERNS.CLOCK}\``);
   out.push('');
   out.push('## Patterns in the reader');
   out.push('');
@@ -88,10 +92,10 @@ export function buildReference(): string {
   out.push('');
   out.push('Costs: lower is a better fit. Tuned on the corpus (`lib/scriptos/corpus`); change one, re-measure (`npm run test` runs the ratchet).');
   out.push('');
-  out.push('| Weight | Cost | What it prices |');
-  out.push('| --- | ---: | --- |');
+  out.push('| Weight | Value | Effect | What it prices |');
+  out.push('| --- | ---: | --- | --- |');
   for (const key of Object.keys(DEFAULT_PARAMS) as Array<keyof Params>) {
-    out.push(`| \`${key}\` | ${DEFAULT_PARAMS[key]} | ${PARAM_DOCS[key]} |`);
+    out.push(`| \`${key}\` | ${DEFAULT_PARAMS[key]} | ${key === 'temperature' ? 'scale' : DISCOUNTS.has(key) ? 'subtracts (raising it favours)' : 'adds (raising it penalises)'} | ${PARAM_DOCS[key]} |`);
   }
   out.push('');
   return out.join('\n');

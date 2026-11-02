@@ -46,9 +46,9 @@ export const NUMBER_WORDS = new Set(['A', 'AM', 'PM', 'ONE', 'TWO', 'THREE', 'FO
 export const MONTHS = new Set(['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER', 'SPRING', 'SUMMER', 'AUTUMN', 'FALL', 'WINTER']);
 export const DAYS_OF_WEEK = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
 /** A layer of a story told in layers: "PART ONE", "CHAPTER 2", "ACT THREE, LATER", "REEL 2". */
-export const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i;
-export const YEAR = /\b(1[0-9]{3}|20[0-9]{2})(?:'?s)?\b/g;
-export const CLOCK = /^\d{1,2}[:.]\d{2}$/;
+const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i;
+const YEAR = /\b(1[0-9]{3}|20[0-9]{2})(?:'?s)?\b/g;
+const CLOCK = /^\d{1,2}[:.]\d{2}$/;
 
 /** "LATE AFTERNOON", "EARLY EVENING", "MID-MORNING": a time of day with a qualifier. */
 const isTimeOfDay = (joined: string): boolean => TIMES.has(joined) || TIMES.has(joined.replace(/^(LATE|EARLY|MID)\s+/, ''));
@@ -150,3 +150,10 @@ export function readHeading(headingBody: string): Heading {
     frame,
   };
 }
+
+/** The heading patterns as text, for the generated parser reference (the live regexes stay private: `YEAR` is global and carries state). */
+export const HEADING_PATTERNS: Record<string, string> = {
+  FRAME_TAG: `/${FRAME_TAG.source}/${FRAME_TAG.flags}`,
+  YEAR: `/${YEAR.source}/${YEAR.flags}`,
+  CLOCK: `/${CLOCK.source}/${CLOCK.flags}`,
+};
