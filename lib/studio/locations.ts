@@ -37,6 +37,8 @@ export interface SceneAtLocation {
   id: string;
   scene_number: number;
   location: string | null;
+  /** The linked location (the film graph); the heading's text when it is absent or gone. */
+  location_id?: string | null;
   heading: string | null;
   shoot_day: number | null;
   time_of_day?: string | null;
@@ -57,8 +59,9 @@ export const locationKey = (name: string | null | undefined) => (name ?? '').tri
 /** Every location in the script, with its record; then records the script doesn't use. */
 export function locationRows(scenes: SceneAtLocation[], records: LocationRecord[]): LocationRow[] {
   const byName = new Map<string, SceneAtLocation[]>();
+  const nameOfId = new Map(records.map((r) => [r.id, locationKey(r.name)]));
   for (const sc of scenes) {
-    const key = locationKey(sc.location);
+    const key = (sc.location_id ? nameOfId.get(sc.location_id) : undefined) ?? locationKey(sc.location);
     if (!key) continue;
     const list = byName.get(key);
     if (list) list.push(sc); else byName.set(key, [sc]);

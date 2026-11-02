@@ -6,6 +6,7 @@ import { Check, ExternalLink, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
+import { placeResolver } from '@/lib/film/places';
 import {
   issueState, locationKey, studio, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
@@ -30,9 +31,9 @@ type CrewMember = { user_id: string; role: string; username?: string };
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
-function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[]) {
+function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[], placeOf: (sc: SceneRow) => string) {
   const dayScenes = scenes.filter((sc) => (sc.shoot_day ?? 1) === day).sort((a, b) => a.scene_number - b.scene_number);
-  const locations = Array.from(new Set(dayScenes.map((sc) => sc.location).filter(Boolean))) as string[];
+  const locations = Array.from(new Set(dayScenes.map(placeOf).filter(Boolean)));
   const cast = Array.from(new Set(dayScenes.flatMap(castOf)));
   const eighths = dayScenes.reduce((t, sc) => { const m = String(sc.est_duration || '').match(/(\d+)\/8/); return t + (m ? Number(m[1]) : 0); }, 0);
   return { dayScenes, locations, cast, pages: eighths ? (eighths / 8).toFixed(1) : null };
@@ -57,6 +58,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     () => new Map(filmDays({ scenes, days: shootDays.rows, places: locations.rows, sheets: sheets.rows, viewerZone: deviceZone() }).map((d) => [d.number, d])),
     [scenes, shootDays.rows, locations.rows, sheets.rows],
   );
+  const placeOf = useMemo(() => placeResolver(locations.rows), [locations.rows]);
   const addressOf = useMemo(() => new Map(locations.rows.filter((l) => l.address).map((l) => [locationKey(l.name), l.address as string])), [locations.rows]);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
@@ -69,7 +71,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const nameOf = (userId: string) => (userId === me ? 'You' : crew.find((m) => m.user_id === userId)?.username || 'The owner');
 
   const print = (day: number) => {
-    const d = dayFacts(scenes, day, castOf);
+    const d = dayFacts(scenes, day, castOf, placeOf);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
     const callOf = (t: CallTarget) => mine.find((c) => ('crew_user_id' in t ? c.crew_user_id === t.crew_user_id : c.character_name === t.character_name));
@@ -98,7 +100,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
 
   // Each called actor's pages for the day, from the script's saved text.
   const printSides = (day: number) => {
-    const d = dayFacts(scenes, day, castOf);
+    const d = dayFacts(scenes, day, castOf, placeOf);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
     const sides = buildSides(
@@ -122,7 +124,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: 'var(--danger)' }}>{sheets.error || calls.error}</div>}
       <div className={c.list}>
         {days.map((day) => {
-          const d = dayFacts(scenes, day, castOf);
+          const d = dayFacts(scenes, day, castOf, placeOf);
           const sheet = sheetFor(day);
           const open = openDay === day;
           const dayCalls = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);

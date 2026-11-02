@@ -39,6 +39,7 @@ export interface ReadinessScene {
   shoot_day: number | null;
   /** From the heading (INT. HARBOR - NIGHT → HARBOR). */
   location?: string | null;
+  location_id?: string | null;
 }
 
 export interface ReadinessInput {
@@ -54,13 +55,15 @@ export interface ReadinessInput {
   dateOfDay: Map<number, string>;
   /** Location records by name (upper case); absent → the check doesn't apply. */
   locations?: Map<string, { status: string; permit: string }>;
+  /** Where a scene shoots (graph first). Defaults to the heading's text. */
+  placeOf?: (scene: ReadinessScene) => string;
 }
 
 const list = (names: string[], max = 3) =>
   names.length <= max ? names.join(', ') : `${names.slice(0, max).join(', ')} +${names.length - max}`;
 
 function locationCheck(scene: ReadinessScene, input: ReadinessInput): ReadinessCheck {
-  const name = locationKey(scene.location);
+  const name = input.placeOf ? input.placeOf(scene) : locationKey(scene.location);
   if (!name || !input.locations) return { id: 'location', label: 'Location', state: 'none', detail: '' };
   const r = locationReadiness(name, input.locations.get(name));
   return { id: 'location', label: 'Location', state: r.ready ? 'done' : 'todo', detail: r.detail };

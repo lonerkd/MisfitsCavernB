@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronDown, FileText, Minus, PenLine } from 'lucide-react';
 import { useBreakdown } from '@/lib/breakdown';
+import { placeResolver } from '@/lib/film/places';
 import { locationKey, useCallSheets, useCastings, useProjectLocations } from '@/lib/studio';
 import { nextShootDay, readinessByDay, type CheckId, type ReadinessDay, type ReadinessInput, type SceneReadiness } from '@/lib/studio/readiness';
 import type { Place } from '@/lib/os/progress';
@@ -68,7 +69,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const refsByScene = new Map(Array.from(mediaByScene.entries()).map(([id, list]) => [id, list.length]));
     const dateOfDay = new Map(sheets.rows.filter((c) => c.shoot_date).map((c) => [c.shoot_day, c.shoot_date as string]));
     const locationMap = new Map(locations.rows.map((l) => [locationKey(l.name), { status: l.status, permit: l.permit }]));
-    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
+    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, placeOf: placeResolver(locations.rows), elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
   }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, castings.rows, locations.rows, castOf]);
 
   const days = useMemo(() => readinessByDay(scenes.rows, input), [scenes.rows, input]);
@@ -97,7 +98,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const undatedDays = Array.from(new Set(of('date').map((x) => headingOf.get(x.sceneId)?.shoot_day).filter((d): d is number => d != null))).sort((a, b) => a - b);
     const unscheduled = of('date').filter((x) => headingOf.get(x.sceneId)?.shoot_day == null).length;
     const items: Array<{ id: CheckId; text: string; scenes: number; editor?: boolean }> = [];
-    const places = new Set(of('location').map((x) => locationKey(headingOf.get(x.sceneId)?.location)).filter(Boolean));
+    const places = new Set(of('location').map((x) => { const sc = headingOf.get(x.sceneId); return sc ? (input.placeOf ?? ((x: typeof sc) => locationKey(x.location)))(sc) : ''; }).filter(Boolean));
     if (places.size) items.push({ id: 'location', text: `Lock down ${Array.from(places).sort().slice(0, 3).join(', ')}${places.size > 3 ? ` +${places.size - 3}` : ''}`, scenes: of('location').length });
     if (uncast.size) items.push({ id: 'cast', text: `Cast ${Array.from(uncast).sort().slice(0, 4).join(', ')}${uncast.size > 4 ? ` +${uncast.size - 4}` : ''}`, scenes: of('cast').length });
     if (unbroken) items.push({ id: 'elements', text: `Break down ${unbroken} scene${unbroken === 1 ? '' : 's'}`, scenes: unbroken, editor: true });

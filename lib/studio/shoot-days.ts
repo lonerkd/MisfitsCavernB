@@ -6,6 +6,7 @@ export interface SchedulableScene {
   id: string;
   scene_number: number;
   location: string | null;
+  location_id?: string | null;
   time_of_day: string | null;
   est_duration: string | null;
   shoot_day: number | null;
@@ -27,10 +28,15 @@ export interface ShootDayPlan {
   updates: Array<{ id: string; shoot_day: number }>;
 }
 
-export function packShootDays(scenes: SchedulableScene[], capacity = DEFAULT_DAY_CAPACITY_EIGHTHS): ShootDayPlan {
+export function packShootDays(
+  scenes: SchedulableScene[],
+  capacity = DEFAULT_DAY_CAPACITY_EIGHTHS,
+  /** Where a scene shoots (graph first); defaults to the heading's text. */
+  placeFor: (s: SchedulableScene) => string = (s) => (s.location ?? '').trim().toUpperCase(),
+): ShootDayPlan {
   const groups = new Map<string, SchedulableScene[]>();
   for (const s of scenes) {
-    const key = (s.location ?? '').trim().toUpperCase();
+    const key = placeFor(s);
     const list = groups.get(key) ?? [];
     list.push(s);
     groups.set(key, list);
