@@ -8,7 +8,15 @@ describe('languagesIn', () => {
     expect(languagesIn('ABUELA (Spanish)')).toEqual(['Spanish']);
     expect(languagesIn('MARA (sings, Portuguese)')).toEqual(['Portuguese']);
     expect(languagesIn('VOICE (V.O.) (Spanish, muffled)')).toEqual(['Spanish']);
-    expect(languagesIn('(in Haitian Creole)')).toEqual(['Creole']);
+    expect(languagesIn('(in Haitian Creole)')).toEqual(['Haitian Creole']);
+    expect(languagesIn('MARA (speaking Yiddish)')).toEqual(['Yiddish']);
+    expect(languagesIn('MARA (sings in French)')).toEqual(['French']);
+    expect(languagesIn('MARA (Navajo)')).toEqual(['Navajo']);
+    expect(languagesIn('MARA (español)')).toEqual(['Spanish']);
+    expect(languagesIn('MARA (speaking Quenya)')).toEqual(['Quenya']); // not in the data: after "speaking", one capitalised word is taken as written
+    expect(languagesIn('MARA (Spanish accent)')).toEqual([]);
+    expect(languagesIn('MARA (in the kitchen)')).toEqual([]);
+    expect(languagesIn('MARA (English subtitles)')).toEqual([]);
     expect(languagesIn("TESSA (CONT'D)")).toEqual([]);
     expect(languagesIn('JONAS (soft)')).toEqual([]);
     expect(languagesIn('INES (Spanish and Portuguese)')).toEqual(['Spanish', 'Portuguese']);
@@ -45,6 +53,31 @@ INT. STUDIO -- NIGHT (PART TWO)
 HOST (Portuguese)
 Bem-vindos.
 `;
+
+describe('scriptKnowledge: the gaps, shown instead of guessed', () => {
+  const k = scriptKnowledge(parseScript(`INT. WORKSHOP -- LIGHTHOUSE -- NIGHT
+
+TESSA (quietly)
+Hello.
+
+TESSA (V.O.)
+Still here.
+
+JONAS (quietly, Spanish)
+Hola.
+
+EXT. WORKSHOP -- LIGHTHOUSE -- DAY
+
+JONAS (quietly)
+Bye.
+`));
+  it('lists the cue words nothing recognised, with how often, and not extensions or languages', () => {
+    expect(k.vocabulary.cueTags).toEqual([{ tag: 'quietly', count: 3 }]);
+  });
+  it('lists how headings end and what the reader made of each ending', () => {
+    expect(k.vocabulary.headingTails.map((t) => [t.tail, t.count, t.treatedAs])).toEqual(expect.arrayContaining([['NIGHT', 1, 'when'], ['DAY', 1, 'when']]));
+  });
+});
 
 describe('scriptKnowledge: what the script says about itself', () => {
   const k = scriptKnowledge(parseScript(SCRIPT));

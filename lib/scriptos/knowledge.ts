@@ -4,6 +4,8 @@
 
 import type { ParseResult } from './types';
 import { languagesIn } from './languages';
+import { headingParts } from './heading';
+import { KNOWLEDGE } from './parser';
 
 export interface LanguageUse {
   language: string;
@@ -28,6 +30,15 @@ export interface ScriptKnowledge {
   places: Array<{ place: string; scenes: number; qualifiers: string[] }>;
   /** How many times the story jumps back in time between two dated scenes. */
   timeJumpsBack: number;
+  /**
+   * What this script writes that the reader does not know (the gaps, so a new script shows what is missing instead of
+   * someone guessing): the bracketed words on cues that are neither a known extension nor a language, and the last
+   * part of each heading with what the reader made of it (the place, or a "when" it set aside).
+   */
+  vocabulary: {
+    cueTags: Array<{ tag: string; count: number }>;
+    headingTails: Array<{ tail: string; count: number; treatedAs: 'place' | 'when' }>;
+  };
 }
 
 const wordCount = (s: string) => (s.trim().match(/\S+/g) ?? []).length;
@@ -92,6 +103,33 @@ export function scriptKnowledge(read: Pick<ParseResult, 'lines' | 'scenes'>): Sc
     }
   });
 
+  // The gaps: bracketed words on cues nothing recognised, and how each heading ends.
+  const cueTags = new Map<string, number>();
+  for (const l of read.lines) {
+    if (l.type !== 'character') continue;
+    const known = new Set(languagesIn(l.text).map((x) => x.toLowerCase()));
+    for (const m of l.text.matchAll(/\(([^)]*)\)/g)) {
+      for (const raw of m[1].split(/[,;]/)) {
+        const tag = raw.trim().toLowerCase();
+        if (!tag || KNOWLEDGE.EXTENSIONS.has(tag.toUpperCase()) || KNOWLEDGE.EXTENSIONS.has(`(${tag.toUpperCase()})`) || /^(cont'?d|contd|more|cont)\.?$/.test(tag)) continue;
+        if (languagesIn(`(${tag})`).length || known.has(tag)) continue;
+        cueTags.set(tag, (cueTags.get(tag) ?? 0) + 1);
+      }
+    }
+  }
+  const tails = new Map<string, { count: number; treatedAs: 'place' | 'when' }>();
+  for (const scene of read.scenes) {
+    const body = scene.heading.replace(/^\s*(\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
+    const parts = headingParts(body);
+    const tail = (parts[parts.length - 1] ?? '').toUpperCase();
+    if (!tail || parts.length < 2) continue;
+    const treatedAs = scene.location.toUpperCase().split(' - ').includes(tail) ? 'place' : 'when';
+    const t = tails.get(tail) ?? { count: 0, treatedAs };
+    t.count += 1;
+    tails.set(tail, t);
+  }
+  const top = <T,>(entries: T[], key: (t: T) => number, n = 30) => entries.sort((a, b) => key(b) - key(a)).slice(0, n);
+
   return {
     languages,
     untaggedSpeeches: untagged,
@@ -101,5 +139,9 @@ export function scriptKnowledge(read: Pick<ParseResult, 'lines' | 'scenes'>): Sc
     places: [...places].map(([place, p]) => ({ place, scenes: p.scenes, qualifiers: [...p.qualifiers].sort() }))
       .sort((a, b) => b.scenes - a.scenes || b.qualifiers.length - a.qualifiers.length || a.place.localeCompare(b.place)),
     timeJumpsBack,
+    vocabulary: {
+      cueTags: top([...cueTags].map(([tag, count]) => ({ tag, count })), (x) => x.count),
+      headingTails: top([...tails].map(([tail, t]) => ({ tail, ...t })), (x) => x.count),
+    },
   };
 }
