@@ -36,6 +36,9 @@ const groups = (mac: boolean): { title: string; items: [string, string][] }[] =>
     items: [
       ...chordItems('editor', mac),
       ['Tab', 'Smart element insert (scene / dialogue)'],
+      ['Escape, then Tab', 'Leave the script (move to the next control)'],
+      ['Alt 1–9', 'Tag the selection (tag mode)'],
+      ['Alt Enter  ·  Alt ⌫', 'Accept / dismiss a suggestion'],
       ['↑ ↓ · Enter', 'Navigate & accept autocomplete'],
       ['(', 'Auto-close parenthetical'],
       ['Enter', 'Auto-format a scene heading'],

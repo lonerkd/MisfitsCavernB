@@ -33,8 +33,12 @@ test.describe.serial('Global chords (local Supabase)', () => {
     for (const route of ['/today', '/editor']) {
       await page.goto(route);
       await page.waitForLoadState('domcontentloaded');
-      if (route === '/editor') await page.locator('textarea').first().click({ timeout: 30_000 }).catch(() => {});
-      else await page.locator('body').click();
+      // Inside the editor, the press happens with the script's text box focused (a failure to find it fails the test).
+      if (route === '/editor') {
+        const script = page.getByLabel('Script', { exact: true });
+        await script.click({ timeout: 30_000 });
+        await expect(script).toBeFocused();
+      } else await page.locator('body').click();
 
       await page.keyboard.press('Control+k');
       await expect(page.getByRole('dialog', { name: 'Search the suite' })).toBeVisible({ timeout: 15_000 });
@@ -48,5 +52,25 @@ test.describe.serial('Global chords (local Supabase)', () => {
       await page.keyboard.press('Escape');
       await expect(page.getByRole('heading', { name: 'KEYBOARD SHORTCUTS' })).toHaveCount(0);
     }
+  });
+
+  test('inside a split pane the search and shortcuts open on the split page', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', user.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+
+    await page.goto('/today');
+    await page.keyboard.press('Control+\\');
+    await page.waitForURL(/\/split/, { timeout: 30_000 });
+    const pane = page.frameLocator('iframe').first();
+    await pane.locator('body').click({ timeout: 30_000 });
+    await page.keyboard.press('Control+k');
+    await expect(page.getByRole('dialog', { name: 'Search the suite' })).toBeVisible({ timeout: 15_000 });
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Control+/');
+    await expect(page.getByRole('heading', { name: 'KEYBOARD SHORTCUTS' })).toBeVisible({ timeout: 15_000 });
   });
 });

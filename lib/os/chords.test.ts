@@ -5,14 +5,14 @@ const press = (key: string, o: Partial<{ ctrlKey: boolean; metaKey: boolean; alt
   ({ key, ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, ...o });
 
 describe('the chord table', () => {
-  it('has no two chords on the same keys in the same place, and no tool chord on a global one', () => {
+  it('has no two chords on the same keys in one scope, and no tool chord on a global one', () => {
     const sig = (c: (typeof CHORDS)[number]) => `${c.key}${c.shift ? '+shift' : ''}`;
-    const seen = new Map<string, string>();
-    for (const c of CHORDS) {
-      const clash = seen.get(sig(c));
-      // A scope may share keys with another tool's chord (⌘F in the editor, say) but never with a global one.
-      if (clash) expect(c.scope !== 'global' && CHORDS.find((x) => x.id === clash)!.scope !== 'global' && CHORDS.find((x) => x.id === clash)!.scope !== c.scope, `${c.id} reuses the keys of ${clash}`).toBe(true);
-      seen.set(sig(c), c.id);
+    for (const [i, c] of CHORDS.entries()) {
+      for (const earlier of CHORDS.slice(0, i)) {
+        if (sig(earlier) !== sig(c)) continue;
+        // Different tools may share keys (⌘F in the editor and another tool), but never within one scope, and never with a global chord.
+        expect(earlier.scope !== c.scope && earlier.scope !== 'global' && c.scope !== 'global', `${c.id} reuses the keys of ${earlier.id}`).toBe(true);
+      }
     }
   });
 

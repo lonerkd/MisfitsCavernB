@@ -27,6 +27,7 @@ export const CHORDS: readonly Chord[] = [
   { id: 'editor.goto', key: 'g', scope: 'editor', label: 'Go to a scene' },
   { id: 'editor.undo', key: 'z', scope: 'editor', label: 'Undo' },
   { id: 'editor.redo', key: 'z', shift: true, scope: 'editor', label: 'Redo' },
+  { id: 'editor.tagmode', key: 'b', shift: true, scope: 'editor', label: 'Breakdown tag mode' },
   { id: 'editor.redo-y', key: 'y', scope: 'editor', label: 'Redo' },
 ];
 

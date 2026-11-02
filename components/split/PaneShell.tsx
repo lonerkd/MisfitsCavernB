@@ -22,8 +22,16 @@ export function PaneReporter() {
     };
     report();
     const t = setInterval(report, 400);
+    // The chrome (search, the shortcuts panel) belongs to the split page, so a pane hands it the global chords it cannot answer.
+    const onKey = (e: KeyboardEvent) => {
+      const id = matchChord(e)?.id;
+      if (id !== 'palette' && id !== 'help') return;
+      e.preventDefault();
+      postToSplit({ type: 'chord', id });
+    };
+    window.addEventListener('keydown', onKey);
     window.addEventListener('popstate', report);
-    return () => { clearInterval(t); window.removeEventListener('popstate', report); };
+    return () => { clearInterval(t); window.removeEventListener('popstate', report); window.removeEventListener('keydown', onKey); };
   }, []);
   return null;
 }
