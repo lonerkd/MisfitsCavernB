@@ -120,6 +120,8 @@ export default function EditorPage() {
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const caretAfterRemote = useRef<[number, number] | null>(null);
+  // Where the caret goes once the text the editor itself reshaped (an opening parenthesis, a Tab, an inserted element) is on screen.
+  const caretAfterEdit = useRef<number | null>(null);
   // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
   const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -134,6 +136,8 @@ export default function EditorPage() {
       if (mapIndex && ta && document.activeElement === ta) {
         caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
       }
+      // A caret the editor has yet to place moves with the words that came in before it.
+      if (mapIndex && caretAfterEdit.current !== null) caretAfterEdit.current = mapIndex(caretAfterEdit.current);
       // A collaborator's edit is already in the shared text; put it on screen at
       // once, so a key pressed a moment later is measured against what the
       // writer sees and cannot wipe the edit out.
@@ -146,6 +150,14 @@ export default function EditorPage() {
     const ta = textareaRef.current;
     caretAfterRemote.current = null;
     if (caret && ta && document.activeElement === ta) ta.setSelectionRange(caret[0], caret[1]);
+    // The reshaped text has just been put on screen (which moves the caret to the end): put the caret where the edit left it,
+    // now, not on a timer, so a key pressed at once cannot land at the end of the script.
+    const placed = caretAfterEdit.current;
+    if (placed !== null && ta) {
+      caretAfterEdit.current = null;
+      ta.focus();
+      ta.setSelectionRange(placed, placed);
+    }
   }, [content]);
   const stash = useScriptStash(currentScript?.id ?? null);
   // Everything the text implies — lines, scenes, character stats, lint — worked
@@ -505,7 +517,15 @@ export default function EditorPage() {
 
   // Where the caret goes after an edit: the textarea is controlled, so set it once React has rendered.
   const placeCaret = (editor: HTMLTextAreaElement, caret: number) => {
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+    // Applied as soon as the new text is on screen (see the layout effect on `content`). If the text turns out to be
+    // unchanged there is no new text to wait for, so the timer places it instead.
+    caretAfterEdit.current = caret;
+    setTimeout(() => {
+      if (caretAfterEdit.current === null) return;
+      caretAfterEdit.current = null;
+      editor.focus();
+      editor.setSelectionRange(caret, caret);
+    }, 0);
   };
 
   const insertElement = (type: string) => {
