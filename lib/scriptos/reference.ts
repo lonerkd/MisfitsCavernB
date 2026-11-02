@@ -1,7 +1,7 @@
 // The parser reference: every word list, pattern and weight the reading engine uses, written out from the
 // code itself so it cannot drift (`reference.test.ts` fails if the committed copy is stale). Pure.
 
-import { KNOWLEDGE, TRANSITION_TO_COLOUR } from './parser';
+import { BREAKDOWN_STOPWORDS, KNOWLEDGE, TRANSITION_TO_COLOUR } from './parser';
 import { DEFAULT_PARAMS, TIME_CARD, type Params } from './decode';
 import { TIMES, FILLER, NUMBER_WORDS, MONTHS, DAYS_OF_WEEK, FRAME_TAG, YEAR, CLOCK } from './heading';
 import { SYNONYMS, VERBS } from './languages';
@@ -34,6 +34,7 @@ export const PARAM_DOCS: Record<keyof Params, string> = {
 // Code-point order, never a locale's collation: the committed file must come out the same on every machine.
 const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const sorted = (set: ReadonlySet<string>) => Array.from(set).sort(byCodePoint);
+const re = (r: RegExp) => `/${r.source}/${r.flags}`;
 const list = (items: string[]) => items.map((i) => `\`${i}\``).join(' · ');
 
 export function buildReference(): string {
@@ -50,6 +51,12 @@ export function buildReference(): string {
     out.push(list(sorted(set as Set<string>)));
     out.push('');
   }
+  out.push(`### BREAKDOWN_STOPWORDS (${BREAKDOWN_STOPWORDS.size})`);
+  out.push('');
+  out.push('Words the breakdown ignores when it suggests elements from action lines (`lib/scriptos/parser.ts`):');
+  out.push('');
+  out.push(list(sorted(BREAKDOWN_STOPWORDS)));
+  out.push('');
   out.push('## Heading vocabulary (`lib/scriptos/heading.ts`)');
   out.push('');
   for (const [name, set] of Object.entries({ TIMES, FILLER, NUMBER_WORDS, MONTHS, DAYS_OF_WEEK })) {
@@ -60,14 +67,14 @@ export function buildReference(): string {
   }
   out.push('### Patterns');
   out.push('');
-  out.push(`- \`FRAME_TAG\` — layers of a story told in layers: \`${FRAME_TAG.source}\``);
-  out.push(`- \`YEAR\` — a year or a decade in a heading: \`${YEAR.source}\``);
-  out.push(`- \`CLOCK\` — a clock time standing in for a time of day: \`${CLOCK.source}\``);
+  out.push(`- \`FRAME_TAG\` — layers of a story told in layers: \`${re(FRAME_TAG)}\``);
+  out.push(`- \`YEAR\` — a year or a decade in a heading: \`${re(YEAR)}\``);
+  out.push(`- \`CLOCK\` — a clock time standing in for a time of day: \`${re(CLOCK)}\``);
   out.push('');
   out.push('## Patterns in the reader');
   out.push('');
-  out.push(`- \`TRANSITION_TO_COLOUR\` (\`parser.ts\`) — a transition written without its colon: \`${TRANSITION_TO_COLOUR.source}\``);
-  out.push(`- \`TIME_CARD\` (\`decode.ts\`) — a time card that narrates and ends a speech ("TWO HOURS LATER"): \`${TIME_CARD.source}\``);
+  out.push(`- \`TRANSITION_TO_COLOUR\` (\`parser.ts\`) — a transition written without its colon: \`${re(TRANSITION_TO_COLOUR)}\``);
+  out.push(`- \`TIME_CARD\` (\`decode.ts\`) — a time card that narrates and ends a speech ("TWO HOURS LATER"): \`${re(TIME_CARD)}\``);
   out.push('');
   out.push('## Languages (`lib/scriptos/languages.ts`)');
   out.push('');
@@ -75,7 +82,7 @@ export function buildReference(): string {
   out.push('');
   out.push(Object.entries(SYNONYMS).sort(([a], [b]) => byCodePoint(a, b)).map(([k, v]) => `\`${k}\` → ${v}`).join(' · '));
   out.push('');
-  out.push(`A language is named after a verb phrase: \`${VERBS.source}\``);
+  out.push(`A language is named after a verb phrase: \`${re(VERBS)}\``);
   out.push('');
   out.push('## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)');
   out.push('');

@@ -64,6 +64,12 @@
 
 `BEAM` · `BLAST` · `BLOOD` · `BULLET` · `CRASH` · `EXPLOSION` · `FIRE` · `GLOW` · `HOLOGRAM` · `LASER` · `MAGIC` · `SHATTER` · `SMOKE` · `SPARKS` · `WOUND`
 
+### BREAKDOWN_STOPWORDS (110)
+
+Words the breakdown ignores when it suggests elements from action lines (`lib/scriptos/parser.ts`):
+
+`A` · `ACROSS` · `AFTER` · `AGAINST` · `ALL` · `ALONG` · `AN` · `AND` · `ANGLE` · `ANY` · `ARE` · `AROUND` · `AS` · `AT` · `BACK` · `BE` · `BEFORE` · `BETWEEN` · `BEYOND` · `BUT` · `BY` · `CAN` · `CARD` · `CHYRON` · `CLOSE` · `CONTINUOUS` · `COULD` · `DAY` · `DID` · `DO` · `DOES` · `DOWN` · `EVERY` · `EXT` · `FINALLY` · `FOR` · `FROM` · `HAD` · `HAS` · `HAVE` · `HE` · `HER` · `HERE` · `HIS` · `HOLD` · `I` · `IN` · `INSERT` · `INT` · `INTO` · `IS` · `IT` · `JUST` · `LATER` · `MAY` · `MIGHT` · `MORE` · `MUST` · `MY` · `NIGHT` · `NO` · `NOT` · `NOW` · `OF` · `OFF` · `ON` · `ONLY` · `OR` · `OUR` · `OUT` · `OVER` · `POV` · `QUICKLY` · `SHALL` · `SHE` · `SLOWLY` · `SOME` · `SOON` · `STILL` · `SUDDENLY` · `SUPER` · `THAT` · `THE` · `THEIR` · `THEM` · `THEN` · `THERE` · `THESE` · `THEY` · `THIS` · `THOSE` · `THROUGH` · `TITLE` · `TO` · `UNDER` · `UP` · `WAS` · `WE` · `WERE` · `WHAT` · `WHEN` · `WHERE` · `WHILE` · `WHO` · `WILL` · `WITH` · `WOULD` · `YES` · `YOU` · `YOUR`
+
 ## Heading vocabulary (`lib/scriptos/heading.ts`)
 
 ### TIMES (60)
@@ -88,14 +94,14 @@
 
 ### Patterns
 
-- `FRAME_TAG` — layers of a story told in layers: `^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$`
-- `YEAR` — a year or a decade in a heading: `\b(1[0-9]{3}|20[0-9]{2})(?:'?s)?\b`
-- `CLOCK` — a clock time standing in for a time of day: `^\d{1,2}[:.]\d{2}$`
+- `FRAME_TAG` — layers of a story told in layers: `/^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i`
+- `YEAR` — a year or a decade in a heading: `/\b(1[0-9]{3}|20[0-9]{2})(?:'?s)?\b/g`
+- `CLOCK` — a clock time standing in for a time of day: `/^\d{1,2}[:.]\d{2}$/`
 
 ## Patterns in the reader
 
-- `TRANSITION_TO_COLOUR` (`parser.ts`) — a transition written without its colon: `^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$`
-- `TIME_CARD` (`decode.ts`) — a time card that narrates and ends a speech ("TWO HOURS LATER"): `^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DAYS?|WEEKS?|MONTHS?|YEARS?) (?:LATER|EARLIER|BEFORE|AFTER)|(?:MOMENTS|SECONDS|MINUTES|HOURS|DAYS|WEEKS|MONTHS|YEARS) (?:LATER|EARLIER)|LATER|EARLIER|MEANWHILE|SAME TIME|THE NEXT (?:DAY|MORNING|NIGHT|AFTERNOON|EVENING)|THAT NIGHT|THAT MORNING|CONTINUOUS|MOMENTS LATER)[.:]?$`
+- `TRANSITION_TO_COLOUR` (`parser.ts`) — a transition written without its colon: `/^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/`
+- `TIME_CARD` (`decode.ts`) — a time card that narrates and ends a speech ("TWO HOURS LATER"): `/^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DAYS?|WEEKS?|MONTHS?|YEARS?) (?:LATER|EARLIER|BEFORE|AFTER)|(?:MOMENTS|SECONDS|MINUTES|HOURS|DAYS|WEEKS|MONTHS|YEARS) (?:LATER|EARLIER)|LATER|EARLIER|MEANWHILE|SAME TIME|THE NEXT (?:DAY|MORNING|NIGHT|AFTERNOON|EVENING)|THAT NIGHT|THAT MORNING|CONTINUOUS|MOMENTS LATER)[.:]?$/`
 
 ## Languages (`lib/scriptos/languages.ts`)
 
@@ -103,7 +109,7 @@ Names are read from the platform's own language table (`Intl.DisplayNames`); `SY
 
 `african american vernacular english` → English · `american sign language` → Sign language · `asl` → Sign language · `british sign language` → Sign language · `bsl` → Sign language · `cantonese` → Cantonese · `chinese` → Chinese · `cockney` → English · `creole` → Haitian Creole · `farsi` → Persian · `filipino` → Filipino · `gaelic` → Gaelic · `haitian` → Haitian Creole · `haitian creole` → Haitian Creole · `kreyol` → Haitian Creole · `kreyòl` → Haitian Creole · `mandarin` → Mandarin Chinese · `mandarin chinese` → Mandarin Chinese · `patois` → Patois · `pidgin` → Pidgin · `scottish gaelic` → Gaelic · `sign language` → Sign language · `signing` → Sign language · `spanglish` → Spanglish · `tagalog` → Filipino
 
-A language is named after a verb phrase: `\b(?:in|speaking|speaks|spoken in|sings in|singing in|says in|reads in|replies in|answers in|switches to|into|translated from)\s+([\p{L}][\p{L}' -]*)$`
+A language is named after a verb phrase: `/\b(?:in|speaking|speaks|spoken in|sings in|singing in|says in|reads in|replies in|answers in|switches to|into|translated from)\s+([\p{L}][\p{L}' -]*)$/iu`
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
 
