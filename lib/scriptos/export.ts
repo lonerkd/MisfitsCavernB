@@ -1,12 +1,13 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
+import { readingFormat } from './reading-format';
 import { serializeFountain } from './fountain-export';
 
 export function exportScriptAsText(script: StoredScript, format: 'txt' | 'fountain' = 'txt'): void {
   // '.fountain' downloads a canonically-formatted Fountain document — parse and
   // re-emit — rather than a raw dump, so the file is clean and round-trips.
   // '.txt' is the author's source verbatim.
-  const text = format === 'fountain' ? serializeFountain(parseScript(script.content).lines) : script.content;
+  const text = format === 'fountain' ? serializeFountain(parseScript(script.content, readingFormat(script.format)).lines) : script.content;
   const blob = new Blob([text], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -19,7 +20,7 @@ export function exportScriptAsText(script: StoredScript, format: 'txt' | 'founta
 }
 
 export function exportScriptAsFdx(script: StoredScript): void {
-  const result = parseScript(script.content);
+  const result = parseScript(script.content, readingFormat(script.format));
 
   const mapTypeToFdx = (type: string): string => {
     switch (type) {
@@ -116,7 +117,7 @@ ${paragraphs}
 /** jsPDF is large and only needed here, so it loads when a PDF is asked for. */
 export async function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): Promise<void> {
   const { jsPDF } = await import('jspdf');
-  const result = parseScript(script.content);
+  const result = parseScript(script.content, readingFormat(script.format));
 
   const doc = new jsPDF({ unit: 'in', format: 'letter' });
   doc.setFont('courier', 'normal');
