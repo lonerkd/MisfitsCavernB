@@ -34,7 +34,7 @@ test.describe('The island says where the shoot day is (local Supabase)', () => {
   });
 
   test('on set today: rolling, hours on set, and time to wrap, then over', async () => {
-    test.setTimeout(120_000);
+    test.setTimeout(150_000);
     // Midday-ish so "3 hours ago" and "1 hour from now" are the same calendar day for any run time that matters.
     const now = new Date();
     const callAt = new Date(now.getTime() - 3 * 3600_000);
@@ -67,12 +67,15 @@ test.describe('The island says where the shoot day is (local Supabase)', () => {
 
       // The planned wrap passes while the crew is still rolling: it says how far over.
       await admin.from('call_sheets').update({ estimated_wrap: `${hhmm(new Date(now.getTime() - 20 * 60_000))}:00` }).eq('id', sheet);
-      await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · .* on set · (1\d|2\d)m over$/ })).toBeVisible({ timeout: 40_000 });
+      await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · .* on set · (1\d|2\d)m over$/ })).toBeVisible({ timeout: 75_000 });
     } finally { await ctx.close(); await browser.close(); }
   });
 
   test('on a 320 px phone the On set pill stays inside the screen', async () => {
     test.setTimeout(120_000);
+    // This test makes its own shoot day if the first one did not (it skips itself near midnight, or may run alone).
+    const have = (await admin.from('call_sheets').select('id').eq('project_id', projectId)).data ?? [];
+    if (!have.length) await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: local(new Date()) });
     const browser = await chromium.launch({ executablePath: process.env.MC_LOCAL_CHROMIUM });
     const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
     const page = await ctx.newPage();

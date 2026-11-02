@@ -42,8 +42,8 @@ describe('onSetLine', () => {
     expect(onSetLine(status('before', 0))).toBeNull();
   });
   it('says where the day is and how long they have been on set; the island adds what is left to the planned wrap', () => {
-    expect(onSetLine(status('shooting', 252, 0, 80))).toEqual({ short: 'Rolling · 4h 12m on set', full: 'Rolling · 4h 12m on set · 1h 20m to wrap' });
-    expect(onSetLine(status('prep', 20))).toEqual({ short: 'Crew called · 20m on set', full: 'Crew called · 20m on set' });
+    expect(onSetLine(status('shooting', 252, 0, 80))).toEqual({ short: 'Rolling · 4h 12m', full: 'Rolling · 4h 12m on set · 1h 20m to wrap' });
+    expect(onSetLine(status('prep', 20))).toEqual({ short: 'Crew called · 20m', full: 'Crew called · 20m on set' });
     expect(onSetLine(status('lunch', 300, 0, 40))?.full).toBe('Lunch · 5h on set · 40m to wrap');
   });
   it('says how far over the planned wrap the day is, and after the wrap shows what the day came to', () => {

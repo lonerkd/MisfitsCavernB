@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useProject } from '@/lib/os';
 import { studio, useShootDays } from '@/lib/studio';
-import { dayClock, dayStatus, localDateTime } from '@/lib/studio/onset';
+import { dayClock, dayStatus, plannedWrapAt } from '@/lib/studio/onset';
 import { localDate, onSetLine, shootDayToday } from './onset';
 
 const key = (dayId: string) => `mc-onset-away:${dayId}`;
@@ -28,23 +28,27 @@ export function useOnSet(): OnSet | null {
   // both the desktop island and the phone's pill ask).
   const projectId = onToday ? activeProject?.id ?? null : null;
   const dayNumber = day?.day_number ?? null;
-  const [clockData, setClockData] = useState<Awaited<ReturnType<typeof studio.getDayClock>> | null>(null);
+  // What was read is kept with the project and day it was read for, so another project's label never shows this one's clock.
+  const [read, setRead] = useState<{ key: string; data: Awaited<ReturnType<typeof studio.getDayClock>> } | null>(null);
+  const readKey = projectId && dayNumber !== null ? `${projectId}:${dayNumber}` : null;
+  const clockData = read && read.key === readKey ? read.data : null;
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     if (!projectId || dayNumber === null) return;
     let cancelled = false;
-    const read = () => {
+    const key = `${projectId}:${dayNumber}`;
+    const reload = () => {
       setNow(new Date());
-      studio.getDayClock(projectId, dayNumber).then((d) => { if (!cancelled) setClockData(d); }).catch(() => { /* the line just stays as it was */ });
+      studio.getDayClock(projectId, dayNumber).then((d) => { if (!cancelled) setRead({ key, data: d }); }).catch(() => { /* the line just stays as it was */ });
     };
-    read();
-    const t = window.setInterval(read, 30_000);
+    reload();
+    const t = window.setInterval(reload, 30_000);
     return () => { cancelled = true; window.clearInterval(t); };
   }, [projectId, dayNumber]);
   if (!day || !onToday) return null;
   // Nothing to say until the crew call is stamped (a wrap stamped with no call is not a day to report on).
   const clock = clockData?.sheet ? dayClock(clockData.rows) : null;
-  const line = clockData?.sheet && clock?.call ? onSetLine(dayStatus(clock, now, localDateTime(clockData.sheet.shoot_date, clockData.sheet.estimated_wrap))) : null;
+  const line = clockData?.sheet && clock?.call ? onSetLine(dayStatus(clock, now, plannedWrapAt(clockData.sheet.shoot_date, clockData.sheet.estimated_wrap, clock.call))) : null;
   return {
     label: `On set · Day ${day.day_number}`,
     line,

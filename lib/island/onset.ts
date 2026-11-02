@@ -1,3 +1,5 @@
+import type { DayStatus } from '@/lib/studio/onset';
+
 // On set: the island takes over by itself on a shoot day, and steps back the
 // moment it is dismissed. These are the pure parts; the hook is beside them.
 
@@ -13,8 +15,6 @@ export function localDate(d: Date): string {
 export function shootDayToday<T extends DatedDay>(days: readonly T[], today: string): T | null {
   return days.find((d) => d.shoot_date === today) ?? null;
 }
-
-import type { DayStatus } from '@/lib/studio/onset';
 
 /** 75 → "1h 15m", 45 → "45m", 120 → "2h". */
 export function duration(minutes: number): string {
@@ -34,9 +34,11 @@ const PHASE: Record<DayStatus['phase'], string> = { before: '', prep: 'Crew call
 export function onSetLine(status: DayStatus): { short: string; full: string } | null {
   const phase = PHASE[status.phase];
   if (!phase) return null;
-  const short = `${phase} · ${duration(status.onSetMinutes)} on set`;
+  const onSet = `${phase} · ${duration(status.onSetMinutes)} on set`;
+  // The phone's pill has room for little, and what it has should be the useful part: the phase and the time.
+  const short = `${phase} · ${duration(status.onSetMinutes)}`;
   const tail = status.overtimeMinutes > 0 ? `${duration(status.overtimeMinutes)} over` : status.toWrapMinutes != null && status.phase !== 'wrapped' ? `${duration(status.toWrapMinutes)} to wrap` : '';
-  return { short, full: tail ? `${short} · ${tail}` : short };
+  return { short, full: tail ? `${onSet} · ${tail}` : onSet };
 }
 
 /** Where the on-set tools live. */
