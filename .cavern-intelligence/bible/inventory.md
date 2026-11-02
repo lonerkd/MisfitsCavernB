@@ -332,7 +332,7 @@
 
 ### `/today`
 
-- **Tables:** `audit_logs`, `budget_items`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channels`, `media`, `messages`, `notifications`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `timeline_items`
+- **Tables:** `audit_logs`, `budget_items`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channels`, `media`, `messages`, `notifications`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `shoot_days`, `timeline_items`
 - **Functions:** `edit_message`, `get_my_account`, `get_my_ui_prefs`, `lounge_unread`, `mark_lounge_read`, `pin_message`, `search_lounge`, `set_my_ui_prefs`, `toggle_message_reaction`
 - **Realtime:** `chan`, `project`, `projects:list`
 
@@ -439,7 +439,7 @@
 | `scripts` | `/p/[token]`, `/admin/brief-questions`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/call/[id]`, `/crew/[id]`, `/crew`, `/editor`, `/hub`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/today`, `/welcome` |
 | `set_log` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `sfx_assets` | `/editor`, `/settings`, `/soundtrack` |
-| `shoot_days` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
+| `shoot_days` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio`, `/today` |
 | `shots` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `spotify_connections` | `/auth/spotify-callback`, `/editor`, `/soundtrack` |
 | `support_case_messages` | `/admin/support`, `/hub/help/[id]`, `/hub/help` |
