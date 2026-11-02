@@ -134,6 +134,15 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       if (localPlayer) localPlayer.disconnect();
+      // A disconnected player has no track, no position and no controls: leaving them here would show the last
+      // account's song (and let a button drive a dead player) until the next player reports in, which it may
+      // never do if the person has just signed out or switched Spotify account.
+      setPlayer(null);
+      setDeviceId(null);
+      setCurrentTrack(null);
+      setIsPlaying(false);
+      setProgressMs(0);
+      setDurationMs(0);
     };
   }, [isSDKReady, isAuthenticated, useIframeFallback]);
 
