@@ -189,6 +189,8 @@ runs, one at a time by priority, each with its controls:
 - network / sync status (offline, "saved on device, will sync", outbox count)
 - a temporary notification (exists as `live`; add a hold time and an action)
 
+**The island at every size — M/L, a design pass first (owner, 2026-11-02):** under 760 px the island vanishes and the phone's pill takes over, whatever the device (narrow desktop windows, split screens, small tablets with keyboards). Plan: [plans/2026-11-02-island-at-every-size.md](plans/2026-11-02-island-at-every-size.md) — one island core, three presentations (dock, pill, sheet) chosen by capability (width × pointer × keyboard) not by a breakpoint; four layers (rest, live, context, command) the same at every size; a zone map per surface class so the keyboard, pointer and island share the whole screen; never strip a tool's own controls to fit the pill. Order: audit → compact dock for narrow non-touch → one core → action registry and command grammar → tool-by-tool pass. Four decisions for the owner are at the end of the plan. Done when a narrow desktop window has the island, the phone pill has activities and the command layer, and every tool's ten fast-path actions are reachable by key, pointer and touch.
+
 ### 4.2 Discord
 **Built**: Discord sign-in (`app/(suite)/auth`, `signInWithOAuth({ provider:
 'discord' })`; name and avatar from the identity in `app/(suite)/auth/callback`);
