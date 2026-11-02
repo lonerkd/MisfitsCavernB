@@ -1357,7 +1357,7 @@ function internal.call_sheet_snapshot(p_sheet uuid) body=33e74d687d15ef5b7fcfcc0
 function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
 function internal.call_sheets_link_day() body=3c1981592353a6cfe1288e3d9addeeac
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
-function internal.calls_link_character() body=2fe64acafa029cb75f4ae4eaf931314f
+function internal.calls_link_character() body=723517674440598f8d5906d778acf13f
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
@@ -1617,7 +1617,7 @@ index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_element
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
 index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
 index CREATE INDEX call_sheet_acks_user_id_fkey_idx ON public.call_sheet_acks USING btree (user_id)
-index CREATE INDEX call_sheet_calls_character_idx ON public.call_sheet_calls USING btree (character_id)
+index CREATE INDEX call_sheet_calls_character_idx ON public.call_sheet_calls USING btree (character_id, project_id)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
 index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls USING btree (call_sheet_id, project_id)
@@ -2330,7 +2330,7 @@ trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_it
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
-trigger CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character_name ON public.call_sheet_calls FOR EACH ROW EXECUTE FUNCTION internal.calls_link_character()
+trigger CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character_name, character_id ON public.call_sheet_calls FOR EACH ROW EXECUTE FUNCTION internal.calls_link_character()
 trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()

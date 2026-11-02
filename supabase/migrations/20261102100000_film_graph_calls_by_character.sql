@@ -9,7 +9,7 @@ ALTER TABLE public.call_sheet_calls
   ADD COLUMN character_id uuid,
   ADD CONSTRAINT call_sheet_calls_character_fkey FOREIGN KEY (character_id, project_id)
     REFERENCES public.characters(id, project_id) ON DELETE SET NULL (character_id);
-CREATE INDEX call_sheet_calls_character_idx ON public.call_sheet_calls USING btree (character_id);
+CREATE INDEX call_sheet_calls_character_idx ON public.call_sheet_calls USING btree (character_id, project_id);
 
 -- What's already there: characters for any name a call uses, then the links.
 -- Filled with the table's own triggers off, so no call looks edited.
@@ -33,6 +33,11 @@ AS $function$
 declare
   v_name text := upper(btrim(coalesce(new.character_name, '')));
 begin
+  -- Unlinking is allowed (the foreign key does it when a character is removed): only a link that
+  -- names a character, or a changed name, is made to agree with the name.
+  if tg_op = 'UPDATE' and new.character_id is null and new.character_name is not distinct from old.character_name then
+    return new;
+  end if;
   if v_name = '' or char_length(v_name) > 200 then
     new.character_id := null;
     return new;
@@ -47,7 +52,7 @@ begin
 end;
 $function$;
 REVOKE ALL ON FUNCTION internal.calls_link_character() FROM PUBLIC, anon, authenticated;
-CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character_name ON public.call_sheet_calls
+CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character_name, character_id ON public.call_sheet_calls
   FOR EACH ROW EXECUTE FUNCTION internal.calls_link_character();
 
 -- Renaming a character renames it in its calls too (as it already does in castings and scenes).

@@ -92,4 +92,14 @@ describe('call_sheet_calls.character_id', () => {
     expect((await cast.sam.client.from('characters').select('id').eq('project_id', projectId)).data!.length).toBe(before);
     expect(await characterId('GHOST')).toBeNull();
   });
+
+  it('the link cannot be pointed at a character the name does not say', async () => {
+    const a = (await cast.sam.client.from('call_sheets').insert({ project_id: projectId, shoot_day: 3 }).select('id').single()).data!.id;
+    const call = (await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: a, project_id: projectId, character_name: 'NELL', call_time: '06:00' }).select('id, character_id').single()).data!;
+    const nell = call.character_id;
+    const other = (await characterId('LEO'))!;
+    const moved = await cast.sam.client.from('call_sheet_calls').update({ character_id: other }).eq('id', call.id).select('character_id, character_name').single();
+    expect(moved.error).toBeNull();
+    expect(moved.data).toEqual({ character_id: nell, character_name: 'NELL' });
+  });
 });
