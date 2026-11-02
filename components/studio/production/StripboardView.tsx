@@ -55,7 +55,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
 
   const list = scenes.rows;
   const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
-  const board = useMemo(() => buildBoard(list, capacity, castOfScene, (sc) => placeOf(sc)), [list, capacity, castOfScene, placeOf]);
+  const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
   const film = useMemo(
@@ -117,7 +117,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   };
 
   const autoSchedule = async () => {
-    const plan = packShootDays(list, capacity, (sc) => placeOf(sc));
+    const plan = packShootDays(list, capacity, placeOf);
     if (!plan.updates.length) { toast(`Already grouped by location — ${plan.days} shoot day${plan.days === 1 ? '' : 's'}.`, 'info'); return; }
     if (!await confirm({
       title: 'Auto-schedule?',

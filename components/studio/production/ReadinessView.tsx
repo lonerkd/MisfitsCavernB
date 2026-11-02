@@ -98,7 +98,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const undatedDays = Array.from(new Set(of('date').map((x) => headingOf.get(x.sceneId)?.shoot_day).filter((d): d is number => d != null))).sort((a, b) => a - b);
     const unscheduled = of('date').filter((x) => headingOf.get(x.sceneId)?.shoot_day == null).length;
     const items: Array<{ id: CheckId; text: string; scenes: number; editor?: boolean }> = [];
-    const places = new Set(of('location').map((x) => { const sc = headingOf.get(x.sceneId); return sc ? input.placeOf!(sc) : ''; }).filter(Boolean));
+    const places = new Set(of('location').map((x) => { const sc = headingOf.get(x.sceneId); return sc ? (input.placeOf ?? ((x: typeof sc) => locationKey(x.location)))(sc) : ''; }).filter(Boolean));
     if (places.size) items.push({ id: 'location', text: `Lock down ${Array.from(places).sort().slice(0, 3).join(', ')}${places.size > 3 ? ` +${places.size - 3}` : ''}`, scenes: of('location').length });
     if (uncast.size) items.push({ id: 'cast', text: `Cast ${Array.from(uncast).sort().slice(0, 4).join(', ')}${uncast.size > 4 ? ` +${uncast.size - 4}` : ''}`, scenes: of('cast').length });
     if (unbroken) items.push({ id: 'elements', text: `Break down ${unbroken} scene${unbroken === 1 ? '' : 's'}`, scenes: unbroken, editor: true });

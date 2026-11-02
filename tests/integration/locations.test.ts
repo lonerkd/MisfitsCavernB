@@ -51,7 +51,7 @@ describe('project_locations', () => {
     expect((await sam.listLocations(projectId)).find((l) => l.id === dock.id)?.name).toBe('WHARF');
 
     // Riley cannot see the row, so the rename finds nothing to change.
-    await expect(createStudioApi(cast.riley.client).renameLocation(dock.id, 'Mine')).rejects.toThrow();
+    await expect(createStudioApi(cast.riley.client).renameLocation(dock.id, 'Mine')).rejects.toThrow('That location is gone, or you can’t change it');
     expect((await sam.listLocations(projectId)).find((l) => l.id === dock.id)?.name).toBe('WHARF');
   });
 });

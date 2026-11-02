@@ -519,6 +519,7 @@ export function createStudioApi(db: Client) {
     const { data, error } = await db.from('project_locations').update({ name: next }).eq('id', id).select('*').single();
     if (error) {
       if (error.code === '23505') throw new Error(`There is already a location called ${next}`);
+      if (error.code === 'PGRST116') throw new Error('That location is gone, or you can’t change it');
       fail(error, 'Could not rename the location');
     }
     return data;
