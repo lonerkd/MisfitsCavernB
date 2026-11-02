@@ -44,8 +44,13 @@ test.describe('The island holds a voice call (local Supabase)', () => {
   };
   /** Navigate the way a person does, through the island's own links: a client-side move, never a page reload (a reload would end any call). */
   const goTo = async (page: Page, app: string, path: RegExp) => {
-    await page.locator('[data-taskbar] .mc-taskbar').hover();
-    await island(page).getByRole('link', { name: app, exact: true }).click();
+    await island(page).getByRole('button', { name: /^Open the island/ }).click();
+    const link = island(page).getByRole('link', { name: app, exact: true });
+    const box = await link.boundingBox();
+    appendFileSync('/tmp/claude-0/probe3.txt', `before click ${app}: url=${page.url()} box=${JSON.stringify(box)}\n`);
+    await link.click();
+    await page.waitForTimeout(3000);
+    appendFileSync('/tmp/claude-0/probe3.txt', `after click ${app}: url=${page.url()}\n`);
     await page.waitForURL(path);
     await page.mouse.move(10, 10);
   };
@@ -67,51 +72,32 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       const picker = page.getByLabel('Active project');
       await picker.waitFor();
       if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 1\n');
       await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 2\n');
       await expect(island(page).getByText(/In voice/)).toHaveCount(0); // nothing running, nothing held
 
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 3\n');
       await page.getByRole('button', { name: /JOIN VOICE/ }).click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 4\n');
       await expect(island(page).getByText(`In voice · ${room}`)).toBeVisible({ timeout: 30_000 });
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 5\n');
       await expect(island(page).getByText('1 person')).toBeVisible();
 
       // Leave the Lounge entirely: the page that started the call is gone, the call is not.
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 6\n');
       await goTo(page, 'Today', /\/today/);
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 7\n');
       await expect(island(page).getByText(`In voice · ${room}`)).toBeVisible({ timeout: 30_000 });
 
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 8\n');
       await shot(page, 'call-live');
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 9\n');
       await island(page).getByRole('button', { name: 'Mute', exact: true }).click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 10\n');
       await expect(island(page).getByText(/muted/)).toBeVisible();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 11\n');
       await shot(page, 'call-muted');
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 12\n');
       await island(page).getByRole('button', { name: 'Unmute', exact: true }).click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 13\n');
       await expect(island(page).getByText(/muted/)).toHaveCount(0);
 
       // Back in the Lounge, the room knows it is the same call.
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 14\n');
       await goTo(page, 'Lounge', /\/lounge/);
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 15\n');
       await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 16\n');
       await expect(page.getByRole('button', { name: /LEAVE VOICE/ })).toBeVisible({ timeout: 15_000 });
 
       // Leave from the island itself, from another page.
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 17\n');
       await goTo(page, 'Today', /\/today/);
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 18\n');
       await island(page).getByRole('button', { name: 'Leave', exact: true }).click();
-      appendFileSync('/tmp/claude-0/steps.txt', 'step 19\n');
       await expect(island(page).getByText(/In voice/)).toHaveCount(0);
     } finally { await ctx.close(); await browser.close(); }
   });
