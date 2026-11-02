@@ -23,18 +23,25 @@ export interface OwnerRow {
 }
 
 export interface ScheduledDay { project_id: string; day_number: number; shoot_date: string | null }
+/** The call sheets of the scheduled days, whatever their own date says (so one the date filter dropped still counts). */
+export interface DaySheet { project_id: string; shoot_day: number; issued_at: string | null }
 
 /**
  * A shoot day is dated on the schedule before it has a call sheet. The owner's "next day on set" has to see those
  * days too (with no call sheet, so "not issued"), or a dated day without a sheet is invisible until someone makes one.
- * A day that has a sheet keeps the sheet (it knows whether it was issued).
+ * The day's own date is the schedule's: it wins over a call sheet's copy of it. A day that has a sheet keeps what the
+ * sheet knows (whether it was issued), even when the sheet itself fell outside the date window the caller read.
  */
-export function withScheduledDays(sheets: OwnerData['sheets'], days: ScheduledDay[]): OwnerData['sheets'] {
-  const have = new Set(sheets.map((s) => `${s.project_id}:${s.shoot_day}`));
+export function withScheduledDays(sheets: OwnerData['sheets'], days: ScheduledDay[], daySheets: DaySheet[] = []): OwnerData['sheets'] {
+  const key = (project: string, day: number) => `${project}:${day}`;
+  const dateOf = new Map(days.filter((d) => d.shoot_date).map((d) => [key(d.project_id, d.day_number), d.shoot_date as string]));
+  const issuedOf = new Map(daySheets.map((s) => [key(s.project_id, s.shoot_day), s.issued_at]));
+  const have = new Set(sheets.map((s) => key(s.project_id, s.shoot_day)));
+  const known = sheets.map((s) => ({ ...s, shoot_date: dateOf.get(key(s.project_id, s.shoot_day)) ?? s.shoot_date }));
   const extra = days
-    .filter((d) => d.shoot_date && !have.has(`${d.project_id}:${d.day_number}`))
-    .map((d) => ({ project_id: d.project_id, shoot_date: d.shoot_date, shoot_day: d.day_number, issued_at: null }));
-  return [...sheets, ...extra];
+    .filter((d) => d.shoot_date && !have.has(key(d.project_id, d.day_number)))
+    .map((d) => ({ project_id: d.project_id, shoot_date: d.shoot_date, shoot_day: d.day_number, issued_at: issuedOf.get(key(d.project_id, d.day_number)) ?? null }));
+  return [...known, ...extra];
 }
 
 /** Whole days from `today` to `date` (both YYYY-MM-DD, local). */

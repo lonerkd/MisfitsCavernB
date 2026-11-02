@@ -61,6 +61,14 @@ describe('withScheduledDays', () => {
     ]);
     expect(out).toEqual([{ project_id: 'p2', shoot_date: '2026-12-03', shoot_day: 1, issued_at: null }]);
   });
+  it('an issued sheet that fell outside the date window still counts as issued', () => {
+    const out = withScheduledDays([], [{ project_id: 'p1', day_number: 1, shoot_date: '2026-12-01' }], [{ project_id: 'p1', shoot_day: 1, issued_at: '2026-11-20T10:00:00Z' }]);
+    expect(out).toEqual([sheet(1, '2026-12-01', '2026-11-20T10:00:00Z')]);
+  });
+  it('the schedule\'s date wins over the sheet\'s copy of it', () => {
+    const out = withScheduledDays([sheet(2, '2026-12-05', 'x')], [{ project_id: 'p1', day_number: 2, shoot_date: '2026-12-01' }]);
+    expect(out).toEqual([sheet(2, '2026-12-01', 'x')]);
+  });
   it('makes the owner row show the next day and flag it when the week is near and nothing has gone out', () => {
     const data: OwnerData = { pendingCrew: [], openTasks: [], sheets: withScheduledDays([], [{ project_id: 'p1', day_number: 1, shoot_date: '2026-11-04' }]) };
     const [row] = ownerRows([{ id: 'p1', title: 'Harbor', phase: 'production' }], data, '2026-11-02');
