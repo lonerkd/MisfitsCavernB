@@ -1,0 +1,7 @@
+# Session — 2026-11-02: call-sheet calls are linked to their character
+
+Castings already pointed at a character by id; calls on the call sheet still carried only a name. Migration `20261102100000_film_graph_calls_by_character.sql` adds `call_sheet_calls.character_id` (same-project foreign key, `ON DELETE SET NULL`), backfills it (making a character for any name a call used), links new and renamed calls by trigger (`internal.calls_link_character`, invoker, trigger-only), and extends `internal.characters_rename()` so renaming a character renames it in its calls as it already did in castings and scenes. The text column stays and stays correct; readers move to the id when the text is dropped (cutover step 5).
+
+**Verified:** a persona test against the real local stack (`tests/integration/film-graph-calls.test.ts`): a call for a name links to the character the scenes already use, and one for a new name makes it; a rename reaches the call; a crew-person call has no character; an outsider reads and changes nothing; removing a character unlinks its calls and keeps their text. The neighbouring call-sheet and people tests still pass; the drift check is clean; snapshot and types regenerated.
+
+**To do after merge (by hand, `database-and-security.md` §3):** apply the migration to production, run the drift check, then staging. It is additive (a nullable column, an index, a backfill, two functions); no existing column or function signature changes.

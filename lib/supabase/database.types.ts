@@ -489,6 +489,7 @@ export type Database = {
         Row: {
           call_sheet_id: string;
           call_time: string | null;
+          character_id: string | null;
           character_name: string | null;
           created_at: string | null;
           crew_user_id: string | null;
@@ -501,6 +502,7 @@ export type Database = {
         Insert: {
           call_sheet_id: string;
           call_time?: string | null;
+          character_id?: string | null;
           character_name?: string | null;
           created_at?: string | null;
           crew_user_id?: string | null;
@@ -512,6 +514,7 @@ export type Database = {
         Update: {
           call_sheet_id?: string;
           call_time?: string | null;
+          character_id?: string | null;
           character_name?: string | null;
           created_at?: string | null;
           crew_user_id?: string | null;
@@ -521,6 +524,13 @@ export type Database = {
           role_label?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "call_sheet_calls_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "call_sheet_calls_crew_user_id_fkey";
             columns: ["crew_user_id"];
