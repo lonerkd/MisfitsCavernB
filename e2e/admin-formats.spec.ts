@@ -57,7 +57,7 @@ test.describe.serial('Admin formats (local Supabase)', () => {
     await fill();
     await form.getByLabel('One line').fill('One night, one room.');
     await form.getByLabel('Script format').selectOption('treatment');
-    await form.getByLabel('post-production').check();
+    await form.getByRole('group', { name: 'Skips' }).getByLabel('post-production').check();
     await form.getByRole('button', { name: 'Add format' }).click();
     await expect(boss.page.getByText(`Added ${NAME}`)).toBeVisible({ timeout: 20_000 });
     await expect(boss.page.getByRole('list', { name: 'Formats' }).getByText(NAME)).toBeVisible();
