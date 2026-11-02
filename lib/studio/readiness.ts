@@ -51,7 +51,7 @@ export interface ReadinessInput {
   elementsByScene: Map<string, Array<{ name: string; status: 'needed' | 'sourcing' | 'ready' }>>;
   shotsByScene: Map<string, number>;
   refsByScene: Map<string, number>;
-  /** Shoot day → date from its call sheet. */
+  /** Shoot day → its date: the day's own, else its call sheet's (`dateOfDayMap`). */
   dateOfDay: Map<number, string>;
   /** Location records by name (upper case); absent → the check doesn't apply. */
   locations?: Map<string, { status: string; permit: string }>;

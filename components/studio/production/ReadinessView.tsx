@@ -114,7 +114,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
   const matches = (x: SceneReadiness) =>
     filter === 'all' || (filter === 'blocked' && x.state === 'blocked') || (filter === 'ready' && x.state === 'ready') || (filter === 'done' && (x.state === 'shot' || x.state === 'wrapped'));
   const shown = days.map((d) => ({ ...d, scenes: d.scenes.filter(matches) })).filter((d) => d.scenes.length > 0);
-  const loading = scenes.status === 'loading' || bd.status === 'loading' || castings.status === 'loading';
+  const loading = scenes.status === 'loading' || bd.status === 'loading' || castings.status === 'loading' || sheets.status === 'loading' || shootDays.status === 'loading';
 
   if (!loading && scenes.rows.length === 0) {
     return (
