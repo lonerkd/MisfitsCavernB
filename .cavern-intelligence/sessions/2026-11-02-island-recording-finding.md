@@ -1,0 +1,3 @@
+# Session — 2026-11-02: why the island cannot hold a recording yet
+
+Tried the island's recording activity (BACKLOG 4.1): a pure activity (a clock in whole seconds, a Stop) registered from Capture's recorder, and a real-browser run with a fake microphone at phone size. The recording worked; nothing showed it. The island dock is hidden under 760 px, the phone's "Suite" nav is the tab-bar pill (which does not render activities), and Capture is a phone-only bottom sheet, so there is no screen where both exist. Shipping the registration would have been a feature that does nothing, so it was discarded. The two missing pieces (a suite-level recorder that survives leaving the screen, and activities in the phone's tab-bar pill) and their size are in BACKLOG 4.1. No code changed.
