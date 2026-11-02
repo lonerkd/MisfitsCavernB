@@ -1,5 +1,6 @@
 
 
+import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
@@ -427,7 +428,7 @@ export class ScriptParser {
     const heads: Head[] = [];
     this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
-      if (!trim || trim.length > 28 || !shape.test(trim) || this.isCaps(trim)) return;
+      if (!trim || trim.length > THRESHOLDS.titleCaseCueMaxLength.value || !shape.test(trim) || this.isCaps(trim)) return;
       if (idx > 0 && this.rawLines[idx - 1].trim()) return; // a head line follows a blank line (or the start)
       const next = (this.rawLines[idx + 1] || '').trim();
       if (!next || this.isSceneHeading(next)) return;
@@ -441,7 +442,7 @@ export class ScriptParser {
 
     const count = new Map<string, number>();
     for (const h of heads) count.set(h.name, (count.get(h.name) ?? 0) + 1);
-    const accepted = new Set([...count].filter(([, n]) => n >= 2).map(([name]) => name));
+    const accepted = new Set([...count].filter(([, n]) => n >= THRESHOLDS.titleCaseCueMinHeads.value).map(([name]) => name));
     if (accepted.size === 0) return;
 
     // A name that appears once, directly between two heads that recur, is the other half of an exchange.

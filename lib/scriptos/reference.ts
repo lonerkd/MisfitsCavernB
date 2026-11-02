@@ -5,6 +5,7 @@ import { BREAKDOWN_STOPWORDS, KNOWLEDGE, TRANSITION_TO_COLOUR } from './parser';
 import { DEFAULT_PARAMS, TIME_CARD, type Params } from './decode';
 import { TIMES, FILLER, NUMBER_WORDS, MONTHS, DAYS_OF_WEEK, HEADING_PATTERNS } from './heading';
 import { SYNONYMS, VERBS } from './languages';
+import { THRESHOLDS } from './thresholds';
 
 /** What each decoder weight means. A new weight with no line here fails the test, so the reference stays whole. */
 export const PARAM_DOCS: Record<keyof Params, string> = {
@@ -87,6 +88,14 @@ export function buildReference(): string {
   out.push(Object.entries(SYNONYMS).sort(([a], [b]) => byCodePoint(a, b)).map(([k, v]) => `\`${k}\` → ${v}`).join(' · '));
   out.push('');
   out.push(`A language is named after a verb phrase: \`${re(VERBS)}\``);
+  out.push('');
+  out.push('## Thresholds (`lib/scriptos/thresholds.ts`)');
+  out.push('');
+  out.push('The reader\'s own cut-off numbers: the document profile, the offer of a second reading, and the Title Case cue scan.');
+  out.push('');
+  out.push('| Threshold | Value | What it decides |');
+  out.push('| --- | ---: | --- |');
+  for (const [key, t] of Object.entries(THRESHOLDS)) out.push(`| \`${key}\` | ${t.value} | ${t.what} |`);
   out.push('');
   out.push('## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)');
   out.push('');
