@@ -14,7 +14,7 @@ import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
 import { Sky } from '@/components/film/Sky';
 import { lightNoteBrief } from '@/lib/film/sky';
-import { locationKey } from '@/lib/studio';
+import { placeResolver } from '@/lib/film/places';
 import { buildBoard, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
@@ -54,7 +54,8 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const stripRefs = useRef(new Map<string, HTMLLIElement>());
 
   const list = scenes.rows;
-  const board = useMemo(() => buildBoard(list, capacity, castOfScene), [list, capacity, castOfScene]);
+  const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
+  const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
   const film = useMemo(
@@ -116,7 +117,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   };
 
   const autoSchedule = async () => {
-    const plan = packShootDays(list, capacity);
+    const plan = packShootDays(list, capacity, placeOf);
     if (!plan.updates.length) { toast(`Already grouped by location — ${plan.days} shoot day${plan.days === 1 ? '' : 's'}.`, 'info'); return; }
     if (!await confirm({
       title: 'Auto-schedule?',
@@ -235,8 +236,8 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                     {d.scenes.map((sc, i) => {
                       const row = sc as SceneRow;
                       // A black strip marks a company move, as on a paper board.
-                      const from = i > 0 ? locationKey(d.scenes[i - 1].location) : '';
-                      const here = locationKey(sc.location);
+                      const from = i > 0 ? placeOf(d.scenes[i - 1]) : '';
+                      const here = placeOf(sc);
                       const moved = !!from && !!here && from !== here;
                       const km = moved ? kmBetween.get(`${from}|${here}`) : undefined;
                       const kind = stripKind(sc);

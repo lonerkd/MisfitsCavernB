@@ -91,6 +91,7 @@ column call_sheet_acks.user_id uuid not null
 column call_sheet_acks.version integer not null
 column call_sheet_calls.call_sheet_id uuid not null
 column call_sheet_calls.call_time time without time zone
+column call_sheet_calls.character_id uuid
 column call_sheet_calls.character_name text
 column call_sheet_calls.created_at timestamp with time zone default now()
 column call_sheet_calls.crew_user_id uuid
@@ -866,6 +867,7 @@ constraint call_sheet_acks.call_sheet_acks_pkey PRIMARY KEY (call_sheet_id, user
 constraint call_sheet_acks.call_sheet_acks_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
 constraint call_sheet_acks.call_sheet_acks_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint call_sheet_acks.call_sheet_acks_version_check CHECK ((version >= 1))
+constraint call_sheet_calls.call_sheet_calls_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE SET NULL (character_id)
 constraint call_sheet_calls.call_sheet_calls_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint call_sheet_calls.call_sheet_calls_pkey PRIMARY KEY (id)
 constraint call_sheet_calls.call_sheet_calls_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
@@ -1355,6 +1357,7 @@ function internal.call_sheet_snapshot(p_sheet uuid) body=33e74d687d15ef5b7fcfcc0
 function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
 function internal.call_sheets_link_day() body=3c1981592353a6cfe1288e3d9addeeac
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
+function internal.calls_link_character() body=723517674440598f8d5906d778acf13f
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
@@ -1363,7 +1366,7 @@ function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
-function internal.characters_rename() body=28f91a48f7f66a72e693e6a37049b9df
+function internal.characters_rename() body=318754cf015e76713452d914dafbc551
 function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
@@ -1485,6 +1488,7 @@ grant function internal.call_sheet_snapshot(p_sheet uuid) postgres
 grant function internal.call_sheets_issue_guard() postgres
 grant function internal.call_sheets_link_day() postgres
 grant function internal.caller_is_admin() authenticated,postgres,service_role
+grant function internal.calls_link_character() postgres
 grant function internal.can_access_project(pid uuid) authenticated,postgres,service_role
 grant function internal.can_access_script(sid uuid) authenticated,postgres,service_role
 grant function internal.can_notify(target uuid) authenticated,postgres,service_role
@@ -1613,6 +1617,7 @@ index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_element
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
 index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
 index CREATE INDEX call_sheet_acks_user_id_fkey_idx ON public.call_sheet_acks USING btree (user_id)
+index CREATE INDEX call_sheet_calls_character_idx ON public.call_sheet_calls USING btree (character_id, project_id)
 index CREATE INDEX call_sheet_calls_crew_user_idx ON public.call_sheet_calls USING btree (crew_user_id)
 index CREATE INDEX call_sheet_calls_project_idx ON public.call_sheet_calls USING btree (project_id)
 index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls USING btree (call_sheet_id, project_id)
@@ -2325,6 +2330,7 @@ trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_it
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
 trigger CREATE TRIGGER call_sheets_updated_at BEFORE UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character_name, character_id ON public.call_sheet_calls FOR EACH ROW EXECUTE FUNCTION internal.calls_link_character()
 trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()

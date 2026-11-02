@@ -122,6 +122,8 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     expect(await axeViolations(page), 'breakdown view').toEqual([]);
 
     // ── The stripboard: drag a strip to a new day, then Alt+← it back ──
+    // Tall enough that the strip and the drop zone are on screen together, so the drag has both ends in view.
+    await page.setViewportSize({ width: 1280, height: 1100 });
     await page.goto('/studio?tab=production&view=schedule');
     const strip = page.getByRole('listitem', { name: /^Scene 2,/ });
     await strip.dragTo(page.getByRole('region', { name: 'A new shoot day' }));
