@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useProject } from '@/lib/os';
-import { useCallSheets, useSetLog, useShootDays } from '@/lib/studio';
+import { studio, useShootDays } from '@/lib/studio';
 import { dayClock, dayStatus, localDateTime } from '@/lib/studio/onset';
 import { localDate, onSetLine, shootDayToday } from './onset';
 
@@ -23,19 +23,28 @@ export function useOnSet(): OnSet | null {
   const [steppedOut, setSteppedOut] = useState<string | null>(null);
   const day = shootDayToday(days, today);
   const onToday = !!day && steppedOut !== day.id && !wasAway(day.id);
-  // The day's own clock, read (and kept live) only while it is a shoot day and the person has not stepped out.
+  // The day's own clock, read only while it is a shoot day and the person has not stepped out, and re-read every 30 seconds
+  // (a narrow read of one call sheet and its clock stamps, not a live subscription: the island is on every page, and
+  // both the desktop island and the phone's pill ask).
   const projectId = onToday ? activeProject?.id ?? null : null;
-  const sheets = useCallSheets(projectId).rows;
-  const log = useSetLog(projectId).rows;
+  const dayNumber = day?.day_number ?? null;
+  const [clockData, setClockData] = useState<Awaited<ReturnType<typeof studio.getDayClock>> | null>(null);
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
-    if (!onToday) return;
-    const t = window.setInterval(() => setNow(new Date()), 30_000);
-    return () => window.clearInterval(t);
-  }, [onToday]);
+    if (!projectId || dayNumber === null) return;
+    let cancelled = false;
+    const read = () => {
+      setNow(new Date());
+      studio.getDayClock(projectId, dayNumber).then((d) => { if (!cancelled) setClockData(d); }).catch(() => { /* the line just stays as it was */ });
+    };
+    read();
+    const t = window.setInterval(read, 30_000);
+    return () => { cancelled = true; window.clearInterval(t); };
+  }, [projectId, dayNumber]);
   if (!day || !onToday) return null;
-  const sheet = sheets.find((c) => c.shoot_day === day.day_number);
-  const line = sheet ? onSetLine(dayStatus(dayClock(log.filter((r) => r.call_sheet_id === sheet.id)), now, localDateTime(sheet.shoot_date, sheet.estimated_wrap))) : null;
+  // Nothing to say until the crew call is stamped (a wrap stamped with no call is not a day to report on).
+  const clock = clockData?.sheet ? dayClock(clockData.rows) : null;
+  const line = clockData?.sheet && clock?.call ? onSetLine(dayStatus(clock, now, localDateTime(clockData.sheet.shoot_date, clockData.sheet.estimated_wrap))) : null;
   return {
     label: `On set · Day ${day.day_number}`,
     line,

@@ -63,11 +63,35 @@ test.describe('The island says where the shoot day is (local Supabase)', () => {
       await page.goto('/today');
 
       const island = page.getByRole('navigation', { name: 'Suite' });
-      await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · 3h( \d\dm)? on set · (\d+h )?(\d+m)? to wrap$/ })).toBeVisible({ timeout: 30_000 });
+      await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · 3h( \d\dm)? on set · (\d+h( \d\dm)?|\d+m) to wrap$/ })).toBeVisible({ timeout: 30_000 });
 
       // The planned wrap passes while the crew is still rolling: it says how far over.
       await admin.from('call_sheets').update({ estimated_wrap: `${hhmm(new Date(now.getTime() - 20 * 60_000))}:00` }).eq('id', sheet);
       await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · .* on set · (1\d|2\d)m over$/ })).toBeVisible({ timeout: 40_000 });
+    } finally { await ctx.close(); await browser.close(); }
+  });
+
+  test('on a 320 px phone the On set pill stays inside the screen', async () => {
+    test.setTimeout(120_000);
+    const browser = await chromium.launch({ executablePath: process.env.MC_LOCAL_CHROMIUM });
+    const ctx = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    try {
+      await page.goto('/auth');
+      await page.fill('input[name="email"]', email);
+      await page.fill('input[name="password"]', PASSWORD);
+      await page.locator('button[type="submit"]').click();
+      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await page.goto('/studio?tab=production&view=onset');
+      const picker = page.getByLabel('Active project');
+      await picker.waitFor();
+      if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+      await page.goto('/today');
+      const link = page.locator('[data-mobile-tabbar]').getByRole('link', { name: /^On set · Day 1/ });
+      await expect(link).toBeVisible({ timeout: 30_000 });
+      await expect.poll(async () => { const b = await link.boundingBox(); return b ? b.x + b.width : 9999; }).toBeLessThanOrEqual(320);
+      const capture = await page.locator('[data-mobile-tabbar]').getByRole('button', { name: /Capture/ }).boundingBox();
+      expect(capture && capture.x + capture.width).toBeLessThanOrEqual(320);
     } finally { await ctx.close(); await browser.close(); }
   });
 });

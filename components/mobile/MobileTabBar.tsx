@@ -233,7 +233,7 @@ export default function MobileTabBar() {
         </button>
         {onSet && (
           <span className={m.pillOnset}>
-            <Link href={ON_SET_HREF} className={m.pillOnsetLink}>{onSet.label}{onSet.line ? ` · ${onSet.line.short}` : ''}</Link>
+            <Link href={ON_SET_HREF} className={m.pillOnsetLink} title={`${onSet.label}${onSet.line ? ` · ${onSet.line.full}` : ''}`}>{onSet.label}{onSet.line ? ` · ${onSet.line.short}` : ''}</Link>
             <button type="button" className={m.pillOnsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
           </span>
         )}
