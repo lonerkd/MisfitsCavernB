@@ -20,8 +20,7 @@ import { ON_SET_HREF } from '@/lib/island/onset';
 import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { useActivities } from '@/lib/island/activities';
-import { useSyncActivity } from '@/lib/island/useSyncActivity';
-import { useCallActivity } from '@/lib/island/useCallActivity';
+import { ActivityBridges } from '@/components/island/ActivityBridges';
 import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/components/island/IslandActivity';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
@@ -218,9 +217,8 @@ export default function EcosystemTaskbar() {
   const [projectsOpen, setProjectsOpen] = useState(false);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
-  // What is running (a sprint, the offline queue…) is held on the island; "+N" shows the next when there are several.
-  useSyncActivity();
-  useCallActivity();
+  // What is running (a sprint, the offline queue, a call, music) is held on the island; "+N" shows the next when there are several.
+  // <ActivityBridges /> (rendered below) watches the things that change every second, apart from this component.
   const activities = useActivities();
   const [pick, setPick] = useState(0);
   const shownIndex = activities.length ? pick % activities.length : 0;
@@ -468,6 +466,7 @@ export default function EcosystemTaskbar() {
 
   return (
     <nav ref={dockRef} aria-label="Suite" className={`mc-dock ${s.dock}`} data-taskbar data-island={mode} style={{ '--island-scale': scale } as React.CSSProperties}>
+      <ActivityBridges />
       <motion.div
         layoutRoot
         initial={{ y: 80, opacity: 0 }}
