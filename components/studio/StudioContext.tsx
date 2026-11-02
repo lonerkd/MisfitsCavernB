@@ -9,6 +9,7 @@ import React, { createContext, useCallback, useContext, useEffect, useLayoutEffe
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
@@ -131,9 +132,12 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const corrections = useReadingCorrections(projectId);
   const readContextRef = useRef(contextFromProject(castings.rows, corrections.rows));
   useLayoutEffect(() => { readContextRef.current = contextFromProject(castings.rows, corrections.rows); });
+  // The script's own reading rules (the same ones the editor uses), kept in a ref so the sync callback stays steady.
+  const formatsRef = useRef<Record<string, string | null>>({});
+  useLayoutEffect(() => { formatsRef.current = Object.fromEntries(scripts.map((sc) => [sc.id, sc.format])); });
   const syncScenes = useCallback((id: string) => fetchScriptContent(id)
     .then(async (text) => {
-      const parsed = parseScript(text, 'screenplay', undefined, { context: readContextRef.current });
+      const parsed = parseScript(text, readingFormat(formatsRef.current[id]), undefined, { context: readContextRef.current });
       setParsedScenes({
         scriptId: id,
         scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),
