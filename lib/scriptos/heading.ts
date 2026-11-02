@@ -35,7 +35,7 @@ const NUMBER_WORDS = new Set(['A', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX',
 const MONTHS = new Set(['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER', 'SPRING', 'SUMMER', 'AUTUMN', 'FALL', 'WINTER']);
 const DAYS_OF_WEEK = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
 /** A layer of a story told in layers: "PART ONE", "CHAPTER 2", "ACT THREE, LATER", "HOUR FOUR". */
-const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)\b/i;
+const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i;
 const YEAR = /\b(1[0-9]{3}|20[0-9]{2})\b/g;
 
 /** "LATE AFTERNOON", "EARLY EVENING", "MID-MORNING": a time of day with a qualifier. */
@@ -49,11 +49,18 @@ function isWhen(part: string): boolean {
   if (w.length === 0) return true; // nothing left but a bracketed tag: that is a "when" (or a frame)
   const joined = w.join(' ');
   if (isTimeOfDay(joined)) return true;
-  return w.every((x) => TIMES.has(x) || FILLER.has(x) || NUMBER_WORDS.has(x) || MONTHS.has(x) || DAYS_OF_WEEK.has(x) || /^\d{4}$/.test(x) || /^\d+$/.test(x));
+  // Phrases of several words in the vocabulary ("DREAM SEQUENCE", "LATER STILL") are taken out whole before the words are judged one by one.
+  let rest = ` ${joined} `;
+  for (const phrase of [...FILLER].filter((f) => f.includes(' ')).sort((a, b) => b.length - a.length)) rest = rest.split(` ${phrase} `).join(' ');
+  const left = rest.trim() ? rest.trim().split(/\s+/) : [];
+  return left.every((x) => TIMES.has(x) || FILLER.has(x) || NUMBER_WORDS.has(x) || MONTHS.has(x) || DAYS_OF_WEEK.has(x) || /^\d{4}$/.test(x) || /^\d+$/.test(x));
 }
 
+/** The parts of a heading body, split on hyphens, double hyphens, en and em dashes. */
+export const headingParts = (headingBody: string): string[] => headingBody.split(/\s+-{1,2}\s+|\s+[–—]\s+/).map((p) => p.trim()).filter(Boolean);
+
 export function readHeading(headingBody: string): Heading {
-  const parts = headingBody.split(/\s+-{1,2}\s+|\s+[–—]\s+/).map((p) => p.trim()).filter(Boolean);
+  const parts = headingParts(headingBody);
   const years: number[] = [];
   let era: string | null = null;
   let marker: string | null = null;
@@ -72,7 +79,7 @@ export function readHeading(headingBody: string): Heading {
   const cleaned = parts.map(clean);
   const kept: string[] = [];
   cleaned.forEach((part, i) => {
-    if (i > 0 && FRAME_TAG.test(part) && !/\d/.test(part)) { frame = frame ?? part.toUpperCase(); return; } // a layer tag written without brackets
+    if (i > 0 && FRAME_TAG.test(part)) { frame = frame ?? part.toUpperCase(); return; } // a layer tag written without brackets
     if (i > 0 && isWhen(part)) {
       const up = part.toUpperCase();
       const isPlainTime = isTimeOfDay(words(part).join(' '));

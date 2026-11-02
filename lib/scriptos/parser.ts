@@ -1,7 +1,7 @@
 
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
-import { readHeading } from './heading';
+import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
 
@@ -955,7 +955,7 @@ export class ScriptParser {
 
   private parseTime(slug: string): string {
     const body = this.stripScenePrefix(slug);
-    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    const parts = headingParts(body); // the same separators the heading reader splits on (hyphens, en and em dashes)
     const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
     const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));

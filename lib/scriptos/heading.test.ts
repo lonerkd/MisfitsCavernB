@@ -28,6 +28,17 @@ describe('readHeading: a place stays one place, and the when is kept', () => {
     expect(readHeading('STUDIO -- EARLY EVENING').marker).toBeNull();
     expect(readHeading('RADIO STUDIO -- THE BOOTH -- NIGHT -- PART FIVE, LATER')).toMatchObject({ location: 'RADIO STUDIO - THE BOOTH', frame: 'PART FIVE, LATER', marker: null });
   });
+  it('a layer tag with a number, bracketed or not, and a phrase of several filler words, are not part of the place', () => {
+    expect(readHeading('RADIO STUDIO -- NIGHT -- PART 2')).toMatchObject({ location: 'RADIO STUDIO', frame: 'PART 2' });
+    expect(readHeading('RADIO STUDIO -- NIGHT (CHAPTER 3, LATER)')).toMatchObject({ location: 'RADIO STUDIO', frame: 'CHAPTER 3, LATER' });
+    expect(readHeading('BEDROOM -- DREAM SEQUENCE')).toMatchObject({ location: 'BEDROOM', marker: 'DREAM SEQUENCE' });
+    expect(readHeading('KITCHEN -- NIGHT -- LATER STILL')).toMatchObject({ location: 'KITCHEN', marker: 'LATER STILL' });
+    expect(readHeading('PART 2 DINER -- NIGHT').location).toBe('PART 2 DINER'); // a place that starts with the word PART is still a place
+    expect(readHeading('HARBOR -- REEL 2 CAFÉ').location).toBe('HARBOR - REEL 2 CAFÉ'); // a layer tag is the whole part, not its first words
+  });
+  it('en and em dashes separate the parts, and the time of day is found past them', () => {
+    expect(readHeading('DOCK OFFICE – HARBOR TOWN — NIGHT')).toMatchObject({ location: 'DOCK OFFICE - HARBOR TOWN' });
+  });
   it('continuity markers are kept as markers', () => {
     expect(readHeading("MARA'S FLAT -- THE SAME NIGHT").marker).toBe('THE SAME NIGHT');
     expect(readHeading("TESSA AND JONAS'S HOUSE -- NIGHT -- DAYS LATER")).toMatchObject({ location: "TESSA AND JONAS'S HOUSE", marker: 'DAYS LATER' });

@@ -10,6 +10,8 @@ The owner shared a real script (a series pilot of about 10,000 lines) as the fir
 
 **What I got wrong.** I wrote the first tests and code comments from the real script's own headings, names and cue examples, in a public repository, and wrote "invented scripts" in a draft pull request description that was not true. The permission check stopped the pull request from being opened; every example in tracked files is now invented (`MARA'S FLAT`, `DOCK OFFICE -- HARBOR TOWN`, `ABUELA (Spanish)`), the layer tag is no longer tied to one script's wording, and the branch was force-replaced (it was mine, unmerged). **The earlier commit may still be fetchable by its hash from GitHub for a while** (it names places and characters from the script); GitHub support can purge it.
 
+**Found in review and fixed:** a numbered layer tag written without brackets (`PART 2`) was kept in the place; phrases of several filler words (`DREAM SEQUENCE`, `LATER STILL`) split a place in two; and the time of day was found only past hyphens while the place was split on en and em dashes too (both now use one splitter, `headingParts`).
+
 **Verified:** 9 tests for the heading reader (including that a place with a time word in its name stays a place), 4 for the language reader and the summary; the private runner has two new unlabelled invariants (no location carries a year or a layer tag; the knowledge report is written), all 10 of its tests pass on the real script; typecheck, lint, 2021 unit tests, build.
 
 **Weight:** the heading reader is part of the parser, so the Studio and the pitch page grew by about 1.5 kB gzipped; their budgets in `performance-budget.json` went up by 2 kB each on purpose (362 → 364, 425 → 427).
