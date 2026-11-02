@@ -130,7 +130,7 @@ Chrome lives in two places, and nothing else mounts itself globally:
   pressing it: the suite strip above, the page's numbers and controls beside the
   dot), `caps` (Caps Lock: the same deck held open with a key on every control —
   1–6 apps, Q–I controls, / search,  split, P project, Esc puts it away) and
-  `dot` (typing in a field). The mode is on `nav[data-island]`. A page describes
+  `dot` (typing in a field), and `activity` (something running is held: the offline queue, a writing sprint, a voice call; `lib/island/activities.ts`). The mode is on `nav[data-island]`. A page describes
   itself with `usePillStage(descriptor)` (title, fields, toggles, actions;
   republished whenever what it shows changes — no deps list); a page that
   doesn't still gets a name and next places from `lib/island/routes.ts` — add a

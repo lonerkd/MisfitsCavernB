@@ -184,7 +184,7 @@ open, caps, dot) and `emit()`s brief events (saved, synced, joined).
 motion respected), the editor's sync events.
 **To add** — a *live activity* layer that holds the island while something
 runs, one at a time by priority, each with its controls:
-- call active (Lounge voice room: who's in, mute, leave) — `lib/webrtc/voice.ts`
+- ~~call active~~ — **built 2026-11-02**: the call moved from the Lounge page to the suite (`lib/webrtc/VoiceCall.tsx`), so it survives leaving the Lounge, and the island holds it with Mute and Leave (`lib/island/callActivity.ts`). Left: who is speaking on the island (a ring or the name), a "back to the room" control, and a two-browser spec (a second person joining); see 3.24
 - recording (Capture's voice memo / clip — `MediaRecorder` in `Capture.tsx`)
 - uploading, with a progress bar (Library, Capture outbox, SFX) — needs
   upload progress events (Storage over XHR/TUS)
