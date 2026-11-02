@@ -60,6 +60,14 @@ export interface Scene {
   sceneNumber: string;
   location: string;
   timeOfDay: string;
+  /** Calendar years the heading names ("(1964)", "(LATE 1962)"), in order. */
+  years?: number[];
+  /** The words that came with the year ("LATE 1962"). */
+  era?: string;
+  /** How this scene follows the one before ("CONTINUOUS", "THE SAME NIGHT", "TWO DAYS LATER"). */
+  marker?: string;
+  /** The layer of a story told in layers ("HOUR ONE"). */
+  frame?: string;
   characters: string[];
   wordCount?: number;
   eighths?: number;
