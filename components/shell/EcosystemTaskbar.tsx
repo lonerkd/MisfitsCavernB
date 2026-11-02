@@ -600,7 +600,7 @@ export default function EcosystemTaskbar() {
             {mode === 'activity' && activity && <ActivityControls activity={activity} count={activities.length} onCycle={() => setPick(shownIndex + 1)} />}
             {onSet && mode === 'rest' && (
                 <span className={s.onset}>
-                  <Link href={ON_SET_HREF} prefetch={false} className={s.onsetLink}>{onSet.label}</Link>
+                  <Link href={ON_SET_HREF} prefetch={false} className={s.onsetLink}>{onSet.label}{onSet.line ? ` · ${onSet.line.full}` : ''}</Link>
                   <button type="button" className={s.onsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
                 </span>
               )}
