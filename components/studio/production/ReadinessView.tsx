@@ -4,8 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Check, ChevronDown, FileText, Minus, PenLine } from 'lucide-react';
 import { useBreakdown } from '@/lib/breakdown';
+import { dateOfDayMap } from '@/lib/film/dates';
 import { placeResolver } from '@/lib/film/places';
-import { locationKey, useCallSheets, useCastings, useProjectLocations } from '@/lib/studio';
+import { locationKey, useCallSheets, useCastings, useProjectLocations, useShootDays } from '@/lib/studio';
 import { nextShootDay, readinessByDay, type CheckId, type ReadinessDay, type ReadinessInput, type SceneReadiness } from '@/lib/studio/readiness';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
@@ -45,6 +46,7 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
   const locations = useProjectLocations(project.id);
+  const shootDays = useShootDays(project.id);
   const [filter, setFilter] = useState<Filter>('all');
   const [open, setOpen] = useState<string | null>(() => followScene?.sceneId ?? null);
 
@@ -67,10 +69,10 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const shotsByScene = new Map<string, number>();
     for (const sh of shots.rows) shotsByScene.set(sh.scene_id, (shotsByScene.get(sh.scene_id) ?? 0) + 1);
     const refsByScene = new Map(Array.from(mediaByScene.entries()).map(([id, list]) => [id, list.length]));
-    const dateOfDay = new Map(sheets.rows.filter((c) => c.shoot_date).map((c) => [c.shoot_day, c.shoot_date as string]));
+    const dateOfDay = dateOfDayMap(shootDays.rows, sheets.rows);
     const locationMap = new Map(locations.rows.map((l) => [locationKey(l.name), { status: l.status, permit: l.permit }]));
     return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, placeOf: placeResolver(locations.rows), elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
-  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, castings.rows, locations.rows, castOf]);
+  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, shootDays.rows, castings.rows, locations.rows, castOf]);
 
   const days = useMemo(() => readinessByDay(scenes.rows, input), [scenes.rows, input]);
   const all = useMemo(() => days.flatMap((d) => d.scenes), [days]);
