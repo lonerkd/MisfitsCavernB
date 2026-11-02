@@ -72,7 +72,7 @@ const hasLower = (t: string) => [...t].some((c) => c !== c.toUpperCase() && c ==
  * A time card on a line of its own ("TWO HOURS LATER", "MOMENTS LATER", "THE NEXT MORNING", "MEANWHILE"): it
  * narrates, and it ends a speech. Matched on the whole line, so "SEE YOU LATER." shouted in dialogue is not one.
  */
-const TIME_CARD = /^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DAYS?|WEEKS?|MONTHS?|YEARS?) (?:LATER|EARLIER|BEFORE|AFTER)|(?:MOMENTS|SECONDS|MINUTES|HOURS|DAYS|WEEKS|MONTHS|YEARS) (?:LATER|EARLIER)|LATER|EARLIER|MEANWHILE|SAME TIME|THE NEXT (?:DAY|MORNING|NIGHT|AFTERNOON|EVENING)|THAT NIGHT|THAT MORNING|CONTINUOUS|MOMENTS LATER)[.:]?$/;
+export const TIME_CARD = /^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DAYS?|WEEKS?|MONTHS?|YEARS?) (?:LATER|EARLIER|BEFORE|AFTER)|(?:MOMENTS|SECONDS|MINUTES|HOURS|DAYS|WEEKS|MONTHS|YEARS) (?:LATER|EARLIER)|LATER|EARLIER|MEANWHILE|SAME TIME|THE NEXT (?:DAY|MORNING|NIGHT|AFTERNOON|EVENING)|THAT NIGHT|THAT MORNING|CONTINUOUS|MOMENTS LATER)[.:]?$/;
 
 /** How badly the line, alone, fits each label. */
 export function emission(o: Observation, ev: Evidence, p: Params, tight = false): Record<State, number> {

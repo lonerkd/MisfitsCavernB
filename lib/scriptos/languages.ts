@@ -8,7 +8,7 @@
 // `(soft)`, `(beat)`, `(O.S.)` and `(Spanish accent)` do not. A name after "in", "speaking", "sings in" and the like
 // counts even if it is one the data does not know, and is reported as written.
 
-const SYNONYMS: Record<string, string> = {
+export const SYNONYMS: Record<string, string> = {
   creole: 'Haitian Creole', 'haitian creole': 'Haitian Creole', kreyol: 'Haitian Creole', 'kreyòl': 'Haitian Creole', haitian: 'Haitian Creole',
   mandarin: 'Mandarin Chinese', 'mandarin chinese': 'Mandarin Chinese', cantonese: 'Cantonese', chinese: 'Chinese',
   farsi: 'Persian', filipino: 'Filipino', tagalog: 'Filipino', gaelic: 'Gaelic', 'scottish gaelic': 'Gaelic', 'sign language': 'Sign language',
@@ -44,7 +44,7 @@ function names(): Map<string, string> {
   return map;
 }
 
-const VERBS = /\b(?:in|speaking|speaks|spoken in|sings in|singing in|says in|reads in|replies in|answers in|switches to|into|translated from)\s+([\p{L}][\p{L}' -]*)$/iu;
+export const VERBS = /\b(?:in|speaking|speaks|spoken in|sings in|singing in|says in|reads in|replies in|answers in|switches to|into|translated from)\s+([\p{L}][\p{L}' -]*)$/iu;
 
 const canon = (token: string): string | null => {
   const t = token.trim().replace(/[.!]+$/, '').replace(/\s+/g, ' ');
