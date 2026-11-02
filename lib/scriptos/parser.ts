@@ -1,6 +1,7 @@
 
 
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
+import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
 
@@ -892,6 +893,7 @@ export class ScriptParser {
           sceneNumber: line.meta?.sceneNumber || '',
           location: this.parseLocation(slugText),
           timeOfDay: this.parseTime(slugText),
+          ...this.headingFacts(slugText),
           characters: []
         };
       } else if (currentScene) {
@@ -934,24 +936,26 @@ export class ScriptParser {
     return slug.trim().replace(/^\s*(\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
   }
 
-  private isTimePart(part: string): boolean {
-    const up = part.toUpperCase().replace(/[^A-Z\s/]/g, '').trim();
-    if (KNOWLEDGE.TIME_OF_DAY.has(up)) return true;
-    return [...KNOWLEDGE.TIME_OF_DAY].some(t => up === t || up.endsWith(' ' + t) || up.endsWith(t));
+  /** The when of a heading, kept: the years it names, the era words, how it follows the scene before, its layer of the story. */
+  private headingFacts(slug: string): Pick<Scene, 'years' | 'era' | 'marker' | 'frame'> {
+    const h = readHeading(this.stripScenePrefix(slug));
+    return {
+      ...(h.years.length ? { years: h.years } : {}),
+      ...(h.era ? { era: h.era } : {}),
+      ...(h.marker ? { marker: h.marker } : {}),
+      ...(h.frame ? { frame: h.frame } : {}),
+    };
   }
 
   private parseLocation(slug: string): string {
     const body = this.stripScenePrefix(slug);
-
-    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return body.trim();
-    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
-    return parts.join(' - ');
+    if (!body.trim()) return body.trim();
+    return readHeading(body).location;
   }
 
   private parseTime(slug: string): string {
     const body = this.stripScenePrefix(slug);
-    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    const parts = headingParts(body); // the same separators the heading reader splits on (hyphens, en and em dashes)
     const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
     const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));

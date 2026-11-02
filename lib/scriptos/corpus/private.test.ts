@@ -15,6 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseScript } from '../parser';
 import { TRANSFORMS } from './metamorphic';
+import { scriptKnowledge } from '../knowledge';
 
 const DIR = path.resolve(process.cwd(), '.private-corpus');
 const files = fs.existsSync(DIR) ? fs.readdirSync(DIR).filter((f) => /\.(fountain|txt)$/i.test(f)).sort() : [];
@@ -41,6 +42,19 @@ describe.skipIf(files.length === 0)('the private corpus (real scripts)', () => {
           expect(moved.length, `${moved.length} elements changed type`).toBe(0);
         });
       }
+
+      it('keeps a place one place: no scene’s location carries a year or a layer tag', () => {
+        const layer = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)\b/i;
+        const bad = read.scenes.filter((sc) => /\b(1[5-9]\d\d|20\d\d)\b/.test(sc.location) || sc.location.split(' - ').some((part) => layer.test(part))).map((sc) => sc.heading);
+        expect(bad).toEqual([]);
+      });
+
+      it('writes what the script knows about itself (languages, eras, layers, places) next to the snapshot, for the owner', () => {
+        fs.mkdirSync(SNAP, { recursive: true });
+        const k = scriptKnowledge(read);
+        fs.writeFileSync(path.join(SNAP, file + '.knowledge.json'), JSON.stringify(k, null, 1));
+        expect(k.places.length).toBeGreaterThan(0);
+      });
 
       it('has not changed how any line is read since the snapshot (or there is none yet)', () => {
         const now = read.lines.map((l, i) => ({ i, type: l.type }));
