@@ -9,7 +9,7 @@
 //   2. a BACKLOG item with no issue yet                                         -> info (the owner runs backlog-to-issues --create)
 //   3. two BACKLOG items with the same number                                   -> renumber one
 //   4. STATE.md "Resume here (handoff, DATE)" older than the newest session note by > 14 days -> refresh the handoff
-//   5. BACKLOG "Last audited" older than 45 days                                -> info
+//   5. BACKLOG "Last audited" more than 45 days before today                                -> info
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import { parseBacklog } from './backlog-to-issues.mjs';
@@ -51,7 +51,7 @@ if (!handoff) add('warn', 'STATE.md has no "Resume here (handoff, DATE)" heading
 else if (newest && days(new Date(handoff[1]), newest) > 14) add('warn', `STATE.md handoff is dated ${handoff[1]}; the newest session note is ${sessions[sessions.length - 1].slice(0, 10)}`, 'reread STATE "Resume here" and "Direction" against BACKLOG and the notes, fix what moved, redate it');
 
 const audited = /Last audited: (\d{4}-\d\d-\d\d)/.exec(backlog);
-if (audited && newest && days(new Date(audited[1]), newest) > 45) add('info', `BACKLOG "Last audited" is ${audited[1]}`, 'audit each item against the code, then redate it');
+if (audited && days(new Date(audited[1]), new Date()) > 45) add('info', `BACKLOG "Last audited" is ${audited[1]}`, 'audit each item against the code, then redate it');
 
 if (!findings.length) console.log('Bookkeeping is consistent: issues, BACKLOG, STATE and the session notes agree.');
 else {
