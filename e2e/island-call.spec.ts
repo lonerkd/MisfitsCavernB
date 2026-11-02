@@ -9,6 +9,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
+const SHOTS = process.env.ISLAND_SHOTS; // a folder: screenshots of the island while it holds the call
 
 test.describe('The island holds a voice call (local Supabase)', () => {
   test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
@@ -34,6 +35,9 @@ test.describe('The island holds a voice call (local Supabase)', () => {
   });
 
   const island = (page: Page) => page.getByRole('navigation', { name: 'Suite' });
+  const shot = async (page: Page, name: string) => {
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, clip: { x: 0, y: 760, width: 1600, height: 140 } });
+  };
   /** Navigate the way a person does, through the island's own links: a client-side move, never a page reload (a reload would end any call). */
   const goTo = async (page: Page, app: string, path: RegExp) => {
     await page.locator('[data-taskbar] .mc-taskbar').hover();
@@ -70,8 +74,10 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       await goTo(page, 'Today', /\/today/);
       await expect(island(page).getByText(`In voice · ${room}`)).toBeVisible({ timeout: 30_000 });
 
+      await shot(page, 'call-live');
       await island(page).getByRole('button', { name: 'Mute', exact: true }).click();
       await expect(island(page).getByText(/muted/)).toBeVisible();
+      await shot(page, 'call-muted');
       await island(page).getByRole('button', { name: 'Unmute', exact: true }).click();
       await expect(island(page).getByText(/muted/)).toHaveCount(0);
 
