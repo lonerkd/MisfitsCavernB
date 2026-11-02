@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { areasOf, buildCoverage, registrationsIn } from './coverage';
+import { areaOfRegistration, areasOf, buildCoverage, registrationsIn } from './coverage';
 
 const ROOT = process.cwd();
 const FILE = join(ROOT, '.cavern-intelligence', 'island-coverage.md');
@@ -54,6 +54,23 @@ describe('registrationsIn', () => {
   });
 });
 
+describe('spread and conditional entries', () => {
+  it('keeps the controls a descriptor offers only sometimes, marked as conditional', () => {
+    const src = `usePillStage({ module: 'm', title: 'T', fields: [{ label: 'Open', value: '1' }, ...(user ? [{ label: 'Mine', value: '2' }] : [])], actions: [...(ok ? [{ id: 'a', label: 'Go' }] : [])] });`;
+    const [r] = registrationsIn('a.tsx', src);
+    expect(r.fields).toEqual(['Open', 'Mine (conditional)']);
+    expect(r.actions).toEqual([{ id: 'a', label: 'Go (conditional)' }]);
+  });
+});
+
+describe('areaOfRegistration', () => {
+  it('uses the folder, or the area whose files import the registering component', () => {
+    expect(areaOfRegistration('app/(suite)/jobs/page.tsx', {})).toBe('jobs');
+    expect(areaOfRegistration('components/lounge/useLounge.ts', { 'app/(suite)/lounge/page.tsx': "import { useLounge } from '@/components/lounge/useLounge';" })).toBe('lounge');
+    expect(areaOfRegistration('components/lounge/useLounge.ts', {})).toBeUndefined();
+  });
+});
+
 describe('areasOf', () => {
   it('lists the route areas that have a page', () => {
     expect(areasOf(['app/(suite)/jobs/page.tsx', 'app/(suite)/admin/users/page.tsx', 'app/(suite)/page.tsx', 'app/(suite)/layout.tsx'])).toEqual(['admin', 'jobs']);
@@ -61,14 +78,16 @@ describe('areasOf', () => {
 });
 
 describe('the island coverage reference', () => {
-  const sources = (): { files: Record<string, string>; pageFiles: string[] } => {
+  const sources = (): { files: Record<string, string>; pageFiles: string[]; appSources: Record<string, string> } => {
     const all = [...walk(join(ROOT, 'app')), ...walk(join(ROOT, 'components'))].map((f) => relative(ROOT, f).split('\\').join('/'));
     const files: Record<string, string> = {};
     for (const f of all) {
       const src = readFileSync(join(ROOT, f), 'utf8');
       if (/usePill(Stage|Zone)\(/.test(src)) files[f] = src;
     }
-    return { files, pageFiles: all.filter((f) => /\/page\.tsx$/.test(f)) };
+    const appSources: Record<string, string> = {};
+    for (const f of all) if (f.startsWith('app/(suite)/')) appSources[f] = readFileSync(join(ROOT, f), 'utf8');
+    return { files, pageFiles: all.filter((f) => /\/page\.tsx$/.test(f)), appSources };
   };
 
   it.skipIf(writing)('is the committed file (run `npm run island:coverage` after a page changes what it tells the island)', () => {

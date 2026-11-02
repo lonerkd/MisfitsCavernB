@@ -76,6 +76,19 @@ const text = (raw: string | undefined): string => {
   return m ? (m[1] ?? m[2] ?? m[3] ?? '').replace(/\$\{[^}]*\}/g, '…') : '(computed)';
 };
 
+/** Every outermost `{ ... }` in `src`, strings respected. */
+function objectsIn(src: string): string[] {
+  const out: string[] = [];
+  let at = 0;
+  for (;;) {
+    const o = objectAfter(src, at);
+    if (!o) return out;
+    const i = src.indexOf(o, at);
+    out.push(o);
+    at = i + o.length;
+  }
+}
+
 /** The elements of the array literal under `key` — each element's own props. A conditional array (`x ? [..] : []`) is read too. */
 function entries(obj: Record<string, string>, key: string): Array<{ id: string; label: string }> {
   const raw = obj[key];
@@ -94,11 +107,15 @@ function entries(obj: Record<string, string>, key: string): Array<{ id: string; 
   }
   if (end < 0) return [];
   const out: Array<{ id: string; label: string }> = [];
-  for (const el of splitTop(raw.slice(open + 1, end))) {
-    if (!el.startsWith('{')) continue;
+  const add = (el: string, conditional: boolean) => {
     const p = props(el);
-    if (p.label === undefined) continue;
-    out.push({ id: p.id ? text(p.id) : '', label: text(p.label) });
+    if (p.label === undefined) return;
+    out.push({ id: p.id ? text(p.id) : '', label: text(p.label) + (conditional ? ' (conditional)' : '') });
+  };
+  for (const el of splitTop(raw.slice(open + 1, end))) {
+    if (el.startsWith('{')) add(el, false);
+    // A spread such as `...(user ? [{ label: 'Mine' }] : [])`: its objects are offered only sometimes.
+    else if (el.startsWith('...')) for (const o of objectsIn(el)) add(o, true);
   }
   return out;
 }
@@ -136,9 +153,22 @@ export function areasOf(pageFiles: string[]): string[] {
   return [...areas].sort();
 }
 
-export function buildCoverage(input: { files: Record<string, string>; pageFiles: string[] }): string {
+/** The route area a registration belongs to: its own folder under app/(suite), or the area whose files import the component that registers it. */
+export function areaOfRegistration(file: string, appSources: Record<string, string>): string | undefined {
+  const own = /^app\/\(suite\)\/([^/]+)\//.exec(file)?.[1];
+  if (own) return own;
+  const base = file.replace(/^.*\//, '').replace(/\.(tsx|ts)$/, '');
+  for (const [f, src] of Object.entries(appSources)) {
+    if (!new RegExp(`from\\s+['"][^'"]*/${base}['"]`).test(src)) continue;
+    const a = /^app\/\(suite\)\/([^/]+)\//.exec(f)?.[1];
+    if (a) return a;
+  }
+  return undefined;
+}
+
+export function buildCoverage(input: { files: Record<string, string>; pageFiles: string[]; appSources?: Record<string, string> }): string {
   const regs = Object.entries(input.files).flatMap(([file, src]) => registrationsIn(file, src)).sort((a, b) => a.file.localeCompare(b.file) || a.title.localeCompare(b.title));
-  const stageAreas = new Set(regs.filter((r) => r.kind === 'stage').map((r) => /^app\/\(suite\)\/([^/]+)\//.exec(r.file)?.[1]).filter(Boolean));
+  const stageAreas = new Set(regs.filter((r) => r.kind === 'stage').map((r) => areaOfRegistration(r.file, input.appSources ?? {})).filter(Boolean));
   const areas = areasOf(input.pageFiles);
   const list = (items: string[]) => (items.length ? items.map((i) => `\`${i}\``).join(' · ') : '—');
 

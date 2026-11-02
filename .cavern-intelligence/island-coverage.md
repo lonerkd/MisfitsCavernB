@@ -6,20 +6,20 @@
 
 ## Areas with no stage
 
-`/admin` · `/auth` · `/call` · `/crew` · `/hub` · `/lounge` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
+`/admin` · `/auth` · `/call` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
 
 ## Registrations
 
 | Where | Kind | Title | Fields | Toggles | Actions |
 | --- | --- | --- | --- | --- | --- |
 | `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | `Focus` | `find` Find & replace |
-| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` | — | `post-job` + Post Position |
+| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | `post-job` + Post Position |
 | `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
 | `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | `new-project` + New Project |
 | `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | `next-tab` Next tab → |
 | `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | `jump-scene` → Jump to Scene |
-| `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` | — | `lounge-search` Search messages |
-| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` | — | — |
+| `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` · `Unread (conditional)` | — | `lounge-search` Search messages · `lounge-pinned` Pinned (conditional) |
+| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | — |
 | `components/studio/CrewBoards.tsx` | zone | (computed) | `Role` · `Status` | — | `message-crew` → Message in Lounge |
 
 Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.
