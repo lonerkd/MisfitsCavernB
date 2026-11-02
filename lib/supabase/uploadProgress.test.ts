@@ -39,6 +39,18 @@ describe('uploadWithProgress', () => {
     expect(seen).toEqual([[40, 100], [100, 100]]);
     expect(s.upload).not.toHaveBeenCalled();
   });
+  it('asks for overwrite permission when the signed URL is created, not only in a header', async () => {
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    const s = store();
+    void uploadWithProgress(s, 'p', file, { upsert: true }, () => {});
+    await Promise.resolve(); await Promise.resolve();
+    expect(s.createSignedUploadUrl).toHaveBeenCalledWith('p', { upsert: true });
+    expect(FakeXhr.last.headers['x-upsert']).toBe('true');
+    const t = store();
+    void uploadWithProgress(t, 'p', file, {}, () => {});
+    await Promise.resolve(); await Promise.resolve();
+    expect(t.createSignedUploadUrl).toHaveBeenCalledWith('p', { upsert: false });
+  });
   it('reports the server’s own message when it refuses', async () => {
     vi.stubGlobal('XMLHttpRequest', FakeXhr);
     const done = uploadWithProgress(store(), 'p', file, {}, () => {});

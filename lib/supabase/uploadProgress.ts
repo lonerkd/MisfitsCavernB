@@ -5,7 +5,7 @@
 
 interface UploadStore {
   upload: (path: string, file: Blob, options: { contentType?: string; upsert?: boolean; cacheControl?: string }) => Promise<{ error: { message: string } | null }>;
-  createSignedUploadUrl: (path: string) => Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+  createSignedUploadUrl: (path: string, options?: { upsert: boolean }) => Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
 }
 
 export interface ProgressUploadOptions {
@@ -23,7 +23,8 @@ export async function uploadWithProgress(
   onProgress: (loaded: number, total: number) => void,
 ): Promise<{ error: { message: string } | null }> {
   if (typeof XMLHttpRequest === 'undefined') return store.upload(path, file, options);
-  const signed = await store.createSignedUploadUrl(path);
+  // Overwrite permission is part of the signed token: the x-upsert header on the PUT alone cannot grant it.
+  const signed = await store.createSignedUploadUrl(path, { upsert: options.upsert ?? false });
   if (signed.error || !signed.data) return store.upload(path, file, options);
 
   return new Promise((resolve) => {

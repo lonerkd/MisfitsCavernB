@@ -53,6 +53,18 @@ describe('the upload tracker', () => {
     b.end();
     expect(activityStore.getSnapshot().some((x) => x.id === 'upload')).toBe(false);
   });
+  it('does not republish to the island for progress events that change nothing it shows', () => {
+    const seen: number[] = [];
+    const off = activityStore.subscribe(() => seen.push(1));
+    const t = beginUpload('big.mov', 1_000_000);
+    const afterStart = seen.length;
+    for (let i = 1; i <= 50; i++) t.progress(i * 10); // 50 events inside the same whole percent
+    expect(seen.length).toBe(afterStart);
+    t.progress(500_000); // the bar and the percent move
+    expect(seen.length).toBe(afterStart + 1);
+    t.end();
+    off();
+  });
   it('ending twice, or reporting after the end, does no harm', () => {
     const t = beginUpload('a', 10);
     t.end(); t.end(); t.progress(5);

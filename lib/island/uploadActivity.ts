@@ -24,13 +24,15 @@ export function formatBytes(n: number): string {
 export function uploadActivity(s: UploadSnapshot): Activity | null {
   if (s.count === 0) return null;
   const fraction = s.total > 0 ? Math.min(1, s.loaded / s.total) : undefined;
-  const pct = fraction === undefined ? '' : `${Math.round(fraction * 100)}%`;
+  // Everything shown moves in whole percent (the bytes too), so the island is told only when a person could see a change.
+  const shown = fraction === undefined ? undefined : quantize(fraction);
+  const pct = shown === undefined ? '' : `${Math.round(shown * 100)}%`;
   return {
     id: 'upload',
     kind: 'upload',
     tone: 'busy',
     title: s.count === 1 && s.name ? `Uploading ${s.name}` : `Uploading ${s.count} files`,
-    detail: s.total > 0 ? [pct, `${formatBytes(s.loaded)} of ${formatBytes(s.total)}`].join(' · ') : undefined,
-    progress: fraction === undefined ? undefined : quantize(fraction),
+    detail: shown !== undefined ? [pct, `${formatBytes(Math.round(shown * s.total))} of ${formatBytes(s.total)}`].join(' · ') : undefined,
+    progress: shown,
   };
 }

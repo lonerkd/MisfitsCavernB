@@ -10,4 +10,6 @@ Uploading a file to the Studio library now shows on the island: "Uploading slowr
 
 **Reviewed as a data-layer change** (the risk check rated it high): the new path is a signed upload URL, so it must be issued only to someone who could have uploaded the plain way. `tests/integration/media-signed-upload.test.ts` against the real local stack: the owner and a crew member get a URL and the file lands at that path (sent as a raw body with the same headers the browser code uses); an outsider is refused and nothing is written; a URL for one path cannot write another. 4 of 4 pass. No migration, no new policy.
 
+**Found in review and fixed:** (1) every raw progress event republished the island's activity even when nothing it shows had changed (the detail line carried exact bytes): everything shown now moves in whole percent, and a republish with the same words and bar is dropped (a test sends 50 events inside one percent and expects no notification); (2) overwrite permission lives in the signed token, so `upsert` is now passed when the signed URL is created, not only as a header.
+
 **Left (BACKLOG 4.1):** the SFX library, the paperwork scans and Capture's outbox still upload without the island; a cancel button; a retry when the network drops mid-upload.

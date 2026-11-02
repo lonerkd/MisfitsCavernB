@@ -1,7 +1,7 @@
 // The uploads in flight, kept in one place so the island can hold them (BACKLOG 4.1). The code that uploads calls
 // `beginUpload`, reports progress, and ends it (always, in a finally); this publishes the total to the island's
 // activity store. Several at once are one activity, "Uploading 3 files", with the combined progress.
-import { activityStore } from './activityStore';
+import { activityStore, activitySignature } from './activityStore';
 import { uploadActivity, type UploadSnapshot } from './uploadActivity';
 
 interface Running { name: string; loaded: number; total: number }
@@ -18,9 +18,20 @@ export function uploadSnapshot(): UploadSnapshot {
   };
 }
 
+// The browser reports progress many times a second; the island only needs to hear when what it shows changes
+// (the whole percent, the title), so a republish with the same words and bar is dropped.
+let lastShown: string | null = null;
+
 function publish() {
   const activity = uploadActivity(uploadSnapshot());
-  if (activity) activityStore.set(activity); else activityStore.clear('upload');
+  if (!activity) {
+    if (lastShown !== null) { lastShown = null; activityStore.clear('upload'); }
+    return;
+  }
+  const signature = activitySignature(activity);
+  if (signature === lastShown) return;
+  lastShown = signature;
+  activityStore.set(activity);
 }
 
 export interface UploadTracker {
