@@ -37,10 +37,9 @@ export function parseBacklog(text) {
   const lines = text.split(/\r?\n/);
   const items = [];
   let cur = null;
-  let in3 = false;
   for (const line of lines) {
-    if (/^## /.test(line)) { in3 = /^## 3\./.test(line); cur = null; continue; }
-    if (!in3) continue;
+    // Any `### 3.N` heading is an item wherever it sits (some were added after §4 and were never synced).
+    if (/^## /.test(line)) { cur = null; continue; }
     const h = /^### (3\.\d+[a-z]?) (.+)$/.exec(line);
     if (h) {
       const rest = h[2];
@@ -85,9 +84,10 @@ function issueBody(it) {
 }
 
 function existingIds() {
-  const out = gh(['issue', 'list', '--repo', REPO, '--state', 'all', '--label', 'backlog', '--limit', '1000', '--json', 'body']);
+  // REST, not `gh issue ...`: GraphQL is not available from Claude Code sessions.
+  const out = gh(['api', `repos/${REPO}/issues?state=all&labels=backlog&per_page=100`, '--paginate', '--jq', '[.[]|select(.pull_request|not)|{body}]']);
   const ids = new Set();
-  for (const i of JSON.parse(out || '[]')) {
+  for (const i of out.split('\n').filter(Boolean).flatMap((l) => JSON.parse(l))) {
     const m = /<!-- backlog-id:([\w.]+) -->/.exec(i.body || '');
     if (m) ids.add(m[1]);
   }
@@ -123,7 +123,7 @@ function main() {
     const title = `[BACKLOG ${it.id}] ${it.title}`;
     console.log(`  ${create ? 'create' : 'would '} ${it.id}  ${title.slice(0, 80)}  [${labels.join(', ')}]`);
     if (create) {
-      gh(['issue', 'create', '--repo', REPO, '--title', title, '--body-file', '-', '--label', labels.join(',')], issueBody(it));
+      gh(['api', `repos/${REPO}/issues`, '--input', '-'], JSON.stringify({ title, body: issueBody(it), labels }));
       made += 1;
     }
   }
