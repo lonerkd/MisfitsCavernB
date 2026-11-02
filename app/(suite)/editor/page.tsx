@@ -13,6 +13,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
@@ -157,8 +158,7 @@ export default function EditorPage() {
   const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
-    // Only copy has its own reading here; every other script is read as before (BACKLOG: let podcast and outline scripts use theirs).
-    const result = parseScript(parseSource, scriptFormat === 'copy' ? 'copy' : 'screenplay', undefined, { context: readContext });
+    const result = parseScript(parseSource, readingFormat(scriptFormat), undefined, { context: readContext });
     return {
       lines: result.lines,
       parsedScenes: result.scenes,

@@ -347,7 +347,7 @@ export function mediaSrc(m: Pick<Media, 'storage_path' | 'external_url'>, signed
 // Not a Realtime table on purpose (a script row carries the whole screenplay);
 // reloaded on focus instead.
 
-export interface ProjectScript { id: string; title: string; updated_at: string | null }
+export interface ProjectScript { id: string; title: string; updated_at: string | null; format: string | null }
 const NO_SCRIPTS: ProjectScript[] = [];
 
 export function useProjectScripts(projectId: string | null) {
@@ -361,7 +361,7 @@ export function useProjectScripts(projectId: string | null) {
     if (!projectId) return;
     await supabase
       .from('scripts')
-      .select('id, title, updated_at')
+      .select('id, title, updated_at, format')
       .eq('project_id', projectId)
       .order('updated_at', { ascending: false })
       .then(({ data, error }) => setGot((g) => (error

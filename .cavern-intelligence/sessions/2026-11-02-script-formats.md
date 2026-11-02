@@ -1,0 +1,11 @@
+# Session — 2026-11-02: podcast and outline scripts are read as themselves (BACKLOG 3.35)
+
+The editor read every script except copy as a screenplay, and the Studio read **every** script, copy included, as a screenplay, even though the parser has rules for podcast and documentary-outline scripts (and copy). So a podcast script had no scenes and no speakers in the Studio, and the editor and the Studio could disagree about the scene index of a copy script.
+
+**The fix.** One function, `readingFormat` (`lib/scriptos/reading-format.ts`), decides which rules a script is read with: copy, podcast and doc-outline have their own; screenplay, teleplay, stage play, treatment and "no format yet" are read as a screenplay (unchanged). The editor and the Studio (the two surfaces that write the scene index) both use it; the Studio's script list now carries each script's `format`, and the Studio's cast list (Casting board, Character bible) reads with it too (found in review: it parsed without a format, so a podcast's speakers would not have been listed).
+
+**Verified:** unit tests on real podcast and outline text (podcast: two segment scenes, HOST and GUEST in the cast, four dialogue lines; read as a screenplay it had 0 scenes and no GUEST; outline: three scenes from the timecode and the labels, soundbites as dialogue); a real browser (`e2e/script-formats.spec.ts`): opening a podcast script and an outline in the Studio writes 2 and 3 scenes to the database, and **with the old behaviour restored it fails (0 scenes, expected 2)**; typecheck, lint, 1974 unit tests, build, bundle budget.
+
+**What changes for people:** a podcast or documentary-outline script now has scenes (its segments) and speakers in the editor and the Studio; a copy script's Studio scene index now matches the editor's. Existing screenplay-family scripts read exactly as before. **Not verified / left:** the other surfaces that parse without a format (public share, export, pitch, brief page, Spotify mood) still read as a screenplay: the same list as BACKLOG 3.22(b).
+
+**Not verified / left:** the other surfaces that parse without a format (public share, export, pitch, brief page, Spotify mood) still read as a screenplay: the same list as BACKLOG 3.22(b).
