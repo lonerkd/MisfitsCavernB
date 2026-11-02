@@ -97,10 +97,13 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
     const next = value.trim() || null;
     if ((rec?.[key] ?? null) !== next) void save({ [key]: next });
   };
-  const rename = async (value: string) => {
-    if (!rec || !value.trim() || value.trim().toUpperCase() === row.name) return;
-    try { onRenamed(await studio.renameLocation(rec.id, value)); }
-    catch (e) { toast(e instanceof Error ? e.message : 'Could not rename the location', 'error'); }
+  const rename = async (input: HTMLInputElement) => {
+    if (!rec || input.value.trim().toUpperCase() === row.name) return;
+    try { onRenamed(await studio.renameLocation(rec.id, input.value)); }
+    catch (e) {
+      input.value = rec.name; // a refused name does not stay in the box
+      toast(e instanceof Error ? e.message : 'Could not rename the location', 'error');
+    }
   };
   const remove = async () => {
     if (!rec || !(await confirm(`Remove the record for ${row.name}? ${row.scenes.length ? 'The scenes stay; the address, contact and permit go.' : ''}`))) return;
@@ -152,7 +155,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
             {rec && (
               <label className={s.stack} style={{ gap: 4 }}>
                 <span className={s.hint}>Name (every scene at this place follows)</span>
-                <input className={s.input} defaultValue={rec.name} key={`name:${rec.name}`} maxLength={200} onBlur={(e) => void rename(e.target.value)} />
+                <input className={s.input} defaultValue={rec.name} key={`name:${rec.name}`} maxLength={200} onBlur={(e) => void rename(e.target)} />
               </label>
             )}
             <label className={s.stack} style={{ gap: 4 }}>

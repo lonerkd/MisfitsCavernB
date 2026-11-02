@@ -36,4 +36,22 @@ describe('project_locations', () => {
     expect((await cast.riley.client.from('project_locations').select('id').eq('project_id', projectId)).data).toEqual([]);
     await expect(createStudioApi(cast.riley.client).saveLocation(projectId, 'CAVE', {})).rejects.toThrow();
   });
+
+  it('a rename keeps the record and its scenes; a name in use, a blank name and an outsider are refused', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    const jordan = createStudioApi(cast.jordan.client);
+    const dock = await sam.saveLocation(projectId, 'Dock', {});
+    await sam.saveLocation(projectId, 'Quay', {});
+
+    const renamed = await jordan.renameLocation(dock.id, ' wharf ');
+    expect(renamed).toMatchObject({ id: dock.id, name: 'WHARF' });
+
+    await expect(sam.renameLocation(dock.id, 'Quay')).rejects.toThrow('There is already a location called QUAY');
+    await expect(sam.renameLocation(dock.id, '   ')).rejects.toThrow('A location needs a name');
+    expect((await sam.listLocations(projectId)).find((l) => l.id === dock.id)?.name).toBe('WHARF');
+
+    // Riley cannot see the row, so the rename finds nothing to change.
+    await expect(createStudioApi(cast.riley.client).renameLocation(dock.id, 'Mine')).rejects.toThrow();
+    expect((await sam.listLocations(projectId)).find((l) => l.id === dock.id)?.name).toBe('WHARF');
+  });
 });
