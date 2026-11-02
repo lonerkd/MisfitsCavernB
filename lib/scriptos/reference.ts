@@ -31,7 +31,9 @@ export const PARAM_DOCS: Record<keyof Params, string> = {
   temperature: 'how sharply costs become certainty (lower is more decisive)',
 };
 
-const sorted = (set: ReadonlySet<string>) => Array.from(set).sort((a, b) => a.localeCompare(b));
+// Code-point order, never a locale's collation: the committed file must come out the same on every machine.
+const byCodePoint = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+const sorted = (set: ReadonlySet<string>) => Array.from(set).sort(byCodePoint);
 const list = (items: string[]) => items.map((i) => `\`${i}\``).join(' · ');
 
 export function buildReference(): string {
@@ -71,7 +73,7 @@ export function buildReference(): string {
   out.push('');
   out.push(`Names are read from the platform's own language table (\`Intl.DisplayNames\`); \`SYNONYMS\` adds what that table lacks (${Object.keys(SYNONYMS).length} entries):`);
   out.push('');
-  out.push(Object.entries(SYNONYMS).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `\`${k}\` → ${v}`).join(' · '));
+  out.push(Object.entries(SYNONYMS).sort(([a], [b]) => byCodePoint(a, b)).map(([k, v]) => `\`${k}\` → ${v}`).join(' · '));
   out.push('');
   out.push(`A language is named after a verb phrase: \`${VERBS.source}\``);
   out.push('');
