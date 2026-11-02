@@ -28,6 +28,7 @@
     "stack:up": "bash scripts/dev-stack.sh",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "bible": "node scripts/bible.mjs",
+    "parser:reference": "UPDATE_PARSER_REFERENCE=1 vitest run lib/scriptos/reference.test.ts",
     "bible:shots": "node scripts/bible-shots.mjs"
   },
   "dependencies": {

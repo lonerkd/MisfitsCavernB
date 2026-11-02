@@ -9,7 +9,7 @@ import { decodeLabels, type Decoded, type Observation, type State } from './deco
  * The "… TO BLACK / WHITE" family, which writers qualify in many ways (SMASH CUT TO BLACK, MATCH CUT TO WHITE,
  * HARD CUT TO BLACK, DISSOLVE TO WHITE, SLOW FADE TO BLACK) and no list will hold. A pattern says it once.
  */
-const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
+export const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
