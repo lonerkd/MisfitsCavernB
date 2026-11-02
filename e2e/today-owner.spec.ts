@@ -21,6 +21,7 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
   const crew = person('c');
   const invited = person('i');
   let projectId = '';
+  let scheduledId = '';
 
   test.beforeAll(async () => {
     const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
@@ -38,12 +39,17 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
     expect(taskIns.error).toBeNull();
     const sheetIns = await admin.from('call_sheets').insert({ project_id: projectId, shoot_date: day(2), shoot_day: 1 });
     expect(sheetIns.error).toBeNull();
+    // A second production: its day is dated on the schedule, and no call sheet has been made yet.
+    scheduledId = (await admin.from('projects').insert({ title: `Sched ${TAG}`, creator_id: owner.id }).select('id').single()).data!.id;
+    const dayIns = await admin.from('shoot_days').insert({ project_id: scheduledId, day_number: 1, shoot_date: day(3) });
+    expect(dayIns.error).toBeNull();
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('call_sheets').delete().eq('project_id', projectId);
     await admin.from('project_tasks').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
+    if (scheduledId) await admin.from('projects').delete().eq('id', scheduledId);
     for (const p of [owner, crew, invited]) if (p.id) await admin.auth.admin.deleteUser(p.id);
   });
 
@@ -63,6 +69,15 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
     await expect(flags).toBeVisible({ timeout: 30_000 });
     await expect(flags.getByText('1 invite unanswered')).toBeVisible();
     await expect(flags.getByText('1 task overdue')).toBeVisible();
+    await expect(flags.getByText(/Day 1 · .* · call sheet not issued/)).toBeVisible();
+  });
+
+  test('a day dated on the schedule with no call sheet yet still shows as the next day, not issued', async ({ page }) => {
+    test.setTimeout(120_000);
+    await signIn(page, owner);
+    await page.goto('/today');
+    const flags = page.getByRole('list', { name: `Sched ${TAG}: what needs you` });
+    await expect(flags).toBeVisible({ timeout: 30_000 });
     await expect(flags.getByText(/Day 1 · .* · call sheet not issued/)).toBeVisible();
   });
 

@@ -3,6 +3,7 @@
 // projects. RLS limits every read to what they can see.
 import { supabase } from './client';
 import type { LoungeUnread } from './messages';
+import { withScheduledDays, type ScheduledDay } from '@/lib/today/owner';
 
 export interface TodaySheet { id: string; project_id: string; shoot_date: string | null; shoot_day: number; general_call: string | null; location_address: string | null; weather: string | null; issued_at: string | null }
 export interface TodayTask { id: string; project_id: string; title: string; completed: boolean | null; due_date: string | null }
@@ -56,15 +57,19 @@ export async function nameUnread(un: LoungeUnread): Promise<{
 /** What the owner needs to see across their productions: unanswered crew, open tasks, shoot days. Throws if any part fails. */
 export async function getOwnerData(projectIds: string[], fromDay: string): Promise<import('@/lib/today/owner').OwnerData> {
   if (!projectIds.length) return { pendingCrew: [], openTasks: [], sheets: [] };
-  const [crew, tasks, sheets] = await Promise.all([
+  const [crew, tasks, sheets, days] = await Promise.all([
     supabase.from('project_crew').select('project_id').in('project_id', projectIds).eq('status', 'pending'),
     supabase.from('project_tasks').select('project_id, due_date').in('project_id', projectIds).eq('completed', false).limit(500),
     supabase.from('call_sheets').select('project_id, shoot_date, shoot_day, issued_at').in('project_id', projectIds).gte('shoot_date', fromDay).order('shoot_date').limit(60),
+    supabase.from('shoot_days').select('project_id, day_number, shoot_date').in('project_id', projectIds).gte('shoot_date', fromDay).order('shoot_date').limit(60),
   ]);
-  for (const r of [crew, tasks, sheets]) if (r.error) throw r.error;
+  for (const r of [crew, tasks, sheets, days]) if (r.error) throw r.error;
   return {
     pendingCrew: (crew.data ?? []) as { project_id: string }[],
     openTasks: (tasks.data ?? []) as { project_id: string; due_date: string | null }[],
-    sheets: (sheets.data ?? []) as { project_id: string; shoot_date: string | null; shoot_day: number; issued_at: string | null }[],
+    sheets: withScheduledDays(
+      (sheets.data ?? []) as { project_id: string; shoot_date: string | null; shoot_day: number; issued_at: string | null }[],
+      (days.data ?? []) as ScheduledDay[],
+    ),
   };
 }
