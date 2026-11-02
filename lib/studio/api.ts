@@ -5,6 +5,8 @@
 // client (lib/studio/index.ts), and tests/integration pass a signed-in persona,
 // so the integration suite exercises this exact code against a real database.
 
+import { beginUpload } from '@/lib/island/uploads';
+import { uploadWithProgress } from '@/lib/supabase/uploadProgress';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
 import { logActivity } from '@/lib/supabase/activity';
@@ -234,7 +236,10 @@ export function createStudioApi(db: Client) {
     const id = crypto.randomUUID();
     const path = `${projectId}/${id}/${safeFileName(file.name)}`;
 
-    const up = await db.storage.from(MEDIA_BUCKET).upload(path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' });
+    // The island shows the upload and how far along it is.
+    const tracker = beginUpload(file.name, file.size);
+    const up = await uploadWithProgress(db.storage.from(MEDIA_BUCKET), path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' }, tracker.progress)
+      .finally(tracker.end);
     if (up.error) throw new StudioError(`Upload failed: ${up.error.message}`);
 
     const { data, error } = await db
