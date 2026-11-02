@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseScript } from '../../parser';
-import { HAND_SCRIPTS } from './real-conventions';
+import { HAND_SCRIPTS, HAND_SCRIPTS_LAYOUT } from './real-conventions';
 
 const CODE: Record<string, string> = { S: 'slug', A: 'action', C: 'character', D: 'dialogue', P: 'parenthetical', T: 'transition' };
 
@@ -11,7 +11,7 @@ function prepare(lines: string[]) {
 }
 
 describe('hand-written scripts', () => {
-  for (const script of HAND_SCRIPTS) {
+  for (const script of [...HAND_SCRIPTS, ...HAND_SCRIPTS_LAYOUT]) {
     it(`${script.name}: ${script.note}`, () => {
       const { expected, source } = prepare(script.lines);
       const read = parseScript(source).lines;
@@ -23,5 +23,14 @@ describe('hand-written scripts', () => {
       });
       expect(wrong).toEqual([]);
     });
+
+    if (script.cast) {
+      it(`${script.name}: finds the cast`, () => {
+        const { source } = prepare(script.lines);
+        const found = parseScript(source).characters.map((c) => c.name.toUpperCase());
+        expect(script.cast!.filter((who) => !found.includes(who))).toEqual([]); // nobody a reader would name is missed
+        expect(found.filter((who) => !script.cast!.includes(who))).toEqual([]); // and nobody is invented
+      });
+    }
   }
 });

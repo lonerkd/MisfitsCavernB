@@ -88,3 +88,66 @@ describe('transitions to black and white, however the writer qualifies them', ()
     expect(read.find((l) => l.text.startsWith('The room'))?.type).toBe('action');
   });
 });
+
+describe('how this script writes its cues: plain title case', () => {
+  const titleCase = [
+    'INT. KITCHEN - DAY', '', 'Maya', 'Did you eat?', '', 'Ben', 'Not yet.', '', 'A hush. Maya opens the fridge.', '',
+    'Maya', 'There is nothing in here.', '', 'Ben', 'Then we order.',
+  ].join('\n');
+
+  it('a short name that heads block after block is a cue, whatever its casing', () => {
+    expect(types(titleCase)).toEqual(['slug', 'character', 'dialogue', 'character', 'dialogue', 'action', 'character', 'dialogue', 'character', 'dialogue']);
+  });
+
+  it('the cast holds them (in capitals, as the cast does), and the sentence that opens with a name is still action', () => {
+    const r = parseScript(titleCase);
+    expect(r.characters.map((c) => c.name).sort()).toEqual(['BEN', 'MAYA']);
+    expect(r.lines.find((l) => l.text.startsWith('A hush'))?.type).toBe('action');
+  });
+
+  it('a name that appears once, between two that recur, is the other half of the exchange', () => {
+    const src = ['INT. A - DAY', '', 'Maya', 'Hello there.', '', 'Ben', 'Hi.', '', 'Maya', 'Coffee?'].join('\n');
+    expect(parseScript(src).lines.filter((l) => l.type === 'character').map((l) => l.text)).toEqual(['Maya', 'Ben', 'Maya']);
+  });
+
+  it('a lone word is not a cue: one occurrence proves nothing', () => {
+    const src = ['INT. A - DAY', '', 'Silence', 'Nobody moves for a long moment.', '', 'Maya waits.'].join('\n');
+    expect(types(src)).toEqual(['slug', 'action', 'action', 'action']);
+  });
+
+  it('a name that heads a block but ends in punctuation, or is a time word, is not taken for a cue', () => {
+    const src = ['INT. A - DAY', '', 'Later.', 'They are gone.', '', 'Later.', 'They are back.', '', 'Morning', 'Light fills the room.', '', 'Morning', 'Light fills it again.'].join('\n');
+    expect(parseScript(src).lines.some((l) => l.type === 'character')).toBe(false);
+  });
+});
+
+describe('the cast is who the reading says speaks', () => {
+  it('a cue whose only line is shouted in capitals is in the cast (the line and the cast agree)', () => {
+    const src = 'INT. A - NIGHT\n\nMAYA\nWe should go.\n\nTHE VOICE\nWELCOME BACK.\n';
+    const r = parseScript(src);
+    expect(r.lines.find((l) => l.text === 'THE VOICE')?.type).toBe('character');
+    expect(r.characters.map((c) => c.name)).toContain('THE VOICE');
+  });
+
+  it('a numbered extra keeps its #: COP #1 is not COP 1', () => {
+    const src = 'INT. A - NIGHT\n\nCOP #1\nYou hear that?\n\nCOP #2\nYeah.\n';
+    expect(parseScript(src).characters.map((c) => c.name).sort()).toEqual(['COP #1', 'COP #2']);
+  });
+
+  it('in a script with no blank lines, caps action is not mistaken for a cast member', () => {
+    const src = ['INT. LAB - NIGHT', 'A machine hums.', 'VOSS', 'Is that normal?', 'HALE', 'No.', 'THE DOOR EXPLODES.', 'Smoke fills the room.', 'VOSS', 'Run.', 'HALE', 'Go.', 'A beat passes.'].join('\n');
+    expect(parseScript(src).characters.map((c) => c.name).sort()).toEqual(['HALE', 'VOSS']);
+  });
+
+  it('a name the project already knows stays in the cast even when this draft has no line for them yet', () => {
+    const r = parseScript('INT. A - DAY\n\nMAYA\nHi.\n', 'screenplay', undefined, { context: { characters: ['Ben'] } });
+    expect(r.characters.map((c) => c.name).sort()).toEqual(['BEN', 'MAYA']);
+  });
+
+  it('NAME: speech on one line is a podcast\u2019s way of writing, so the format decides: speakers under the podcast format, plain action under a screenplay (BACKLOG 3.35)', () => {
+    const src = 'INT. STUDIO - NIGHT\n\nHOST: Welcome back.\nGUEST: Thanks.\n';
+    expect(parseScript(src, 'podcast').characters.map((c) => c.name).sort()).toEqual(['GUEST', 'HOST']);
+    expect(parseScript(src).characters).toEqual([]);
+  });
+});
+

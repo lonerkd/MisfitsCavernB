@@ -141,6 +141,9 @@ describe('the reading pipeline on the corpus', () => {
       const m = measured.get(name)!;
       expect(m.text.score.macroF1).toBeGreaterThanOrEqual(floor[0]);
       expect(m.pdf.score.macroF1).toBeGreaterThanOrEqual(floor[1]);
+      // The cast is what the Studio is built from: everyone who speaks is found, and nobody is invented.
+      expect(m.text.castRecall).toBeGreaterThanOrEqual(0.99);
+      expect(m.text.castInvented).toBeLessThanOrEqual(0.01);
     });
   }
 });
@@ -157,6 +160,10 @@ describe('scripts pasted without blank lines', () => {
       const r = measureTight(STYLES.find(([n]) => n === name)![1]);
       expect(r.score.macroF1).toBeGreaterThanOrEqual(floor);
       expect(r.score.perType.character.f1).toBeGreaterThanOrEqual(0.97);
+      // Measured 2026-11-02, after the cast became "the names read as cues": about one invented name per script
+      // before (1.03 for REAL_WORLD, 1.17 for INTERNATIONAL), now 0.03 and 0.
+      expect(r.castRecall).toBeGreaterThanOrEqual(0.98);
+      expect(r.castInvented).toBeLessThanOrEqual(0.1);
     });
   }
 
