@@ -14,6 +14,8 @@ export interface Registration {
   actions: Array<{ id: string; label: string }>;
 }
 
+import { CONTROL_KEYS } from './routes';
+
 const CALL = /\b(usePillStage|usePillZone)\(/g;
 
 /** The `{ ... }` that starts at or after `from`, balanced, ignoring braces inside strings and template literals. */
@@ -120,6 +122,21 @@ function entries(obj: Record<string, string>, key: string): Array<{ id: string; 
   return out;
 }
 
+/**
+ * The Caps Lock deck key each control of a descriptor gets, by the island's own rule: toggles first, then actions, then the
+ * route's links, one key each from CONTROL_KEYS. A `~` means a conditional control comes before it, so its key moves with
+ * what the page shows. The same action therefore has a different key on pages with a different number of toggles.
+ */
+export function deckKeys(r: Pick<Registration, 'toggles' | 'actions'>): { toggles: string[]; actions: string[] } {
+  const all = [...r.toggles, ...r.actions.map((a) => a.label)];
+  const keyAt = (i: number): string => {
+    const k = CONTROL_KEYS[i];
+    if (!k) return '–';
+    return (all.slice(0, i).some((l) => l.endsWith('(conditional)')) ? '~' : '') + k.toUpperCase();
+  };
+  return { toggles: r.toggles.map((_, i) => keyAt(i)), actions: r.actions.map((_, i) => keyAt(r.toggles.length + i)) };
+}
+
 export function registrationsIn(file: string, src: string): Registration[] {
   const out: Registration[] = [];
   CALL.lastIndex = 0;
@@ -189,8 +206,11 @@ export function buildCoverage(input: { files: Record<string, string>; pageFiles:
   out.push('| Where | Kind | Title | Fields | Toggles | Actions |');
   out.push('| --- | --- | --- | --- | --- | --- |');
   for (const r of regs) {
-    out.push(`| \`${r.file}\` | ${r.kind} | ${r.title} | ${list(r.fields)} | ${list(r.toggles)} | ${r.actions.length ? r.actions.map((a) => `\`${a.id || '?'}\` ${a.label}`).join(' · ') : '—'} |`);
+    const k = deckKeys(r);
+    out.push(`| \`${r.file}\` | ${r.kind} | ${r.title} | ${list(r.fields)} | ${r.toggles.length ? r.toggles.map((t, i) => `**${k.toggles[i]}** \`${t}\``).join(' · ') : '—'} | ${r.actions.length ? r.actions.map((a, i) => `**${k.actions[i]}** \`${a.id || '?'}\` ${a.label}`).join(' · ') : '—'} |`);
   }
+  out.push('');
+  out.push('**Deck keys** (bold) are the Caps Lock keys the island gives each control (toggles first, then actions, then the route\'s links; `~` = a conditional control comes before it). The same action lands on a different key on pages with a different number of toggles: that is the problem the ten-slot fast path in the island plan fixes.');
   out.push('');
   out.push('Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.');
   out.push('');

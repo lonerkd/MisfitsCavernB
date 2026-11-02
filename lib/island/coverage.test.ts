@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { areaOfRegistration, areasOf, buildCoverage, registrationsIn } from './coverage';
+import { areaOfRegistration, areasOf, buildCoverage, deckKeys, registrationsIn } from './coverage';
 
 const ROOT = process.cwd();
 const FILE = join(ROOT, '.cavern-intelligence', 'island-coverage.md');
@@ -60,6 +60,13 @@ describe('spread and conditional entries', () => {
     const [r] = registrationsIn('a.tsx', src);
     expect(r.fields).toEqual(['Open', 'Mine (conditional)']);
     expect(r.actions).toEqual([{ id: 'a', label: 'Go (conditional)' }]);
+  });
+});
+
+describe('deckKeys', () => {
+  it('numbers toggles then actions along the deck keys, marking what a conditional control moves', () => {
+    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'a', label: 'Find' }, { id: 'b', label: 'Go' }] })).toEqual({ toggles: ['Q'], actions: ['W', 'E'] });
+    expect(deckKeys({ toggles: [], actions: [{ id: 'a', label: 'One (conditional)' }, { id: 'b', label: 'Two' }] })).toEqual({ toggles: [], actions: ['Q', '~W'] });
   });
 });
 
