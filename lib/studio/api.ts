@@ -5,6 +5,7 @@
 // client (lib/studio/index.ts), and tests/integration pass a signed-in persona,
 // so the integration suite exercises this exact code against a real database.
 
+import { castFromText } from '@/lib/film/cast';
 import { beginUpload } from '@/lib/island/uploads';
 import { uploadWithProgress } from '@/lib/supabase/uploadProgress';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -23,7 +24,7 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
-export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null }
+export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
 export interface CallSheetPerson { id: string; username: string; craft: string | null }
 export interface CallSheetView {
   sheet: CallSheet;
@@ -470,10 +471,10 @@ export function createStudioApi(db: Client) {
     const [p, cl, sc, crew, cast, ack] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
+      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
-      db.from('character_castings').select('character_name').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
+      db.from('character_castings').select('character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
       db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
     ]);
     for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
@@ -488,9 +489,9 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []) as CallSheetScene[],
+      scenes: (sc.data ?? []).map(({ scene_characters, cast_list, ...scene }) => ({ ...scene, cast: sceneCast(cast_list, scene_characters) })),
       people,
-      castAs: (cast.data ?? []).map((r) => r.character_name),
+      castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
       acked: ack.data?.version ?? null,
     };
   }
@@ -966,6 +967,13 @@ export function createStudioApi(db: Client) {
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,
     getLookbook,
   };
+}
+
+/** A scene's cast for the call sheet: the linked characters in name order, else the older text (as the Studio reads it: `lib/film/cast.ts`). */
+export function sceneCast(castList: string | null, links: Array<{ characters: { name: string } | null }> | null | undefined): string[] {
+  const linked = (links ?? []).map((l) => l.characters?.name?.trim().toUpperCase()).filter((n): n is string => !!n);
+  // The text keeps its script order (first appearance); each name once either way.
+  return linked.length ? Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b)) : Array.from(new Set(castFromText(castList)));
 }
 
 export type StudioApi = ReturnType<typeof createStudioApi>;
