@@ -29,7 +29,7 @@ For each surface class, define the zones and who owns them — tool header, cont
 
 ## Order
 
-0. **Audit, as generated data (S):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
+0. **Audit, as generated data (S) — first part built 2026-11-02 ([`island-coverage.md`](../island-coverage.md)):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
 1. **Compact dock for narrow non-touch (S–M):** the quickest real win: under 760 px with a fine pointer or a keyboard, show a compact dock instead of nothing.
 2. **One core, three presentations (M):** fold the pill into the core; activities, on-set line and search on the pill (this also makes the recording activity worth building: BACKLOG 4.1).
 3. **Action registry and command grammar (M–L):** every tool registers actions with keys; the palette and Caps deck read it; generated reference and a help overlay.
@@ -45,7 +45,7 @@ The island merged them into one surface that changes shape, in seven shapes (`li
 
 ## What the island has to work with today (coverage, counted in the code)
 
-The island is only as deep as what pages tell it. Pages register with `usePillStage` (the page's own pill) or `usePillZone` (a hover/focus zone): **5 pages** do (Studio, Projects, Portfolio, Jobs, Editor) and **3 zones** (the editor's centre views, the crew boards, the production manager). Every other area (Today, Hub, Lounge, Soundtrack, Settings, Profile, Crew, Admin, Split, the call page) gets only a fallback name and next places from `lib/island/routes.ts`. The Studio is one stage for dozens of views (Schedule, Readiness, Locations, Money, On set, Cast & crew…), none with a zone of its own. So the work of "design every inch" is first **data**: a generated island-coverage reference (like the parser reference) listing, per route and per view, its stage, its zones, its actions and their keys, and what is missing — so the design is argued from what is there, not from memory.
+The island is only as deep as what pages tell it. Pages register with `usePillStage` (the page's own pill) or `usePillZone` (a hover/focus zone): **6 stages** do (Studio, Projects, Portfolio, Jobs, Editor, and the Lounge through `useLounge`) and **3 zones** (the editor's centre views, the crew boards, the production manager). Every other area (Today, Hub, Soundtrack, Settings, Profile, Crew, Admin, Split, the call page) gets only a fallback name and next places from `lib/island/routes.ts`. The Studio is one stage for dozens of views (Schedule, Readiness, Locations, Money, On set, Cast & crew…), none with a zone of its own. So the work of "design every inch" is first **data**: a generated island-coverage reference (like the parser reference) listing, per route and per view, its stage, its zones, its actions and their keys, and what is missing — so the design is argued from what is there, not from memory.
 
 ## Owner answers so far (2026-11-02)
 
@@ -80,3 +80,15 @@ This is a draft to be corrected by use, not a final: step 0 (the generated cover
 ## What is still the owner's, after trying it
 
 Whether the island replaces the tab bar on phones is leaning yes (owner, 2026-11-02), confirmed or reversed after trying `island_v2`; everything above is a default that the owner can change.
+
+## The key model (owner, 2026-11-02) — three layers, one grammar
+
+The owner's rule, recorded as a design decision (the owner delegated the open details):
+
+1. **Ctrl/⌘ chords are global and mean the same in every tool.** Undo (⌘Z) and redo (⇧⌘Z / ⌘Y), save (⌘S), find (⌘F), new (⌘N), command palette (⌘K), go-to (⌘G), help (⌘/) — one meaning everywhere; a tool that cannot do one says so in the island rather than ignoring the key. A tool's own chords are added on top, never in conflict.
+2. **Without Caps Lock, the island is the hover/context layer:** the controls of whatever the pointer or focus is on (the stage and zones pages register), the "screen-backed" controls.
+3. **Caps Lock on adds the suite layer on top of 1 and 2:** the app switcher (every tool, project, place), the ten-slot deck, and everything the hover context offers — "all of that plus more". Nothing in the context layer disappears when Caps Lock is on.
+
+**What the code does today (found 2026-11-02):** Caps Lock only toggles the deck (`kbActive`, `lib/os/PillContext.tsx`). Ctrl/⌘ chords are page-local: only the editor has them (`app/(suite)/editor/page.tsx`: ⌘S, F, E, G, /, and its own undo/redo bound to its textarea); the Split view has ⌘\; the Studio and the rest have no ⌘Z at all, and the shortcuts overlay (`ShortcutsOverlay.tsx`) lists what the editor and taskbar do, not a single table.
+
+**Build order:** (a) one chord registry (`lib/os/chords.ts`: the global chords, who handles them now, a conflict test — no tool may bind a global chord to something else), with the editor's bindings moved onto it; (b) a suite-wide undo stack for non-text actions (delete, move, rename, status change) so ⌘Z is real outside the editor — each action registers its inverse, nothing is undone that cannot truly be undone; (c) the island shows the keys beside every action it offers (the coverage reference gains a keys column); (d) the shortcuts overlay is generated from the registry. Done when ⌘Z undoes the last action in the Studio, Projects and Jobs as it does in the editor, a test fails when two tools bind one chord differently, and Caps Lock shows the switcher plus the hover context together.
