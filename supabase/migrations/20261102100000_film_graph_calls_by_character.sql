@@ -58,7 +58,12 @@ CREATE OR REPLACE FUNCTION internal.characters_rename()
 AS $function$
 begin
   update public.character_castings set character_name = new.name where character_id = new.id;
-  update public.call_sheet_calls set character_name = new.name where character_id = new.id;
+  -- One call per name per sheet is unique, and two calls typed 'Maya' and 'MAYA' both link to this
+  -- character: rename one per sheet, and leave a call alone if its sheet already has the new name.
+  -- The link (character_id) is the truth; the text on a left-alone call is just older.
+  update public.call_sheet_calls k set character_name = new.name
+  where k.id in (select distinct on (call_sheet_id) id from public.call_sheet_calls where character_id = new.id order by call_sheet_id, id)
+    and not exists (select 1 from public.call_sheet_calls o where o.call_sheet_id = k.call_sheet_id and o.character_name = new.name and o.id <> k.id);
   update public.scenes s set cast_list = (
     select string_agg(case when upper(btrim(x)) = old.name then new.name else btrim(x) end, ', ')
     from unnest(string_to_array(s.cast_list, ',')) x

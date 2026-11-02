@@ -63,4 +63,33 @@ describe('call_sheet_calls.character_id', () => {
     // The text stays exactly as it was typed; only the link goes.
     expect(call).toEqual({ character_id: null, character_name: 'Dock Boy' });
   });
+
+  it('changing a call’s name relinks it, and a rename survives two case-variants of one name on a sheet', async () => {
+    const sheet = (await cast.sam.client.from('call_sheets').insert({ project_id: projectId, shoot_day: 2 }).select('id').single()).data!.id;
+    const ins = await cast.sam.client.from('call_sheet_calls').insert([
+      { call_sheet_id: sheet, project_id: projectId, character_name: 'Ivy', call_time: '06:00' },
+      { call_sheet_id: sheet, project_id: projectId, character_name: 'IVY', call_time: '06:10' },
+    ]).select('id, character_id');
+    expect(ins.error).toBeNull();
+    const ivy = (await characterId('IVY'))!;
+    expect(ins.data!.every((r) => r.character_id === ivy)).toBe(true);
+
+    // Both link to IVY; renaming must not fail on the unique (sheet, name) index.
+    expect((await cast.sam.client.from('characters').update({ name: 'IVY ROSE' }).eq('id', ivy)).error).toBeNull();
+    const after = (await cast.sam.client.from('call_sheet_calls').select('character_id, character_name').eq('call_sheet_id', sheet)).data!;
+    expect(after.every((r) => r.character_id === ivy)).toBe(true);
+    expect(after.filter((r) => r.character_name === 'IVY ROSE')).toHaveLength(1);
+
+    // Pointing a call at another name moves its link.
+    const leo = await cast.sam.client.from('call_sheet_calls').update({ character_name: 'LEO' }).eq('id', ins.data![0].id).select('character_id').single();
+    expect(leo.data!.character_id).toBe(await characterId('LEO'));
+  });
+
+  it('an outsider cannot make a call, and so cannot make a character', async () => {
+    const before = (await cast.sam.client.from('characters').select('id').eq('project_id', projectId)).data!.length;
+    const r = await cast.riley.client.from('call_sheet_calls').insert({ call_sheet_id: sheetId, project_id: projectId, character_name: 'GHOST', call_time: '01:00' });
+    expect(r.error).not.toBeNull();
+    expect((await cast.sam.client.from('characters').select('id').eq('project_id', projectId)).data!.length).toBe(before);
+    expect(await characterId('GHOST')).toBeNull();
+  });
 });
