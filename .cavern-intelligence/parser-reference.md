@@ -120,7 +120,7 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `profileMinElements` | 10 | a script needs at least this many non-blank lines before its blank-line habit is judged at all |
 | `profileMaxBlankShare` | 0.05 | below this share of blank lines the script is "tight" (it does not separate elements with blank lines) |
 | `tightCueAfterSpeechNoBlank` | 4 | in a tight script the cost of a cue straight after speech with no blank line is capped at this (the missing blank says nothing) |
-| `alternativeMinShare` | 0.02 | a second reading of a line is offered only when it holds at least this share of the probability |
+| `alternativeMinShare` | 0.02 | a second reading of a line is offered only when it holds more than this share of the probability |
 | `titleCaseCueMaxLength` | 28 | the longest a Title Case line can be and still be considered a speaker's name (scripts that do not capitalise cues) |
 | `titleCaseCueMinHeads` | 2 | a Title Case name must head at least this many blocks before it is accepted as a cue (or sit between two that recur) |
 

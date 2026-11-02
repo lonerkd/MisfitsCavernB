@@ -16,7 +16,7 @@ export const THRESHOLDS = {
   },
   alternativeMinShare: {
     value: 0.02,
-    what: 'a second reading of a line is offered only when it holds at least this share of the probability',
+    what: 'a second reading of a line is offered only when it holds more than this share of the probability',
   },
   titleCaseCueMaxLength: {
     value: 28,
