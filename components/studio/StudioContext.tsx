@@ -55,6 +55,8 @@ export interface StudioData {
   cuts: LiveRows<PostCut>;
   postNotes: LiveRows<PostNote>;
   scripts: ProjectScript[];
+  /** The chosen script's format (it decides which reading rules apply), or null. */
+  scriptFormat: string | null;
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
   setScriptId: (id: string) => void;
@@ -219,6 +221,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     cuts,
     postNotes,
     scripts,
+    scriptFormat: scripts.find((sc) => sc.id === scriptId)?.format ?? null,
     scriptsStatus,
     scriptId,
     setScriptId,
