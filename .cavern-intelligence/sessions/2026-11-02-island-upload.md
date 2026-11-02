@@ -1,0 +1,11 @@
+# Session — 2026-11-02: the island holds an upload, with how far along it is
+
+Uploading a file to the Studio library now shows on the island: "Uploading slowreel.png", the percentage and a bar, "Uploading 3 files" when several run at once, and it lets go when they finish or fail.
+
+**How.** supabase-js's `upload()` uses `fetch`, which reports no upload progress, so `uploadWithProgress` (`lib/supabase/uploadProgress.ts`) asks Storage for a signed upload URL and sends the file with `XMLHttpRequest`, whose upload events do. The signed URL is only issued to someone allowed to write that path, so the rules are the same as before. With no `XMLHttpRequest`, or no signed URL, it falls back to the plain upload. `beginUpload` (`lib/island/uploads.ts`) keeps the numbers (several uploads are one activity with the combined progress) and publishes them to the island's activity store; `uploadActivity` (pure) words it. The library's `uploadFile` (`lib/studio/api.ts`) is the first caller.
+
+**A structural fix on the way.** The activity store lived in the same file as the React hooks that read it, so a data-layer module importing the store pulled client-only hooks into a server bundle (the build failed). The store (no React) is now `lib/island/activityStore.ts`; `activities.ts` keeps the hooks and re-exports it, so nothing else changed.
+
+**Verified:** 12 unit tests (the wording, the percentage and bar, several files as one, the tracker publishing and clearing, the upload helper with a fake XMLHttpRequest: progress, the server's own refusal message, a dropped network, both fallbacks); a real browser (`e2e/island-upload.spec.ts`: a 1.5 MB image slowed to about 250 kB/s through the browser's network throttle: the island says "Uploading slowreel.png" with a percentage, lets go, and the item is in the library with the right size); the island activity specs, 3 repeats of 4 of 4; typecheck, lint, unit tests, build, bundle budget. **Not verified:** `e2e/studio-journey.spec.ts` (it uses the stock Playwright page fixture, which needs ffmpeg and cannot run in this container; the new spec covers the library upload itself); a large video upload.
+
+**Left (BACKLOG 4.1):** the SFX library, the paperwork scans and Capture's outbox still upload without the island; a cancel button; a retry when the network drops mid-upload.
