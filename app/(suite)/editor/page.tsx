@@ -468,9 +468,9 @@ export default function EditorPage() {
       else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
       else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
       else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
-      else if (document.activeElement === textareaRef.current && (chord === 'editor.undo' || chord === 'editor.redo' || chord === 'editor.redo-y')) {
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
         e.preventDefault();
-        if (chord === 'editor.undo') undo(); else redo();
+        if (chord === 'undo') undo(); else redo();
       }
       if (e.key === 'Escape') {
         if (focusMode) setFocusMode(false);

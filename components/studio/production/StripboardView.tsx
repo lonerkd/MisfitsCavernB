@@ -1,5 +1,6 @@
 'use client';
 
+import { pushUndo } from '@/lib/os/undo';
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Calendar, Minus, PanelRightOpen, Plus, Printer, Sun, Wand2 } from 'lucide-react';
@@ -75,6 +76,9 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
     if (refocus) requestAnimationFrame(() => stripRefs.current.get(sc.id)?.focus());
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { shoot_day: day }));
+      pushUndo(`Moved scene ${sc.scene_number} to day ${day}`, async () => {
+        scenes.upsertLocal(await studio.updateScene(sc.id, { shoot_day: before.shoot_day ?? null }));
+      });
     } catch (e) {
       scenes.upsertLocal({ ...before, updated_at: new Date().toISOString() });
       toast(e instanceof Error ? e.message : 'Could not move the scene', 'error');
@@ -97,6 +101,9 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(cur) + 1) % STATUS_ORDER.length];
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { status: next }));
+      pushUndo(`Scene ${sc.scene_number} set to ${next}`, async () => {
+        scenes.upsertLocal(await studio.updateScene(sc.id, { status: sc.status ?? 'planned' }));
+      });
       setAnnounce(`Scene ${sc.scene_number}: ${next}.`);
       if (next === 'wrapped') logActivity(`wrapped scene ${sc.scene_number} "${sc.heading ?? sc.title}"`, 'scene', sc.id, { project_id: project.id });
     } catch (e) {
@@ -128,10 +135,24 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
     })) return;
     setBusy(true);
     let failed = 0;
+    const moved: Array<{ id: string; was: number | null }> = [];
     for (const u of plan.updates) {
-      try { scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day })); } catch { failed++; }
+      try {
+        const was = list.find((x) => x.id === u.id)?.shoot_day ?? null;
+        scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day }));
+        moved.push({ id: u.id, was });
+      } catch { failed++; }
     }
     setBusy(false);
+    if (moved.length) {
+      pushUndo(`Auto-scheduled ${moved.length} scene${moved.length === 1 ? '' : 's'}`, async () => {
+        let back = 0;
+        for (const m of moved) {
+          try { scenes.upsertLocal(await studio.updateScene(m.id, { shoot_day: m.was })); } catch { back++; }
+        }
+        if (back) throw new Error(`${back} scene${back === 1 ? '' : 's'} could not be put back`);
+      });
+    }
     toast(failed ? `${failed} scene${failed === 1 ? '' : 's'} could not be moved — try again.` : `Scheduled into ${plan.days} days`, failed ? 'error' : 'success');
   };
 
