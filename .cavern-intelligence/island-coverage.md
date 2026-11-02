@@ -22,6 +22,6 @@
 | `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | **Q** `post-job` → Post as Job (conditional) |
 | `components/studio/CrewBoards.tsx` | zone | (computed) | `Role` · `Status` | — | **Y** `message-crew` → Message in Lounge |
 
-**Deck keys** (bold) are the Caps Lock keys the island gives each control an action with a slot (`lib/island/slots.ts`) has the same key on every page; the others fill the free keys, toggles first, then actions, then the route's links from `lib/island/routes.ts`, which this table does not list; `~` = a conditional control comes before an unslotted one). Actions still without a slot are the ones whose key moves from page to page.
+**Deck keys** (bold) are the Caps Lock keys the island gives each control. An action with a slot (`lib/island/slots.ts`) has the same key on every page; the other controls fill the free keys, toggles first, then actions, then the route's links from `lib/island/routes.ts`, which this table does not list. A `~` means a conditional control comes before an unslotted one, so its key can move. Actions still without a slot are the ones whose key moves from page to page.
 
 Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.
