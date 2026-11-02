@@ -8,7 +8,9 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
-import { studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import { money, studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import { useBreakdown } from '@/lib/breakdown';
+import { sceneCosts } from '@/lib/studio/scene-cost';
 import { lightNoteText } from '@/lib/film/days';
 import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
@@ -55,6 +57,14 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
 
   const list = scenes.rows;
   const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
+  // What each scene and day costs, from the breakdown (the same figures as Money). Not shown until the breakdown has
+  // loaded cleanly: a half-read breakdown would put wrong money on the board.
+  const bd = useBreakdown(project.id);
+  const costsOk = bd.status !== 'loading' && bd.status !== 'error';
+  const costs = useMemo(() => (costsOk ? sceneCosts({
+    scenes: list.map((r) => ({ id: r.id, shoot_day: r.shoot_day ?? null })),
+    categories: bd.categories.rows, elements: bd.elements.rows, tags: bd.tags.rows,
+  }) : null), [costsOk, list, bd.categories.rows, bd.elements.rows, bd.tags.rows]);
   const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
@@ -224,6 +234,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
+                    {costs && (() => { const dc = costs.byDay.find((x) => x.day === d.day); return dc && dc.total > 0 ? <span title={dc.unpriced > 0 ? `${dc.unpriced} element${dc.unpriced === 1 ? '' : 's'} with no price, so this is low` : dc.estimated > 0 ? `${money(dc.estimated)} of it is a default estimate` : undefined}>{money(dc.total)}</span> : null; })()}
                   </div>
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>
@@ -244,6 +255,8 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                       const e = eighthsOf(sc.est_duration);
                       const status = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
                       const els = elementCounts.get(sc.id) ?? 0;
+                      const sceneCost = costs?.byScene.get(sc.id);
+                      const costed = sceneCost && sceneCost.total > 0 ? sceneCost : null;
                       const cast = castOfScene(sc);
                       return (
                         <React.Fragment key={sc.id}>
@@ -254,7 +267,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                           style={{ ['--k' as string]: KIND_COLOR[kind], ['--kt' as string]: readable(KIND_COLOR[kind]), minHeight: 44 + Math.min(e, 16) * 2 }}
                           draggable
                           tabIndex={0}
-                          aria-label={`Scene ${sc.scene_number}, ${sc.heading ?? sc.title}, ${pages(e)} pages, ${status}`}
+                          aria-label={`Scene ${sc.scene_number}, ${sc.heading ?? sc.title}, ${pages(e)} pages${costed ? `, costs ${money(costed.total)}` : ''}, ${status}`}
                           aria-describedby="strip-help"
                           onDragStart={(ev) => { ev.dataTransfer.setData('text/plain', sc.id); ev.dataTransfer.effectAllowed = 'move'; setDragId(sc.id); }}
                           onDragEnd={() => { setDragId(null); setDropDay(null); }}
@@ -271,6 +284,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                             <span className={b.kind}>{STRIP_LABEL[kind]}</span>
                             {cast.length > 0 && <span>{cast.length} cast</span>}
                             {els > 0 && <span>{els} element{els === 1 ? '' : 's'}</span>}
+                            {costed && <span title={costed.unpriced > 0 ? `${costed.unpriced} element${costed.unpriced === 1 ? '' : 's'} with no price, so this is low` : costed.estimated > 0 ? `${money(costed.estimated)} of it is a default estimate` : undefined}>{money(costed.total)}</span>}
                           </span>
                           {cardsOn && (
                             <button type="button" aria-label={`Open the card for scene ${sc.scene_number}`} title="Open the card" onClick={() => openCard(sc.id)} draggable={false} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 4, minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
