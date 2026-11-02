@@ -22,6 +22,7 @@ import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { useActivities } from '@/lib/island/activities';
 import { useSyncActivity } from '@/lib/island/useSyncActivity';
 import { useCallActivity } from '@/lib/island/useCallActivity';
+import { useMusicActivity } from '@/lib/island/useMusicActivity';
 import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/components/island/IslandActivity';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
@@ -221,6 +222,7 @@ export default function EcosystemTaskbar() {
   // What is running (a sprint, the offline queue…) is held on the island; "+N" shows the next when there are several.
   useSyncActivity();
   useCallActivity();
+  useMusicActivity();
   const activities = useActivities();
   const [pick, setPick] = useState(0);
   const shownIndex = activities.length ? pick % activities.length : 0;
