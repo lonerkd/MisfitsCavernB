@@ -434,7 +434,7 @@ export class ScriptParser {
       if (!name || /[.!?]$/.test(trim) || this.rejectedNames.has(name)) return;
       if (KNOWLEDGE.SCENE_PREFIXES.has(name) || this.isTransitionText(name) || KNOWLEDGE.CAMERA_ANGLES.has(name) || KNOWLEDGE.TIME_OF_DAY.has(name)) return;
       // What is under it reads like speech (a sentence, or a parenthetical), not another bare label.
-      if (!(next.startsWith('(') || /[\p{Ll}]/u.test(next))) return;
+      if (!(next.startsWith('(') || /[\p{Ll}]/u.test(next) || /[.!?…,]$/.test(next))) return; // shouted speech ends like a sentence
       heads.push({ idx, name });
     });
 
@@ -863,7 +863,10 @@ export class ScriptParser {
     // the decoder is reading the script, the cast is the names it read as cues, plus the ones the project already
     // knows. (Other formats, the podcast's `NAME: speech`, have no decoder and keep what their own pre-scan found.)
     const decoded = this.usesScreenplayGrammar();
-    return Array.from(this.characterStats.entries())
+    const stats = new Map(this.characterStats);
+    // A cue the pre-scan never saw (a forced Fountain `@mc`) is still a cue the reader read.
+    if (decoded) for (const name of first.keys()) if (!stats.has(name) && !this.rejectedNames.has(name)) stats.set(name, this.lines.filter(l => l.type === 'character' && ((l.meta?.characterName as string | undefined) ?? this.clean(l.text)) === name).length);
+    return Array.from(stats.entries())
       .filter(([name]) => !decoded || first.has(name) || this.learnedNames.has(name))
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, lines: count, firstLineIndex: first.get(name) ?? -1 }));

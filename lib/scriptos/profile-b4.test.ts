@@ -151,3 +151,15 @@ describe('the cast is who the reading says speaks', () => {
   });
 });
 
+
+describe('review fixes: forced cues and shouted speech', () => {
+  it('a forced Fountain cue is in the cast it speaks in', () => {
+    const r = parseScript('INT. ROOM - DAY\n\n@mc\nHello there.\n\nINT. HALL - DAY\n\n@mc\nAgain.\n');
+    expect(r.lines.some((l) => l.type === 'character')).toBe(true);
+    expect(r.characters.map((c) => c.name.toUpperCase())).toContain('MC');
+  });
+  it('a recurring title-case cue whose speech is shouted is still a cue', () => {
+    const r = parseScript('INT. ROOM - DAY\n\nMaya\nSTOP!\n\nBen\nNo.\n\nMaya\nGO NOW.\n');
+    expect(r.characters.map((c) => c.name.toUpperCase())).toContain('MAYA');
+  });
+});

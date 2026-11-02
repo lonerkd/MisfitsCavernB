@@ -112,6 +112,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'shooting-script-camera',
+    cast: ['NINA'],
     note: 'camera directions, INSERT, ANGLE ON, montage list, LATER, BACK TO SCENE',
     lines: [
       'S|INT. APARTMENT - NIGHT',
@@ -180,6 +181,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'british-spec-style',
+    cast: ['GRAN', 'TOM'],
     note: 'headings without INT./EXT. numbering oddities, lowercase action openings, transitions as sentences',
     lines: [
       'S|INT. KITCHEN - DAY',
@@ -208,6 +210,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'rough-draft-habits',
+    cast: ['LENA', 'BEN'],
     note: 'lowercase headings, missing punctuation, en dashes, page-break markers, cues in title case',
     lines: [
       'S|int. kitchen - day',
@@ -250,6 +253,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'action-that-looks-like-cues',
+    cast: ['VOSS', 'HALE'],
     note: 'caps action, one-word lines, names that are also nouns, sound words, dialogue that begins with a caps word',
     lines: [
       'S|INT. LAB - NIGHT',
@@ -285,6 +289,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'tight-and-shouted',
+    cast: ['MAN #1', "WOMAN'S VOICE", 'BOTH', 'EVERYONE', 'TV ANNOUNCER'],
     note: 'no blank lines between elements, shouted second lines, group cues, a cue with no speech',
     lines: [
       'S|INT. BUNKER - NIGHT',
@@ -313,6 +318,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'title-page-then-body',
+    cast: [],
     note: 'a Fountain-style title page, then the script',
     lines: [
       '?|Title: THE LAST HARBOR',
