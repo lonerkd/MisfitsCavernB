@@ -3,10 +3,15 @@
 // the generator proves little; these are an independent set. Notation: `S|` scene heading, `A|` action,
 // `C|` character cue, `D|` dialogue, `P|` parenthetical, `T|` transition, blank line = empty.
 // `?|` marks a line where reasonable readers disagree: it is not scored.
-export interface HandScript { name: string; note: string; lines: string[] }
+export interface HandScript {
+  name: string; note: string; lines: string[];
+  /** Who a reader would say speaks in it (capitals, extensions dropped): the cast the Studio is built from. */
+  cast?: string[];
+}
 
 export const HAND_SCRIPTS: HandScript[] = [
   {
+    cast: ['RUIZ', 'DELGADO', 'MARTA'],
     name: 'feature-spec-1',
     note: 'scene numbers on both sides, V.O., O.S., CONT\'D, SUPER, a phone call, INTERCUT',
     lines: [
@@ -63,6 +68,7 @@ export const HAND_SCRIPTS: HandScript[] = [
     ],
   },
   {
+    cast: ['COP #1', 'COP #2', 'WAITRESS #1', 'CAPTAIN HOLT'],
     name: 'tv-multicam-colon-free',
     note: 'teaser/act structure, numbered speakers, short one-word lines, ALL-CAPS sound effects in action',
     lines: [
@@ -106,6 +112,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'shooting-script-camera',
+    cast: ['NINA'],
     note: 'camera directions, INSERT, ANGLE ON, montage list, LATER, BACK TO SCENE',
     lines: [
       'S|INT. APARTMENT - NIGHT',
@@ -139,6 +146,7 @@ export const HAND_SCRIPTS: HandScript[] = [
     ],
   },
   {
+    cast: ['DR. OKAFOR', 'SGT. MCALLISTER', 'MARY-ANN', "O'BRIEN", 'THE VOICE'],
     name: 'dialogue-traps',
     note: 'dialogue that looks like other things: caps shouting, numbers, ellipses, a question, names with punctuation',
     lines: [
@@ -173,6 +181,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'british-spec-style',
+    cast: ['GRAN', 'TOM'],
     note: 'headings without INT./EXT. numbering oddities, lowercase action openings, transitions as sentences',
     lines: [
       'S|INT. KITCHEN - DAY',
@@ -201,6 +210,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'rough-draft-habits',
+    cast: ['LENA', 'BEN'],
     note: 'lowercase headings, missing punctuation, en dashes, page-break markers, cues in title case',
     lines: [
       'S|int. kitchen - day',
@@ -243,6 +253,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'action-that-looks-like-cues',
+    cast: ['VOSS', 'HALE'],
     note: 'caps action, one-word lines, names that are also nouns, sound words, dialogue that begins with a caps word',
     lines: [
       'S|INT. LAB - NIGHT',
@@ -278,6 +289,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'tight-and-shouted',
+    cast: ['MAN #1', "WOMAN'S VOICE", 'BOTH', 'EVERYONE', 'TV ANNOUNCER'],
     note: 'no blank lines between elements, shouted second lines, group cues, a cue with no speech',
     lines: [
       'S|INT. BUNKER - NIGHT',
@@ -306,6 +318,7 @@ export const HAND_SCRIPTS: HandScript[] = [
   },
   {
     name: 'title-page-then-body',
+    cast: [],
     note: 'a Fountain-style title page, then the script',
     lines: [
       '?|Title: THE LAST HARBOR',
@@ -318,6 +331,77 @@ export const HAND_SCRIPTS: HandScript[] = [
       'S|EXT. HARBOR - DAWN',
       '',
       'A|A foghorn. Nothing else.',
+    ],
+  },
+];
+
+// Round two: plain-text conventions where the layout, not the punctuation, carries the structure.
+export const HAND_SCRIPTS_LAYOUT: HandScript[] = [
+  {
+    cast: ['ROSE', 'YOUNG SAILOR'],
+    name: 'indented-text-script',
+    note: 'a .txt screenplay as found online: headings flush left, action at the margin, cues and dialogue indented with spaces',
+    lines: [
+      'S|INT. LIGHTHOUSE - NIGHT',
+      '',
+      'A|Wind howls against the glass. KEEPER ROSE (60s) winds a lamp.',
+      '',
+      'C|                    ROSE',
+      'D|          The light never lies.',
+      '',
+      'C|                    YOUNG SAILOR (O.S.)',
+      'P|               (shouting)',
+      'D|          There\'s a ship on the rocks!',
+      '',
+      'A|Rose drops the wrench.',
+      '',
+      'C|                    ROSE',
+      'D|          Then the light lied.',
+      '',
+      'T|                                        CUT TO:',
+      '',
+      'S|EXT. ROCKS - CONTINUOUS',
+      '',
+      'A|Waves slam a splintered hull.',
+    ],
+  },
+  {
+    cast: ['HOST', 'GUEST'],
+    name: 'colon-cues',
+    note: 'multi-cam / radio style: NAME: speech on the same line, and an uppercase NAME: on its own line',
+    lines: [
+      'S|INT. STUDIO - NIGHT',
+      '',
+      // A cue and its speech on one line has no type of its own here; the cast is what matters (checked below).
+      '?|HOST: Welcome back to the show.',
+      '?|GUEST: Thanks for having me.',
+      '',
+      'A|The audience laughs.',
+      '',
+      'C|HOST:',
+      'D|So tell me about the film.',
+      '',
+      'C|GUEST:',
+      'D|It took eleven years.',
+    ],
+  },
+  {
+    cast: ['MAYA', 'BEN'],
+    name: 'title-case-cues',
+    note: 'cues in plain title case, as many drafts and web scripts write them',
+    lines: [
+      'S|INT. KITCHEN - DAY',
+      '',
+      'C|Maya',
+      'D|Did you eat?',
+      '',
+      'C|Ben',
+      'D|Not yet.',
+      '',
+      'A|Maya opens the fridge.',
+      '',
+      'C|Maya',
+      'D|There is nothing in here.',
     ],
   },
 ];

@@ -141,6 +141,8 @@ export class ScriptParser {
   private format: ScriptFormat;
 
   private learnedNames: Set<string>;
+  /** Names this script writes as plain title-case head lines ("Maya") rather than in capitals, found by preScanTitleCaseCues. */
+  private titleCaseCues: Set<string> = new Set();
 
   /*
    * Per-scene state reset
@@ -230,7 +232,7 @@ export class ScriptParser {
     return text
       .replace(/\s*\(.*?\)\s*/g, ' ')
       .replace(/^\^/, '')
-      .replace(/[^\p{L}\p{N}\s'’\-.]/gu, '')
+      .replace(/[^\p{L}\p{N}\s'’\-.#]/gu, '')
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/^\.+|\.+$/g, '')
@@ -250,6 +252,7 @@ export class ScriptParser {
     this.lines = [];
     if (this.usesScreenplayGrammar()) {
       this.preScanCharacters();
+      this.preScanTitleCaseCues();
     } else if (this.format === 'podcast') {
       this.preScanSpeakers();
     }
@@ -408,6 +411,49 @@ export class ScriptParser {
     });
   }
 
+  /**
+   * How THIS script writes its cues (the document profile, L3): some scripts, especially ones pasted from the web
+   * or written in a hurry, write a speaker as plain title case ("Maya") on a line of its own above the speech
+   * instead of in capitals. A person sees at once that they are cues because the same short name heads block
+   * after block. This is that inference: a short, unpunctuated, title-case line that follows a blank line and has
+   * a line of speech under it, and that RECURS. A one-off is not enough (a lone "Silence" is just a word); a name
+   * that is also seen between two recurring ones (a two-person exchange) is.
+   */
+  private preScanTitleCaseCues() {
+    if (!this.usesScreenplayGrammar()) return;
+    const shape = /^\p{Lu}[\p{L}'’\-.]*(?: \p{Lu}[\p{L}'’\-.]*){0,2}(?: \d+)?$/u;
+    type Head = { idx: number; name: string };
+    const heads: Head[] = [];
+    this.rawLines.forEach((line, idx) => {
+      const trim = line.trim();
+      if (!trim || trim.length > 28 || !shape.test(trim) || this.isCaps(trim)) return;
+      if (idx > 0 && this.rawLines[idx - 1].trim()) return; // a head line follows a blank line (or the start)
+      const next = (this.rawLines[idx + 1] || '').trim();
+      if (!next || this.isSceneHeading(next)) return;
+      const name = this.clean(trim).toUpperCase();
+      if (!name || /[.!?]$/.test(trim) || this.rejectedNames.has(name)) return;
+      if (KNOWLEDGE.SCENE_PREFIXES.has(name) || this.isTransitionText(name) || KNOWLEDGE.CAMERA_ANGLES.has(name) || KNOWLEDGE.TIME_OF_DAY.has(name)) return;
+      // What is under it reads like speech (a sentence, or a parenthetical), not another bare label.
+      if (!(next.startsWith('(') || /[\p{Ll}]/u.test(next) || /[.!?…,]$/.test(next))) return; // shouted speech ends like a sentence
+      heads.push({ idx, name });
+    });
+
+    const count = new Map<string, number>();
+    for (const h of heads) count.set(h.name, (count.get(h.name) ?? 0) + 1);
+    const accepted = new Set([...count].filter(([, n]) => n >= 2).map(([name]) => name));
+    if (accepted.size === 0) return;
+
+    // A name that appears once, directly between two heads that recur, is the other half of an exchange.
+    for (let i = 1; i < heads.length - 1; i++) {
+      const h = heads[i];
+      if (!accepted.has(h.name) && accepted.has(heads[i - 1].name) && accepted.has(heads[i + 1].name)) accepted.add(h.name);
+    }
+    for (const name of accepted) {
+      this.titleCaseCues.add(name);
+      this.characterStats.set(name, (this.characterStats.get(name) ?? 0) + (count.get(name) ?? 1));
+    }
+  }
+
   private preScanSpeakers() {
     const speakerLine = /^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*\S/;
     this.rawLines.forEach(line => {
@@ -540,8 +586,8 @@ export class ScriptParser {
       isCaps: (t) => this.isCaps(t),
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
-      looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)),
+      looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n) || (pb && !!n && this.titleCaseCues.has(this.clean(t).toUpperCase())),
+      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.characterStats.has(this.clean(n).toUpperCase()),
       isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
       opensWithKnownName: (t) => this.opensWithKnownName(t),
@@ -566,8 +612,14 @@ export class ScriptParser {
     analysis.reasoning = [...analysis.reasoning, `Decoded as ${decided}`];
     if (alternative) analysis.meta = { ...analysis.meta, alternative };
     if (decided === 'character') {
-      const name = analysis.meta?.characterName || this.clean(trim);
+      const written = analysis.meta?.characterName || this.clean(trim);
+      const name = this.titleCaseCues.has(written.toUpperCase()) ? written.toUpperCase() : written;
       analysis.meta = { ...analysis.meta, characterName: name };
+      // The cast is who the reading says speaks. The pre-scan skips a cue whose only line is shouted in capitals
+      // (it cannot tell that from caps action), but the decoder, which sees the whole script, may read it as a cue:
+      // a name read as a cue is in the cast, so the lines and the cast never disagree.
+      const key = this.clean(name);
+      if (key && !this.characterStats.has(key) && !this.rejectedNames.has(key)) this.characterStats.set(key, 1);
       // A name seen speaking once is a cue by the rules but a guess by the evidence: a person should look.
       if ((this.characterStats.get(this.clean(name)) ?? 0) <= 1 && !this.learnedNames.has(this.clean(name))) {
         analysis.confidence = Math.min(analysis.confidence, 60);
@@ -806,7 +858,16 @@ export class ScriptParser {
       const name = (l.meta?.characterName as string | undefined) ?? this.clean(l.text);
       if (!first.has(name)) first.set(name, l.index);
     }
-    return Array.from(this.characterStats.entries())
+    // The pre-scan is evidence for the decoder, not the answer: it takes any caps line with a sentence under it,
+    // which includes caps action ("THE DOOR EXPLODES.") in a script with no blank lines to tell them apart. When
+    // the decoder is reading the script, the cast is the names it read as cues, plus the ones the project already
+    // knows. (Other formats, the podcast's `NAME: speech`, have no decoder and keep what their own pre-scan found.)
+    const decoded = this.usesScreenplayGrammar();
+    const stats = new Map(this.characterStats);
+    // A cue the pre-scan never saw (a forced Fountain `@mc`) is still a cue the reader read.
+    if (decoded) for (const name of first.keys()) if (!stats.has(name) && !this.rejectedNames.has(name)) stats.set(name, this.lines.filter(l => l.type === 'character' && ((l.meta?.characterName as string | undefined) ?? this.clean(l.text)) === name).length);
+    return Array.from(stats.entries())
+      .filter(([name]) => !decoded || first.has(name) || this.learnedNames.has(name))
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, lines: count, firstLineIndex: first.get(name) ?? -1 }));
   }
