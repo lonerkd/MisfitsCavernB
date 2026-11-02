@@ -63,8 +63,7 @@ post a character by name).
 2. **Call-sheet calls and castings by `character_id`** (cast on the sheet follows
    the schedule and survives a rename); jobs' casting calls keep the name for
    display and gain the id. **M.**
-3. **Locations by `location_id`** in the stripboard, call sheet, readiness and
-   shoot-day grouping. **S–M.**
+3. **Done (2026-11-02)** — **Locations by `location_id`** in the stripboard (strips, company moves, locations per day), the auto-scheduler's grouping, the call sheet's day locations and addresses, readiness (and its "lock down" list) and the Locations list. One resolver, `lib/film/places.ts` (`placeResolver`): the linked record's current name, else the heading's text. A location can now be renamed (Studio › Locations › Name): every scene that points at it follows; the script's headings keep their words, and a heading edited later still files under whatever name it spells. Still on the text: the public `/call/[id]` page, `lib/studio/api.ts`'s call-sheet scene query, `shoot-days.ts` callers outside the stripboard, `scene-sync.ts` (the writer). **S–M.**
 4. **Shoot days by `shoot_day_id`**: one `ShootDay` object everything shares;
    the integer becomes a derived label. Touches the most files. **M–L.**
 5. **Drop the text columns** (`cast_list`, `location`, the integer days,

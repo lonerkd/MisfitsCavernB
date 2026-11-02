@@ -67,7 +67,7 @@ export function LocationsView() {
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.map((row) => (
           <LocationItem key={row.name} row={row} days={days.rows} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
-            onSaved={(r) => records.upsertLocal(r)} onRemoved={(id) => records.removeLocal(id)} />
+            onSaved={(r) => records.upsertLocal(r)} onRenamed={(r) => { records.upsertLocal(r); setOpen(r.name); }} onRemoved={(id) => records.removeLocal(id)} />
         ))}
       </ul>
       <form onSubmit={addOther} className={s.row} style={{ gap: 8 }}>
@@ -79,8 +79,8 @@ export function LocationsView() {
   );
 }
 
-function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
-  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
+function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRemoved }: {
+  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRenamed: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -96,6 +96,11 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
   const text = (key: 'address' | 'contact' | 'notes', value: string) => {
     const next = value.trim() || null;
     if ((rec?.[key] ?? null) !== next) void save({ [key]: next });
+  };
+  const rename = async (value: string) => {
+    if (!rec || !value.trim() || value.trim().toUpperCase() === row.name) return;
+    try { onRenamed(await studio.renameLocation(rec.id, value)); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not rename the location', 'error'); }
   };
   const remove = async () => {
     if (!rec || !(await confirm(`Remove the record for ${row.name}? ${row.scenes.length ? 'The scenes stay; the address, contact and permit go.' : ''}`))) return;
@@ -144,6 +149,12 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+            {rec && (
+              <label className={s.stack} style={{ gap: 4 }}>
+                <span className={s.hint}>Name (every scene at this place follows)</span>
+                <input className={s.input} defaultValue={rec.name} key={`name:${rec.name}`} maxLength={200} onBlur={(e) => void rename(e.target.value)} />
+              </label>
+            )}
             <label className={s.stack} style={{ gap: 4 }}>
               <span className={s.hint}>Address</span>
               <input className={s.input} defaultValue={rec?.address ?? ''} key={`a:${rec?.address}`} maxLength={500} onBlur={(e) => text('address', e.target.value)} />
