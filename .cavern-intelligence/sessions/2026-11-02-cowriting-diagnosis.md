@@ -1,0 +1,7 @@
+# Session — 2026-11-02: keys typed after "(" landed at the end of the script
+
+The nightly's `editor-cowriting` "typing at the very same spot" flake looked like a co-writing race. Two instrumented runs (the editor's handlers, then every `setContent` with its stack) showed it was not: the editor reshapes text itself on an opening parenthesis (a pair), Tab and inserted elements, and put the caret back afterwards with `setTimeout(…, 0)`. React moves a textarea's caret to the end when it sets the new value; Chromium handles a queued key press before a 0 ms timer; so a key typed straight after `(` landed at the end of the script. It needs no collaborator, only a quick typist, and it also made the co-writing spec fail about 1 run in 4.
+
+**Fix:** `placeCaret` records the caret in `caretAfterEdit`, and the layout effect on `content` (which runs as the new text is put on screen) places it, so nothing can type in between; the timer remains only for an edit that leaves the text unchanged. A caret still waiting when a collaborator's words arrive is moved with them.
+
+**Verified:** `e2e/editor-caret-after-edit.spec.ts` (12 rounds of `(abc` typed with no delay, text never grows at the end) fails on the old code and passed 28 of 29 runs on the new (one run did not load the page); the original same-spot spec: 21 of 22 (the one failure was the page not loading), was about 3 of 4 before; typecheck, lint, unit tests. The temporary instrumentation and debug spec were removed.
