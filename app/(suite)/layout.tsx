@@ -2,6 +2,7 @@ import { OSProvider } from '@/lib/os';
 import { PresenceProvider } from '@/lib/os/PresenceContext';
 import { PillProvider } from '@/lib/os/PillContext';
 import { SpotifyProvider } from '@/lib/os/SpotifyContext';
+import { VoiceCallProvider } from '@/lib/webrtc/VoiceCall';
 import ClientShell from '@/components/shell/ClientShell';
 import { IncidentBanner } from '@/components/hub/IncidentBanner';
 
@@ -13,9 +14,11 @@ export default function SuiteLayout({ children }: { children: React.ReactNode })
       <PresenceProvider>
         <PillProvider>
           <SpotifyProvider>
-            <ClientShell />
-            <IncidentBanner />
-            <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
+            <VoiceCallProvider>
+              <ClientShell />
+              <IncidentBanner />
+              <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
+            </VoiceCallProvider>
           </SpotifyProvider>
         </PillProvider>
       </PresenceProvider>
