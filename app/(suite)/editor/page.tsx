@@ -1,5 +1,6 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -462,43 +463,22 @@ export default function EditorPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      else if (document.activeElement === textareaRef.current && (chord === 'editor.undo' || chord === 'editor.redo' || chord === 'editor.redo-y')) {
         e.preventDefault();
-        handleSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        setShowFindReplace(prev => !prev);
+        if (chord === 'editor.undo') undo(); else redo();
       }
       if (e.key === 'Escape') {
         if (focusMode) setFocusMode(false);
         if (showFindReplace) setShowFindReplace(false);
         if (showFormatMenu) setShowFormatMenu(false);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        setFocusMode(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-        e.preventDefault();
-        setShowGoToScene(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-        e.preventDefault();
-        setShowShortcuts(prev => !prev);
-      }
-      if (e.key === 'Escape') {
         if (showGoToScene) setShowGoToScene(false);
         if (showShortcuts) setShowShortcuts(false);
-      }
-
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo(); else undo();
-      }
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        redo();
       }
     };
     window.addEventListener('keydown', handler);

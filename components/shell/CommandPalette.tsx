@@ -1,5 +1,6 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
@@ -77,6 +78,7 @@ export default function CommandPalette() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
+      else if (matchChord(e)?.id === 'palette') { e.preventDefault(); setOpen((o) => !o); }
     };
     const onOpen = () => setOpen(true);
     window.addEventListener('keydown', onKey);

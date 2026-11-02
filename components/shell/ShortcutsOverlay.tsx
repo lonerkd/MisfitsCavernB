@@ -5,12 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { X, Keyboard } from 'lucide-react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { CHORDS, chordText, isMac, matchChord } from '@/lib/os/chords';
 
-const GROUPS: { title: string; items: [string, string][] }[] = [
+// The chords are read from the table the handlers use, so what is shown is what is bound.
+const chordItems = (scope: 'global' | 'editor', mac: boolean): [string, string][] =>
+  CHORDS.filter((c) => c.scope === scope).map((c) => [chordText(c, mac), c.label]);
+
+const groups = (mac: boolean): { title: string; items: [string, string][] }[] => [
   {
     title: 'Global',
     items: [
-      ['⌘ \\  /  Ctrl \\', 'Split screen: this page and another side by side'],
+      ...chordItems('global', mac),
       ['?', 'Show this shortcuts panel'],
       ['Esc', 'Close any dialog or palette'],
     ],
@@ -29,6 +34,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
   {
     title: 'ScriptOS editor',
     items: [
+      ...chordItems('editor', mac),
       ['Tab', 'Smart element insert (scene / dialogue)'],
       ['↑ ↓ · Enter', 'Navigate & accept autocomplete'],
       ['(', 'Auto-close parenthetical'],
@@ -47,10 +53,12 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
 export default function ShortcutsOverlay() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [mac] = useState(() => isMac());
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setOpen(false); return; }
+      if (matchChord(e)?.id === 'help') { e.preventDefault(); setOpen(o => !o); return; }
 
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         const t = e.target as HTMLElement;
@@ -92,7 +100,7 @@ export default function ShortcutsOverlay() {
             </div>
 
             <div style={{ display: 'grid', gap: 20 }}>
-              {GROUPS.map(g => (
+              {groups(mac).map(g => (
                 <div key={g.title}>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
                   <div style={{ display: 'grid', gap: 4 }}>

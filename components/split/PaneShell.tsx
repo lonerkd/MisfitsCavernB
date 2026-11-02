@@ -1,5 +1,6 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { postToSplit, splitHref } from '@/lib/split/pane';
@@ -33,7 +34,7 @@ export function SplitShortcut() {
   const pathname = usePathname();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== '\\' || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey) return;
+      if (matchChord(e)?.id !== 'split') return;
       if (pathname === '/split' || pathname === '/auth' || /^\/(shared|p|s)\//.test(pathname)) return;
       e.preventDefault();
       router.push(splitHref(window.location.pathname + window.location.search));
