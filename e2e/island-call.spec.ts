@@ -92,6 +92,7 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       await expect(island(page).getByText(/muted/)).toHaveCount(0);
       // Chromium's fake microphone beeps, so the call hears the person talking: the island says so.
       await expect(island(page).getByText(/you.re speaking/)).toBeVisible({ timeout: 20_000 });
+      await shot(page, 'call-speaking');
 
       // The island offers the way back to the room (anywhere but the Lounge), and it lands on that room.
       await island(page).getByRole('button', { name: 'Room', exact: true }).click();
