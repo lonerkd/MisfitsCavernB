@@ -90,11 +90,15 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       await shot(page, 'call-muted');
       await island(page).getByRole('button', { name: 'Unmute', exact: true }).click();
       await expect(island(page).getByText(/muted/)).toHaveCount(0);
+      // Chromium's fake microphone beeps, so the call hears the person talking: the island says so.
+      await expect(island(page).getByText(/you.re speaking/)).toBeVisible({ timeout: 20_000 });
+      await shot(page, 'call-speaking');
 
-      // Back in the Lounge, the room knows it is the same call.
-      await goTo(page, 'Lounge', /\/lounge/);
-      await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
+      // The island offers the way back to the room (anywhere but the Lounge), and it lands on that room.
+      await island(page).getByRole('button', { name: 'Room', exact: true }).click();
+      await page.waitForURL(/\/lounge\?channel=/);
       await expect(page.getByRole('button', { name: /LEAVE VOICE/ })).toBeVisible({ timeout: 15_000 });
+      await expect(island(page).getByRole('button', { name: 'Room', exact: true })).toHaveCount(0); // already there
 
       // Leave from the island itself, from another page.
       await goTo(page, 'Today', /\/today/);
