@@ -44,12 +44,25 @@ describe('sceneCosts', () => {
     expect(r.byDay[0]).toMatchObject({ day: 1, estimated: 40, unpriced: 1 });
   });
 
-  it('an element in no scene is reported, not hidden, and tags for scenes or elements that are gone are ignored', () => {
+  it('an element in no scene is reported, not hidden, and a tag for an element that is gone is ignored', () => {
     const elements: CostElement[] = [{ id: 'idle', category_id: 'props', cost: 70 }, { id: 'x', category_id: 'props', cost: 5 }];
-    const r = sceneCosts({ scenes, categories: cats, elements, tags: [tag('gone', 'x'), tag('s1', 'ghost')] });
+    const r = sceneCosts({ scenes, categories: cats, elements, tags: [tag('s1', 'ghost')] });
     expect(r.unplaced).toBe(75);
+    expect(r.placed).toBe(0);
     expect(r.projectTotal).toBe(75);
     expect(r.byScene.get('s1')?.total).toBe(0);
+  });
+
+  it('scenes this call was not given (another script’s) take their share; placed + elsewhere + unplaced is the project total', () => {
+    const elements: CostElement[] = [{ id: 'car', category_id: 'props', cost: 100 }, { id: 'solo', category_id: 'props', cost: 30 }, { id: 'idle', category_id: 'props', cost: 7 }];
+    // The car is in s1 and in two scenes of another script; solo only in the other script; idle nowhere.
+    const r = sceneCosts({ scenes, categories: cats, elements, tags: [tag('s1', 'car'), tag('other-a', 'car'), tag('other-b', 'car'), tag('other-a', 'solo')] });
+    expect(r.byScene.get('s1')?.total).toBe(33.33); // a third of the car, not all of it (the odd cent goes to the first scene in id order)
+    expect(r.placed).toBe(33.33);
+    expect(r.elsewhere).toBe(96.67); // two thirds of the car and all of solo
+    expect(r.unplaced).toBe(7);
+    expect(r.placed + r.elsewhere + r.unplaced).toBeCloseTo(r.projectTotal, 10);
+    expect(r.projectTotal).toBe(137);
   });
 
   it('copes with strings from the database, blanks and nonsense', () => {

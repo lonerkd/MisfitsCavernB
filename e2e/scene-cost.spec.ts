@@ -63,6 +63,7 @@ test.describe('Cost by scene and day (local Supabase)', () => {
       const mk = async (name: string, category: string, cost: number | null) => (await admin.from('breakdown_elements').insert({ project_id: projectId, category_id: category, name, cost, created_by: userId }).select('id').single()).data!.id as string;
       const lamp = await mk('Work lamp', props, 100);
       const coat = await mk('Apron', wardrobe, null); // no figure entered: the category's $40 default
+      await mk('Spare gaffer tape', props, 7); // tagged in no scene
       await admin.from('scene_elements').insert([
         { scene_id: scenes[0].id, element_id: lamp, project_id: projectId },
         { scene_id: scenes[1].id, element_id: lamp, project_id: projectId },
@@ -78,7 +79,9 @@ test.describe('Cost by scene and day (local Supabase)', () => {
       await expect(section.getByRole('row', { name: /Day 2/ })).toContainText('$50');
       await expect(section.getByRole('row', { name: /KITCHEN/ })).toContainText('incl. $50 shared');
       await expect(section.getByRole('row', { name: /Day 1/ })).toContainText('$40 is a default estimate');
-      await expect(section).toContainText('Project total $140');
+      await expect(section).toContainText('The scenes above add up to $140.');
+      await expect(section).toContainText('Another $7 is on elements not tagged in any scene.');
+      await expect(section).toContainText('Project total $147.');
       if (process.env.COST_SHOT) await section.screenshot({ path: process.env.COST_SHOT });
     } finally { await ctx.close(); await browser.close(); }
   });

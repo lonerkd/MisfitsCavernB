@@ -38,10 +38,14 @@ export interface SceneCosts {
   byScene: Map<string, SceneCost>;
   /** In day order, the unscheduled scenes last. */
   byDay: DayCost[];
-  /** Everything the breakdown's elements cost, in scenes or not. */
-  projectTotal: number;
-  /** Cost of elements that are tagged in no scene (so no scene or day carries it). */
+  /** What the scenes given here add up to (equal to the days added up). */
+  placed: number;
+  /** The share of elements that sit in scenes this call was not given (another script's, or since removed). */
+  elsewhere: number;
+  /** Cost of elements that are tagged in no scene at all. */
   unplaced: number;
+  /** Everything the breakdown's elements cost: placed + elsewhere + unplaced. */
+  projectTotal: number;
 }
 
 const toCents = (v: number | string | null | undefined): number => {
@@ -52,14 +56,15 @@ const toCents = (v: number | string | null | undefined): number => {
 const money = (cents: number) => cents / 100;
 
 export function sceneCosts(input: { scenes: CostScene[]; categories: CostCategory[]; elements: CostElement[]; tags: CostTag[] }): SceneCosts {
-  const sceneIds = new Set(input.scenes.map((s) => s.id));
   const unitCents = new Map(input.categories.map((c) => [c.id, toCents(c.unit_cost)]));
   const elementById = new Map(input.elements.map((e) => [e.id, e]));
 
-  // The scenes each element is tagged in, once each, in a stable order; tags for scenes or elements that are gone are ignored.
+  // The scenes each element is tagged in, once each, in a stable order. A tag may name a scene this call was not
+  // given (a project can hold several scripts, and the caller may show one): it still counts as a share, so a
+  // prop used in two scripts is split across all its scenes and not charged in full to the one on screen.
   const scenesOf = new Map<string, string[]>();
   for (const t of input.tags) {
-    if (!sceneIds.has(t.scene_id) || !elementById.has(t.element_id)) continue;
+    if (!elementById.has(t.element_id)) continue;
     const list = scenesOf.get(t.element_id) ?? [];
     if (!list.includes(t.scene_id)) list.push(t.scene_id);
     scenesOf.set(t.element_id, list);
@@ -70,6 +75,7 @@ export function sceneCosts(input: { scenes: CostScene[]; categories: CostCategor
 
   let projectCents = 0;
   let unplacedCents = 0;
+  let elsewhereCents = 0;
   for (const e of input.elements) {
     const entered = e.cost != null && e.cost !== '';
     const unit = unitCents.get(e.category_id) ?? 0;
@@ -81,7 +87,8 @@ export function sceneCosts(input: { scenes: CostScene[]; categories: CostCategor
     const extra = cents - base * where.length; // the first `extra` scenes carry one more cent, so the parts add up exactly
     where.forEach((sceneId, i) => {
       const part = base + (i < extra ? 1 : 0);
-      const a = acc.get(sceneId)!;
+      const a = acc.get(sceneId);
+      if (!a) { elsewhereCents += part; return; }
       if (where.length === 1) a.own += part; else a.shared += part;
       if (!entered && unit > 0) a.estimated += part;
       if (!entered && unit === 0) a.unpriced += 1;
@@ -105,5 +112,6 @@ export function sceneCosts(input: { scenes: CostScene[]; categories: CostCategor
     .sort(([x], [y]) => (x === null ? 1 : y === null ? -1 : x - y))
     .map(([day, d]) => ({ day, scenes: d.scenes, total: money(d.total), estimated: money(d.estimated), unpriced: d.unpriced }));
 
-  return { byScene, byDay, projectTotal: money(projectCents), unplaced: money(unplacedCents) };
+  const placedCents = projectCents - unplacedCents - elsewhereCents;
+  return { byScene, byDay, placed: money(placedCents), elsewhere: money(elsewhereCents), unplaced: money(unplacedCents), projectTotal: money(projectCents) };
 }

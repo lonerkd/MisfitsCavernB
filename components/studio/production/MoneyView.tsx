@@ -119,50 +119,58 @@ function SceneCostSection() {
   }), [scenes.rows, bd.categories.rows, bd.elements.rows, bd.tags.rows]);
 
   if (bd.status === 'loading') return null;
-  const priced = scenes.rows.filter((r) => (costs.byScene.get(r.id)?.elements ?? 0) > 0);
   const label = (d: number | null) => (d === null ? 'Not scheduled' : `Day ${d}`);
   const note = (e: number, u: number) => [e > 0 ? `${money(e)} is a default estimate` : '', u > 0 ? `${u} element${u === 1 ? '' : 's'} with no price` : ''].filter(Boolean).join(' · ');
+  const anyTagged = scenes.rows.some((r) => (costs.byScene.get(r.id)?.elements ?? 0) > 0);
 
   return (
     <section aria-labelledby="money-scenes" className={s.stack} style={{ gap: 12 }}>
       <h3 id="money-scenes" className={s.panelTitle} style={{ marginBottom: 0 }}><DollarSign size={14} /> Cost by scene and day</h3>
-      {priced.length === 0 ? (
-        <p className={s.hint}>Nothing is tagged in a scene yet. Tag props, wardrobe and the rest in the Breakdown and each scene gets a cost here.</p>
+      {bd.status === 'error' ? (
+        <p className={s.hint} role="alert">Could not read the breakdown{bd.error ? `: ${bd.error}` : ''}. The costs below would be wrong, so none are shown. Reload to try again.</p>
       ) : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <caption className="sr-only">Each shoot day and its scenes with what they cost</caption>
-            <thead>
-              <tr className={s.hint} style={{ textAlign: 'left' }}>
-                <th scope="col" style={{ padding: 6, fontWeight: 400 }}>Day / scene</th>
-                <th scope="col" style={{ padding: 6, fontWeight: 400, textAlign: 'right' }}>Cost</th>
-                <th scope="col" style={{ padding: 6, fontWeight: 400 }}>Notes</th>
-              </tr>
-            </thead>
-            {costs.byDay.map((d) => (
-              <tbody key={String(d.day)}>
-                <tr style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.12)' }}>
-                  <th scope="rowgroup" style={{ padding: 6, textAlign: 'left' }}>{label(d.day)} · {d.scenes} scene{d.scenes === 1 ? '' : 's'}</th>
-                  <td style={{ padding: 6, textAlign: 'right', fontWeight: 600 }}>{money(d.total)}</td>
-                  <td style={{ padding: 6 }} className={s.hint}>{note(d.estimated, d.unpriced)}</td>
+          {!anyTagged ? (
+            <p className={s.hint}>Nothing in this script is tagged with a breakdown element yet. Tag props, wardrobe and the rest in the Breakdown and each scene gets a cost here.</p>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+              <caption className="sr-only">Each shoot day and its scenes with what they cost</caption>
+              <thead>
+                <tr className={s.hint} style={{ textAlign: 'left' }}>
+                  <th scope="col" style={{ padding: 6, fontWeight: 400 }}>Day / scene</th>
+                  <th scope="col" style={{ padding: 6, fontWeight: 400, textAlign: 'right' }}>Cost</th>
+                  <th scope="col" style={{ padding: 6, fontWeight: 400 }}>Notes</th>
                 </tr>
-                {scenes.rows.filter((r) => (r.shoot_day ?? null) === d.day && (costs.byScene.get(r.id)?.elements ?? 0) > 0).map((r) => {
-                  const c = costs.byScene.get(r.id)!;
-                  return (
-                    <tr key={r.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-                      <td style={{ padding: '6px 6px 6px 18px' }}>{r.scene_number != null ? `${r.scene_number}. ` : ''}{r.heading ?? 'Scene'}</td>
-                      <td style={{ padding: 6, textAlign: 'right' }} title={c.shared > 0 ? `${money(c.own)} its own, ${money(c.shared)} its share of things used in other scenes too` : undefined}>{money(c.total)}</td>
-                      <td style={{ padding: 6 }} className={s.hint}>{[c.shared > 0 ? `incl. ${money(c.shared)} shared` : '', note(c.estimated, c.unpriced)].filter(Boolean).join(' · ')}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            ))}
-          </table>
-          <p className={s.hint}>
-            Project total {money(costs.projectTotal)}{costs.unplaced > 0 ? ` — of which ${money(costs.unplaced)} is on elements not tagged in any scene` : ''}.
-            Something used in several scenes is split between them, so scenes and days add up to the total.
-          </p>
+              </thead>
+              {costs.byDay.map((d) => (
+                <tbody key={String(d.day)}>
+                  <tr style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.12)' }}>
+                    <th scope="rowgroup" style={{ padding: 6, textAlign: 'left' }}>{label(d.day)} · {d.scenes} scene{d.scenes === 1 ? '' : 's'}</th>
+                    <td style={{ padding: 6, textAlign: 'right', fontWeight: 600 }}>{money(d.total)}</td>
+                    <td style={{ padding: 6 }} className={s.hint}>{note(d.estimated, d.unpriced)}</td>
+                  </tr>
+                  {scenes.rows.filter((r) => (r.shoot_day ?? null) === d.day).map((r) => {
+                    const c = costs.byScene.get(r.id)!;
+                    return (
+                      <tr key={r.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+                        <td style={{ padding: '6px 6px 6px 18px' }}>{r.scene_number != null ? `${r.scene_number}. ` : ''}{r.heading ?? 'Scene'}</td>
+                        <td style={{ padding: 6, textAlign: 'right' }} title={c.shared > 0 ? `${money(c.own)} its own, ${money(c.shared)} its share of things used in other scenes too` : undefined}>{c.elements > 0 ? money(c.total) : '—'}</td>
+                        <td style={{ padding: 6 }} className={s.hint}>{c.elements === 0 ? 'nothing tagged' : [c.shared > 0 ? `incl. ${money(c.shared)} shared` : '', note(c.estimated, c.unpriced)].filter(Boolean).join(' · ')}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              ))}
+            </table>
+          )}
+          {(costs.projectTotal > 0 || bd.elements.rows.length > 0) && (
+            <p className={s.hint}>
+              The scenes above add up to {money(costs.placed)}.
+              {costs.elsewhere > 0 ? ` Another ${money(costs.elsewhere)} sits in other scripts' scenes.` : ''}
+              {costs.unplaced > 0 ? ` Another ${money(costs.unplaced)} is on elements not tagged in any scene.` : ''}
+              {' '}Project total {money(costs.projectTotal)}. Something used in several scenes is split between them, so nothing is counted twice.
+            </p>
+          )}
         </>
       )}
     </section>
