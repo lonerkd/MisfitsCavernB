@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**47 pages · 6 API routes · 84 tables · 60 database functions · 73 e2e specs**
+**47 pages · 6 API routes · 84 tables · 60 database functions · 74 e2e specs**
 
 ## Routes
 
@@ -27,7 +27,7 @@
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 31 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (275) | 28 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (484) | 39 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, continuity, credits, cut-notes, daylight, documents, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, guides, hide-message, hiring, install, island-activity, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, password-recovery, phases, project-manager, projects-keyboard-phase, readiness, reading-corrections, real-data, reports, route-smoke, script-share, search, shot-designer, split, spotify-connect, studio-journey, suspend-user, table-read, themes, today-owner, transcripts, view-as, writing-loop, your-data |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (484) | 39 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community, continuity, credits, cut-notes, daylight, documents, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, guides, hide-message, hiring, install, island-activity, island-call, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, on-set, onboarding, onset-offline, password-recovery, phases, project-manager, projects-keyboard-phase, readiness, reading-corrections, real-data, reports, route-smoke, script-share, search, shot-designer, split, spotify-connect, studio-journey, suspend-user, table-read, themes, today-owner, transcripts, view-as, writing-loop, your-data |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 33 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (226) | 50 files · components: projects, ui · lib: auth, brief, formats, os, push, scriptos, studio, supabase, types, validation | call-sheets, push |
@@ -40,7 +40,7 @@
 | `/hub` | signed in | `app/(suite)/hub/page.tsx` (108) | 35 files · components: Flag, ui · lib: auth, flags, formats, hooks, hub, os, push, supabase, types, validation | auth-journey |
 | `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (552) | 34 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (440) | 49 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, reports, route-smoke |
-| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 76 files · components: lounge, projects, ui · lib: auth, brief, formats, hooks, lounge, notifications, os, push, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community, hide-message, island, keyboard-audit, layout, lounge, mobile, route-smoke |
+| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 77 files · components: lounge, projects, ui · lib: auth, brief, formats, hooks, lounge, notifications, os, push, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, route-smoke |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
 | `/` | public | `app/(suite)/page.tsx` (470) | 51 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (239) | 35 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility |
@@ -556,6 +556,7 @@
 | `home-page-crash.spec.ts` | `/` |
 | `install.spec.ts` | `/auth`, `/today` |
 | `island-activity.spec.ts` | `/auth`, `/editor`, `/studio` |
+| `island-call.spec.ts` | `/auth`, `/lounge` |
 | `island.spec.ts` | `/auth`, `/lounge`, `/projects`, `/settings`, `/today` |
 | `keyboard-audit.spec.ts` | `/`, `/admin`, `/auth`, `/crew`, `/editor`, `/jobs`, `/jobs/*`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/projects/*`, `/settings`, `/shared/*`, `/showcase`, `/soundtrack`, `/studio`, `/welcome` |
 | `layout.spec.ts` | `/auth`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/studio`, `/today` |

@@ -1,5 +1,4 @@
 import { execSync } from 'node:child_process';
-import { appendFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { test, expect, chromium, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
@@ -42,16 +41,18 @@ test.describe('The island holds a voice call (local Supabase)', () => {
     await page.waitForTimeout(900); // let it finish moving
     await page.screenshot({ path: `${SHOTS}/${name}.png`, clip: { x: 500, y: 790, width: 600, height: 110 }, scale: 'device' });
   };
-  /** Navigate the way a person does, through the island's own links: a client-side move, never a page reload (a reload would end any call). */
+  /**
+   * Navigate the way a person does, through the island's own links: a client-side move, never a page reload (a
+   * reload would end any call). The deck slides open, so a click can land while it is still moving; a person
+   * clicks again, and so does this: the whole step (open it if it is shut, click the app) retries until the page moves.
+   */
   const goTo = async (page: Page, app: string, path: RegExp) => {
-    await island(page).getByRole('button', { name: /^Open the island/ }).click();
-    const link = island(page).getByRole('link', { name: app, exact: true });
-    const box = await link.boundingBox();
-    appendFileSync('/tmp/claude-0/probe3.txt', `before click ${app}: url=${page.url()} box=${JSON.stringify(box)}\n`);
-    await link.click();
-    await page.waitForTimeout(3000);
-    appendFileSync('/tmp/claude-0/probe3.txt', `after click ${app}: url=${page.url()}\n`);
-    await page.waitForURL(path);
+    await expect(async () => {
+      const link = island(page).getByRole('link', { name: app, exact: true });
+      if (!(await link.isVisible())) await island(page).getByRole('button', { name: /^Open the island/ }).click();
+      await link.click({ timeout: 5000 });
+      await page.waitForURL(path, { timeout: 4000 });
+    }).toPass({ timeout: 40_000 });
     await page.mouse.move(10, 10);
   };
 

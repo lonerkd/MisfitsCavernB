@@ -16,6 +16,9 @@ The Lounge represents a real-time chat space integrated directly into film proje
 ## 2. Peer-to-Peer WebRTC Audio Mesh
 The Lounge features decentralized peer-to-peer voice rooms, providing crew communication without incurring expensive external server signaling/routing costs.
 
+### The call belongs to the suite, not to the Lounge page (`lib/webrtc/VoiceCall.tsx`)
+`VoiceCallProvider` sits in the suite layout and owns the one call: which room, who is in it, mute, leave. The Lounge's `VoiceRoom` is only a **view** of it for the channel you are looking at (join, leave, "move here" when you are in a call in another channel), so the call **carries on while you use the rest of the suite**: the microphone, the peers and the audio live in the provider, not in a page. The island holds the call on every page (`lib/island/callActivity.ts`: the room, how many are in it, Mute and Leave). One call at a time: joining another room moves it. Signing out, or another person signing in, ends it. A full room (see below) ends it and says so. A full page reload ends a call (it is a browser session); moving between pages does not.
+
 ### Peer Mesh Pipeline (`lib/webrtc/voice.ts`)
 - **No SFU (Selective Forwarding Unit) Server:** The architecture is built as a **full mesh network**. Every user opens a direct WebRTC peer connection (`RTCPeerConnection`) with every other user in the channel.
 - **Scalability:** Full mesh scales perfectly for typical indie film crew sizes (2 to 8 concurrent speakers) and runs entirely inside the users' browsers. The limit is enforced: `lib/webrtc/mesh.ts` seats the earliest 8 by presence `joinedAt`; a 9th is turned away before any connection opens (toast + "room is full"), and a simultaneous join is settled by the same seat order on every client.
