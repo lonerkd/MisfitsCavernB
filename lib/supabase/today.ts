@@ -61,10 +61,10 @@ export async function getOwnerData(projectIds: string[], fromDay: string): Promi
     supabase.from('project_crew').select('project_id').in('project_id', projectIds).eq('status', 'pending'),
     supabase.from('project_tasks').select('project_id, due_date').in('project_id', projectIds).eq('completed', false).limit(500),
     supabase.from('call_sheets').select('project_id, shoot_date, shoot_day, issued_at').in('project_id', projectIds).gte('shoot_date', fromDay).order('shoot_date').limit(60),
-    supabase.from('shoot_days').select('project_id, day_number, shoot_date').in('project_id', projectIds).gte('shoot_date', fromDay).order('shoot_date').limit(200),
+    nextScheduledDays(projectIds, fromDay),
   ]);
-  for (const r of [crew, tasks, sheets, days]) if (r.error) throw r.error;
-  const dated = (days.data ?? []) as ScheduledDay[];
+  for (const r of [crew, tasks, sheets]) if (r.error) throw r.error;
+  const dated = days;
   // The call sheets of those days, whatever their own date says: a sheet outside the date window above (or past its row
   // limit) must not make an issued day read as "not issued".
   const dayNumbers = Array.from(new Set(dated.map((d) => d.day_number)));
@@ -81,4 +81,17 @@ export async function getOwnerData(projectIds: string[], fromDay: string): Promi
       (own.data ?? []) as DaySheet[],
     ),
   };
+}
+
+/**
+ * The next few dated shoot days of each project, read one project at a time: a single capped query across every project
+ * would let one production with many days crowd another's next day out of the result.
+ */
+async function nextScheduledDays(projectIds: string[], fromDay: string): Promise<ScheduledDay[]> {
+  const perProject = await Promise.all(projectIds.map((id) =>
+    supabase.from('shoot_days').select('project_id, day_number, shoot_date').eq('project_id', id).gte('shoot_date', fromDay).order('shoot_date').limit(3),
+  ));
+  const failed = perProject.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+  return perProject.flatMap((r) => (r.data ?? []) as ScheduledDay[]);
 }
