@@ -841,6 +841,21 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /**
+   * Just what the island needs of a shoot day's clock: the day's call sheet (when it is dated, its planned wrap) and the
+   * crew-call, rolling, lunch, back-in and wrap stamps on it. Narrow on purpose: the island reads it on every page on a
+   * shoot day, so it must not pull the whole project's set log (notes, continuity, media).
+   */
+  async function getDayClock(projectId: string, dayNumber: number): Promise<{ sheet: { id: string; shoot_date: string | null; estimated_wrap: string | null } | null; rows: Array<{ kind: string; at: string }> }> {
+    const sheetRes = await db.from('call_sheets').select('id, shoot_date, estimated_wrap').eq('project_id', projectId).eq('shoot_day', dayNumber).maybeSingle();
+    if (sheetRes.error) fail(sheetRes.error, 'Could not read the day');
+    const sheet = sheetRes.data;
+    if (!sheet) return { sheet: null, rows: [] };
+    const logRes = await db.from('set_log').select('kind, at').eq('call_sheet_id', sheet.id).in('kind', ['call', 'rolling', 'lunch', 'back', 'wrap']);
+    if (logRes.error) fail(logRes.error, 'Could not read the day clock');
+    return { sheet, rows: logRes.data };
+  }
+
   async function addSetLog(entry: SetLogEntry): Promise<SetLogRow> {
     const { data, error } = await db.from('set_log').insert(entry).select('*').single();
     if (error) fail(error, 'Could not log that');
@@ -944,7 +959,7 @@ export function createStudioApi(db: Client) {
     listScenes, listProjectScenes, syncScriptScenes, updateScene,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
-    listSetLog, addSetLog, updateSetLog, deleteSetLog,
+    listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,
