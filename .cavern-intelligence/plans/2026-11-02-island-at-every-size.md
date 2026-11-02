@@ -53,7 +53,30 @@ The island is only as deep as what pages tell it. Pages register with `usePillSt
 4. A **long-press equivalent on touch** for the held layer: yes.
 2. and 3. (the ten fast-path actions per tool; where a thumb should reach) still open: the coverage reference above is the input to 2.
 
-## Decisions still needed from the owner (these are design, not code)
+## Delegated to Claude (owner, 2026-11-02: "I can't answer yet, I'll come with actually trying it; take charge")
 
-1. The ten fast-path actions per tool (write, schedule, cast, call sheet, wrap…) in the owner's own priority — these set the key map and the thumb zone.
-2. Where on a phone the thumb should reach: bottom only, or a bottom sheet that grows?
+The two open decisions are mine to make now and the owner's to correct after trying them. Defaults, with the reason, so they can be argued with:
+
+**The ten fast-path actions: one fixed set of ten slots, the same keys in every tool** (muscle memory beats per-tool cleverness; the Caps deck already gives a page eight control keys, `CONTROL_KEYS` Q–I, so the set is eight keyed slots plus two on the held layer). Each tool fills the slots with its own action, or leaves one empty (never repurposed):
+
+| Key | Slot | Editor | Studio schedule | Today |
+|---|---|---|---|---|
+| Q | **Create** | new scene | add a scene to a day | new task |
+| W | **Jump** | go to scene / character | go to day / scene | go to project |
+| E | **Find** | find and replace | filter the board | search |
+| R | **View** | write / board / outline | strips / day-out-of-days | — |
+| T | **Share / export** | export | print / call sheet | — |
+| Y | **People** | cast and characters | cast and crew | — |
+| U | **Note** | scene note | day note | — |
+| I | **Live** | table read / sprint | wrap, roll (On set) | open the day |
+| O, P (held layer) | **Undo / redo**, **Back up a level** | | | |
+
+This is a draft to be corrected by use, not a final: step 0 (the generated coverage reference) fills the real table for every route from what pages already register, and the owner edits that.
+
+**The thumb zone: bottom-anchored, three detents, mirrored on request.** The pill sits at the bottom; a sheet grows **upward** from it in three detents (peek: the page's top four actions; half: all ten slots plus search; full: places and tools); the primary action is bottom-right with a setting to mirror it for the left hand; nothing a tool needs often sits in the top third of a phone. **Long-press** on the pill is the held layer (the Caps layer's touch equivalent, per the owner); long-press on any zone is that zone's actions (the touch equivalent of hover context).
+
+**To try, not to take on faith:** the narrow-window dock and the phone presentation ship behind an account flag (`island_v2`, `lib/flags.ts`) so the owner turns it on, tries it, and changes it; and the slots' use is counted per account (which key, which tool, how often, locally first) so the defaults are tuned by what the owner actually does rather than by this table. Both are part of step 1.
+
+## What is still the owner's, after trying it
+
+Whether the island replaces the tab bar on phones is leaning yes (owner, 2026-11-02), confirmed or reversed after trying `island_v2`; everything above is a default that the owner can change.
