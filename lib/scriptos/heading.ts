@@ -34,7 +34,7 @@ const FILLER = new Set(['THE', 'THAT', 'THIS', 'SAME', 'NEXT', 'EARLY', 'LATE', 
 const NUMBER_WORDS = new Set(['A', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'FEW', 'SEVERAL', 'MANY']);
 const MONTHS = new Set(['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER', 'SPRING', 'SUMMER', 'AUTUMN', 'FALL', 'WINTER']);
 const DAYS_OF_WEEK = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
-/** A layer of a story told in layers: "PART ONE", "CHAPTER 2", "ACT THREE, LATER", "HOUR FOUR". */
+/** A layer of a story told in layers: "PART ONE", "CHAPTER 2", "ACT THREE, LATER", "REEL 2". */
 const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i;
 const YEAR = /\b(1[0-9]{3}|20[0-9]{2})\b/g;
 

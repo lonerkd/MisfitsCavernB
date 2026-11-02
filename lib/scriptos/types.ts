@@ -66,7 +66,7 @@ export interface Scene {
   era?: string;
   /** How this scene follows the one before ("CONTINUOUS", "THE SAME NIGHT", "TWO DAYS LATER"). */
   marker?: string;
-  /** The layer of a story told in layers ("HOUR ONE"). */
+  /** The layer of a story told in layers ("PART ONE"). */
   frame?: string;
   characters: string[];
   wordCount?: number;
