@@ -27,15 +27,31 @@ For each surface class, define the zones and who owns them — tool header, cont
 
 ## Order
 
-0. **Audit (S):** every route's keyboard and pointer actions against the four layers (the generated route inventory and `keyboard-audit.spec.ts` are the start); list what the pill lacks against the dock.
+0. **Audit, as generated data (S):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
 1. **Compact dock for narrow non-touch (S–M):** the quickest real win: under 760 px with a fine pointer or a keyboard, show a compact dock instead of nothing.
 2. **One core, three presentations (M):** fold the pill into the core; activities, on-set line and search on the pill (this also makes the recording activity worth building: BACKLOG 4.1).
 3. **Action registry and command grammar (M–L):** every tool registers actions with keys; the palette and Caps deck read it; generated reference and a help overlay.
 4. **Tool-by-tool screen pass (L):** the zone maps applied route by route, starting with the Editor and the Studio schedule, measured in keystrokes and taps to reach the ten most common actions.
 
-## Decisions needed from the owner (these are design, not code)
+## Where the island came from — and whether anything was lost (checked in git and the notes, 2026-11-02)
 
-1. On a phone, does the island replace the tab bar, or sit beside it (today: the pill *is* the tab bar)?
-2. The ten fast-path actions per tool (write, schedule, cast, call sheet, wrap…) in the owner's own priority — these set the key map and the thumb zone.
-3. Where on a phone the thumb should reach: bottom only, or a bottom sheet that grows?
-4. Whether a Caps Lock-style held layer should exist on touch (a long-press equivalent) or stay a keyboard thing.
+Until the 2026-10-03 "one adaptive dock" change (`5a11e46d`, #96; the notes call it "the island session", `STATE-history.md`) the desk chrome was **two things side by side**: a dock (the app icons, a carousel) and, beside it, a **context capsule** (`ContextCapsule` in the old `EcosystemTaskbar.tsx`): a pulsing dot with the page's lead number that slid out to the right of the dock and, on hover or by key, opened into the page's full strip (its fields, toggles and actions) with a **zone breadcrumb** above it and a keyboard focus ring through the controls. The Caps Lock hotkeys (apps on keys, `b18722ba`, 2026-07-04) were older still and already drove "apps and pill navigation".
+
+The island merged them into one surface that changes shape (`lib/island/mode.ts`): `rest` is the old dot and lead number, `context` is the capsule's strip (breadcrumb included), `open` is the dock, `caps` is the keyboard deck (1–6 apps, Q–I the page's controls, `/` search), `dot` is a typing dot, and later `activity` holds what is running. So the slide-out dot was **folded into rest/context, not replaced by Caps Lock**; Caps Lock is the keyboard way into both the dock and the capsule.
+
+**Nothing functional is missing in the code** (lead, fields, toggles, actions, breadcrumb, transient messages, keyboard focus all still exist in `EcosystemTaskbar.tsx`), but one thing about the *form* changed and is worth deciding on purpose: the dock and the context strip used to be **visible together and independent** (context slid out beside navigation and collapsed on its own); now one body takes one shape at a time (the open and Caps decks show both, but at rest/context the other is gone), and the app-icon carousel is gone. Not verified: how the old UI *looked* — that is from the code, not a screenshot; a build of `a9ba029b` can be screenshotted beside today's to settle it.
+
+## What the island has to work with today (coverage, counted in the code)
+
+The island is only as deep as what pages tell it. Pages register with `usePillStage` (the page's own pill) or `usePillZone` (a hover/focus zone): **5 pages** do (Studio, Projects, Portfolio, Jobs, Editor) and **3 zones** (the editor's centre views, the crew boards, the production manager). Every other area (Today, Hub, Lounge, Soundtrack, Settings, Profile, Crew, Admin, Split, the call page) gets only a fallback name and next places from `lib/island/routes.ts`. The Studio is one stage for dozens of views (Schedule, Readiness, Locations, Money, On set, Cast & crew…), none with a zone of its own. So the work of "design every inch" is first **data**: a generated island-coverage reference (like the parser reference) listing, per route and per view, its stage, its zones, its actions and their keys, and what is missing — so the design is argued from what is there, not from memory.
+
+## Owner answers so far (2026-11-02)
+
+1. On a phone the island should **replace** the tab bar (leaning; the pill becomes the island's phone presentation, not a second thing).
+4. A **long-press equivalent on touch** for the held layer: yes.
+2. and 3. (the ten fast-path actions per tool; where a thumb should reach) still open: the coverage reference above is the input to 2.
+
+## Decisions still needed from the owner (these are design, not code)
+
+1. The ten fast-path actions per tool (write, schedule, cast, call sheet, wrap…) in the owner's own priority — these set the key map and the thumb zone.
+2. Where on a phone the thumb should reach: bottom only, or a bottom sheet that grows?
