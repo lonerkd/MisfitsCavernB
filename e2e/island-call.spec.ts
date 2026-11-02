@@ -36,7 +36,10 @@ test.describe('The island holds a voice call (local Supabase)', () => {
 
   const island = (page: Page) => page.getByRole('navigation', { name: 'Suite' });
   const shot = async (page: Page, name: string) => {
-    if (SHOTS) await page.screenshot({ path: `${SHOTS}/${name}.png`, clip: { x: 0, y: 760, width: 1600, height: 140 } });
+    if (!SHOTS) return;
+    await page.mouse.move(10, 10); // off the island, so what is shown is the island at rest
+    await page.waitForTimeout(900); // let it finish moving
+    await page.screenshot({ path: `${SHOTS}/${name}.png`, clip: { x: 500, y: 790, width: 600, height: 110 }, scale: 'device' });
   };
   /** Navigate the way a person does, through the island's own links: a client-side move, never a page reload (a reload would end any call). */
   const goTo = async (page: Page, app: string, path: RegExp) => {
