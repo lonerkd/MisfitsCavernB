@@ -188,7 +188,7 @@ runs, one at a time by priority, each with its controls:
 - recording (Capture's voice memo / clip — `MediaRecorder` in `Capture.tsx`)
 - uploading, with a progress bar (Library, Capture outbox, SFX) — needs
   upload progress events (Storage over XHR/TUS)
-- music playing (now-playing mini player — `GlobalAudioWidget` / Spotify)
+- ~~music playing~~ — **built 2026-11-02**: the island holds the track that is playing (name, artists, a progress bar) with Pause / Play and Next, on every page, and lets go of a song paused for more than two minutes (`lib/island/musicActivity.ts`, `useMusicActivity.ts`). Left: previous track, album art, and a check against a real Spotify Premium account (unit-tested only: Spotify cannot be driven in CI)
 - timer running (writing sprint — `WritingLoop`; On set's day clock)
 - network / sync status (offline, "saved on device, will sync", outbox count)
 - a temporary notification (exists as `live`; add a hold time and an action)
