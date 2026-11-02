@@ -24,7 +24,7 @@ export type Shot = Tables<'shots'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
-export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
+export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
 export interface CallSheetPerson { id: string; username: string; craft: string | null }
 export interface CallSheetView {
   sheet: CallSheet;
@@ -489,7 +489,7 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []).map(({ scene_characters, ...scene }) => ({ ...scene, cast: sceneCast(scene.cast_list, scene_characters) })),
+      scenes: (sc.data ?? []).map(({ scene_characters, cast_list, ...scene }) => ({ ...scene, cast: sceneCast(cast_list, scene_characters) })),
       people,
       castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
       acked: ack.data?.version ?? null,
@@ -972,7 +972,8 @@ export function createStudioApi(db: Client) {
 /** A scene's cast for the call sheet: the linked characters in name order, else the older text (as the Studio reads it: `lib/film/cast.ts`). */
 export function sceneCast(castList: string | null, links: Array<{ characters: { name: string } | null }> | null | undefined): string[] {
   const linked = (links ?? []).map((l) => l.characters?.name?.trim().toUpperCase()).filter((n): n is string => !!n);
-  return linked.length ? Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b)) : castFromText(castList);
+  // The text keeps its script order (first appearance); each name once either way.
+  return linked.length ? Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b)) : Array.from(new Set(castFromText(castList)));
 }
 
 export type StudioApi = ReturnType<typeof createStudioApi>;

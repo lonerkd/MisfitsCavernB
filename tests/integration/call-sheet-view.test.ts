@@ -27,12 +27,15 @@ describe('getCallSheetView', () => {
     expect(view!.castAs).toEqual(['MAYA']);
   });
 
-  it('follows a character through a rename', async () => {
-    const maya = (await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA').single()).data!.id;
-    expect((await cast.sam.client.from('characters').update({ name: 'MAYA ROSE' }).eq('id', maya)).error).toBeNull();
-    const view = await createStudioApi(cast.jordan.client).getCallSheetView(sheetId, cast.jordan.id);
-    expect(view!.scenes[0].cast).toEqual(['BEN', 'MAYA ROSE']);
-    expect(view!.castAs).toEqual(['MAYA ROSE']);
+  it('follows a character through a rename (its own scene and character, so it does not lean on the test above)', async () => {
+    const sheet = (await cast.sam.client.from('call_sheets').insert({ project_id: projectId, shoot_day: 2, shoot_date: '2026-12-02' }).select('id').single()).data!.id;
+    await cast.sam.client.from('scenes').insert({ project_id: projectId, scene_number: 2, title: 'Scene 2', cast_list: 'IVY, LEO', shoot_day: 2 });
+    await cast.sam.client.from('character_castings').insert({ project_id: projectId, character_name: 'IVY', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
+    const ivy = (await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'IVY').single()).data!.id;
+    expect((await cast.sam.client.from('characters').update({ name: 'IVY ROSE' }).eq('id', ivy)).error).toBeNull();
+    const view = await createStudioApi(cast.jordan.client).getCallSheetView(sheet, cast.jordan.id);
+    expect(view!.scenes[0].cast).toEqual(['IVY ROSE', 'LEO']);
+    expect(view!.castAs).toContain('IVY ROSE');
   });
 
   it('shows an outsider nothing', async () => {
@@ -44,6 +47,7 @@ describe('sceneCast', () => {
   it('prefers the links, and falls back to the text when a scene has none', () => {
     expect(sceneCast('X, Y', [{ characters: { name: 'ben' } }, { characters: { name: 'Ana' } }, { characters: { name: 'ben' } }])).toEqual(['ANA', 'BEN']);
     expect(sceneCast('maya, Ben ', [])).toEqual(['MAYA', 'BEN']);
+    expect(sceneCast('MAYA, MAYA, BEN', [])).toEqual(['MAYA', 'BEN']); // each name once, in script order
     expect(sceneCast(null, null)).toEqual([]);
   });
 });
