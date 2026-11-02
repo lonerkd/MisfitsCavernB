@@ -9,8 +9,7 @@ import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import { money, studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
-import { useBreakdown } from '@/lib/breakdown';
-import { sceneCosts } from '@/lib/studio/scene-cost';
+import type { SceneCosts } from '@/lib/studio/scene-cost';
 import { lightNoteText } from '@/lib/film/days';
 import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
@@ -38,7 +37,7 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * Alt+←/→ on a focused strip), see each day's pages against the crew's day,
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
-export function StripboardView({ elementCounts }: { elementCounts: Map<string, number> }) {
+export function StripboardView({ elementCounts, costs }: { elementCounts: Map<string, number>; costs: SceneCosts | null }) {
   const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
@@ -57,14 +56,6 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
 
   const list = scenes.rows;
   const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
-  // What each scene and day costs, from the breakdown (the same figures as Money). Not shown until the breakdown has
-  // loaded cleanly: a half-read breakdown would put wrong money on the board.
-  const bd = useBreakdown(project.id);
-  const costsOk = bd.status !== 'loading' && bd.status !== 'error';
-  const costs = useMemo(() => (costsOk ? sceneCosts({
-    scenes: list.map((r) => ({ id: r.id, shoot_day: r.shoot_day ?? null })),
-    categories: bd.categories.rows, elements: bd.elements.rows, tags: bd.tags.rows,
-  }) : null), [costsOk, list, bd.categories.rows, bd.elements.rows, bd.tags.rows]);
   const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
@@ -234,7 +225,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
-                    {costs && (() => { const dc = costs.byDay.find((x) => x.day === d.day); return dc && dc.total > 0 ? <span title={dc.unpriced > 0 ? `${dc.unpriced} element${dc.unpriced === 1 ? '' : 's'} with no price, so this is low` : dc.estimated > 0 ? `${money(dc.estimated)} of it is a default estimate` : undefined}>{money(dc.total)}</span> : null; })()}
+                    {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => { const dc = costs.byDay.find((x) => x.day === d.day); return dc ? <span title={dc.unpriced > 0 ? `${dc.unpriced} element${dc.unpriced === 1 ? '' : 's'} with no price, so this is low` : dc.estimated > 0 ? `${money(dc.estimated)} of it is a default estimate` : undefined}>{money(dc.total)}</span> : null; })()}
                   </div>
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>
@@ -256,7 +247,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                       const status = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
                       const els = elementCounts.get(sc.id) ?? 0;
                       const sceneCost = costs?.byScene.get(sc.id);
-                      const costed = sceneCost && sceneCost.total > 0 ? sceneCost : null;
+                      const costed = sceneCost && sceneCost.elements > 0 ? sceneCost : null;
                       const cast = castOfScene(sc);
                       return (
                         <React.Fragment key={sc.id}>
