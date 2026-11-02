@@ -13,15 +13,15 @@
 | Where | Kind | Title | Fields | Toggles | Actions |
 | --- | --- | --- | --- | --- | --- |
 | `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | **Q** `Focus` | **W** `find` Find & replace |
-| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position |
+| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position (conditional) |
 | `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
-| `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project |
+| `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project (conditional) |
 | `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | **Q** `next-tab` Next tab → |
 | `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | **Q** `jump-scene` → Jump to Scene |
 | `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` · `Unread (conditional)` | — | **Q** `lounge-search` Search messages · **W** `lounge-pinned` Pinned (conditional) |
-| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | — |
+| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | **Q** `post-job` → Post as Job (conditional) |
 | `components/studio/CrewBoards.tsx` | zone | (computed) | `Role` · `Status` | — | **Q** `message-crew` → Message in Lounge |
 
-**Deck keys** (bold) are the Caps Lock keys the island gives each control (toggles first, then actions, then the route's links; `~` = a conditional control comes before it). The same action lands on a different key on pages with a different number of toggles: that is the problem the ten-slot fast path in the island plan fixes.
+**Deck keys** (bold) are the Caps Lock keys the island gives each control (toggles first, then actions, then the route's links from `lib/island/routes.ts`, which this table does not list; `~` = a conditional control comes before it). The same action lands on a different key on pages with a different number of toggles: that is the problem the ten-slot fast path in the island plan fixes.
 
 Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.

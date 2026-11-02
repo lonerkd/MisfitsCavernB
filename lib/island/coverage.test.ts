@@ -35,7 +35,7 @@ describe('registrationsIn', () => {
         }
       );`;
     const [r] = registrationsIn('app/(suite)/jobs/page.tsx', src);
-    expect(r).toMatchObject({ kind: 'stage', module: 'portfolio', fields: ['Open', 'Mine'], toggles: ['Focus mode'], actions: [{ id: 'post-job', label: '+ Post Position' }] });
+    expect(r).toMatchObject({ kind: 'stage', module: 'portfolio', fields: ['Open', 'Mine'], toggles: ['Focus mode'], actions: [{ id: 'post-job', label: '+ Post Position (conditional)' }] });
   });
 
   it('reads a zone, and ignores the hook definitions and imports', () => {
@@ -67,6 +67,13 @@ describe('deckKeys', () => {
   it('numbers toggles then actions along the deck keys, marking what a conditional control moves', () => {
     expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'a', label: 'Find' }, { id: 'b', label: 'Go' }] })).toEqual({ toggles: ['Q'], actions: ['W', 'E'] });
     expect(deckKeys({ toggles: [], actions: [{ id: 'a', label: 'One (conditional)' }, { id: 'b', label: 'Two' }] })).toEqual({ toggles: [], actions: ['Q', '~W'] });
+  });
+});
+
+describe('a ternary between arrays', () => {
+  it('reads the branch that has the control, marked conditional (ProductionManager: `posted ? [] : [{ post-job }]`)', () => {
+    const [r] = registrationsIn('a.tsx', "usePillZone({ module: 'm', title: 'T', actions: posted ? [] : [{ id: 'post-job', label: 'Post' }] });");
+    expect(r.actions).toEqual([{ id: 'post-job', label: 'Post (conditional)' }]);
   });
 });
 
