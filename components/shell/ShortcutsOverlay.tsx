@@ -39,6 +39,8 @@ const groups = (mac: boolean): { title: string; items: [string, string][] }[] =>
       ['Escape, then Tab', 'Leave the script (move to the next control)'],
       ['Alt 1–9', 'Tag the selection (tag mode)'],
       ['Alt Enter  ·  Alt ⌫', 'Accept / dismiss a suggestion'],
+      ['Alt ← →', 'Back / forward through your jumps'],
+      ['Alt U L D S', 'Case the selection · duplicate the line · stash it'],
       ['↑ ↓ · Enter', 'Navigate & accept autocomplete'],
       ['(', 'Auto-close parenthetical'],
       ['Enter', 'Auto-format a scene heading'],
