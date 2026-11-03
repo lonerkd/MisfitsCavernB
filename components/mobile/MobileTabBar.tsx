@@ -29,7 +29,6 @@ import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
