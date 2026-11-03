@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULT_CHOICE, DEFAULT_THEME_ID, THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
+import { DEFAULT_CHOICE, DEFAULT_THEME_ID, EARLY_THEME_SCRIPT, THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
 
 const css = readFileSync(join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8');
 const block = (id: string) => {
@@ -57,6 +57,35 @@ describe('the default', () => {
 
   it('keeps the rest in their order after it', () => {
     expect(THEMES.map((t) => t.id)).toEqual(['paper', 'default', 'vampire', 'blueprint', 'terminal', 'editorial', 'inkrust', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'forest']);
+  });
+});
+
+describe('the early script (first paint)', () => {
+  // Runs the script against a stand-in page, the way the browser runs it before anything is drawn.
+  const paint = (stored: string | null, light = false): string | undefined => {
+    const root: { dataset: Record<string, string>; style: { setProperty: () => void } } = { dataset: {}, style: { setProperty: () => {} } };
+    const localStorage = { getItem: (k: string) => (k === 'mc_theme' ? stored : null) };
+    const window = { matchMedia: () => ({ matches: light }) };
+    new Function('localStorage', 'document', 'window', EARLY_THEME_SCRIPT)(localStorage, { documentElement: root }, window);
+    return root.dataset.theme;
+  };
+
+  it('paints a stored theme, as chosen', () => {
+    expect(paint(JSON.stringify({ id: 'slate' }))).toBe('slate');
+    expect(paint(JSON.stringify({ id: 'default' }))).toBe('default');
+    expect(paint('"neon"')).toBe('neon');
+    expect(paint('cyberpunk')).toBe('neon');
+  });
+
+  it('falls back to the default for an id the catalogue does not have (no CSS block would style it)', () => {
+    expect(paint(JSON.stringify({ id: 'nope' }))).toBe('paper');
+    expect(paint('"<script>"')).toBe('paper');
+  });
+
+  it('follows the device for System, and leaves the page as rendered when nothing is stored', () => {
+    expect(paint(JSON.stringify({ id: 'system' }), true)).toBe('paper');
+    expect(paint(JSON.stringify({ id: 'system' }), false)).toBe('default');
+    expect(paint(null)).toBeUndefined();
   });
 });
 

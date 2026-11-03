@@ -164,4 +164,5 @@ export const EARLY_THEME_SCRIPT = `(function(){try{var r=localStorage.getItem('$
 if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
 if(c.id==='custom'){var v=JSON.parse(localStorage.getItem('${THEME_VARS_KEY}')||'null');if(!v)return;d.dataset.theme='custom';for(var k in v)d.style.setProperty(k,v[k]);return;}
 var id=c.id;if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'default';
+else if(${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='${DEFAULT_THEME_ID}';
 d.dataset.theme=id;}catch(e){}})();`;
