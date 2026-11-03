@@ -1,0 +1,3 @@
+# Session — 2026-11-03: the island counts which deck keys are used
+
+First follow-up after the compact dock: `lib/island/keyUse.ts` counts each Caps Lock deck key press per control (`key:id`) in this device's localStorage only, nothing sent. Read it with `JSON.parse(localStorage.getItem('mc_island_key_use'))` to tune the ten slots. **Verified:** unit tests, typecheck, lint. **Left (BACKLOG 4.1):** Share, Note and Live actions; O/P for undo (note: `P` is already the project switcher in the deck, so undo needs another pair or the switcher moves); more registered undo actions; the tool-by-tool pass.

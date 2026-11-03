@@ -24,6 +24,7 @@ import { ActivityBridges } from '@/components/island/ActivityBridges';
 import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/components/island/IslandActivity';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { assignKeys, type PillSlot } from '@/lib/island/slots';
+import { countKeyUse } from '@/lib/island/keyUse';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
@@ -354,7 +355,7 @@ export default function EcosystemTaskbar() {
     if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
 
     const byKey = controls[deckKeys.indexOf(key)];
-    if (byKey) { done(); byKey.run(); return; }
+    if (byKey) { done(); countKeyUse(key, byKey.id); byKey.run(); return; }
 
     if (!controls.length) return;
     if (key === 'arrowright' || key === ']') { done(); setKbFocusIndex(i => (i + 1) % controls.length); return; }
