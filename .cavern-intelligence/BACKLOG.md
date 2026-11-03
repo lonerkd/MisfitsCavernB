@@ -45,6 +45,9 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 3. Upgrades (scoped — in suggested order)
 
+### 3.35 Paper as the default: walk every screen in it — S (owner, 2026-11-03)
+Paper became the default theme (`design-tokens.md`); three dark-only hard-codes were found and fixed by looking (the editor's stage, the undated day header, the stripboard's date box), but only sign-in, Today, the Studio schedule, the editor and the Lounge were walked. Left: every other screen under Paper (`npm run bible:shots` with the theme set to Paper), fixing what only reads in dark (white text on a theme surface, a hard-coded near-black panel). Media stages (video frames) are black on purpose. Done when the screenshots of every screen in Paper read cleanly.
+
 ### 3.1 Dev-toolchain advisories — watch, S when upstream moves
 Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,
 2026-10-06, after `source-map-js` 1.2.2; 2026-10-03's fix bumped `dompurify`,

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
+import { DEFAULT_CHOICE, DEFAULT_THEME_ID, THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
 
 const css = readFileSync(join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8');
 const block = (id: string) => {
@@ -47,6 +47,19 @@ describe('dim text', () => {
   });
 });
 
+describe('the default', () => {
+  it('is Paper, first in the picker, and what a person with no choice sees', () => {
+    expect(DEFAULT_THEME_ID).toBe('paper');
+    expect(DEFAULT_CHOICE).toEqual({ id: 'paper' });
+    expect(THEMES[0].id).toBe('paper');
+    expect(THEMES[0].mode).toBe('light');
+  });
+
+  it('keeps the rest in their order after it', () => {
+    expect(THEMES.map((t) => t.id)).toEqual(['paper', 'default', 'vampire', 'blueprint', 'terminal', 'editorial', 'inkrust', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'forest']);
+  });
+});
+
 describe('choosing', () => {
   it('reads old names, objects and junk', () => {
     expect(toThemeChoice('cyberpunk')).toEqual({ id: 'neon' });
@@ -54,9 +67,11 @@ describe('choosing', () => {
     expect(toThemeChoice('paper')).toEqual({ id: 'paper' });
     expect(toThemeChoice({ id: 'system' })).toEqual({ id: 'system' });
     expect(toThemeChoice({ id: 'custom', bg: '#FFFFFF', accent: '#0b7a78' })).toEqual({ id: 'custom', bg: '#ffffff', accent: '#0b7a78' });
-    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual({ id: 'default' });
-    expect(toThemeChoice('nope')).toEqual({ id: 'default' });
-    expect(toThemeChoice(null)).toEqual({ id: 'default' });
+    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual({ id: 'paper' });
+    expect(toThemeChoice('nope')).toEqual({ id: 'paper' });
+    expect(toThemeChoice(null)).toEqual({ id: 'paper' });
+    // Someone who chose Cavern keeps it: only a missing or unreadable choice falls back.
+    expect(toThemeChoice('default')).toEqual({ id: 'default' });
   });
 
   it('System follows the device', () => {

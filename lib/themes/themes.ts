@@ -18,8 +18,8 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'paper', label: 'Paper', hint: 'Warm off-white, ink and terracotta', mode: 'light', swatch: ['#f6f1e7', '#1f1a14', '#b3361a'] },
+  { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'vampire', label: 'Vampire', hint: 'Crimson and violet on black', mode: 'dark', swatch: ['#090101', '#f5eedc', '#f04444'] },
   { id: 'blueprint', label: 'Blueprint', hint: 'Drafting-table blue with a grid', mode: 'dark', swatch: ['#0b2447', '#dbe8ff', '#5cc8ff'] },
   { id: 'terminal', label: 'Terminal', hint: 'Green phosphor, monospace everything', mode: 'dark', swatch: ['#030a05', '#8dfc9b', '#3dff6e'] },
@@ -41,7 +41,9 @@ export type ThemeChoice =
   | { id: ThemeId | 'system' }
   | { id: 'custom'; bg: string; accent: string };
 
-export const DEFAULT_CHOICE: ThemeChoice = { id: 'default' };
+/** What a person who has not chosen sees: Paper, the light look. (Cavern, the dark house look, stays one tap away, and System still gives it on a dark device.) */
+export const DEFAULT_THEME_ID: ThemeId = 'paper';
+export const DEFAULT_CHOICE: ThemeChoice = { id: DEFAULT_THEME_ID };
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Tolerant reader for a stored choice (account prefs, this device, or an old plain name). */
