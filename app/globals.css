@@ -202,7 +202,7 @@ body.custom-cursor-active * {
    its fine print, a phone held at arm's length on set gets 11px. */
 :root { --mc-min-font: 11px; }
 @media (max-width: 760px) {
-  .mc-dock { display: none !important; }
+  .mc-dock:not([data-compact='true']) { display: none !important; }
   html, body { overflow-x: clip; }
   .main-content-container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
   input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]), select, textarea { font-size: 16px !important; }
