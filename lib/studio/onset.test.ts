@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay } from './onset';
+import { dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay, plannedWrapAt } from './onset';
 
 const sheet = (id: string, shoot_day: number, shoot_date: string | null) => ({ id, shoot_day, shoot_date });
 
@@ -59,5 +59,20 @@ describe('progress and formats', () => {
     expect(localDateTime(null, '19:30')).toBeNull();
     expect(formatMinutes(135)).toBe('2h 15m');
     expect(formatMinutes(40)).toBe('40m');
+  });
+});
+
+describe('plannedWrapAt', () => {
+  const at = (d: string, t: string) => new Date(`${d}T${t}`).getTime();
+
+  it('is the sheet\'s wrap time on the shoot day', () => {
+    expect(plannedWrapAt('2026-12-01', '19:00:00', new Date(at('2026-12-01', '07:00:00')).toISOString())?.getTime()).toBe(at('2026-12-01', '19:00:00'));
+  });
+  it('is the morning after for a night shoot (a wrap no later than the call)', () => {
+    expect(plannedWrapAt('2026-12-01', '02:00:00', new Date(at('2026-12-01', '18:00:00')).toISOString())?.getTime()).toBe(at('2026-12-02', '02:00:00'));
+  });
+  it('without a call stamp (or a wrap) it is what the sheet says, or nothing', () => {
+    expect(plannedWrapAt('2026-12-01', '02:00:00', null)?.getTime()).toBe(at('2026-12-01', '02:00:00'));
+    expect(plannedWrapAt('2026-12-01', null, new Date().toISOString())).toBeNull();
   });
 });

@@ -54,7 +54,7 @@ test.describe('Podcast and outline scripts keep their own scene index (local Sup
 
       for (const [format, want] of [['podcast', 2], ['doc-outline', 3]] as const) {
         // The Studio opens the script this device chose last (a per-device preference): choose it, then open the Studio.
-        await page.goto('/today');
+        await page.goto('/community');
         await page.evaluate(([key, id]) => localStorage.setItem(key, id), [`mc_studio_script_${projectId}`, scripts[format]]);
         await page.goto(`/studio?project=${projectId}`);
         await expect.poll(() => sceneCount(scripts[format]), { timeout: 30_000, message: `${format} scene index` }).toBe(want);

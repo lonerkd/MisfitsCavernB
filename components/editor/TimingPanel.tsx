@@ -93,7 +93,7 @@ export function TimingPanel({ timing, characters, currentSceneIdx, onJump, onRea
                   </td>
                   <td style={cell}>{formatEighths(s.eighths)}</td>
                   <td style={{ ...cell, color: 'var(--fg-muted)' }}>{formatRuntime(s.estimate)}</td>
-                  <td style={{ ...cell, color: s.read ? '#5fd99a' : 'var(--fg-muted)' }}>{s.read ? formatRuntime(s.read) : '—'}</td>
+                  <td style={{ ...cell, color: s.read ? 'var(--ok)' : 'var(--fg-muted)' }}>{s.read ? formatRuntime(s.read) : '—'}</td>
                   <td style={cell}>{formatRuntime(s.runtime)}</td>
                   <td style={cell}>
                     <button type="button" onClick={() => onRead(s.index)} aria-label={`Table read from scene ${s.index + 1}`} title="Table read from here"

@@ -9,6 +9,7 @@
 // a cue needs a line beneath it, a blank line ends a speech. Deterministic, linear,
 // no model: the weights below are the only knobs, and the corpus measures them.
 
+import { THRESHOLDS } from './thresholds';
 import type { LineType } from './types';
 
 export type State = 'slug' | 'transition' | 'character' | 'parenthetical' | 'dialogue' | 'action';
@@ -167,13 +168,13 @@ export function documentProfile(obs: Observation[]): { tight: boolean; blankShar
   const span = obs.slice(from, to);
   const free = span.filter((o) => o.kind !== 'empty').length;
   const blankShare = span.length ? (span.length - free) / span.length : 0;
-  return { tight: free >= 10 && blankShare < 0.05, blankShare };
+  return { tight: free >= THRESHOLDS.profileMinElements.value && blankShare < THRESHOLDS.profileMaxBlankShare.value, blankShare };
 }
 
 export function decodeLabels(obs: Observation[], ev: Evidence, base: Params = DEFAULT_PARAMS): Decoded {
   const n = obs.length;
   const tight = documentProfile(obs).tight;
-  const p: Params = tight ? { ...base, cueAfterSpeechNoBlank: Math.min(base.cueAfterSpeechNoBlank, 4) } : base;
+  const p: Params = tight ? { ...base, cueAfterSpeechNoBlank: Math.min(base.cueAfterSpeechNoBlank, THRESHOLDS.tightCueAfterSpeechNoBlank.value) } : base;
   const states: Array<State | null> = new Array(n).fill(null);
   const confidence: number[] = new Array(n).fill(100);
   const alternatives: Array<State | null> = new Array(n).fill(null);
@@ -239,7 +240,7 @@ export function decodeLabels(obs: Observation[], ev: Evidence, base: Params = DE
     const chosen = cands[i].findIndex((c) => c.state === states[i]);
     confidence[i] = Math.round((marginal[chosen] ?? 0) * 100);
     const second = order.find(([, k]) => cands[i][k].state !== states[i]);
-    alternatives[i] = second && second[0] > 0.02 ? cands[i][second[1]].state : null;
+    alternatives[i] = second && second[0] > THRESHOLDS.alternativeMinShare.value ? cands[i][second[1]].state : null;
   }
   return { states, confidence, alternatives };
 }

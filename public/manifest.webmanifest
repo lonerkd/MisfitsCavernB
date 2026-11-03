@@ -3,12 +3,12 @@
   "short_name": "Cavern",
   "description": "The production suite for independent filmmakers, by Misfits Cavern.",
   "id": "/",
-  "start_url": "/today",
+  "start_url": "/community",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#040710",
-  "theme_color": "#040710",
+  "background_color": "#f6f1e7",
+  "theme_color": "#f6f1e7",
   "icons": [
     {
       "src": "/icon.svg",
@@ -40,7 +40,7 @@
       "name": "Capture",
       "short_name": "Capture",
       "description": "A photo, clip, voice memo, note or link into a project",
-      "url": "/today?capture=1",
+      "url": "/community?capture=1",
       "icons": [
         {
           "src": "/icon-192.png",
@@ -50,8 +50,8 @@
       ]
     },
     {
-      "name": "Today",
-      "url": "/today",
+      "name": "Community",
+      "url": "/community",
       "icons": [
         {
           "src": "/icon-192.png",
@@ -73,7 +73,7 @@
     }
   ],
   "share_target": {
-    "action": "/today",
+    "action": "/community",
     "method": "GET",
     "params": {
       "title": "title",

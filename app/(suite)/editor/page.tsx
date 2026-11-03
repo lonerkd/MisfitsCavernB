@@ -1,5 +1,6 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -43,7 +44,7 @@ import { useBriefAnswer } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/os/PillContext';
-import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -120,6 +121,8 @@ export default function EditorPage() {
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const caretAfterRemote = useRef<[number, number] | null>(null);
+  // Where the caret goes once the text the editor itself reshaped (an opening parenthesis, a Tab, an inserted element) is on screen.
+  const caretAfterEdit = useRef<number | null>(null);
   // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
   const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,8 @@ export default function EditorPage() {
       if (mapIndex && ta && document.activeElement === ta) {
         caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
       }
+      // A caret the editor has yet to place moves with the words that came in before it.
+      if (mapIndex && caretAfterEdit.current !== null) caretAfterEdit.current = mapIndex(caretAfterEdit.current);
       // A collaborator's edit is already in the shared text; put it on screen at
       // once, so a key pressed a moment later is measured against what the
       // writer sees and cannot wipe the edit out.
@@ -146,6 +151,14 @@ export default function EditorPage() {
     const ta = textareaRef.current;
     caretAfterRemote.current = null;
     if (caret && ta && document.activeElement === ta) ta.setSelectionRange(caret[0], caret[1]);
+    // The reshaped text has just been put on screen (which moves the caret to the end): put the caret where the edit left it,
+    // now, not on a timer, so a key pressed at once cannot land at the end of the script.
+    const placed = caretAfterEdit.current;
+    if (placed !== null && ta) {
+      caretAfterEdit.current = null;
+      ta.focus();
+      ta.setSelectionRange(placed, placed);
+    }
   }, [content]);
   const stash = useScriptStash(currentScript?.id ?? null);
   // Everything the text implies — lines, scenes, character stats, lint — worked
@@ -228,7 +241,6 @@ export default function EditorPage() {
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
 
-  const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
@@ -450,48 +462,26 @@ export default function EditorPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
         e.preventDefault();
-        handleSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        setShowFindReplace(prev => !prev);
+        if (chord === 'undo') undo(); else redo();
       }
       if (e.key === 'Escape') {
         if (focusMode) setFocusMode(false);
         if (showFindReplace) setShowFindReplace(false);
         if (showFormatMenu) setShowFormatMenu(false);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        setFocusMode(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-        e.preventDefault();
-        setShowGoToScene(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-        e.preventDefault();
-        setShowShortcuts(prev => !prev);
-      }
-      if (e.key === 'Escape') {
         if (showGoToScene) setShowGoToScene(false);
-        if (showShortcuts) setShowShortcuts(false);
-      }
-
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo(); else undo();
-      }
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        redo();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
 
   const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
 
@@ -505,7 +495,15 @@ export default function EditorPage() {
 
   // Where the caret goes after an edit: the textarea is controlled, so set it once React has rendered.
   const placeCaret = (editor: HTMLTextAreaElement, caret: number) => {
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+    // Applied as soon as the new text is on screen (see the layout effect on `content`). If the text turns out to be
+    // unchanged there is no new text to wait for, so the timer places it instead.
+    caretAfterEdit.current = caret;
+    setTimeout(() => {
+      if (caretAfterEdit.current === null) return;
+      caretAfterEdit.current = null;
+      editor.focus();
+      editor.setSelectionRange(caret, caret);
+    }, 0);
   };
 
   const insertElement = (type: string) => {
@@ -770,7 +768,7 @@ export default function EditorPage() {
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
       actions: [
-        { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
       ],
     }
   );
@@ -792,7 +790,7 @@ export default function EditorPage() {
   const scriptProjectId = currentScript?.project_id ?? null;
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
-  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
   return (
     <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
@@ -855,7 +853,7 @@ export default function EditorPage() {
         </AnimatePresence>
 
         {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
-        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: 'var(--bg)', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
@@ -1110,7 +1108,6 @@ export default function EditorPage() {
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
       }}>
         <AnimatePresence>
-          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
         </AnimatePresence>
 
         <AnimatePresence>

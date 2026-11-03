@@ -18,6 +18,13 @@ export type FlagDef = {
 };
 
 export const FLAGS = {
+  island_v2: {
+    local: true,
+    preview: true,
+    production: 'admins',
+    since: '2026-11-03',
+    note: 'The island at every size (plans/2026-11-02-island-at-every-size.md): so far the compact dock for a narrow window with a mouse or keyboard. Admins only in production until the owner has tried it.',
+  },
   ad_copywriting: {
     local: true,
     preview: true,
