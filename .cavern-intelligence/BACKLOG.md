@@ -259,12 +259,21 @@ every amount is plain dollars) and tax jurisdictions; cost alerts; financial
 reports; export to Excel/CSV and Movie Magic Budgeting.
 
 ### 4.7 Editor: navigation and power editing
-**Built**: scene list and outline (jump to a scene), ⌘K, the stash
-(snippets beside the script), autocomplete for characters and headings.
-**To add**: go to scene number / page number / a character's scenes;
-multi-cursor and block selection; quick actions on a selection (tag mode's
-selection menu is a start); macros; snippet expansion (stash → a typed
-trigger); context-aware commands; command history and repeat.
+**Built**: scene list and outline (jump to a scene), search (Ctrl/⌘ K), the
+stash (snippets beside the script, now also **Alt + S** on a selection),
+autocomplete for characters and headings. **Built 2026-10-27 (replayed on
+main 2026-10-28):** **Go to** (Ctrl/⌘ G) takes a scene number, a page (`p12`)
+or a character's name — their next scene, then the next on Enter (wrapping) —
+previewing where Enter lands and refusing what is not there; **Ctrl/⌘ ↓ ↑**
+step the next / previous scene; **Alt + ← →** walk back and forward through
+the places the editor jumped from (see `stepScene` / `resolveGoTo` /
+`stepHistory` in `lib/scriptos/`); **Alt + U / L** case the selection and
+**Alt + D** duplicate the line (`lib/scriptos/selection.ts`). **Version
+compare** (wishlist 4.12) is in too — see 4.12.
+**To add**: multi-cursor and block selection; macros; snippet expansion
+(stash → a typed trigger, needs a `script_stash.trigger` column);
+context-aware commands; percentages of a script (page / scene / character
+filters in compare).
 
 ### 4.8 Characters
 **Built**: the character bible (description, backstory, motivation, arc,
