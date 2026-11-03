@@ -53,6 +53,23 @@ describe('sample work stays in the demo', () => {
     expect(titles.some((t) => t.startsWith('Sample short'))).toBe(false);
   });
 
+  it('the platform totals leave out a sample account’s loose script, and count an ordinary one', async () => {
+    const admin = adminClient();
+    const scripts = async () => Number(((await cast.riley.client.rpc('get_platform_stats')).data ?? [])[0]?.scripts);
+    const before = await scripts();
+    const mk = async (by: string, project?: string) => (await admin.from('scripts').insert({ title: `Loose ${Date.now()}`, content: 'INT. ROOM - DAY\n', created_by: by, last_edited_by: by, project_id: project ?? null }).select('id').single()).data!.id;
+    // Riley's own, ordinary project: a sample person's script inside it counts with the project.
+    const realProject = (await admin.from('projects').insert({ title: `Real ${Date.now()}`, creator_id: cast.riley.id, status: 'production' }).select('id').single()).data!.id;
+    const ids = [await mk(nova.id), await mk(cast.riley.id), await mk(nova.id, realProject)];
+    try {
+      // Nova's loose script adds nothing; Riley's loose script adds one; Nova's script in a real project adds one.
+      expect(await scripts()).toBe(before + 2);
+    } finally {
+      await admin.from('scripts').delete().in('id', ids);
+      await admin.from('projects').delete().eq('id', realProject);
+    }
+  });
+
   it('nobody flags or unflags themselves', async () => {
     expect((await cast.riley.client.from('profiles').update({ is_sample: true }).eq('id', cast.riley.id)).error).not.toBeNull();
     expect((await nova.client.from('profiles').update({ is_sample: false }).eq('id', nova.id)).error).not.toBeNull();

@@ -29,7 +29,7 @@ export interface Heading {
 // Times of day, in English first and then the languages scripts are most often written in. This is a start, not a
 // finished list: `scriptKnowledge` reports which trailing heading words it could not place, so a new script
 // shows what is missing instead of someone guessing.
-const TIMES = new Set([
+export const TIMES = new Set([
   'DAY', 'NIGHT', 'MORNING', 'AFTERNOON', 'EVENING', 'DAWN', 'DUSK', 'SUNRISE', 'SUNSET', 'MIDNIGHT', 'NOON',
   'EARLY MORNING', 'LATE NIGHT', 'MAGIC HOUR', 'TWILIGHT',
   // Spanish and Portuguese
@@ -41,10 +41,10 @@ const TIMES = new Set([
   // Italian
   'GIORNO', 'NOTTE', 'MATTINA', 'SERA', 'POMERIGGIO', 'ALBA', 'TRAMONTO', 'MEZZANOTTE',
 ]);
-const FILLER = new Set(['THE', 'THAT', 'THIS', 'SAME', 'NEXT', 'EARLY', 'LATE', 'EARLIER', 'LATER', 'LATER STILL', 'BEFORE', 'AFTER', 'OF', 'A', 'AN', 'TO', 'AT', 'IN', 'ON', 'SOON', 'THEN', 'MOMENTS', 'MINUTES', 'HOURS', 'DAYS', 'WEEKS', 'MONTHS', 'YEARS', 'SECONDS', 'WEEK', 'MONTH', 'YEAR', 'MINUTE', 'HOUR', 'SECOND', 'TIME', 'THAT WEEK', 'SIMULTANEOUS', 'MEANWHILE', 'CONTINUOUS', 'CONT\'D', 'FLASHBACK', 'PRESENT', 'PAST', 'FUTURE', 'DREAM SEQUENCE', 'DAYDREAM', 'NIGHTMARE', 'VARIOUS', 'ANOTHER', 'FOLLOWING', 'PREVIOUS']);
-const NUMBER_WORDS = new Set(['A', 'AM', 'PM', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'FEW', 'SEVERAL', 'MANY']);
-const MONTHS = new Set(['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER', 'SPRING', 'SUMMER', 'AUTUMN', 'FALL', 'WINTER']);
-const DAYS_OF_WEEK = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
+export const FILLER = new Set(['THE', 'THAT', 'THIS', 'SAME', 'NEXT', 'EARLY', 'LATE', 'EARLIER', 'LATER', 'LATER STILL', 'BEFORE', 'AFTER', 'OF', 'A', 'AN', 'TO', 'AT', 'IN', 'ON', 'SOON', 'THEN', 'MOMENTS', 'MINUTES', 'HOURS', 'DAYS', 'WEEKS', 'MONTHS', 'YEARS', 'SECONDS', 'WEEK', 'MONTH', 'YEAR', 'MINUTE', 'HOUR', 'SECOND', 'TIME', 'THAT WEEK', 'SIMULTANEOUS', 'MEANWHILE', 'CONTINUOUS', 'CONT\'D', 'FLASHBACK', 'PRESENT', 'PAST', 'FUTURE', 'DREAM SEQUENCE', 'DAYDREAM', 'NIGHTMARE', 'VARIOUS', 'ANOTHER', 'FOLLOWING', 'PREVIOUS']);
+export const NUMBER_WORDS = new Set(['A', 'AM', 'PM', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE', 'TEN', 'ELEVEN', 'TWELVE', 'FEW', 'SEVERAL', 'MANY']);
+export const MONTHS = new Set(['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER', 'SPRING', 'SUMMER', 'AUTUMN', 'FALL', 'WINTER']);
+export const DAYS_OF_WEEK = new Set(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']);
 /** A layer of a story told in layers: "PART ONE", "CHAPTER 2", "ACT THREE, LATER", "REEL 2". */
 const FRAME_TAG = /^(PART|CHAPTER|ACT|HOUR|REEL|TAPE|SEGMENT)\s+([A-Z]+|\d+)(\s*,\s*[A-Z][A-Z ]*)?$/i;
 const YEAR = /\b(1[0-9]{3}|20[0-9]{2})(?:'?s)?\b/g;
@@ -150,3 +150,10 @@ export function readHeading(headingBody: string): Heading {
     frame,
   };
 }
+
+/** The heading patterns as text, for the generated parser reference (the live regexes stay private: `YEAR` is global and carries state). */
+export const HEADING_PATTERNS: Record<string, string> = {
+  FRAME_TAG: `/${FRAME_TAG.source}/${FRAME_TAG.flags}`,
+  YEAR: `/${YEAR.source}/${YEAR.flags}`,
+  CLOCK: `/${CLOCK.source}/${CLOCK.flags}`,
+};

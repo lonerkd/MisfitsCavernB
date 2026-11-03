@@ -1,3 +1,4 @@
+import { clearUndo } from '@/lib/os/undo';
 import { supabase } from '@/lib/supabase/client';
 import { PUBLIC_PROFILE_COLUMNS } from '@/lib/supabase/profile-columns';
 import { logAuditAction } from '@/lib/supabase/audit';
@@ -214,6 +215,7 @@ export function osAdoptSession(user: { id: string; email?: string | null }) {
 
 export function resetOS() {
   teardownSync();
+  clearUndo(); // an undo made by the last person on this tab must never run for the next
   if (typeof window !== 'undefined') {
     localStorage.removeItem(ACTIVE_PROJECT_KEY);
     localStorage.removeItem(LEGACY_SCRIPT_KEY);

@@ -26,6 +26,8 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 | [`database-and-security.md`](database-and-security.md) | schema, RLS, `internal` helpers, sharing, the definer allowlist, the migration workflow |
 | [`design-tokens.md`](design-tokens.md) | colours, type, scales, components, themes, accessibility |
 | [`scriptos-engine.md`](scriptos-engine.md) | the script editor: parser, co-writing, offline, the writing loop |
+| [`parser-reference.md`](parser-reference.md) | every word list, pattern and decoder weight the reader uses — **generated** (`npm run parser:reference`; a test fails when it is stale) |
+| [`island-coverage.md`](island-coverage.md) | what each page tells the island (stages, zones, fields, actions) and the areas that tell it nothing — **generated** (`npm run island:coverage`; a test fails when it is stale) |
 | [`studio-and-preproduction.md`](studio-and-preproduction.md) | the Studio: library, scenes, production, on set, post, sharing |
 | [`project-brief.md`](project-brief.md) | the brief and project context every tool adapts to |
 | [`lounge-and-audio.md`](lounge-and-audio.md) | the Lounge, channels, voice |

@@ -8,7 +8,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
 import { changes, draftLogRow, loadSnapshot, saveSnapshot, type DaySnapshot } from '@/lib/studio/onset-offline';
 import { useOnSetSync, type OnSetSync } from '@/lib/studio/useOnSetSync';
-import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay, type ClockKind } from '@/lib/studio/onset';
+import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, plannedWrapAt, pickDay, type ClockKind } from '@/lib/studio/onset';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -98,7 +98,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
 
   const dayLog = useMemo(() => log.rows.filter((r) => r.call_sheet_id === sheet?.id), [log.rows, sheet?.id]);
   const clock = useMemo(() => dayClock(dayLog), [dayLog]);
-  const status = dayStatus(clock, now, localDateTime(sheet?.shoot_date ?? null, sheet?.estimated_wrap ?? null));
+  const status = dayStatus(clock, now, plannedWrapAt(sheet?.shoot_date ?? null, sheet?.estimated_wrap ?? null, clock.call));
   const myCall = calls.rows.find((c) => c.call_sheet_id === sheet?.id && c.crew_user_id === userId);
 
   const dayScenes = useMemo(

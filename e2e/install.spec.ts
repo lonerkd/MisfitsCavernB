@@ -56,7 +56,7 @@ test.describe('Installing on iPhone (local Supabase)', () => {
   test('Today on an iPhone: how to add it to the Home Screen; Not now holds', async ({ browser }) => {
     test.setTimeout(120_000);
     const page = await signIn(browser, IPHONE);
-    await page.goto('/today');
+    await page.goto('/community');
     const hint = page.getByRole('complementary', { name: 'Put The Cavern on your Home Screen' });
     await expect(hint).toContainText('Add to Home Screen', { timeout: 20_000 });
     await hint.getByRole('button', { name: 'Not now' }).click();
@@ -69,13 +69,13 @@ test.describe('Installing on iPhone (local Supabase)', () => {
   test('installed (standalone), or on a desk: no hint', async ({ browser }) => {
     test.setTimeout(120_000);
     const installed = await signIn(browser, IPHONE, 'Object.defineProperty(navigator, "standalone", { get: () => true });');
-    await installed.goto('/today');
+    await installed.goto('/community');
     await expect(installed.getByRole('heading').first()).toBeVisible({ timeout: 20_000 });
     await installed.waitForTimeout(1000);
     await expect(installed.getByRole('complementary', { name: 'Put The Cavern on your Home Screen' })).toHaveCount(0);
 
     const desk = await signIn(browser, { viewport: { width: 1280, height: 800 } });
-    await desk.goto('/today');
+    await desk.goto('/community');
     await expect(desk.getByRole('heading').first()).toBeVisible({ timeout: 20_000 });
     await desk.waitForTimeout(1000);
     await expect(desk.getByRole('complementary', { name: 'Put The Cavern on your Home Screen' })).toHaveCount(0);

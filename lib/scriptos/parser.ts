@@ -1,5 +1,6 @@
 
 
+import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
@@ -9,7 +10,7 @@ import { decodeLabels, type Decoded, type Observation, type State } from './deco
  * The "… TO BLACK / WHITE" family, which writers qualify in many ways (SMASH CUT TO BLACK, MATCH CUT TO WHITE,
  * HARD CUT TO BLACK, DISSOLVE TO WHITE, SLOW FADE TO BLACK) and no list will hold. A pattern says it once.
  */
-const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
+export const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -427,7 +428,7 @@ export class ScriptParser {
     const heads: Head[] = [];
     this.rawLines.forEach((line, idx) => {
       const trim = line.trim();
-      if (!trim || trim.length > 28 || !shape.test(trim) || this.isCaps(trim)) return;
+      if (!trim || trim.length > THRESHOLDS.titleCaseCueMaxLength.value || !shape.test(trim) || this.isCaps(trim)) return;
       if (idx > 0 && this.rawLines[idx - 1].trim()) return; // a head line follows a blank line (or the start)
       const next = (this.rawLines[idx + 1] || '').trim();
       if (!next || this.isSceneHeading(next)) return;
@@ -441,7 +442,7 @@ export class ScriptParser {
 
     const count = new Map<string, number>();
     for (const h of heads) count.set(h.name, (count.get(h.name) ?? 0) + 1);
-    const accepted = new Set([...count].filter(([, n]) => n >= 2).map(([name]) => name));
+    const accepted = new Set([...count].filter(([, n]) => n >= THRESHOLDS.titleCaseCueMinHeads.value).map(([name]) => name));
     if (accepted.size === 0) return;
 
     // A name that appears once, directly between two heads that recur, is the other half of an exchange.

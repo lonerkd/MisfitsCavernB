@@ -155,7 +155,7 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
       // A comes back and opens the Today page, not the editor, and syncs from the island.
       await a.ctx.setOffline(false);
       const today = await a.ctx.newPage();
-      await today.goto('/today');
+      await today.goto('/community');
       const island = today.getByRole('navigation', { name: 'Suite' });
       await expect(island.getByText(/waiting to sync|saved on this device/)).toBeVisible({ timeout: 30_000 });
       await island.getByRole('button', { name: 'Sync now' }).click();

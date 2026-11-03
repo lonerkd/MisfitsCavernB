@@ -87,3 +87,7 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   best streak, records and a 4-week grid; `badges()` derives what's earned.
   Sprints have a length the writer sets (5–120 min), count their own words
   and log themselves when they end.
+
+## The parser reference (generated)
+
+Every word list, pattern and decoder weight the reader uses is written out in [`parser-reference.md`](parser-reference.md), generated from the code (`npm run parser:reference`). `lib/scriptos/reference.test.ts` fails when the committed copy is stale, and a new decoder weight with no description in `PARAM_DOCS` fails it too, so changing the reader's vocabulary or weights means regenerating the reference in the same change.
