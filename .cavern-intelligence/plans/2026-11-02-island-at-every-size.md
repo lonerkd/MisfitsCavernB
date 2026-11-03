@@ -30,7 +30,7 @@ For each surface class, define the zones and who owns them — tool header, cont
 ## Order
 
 0. **Audit, as generated data (S) — first part built 2026-11-02 ([`island-coverage.md`](../island-coverage.md)):** an island-coverage reference (`npm run island:coverage`, a test keeps it current, like `parser-reference.md`): per route and view its stage, zones, actions and keys, against the four layers; what the pill lacks against the dock; the old-vs-new screenshot comparison. The generated route inventory and `keyboard-audit.spec.ts` are the start.
-1. **Compact dock for narrow non-touch (S–M):** the quickest real win: under 760 px with a fine pointer or a keyboard, show a compact dock instead of nothing.
+1. **Compact dock for narrow non-touch (S–M) — built 2026-11-03 behind `island_v2` (`lib/island/compact.ts`; two CSS rules hid the dock under 760 px, `island.module.css` and `.mc-dock` in `globals.css`, both now spare a dock marked compact):** the quickest real win: under 760 px with a fine pointer or a keyboard, show a compact dock instead of nothing.
 2. **One core, three presentations (M):** fold the pill into the core; activities, on-set line and search on the pill (this also makes the recording activity worth building: BACKLOG 4.1).
 3. **Action registry and command grammar (M–L):** every tool registers actions with keys; the palette and Caps deck read it; generated reference and a help overlay.
 4. **Tool-by-tool screen pass (L):** the zone maps applied route by route, starting with the Editor and the Studio schedule, measured in keystrokes and taps to reach the ten most common actions.
