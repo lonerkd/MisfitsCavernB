@@ -38,6 +38,7 @@ export default function CallSheetPage() {
   const [scenes, setScenes] = useState<SceneLite[]>([]);
   const [people, setPeople] = useState<Map<string, Person>>(new Map());
   const [castAs, setCastAs] = useState<string[]>([]);
+  const [castIds, setCastIds] = useState<string[]>([]);
   const [acked, setAcked] = useState<number | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [confirming, setConfirming] = useState(false);
@@ -56,6 +57,7 @@ export default function CallSheetPage() {
       setScenes(v.scenes);
       setPeople(v.people);
       setCastAs(v.castAs);
+      setCastIds(v.castIds);
       setAcked(v.acked);
       setState('ready');
     }, (e) => {
@@ -74,7 +76,7 @@ export default function CallSheetPage() {
     [sheet, calls],
   );
   const status = sheet ? issueState(sheet, calls) : { status: 'draft' as const };
-  const mine = snap && user?.id ? callFor(snap, user.id, castAs) : null;
+  const mine = snap && user?.id ? callFor(snap, user.id, castAs, castIds) : null;
 
   const confirm = async () => {
     if (!sheet) return;

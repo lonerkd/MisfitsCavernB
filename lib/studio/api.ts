@@ -33,6 +33,7 @@ export interface CallSheetView {
   scenes: CallSheetScene[];
   people: Map<string, CallSheetPerson>;
   castAs: string[];
+  castIds: string[];
   acked: number | null;
 }
 export type ProjectLocation = Tables<'project_locations'>;
@@ -491,7 +492,7 @@ export function createStudioApi(db: Client) {
       db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
-      db.from('character_castings').select('character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
+      db.from('character_castings').select('character_id, character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
       db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
     ]);
     for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
@@ -509,6 +510,7 @@ export function createStudioApi(db: Client) {
       scenes: (sc.data ?? []).map(({ scene_characters, cast_list, ...scene }) => ({ ...scene, cast: sceneCast(cast_list, scene_characters) })),
       people,
       castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
+      castIds: (cast.data ?? []).map((r) => r.character_id ?? ''),
       acked: ack.data?.version ?? null,
     };
   }

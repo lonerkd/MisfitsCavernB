@@ -47,3 +47,19 @@ describe('call sheet snapshots', () => {
     expect(callFor(mixed, 'u9', ['DOCK BOY'])).toEqual({ call_time: '07:00:00', remarks: null, as: 'DOCK BOY' });
   });
 });
+
+describe('callFor by character id', () => {
+  const base = { shoot_date: null, general_call: null, shooting_call: null, estimated_wrap: null, location_address: null, weather: null, notes: null, calls: {} };
+  it('finds a cast call by id after the character was renamed', () => {
+    const snap = { ...base, cast_calls: { MAYA: { call_time: '06:30:00', remarks: null } }, cast_by_id: { c1: { call_time: '06:30:00', remarks: null, name: 'MAYA' } } };
+    expect(callFor(snap, 'u1', ['MAYA RIVERA'], ['c1'])).toEqual({ call_time: '06:30:00', remarks: null, as: 'MAYA RIVERA' });
+  });
+  it('falls back to the name on a sheet issued before ids were filed', () => {
+    const snap = { ...base, cast_calls: { MAYA: { call_time: '06:30:00', remarks: null } } };
+    expect(callFor(snap, 'u1', ['MAYA'], ['c1'])?.as).toBe('MAYA');
+  });
+  it('does not read an old issued sheet as changed for lacking ids', () => {
+    const issued = { ...base, cast_calls: {} };
+    expect(sameSnapshot(issued, { ...issued, cast_by_id: {} })).toBe(true);
+  });
+});
