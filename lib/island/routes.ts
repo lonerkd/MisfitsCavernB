@@ -5,12 +5,12 @@
 
 import {
   ADMIN_LINKS, CREW, JOBS, LOUNGE, PORTFOLIO, PORTFOLIO_MANAGE, PROFILE, PROJECTS,
-  SCRIPT, SETTINGS, STUDIO, TODAY, projectLink, type IslandLink,
+  SCRIPT, SETTINGS, STUDIO, COMMUNITY, projectLink, type IslandLink,
 } from './links';
 
 export type { IslandLink };
 
-export type IslandApp = 'home' | 'today' | 'editor' | 'studio' | 'lounge' | 'portfolio';
+export type IslandApp = 'home' | 'editor' | 'studio' | 'lounge' | 'portfolio';
 
 export interface IslandRoute {
   /** Short name of the place, shown beside the dot. */
@@ -38,7 +38,7 @@ function backTarget(pathname: string): IslandRoute['back'] {
       return third ? project : { label: 'Projects', href: '/projects' };
     case 'studio': case 'editor': case 'lounge': case 'soundtrack':
       return project ?? { label: 'Projects', href: '/projects' };
-    case 'hub': return second ? { label: 'Hub', href: '/hub' } : null;
+    case 'hub': return second ? { label: 'Community', href: '/community' } : null;
     case 'crew': return second ? { label: 'Crew', href: '/crew' } : null;
     case 'jobs': return second ? { label: 'Jobs board', href: '/jobs' } : null;
     case 'portfolio': return second ? { label: 'Portfolio', href: '/portfolio' } : null;
@@ -53,13 +53,13 @@ function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back
 
   switch (first) {
     case '':
-      return { title: 'Hub', app: 'home', links: [TODAY, PROJECTS] };
+      return { title: 'Community', app: 'home', links: [COMMUNITY, PROJECTS] };
+    case 'community':
+      return { title: 'Community', app: 'home', links: [PROJECTS, ...tools] };
     case 'hub':
-      return { title: second ? 'Hub post' : 'Hub', app: 'home', links: [TODAY, PROJECTS] };
-    case 'today':
-      return { title: 'Today', app: 'today', links: [PROJECTS, ...tools] };
+      return { title: second ? 'Hub post' : 'Community', app: 'home', links: [COMMUNITY, PROJECTS] };
     case 'projects':
-      if (!second) return { title: 'Projects', app: 'home', links: [TODAY] };
+      if (!second) return { title: 'Projects', app: 'home', links: [COMMUNITY] };
       if (third === 'pitch') return { title: 'Pitch', app: 'home', links: [projectLink(second), STUDIO] };
       return { title: 'Project', app: 'home', links: [SCRIPT, STUDIO, LOUNGE] };
     case 'editor':
@@ -94,7 +94,7 @@ function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back
         links: ADMIN_LINKS.filter((l) => l.href !== pathname),
       };
     default:
-      return { title: first.replace(/-/g, ' '), app: null, links: [TODAY, PROJECTS] };
+      return { title: first.replace(/-/g, ' '), app: null, links: [COMMUNITY, PROJECTS] };
   }
 }
 

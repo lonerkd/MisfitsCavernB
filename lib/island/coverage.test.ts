@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { areaOfRegistration, areasOf, buildCoverage, registrationsIn } from './coverage';
+import { areaOfRegistration, areasOf, buildCoverage, deckKeys, registrationsIn } from './coverage';
 
 const ROOT = process.cwd();
 const FILE = join(ROOT, '.cavern-intelligence', 'island-coverage.md');
@@ -35,7 +35,7 @@ describe('registrationsIn', () => {
         }
       );`;
     const [r] = registrationsIn('app/(suite)/jobs/page.tsx', src);
-    expect(r).toMatchObject({ kind: 'stage', module: 'portfolio', fields: ['Open', 'Mine'], toggles: ['Focus mode'], actions: [{ id: 'post-job', label: '+ Post Position' }] });
+    expect(r).toMatchObject({ kind: 'stage', module: 'portfolio', fields: ['Open', 'Mine'], toggles: ['Focus mode'], actions: [{ id: 'post-job', label: '+ Post Position (conditional)' }] });
   });
 
   it('reads a zone, and ignores the hook definitions and imports', () => {
@@ -60,6 +60,25 @@ describe('spread and conditional entries', () => {
     const [r] = registrationsIn('a.tsx', src);
     expect(r.fields).toEqual(['Open', 'Mine (conditional)']);
     expect(r.actions).toEqual([{ id: 'a', label: 'Go (conditional)' }]);
+  });
+});
+
+describe('deckKeys', () => {
+  it('fills unslotted controls with free keys, toggles then actions, marking what a conditional control moves', () => {
+    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'a', label: 'Open' }, { id: 'b', label: 'Go' }] })).toEqual({ toggles: ['Q'], actions: ['W', 'E'] });
+    expect(deckKeys({ toggles: [], actions: [{ id: 'a', label: 'One (conditional)' }, { id: 'b', label: 'Two' }] })).toEqual({ toggles: [], actions: ['Q', '~W'] });
+  });
+
+  it('gives a slotted action its slot key on any page, and the unslotted ones the keys left', () => {
+    expect(deckKeys({ toggles: ['Focus'], actions: [{ id: 'f', label: 'Find', slot: 'find' }] })).toEqual({ toggles: ['Q'], actions: ['E'] });
+    expect(deckKeys({ toggles: [], actions: [{ id: 'f', label: 'Find', slot: 'find' }] })).toEqual({ toggles: [], actions: ['E'] });
+  });
+});
+
+describe('slots in a registration', () => {
+  it('are read from the source, including a literal typed `as const`', () => {
+    const [r] = registrationsIn('a.tsx', "usePillStage({ module: 'm', title: 'T', actions: [{ id: 'a', slot: 'create', label: 'New', onClick: x }, ...(y ? [{ id: 'b', slot: 'view' as const, label: 'See', onClick: z }] : [])] });");
+    expect(r.actions).toEqual([{ id: 'a', label: 'New', slot: 'create' }, { id: 'b', label: 'See (conditional)', slot: 'view' }]);
   });
 });
 

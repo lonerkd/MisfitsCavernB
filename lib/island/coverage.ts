@@ -11,8 +11,10 @@ export interface Registration {
   title: string;
   fields: string[];
   toggles: string[];
-  actions: Array<{ id: string; label: string }>;
+  actions: Array<{ id: string; label: string; slot?: PillSlot }>;
 }
+
+import { assignKeys, SLOT_KEYS, type PillSlot } from './slots';
 
 const CALL = /\b(usePillStage|usePillZone)\(/g;
 
@@ -90,34 +92,58 @@ function objectsIn(src: string): string[] {
 }
 
 /** The elements of the array literal under `key` — each element's own props. A conditional array (`x ? [..] : []`) is read too. */
-function entries(obj: Record<string, string>, key: string): Array<{ id: string; label: string }> {
+function entries(obj: Record<string, string>, key: string): Array<{ id: string; label: string; slot?: PillSlot }> {
   const raw = obj[key];
   if (!raw) return [];
-  const open = raw.indexOf('[');
-  if (open < 0) return [];
+  // Every array literal at the top of the value: a plain `[..]`, or each branch of `cond ? [] : [{..}]`. Objects found in a
+  // branch are offered only sometimes, so they are marked conditional.
+  const plain = raw.trim().startsWith('[');
+  const arrays: string[] = [];
   let depth = 0;
   let quote: string | null = null;
-  let end = -1;
-  for (let i = open; i < raw.length; i++) {
+  let start = -1;
+  for (let i = 0; i < raw.length; i++) {
     const c = raw[i];
     if (quote) { if (c === '\\') i++; else if (c === quote) quote = null; continue; }
     if (c === '"' || c === "'" || c === '`') quote = c;
-    else if (c === '[') depth++;
-    else if (c === ']' && --depth === 0) { end = i; break; }
+    else if (c === '[') { if (depth === 0) start = i; depth++; }
+    else if (c === ']' && --depth === 0 && start >= 0) { arrays.push(raw.slice(start + 1, i)); start = -1; }
+    else if (c === '(' || c === '{') depth++;
+    else if (c === ')' || c === '}') depth--;
   }
-  if (end < 0) return [];
-  const out: Array<{ id: string; label: string }> = [];
+  const out: Array<{ id: string; label: string; slot?: PillSlot }> = [];
   const add = (el: string, conditional: boolean) => {
     const p = props(el);
     if (p.label === undefined) return;
-    out.push({ id: p.id ? text(p.id) : '', label: text(p.label) + (conditional ? ' (conditional)' : '') });
+    const slot = p.slot ? text(p.slot.replace(/\s+as\s+const\s*$/, '')) : undefined;
+    out.push({ id: p.id ? text(p.id) : '', label: text(p.label) + (conditional ? ' (conditional)' : ''), ...(slot && slot in SLOT_KEYS ? { slot: slot as PillSlot } : {}) });
   };
-  for (const el of splitTop(raw.slice(open + 1, end))) {
-    if (el.startsWith('{')) add(el, false);
-    // A spread such as `...(user ? [{ label: 'Mine' }] : [])`: its objects are offered only sometimes.
-    else if (el.startsWith('...')) for (const o of objectsIn(el)) add(o, true);
+  for (const inner of arrays) {
+    for (const el of splitTop(inner)) {
+      if (el.startsWith('{')) add(el, !plain);
+      // A spread such as `...(user ? [{ label: 'Mine' }] : [])`: its objects are offered only sometimes.
+      else if (el.startsWith('...')) for (const o of objectsIn(el)) add(o, true);
+    }
   }
   return out;
+}
+
+/**
+ * The Caps Lock deck key each control of a descriptor gets, by the island's own rule (`assignKeys`): an action with a
+ * `slot` has that slot's key on every page; the rest fill the free keys, toggles first, then actions, then the route's
+ * links. A `~` means a conditional control comes before an unslotted one, so its key moves with what the page shows.
+ */
+export function deckKeys(r: Pick<Registration, 'toggles' | 'actions'>): { toggles: string[]; actions: string[] } {
+  const items = [...r.toggles.map((): { slot?: PillSlot } => ({})), ...r.actions.map((a) => ({ slot: a.slot }))];
+  const labels = [...r.toggles, ...r.actions.map((a) => a.label)];
+  const keys = assignKeys(items);
+  const keyAt = (i: number): string => {
+    const k = keys[i];
+    if (!k) return '–';
+    const moves = !items[i].slot && labels.slice(0, i).some((l) => l.endsWith('(conditional)'));
+    return (moves ? '~' : '') + k.toUpperCase();
+  };
+  return { toggles: r.toggles.map((_, i) => keyAt(i)), actions: r.actions.map((_, i) => keyAt(r.toggles.length + i)) };
 }
 
 export function registrationsIn(file: string, src: string): Registration[] {
@@ -189,8 +215,11 @@ export function buildCoverage(input: { files: Record<string, string>; pageFiles:
   out.push('| Where | Kind | Title | Fields | Toggles | Actions |');
   out.push('| --- | --- | --- | --- | --- | --- |');
   for (const r of regs) {
-    out.push(`| \`${r.file}\` | ${r.kind} | ${r.title} | ${list(r.fields)} | ${list(r.toggles)} | ${r.actions.length ? r.actions.map((a) => `\`${a.id || '?'}\` ${a.label}`).join(' · ') : '—'} |`);
+    const k = deckKeys(r);
+    out.push(`| \`${r.file}\` | ${r.kind} | ${r.title} | ${list(r.fields)} | ${r.toggles.length ? r.toggles.map((t, i) => `**${k.toggles[i]}** \`${t}\``).join(' · ') : '—'} | ${r.actions.length ? r.actions.map((a, i) => `**${k.actions[i]}** \`${a.id || '?'}\` ${a.label}`).join(' · ') : '—'} |`);
   }
+  out.push('');
+  out.push('**Deck keys** (bold) are the Caps Lock keys the island gives each control. An action with a slot (`lib/island/slots.ts`) has the same key on every page; the other controls fill the free keys, toggles first, then actions, then the route\'s links from `lib/island/routes.ts`, which this table does not list. A `~` means a conditional control comes before an unslotted one, so its key can move. Actions still without a slot are the ones whose key moves from page to page.');
   out.push('');
   out.push('Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.');
   out.push('');

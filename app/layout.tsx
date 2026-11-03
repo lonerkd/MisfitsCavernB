@@ -7,7 +7,7 @@ import './globals.css';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ConfirmProvider } from '@/components/ui/Confirm';
 import MotionPreference from '@/components/ui/MotionPreference';
-import { EARLY_THEME_SCRIPT } from '@/lib/themes/themes';
+import { DEFAULT_THEME_ID, EARLY_THEME_SCRIPT } from '@/lib/themes/themes';
 
 // The suite's typefaces ship with it (app/fonts, SIL Open Font License), so a
 // build never depends on reaching Google Fonts — the one thing that failed CI.
@@ -83,7 +83,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#040710',
+  themeColor: '#f6f1e7',
   colorScheme: 'dark light',
 };
 
@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     // data-theme is set before paint by the script below (the chosen theme on
     // this device), so the attribute differs from the server's on purpose.
-    <html lang="en" data-theme="default" suppressHydrationWarning className={`${hanken.variable} ${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable} ${courierPrime.variable}`}>
+    <html lang="en" data-theme={DEFAULT_THEME_ID} suppressHydrationWarning className={`${hanken.variable} ${bebasNeue.variable} ${dmMono.variable} ${cormorant.variable} ${courierPrime.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: EARLY_THEME_SCRIPT }} />
       </head>

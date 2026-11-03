@@ -9,7 +9,9 @@ export type SplitMessage =
   /** The script's caret is in this scene (null: before the first heading). */
   | { type: 'scene'; scriptId: string; sceneId: string | null }
   /** Take the script to this scene (and to a cut note's line in it). */
-  | { type: 'open-scene'; scriptId: string; sceneId: string; noteId?: string };
+  | { type: 'open-scene'; scriptId: string; sceneId: string; noteId?: string }
+  /** A global chord pressed inside a pane, where there is no search or shortcuts panel of its own: the split page opens it. */
+  | { type: 'chord'; id: 'palette' | 'help' };
 
 export function isSplitMessage(data: unknown): data is SplitMessage {
   if (!data || typeof data !== 'object' || !(data as Record<string, unknown>)[SPLIT_KEY]) return false;
@@ -19,6 +21,7 @@ export function isSplitMessage(data: unknown): data is SplitMessage {
     case 'navigated': return str(d.href) && typeof d.title === 'string';
     case 'scene': return str(d.scriptId) && (d.sceneId === null || str(d.sceneId));
     case 'open-scene': return str(d.scriptId) && str(d.sceneId) && (d.noteId === undefined || str(d.noteId));
+    case 'chord': return d.id === 'palette' || d.id === 'help';
     default: return false;
   }
 }

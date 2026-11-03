@@ -34,42 +34,6 @@ export function FindReplaceBar({
   );
 }
 
-// ── Keyboard shortcuts overlay ─────────────────────────────────────────────
-const SHORTCUTS: [string, string][] = [
-  ['Ctrl + S', 'Save script'],
-  ['Ctrl + F', 'Find & Replace'],
-  ['Ctrl + E', 'Toggle Focus Mode'],
-  ['Ctrl + G', 'Go to Scene'],
-  ['Ctrl + /', 'Show Shortcuts'],
-  ['Tab', 'Smart element insert'],
-  ['Escape, then Tab', 'Leave the script (move to the next control)'],
-  ['Ctrl + Shift + B', 'Breakdown tag mode'],
-  ['Alt + 1–9', 'Tag the selection (tag mode)'],
-  ['Alt + Enter / Alt + ⌫', 'Accept / dismiss a suggestion'],
-  ['Escape', 'Close panels / Exit focus'],
-];
-
-export function ShortcutsModal({ onClose }: { onClose: () => void }) {
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={onClose}>
-      <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 420, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Keyboard Shortcuts</h2>
-          <button aria-label="Close" onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {SHORTCUTS.map(([key, desc]) => (
-            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
-              <span style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{desc}</span>
-              <kbd style={{ fontSize: 11, fontFamily: 'var(--mono)', background: 'rgba(var(--ink-rgb), 0.08)', padding: '2px 8px', borderRadius: 4, color: 'var(--fg-strong)', fontWeight: 600 }}>{key}</kbd>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-    </motion.div>
-  );
-}
-
 // ── Go-to-Scene quick dialog ───────────────────────────────────────────────
 export function GoToSceneModal({
   sceneCount, value, onChange, onJump, onClose,

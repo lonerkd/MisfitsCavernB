@@ -6,20 +6,22 @@
 
 ## Areas with no stage
 
-`/admin` · `/auth` · `/call` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
+`/admin` · `/auth` · `/call` · `/community` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
 
 ## Registrations
 
 | Where | Kind | Title | Fields | Toggles | Actions |
 | --- | --- | --- | --- | --- | --- |
-| `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | `Focus` | `find` Find & replace |
-| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | `post-job` + Post Position |
+| `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | **Q** `Focus` | **E** `find` Find & replace |
+| `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position (conditional) |
 | `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
-| `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | `new-project` + New Project |
-| `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | `next-tab` Next tab → |
-| `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | `jump-scene` → Jump to Scene |
-| `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` · `Unread (conditional)` | — | `lounge-search` Search messages · `lounge-pinned` Pinned (conditional) |
-| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | — |
-| `components/studio/CrewBoards.tsx` | zone | (computed) | `Role` · `Status` | — | `message-crew` → Message in Lounge |
+| `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project (conditional) |
+| `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | **R** `next-tab` Next tab → |
+| `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | **W** `jump-scene` → Jump to Scene |
+| `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` · `Unread (conditional)` | — | **E** `lounge-search` Search messages · **R** `lounge-pinned` Pinned (conditional) |
+| `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | **Q** `post-job` → Post as Job (conditional) |
+| `components/studio/CrewBoards.tsx` | zone | (computed) | `Role` · `Status` | — | **Y** `message-crew` → Message in Lounge |
+
+**Deck keys** (bold) are the Caps Lock keys the island gives each control. An action with a slot (`lib/island/slots.ts`) has the same key on every page; the other controls fill the free keys, toggles first, then actions, then the route's links from `lib/island/routes.ts`, which this table does not list. A `~` means a conditional control comes before an unslotted one, so its key can move. Actions still without a slot are the ones whose key moves from page to page.
 
 Titles and labels shown as `…` or `(computed)` are built at run time (a count, a name); the table lists what the source says.

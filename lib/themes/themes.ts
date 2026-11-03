@@ -18,8 +18,8 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'paper', label: 'Paper', hint: 'Warm off-white, ink and terracotta', mode: 'light', swatch: ['#f6f1e7', '#1f1a14', '#b3361a'] },
+  { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'vampire', label: 'Vampire', hint: 'Crimson and violet on black', mode: 'dark', swatch: ['#090101', '#f5eedc', '#f04444'] },
   { id: 'blueprint', label: 'Blueprint', hint: 'Drafting-table blue with a grid', mode: 'dark', swatch: ['#0b2447', '#dbe8ff', '#5cc8ff'] },
   { id: 'terminal', label: 'Terminal', hint: 'Green phosphor, monospace everything', mode: 'dark', swatch: ['#030a05', '#8dfc9b', '#3dff6e'] },
@@ -41,7 +41,9 @@ export type ThemeChoice =
   | { id: ThemeId | 'system' }
   | { id: 'custom'; bg: string; accent: string };
 
-export const DEFAULT_CHOICE: ThemeChoice = { id: 'default' };
+/** What a person who has not chosen sees: Paper, the light look. (Cavern, the dark house look, stays one tap away, and System still gives it on a dark device.) */
+export const DEFAULT_THEME_ID: ThemeId = 'paper';
+export const DEFAULT_CHOICE: ThemeChoice = { id: DEFAULT_THEME_ID };
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Tolerant reader for a stored choice (account prefs, this device, or an old plain name). */
@@ -162,4 +164,5 @@ export const EARLY_THEME_SCRIPT = `(function(){try{var r=localStorage.getItem('$
 if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
 if(c.id==='custom'){var v=JSON.parse(localStorage.getItem('${THEME_VARS_KEY}')||'null');if(!v)return;d.dataset.theme='custom';for(var k in v)d.style.setProperty(k,v[k]);return;}
 var id=c.id;if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'default';
+else if(${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='${DEFAULT_THEME_ID}';
 d.dataset.theme=id;}catch(e){}})();`;

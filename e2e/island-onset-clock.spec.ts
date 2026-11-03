@@ -60,7 +60,7 @@ test.describe('The island says where the shoot day is (local Supabase)', () => {
       const picker = page.getByLabel('Active project');
       await picker.waitFor();
       if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
-      await page.goto('/today');
+      await page.goto('/community');
 
       const island = page.getByRole('navigation', { name: 'Suite' });
       await expect(island.getByRole('link', { name: /^On set · Day 1 · Rolling · 3h( \d\dm)? on set · (\d+h( \d\dm)?|\d+m) to wrap$/ })).toBeVisible({ timeout: 30_000 });
@@ -89,7 +89,7 @@ test.describe('The island says where the shoot day is (local Supabase)', () => {
       const picker = page.getByLabel('Active project');
       await picker.waitFor();
       if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
-      await page.goto('/today');
+      await page.goto('/community');
       const link = page.locator('[data-mobile-tabbar]').getByRole('link', { name: /^On set · Day 1/ });
       await expect(link).toBeVisible({ timeout: 30_000 });
       await expect.poll(async () => { const b = await link.boundingBox(); return b ? b.x + b.width : 9999; }).toBeLessThanOrEqual(320);
