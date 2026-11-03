@@ -4,6 +4,7 @@
 // and links, loaded once and kept live, shared by every tab. Replaces the old
 // 90-field untyped context.
 
+import { setUndoContext } from '@/lib/os/undo';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -99,6 +100,8 @@ const noNav = () => {};
 
 export function StudioProvider({ project, userId, onNavigate = noNav, children }: { project: Project; userId: string; onNavigate?: (tab: StudioTab, view?: ProductionView) => void; children: React.ReactNode }) {
   const projectId = project.id;
+  // The undo stack hides another project's actions while this one is open.
+  useEffect(() => { setUndoContext('studio', projectId); }, [projectId]);
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
   const shots = useProjectShots(projectId);

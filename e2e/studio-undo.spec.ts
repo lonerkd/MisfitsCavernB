@@ -77,6 +77,16 @@ test.describe('Undo outside the editor (local Supabase)', () => {
       await page.keyboard.press('Control+z');
       await expect.poll(status, { timeout: 15_000 }).toBe('planned');
 
+      // A newer change elsewhere is never overwritten: move scene 1 on, change it behind the page's back, then undo.
+      await strip.focus();
+      await page.keyboard.press('Alt+ArrowRight');
+      await expect.poll(day, { timeout: 15_000 }).toBe(2);
+      await admin.from('scenes').update({ shoot_day: 3 }).eq('id', scenes[0].id);
+      await page.locator('body').click({ position: { x: 5, y: 5 } });
+      await page.keyboard.press('Control+z');
+      await expect(page.getByText(/Could not undo .*changed since/)).toBeVisible({ timeout: 15_000 });
+      expect(await day()).toBe(3);
+
       // Nothing is left to undo here: the key does nothing and no toast claims otherwise.
       await page.keyboard.press('Control+z');
       await expect(page.getByText(/^Undone:/)).toHaveCount(0);
