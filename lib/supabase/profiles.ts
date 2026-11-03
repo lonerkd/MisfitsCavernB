@@ -61,6 +61,8 @@ export interface DirectoryFilter {
   /** A craft, or 'All'. */
   role: string;
   availability: 'all' | 'OPEN' | 'BUSY';
+  /** At most this many people (the full /crew view leaves it out). */
+  limit?: number;
 }
 
 /** The crew directory: real people (no samples), newest first, filtered. */
@@ -71,6 +73,7 @@ export async function listDirectory(f: DirectoryFilter): Promise<Profile[]> {
   if (clean) query = query.or(`username.ilike.%${clean}%,bio.ilike.%${clean}%`);
   if (f.role && f.role !== 'All') query = query.eq('role', f.role);
   if (f.availability !== 'all') query = query.eq('status', f.availability);
+  if (f.limit) query = query.limit(f.limit);
   const { data, error } = await query;
   if (error) throw error;
   return (data as unknown as Profile[]) ?? [];

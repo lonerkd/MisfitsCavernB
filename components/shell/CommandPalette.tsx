@@ -115,7 +115,7 @@ export default function CommandPalette() {
     const nav: Command[] = [
       { id: 'nav-editor', label: 'Open ScriptOS', hint: 'Screenplay editor', icon: <FileText size={15} />, run: go('/editor'), group: 'Navigate', keywords: 'write script screenplay' },
       { id: 'nav-studio', label: 'Open Studio', hint: 'Production suite', icon: <LayoutGrid size={15} />, run: go('/studio'), group: 'Navigate', keywords: 'production board schedule' },
-      { id: 'nav-home', label: 'Go to Hub', hint: "What's new and Learn", icon: <Home size={15} />, run: go('/hub'), group: 'Navigate', keywords: 'home dashboard news updates newsletter learn guides' },
+      { id: 'nav-home', label: 'Go to Community', hint: "Your day, what's new, crew, music", icon: <Home size={15} />, run: go('/community'), group: 'Navigate', keywords: 'home dashboard today hub news updates newsletter learn guides crew lounge music' },
       { id: 'nav-lounge', label: 'Open Lounge', hint: 'Community feed', icon: <MessageSquare size={15} />, run: go('/lounge'), group: 'Navigate', keywords: 'chat community feed' },
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },

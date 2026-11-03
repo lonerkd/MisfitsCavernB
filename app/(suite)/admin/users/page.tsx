@@ -203,7 +203,7 @@ export default function AdminUsersPage() {
                           background: user.is_admin ? 'rgba(232, 67, 26,0.1)' : 'rgba(0,153,255,0.1)',
                           border: `1px solid ${user.is_admin ? 'var(--accent)' : 'rgba(0,153,255,0.3)'}`,
                           borderRadius: 4,
-                          color: user.is_admin ? 'var(--accent)' : '#0099ff',
+                          color: user.is_admin ? 'var(--accent)' : 'var(--info)',
                         }}>
                           {user.is_admin ? 'ADMIN' : 'USER'}
                         </span>
