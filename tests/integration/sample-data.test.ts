@@ -53,6 +53,21 @@ describe('sample work stays in the demo', () => {
     expect(titles.some((t) => t.startsWith('Sample short'))).toBe(false);
   });
 
+  it('the platform totals leave out a sample account’s loose script, and count an ordinary one', async () => {
+    const admin = adminClient();
+    const scripts = async () => Number(((await cast.riley.client.rpc('get_platform_stats')).data ?? [])[0]?.scripts);
+    const before = await scripts();
+    const mk = async (by: string) => (await admin.from('scripts').insert({ title: `Loose ${Date.now()}`, content: 'INT. ROOM - DAY\n', created_by: by, last_edited_by: by }).select('id').single()).data!.id;
+    const novaScript = await mk(nova.id);
+    const rileyScript = await mk(cast.riley.id);
+    try {
+      // Nova is a sample person: her script adds nothing; Riley's, an ordinary one, adds one.
+      expect(await scripts()).toBe(before + 1);
+    } finally {
+      await admin.from('scripts').delete().in('id', [novaScript, rileyScript]);
+    }
+  });
+
   it('nobody flags or unflags themselves', async () => {
     expect((await cast.riley.client.from('profiles').update({ is_sample: true }).eq('id', cast.riley.id)).error).not.toBeNull();
     expect((await nova.client.from('profiles').update({ is_sample: false }).eq('id', nova.id)).error).not.toBeNull();
