@@ -37,7 +37,7 @@ const TOOLS = [
   { href: '/crew', label: 'Crew', icon: Users },
   { href: '/portfolio', label: 'Portfolio', icon: Film },
   { href: '/soundtrack', label: 'Soundtrack', icon: Music },
-  { href: '/today#updates', label: 'Updates', icon: Bell },
+  { href: '/community#updates', label: 'Updates', icon: Bell },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;

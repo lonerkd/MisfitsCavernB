@@ -40,7 +40,7 @@
       "name": "Capture",
       "short_name": "Capture",
       "description": "A photo, clip, voice memo, note or link into a project",
-      "url": "/today?capture=1",
+      "url": "/community?capture=1",
       "icons": [
         {
           "src": "/icon-192.png",
