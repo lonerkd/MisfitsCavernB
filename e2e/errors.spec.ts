@@ -36,7 +36,7 @@ test.describe('Error log (local Supabase)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
-    await page.goto('/today?from=a-link');
+    await page.goto('/community?from=a-link');
     await page.waitForTimeout(1500); // the reporter mounts with the shell
     // The same error twice: logged once per visit.
     await page.evaluate((tag) => {
@@ -45,7 +45,7 @@ test.describe('Error log (local Supabase)', () => {
     }, TAG);
 
     await expect.poll(async () => (await admin.from('client_errors').select('kind, path, user_id').like('message', `%${TAG}%`)).data, { timeout: 20_000 })
-      .toEqual([{ kind: 'window', path: '/today', user_id: owner.id }]);
+      .toEqual([{ kind: 'window', path: '/community', user_id: owner.id }]);
 
     await page.goto('/admin/errors');
     const row = page.getByRole('listitem').filter({ hasText: `Harbour lights failed ${TAG}` });

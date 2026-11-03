@@ -45,6 +45,12 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 3. Upgrades (scoped — in suggested order)
 
+### 3.36 Community — one page for Today, the Hub, the Lounge, crew discovery and the front door — S (owner, 2026-11-03)
+Plan: [plans/2026-11-03-community-page.md](plans/2026-11-03-community-page.md). **Built:** `/community` with Your day (incl. the Lounge's unread), What's new, Crew open to work, The Cavern (numbers + preview picker) and Music; `/today` and `/hub` redirect; one nav entry everywhere. Left: the phone pass by eye, Home sharing `TheCavern`'s data, the hub feed's tab and audience in the URL (`/hub?…` redirects with its query but the feed keeps them in local state, so an old deep link lands on What's new), lazy-loading the lower sections and a calmer loading state on the phone (all sections fetch at once), decisions for the owner (signed-in `/` to Community; whether the Lounge keeps its own island entry), a persona spec for Jordan/Riley. Done when those hold.
+
+### 3.35 Paper as the default: what the walk did not cover — S (owner, 2026-11-03)
+Paper became the default theme and every screen was walked in it (2026-11-03: all 48 screens photographed by eye on desktop; `npm run theme:scan` over 29 routes, desktop and phone, found and fixed the Jobs role pills and rates, the admin role badge and audit-log links, the editor's goal badges and timing numbers, the crew page's portfolio note and the portfolio card's title over its video frame; Cavern, Slate, Editorial, Lagoon, Blueprint and Glass scan clean). Left: the scan sees what is on a route, not what opens on a click (modals, menus, toasts, empty and error states): walk those in Paper; scan the remaining dark presets (`THEME=terminal npm run theme:scan` …: Vampire, Terminal, Mono, Neon, Forest, Ink & Rust); text over an element's own image or gradient is skipped (not one colour); retake `bible/screens` (still the dark-era snapshot: `MC_LOCAL_CHROMIUM=… npm run bible:shots`). Done when those hold.
+
 ### 3.1 Dev-toolchain advisories — watch, S when upstream moves
 Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,
 2026-10-06, after `source-map-js` 1.2.2; 2026-10-03's fix bumped `dompurify`,

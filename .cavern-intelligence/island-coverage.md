@@ -6,7 +6,7 @@
 
 ## Areas with no stage
 
-`/admin` · `/auth` · `/call` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
+`/admin` · `/auth` · `/call` · `/community` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
 
 ## Registrations
 
