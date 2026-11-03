@@ -1,0 +1,5 @@
+# Session — 2026-11-03: the island keeps its dock on a narrow window with a mouse
+
+Step 1 of the island-at-every-size plan, behind the new account flag `island_v2` (on locally and on previews, admins only in production). Under 760 px the dock used to vanish and the phone's pill took over whatever the device. Now `islandSurface` (`lib/island/compact.ts`, read by `useIslandSurface`) picks by capability: a narrow window with a fine pointer (a split screen, a small desktop window) keeps the dock, marked `data-compact`; a touch device keeps the pill and tab bar; flag off changes nothing. Two CSS rules hid the dock (`island.module.css` and `.mc-dock` in `globals.css`); the second was found by running the spec. The tab bar renders only when the surface is the pill.
+
+**Verified:** unit tests for the choice, `e2e/island-compact-dock.spec.ts` (700 px with a mouse: dock, no tab bar, fits the window, the page reserves room; 390 px touch: tab bar, no dock) plus the island, mobile, layout, install and chord specs; looked at at 700 px. **Left:** try it on real devices; the Continue offer still positions itself for the pill. No migration.

@@ -29,6 +29,7 @@ import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
 import s from '../island/island.module.css';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useHubUnread } from '@/components/hub/useHubUnread';
 
@@ -176,6 +177,7 @@ export default function EcosystemTaskbar() {
   // It stays put while the island opens — that overlays, it doesn't reflow.
   // 0 where there is no island (phones use the tab bar).
   const dockRef = useRef<HTMLElement>(null);
+  const surface = useIslandSurface();
   // Its size is this device's choice (Settings › Island size); it follows the slider as it moves.
   const [scale, setScale] = useState(1);
   useEffect(() => {
@@ -193,7 +195,7 @@ export default function EcosystemTaskbar() {
     publish();
     window.addEventListener('resize', publish);
     return () => { window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
-  }, [noDock, scale]);
+  }, [noDock, scale, surface]);
 
   const projectSettings = activeProject?.settings;
   const visibleApps = useMemo(() => {
@@ -469,7 +471,7 @@ export default function EcosystemTaskbar() {
   const hasControls = (deck || mode === 'context') && (fields.length > 0 || shown.length > 0);
 
   return (
-    <nav ref={dockRef} aria-label="Suite" className={`mc-dock ${s.dock}`} data-taskbar data-island={mode} style={{ '--island-scale': scale } as React.CSSProperties}>
+    <nav ref={dockRef} aria-label="Suite" className={`mc-dock ${s.dock}`} data-taskbar data-island={mode} data-compact={surface === 'compact-dock' ? 'true' : undefined} style={{ '--island-scale': scale } as React.CSSProperties}>
       <ActivityBridges />
       <motion.div
         layoutRoot
