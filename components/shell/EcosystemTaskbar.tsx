@@ -352,6 +352,7 @@ export default function EcosystemTaskbar() {
     }
     if (key === '/') { done(); openSearch(); return; }
     if (key === '\\') { done(); openSplit(); return; }
+    if (key === 'o') { done(); window.dispatchEvent(new Event('mc-undo')); return; }
     if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
 
     const byKey = controls[deckKeys.indexOf(key)];
