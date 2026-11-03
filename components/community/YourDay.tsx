@@ -47,6 +47,7 @@ function OwnerFlags({ row, today }: { row: import('@/lib/today/owner').OwnerRow;
 
 export function YourDay() {
   const { isLoading, user } = useOSGate();
+  const userId = user?.id ?? null;
   const { user: profile } = useCurrentUser();
   const { projects, setActiveProject } = useProject();
   const router = useRouter();
@@ -66,13 +67,13 @@ export function YourDay() {
 
   // Gathers the day, then shows it in one go.
   const load = useCallback(() => {
-    if (!user) return Promise.resolve();
+    if (!userId) return Promise.resolve();
     return (async () => {
-      const ownedIds = projects.filter((p) => p.creator_id === user.id).map((p) => p.id);
+      const ownedIds = projects.filter((p) => p.creator_id === userId).map((p) => p.id);
       const [work, un, notes, owner] = await Promise.all([
-        getTodayWork(user.id, projectIds, today),
+        getTodayWork(userId, projectIds, today),
         getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
-        fetchNotifications(user.id, 8).catch(() => [] as Notification[]),
+        fetchNotifications(userId, 8).catch(() => [] as Notification[]),
         // A nicety for the owner: if it does not load, the cards simply show no flags.
         getOwnerData(ownedIds, today).catch((): OwnerData | null => null),
       ]);
@@ -101,7 +102,7 @@ export function YourDay() {
       toast('Could not load your days and tasks. Reload to try again.', 'error');
       setLoaded(true);
     });
-  }, [user, projects, projectIds, today, projectById, toast]);
+  }, [userId, projects, projectIds, today, projectById, toast]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {

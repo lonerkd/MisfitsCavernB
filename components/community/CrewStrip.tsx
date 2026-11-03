@@ -12,7 +12,7 @@ import { listDirectory } from '@/lib/supabase/profiles';
 const SHOWN = 8;
 
 export function CrewStrip() {
-  const loaded = useLoad('community:crew-open', () => listDirectory({ search: '', role: 'All', availability: 'OPEN' }));
+  const loaded = useLoad('community:crew-open', () => listDirectory({ search: '', role: 'All', availability: 'OPEN', limit: SHOWN }));
   const people = (loaded.data ?? []).slice(0, SHOWN);
 
   if (loaded.error) {

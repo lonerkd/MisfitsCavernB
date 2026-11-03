@@ -70,6 +70,8 @@ export default function AuthPage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the URL, an external system
   useEffect(() => { if (wantsForgot) setMode('forgot'); }, [wantsForgot]);
   const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/community';
+  // The old Today and Hub addresses are Community (a new account still goes to /welcome).
+  const isCommunity = redirectTo === '/community' || redirectTo === '/today' || redirectTo === '/hub';
 
   // Navigate when the session is actually established in the OS store — not on a
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
@@ -78,8 +80,8 @@ export default function AuthPage() {
   // A new account with nowhere particular to go starts at /welcome.
   const isNewAccount = useRef(false);
   useEffect(() => {
-    if (status === 'authed') router.replace(isNewAccount.current && redirectTo === '/community' ? '/welcome' : redirectTo);
-  }, [status, redirectTo, router]);
+    if (status === 'authed') router.replace(isNewAccount.current && isCommunity ? '/welcome' : redirectTo);
+  }, [status, redirectTo, isCommunity, router]);
 
   // Every change (and the submit) takes all the fields from the form itself, not
   // just the one that changed: an input event can be lost while the page
