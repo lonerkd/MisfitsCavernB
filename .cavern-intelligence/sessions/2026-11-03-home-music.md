@@ -1,0 +1,7 @@
+# Session — 2026-11-03: Music from the Cavern, and the plan for Community
+
+The first slice of Community (plan: [plans/2026-11-03-community-page.md](../plans/2026-11-03-community-page.md)): a **Music from the Cavern** card on Today, with the four house playlists (`lib/spotify/house.ts`: The Trophy, Misfits Cavern, Misfits Too, Solitude, the ones that already head the global player). Pick one and Spotify's own embedded player opens in the page; nothing from Spotify loads until you pick; a link opens it in Spotify. No Spotify account or connection is needed to listen (signed in to Spotify in the browser you get full tracks, otherwise a preview of each). It is a self-contained component (`components/home/HouseMusic.tsx`) so it moves into Community unchanged. The global player (Premium, the island's Pause / Next) is untouched.
+
+**The plan** records the owner's direction (one page titled Community: Today, the Hub, the Lounge, crew discovery, and the front door's product previews and stats) and the slices; two decisions are flagged for the owner (whether the Lounge keeps its own entry in the island's apps; whether signed-in `/` goes to Community).
+
+**Verified:** `e2e/home-music.spec.ts` in a real browser (all four offered; no Spotify frame until one is picked; picking opens the playlist's embed, swaps and closes); looked at on desktop and phone with the real player loaded; typecheck, lint, the bundle budget (`/today` 324.6 of 331 kB). No migration.

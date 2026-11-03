@@ -11,7 +11,7 @@ import { plain } from '@/lib/film/mentions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
+import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, Music, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
 import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
 import { updateTask } from '@/lib/supabase/project-hub';
@@ -23,6 +23,7 @@ import { clock, dayLabel, daysUntil, dueLabel, greeting, localDay, mapsHref, nex
 import { readable } from '@/lib/util/color';
 import { ContinueOffer } from '@/components/mobile/Continue';
 import { InstallHint } from '@/components/mobile/InstallHint';
+import { HouseMusic } from '@/components/home/HouseMusic';
 import t from './today.module.css';
 
 type Sheet = TodaySheet;
@@ -245,6 +246,11 @@ export default function TodayPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className={`${t.card} ${t.wide}`} aria-labelledby="today-music">
+        <div className={t.cardHead}><h2 id="today-music" className={t.cardTitle}><Music size={14} aria-hidden /> Music from the Cavern</h2></div>
+        <HouseMusic />
       </section>
 
       <section className={`${t.card} ${t.wide}`} aria-labelledby="today-projects">

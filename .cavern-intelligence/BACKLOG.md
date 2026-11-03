@@ -45,6 +45,9 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 3. Upgrades (scoped — in suggested order)
 
+### 3.36 Community — one page for Today, the Hub, the Lounge, crew discovery and the front door — L (owner, 2026-11-03)
+Plan and slices: [plans/2026-11-03-community-page.md](plans/2026-11-03-community-page.md). **Built (slice 1):** Music from the Cavern on Today (the house playlists, Spotify's player in the page). Left: extract the pieces (2), compose `/community` with the redirects and navigation (3), the phone pass (4). Decisions for the owner: whether the Lounge keeps its own entry in the island's apps; whether signed-in `/` goes to Community. Done when one Community page holds the six sections, the old routes redirect, the nav shows one entry, and a persona spec and `theme:scan` pass on it.
+
 ### 3.35 Paper as the default: walk every screen in it — S (owner, 2026-11-03)
 Paper became the default theme (`design-tokens.md`); three dark-only hard-codes were found and fixed by looking (the editor's stage, the undated day header, the stripboard's date box), but only sign-in, Today, the Studio schedule, the editor and the Lounge were walked. Left: every other screen under Paper (`npm run bible:shots` with the theme set to Paper), fixing what only reads in dark (white text on a theme surface, a hard-coded near-black panel). Media stages (video frames) are black on purpose. Done when the screenshots of every screen in Paper read cleanly.
 
