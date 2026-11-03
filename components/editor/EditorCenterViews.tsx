@@ -102,7 +102,7 @@ function SceneBoardCard({
       { label: 'Words', value: `${wordCount}`, color: cardColor },
     ],
     actions: [
-      { id: 'jump-scene', label: '→ Jump to Scene', onClick: onJump },
+      { id: 'jump-scene', slot: 'jump', label: '→ Jump to Scene', onClick: onJump },
     ],
   }, 2);
 

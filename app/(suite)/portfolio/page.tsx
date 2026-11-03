@@ -126,16 +126,18 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           width: '100%',
         }}
       >
+        {/* The card is a video frame, dark in every theme, so its words are light in every theme (not the theme's ink). */}
         <h2 style={{
           fontFamily: 'var(--display)',
           fontSize: 'clamp(1rem, 2vw, 1.5rem)',
           letterSpacing: '-0.02em',
           lineHeight: 1,
           marginBottom: 4,
+          color: 'var(--media-fg)',
         }}>
           {video.title}
         </h2>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--media-fg-dim)', textTransform: 'var(--caps)' }}>
           {[video.role, video.year].filter(Boolean).join(' · ')}
         </div>
         {hover && (
@@ -146,7 +148,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
             style={{
               fontFamily: 'var(--serif)',
               fontSize: 12,
-              color: 'var(--fg-dim)',
+              color: 'var(--media-fg-dim)',
               marginTop: 6,
               fontStyle: 'italic',
               maxWidth: 380,

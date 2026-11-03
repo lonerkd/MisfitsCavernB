@@ -82,7 +82,7 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
       { label: 'Status', value: isOnline ? 'Online' : (member.status || 'pending'), color: isOnline ? 'var(--ok)' : undefined },
     ],
     actions: [
-      { id: 'message-crew', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
+      { id: 'message-crew', slot: 'people', label: '→ Message in Lounge', onClick: () => router.push('/lounge') },
     ],
   } : null, 2);
 

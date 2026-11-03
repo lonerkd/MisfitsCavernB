@@ -8,7 +8,7 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -23,6 +23,7 @@ import { useActivities } from '@/lib/island/activities';
 import { ActivityBridges } from '@/components/island/ActivityBridges';
 import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/components/island/IslandActivity';
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
+import { assignKeys, type PillSlot } from '@/lib/island/slots';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
@@ -34,8 +35,7 @@ import { useHubUnread } from '@/components/hub/useHubUnread';
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/hub',       color: 'var(--accent)' },
-  { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
+  { id: 'home',      name: 'Community', icon: Home,          path: '/community', color: 'var(--accent)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' },
@@ -56,6 +56,7 @@ interface Control {
   id: string;
   kind: 'toggle' | 'action' | 'link';
   label: string;
+  slot?: PillSlot;
   active?: boolean;
   href?: string;
   run: () => void;
@@ -318,11 +319,14 @@ export default function EcosystemTaskbar() {
     const inReach = new Set([...visibleApps.map(a => a.path), '/profile', '/settings']);
     return [
       ...(activeDescriptor?.toggles ?? []).map((t): Control => ({ id: t.id, kind: 'toggle', label: t.label, active: t.active, run: t.onToggle })),
-      ...(activeDescriptor?.actions ?? []).map((a): Control => ({ id: a.id, kind: 'action', label: a.label, run: a.onClick })),
+      ...(activeDescriptor?.actions ?? []).map((a): Control => ({ id: a.id, kind: 'action', label: a.label, slot: a.slot, run: a.onClick })),
       // Places the strip below doesn't already reach.
       ...route.links.filter(l => !inReach.has(l.href)).map((l): Control => ({ id: l.id, kind: 'link', label: l.label, href: l.href, run: () => router.push(l.href) })),
     ].slice(0, CONTROL_KEYS.length);
   }, [activeDescriptor, route, visibleApps, router]);
+
+  // Each control's deck key: an action with a slot has the same key on every page; the rest fill what is free.
+  const deckKeys = useMemo(() => assignKeys(controls), [controls]);
 
   useOnChange(keys, (k) => { if (!k) setKbFocusIndex(-1); });
   useOnChange(controls.length, () => setKbFocusIndex(-1));
@@ -347,7 +351,7 @@ export default function EcosystemTaskbar() {
     if (key === '\\') { done(); openSplit(); return; }
     if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
 
-    const byKey = controls[CONTROL_KEYS.indexOf(key as typeof CONTROL_KEYS[number])];
+    const byKey = controls[deckKeys.indexOf(key)];
     if (byKey) { done(); byKey.run(); return; }
 
     if (!controls.length) return;
@@ -427,7 +431,7 @@ export default function EcosystemTaskbar() {
   };
 
   const renderControl = (c: Control, i: number) => {
-    const hint = keys ? <Key>{CONTROL_KEYS[i]}</Key> : null;
+    const hint = keys && deckKeys[i] ? <Key>{deckKeys[i]}</Key> : null;
     const kb = focusedId === c.id ? 'true' : undefined;
     if (c.kind === 'toggle') {
       return (
@@ -619,7 +623,7 @@ export default function EcosystemTaskbar() {
           {mode === 'caps' && (
             <motion.div layout="position" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: 0.05 }} className={s.hints}>
               <span><Key>1</Key>–<Key>{visibleApps.length}</Key> apps</span>
-              {controls.length > 0 && <span><Key>Q</Key>{controls.length > 1 && <>–<Key>{CONTROL_KEYS[controls.length - 1]}</Key></>} or <Key>←</Key><Key>→</Key><Key>↵</Key> controls</span>}
+              {controls.length > 0 && <span>{CONTROL_KEYS.filter((k) => deckKeys.includes(k)).map((k) => <Key key={k}>{k}</Key>)} or <Key>←</Key><Key>→</Key><Key>↵</Key> controls</span>}
               <span><Key>/</Key> search</span>
               <span><Key>\</Key> split</span>
               <span><Key>P</Key> project</span>

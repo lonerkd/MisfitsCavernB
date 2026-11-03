@@ -1,5 +1,6 @@
 'use client';
 
+import type { PillSlot } from '@/lib/island/slots';
 import React, { createContext, useCallback, useContext, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from 'react';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -26,6 +27,8 @@ export interface PillToggle {
 export interface PillAction {
   id: string;
   label: string;
+  /** Which fixed deck key this action takes (Create is always Q, Find always E…); without one it fills a free key. */
+  slot?: PillSlot;
   onClick: () => void;
 }
 

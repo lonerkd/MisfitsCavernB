@@ -45,6 +45,7 @@ export async function proxy(request: NextRequest) {
     '/welcome',
     '/today',
     '/hub',
+    '/community',
     '/call',
   ];
   const isAdminPath = path.startsWith('/admin');

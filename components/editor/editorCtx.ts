@@ -59,7 +59,6 @@ export interface EditorCtx {
   setShowCharBible: any;
   setShowFormatMenu: any;
   setShowRightSidebar: any;
-  setShowShortcuts: any;
   setShowSidebar: any;
   showFormatMenu: any;
   showRightSidebar: any;
