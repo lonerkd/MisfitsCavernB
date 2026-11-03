@@ -57,7 +57,7 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     // Opened, every app in the island's strip is whole and on screen.
-    await page.goto('/today');
+    await page.goto('/community');
     await expect(page.locator('[data-taskbar]')).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(1500); // the island animates in
     await page.locator('[data-taskbar] .mc-taskbar').hover();
@@ -120,7 +120,7 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     await page.setViewportSize(DESK.viewport);
 
     // Nothing scrolls sideways at desk size.
-    for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio', '/lounge', '/jobs', '/crew']) {
+    for (const path of ['/community', '/projects', `/projects/${projectId}`, '/studio', '/lounge', '/jobs', '/crew']) {
       await page.goto(path);
       await page.waitForTimeout(800);
       const sideways = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);

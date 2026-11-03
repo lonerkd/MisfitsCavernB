@@ -392,7 +392,7 @@ export default function ProjectsPage() {
         { label: 'Total', value: `${projectsList.filter((p) => !p.archived).length}`, color: 'var(--accent)' },
       ],
       actions: user ? [
-        { id: 'new-project', label: '+ New Project', onClick: () => setShowNew(true) },
+        { id: 'new-project', slot: 'create', label: '+ New Project', onClick: () => setShowNew(true) },
       ] : [],
     }
   );

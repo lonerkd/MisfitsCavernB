@@ -11,7 +11,7 @@ export interface IslandLink {
 const link = (id: string, label: string, href: string): IslandLink => ({ id, label, href });
 
 export const PROJECTS = link('go-projects', 'Projects', '/projects');
-export const TODAY = link('go-today', 'Today', '/today');
+export const COMMUNITY = link('go-community', 'Community', '/community');
 export const SCRIPT = link('go-script', 'Script', '/editor');
 export const STUDIO = link('go-studio', 'Studio', '/studio');
 export const LOUNGE = link('go-lounge', 'Lounge', '/lounge');

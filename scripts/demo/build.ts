@@ -214,8 +214,9 @@ function buildProject(p: DemoProject) {
     for (const s of b.scenes) emit(`  insert into public.scene_elements (scene_id, element_id, project_id, created_by) values ('${sceneNo(s)}', '${eid}', pid, ${who(owner)});`);
   });
 
+  // A scene's place already has a record (the scenes were inserted first and each links its place), so this fills it in.
   for (const l of p.locations ?? []) {
-    emit(`  insert into public.project_locations (id, project_id, name, address, contact, status, permit, cost, notes, created_by) values ('${P(`location:${l.name}`)}', pid, ${q(l.name)}, ${q(l.address)}, ${q(l.contact)}, ${q(l.status)}, ${q(l.permit)}, ${n(l.cost)}, ${q(l.notes)}, ${who(owner)});`);
+    emit(`  insert into public.project_locations (id, project_id, name, address, contact, status, permit, cost, notes, created_by) values ('${P(`location:${l.name}`)}', pid, ${q(l.name)}, ${q(l.address)}, ${q(l.contact)}, ${q(l.status)}, ${q(l.permit)}, ${n(l.cost)}, ${q(l.notes)}, ${who(owner)}) on conflict (project_id, name) do update set address = excluded.address, contact = excluded.contact, status = excluded.status, permit = excluded.permit, cost = excluded.cost, notes = excluded.notes;`);
   }
   // Every scene location has a record to fill in, as the Locations view shows it.
   for (const name of new Set(sceneLocations.values())) {
@@ -295,7 +296,7 @@ function buildProject(p: DemoProject) {
     // isn't applied yet (PL/pgSQL resolves the table only if the branch runs).
     emit(`  if to_regclass('public.project_documents') is not null then`);
     for (const d of p.documents) {
-      emit(`    insert into public.project_documents (project_id, kind, title, status, person_id, vendor_id, location_id, party, expires_on, notes, created_by) values (pid, ${q(d.kind)}, ${q(d.title)}, ${q(d.status)}, ${d.person ? who(d.person) : 'null'}, ${d.vendor ? `'${P(`vendor:${d.vendor}`)}'` : 'null'}, ${d.location ? `'${P(`location:${d.location}`)}'` : 'null'}, ${q(d.party)}, ${d.expiresOffset != null ? day(d.expiresOffset) : 'null'}, ${q(d.notes)}, ${who(owner)});`);
+      emit(`    insert into public.project_documents (project_id, kind, title, status, person_id, vendor_id, location_id, party, expires_on, notes, created_by) values (pid, ${q(d.kind)}, ${q(d.title)}, ${q(d.status)}, ${d.person ? who(d.person) : 'null'}, ${d.vendor ? `'${P(`vendor:${d.vendor}`)}'` : 'null'}, ${d.location ? `(select id from public.project_locations where project_id = pid and name = ${q(d.location)})` : 'null'}, ${q(d.party)}, ${d.expiresOffset != null ? day(d.expiresOffset) : 'null'}, ${q(d.notes)}, ${who(owner)});`);
     }
     emit(`  end if;`);
   }

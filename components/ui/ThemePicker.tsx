@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Monitor } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { saveUiPrefs } from '@/lib/os/uiPrefs';
-import { THEMES, THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
+import { DEFAULT_CHOICE, THEMES, THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
 import t from './themePicker.module.css';
 
 function Preview({ swatch }: { swatch: [string, string, string] }) {
@@ -26,7 +26,7 @@ function Preview({ swatch }: { swatch: [string, string, string] }) {
 
 export function ThemePicker({ signedIn }: { signedIn: boolean }) {
   const { toast } = useToast();
-  const [choice, setChoice] = useState<ThemeChoice>({ id: 'default' });
+  const [choice, setChoice] = useState<ThemeChoice>(DEFAULT_CHOICE);
   const [bg, setBg] = useState('#101010');
   const [accent, setAccent] = useState('#e8431a');
 
