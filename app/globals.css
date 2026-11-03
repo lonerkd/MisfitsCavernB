@@ -74,6 +74,9 @@
   --fg-subtle: var(--fg-dim);
   --fg-ghost: rgba(233, 235, 239, 0.12);
   --cream:    #e0ddae;
+  /* Words over a video frame or poster, which is dark in every theme: light in every theme (set once here, not per theme). */
+  --media-fg:     #ffffff;
+  --media-fg-dim: rgba(255, 255, 255, 0.72);
 
   /* Interface labels are sentence case; tracked capitals are for a theme that
      wants them (Terminal). The screenplay's own capitals are format and unaffected. */

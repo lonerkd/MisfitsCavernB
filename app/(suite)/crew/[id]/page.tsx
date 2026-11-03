@@ -251,7 +251,7 @@ export default function CrewMemberPage() {
                     </div>
                   </div>
                   {viewerId === profile.id && (c.portfolio_project_id ? (
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: '#5fd99a' }}>In your portfolio</span>
+                    <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ok)' }}>In your portfolio</span>
                   ) : (
                     <button type="button" disabled={adding === c.project_id}
                       aria-label={`Add ${c.title} to your portfolio`}

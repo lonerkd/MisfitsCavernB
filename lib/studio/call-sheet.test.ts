@@ -42,5 +42,8 @@ describe('call sheet snapshots', () => {
     expect(callFor(snap, 'u1', ['MAYA'])).toEqual({ call_time: '05:45:00', remarks: 'Bring the slate' });
     expect(callFor(snap, 'u2', ['ZED', 'MAYA'])).toEqual({ call_time: '06:30:00', remarks: null, as: 'MAYA' });
     expect(callFor(snap, 'u3', [])).toBeNull();
+    // a call typed in mixed case still reaches the person cast under the character's upper-case name
+    const mixed = { ...snap, cast_calls: { 'Dock Boy': { call_time: '07:00:00', remarks: null } } };
+    expect(callFor(mixed, 'u9', ['DOCK BOY'])).toEqual({ call_time: '07:00:00', remarks: null, as: 'DOCK BOY' });
   });
 });

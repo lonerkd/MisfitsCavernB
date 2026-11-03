@@ -189,7 +189,7 @@ export default function CallSheetPage() {
           {scenes.length ? (
             <ol className={c.list}>
               {scenes.map((sc) => (
-                <li key={sc.id}><span className={c.num}>{sc.scene_number}.</span> {sc.heading ?? sc.title}{sc.cast_list ? <span className={c.dim}> — {sc.cast_list}</span> : null}</li>
+                <li key={sc.id}><span className={c.num}>{sc.scene_number}.</span> {sc.heading ?? sc.title}{sc.cast.length ? <span className={c.dim}> — {sc.cast.join(', ')}</span> : null}</li>
               ))}
             </ol>
           ) : <p className={c.dim}>No scenes scheduled on this day yet.</p>}

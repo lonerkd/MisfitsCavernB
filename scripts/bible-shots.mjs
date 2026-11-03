@@ -79,7 +79,7 @@ const SIGNED_OUT = [
 ].filter(Boolean);
 const SIGNED_IN = [
   ['home', '/'],
-  ['today', '/today'],
+  ['community', '/community'],
   ['welcome', '/welcome'],
   ['projects', '/projects'],
   ['project-hub', `/projects/${project.id}`],

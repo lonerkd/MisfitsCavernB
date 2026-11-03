@@ -1,5 +1,6 @@
 'use client';
 
+import { pushUndo, undoOrigin, UndoRefused } from '@/lib/os/undo';
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Calendar, Minus, PanelRightOpen, Plus, Printer, Sun, Wand2 } from 'lucide-react';
@@ -67,14 +68,42 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
   const wrapped = list.filter((sc) => sc.status === 'wrapped').length;
   const totalEighths = list.reduce((n, sc) => n + eighthsOf(sc.est_duration), 0);
 
+  // An undo puts a scene back only if it still holds what that action left it with (one conditional write), so it never
+  // overwrites a newer move or status from another device or a later action of your own.
+  const putBack = async (id: string, now: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>, was: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>) => {
+    const row = await studio.updateSceneIf(id, now, was);
+    if (!row) throw new UndoRefused('That scene has been changed since (or you can no longer edit it), so nothing was put back.');
+    scenes.upsertLocal(row);
+  };
+
+  // Auto-schedule's undo puts back each scene it moved, one conditional write each. A scene changed since is left alone and
+  // counted; one that failed for another reason (a dropped connection) is kept in a fresh undo, so it can be retried.
+  const pushAutoUndo = (moved: Array<{ id: string; was: number | null; now: number }>, origin: ReturnType<typeof undoOrigin>) => {
+    pushUndo(`Auto-scheduled ${moved.length} scene${moved.length === 1 ? '' : 's'}`, async () => {
+      const retry: typeof moved = [];
+      let changed = 0;
+      for (const m of moved) {
+        try { await putBack(m.id, { shoot_day: m.now }, { shoot_day: m.was }); }
+        catch (e) { if (e instanceof UndoRefused) changed++; else retry.push(m); }
+      }
+      if (retry.length) pushAutoUndo(retry, origin);
+      if (retry.length || changed) {
+        const parts = [changed ? `${changed} scene${changed === 1 ? ' was' : 's were'} changed since and left as they are` : '', retry.length ? `${retry.length} could not be put back — press Ctrl Z again to retry` : ''].filter(Boolean);
+        throw new UndoRefused(`${parts.join('; ')}.`);
+      }
+    }, origin);
+  };
+
   const moveTo = async (sc: SceneRow, day: number, refocus = false) => {
     if (!Number.isInteger(day) || day < 1 || day === (sc.shoot_day ?? 1)) return;
+    const origin = undoOrigin(); // before the first await: where this was done
     const before = sc;
     scenes.upsertLocal({ ...sc, shoot_day: day, updated_at: new Date().toISOString() });
     setAnnounce(`Scene ${sc.scene_number} moved to day ${day}.`);
     if (refocus) requestAnimationFrame(() => stripRefs.current.get(sc.id)?.focus());
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { shoot_day: day }));
+      pushUndo(`Moved scene ${sc.scene_number} to day ${day}`, () => putBack(sc.id, { shoot_day: day }, { shoot_day: before.shoot_day ?? null }), origin);
     } catch (e) {
       scenes.upsertLocal({ ...before, updated_at: new Date().toISOString() });
       toast(e instanceof Error ? e.message : 'Could not move the scene', 'error');
@@ -95,8 +124,10 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
   const cycleStatus = async (sc: SceneRow) => {
     const cur = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(cur) + 1) % STATUS_ORDER.length];
+    const origin = undoOrigin();
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { status: next }));
+      pushUndo(`Scene ${sc.scene_number} set to ${next}`, () => putBack(sc.id, { status: next }, { status: sc.status ?? 'planned' }), origin);
       setAnnounce(`Scene ${sc.scene_number}: ${next}.`);
       if (next === 'wrapped') logActivity(`wrapped scene ${sc.scene_number} "${sc.heading ?? sc.title}"`, 'scene', sc.id, { project_id: project.id });
     } catch (e) {
@@ -126,12 +157,19 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
       confirmLabel: 'Reschedule',
       danger: false,
     })) return;
+    const origin = undoOrigin();
     setBusy(true);
     let failed = 0;
+    const moved: Array<{ id: string; was: number | null; now: number }> = [];
     for (const u of plan.updates) {
-      try { scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day })); } catch { failed++; }
+      try {
+        const was = list.find((x) => x.id === u.id)?.shoot_day ?? null;
+        scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day }));
+        moved.push({ id: u.id, was, now: u.shoot_day });
+      } catch { failed++; }
     }
     setBusy(false);
+    if (moved.length) pushAutoUndo(moved, origin);
     toast(failed ? `${failed} scene${failed === 1 ? '' : 's'} could not be moved — try again.` : `Scheduled into ${plan.days} days`, failed ? 'error' : 'success');
   };
 

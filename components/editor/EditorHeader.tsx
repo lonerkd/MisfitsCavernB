@@ -31,7 +31,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { usePillStage } from '@/lib/os/PillContext';
-import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -49,7 +49,7 @@ import {
 import type { EditorCtx } from './editorCtx';
 
 export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
-  const { tools, activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
+  const { tools, activeProject, activeView, currentScript, handleExport, handleLockRevision, handleNormalize, handleSave, revisionMode, saving, sessionWordsWritten, setActiveView, setCurrentScript, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSidebar, toggleDualDialogue } = ctx;
   // Where the Export menu opens (set from the button when it's pressed).
   const [menuAt, setMenuAt] = useState<{ top: number; right: number } | null>(null);
   return (
@@ -176,7 +176,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
             )}
 
             {[
-              { icon: HelpCircle, title: 'Shortcuts', onClick: () => setShowShortcuts(true) },
+              { icon: HelpCircle, title: 'Shortcuts', onClick: () => window.dispatchEvent(new Event('mc-open-shortcuts')) },
               { icon: SplitSquareHorizontal, title: 'Dual Dialogue', onClick: toggleDualDialogue },
               { icon: Users,      title: 'Character Bible', onClick: () => setShowCharBible(true) },
               { icon: Maximize,   title: 'Focus Mode', onClick: () => setFocusMode(true) },

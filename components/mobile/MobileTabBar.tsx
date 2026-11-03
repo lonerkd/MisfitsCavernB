@@ -37,7 +37,7 @@ const TOOLS = [
   { href: '/crew', label: 'Crew', icon: Users },
   { href: '/portfolio', label: 'Portfolio', icon: Film },
   { href: '/soundtrack', label: 'Soundtrack', icon: Music },
-  { href: '/today#updates', label: 'Updates', icon: Bell },
+  { href: '/community#updates', label: 'Updates', icon: Bell },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;
@@ -62,7 +62,7 @@ function useKeyboardOpen() {
 }
 
 const PLACES: { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }[] = [
-  { href: '/today', label: 'Today', icon: Sun, match: (p) => p === '/today' },
+  { href: '/community', label: 'Community', icon: Sun, match: (p) => p.startsWith('/community') || p.startsWith('/hub') },
   { href: '/projects', label: 'Projects', icon: FolderOpen, match: (p) => p.startsWith('/projects') || p.startsWith('/studio') || p.startsWith('/editor') },
   { href: '/lounge', label: 'Lounge', icon: MessageSquare, match: (p) => p.startsWith('/lounge') },
 ];
@@ -184,7 +184,7 @@ export default function MobileTabBar() {
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
   const search = useLocationSearch();
-  const shared = useMemo(() => (authed && pathname === '/today' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
+  const shared = useMemo(() => (authed && pathname === '/community' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
   const sharedKey = shared ? search : '';
   // Open each share once — including one already in the address when this mounts.
   const [handledShare, setHandledShare] = useState('');
@@ -195,7 +195,7 @@ export default function MobileTabBar() {
   } else if (!sharedKey && handledShare) {
     setHandledShare(''); // the address is tidied: the same share can come again
   }
-  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/today'); }, [sharedKey]);
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/community'); }, [sharedKey]);
   useEffect(() => {
     if (!authed) return;
     let live = true;
@@ -233,7 +233,7 @@ export default function MobileTabBar() {
         </button>
         {onSet && (
           <span className={m.pillOnset}>
-            <Link href={ON_SET_HREF} className={m.pillOnsetLink}>{onSet.label}</Link>
+            <Link href={ON_SET_HREF} className={m.pillOnsetLink} title={`${onSet.label}${onSet.line ? ` · ${onSet.line.full}` : ''}`}>{onSet.label}{onSet.line ? ` · ${onSet.line.short}` : ''}</Link>
             <button type="button" className={m.pillOnsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
           </span>
         )}
