@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// The Cavern's own playlists on Today: all four are offered, nothing from Spotify loads until one is picked, and picking
-// one opens Spotify's player in the page (the frame's address is the playlist's embed). Opt-in: E2E_LOCAL_STACK=1.
+// The Cavern's own playlists on Today: all four are offered, the page opens on Solitude with Spotify's player in it (the
+// frame's address is the playlist's embed), and picking another swaps the player. Opt-in: E2E_LOCAL_STACK=1.
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
@@ -22,7 +22,7 @@ test.describe('Music from the Cavern (local Supabase)', () => {
   });
   test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });
 
-  test('the playlists are offered, and picking one opens the player in the page', async ({ page }) => {
+  test('the playlists are offered, the page opens on Solitude, and picking another swaps the player', async ({ page }) => {
     test.setTimeout(90_000);
     await page.goto('/auth');
     await page.fill('input[name="email"]', user.email);
@@ -34,21 +34,18 @@ test.describe('Music from the Cavern (local Supabase)', () => {
     const section = page.getByRole('region', { name: 'Music from the Cavern' });
     await expect(section).toBeVisible({ timeout: 30_000 });
     for (const name of ['The Trophy', 'Misfits Cavern', 'Misfits Too', 'Solitude']) await expect(section.getByRole('button', { name })).toBeVisible();
-    // Nothing from Spotify is loaded until a playlist is picked.
-    await expect(page.locator('iframe[src*="open.spotify.com"]')).toHaveCount(0);
-
-    await section.getByRole('button', { name: 'Solitude' }).click();
+    // It opens on Solitude, with Spotify's player already in the page.
     const frame = page.locator('iframe[title="Spotify player: Solitude"]');
-    await expect(frame).toBeVisible();
+    await expect(frame).toHaveCount(1);
     await expect(frame).toHaveAttribute('src', /open\.spotify\.com\/embed\/playlist\/3iFM46jnAkoQmsucygQMas/);
     await expect(section.getByRole('button', { name: 'Solitude' })).toHaveAttribute('aria-pressed', 'true');
     await expect(section.getByRole('link', { name: /Open “Solitude” in Spotify/ })).toHaveAttribute('href', 'https://open.spotify.com/playlist/3iFM46jnAkoQmsucygQMas');
 
-    // Picking another swaps the player; picking the same one again puts it away.
+    // Picking another swaps the player (one frame at a time).
     await section.getByRole('button', { name: 'The Trophy' }).click();
     await expect(page.locator('iframe[src*="open.spotify.com"]')).toHaveCount(1);
-    await expect(page.locator('iframe[title="Spotify player: The Trophy"]')).toBeVisible();
-    await section.getByRole('button', { name: 'The Trophy' }).click();
-    await expect(page.locator('iframe[src*="open.spotify.com"]')).toHaveCount(0);
+    await expect(page.locator('iframe[title="Spotify player: The Trophy"]')).toHaveCount(1);
+    await expect(section.getByRole('button', { name: 'The Trophy' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(section.getByRole('button', { name: 'Solitude' })).toHaveAttribute('aria-pressed', 'false');
   });
 });
