@@ -45,7 +45,7 @@ test.describe('Editor undo (local Supabase)', () => {
     await picker.waitFor();
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
     await page.goto(`/editor?script=${scriptId}`);
-    const script = page.getByLabel('Script', { exact: true });
+    const script = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(script).toHaveValue(BASE, { timeout: 30_000 });
 
     await script.click();
