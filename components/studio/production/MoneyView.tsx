@@ -1,5 +1,6 @@
 'use client';
 
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Clock, DollarSign, Plus, Store, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -214,7 +215,11 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
   };
 
   const markPaid = async (x: Expense) => {
-    try { onChange(await studio.updateExpense(x.id, { status: 'paid' })); }
+    const origin = undoOrigin();
+    try {
+      onChange(await studio.updateExpense(x.id, { status: 'paid' }));
+      pushUndo(`Marked “${x.description}” paid`, async () => { onChange(await studio.updateExpense(x.id, { status: x.status })); }, origin);
+    }
     catch (err) { toast(err instanceof Error ? err.message : 'Could not update', 'error'); }
   };
   const remove = async (x: Expense) => {
