@@ -90,3 +90,140 @@ describe('files from other tools', () => {
     expect(t).not.toContain('^');
   });
 });
+
+// ── What a library of real files does that even other producers don't ────────
+// Each case below was a whole class of misreads across a measured library, not
+// a one-off: a transcript set solid at one margin, a cue margin shared with its
+// parentheticals, cues centred over their speeches, camera set-ups at the cue
+// margin, a heading with a scene number in front of it, a heading with no
+// INT./EXT. at all, a speaker written "Name:", and a font that encodes its
+// dash as something else.
+
+describe('files from a library of every kind', () => {
+  const rows = (rs: Array<[string, number, number]>): PositionedItem[] => rs.map(([s, x, y]) => at(s, x, y));
+
+  it('reads a transcript set solid at one margin: cues by text convention alone', () => {
+    const t = layoutPages([rows([
+      ['INTERIOR- DINER- DAY', 90, 720],
+      ['A waitress refills the coffee.', 90, 708],
+      ['MAYA', 90, 696],
+      ['You look tired.', 90, 684],
+      ['JORDAN', 90, 672],
+      ['I am tired.', 90, 660],
+    ])]);
+    expect(types(t)).toEqual(['slug', 'action', 'character', 'dialogue', 'character', 'dialogue']);
+  });
+
+  it('reads a cue margin that also carries its parentheticals, set solid', () => {
+    // Uniform spacing (no blank lines anywhere), action 108, dialogue 160, and
+    // a cue column at 203 that is one third brackets: the column is judged on
+    // its non-bracket lines, and a bracket there is a parenthetical, not a name.
+    const t = layoutPages([rows([
+      ['INT. YARD - DAY', 108, 720],
+      ['Maya hangs the laundry.', 108, 708],
+      ['MAYA', 203, 696],
+      ['(quietly)', 203, 684],
+      ['This line is dry.', 160, 672],
+      ['The wind picks up.', 108, 660],
+      ['JORDAN', 203, 648],
+      ['It is not.', 160, 636],
+    ])]);
+    expect(types(t)).toEqual(['slug', 'action', 'character', 'parenthetical', 'dialogue', 'action', 'character', 'dialogue']);
+  });
+
+  it('reads cues centred over their speeches, where every cue starts at its own x', () => {
+    // Cues centred: a long name starts further left than a short one, so the
+    // cue "column" is a band of starting positions that must not chain the
+    // dialogue and the parenthetical margins into one giant column.
+    const t = layoutPages([rows([
+      ['INT. HALL - NIGHT', 138, 720],
+      ['Maya waits by the door.', 138, 708],
+      ['MAYA', 222, 696],
+      ['You came.', 174, 684],
+      ['THE DOORMAN', 204, 672],
+      ['(looking her over)', 190, 660],
+      ['Always do.', 174, 648],
+      ['JORDAN', 216, 636],
+      ['Not anymore.', 174, 624],
+    ])]);
+    const parsed = parseScript(t);
+    expect(parsed.characters.map((c) => c.name).sort()).toEqual(['JORDAN', 'MAYA', 'THE DOORMAN']);
+  });
+
+  it('treats camera set-ups at the cue margin as action, not characters', () => {
+    const t = layoutPages([rows([
+      ['INT. PIER - DAY', 108, 720],
+      ['ANOTHER ANGLE', 252, 708],
+      ['The pier empties.', 108, 696],
+      ['BRODY', 252, 684],
+      ['We close at six.', 180, 672],
+    ])]);
+    const parsed = parseScript(t);
+    expect(parsed.characters.map((c) => c.name)).toEqual(['BRODY']);
+    expect(types(t)[1]).toBe('action');
+  });
+
+  it('demotes a cue that no speech follows: a name that named nothing', () => {
+    const t = layoutPages([rows([
+      ['BRODY', 252, 720],
+      ['INT. OFFICE - DAY', 108, 708],
+      ['The office is quiet.', 108, 696],
+    ])]);
+    expect(parseScript(t).characters.map((c) => c.name)).toEqual([]);
+  });
+
+  it('reads a heading with a scene number in front of it', () => {
+    const t = layoutPages([rows([
+      ['SCENE 4 - INT. CONCERT HALL - NIGHT', 138, 720],
+      ['The audience settles.', 138, 708],
+    ])]);
+    expect(types(t)).toEqual(['slug', 'action']);
+  });
+
+  it('reads a heading with no INT./EXT. at all: capitals, a dash, a time of day', () => {
+    const t = layoutPages([rows([
+      ['WAREHOUSE - NIGHT.', 108, 720],
+      ['Maya waits by the door.', 108, 692],
+    ])]);
+    expect(types(t)).toEqual(['slug', 'action']);
+    expect(parseScript(t).scenes).toHaveLength(1);
+  });
+
+  it('splits a speaker written "Name:" with the speech on the same baseline', () => {
+    const t = layoutPages([[at('MARCUS:', 134, 720), at('That was a long night.', 177, 720)]]);
+    expect(types(t)).toEqual(['character', 'dialogue']);
+    expect(t).toContain('MARCUS\nThat was a long night.');
+  });
+
+  it('keeps a title-case cue with a colon ("She:") as a speaker, colon dropped', () => {
+    // A two-hander written "She:" / "He:" — title case with a colon, centred.
+    // Several exchanges, because a column is judged on a population.
+    const t = layoutPages([rows([
+      ['EXT. WOODS - DAY', 90, 720],
+      ['She walks the path.', 90, 700],
+      ['She:', 287, 680],
+      ['(Off)', 287, 668],
+      ['I cannot really tell.', 201, 656],
+      ['He:', 289, 636],
+      ['(Off)', 287, 624],
+      ['It should be easy, passing along the path.', 201, 612],
+      ['She:', 287, 592],
+      ['But it is heavy to drag yourself past.', 201, 580],
+      ['He:', 289, 560],
+      ['Then rest.', 201, 548],
+    ])]);
+    const parsed = parseScript(t);
+    // The parser records title-case cues in capitals (its cast is case-folded).
+    expect(parsed.characters.map((c) => c.name)).toEqual(['SHE', 'HE']);
+    expect(t).toContain('She\n(Off)');
+  });
+
+  it('straightens a dash that the font encoded as a low quote', () => {
+    const t = layoutPages([rows([
+      ['EXT. BEACH ‚ NIGHT', 108, 720],
+      ['Waves at the shoreline.', 108, 708],
+    ])]);
+    expect(t).toContain('EXT. BEACH - NIGHT');
+    expect(types(t)[0]).toBe('slug');
+  });
+});

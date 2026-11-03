@@ -2,7 +2,7 @@
 
 import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
-import { headingParts, readHeading } from './heading';
+import { headingParts, readHeading, isTimeOfDay } from './heading';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
 
@@ -243,11 +243,21 @@ export class ScriptParser {
 
   private isSceneHeading(text: string): boolean {
     const m = /^\s*(?:\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i.exec(text);
-    if (!m) return false;
-    // "INT." / "EXT." / "I/E" are headings on sight. A bare word ("Interior lights flicker on.")
-    // is one only if the line also looks like a heading: a dash before the time, or all capitals.
-    if (text.slice(m[0].length).startsWith('.') || m[1].includes('/') || m[1].includes('.')) return true;
-    return /\s[-–—]\s/.test(text) || this.isCaps(text.trim());
+    if (m) {
+      // "INT." / "EXT." / "I/E" are headings on sight. A bare word ("Interior lights flicker on.")
+      // is one only if the line also looks like a heading: a dash before the time, or all capitals.
+      if (text.slice(m[0].length).startsWith('.') || m[1].includes('/') || m[1].includes('.')) return true;
+      return /\s[-–—]\s/.test(text) || this.isCaps(text.trim());
+    }
+    // A heading without a prefix at all: "WAREHOUSE - NIGHT", all capitals, a
+    // dash, and a trailing time of day (heading.ts keeps the vocabulary). Some
+    // drafts name every scene that way and never write INT./EXT. The time is
+    // the LAST dash-separated part — a matching regex would swallow an
+    // all-capitals location whole ("SCENE 1 - INT. APARTMENT - DAY").
+    if (!this.isCaps(text.trim())) return false;
+    const segs = text.trim().split(/\s[-–—]\s/);
+    const last = segs[segs.length - 1].replace(/[.:]+$/, '').replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+    return segs.length > 1 && isTimeOfDay(last);
   }
 
   public parse(): ParseResult {

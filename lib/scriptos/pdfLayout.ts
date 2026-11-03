@@ -15,7 +15,7 @@ interface VLine { text: string; x: number; y: number; page: number; size: number
 type Role = 'action' | 'dialogue' | 'parenthetical' | 'character' | 'transition' | 'margin';
 interface Column { x: number; count: number }
 
-const HEADING = /^\s*(?:\d+[A-Z]?\.?\s+)?(?:INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i;
+const HEADING = /^\s*(?:(?:SCENE\s+)?\d+[A-Z]?[.,]?\s*[-–—]?\s*|\d+[A-Z]?\.?\s+)?(?:INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b/i;
 const TRANSITION = /^(?:FADE (?:IN|OUT|TO)|CUT TO|DISSOLVE TO|SMASH CUT|MATCH CUT|JUMP CUT|FLASH CUT|WIPE TO|IRIS (?:IN|OUT)|INTERCUT|BACK TO|TIME CUT|MORPH TO|BLACKOUT|SLAM TO|QUICK CUT|HARD CUT|CROSSFADE)\b|\bTO:$/i;
 const FURNITURE = /^\(?\s*(?:CONTINUED|MORE|CONT'?D)\s*\)?:?$/i;
 const PAGE_NUMBER = /^\d{1,3}[A-Z]?\.?$/;
@@ -24,10 +24,18 @@ const SCENE_NUMBER = /^\d{1,3}[A-Z]{0,2}\.?$/;
 const hasCase = (c: string) => c !== c.toLowerCase() || c !== c.toUpperCase();
 const isCaps = (t: string) => [...t].some(hasCase) && t === t.toUpperCase();
 const hasLower = (t: string) => [...t].some((c) => hasCase(c) && c === c.toLowerCase());
-/** A short line that is a name: capitals, or any letters in a script with none; no sentence punctuation; not a heading or a transition. */
+// What a cue margin carries besides names in a shooting script: camera set-ups
+// ("ANOTHER ANGLE", "MASTER SHOT"), sound and image cues ("SFX", "TITLES"), and
+// the tail of a heading that wrapped or was set at the wrong margin ("DAY").
+const NOT_A_NAME = /\b(?:ANGLE|ANGLES|POV|POINT OF VIEW|CLOSE-?UPS?|SFX|VFX|INSERTS?|MONTAGE|SUPER|STOCK|TITLES|TITLE CARD|ON SCREEN|INTERCUT|CAMERA|REVEAL)\b/i;
+const BARE_STAGE_WORD = /^(?:DAY|NIGHT|MORNING|AFTERNOON|EVENING|DAWN|DUSK|NOON|MIDNIGHT|CONTINUOUS|LATER|UNDERWATER|AERIAL|INTERIOR|EXTERIOR|SPACE|FADE IN|FADE OUT|THE END)$/;
+/** A short line that is a name: capitals, or any letters in a script with none; no sentence punctuation; not a heading or a transition. A name with a trailing colon ("JONS:", "She:") is a cue too: a stage script or a transcript writes its speakers that way. */
 function cueLike(t: string): boolean {
-  const bare = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
-  if (!bare || bare.length > 40 || HEADING.test(bare) || TRANSITION.test(bare) || /[.!?…。！？,，、;:]$/.test(bare)) return false;
+  const bare0 = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
+  const colon = /:$/.test(bare0);
+  const bare = bare0.replace(/:$/, '').trim();
+  if (!bare || bare.length > 40 || HEADING.test(bare0) || TRANSITION.test(bare0) || NOT_A_NAME.test(bare) || BARE_STAGE_WORD.test(bare) || /[.!?…。！？,，、;:]$/.test(bare)) return false;
+  if (colon) return /^[A-Z][\p{L}\p{N}'’. -]{0,30}$/u.test(bare);
   return [...bare].some(hasCase) ? isCaps(bare) : /\p{L}/u.test(bare);
 }
 /** Running text rather than a name: lower-case letters, or (in a script with no case) a line that is not name-like. */
@@ -72,6 +80,27 @@ function groupLines(items: PositionedItem[], page: number): VLine[] {
     }
     if (seg.length) segments.push(seg);
     for (const s of segments) {
+      // A cue glued to its speech on one baseline ("JONS:Hello there.") is two
+      // elements: the name with its colon is the cue, the rest of the row is
+      // the speech. A stage script writes every line of dialogue that way.
+      const head = s[0].str.trim();
+      if (s.length > 1 && /:$/.test(head) && cueLike(head)) {
+        lines.push({ text: head, x: s[0].transform[4], y: s[0].transform[5], page, size: Math.abs(s[0].transform[3]) || 12, sceneNo });
+        const rest = s.slice(1);
+        let rtext = '';
+        let rprevEnd = 0;
+        for (const it of rest) {
+          const size = Math.abs(it.transform[3]) || 12;
+          const x = it.transform[4];
+          const width = (it as { width?: number }).width ?? it.str.length * size * 0.6;
+          if (rtext && x - rprevEnd > size * 0.25 && !rtext.endsWith(' ') && !it.str.startsWith(' ')) rtext += ' ';
+          rtext += it.str;
+          rprevEnd = x + width;
+        }
+        rtext = rtext.replace(/\s+/g, ' ').trim();
+        if (rtext) lines.push({ text: rtext, x: rest[0].transform[4], y: rest[0].transform[5], page, size: Math.abs(rest[0].transform[3]) || 12, sceneNo });
+        continue;
+      }
       let text = '';
       let prevEnd = 0;
       for (const it of s) {
@@ -95,10 +124,16 @@ function findColumns(lines: VLine[]): Column[] {
   const bins = new Map<number, number>();
   for (const l of lines) bins.set(Math.round(l.x / 3), (bins.get(Math.round(l.x / 3)) ?? 0) + 1);
   const raw = [...bins.entries()].sort((a, b) => a[0] - b[0]);
-  const cols: { sum: number; w: number }[] = [];
+  const cols: { sum: number; w: number; min: number }[] = [];
   let last = -99;
   for (const [bin, n] of raw) {
-    if (bin - last <= 2 && cols.length) { const c = cols[cols.length - 1]; c.sum += bin * 3 * n; c.w += n; } else cols.push({ sum: bin * 3 * n, w: n });
+    const c = cols[cols.length - 1];
+    // Bins three points apart are the same margin. But a RUN of them is not one
+    // column: an element set centred (a cue over its speech) starts at an x that
+    // depends on its width, and such lines can chain every bin between two real
+    // margins into a single "column" that reaches nothing. A margin does not
+    // wander: a cluster may not stretch wider than the tolerance that matches it.
+    if (c && bin - last <= 2 && bin - c.min <= 6) { c.sum += bin * 3 * n; c.w += n; } else cols.push({ sum: bin * 3 * n, w: n, min: bin });
     last = bin;
   }
   // A column is where several lines start; in a very short document a single line may be all there is of one.
@@ -115,13 +150,19 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
   const stat = (c: Column) => {
     const ls = lines.filter((l) => near(l, c));
     const n = Math.max(1, ls.length);
+    const parens = ls.filter((l) => l.text.startsWith('(')).length;
+    // A cue margin in some scripts also holds its character's parentheticals,
+    // so a column is judged on the lines that are not brackets: 30% brackets
+    // must not dilute the name-like lines below the cue threshold.
+    const bare = ls.filter((l) => !l.text.startsWith('('));
+    const speech = Math.max(1, bare.length);
     return {
       n: ls.length,
       heading: ls.filter((l) => HEADING.test(l.text)).length / n,
-      paren: ls.filter((l) => l.text.startsWith('(')).length / n,
+      paren: parens / n,
       transition: ls.filter((l) => isCaps(l.text) && TRANSITION.test(l.text)).length / n,
-      capsShort: ls.filter((l) => cueLike(l.text)).length / n,
-      lower: ls.filter((l) => proseLike(l.text)).length / n,
+      capsShort: bare.filter((l) => cueLike(l.text)).length / speech,
+      lower: bare.filter((l) => proseLike(l.text)).length / speech,
     };
   };
   const stats = new Map(cols.map((c) => [c, stat(c)]));
@@ -193,7 +234,7 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
 // ── 3. elements ───────────────────────────────────────────────────────────────
 
 type Kind = 'heading' | 'action' | 'cue' | 'parenthetical' | 'dialogue' | 'transition';
-interface Element { kind: Kind; text: string; page: number; bottom: number; /** One speech of a dual-dialogue pair. */ dual?: boolean }
+interface Element { kind: Kind; text: string; page: number; bottom: number; /** The column the line sat in: what "this is the same block" is judged against. */ x: number; /** One speech of a dual-dialogue pair. */ dual?: boolean }
 
 /** Plain structured text for the whole document. */
 export function layoutPages(pages: PositionedItem[][]): string {
@@ -211,6 +252,21 @@ export function layoutPages(pages: PositionedItem[][]): string {
     const col = [...roles.keys()].sort((a, b) => Math.abs(a.x - l.x) - Math.abs(b.x - l.x))[0];
     return col ? roles.get(col)! : 'action';
   };
+  // A cue the geometry could not name (the emit loop reads it): the document has
+  // no cue column at all — a text transcript is set solid at one margin — so a
+  // name-like capitals line with speech under it is a cue by convention alone.
+  const textCues = new Set<VLine>();
+  if (![...roles.values()].includes('character')) {
+    const flat = perPage.flat();
+    for (let i = 0; i < flat.length; i++) {
+      const l = flat[i];
+      if (!cueLike(l.text) || FURNITURE.test(l.text) || PAGE_NUMBER.test(l.text)) continue;
+      let j = i + 1;
+      while (j < flat.length && (FURNITURE.test(flat[j].text) || PAGE_NUMBER.test(flat[j].text))) j++;
+      const next = flat[j];
+      if (next && (proseLike(next.text) || next.text.startsWith('('))) textCues.add(l);
+    }
+  }
   // Dual dialogue is two speeches side by side. The reliable signal is a ROW with
   // two cue lines on it: a script with one speech column never has that. Each cue
   // owns the lines below it on its own side, so the pair is read by baseline.
@@ -239,7 +295,7 @@ export function layoutPages(pages: PositionedItem[][]): string {
   let more = false; // a (MORE) / (CONT'D) marker was seen: the next dialogue continues the speech above
   // The open dual pair, if any: the two speeches are built side by side and only
   // become elements when the pair closes, so each keeps its own text.
-  type Dual = { cue: string; dlg: string; page: number; bottom: number; paren?: string };
+  type Dual = { cue: string; dlg: string; page: number; bottom: number; x: number; paren?: string };
   let dual: { left: Dual; right: Dual } | null = null;
   const closeDual = () => {
     if (!dual) return;
@@ -249,9 +305,9 @@ export function layoutPages(pages: PositionedItem[][]): string {
     const both = !!pair.left.cue && !!pair.right.cue;
     const push = (d: Dual) => {
       if (!d.cue && !d.dlg) return;
-      elements.push({ kind: 'cue', text: d.cue, page: d.page, bottom: d.bottom, dual: both });
-      if (d.paren) elements.push({ kind: 'parenthetical', text: d.paren, page: d.page, bottom: d.bottom });
-      if (d.dlg) elements.push({ kind: 'dialogue', text: d.dlg, page: d.page, bottom: d.bottom, dual: both });
+      elements.push({ kind: 'cue', text: d.cue, page: d.page, bottom: d.bottom, x: d.x, dual: both });
+      if (d.paren) elements.push({ kind: 'parenthetical', text: d.paren, page: d.page, bottom: d.bottom, x: d.x });
+      if (d.dlg) elements.push({ kind: 'dialogue', text: d.dlg, page: d.page, bottom: d.bottom, x: d.x, dual: both });
     };
     push(pair.left);
     push(pair.right);
@@ -270,7 +326,7 @@ export function layoutPages(pages: PositionedItem[][]): string {
       // A line in a dual block belongs to its own side, not to the flow.
       const side = dualSide.get(l);
       if (side !== undefined) {
-        if (!dual) dual = { left: { cue: '', dlg: '', page: l.page, bottom: l.y }, right: { cue: '', dlg: '', page: l.page, bottom: l.y } };
+        if (!dual) dual = { left: { cue: '', dlg: '', page: l.page, bottom: l.y, x: l.x }, right: { cue: '', dlg: '', page: l.page, bottom: l.y, x: l.x } };
         const d = side === 0 ? dual.left : dual.right;
         if (cueLike(text) && !d.cue) { d.cue = text; d.bottom = l.y; }
         else if (text.startsWith('(')) { d.paren = d.paren ? d.paren + ' ' + text : text; d.bottom = l.y; }
@@ -283,34 +339,44 @@ export function layoutPages(pages: PositionedItem[][]): string {
       const gap = prev && prev.page === l.page ? prev.bottom - l.y : Infinity;
       const breaks = gap > lineHeight * 1.55;
       const sameBlock = (k: Kind) => !!prev && prev.kind === k && !breaks;
-      let el: Element | null = null;
+      // What "continues the block above" means: same column, no element gap.
+      const follows = !!prev && !breaks && Math.abs(prev.x - l.x) <= 12;
+      let el: Element;
 
-      if (role === 'transition' || (role === 'action' && isCaps(text) && TRANSITION.test(text) && text.length < 40)) el = { kind: 'transition', text, page: l.page, bottom: l.y };
+      // A cue the geometry could not name: the document has no cue column, but a
+      // name-like capitals line with speech under it is a cue by convention. A
+      // text transcript is set solid at one margin and carries no layout at all.
+      if (textCues.has(l)) el = { kind: 'cue', text, page: l.page, bottom: l.y, x: l.x };
+      else if (role === 'transition' || (role === 'action' && isCaps(text) && TRANSITION.test(text) && text.length < 40)) el = { kind: 'transition', text, page: l.page, bottom: l.y, x: l.x };
       else if (role === 'parenthetical') {
         if (prev && prev.kind === 'parenthetical' && !breaks && !prev.text.endsWith(')')) { prev.text += ' ' + text; prev.bottom = l.y; return; }
-        el = { kind: 'parenthetical', text, page: l.page, bottom: l.y };
+        el = { kind: 'parenthetical', text, page: l.page, bottom: l.y, x: l.x };
       } else if (role === 'character') {
-        if (cueLike(text)) el = { kind: 'cue', text, page: l.page, bottom: l.y };
-        else if (sameBlock('dialogue')) { prev!.text += ' ' + text; prev!.bottom = l.y; return; } else el = { kind: 'dialogue', text, page: l.page, bottom: l.y };
+        if (cueLike(text)) el = { kind: 'cue', text, page: l.page, bottom: l.y, x: l.x };
+        // A shooting script sets its camera set-ups at the cue margin: those are
+        // not characters, and a bracket there is a parenthetical, not a name.
+        else if (text.startsWith('(')) el = { kind: 'parenthetical', text, page: l.page, bottom: l.y, x: l.x };
+        else if (follows && prev.kind === 'dialogue') { prev.text += ' ' + text; prev.bottom = l.y; return; }
+        else if (prev && prev.kind === 'cue' && !breaks) el = { kind: 'dialogue', text, page: l.page, bottom: l.y, x: l.x }; // shouted speech in the cue column
+        else el = { kind: 'action', text, page: l.page, bottom: l.y, x: l.x };
       } else if (role === 'dialogue') {
         if (sameBlock('dialogue') || (more && prev?.kind === 'dialogue')) { prev!.text += ' ' + text; prev!.bottom = l.y; prev!.page = l.page; more = false; return; }
-        el = { kind: 'dialogue', text, page: l.page, bottom: l.y };
-      } else if (HEADING.test(text)) el = { kind: 'heading', text: l.sceneNo ? `${text} #${l.sceneNo}#` : text, page: l.page, bottom: l.y };
-      else if (prev && (prev.kind === 'dialogue' || prev.kind === 'parenthetical') && !breaks && proseLike(text)) {
-        // A speech is open and this line is running text: it is that speech, even
-        // though it sits in the action column. In a fragment with no headings, or a
-        // page whose action margin is empty, one column carries both, and the only
-        // thing that tells them apart is that a cue came first.
+        el = { kind: 'dialogue', text, page: l.page, bottom: l.y, x: l.x };
+      } else if (HEADING.test(text)) el = { kind: 'heading', text: l.sceneNo ? `${text} #${l.sceneNo}#` : text, page: l.page, bottom: l.y, x: l.x };
+      else if (prev && (prev.kind === 'dialogue' || prev.kind === 'parenthetical') && follows && proseLike(text)) {
+        // A speech is open and this line is running text in the SAME column: it
+        // is that speech. A transcript set solid has no gaps to separate the
+        // elements, so the column is the only thing left to judge by.
         prev.text += ' ' + text;
         prev.bottom = l.y;
         prev.page = l.page;
         return;
       } else if (prev && prev.kind === 'cue' && !breaks && proseLike(text)) {
         // The cue's own speech, in the same column (a fragment with no headings).
-        el = { kind: 'dialogue', text, page: l.page, bottom: l.y };
+        el = { kind: 'dialogue', text, page: l.page, bottom: l.y, x: l.x };
       } else {
         if (sameBlock('action')) { prev!.text += ' ' + text; prev!.bottom = l.y; return; }
-        el = { kind: 'action', text, page: l.page, bottom: l.y };
+        el = { kind: 'action', text, page: l.page, bottom: l.y, x: l.x };
       }
       if (el.kind === 'cue' || el.kind === 'heading') more = false;
       elements.push(el);
@@ -318,14 +384,29 @@ export function layoutPages(pages: PositionedItem[][]): string {
   }
   closeDual(); // a pair at the very end of the document still has to be written out
 
-  // Words hyphenated across a line break are one word again.
-  const clean = (t: string) => t.replace(/(\p{L})- (\p{Ll})/gu, '$1$2').replace(/\s+/g, ' ').trim();
+  // A cue with no speech under it is not a character. In a shooting script the
+  // cue margin also carries camera set-ups and stage directions; whatever named
+  // nothing that speaks is read back as action.
+  for (let i = 0; i < elements.length; i++) {
+    if (elements[i].kind !== 'cue') continue;
+    let j = i + 1;
+    while (j < elements.length && elements[j].kind === 'parenthetical') j++;
+    if (!elements[j] || elements[j].kind !== 'dialogue') elements[i].kind = 'action';
+  }
+
+  // Words hyphenated across a line break are one word again. A PDF whose font
+  // encodes its dashes wrongly leaves a stray single-quote comma in headings;
+  // a heading is the one place that cannot afford the ambiguity.
+  const clean = (t: string) => t.replace(/(\p{L})- (\p{Ll})/gu, '$1$2').replace(/‚/g, ' - ').replace(/\s+/g, ' ').trim();
   const out: string[] = [];
   let inSpeech = false;
   let dualLeft: string | null = null; // the cue of the left speech of a dual pair, waiting for its partner
   for (const el of elements) {
-    const text = clean(el.text);
+    let text = clean(el.text);
     if (!text) continue;
+    // A cue carries no colon of its own: the reader used one to recognise a
+    // speaker ("She:", "JONS:") but Fountain writes plain names.
+    if (el.kind === 'cue') text = text.replace(/:$/, '');
     const speechPart = el.kind === 'parenthetical' || el.kind === 'dialogue';
     if (el.kind === 'cue') {
       // Fountain marks the SECOND cue of a dual pair with a caret, and the two

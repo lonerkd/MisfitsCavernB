@@ -52,6 +52,7 @@ const CLOCK = /^\d{1,2}[:.]\d{2}$/;
 
 /** "LATE AFTERNOON", "EARLY EVENING", "MID-MORNING": a time of day with a qualifier. */
 const isTimeOfDay = (joined: string): boolean => TIMES.has(joined) || TIMES.has(joined.replace(/^(LATE|EARLY|MID)\s+/, ''));
+export { isTimeOfDay };
 
 const words = (s: string) => s.toUpperCase().replace(/(\d)[:.](\d)/g, '$1:$2').replace(/[^\p{L}0-9'’:\s-]/gu, ' ').split(/\s+/).filter(Boolean);
 
@@ -67,6 +68,7 @@ function isWhen(part: string): boolean {
   const left = rest.trim() ? rest.trim().split(/\s+/) : [];
   return left.every((x) => TIMES.has(x) || FILLER.has(x) || NUMBER_WORDS.has(x) || MONTHS.has(x) || DAYS_OF_WEEK.has(x) || /^\d{4}S?$/.test(x) || /^\d+$/.test(x) || CLOCK.test(x));
 }
+export { isWhen };
 
 /** The parts of a heading body, split on hyphens, double hyphens, en and em dashes. */
 export const headingParts = (headingBody: string): string[] => headingBody.split(/\s+-{1,2}\s+|\s+[–—]\s+/).map((p) => p.trim()).filter(Boolean);
