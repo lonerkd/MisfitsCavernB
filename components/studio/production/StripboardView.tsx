@@ -225,7 +225,13 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
-                    {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => { const dc = costs.byDay.find((x) => x.day === d.day); return dc ? <span title={dc.unpriced > 0 ? `${dc.unpriced} element${dc.unpriced === 1 ? '' : 's'} with no price, so this is low` : dc.estimated > 0 ? `${money(dc.estimated)} of it is a default estimate` : undefined}>{money(dc.total)}</span> : null; })()}
+                    {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => {
+                      // Sum from byScene so unscheduled scenes (board day 1, costs day null) are included.
+                      const total = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.total ?? 0), 0);
+                      const estimated = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.estimated ?? 0), 0);
+                      const unpriced = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.unpriced ?? 0), 0);
+                      return total > 0 ? <span title={unpriced > 0 ? `${unpriced} element${unpriced === 1 ? '' : 's'} with no price, so this is low` : estimated > 0 ? `${money(estimated)} of it is a default estimate` : undefined}>{money(total)}</span> : null;
+                    })()}
                   </div>
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>
