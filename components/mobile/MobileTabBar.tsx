@@ -28,7 +28,7 @@ import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture
 import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -176,7 +176,7 @@ export default function MobileTabBar() {
   const [unread, setUnread] = useState(0);
   const authed = status === 'authed';
   // Only on a phone: on a desk the page would otherwise hold a hidden copy of the project's name.
-  const phone = useMediaQuery('(max-width: 760px)');
+  const phone = useIslandSurface() === 'pill';
   const { activeProject } = useProject();
   const { activeDescriptor } = usePill();
 
