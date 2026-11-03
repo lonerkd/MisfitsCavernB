@@ -45,8 +45,8 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 3. Upgrades (scoped — in suggested order)
 
-### 3.35 Paper as the default: walk every screen in it — S (owner, 2026-11-03)
-Paper became the default theme (`design-tokens.md`); three dark-only hard-codes were found and fixed by looking (the editor's stage, the undated day header, the stripboard's date box), but only sign-in, Today, the Studio schedule, the editor and the Lounge were walked. Left: every other screen under Paper (`npm run bible:shots` with the theme set to Paper), fixing what only reads in dark (white text on a theme surface, a hard-coded near-black panel). Media stages (video frames) are black on purpose. Done when the screenshots of every screen in Paper read cleanly.
+### 3.35 Paper as the default: what the walk did not cover — S (owner, 2026-11-03)
+Paper became the default theme and every screen was walked in it (2026-11-03: all 48 screens photographed by eye on desktop; `npm run theme:scan` over 29 routes, desktop and phone, found and fixed the Jobs role pills and rates, the admin role badge and audit-log links, the editor's goal badges and timing numbers, the crew page's portfolio note and the portfolio card's title over its video frame; Cavern, Slate, Editorial and Lagoon scan clean). Left: the scan sees what is on a route, not what opens on a click (modals, menus, toasts, empty and error states): walk those in Paper; scan the other dark presets (`THEME=blueprint npm run theme:scan` …); retake `bible/screens` (still the dark-era snapshot: `MC_LOCAL_CHROMIUM=… npm run bible:shots`). Done when those hold.
 
 ### 3.1 Dev-toolchain advisories — watch, S when upstream moves
 Production dependencies: **0** vulnerabilities (`npm audit --omit=dev`,

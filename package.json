@@ -28,6 +28,7 @@
     "stack:up": "bash scripts/dev-stack.sh",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "bible": "node scripts/bible.mjs",
+    "theme:scan": "node scripts/theme-scan.mjs",
     "island:coverage": "node scripts/island-coverage.mjs",
     "parser:reference": "node scripts/parser-reference.mjs",
     "bible:shots": "node scripts/bible-shots.mjs"
