@@ -7,8 +7,8 @@ describe('toPayload', () => {
   it('title, body, a link inside the app, and the kind as the tag', () => {
     expect(toPayload(n)).toEqual({ id: 'n1', title: 'Harbor — call sheet · Day 1', body: 'Your call 07:15.', link: '/call/abc', tag: 'call_sheet' });
   });
-  it('a link that isn’t inside the app (or none) opens Today', () => {
-    for (const link of ['https://evil.example/x', '//evil.example', 'javascript:alert(1)', null]) expect(toPayload({ ...n, link }).link).toBe('/today');
+  it('a link that isn’t inside the app (or none) opens Community', () => {
+    for (const link of ['https://evil.example/x', '//evil.example', 'javascript:alert(1)', null]) expect(toPayload({ ...n, link }).link).toBe('/community');
   });
   it('keeps it short, as a lock screen shows it', () => {
     const p = toPayload({ ...n, title: 'T'.repeat(500), body: 'B'.repeat(900) });

@@ -36,15 +36,17 @@ describe('matchChord', () => {
     expect(matchChord(press('s', { ctrlKey: true }), 'split')).toBeUndefined();
   });
 
-  it('tells undo from redo by Shift', () => {
-    expect(matchChord(press('z', { metaKey: true }), 'editor')?.id).toBe('editor.undo');
-    expect(matchChord(press('z', { metaKey: true, shiftKey: true }), 'editor')?.id).toBe('editor.redo');
+  it('tells undo from redo by Shift, in every tool', () => {
+    expect(matchChord(press('z', { metaKey: true }), 'editor')?.id).toBe('undo');
+    expect(matchChord(press('z', { metaKey: true, shiftKey: true }), 'editor')?.id).toBe('redo');
+    expect(matchChord(press('z', { ctrlKey: true }))?.id).toBe('undo');
+    expect(matchChord(press('y', { ctrlKey: true }))?.id).toBe('redo-y');
   });
 });
 
 describe('chordText', () => {
   it('writes a chord for the platform', () => {
-    const redo = CHORDS.find((c) => c.id === 'editor.redo')!;
+    const redo = CHORDS.find((c) => c.id === 'redo')!;
     expect(chordText(redo, true)).toBe('⌘⇧Z');
     expect(chordText(redo, false)).toBe('Ctrl Shift Z');
   });
