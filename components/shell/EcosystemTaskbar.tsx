@@ -8,7 +8,7 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, Sun, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -35,8 +35,7 @@ import { useHubUnread } from '@/components/hub/useHubUnread';
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
-  { id: 'home',      name: 'Hub',       icon: Home,          path: '/hub',       color: 'var(--accent)' },
-  { id: 'today',     name: 'Today',     icon: Sun,           path: '/today',     color: 'var(--warn)' },
+  { id: 'home',      name: 'Community', icon: Home,          path: '/community', color: 'var(--accent)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' },

@@ -62,7 +62,7 @@ function useKeyboardOpen() {
 }
 
 const PLACES: { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }[] = [
-  { href: '/today', label: 'Today', icon: Sun, match: (p) => p === '/today' },
+  { href: '/community', label: 'Community', icon: Sun, match: (p) => p.startsWith('/community') || p.startsWith('/hub') },
   { href: '/projects', label: 'Projects', icon: FolderOpen, match: (p) => p.startsWith('/projects') || p.startsWith('/studio') || p.startsWith('/editor') },
   { href: '/lounge', label: 'Lounge', icon: MessageSquare, match: (p) => p.startsWith('/lounge') },
 ];
@@ -184,7 +184,7 @@ export default function MobileTabBar() {
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
   const search = useLocationSearch();
-  const shared = useMemo(() => (authed && pathname === '/today' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
+  const shared = useMemo(() => (authed && pathname === '/community' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
   const sharedKey = shared ? search : '';
   // Open each share once — including one already in the address when this mounts.
   const [handledShare, setHandledShare] = useState('');
@@ -195,7 +195,7 @@ export default function MobileTabBar() {
   } else if (!sharedKey && handledShare) {
     setHandledShare(''); // the address is tidied: the same share can come again
   }
-  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/today'); }, [sharedKey]);
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/community'); }, [sharedKey]);
   useEffect(() => {
     if (!authed) return;
     let live = true;

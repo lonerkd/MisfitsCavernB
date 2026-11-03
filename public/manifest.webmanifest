@@ -3,7 +3,7 @@
   "short_name": "Cavern",
   "description": "The production suite for independent filmmakers, by Misfits Cavern.",
   "id": "/",
-  "start_url": "/today",
+  "start_url": "/community",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -50,8 +50,8 @@
       ]
     },
     {
-      "name": "Today",
-      "url": "/today",
+      "name": "Community",
+      "url": "/community",
       "icons": [
         {
           "src": "/icon-192.png",
@@ -73,7 +73,7 @@
     }
   ],
   "share_target": {
-    "action": "/today",
+    "action": "/community",
     "method": "GET",
     "params": {
       "title": "title",
