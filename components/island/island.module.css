@@ -171,7 +171,8 @@
 .slot[data-tip]:hover::after, .slot[data-tip]:focus-within::after { opacity: 1; transform: translate(-50%, 0); }
 .slot[data-open='true']::after { display: none; }
 
-@media (max-width: 760px) { .dock { display: none; } }
+/* Phones (and any touch device) get the tab bar's pill; a narrow window with a mouse keeps the dock when island_v2 is on. */
+@media (max-width: 760px) { .dock:not([data-compact='true']) { display: none; } }
 
 .condition { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(var(--ink-rgb), 0.08); color: var(--fg); white-space: nowrap; }
 .condition[data-kind='offline'] { background: var(--limit, #b3261e); color: #fff; }

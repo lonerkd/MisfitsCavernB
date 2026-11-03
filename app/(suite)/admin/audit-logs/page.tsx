@@ -139,7 +139,7 @@ export default function AuditLogsPage() {
                   padding: '8px 16px',
                   background: 'rgba(0,153,255,0.1)',
                   border: '1px solid rgba(0,153,255,0.3)',
-                  color: '#0099ff',
+                  color: 'var(--info)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
@@ -322,7 +322,7 @@ export default function AuditLogsPage() {
                             background: 'rgba(0,153,255,0.1)',
                             padding: '2px 8px',
                             borderRadius: 4,
-                            color: '#0099ff',
+                            color: 'var(--info)',
                           }}
                         >
                           {log.username || 'Deleted account'}

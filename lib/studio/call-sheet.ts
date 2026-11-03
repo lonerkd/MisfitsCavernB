@@ -86,8 +86,12 @@ export function issueState(sheet: (SheetFields & { version: number; issued: Json
 /** One person's call: their own, else the call of a role they're cast in. */
 export function callFor(snap: CallSheetSnapshot, userId: string, castAs: string[]): (CallEntry & { as?: string }) | null {
   if (snap.calls[userId]) return snap.calls[userId];
-  const role = [...castAs].sort().find((name) => snap.cast_calls[name]);
-  return role ? { ...snap.cast_calls[role], as: role } : null;
+  // A call is filed under the name as it was typed ("Dock Boy"), a casting under the character's upper-case name: match on
+  // the name, not on how it was cased.
+  const byName = new Map(Object.entries(snap.cast_calls).map(([name, entry]) => [name.trim().toUpperCase(), { name, entry }]));
+  const role = [...castAs].sort().find((name) => byName.has(name.trim().toUpperCase()));
+  const hit = role ? byName.get(role.trim().toUpperCase()) : undefined;
+  return role && hit ? { ...hit.entry, as: role } : null;
 }
 
 export const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');

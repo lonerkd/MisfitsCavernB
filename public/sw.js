@@ -110,14 +110,14 @@ self.addEventListener('push', (event) => {
       tag: n.tag || undefined,
       icon: '/icon-192.png',
       badge: '/icon-192.png',
-      data: { link: typeof n.link === 'string' && n.link.startsWith('/') && !n.link.startsWith('//') ? n.link : '/today' },
+      data: { link: typeof n.link === 'string' && n.link.startsWith('/') && !n.link.startsWith('//') ? n.link : '/community' },
     }),
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const link = (event.notification.data && event.notification.data.link) || '/today';
+  const link = (event.notification.data && event.notification.data.link) || '/community';
   const target = new URL(link, self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((wins) => {

@@ -22,10 +22,11 @@
    (mail catcher on :54324), `npx supabase stop` first if it came up from stale
    containers. Never push to `main`; PR from a `claude/*` branch; merge only
    once checks are green (owner, 2026-10-27: merge without waiting for the word; production follows main; flags are on in production).
-6. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
+6. **Owner, stats (2026-11-03):** production's public totals were inflated by old QA accounts; 10 were flagged as sample by hand and the stats function fix is in PR #419 (apply to production after merge). Tell Claude whether `thekid` is a test or bot account (it is counted as real now), and delete the throwaway QA accounts when convenient (BACKLOG 3.37).
+7. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
-7. **Last built (2026-11-01/02):** the offline queue merges instead of overwriting; ad export; the deep brain reads scripts with no blank lines and title-case cues, and the cast is the names read as cues; the island holds a voice call (who is speaking, a Room button) and the music; a two-browser voice spec. Open for the island: recording, uploads with progress, the On set day clock (BACKLOG 4.1).
+8. **Last built (2026-11-01/02):** the offline queue merges instead of overwriting; ad export; the deep brain reads scripts with no blank lines and title-case cues, and the cast is the names read as cues; the island holds a voice call (who is speaking, a Room button) and the music; a two-browser voice spec. Open for the island: recording, uploads with progress, the On set day clock (BACKLOG 4.1).
 
 ## Direction (owner, 2026-10-10)
 
