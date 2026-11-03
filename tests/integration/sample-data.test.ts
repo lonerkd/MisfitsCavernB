@@ -57,14 +57,16 @@ describe('sample work stays in the demo', () => {
     const admin = adminClient();
     const scripts = async () => Number(((await cast.riley.client.rpc('get_platform_stats')).data ?? [])[0]?.scripts);
     const before = await scripts();
-    const mk = async (by: string) => (await admin.from('scripts').insert({ title: `Loose ${Date.now()}`, content: 'INT. ROOM - DAY\n', created_by: by, last_edited_by: by }).select('id').single()).data!.id;
-    const novaScript = await mk(nova.id);
-    const rileyScript = await mk(cast.riley.id);
+    const mk = async (by: string, project?: string) => (await admin.from('scripts').insert({ title: `Loose ${Date.now()}`, content: 'INT. ROOM - DAY\n', created_by: by, last_edited_by: by, project_id: project ?? null }).select('id').single()).data!.id;
+    // Riley's own, ordinary project: a sample person's script inside it counts with the project.
+    const realProject = (await admin.from('projects').insert({ title: `Real ${Date.now()}`, creator_id: cast.riley.id, status: 'production' }).select('id').single()).data!.id;
+    const ids = [await mk(nova.id), await mk(cast.riley.id), await mk(nova.id, realProject)];
     try {
-      // Nova is a sample person: her script adds nothing; Riley's, an ordinary one, adds one.
-      expect(await scripts()).toBe(before + 1);
+      // Nova's loose script adds nothing; Riley's loose script adds one; Nova's script in a real project adds one.
+      expect(await scripts()).toBe(before + 2);
     } finally {
-      await admin.from('scripts').delete().in('id', [novaScript, rileyScript]);
+      await admin.from('scripts').delete().in('id', ids);
+      await admin.from('projects').delete().eq('id', realProject);
     }
   });
 
