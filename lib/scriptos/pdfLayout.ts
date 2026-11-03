@@ -56,18 +56,35 @@ function groupLines(items: PositionedItem[], page: number): VLine[] {
     const apart = (a: PositionedItem, b: PositionedItem) => b.transform[4] - (a.transform[4] + a.str.length * (Math.abs(a.transform[3]) || 12) * 0.6) > (Math.abs(a.transform[3]) || 12) * 1.2;
     if (cells.length >= 2 && SCENE_NUMBER.test(cells[0].str.trim()) && apart(cells[0], cells[1])) { sceneNo = cells[0].str.trim().replace(/\.$/, ''); cells = cells.slice(1); }
     if (cells.length >= 2 && SCENE_NUMBER.test(cells[cells.length - 1].str.trim()) && apart(cells[cells.length - 2], cells[cells.length - 1])) cells = cells.slice(0, -1);
-    let text = '';
-    let prevEnd = 0;
+    // A row can hold more than one column's text: dual dialogue, or a cue and its
+    // speech on one baseline. Split where the gutter is too wide to be a space
+    // inside a line, so each column's text becomes its own line.
+    const segments: PositionedItem[][] = [];
+    let seg: PositionedItem[] = [];
+    let segEnd = 0;
     for (const it of cells) {
       const size = Math.abs(it.transform[3]) || 12;
       const x = it.transform[4];
       const width = (it as { width?: number }).width ?? it.str.length * size * 0.6;
-      if (text && x - prevEnd > size * 0.25 && !text.endsWith(' ') && !it.str.startsWith(' ')) text += ' ';
-      text += it.str;
-      prevEnd = x + width;
+      if (seg.length && x - segEnd > size * 2.5) { segments.push(seg); seg = []; }
+      seg.push(it);
+      segEnd = x + width;
     }
-    text = text.replace(/\s+/g, ' ').trim();
-    if (text) lines.push({ text, x: cells[0].transform[4], y: cells[0].transform[5], page, size: Math.abs(cells[0].transform[3]) || 12, sceneNo });
+    if (seg.length) segments.push(seg);
+    for (const s of segments) {
+      let text = '';
+      let prevEnd = 0;
+      for (const it of s) {
+        const size = Math.abs(it.transform[3]) || 12;
+        const x = it.transform[4];
+        const width = (it as { width?: number }).width ?? it.str.length * size * 0.6;
+        if (text && x - prevEnd > size * 0.25 && !text.endsWith(' ') && !it.str.startsWith(' ')) text += ' ';
+        text += it.str;
+        prevEnd = x + width;
+      }
+      text = text.replace(/\s+/g, ' ').trim();
+      if (text) lines.push({ text, x: s[0].transform[4], y: s[0].transform[5], page, size: Math.abs(s[0].transform[3]) || 12, sceneNo });
+    }
   }
   return lines;
 }
@@ -108,9 +125,13 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
     };
   };
   const stats = new Map(cols.map((c) => [c, stat(c)]));
-  // The action column is where the headings are; failing that, the leftmost column with prose.
+  // The action column is where the headings are; failing that, the leftmost column.
+  // A fragment with no headings at all still has to be read: the leftmost column is
+  // the action margin by convention, and taking the leftmost *prose* column instead
+  // would swallow the cue column when the action margin is empty on the page.
   const byHeading = [...cols].sort((a, b) => stats.get(b)!.heading * stats.get(b)!.n - stats.get(a)!.heading * stats.get(a)!.n)[0];
-  const action = stats.get(byHeading)!.heading > 0 ? byHeading : (cols.find((c) => stats.get(c)!.lower > 0.4) ?? cols[0]);
+  const leftmost = [...cols].sort((a, b) => a.x - b.x)[0];
+  const action = stats.get(byHeading)!.heading > 0 ? byHeading : leftmost;
   roles.set(action, 'action');
   const right = cols.filter((c) => c !== action && c.x > action.x + 20).sort((a, b) => a.x - b.x);
   for (const c of cols) if (c !== action && c.x <= action.x + 20) roles.set(c, 'margin');
@@ -121,8 +142,40 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
   };
   take('parenthetical', (s) => s.paren, 0.6);
   take('transition', (s) => s.transition, 0.5);
-  take('character', (s) => s.capsShort, 0.55);
-  take('dialogue', (s) => s.lower * Math.min(1, s.n / 2), 0.3);
+  // Speech stacks: a dialogue column with its cue column to the right (a cue is
+  // indented further than its speech). A dual-dialogue block is a SECOND stack
+  // further right, so take every stack, not one. The prose test is what keeps a
+  // dialogue column from being taken as cues when a line is short and shouted.
+  const isCueCol = (c: Column) => {
+    const s = stats.get(c)!;
+    return s.capsShort >= 0.55 && s.lower < 0.5;
+  };
+  const isDlgCol = (c: Column) => {
+    const s = stats.get(c)!;
+    return s.lower >= 0.3 && s.capsShort < 0.55;
+  };
+  for (const c of [...free]) {
+    if (!isDlgCol(c)) continue;
+    const cue = free.filter((k) => k.x > c.x && k.x - c.x < 200 && isCueCol(k)).sort((a, b) => a.x - b.x)[0];
+    if (!cue) continue;
+    roles.set(c, 'dialogue');
+    roles.set(cue, 'character');
+    free.splice(free.indexOf(c), 1);
+    free.splice(free.indexOf(cue), 1);
+  }
+  // Anything still unassigned that is mostly prose is dialogue: in a dual block the
+  // right-hand speech has no cue of its own to pair with.
+  for (const c of [...free]) {
+    if (!isDlgCol(c)) continue;
+    roles.set(c, 'dialogue');
+    free.splice(free.indexOf(c), 1);
+  }
+  // A cue column with no dialogue column of its own (a shouted speech has no lower
+  // case to prove it is prose) still has to be found.
+  if (![...roles.values()].includes('character')) {
+    const best = free.map((c) => ({ c, v: stats.get(c)!.capsShort })).filter((e) => e.v >= 0.55).sort((a, b) => b.v - a.v)[0];
+    if (best) { roles.set(best.c, 'character'); free.splice(free.indexOf(best.c), 1); }
+  }
   // A column between the action margin and the cue column is dialogue, whatever is in it (shouting has no lower case).
   const cueCol = [...roles.entries()].find(([, r]) => r === 'character')?.[0];
   if (cueCol && ![...roles.values()].includes('dialogue')) {
@@ -140,7 +193,7 @@ function assignRoles(cols: Column[], lines: VLine[]): Map<Column, Role> {
 // ── 3. elements ───────────────────────────────────────────────────────────────
 
 type Kind = 'heading' | 'action' | 'cue' | 'parenthetical' | 'dialogue' | 'transition';
-interface Element { kind: Kind; text: string; page: number; bottom: number }
+interface Element { kind: Kind; text: string; page: number; bottom: number; /** One speech of a dual-dialogue pair. */ dual?: boolean }
 
 /** Plain structured text for the whole document. */
 export function layoutPages(pages: PositionedItem[][]): string {
@@ -158,9 +211,51 @@ export function layoutPages(pages: PositionedItem[][]): string {
     const col = [...roles.keys()].sort((a, b) => Math.abs(a.x - l.x) - Math.abs(b.x - l.x))[0];
     return col ? roles.get(col)! : 'action';
   };
+  // Dual dialogue is two speeches side by side. The reliable signal is a ROW with
+  // two cue lines on it: a script with one speech column never has that. Each cue
+  // owns the lines below it on its own side, so the pair is read by baseline.
+  const dualSide = new Map<VLine, 0 | 1>();
+  for (const ls of perPage) {
+    for (let i = 0; i < ls.length - 1; i++) {
+      const a = ls[i];
+      const b = ls[i + 1];
+      if (Math.abs(a.y - b.y) > 1 || a.x >= b.x) continue;
+      if (!cueLike(a.text) || !cueLike(b.text)) continue;
+      dualSide.set(a, 0);
+      dualSide.set(b, 1);
+      const mid = (a.x + b.x) / 2;
+      for (let j = i + 2; j < ls.length; j++) {
+        const l = ls[j];
+        if (l.y >= a.y - 1) continue;
+        if (HEADING.test(l.text)) break;
+        if (cueLike(l.text) && l.x > a.x - 40) break;
+        if (ls[j - 1] && ls[j - 1].y - l.y > lineHeight * 1.55) break;
+        dualSide.set(l, l.x < mid ? 0 : 1);
+      }
+    }
+  }
 
   const elements: Element[] = [];
   let more = false; // a (MORE) / (CONT'D) marker was seen: the next dialogue continues the speech above
+  // The open dual pair, if any: the two speeches are built side by side and only
+  // become elements when the pair closes, so each keeps its own text.
+  type Dual = { cue: string; dlg: string; page: number; bottom: number; paren?: string };
+  let dual: { left: Dual; right: Dual } | null = null;
+  const closeDual = () => {
+    if (!dual) return;
+    const pair = dual;
+    dual = null;
+    // Only a pair with both cues is dual dialogue; a lone side is just a speech.
+    const both = !!pair.left.cue && !!pair.right.cue;
+    const push = (d: Dual) => {
+      if (!d.cue && !d.dlg) return;
+      elements.push({ kind: 'cue', text: d.cue, page: d.page, bottom: d.bottom, dual: both });
+      if (d.paren) elements.push({ kind: 'parenthetical', text: d.paren, page: d.page, bottom: d.bottom });
+      if (d.dlg) elements.push({ kind: 'dialogue', text: d.dlg, page: d.page, bottom: d.bottom, dual: both });
+    };
+    push(pair.left);
+    push(pair.right);
+  };
   for (const ls of perPage) {
     ls.forEach((l, li) => {
       const role = roleOf(l);
@@ -171,6 +266,18 @@ export function layoutPages(pages: PositionedItem[][]): string {
       if (PAGE_NUMBER.test(text) && (topOrBottom || l.x > actionX + (maxX - actionX) * 0.9)) return;
       if (role === 'margin' && SCENE_NUMBER.test(text)) return;
       if (SCENE_NUMBER.test(text) && l.x > maxX + 1) return;
+
+      // A line in a dual block belongs to its own side, not to the flow.
+      const side = dualSide.get(l);
+      if (side !== undefined) {
+        if (!dual) dual = { left: { cue: '', dlg: '', page: l.page, bottom: l.y }, right: { cue: '', dlg: '', page: l.page, bottom: l.y } };
+        const d = side === 0 ? dual.left : dual.right;
+        if (cueLike(text) && !d.cue) { d.cue = text; d.bottom = l.y; }
+        else if (text.startsWith('(')) { d.paren = d.paren ? d.paren + ' ' + text : text; d.bottom = l.y; }
+        else { d.dlg = d.dlg ? d.dlg + ' ' + text : text; d.bottom = l.y; }
+        return;
+      }
+      closeDual();
 
       const prev = elements[elements.length - 1];
       const gap = prev && prev.page === l.page ? prev.bottom - l.y : Infinity;
@@ -189,7 +296,19 @@ export function layoutPages(pages: PositionedItem[][]): string {
         if (sameBlock('dialogue') || (more && prev?.kind === 'dialogue')) { prev!.text += ' ' + text; prev!.bottom = l.y; prev!.page = l.page; more = false; return; }
         el = { kind: 'dialogue', text, page: l.page, bottom: l.y };
       } else if (HEADING.test(text)) el = { kind: 'heading', text: l.sceneNo ? `${text} #${l.sceneNo}#` : text, page: l.page, bottom: l.y };
-      else {
+      else if (prev && (prev.kind === 'dialogue' || prev.kind === 'parenthetical') && !breaks && proseLike(text)) {
+        // A speech is open and this line is running text: it is that speech, even
+        // though it sits in the action column. In a fragment with no headings, or a
+        // page whose action margin is empty, one column carries both, and the only
+        // thing that tells them apart is that a cue came first.
+        prev.text += ' ' + text;
+        prev.bottom = l.y;
+        prev.page = l.page;
+        return;
+      } else if (prev && prev.kind === 'cue' && !breaks && proseLike(text)) {
+        // The cue's own speech, in the same column (a fragment with no headings).
+        el = { kind: 'dialogue', text, page: l.page, bottom: l.y };
+      } else {
         if (sameBlock('action')) { prev!.text += ' ' + text; prev!.bottom = l.y; return; }
         el = { kind: 'action', text, page: l.page, bottom: l.y };
       }
@@ -197,16 +316,26 @@ export function layoutPages(pages: PositionedItem[][]): string {
       elements.push(el);
     });
   }
+  closeDual(); // a pair at the very end of the document still has to be written out
 
   // Words hyphenated across a line break are one word again.
   const clean = (t: string) => t.replace(/(\p{L})- (\p{Ll})/gu, '$1$2').replace(/\s+/g, ' ').trim();
   const out: string[] = [];
   let inSpeech = false;
+  let dualLeft: string | null = null; // the cue of the left speech of a dual pair, waiting for its partner
   for (const el of elements) {
     const text = clean(el.text);
     if (!text) continue;
     const speechPart = el.kind === 'parenthetical' || el.kind === 'dialogue';
-    if (el.kind === 'cue') { out.push(out.length ? '\n\n' : '', text); inSpeech = true; continue; }
+    if (el.kind === 'cue') {
+      // Fountain marks the SECOND cue of a dual pair with a caret, and the two
+      // speeches are written one after the other.
+      if (el.dual && dualLeft) { out.push('\n\n', text, ' ^'); dualLeft = null; inSpeech = true; continue; }
+      if (el.dual) dualLeft = text;
+      out.push(out.length ? '\n\n' : '', text);
+      inSpeech = true;
+      continue;
+    }
     if (speechPart && inSpeech) { out.push('\n', text); continue; }
     inSpeech = false;
     out.push(out.length ? '\n\n' : '', text);
