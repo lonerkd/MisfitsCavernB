@@ -11,6 +11,7 @@ import { YourDay } from '@/components/community/YourDay';
 import { HubFeed } from '@/components/community/HubFeed';
 import { CrewStrip } from '@/components/community/CrewStrip';
 import { TheCavern } from '@/components/community/TheCavern';
+import { WhenNear } from '@/components/community/WhenNear';
 import { HouseMusic } from '@/components/home/HouseMusic';
 
 function Section({ id, icon, title, children }: { id: string; icon: React.ReactNode; title: string; children: React.ReactNode }) {
@@ -33,13 +34,13 @@ export default function CommunityPage() {
             <HubFeed />
           </Section>
           <Section id="community-crew" icon={<Users size={14} aria-hidden />} title="Crew open to work">
-            <CrewStrip />
+            <WhenNear><CrewStrip /></WhenNear>
           </Section>
           <Section id="community-cavern" icon={<Compass size={14} aria-hidden />} title="The Cavern">
-            <TheCavern />
+            <WhenNear><TheCavern /></WhenNear>
           </Section>
           <Section id="community-music" icon={<Music size={14} aria-hidden />} title="Music from the Cavern">
-            <HouseMusic />
+            <WhenNear><HouseMusic /></WhenNear>
           </Section>
         </div>
       </main>
