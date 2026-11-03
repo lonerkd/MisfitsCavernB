@@ -29,7 +29,7 @@ test.describe('Music from the Cavern (local Supabase)', () => {
     await page.fill('input[name="password"]', PASSWORD);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
-    await page.goto('/today');
+    await page.goto('/community');
 
     const section = page.getByRole('region', { name: 'Music from the Cavern' });
     await expect(section).toBeVisible({ timeout: 30_000 });

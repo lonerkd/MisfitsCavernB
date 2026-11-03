@@ -65,7 +65,7 @@ describe('typing', () => {
 
 describe('islandRoute', () => {
   it('names every part of the suite', () => {
-    for (const path of ['/', '/today', '/projects', '/projects/abc', '/projects/abc/pitch', '/editor', '/studio', '/soundtrack', '/lounge', '/call/abc',
+    for (const path of ['/', '/community', '/projects', '/projects/abc', '/projects/abc/pitch', '/editor', '/studio', '/soundtrack', '/lounge', '/call/abc',
       '/portfolio', '/portfolio/manage', '/showcase', '/jobs', '/jobs/abc', '/crew', '/crew/abc', '/profile', '/settings', '/welcome', '/admin', '/admin/errors']) {
       const r = islandRoute(path, true);
       expect(r.title, path).not.toBe('');
@@ -76,12 +76,12 @@ describe('islandRoute', () => {
   });
 
   it('offers a project’s tools only when a project is open', () => {
-    expect(islandRoute('/today', false).links.map((l) => l.href)).toEqual(['/projects']);
-    expect(islandRoute('/today', true).links.map((l) => l.href)).toEqual(['/projects', '/editor', '/studio', '/lounge']);
+    expect(islandRoute('/community', false).links.map((l) => l.href)).toEqual(['/projects']);
+    expect(islandRoute('/community', true).links.map((l) => l.href)).toEqual(['/projects', '/editor', '/studio', '/lounge']);
   });
 
   it('never offers more controls than the Caps layer has keys', () => {
-    for (const path of ['/', '/today', '/projects/abc', '/admin']) expect(islandRoute(path, true).links.length).toBeLessThanOrEqual(CONTROL_KEYS.length);
+    for (const path of ['/', '/community', '/projects/abc', '/admin']) expect(islandRoute(path, true).links.length).toBeLessThanOrEqual(CONTROL_KEYS.length);
   });
 
   it('falls back to the route’s own name', () => {
@@ -112,7 +112,7 @@ describe('island size', () => {
 describe('islandRoute back target', () => {
   it('has no back on the top-level places', () => {
     expect(islandRoute('/projects', false).back).toBeNull();
-    expect(islandRoute('/today', false).back).toBeNull();
+    expect(islandRoute('/community', false).back).toBeNull();
   });
   it('goes up one level from a project and its tools', () => {
     expect(islandRoute('/projects/p1', true).back).toEqual({ label: 'Projects', href: '/projects' });

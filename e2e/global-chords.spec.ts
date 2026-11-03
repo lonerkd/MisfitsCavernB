@@ -30,7 +30,7 @@ test.describe.serial('Global chords (local Supabase)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
-    for (const route of ['/today', '/editor']) {
+    for (const route of ['/community', '/editor']) {
       await page.goto(route);
       await page.waitForLoadState('domcontentloaded');
       // Inside the editor, the press happens with the script's text box focused (a failure to find it fails the test).
@@ -62,7 +62,7 @@ test.describe.serial('Global chords (local Supabase)', () => {
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
-    await page.goto('/today');
+    await page.goto('/community');
     await page.keyboard.press('Control+\\');
     await page.waitForURL(/\/split/, { timeout: 30_000 });
     const pane = page.frameLocator('iframe').first();

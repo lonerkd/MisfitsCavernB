@@ -1,4 +1,4 @@
-// Today (/today): the next days on set, my calls, what's mine to do, and who
+// Your day (a section of /community): the next days on set, my calls, what's mine to do, and who
 // or what is unread in the Lounge — for the person signed in, across their
 // projects. RLS limits every read to what they can see.
 import { supabase } from './client';

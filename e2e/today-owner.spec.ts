@@ -64,7 +64,7 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
   test('the owner sees what needs them on the project', async ({ page }) => {
     test.setTimeout(120_000);
     await signIn(page, owner);
-    await page.goto('/today');
+    await page.goto('/community');
     const flags = page.getByRole('list', { name: `Flags ${TAG}: what needs you` });
     await expect(flags).toBeVisible({ timeout: 30_000 });
     await expect(flags.getByText('1 invite unanswered')).toBeVisible();
@@ -75,7 +75,7 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
   test('a day dated on the schedule with no call sheet yet still shows as the next day, not issued', async ({ page }) => {
     test.setTimeout(120_000);
     await signIn(page, owner);
-    await page.goto('/today');
+    await page.goto('/community');
     const flags = page.getByRole('list', { name: `Sched ${TAG}: what needs you` });
     await expect(flags).toBeVisible({ timeout: 30_000 });
     await expect(flags.getByText(/Day 1 · .* · call sheet not issued/)).toBeVisible();
@@ -84,7 +84,7 @@ test.describe.serial('Today for the owner (local Supabase)', () => {
   test('crew see no such flags', async ({ page }) => {
     test.setTimeout(120_000);
     await signIn(page, crew);
-    await page.goto('/today');
+    await page.goto('/community');
     await expect(page.getByRole('heading', { name: 'Your projects' })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByRole('link', { name: new RegExp(`Flags ${TAG}`) })).toBeVisible();
     await expect(page.getByRole('list', { name: `Flags ${TAG}: what needs you` })).toHaveCount(0);

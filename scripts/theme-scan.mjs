@@ -7,7 +7,7 @@
 //   npm run theme:scan                       the default theme, desktop
 //   THEME=slate npm run theme:scan           another theme (an id from lib/themes/themes.ts)
 //   PHONE=1 npm run theme:scan               at phone width
-//   npm run theme:scan -- /jobs /today       only these routes
+//   npm run theme:scan -- /jobs /community       only these routes
 //
 // Needs the local stack and the demo account (npm run stack:up -- build, then npm run bible:shots once). Local only.
 import { chromium } from '@playwright/test';
@@ -23,7 +23,7 @@ const THEME = process.env.THEME;
 const PHONE = !!process.env.PHONE;
 const MIN = Number(process.env.MIN_CONTRAST || 3);
 const DEFAULT_ROUTES = [
-  '/today', '/projects', '/jobs', '/lounge', '/settings', '/profile', '/crew', '/hub', '/portfolio', '/editor',
+  '/community', '/projects', '/jobs', '/lounge', '/settings', '/profile', '/crew', '/portfolio', '/editor',
   '/admin', '/admin/users', '/admin/audit-logs',
   '/studio?tab=overview', '/studio?tab=library', '/studio?tab=scenes', '/studio?tab=post', '/studio?tab=pitch', '/studio?tab=share',
   ...['story', 'breakdown', 'readiness', 'locations', 'continuity', 'money', 'paperwork', 'schedule', 'onset', 'crew'].map((v) => `/studio?tab=production&view=${v}`),
