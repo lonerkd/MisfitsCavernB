@@ -195,7 +195,7 @@ lines and status colours from the background's luminance).
 - Public pages (`/p`, `/s`, `/shared`) set `data-theme="default"` (Cavern) on their
   root — a shared page always looks the way its maker designed it, whatever the
   suite's default is. The PWA's `theme_color` / `background_color` follow the default (Paper).
-- **Check a theme with `npm run theme:scan`** (`THEME=<id>`, `PHONE=1`): it walks the screens as the demo account and lists text under 3:1 against what is really behind it. A brand or role colour used as *text* goes through `readable()` (`lib/util/color.ts`) or the `--ok` / `--info` / `--warn` / `--danger` tokens, never a bare hex; words on a video frame are light in every theme.
+- **Check a theme with `npm run theme:scan`** (`THEME=<id>`, `PHONE=1`): it walks the screens as the demo account and lists text under 3:1 against what is really behind it. A brand or role colour used as *text* goes through `readable()` (`lib/util/color.ts`) or the `--ok` / `--info` / `--warn` / `--danger` tokens, never a bare hex; words on a video frame or poster use `--media-fg` / `--media-fg-dim` (set once in `:root`: light in every theme, since the frame is dark in every theme).
 - **Never hard-code** white/black/cream in UI. Use the tokens every theme sets:
   `--fg`, `--fg-strong`, `--fg-muted`, `--fg-dim`; `rgba(var(--fg-rgb), a)`
   for text-coloured tints; `rgba(var(--ink-rgb), a)` for hairlines and

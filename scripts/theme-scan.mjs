@@ -13,7 +13,10 @@
 import { chromium } from '@playwright/test';
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
-if (!/localhost|127\.0\.0\.1/.test(BASE)) { console.error('theme:scan runs against the local stack only.'); process.exit(1); }
+// The demo account's password is typed into the page: only ever a local one (the exact host, not a name that merely contains it).
+let host = '';
+try { host = new URL(BASE).hostname; } catch { /* not a URL */ }
+if (host !== 'localhost' && host !== '127.0.0.1') { console.error('theme:scan runs against the local stack only.'); process.exit(1); }
 const EMAIL = 'bible@cavern.local';
 const PASSWORD = 'bible-local-only-1';
 const THEME = process.env.THEME;
@@ -38,9 +41,25 @@ await page.locator('button[type="submit"]').click();
 await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
 let total = 0;
+let failures = 0;
+let effective = '';
 for (const route of routes) {
-  await page.goto(BASE + route, { waitUntil: 'networkidle' }).catch(() => {});
+  // A route that fails to load, or lands somewhere else (a redirect), is a failure, never a scan of the page before it.
+  try {
+    await page.goto(BASE + route, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+    await page.waitForLoadState('networkidle', { timeout: 8_000 }).catch(() => { /* a page that polls never settles: the pause below is the settle */ });
+  } catch (e) {
+    console.log(`\n${route}: could not be loaded (${e instanceof Error ? e.message.split('\n')[0] : e})`);
+    failures++;
+    continue;
+  }
   await page.waitForTimeout(1800);
+  const wanted = new URL(BASE + route).pathname;
+  const landed = new URL(page.url()).pathname;
+  if (landed !== wanted) { console.log(`\n${route}: landed on ${landed} instead (a redirect: not scanned)`); failures++; continue; }
+  effective = await page.evaluate(() => document.documentElement.dataset.theme || '');
+  // The account's own saved theme is applied once its preferences load: if it overrode the one asked for, say so rather than scan the wrong theme.
+  if (THEME && effective !== THEME) { console.log(`\n${route}: the page is in "${effective}", not "${THEME}" (the demo account's saved theme won): not scanned`); failures++; continue; }
   const found = await page.evaluate((min) => {
     const out = [];
     const parse = (c) => { const m = c.match(/rgba?\(([^)]+)\)/); if (!m) return null; const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number); return { r: p[0], g: p[1], b: p[2], a: p[3] === undefined ? 1 : p[3] }; };
@@ -57,12 +76,15 @@ for (const route of routes) {
       seen.add(el);
       const cs = getComputedStyle(el);
       if (cs.visibility === 'hidden' || cs.display === 'none' || +cs.opacity === 0) continue;
+      // A disabled control is exempt from contrast rules (WCAG 1.4.3), and is drawn faint on purpose.
+      if (el.closest('button:disabled, input:disabled, select:disabled, textarea:disabled, [aria-disabled="true"]')) continue;
       const r = el.getBoundingClientRect();
-      if (r.width < 4 || r.height < 4 || r.bottom < 0 || r.top > 2400) continue;
+      if (r.width < 4 || r.height < 4) continue;
       const layers = []; let skip = false;
       for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
         const s = getComputedStyle(n);
-        if (s.backgroundImage && s.backgroundImage !== 'none') { skip = true; break; }
+        // Text over an image or gradient on an element is skipped (its colour is not one value); a decoration on the page itself (Blueprint's grid, Glass's gradient) is not an element's background.
+        if (s.backgroundImage && s.backgroundImage !== 'none' && n !== document.body && n !== document.documentElement) { skip = true; break; }
         const c = parse(s.backgroundColor);
         if (c && c.a > 0) { layers.push(c); if (c.a >= 0.99) break; }
       }
@@ -86,5 +108,6 @@ for (const route of routes) {
   }
 }
 await browser.close();
-console.log(`\n${routes.length} screens, ${THEME || "default theme"}${PHONE ? ', phone' : ''}: ${total ? `${total} low-contrast kind${total === 1 ? '' : 's'}` : 'every piece of text reads'}.`);
-process.exit(total ? 1 : 0);
+const bad = total + failures;
+console.log(`\n${routes.length} screens, theme "${effective || THEME || 'default'}"${PHONE ? ', phone' : ''}: ${bad ? `${total} low-contrast kind${total === 1 ? '' : 's'}${failures ? `, ${failures} screen${failures === 1 ? '' : 's'} not scanned` : ''}` : 'every piece of text reads'}.`);
+process.exit(bad ? 1 : 0);

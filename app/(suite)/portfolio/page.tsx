@@ -133,11 +133,11 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
           letterSpacing: '-0.02em',
           lineHeight: 1,
           marginBottom: 4,
-          color: '#fff',
+          color: 'var(--media-fg)',
         }}>
           {video.title}
         </h2>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'rgba(255,255,255,0.72)', textTransform: 'var(--caps)' }}>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--media-fg-dim)', textTransform: 'var(--caps)' }}>
           {[video.role, video.year].filter(Boolean).join(' · ')}
         </div>
         {hover && (
@@ -148,7 +148,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
             style={{
               fontFamily: 'var(--serif)',
               fontSize: 12,
-              color: 'rgba(255,255,255,0.72)',
+              color: 'var(--media-fg-dim)',
               marginTop: 6,
               fontStyle: 'italic',
               maxWidth: 380,
