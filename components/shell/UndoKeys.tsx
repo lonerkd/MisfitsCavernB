@@ -7,7 +7,7 @@ import { peekUndo, undoLast } from '@/lib/os/undo';
 
 const typing = (t: EventTarget | null): boolean => {
   const el = t as HTMLElement | null;
-  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable);
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable || !!el.closest?.('[role="textbox"], [role="searchbox"], [role="combobox"]'));
 };
 
 /** Ctrl/⌘ Z outside a text box takes back the last thing done in this tool (`lib/os/undo.ts`). In a text box, the box keeps its own undo. */

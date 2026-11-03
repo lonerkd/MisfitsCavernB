@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearUndo, peekUndo, pushUndo, scopeOf, setUndoContext, subscribeUndo, undoDepth, undoLast, undoOrigin } from './undo';
+import { UndoRefused, clearUndo, peekUndo, pushUndo, scopeOf, setUndoContext, subscribeUndo, undoDepth, undoLast, undoOrigin } from './undo';
 
 beforeEach(() => clearUndo());
 
@@ -32,11 +32,28 @@ describe('the undo stack', () => {
     expect(peekUndo('jobs')?.label).toBe('closed a job');
   });
 
-  it('reports a failed undo and drops it, so the next one still works', async () => {
+  it('drops a refused undo for good, so the next one still works', async () => {
     pushUndo('ok', () => {}, { scope: 'studio' });
-    pushUndo('bad', () => { throw new Error('the row is gone'); }, { scope: 'studio' });
-    expect(await undoLast('studio')).toEqual({ status: 'failed', label: 'bad', message: 'the row is gone' });
+    pushUndo('bad', () => { throw new UndoRefused('changed since'); }, { scope: 'studio' });
+    expect(await undoLast('studio')).toEqual({ status: 'failed', label: 'bad', message: 'changed since' });
     expect(await undoLast('studio')).toEqual({ status: 'undone', label: 'ok' });
+  });
+
+  it('keeps an undo that failed for a passing reason on top, so pressing again retries it before anything older', async () => {
+    let attempts = 0;
+    pushUndo('older', () => {}, { scope: 'studio' });
+    pushUndo('flaky', () => { if (++attempts === 1) throw new Error('network down'); }, { scope: 'studio' });
+    expect(await undoLast('studio')).toMatchObject({ status: 'failed', label: 'flaky' });
+    expect(await undoLast('studio')).toEqual({ status: 'undone', label: 'flaky' });
+    expect(await undoLast('studio')).toEqual({ status: 'undone', label: 'older' });
+  });
+
+  it('lets a twice-failing undo go, so it cannot block the older ones for ever', async () => {
+    pushUndo('older', () => {}, { scope: 'studio' });
+    pushUndo('broken', () => { throw new Error('still down'); }, { scope: 'studio' });
+    await undoLast('studio');
+    await undoLast('studio');
+    expect(await undoLast('studio')).toEqual({ status: 'undone', label: 'older' });
   });
 
   it('awaits an async undo', async () => {
@@ -89,10 +106,12 @@ describe('the undo stack', () => {
     expect(log).toEqual(['second:start', 'second:end', 'first:start', 'first:end']);
   });
 
-  it('forgets everything when cleared (the session ended)', async () => {
-    pushUndo('old session', () => {}, { scope: 'studio' });
+  it('forgets every action when cleared (the session ended) but keeps where the person is working', async () => {
+    setUndoContext('studio', 'project-a');
+    pushUndo('old session', () => {}, undoOrigin('studio'));
     clearUndo();
     expect(await undoLast('studio')).toEqual({ status: 'empty' });
+    expect(undoOrigin('studio')).toEqual({ scope: 'studio', context: 'project-a' });
   });
 
   it('tells subscribers when the stack changes', async () => {

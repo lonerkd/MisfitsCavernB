@@ -101,7 +101,10 @@ const noNav = () => {};
 export function StudioProvider({ project, userId, onNavigate = noNav, children }: { project: Project; userId: string; onNavigate?: (tab: StudioTab, view?: ProductionView) => void; children: React.ReactNode }) {
   const projectId = project.id;
   // The undo stack hides another project's actions while this one is open.
-  useEffect(() => { setUndoContext('studio', projectId); }, [projectId]);
+  useEffect(() => {
+    setUndoContext('studio', projectId);
+    return () => setUndoContext('studio', undefined);
+  }, [projectId]);
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
   const shots = useProjectShots(projectId);

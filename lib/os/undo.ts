@@ -15,11 +15,18 @@ export interface UndoOrigin {
   context?: string;
 }
 
+/** Thrown by an inverse that can never succeed now (the thing was changed since): the entry is dropped, not retried. */
+export class UndoRefused extends Error {
+  constructor(message: string) { super(message); this.name = 'UndoRefused'; }
+}
+
 export interface UndoEntry extends UndoOrigin {
   /** What was done, in the words the toast uses: "Moved scene 4 to day 2". */
   label: string;
   /** Takes the action back. Throws (or rejects) when it cannot, and the person is told. */
   undo: () => void | Promise<void>;
+  /** How many times it has failed for a reason that may pass (a dropped connection). */
+  failures?: number;
 }
 
 const MAX_PER_SCOPE = 50;
@@ -73,6 +80,8 @@ export type UndoResult = { status: 'empty' } | { status: 'undone'; label: string
 
 let running: Promise<unknown> = Promise.resolve();
 
+const MAX_FAILURES = 2;
+
 async function runOne(scope: string): Promise<UndoResult> {
   const entry = peekUndo(scope);
   if (!entry) return { status: 'empty' };
@@ -82,7 +91,16 @@ async function runOne(scope: string): Promise<UndoResult> {
     await entry.undo();
     return { status: 'undone', label: entry.label };
   } catch (e) {
-    return { status: 'failed', label: entry.label, message: e instanceof Error ? e.message : 'Could not undo' };
+    const message = e instanceof Error ? e.message : 'Could not undo';
+    // A refusal is final. Any other failure (a dropped connection) keeps the entry on top so pressing again retries it, rather
+    // than silently undoing an older action out of order; after a second failure it is let go.
+    const failures = (entry.failures ?? 0) + 1;
+    if (!(e instanceof UndoRefused) && failures < MAX_FAILURES) {
+      stack.push({ ...entry, failures });
+      emit();
+      return { status: 'failed', label: entry.label, message: `${message} Press again to retry.` };
+    }
+    return { status: 'failed', label: entry.label, message };
   }
 }
 
@@ -100,10 +118,9 @@ export function undoDepth(scope: string = currentScope()): number {
   return stack.filter((e) => eligible(e, scope)).length;
 }
 
-/** Forget everything: the session ended or changed hands. */
+/** Forget every action: the session ended or changed hands. (Contexts describe what is on screen now, so they stay.) */
 export function clearUndo(): void {
   stack = [];
-  contexts.clear();
   emit();
 }
 
