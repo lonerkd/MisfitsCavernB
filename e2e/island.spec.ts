@@ -75,7 +75,7 @@ test.describe('The island (local Supabase)', () => {
     await shape(page, 'open');
     const controls = page.getByRole('group', { name: 'Projects controls' });
     await expect(controls.getByRole('button', { name: '+ New Project' })).toBeVisible();
-    for (const name of ['Hub', 'Today', 'ScriptOS', 'Studio', 'Lounge', 'Portfolio', 'Profile', 'Settings']) {
+    for (const name of ['Community', 'ScriptOS', 'Studio', 'Lounge', 'Portfolio', 'Profile', 'Settings']) {
       await expect(island(page).getByRole('link', { name, exact: true })).toBeVisible();
     }
     await expect(page.getByRole('button', { name: 'Search (Caps Lock, then slash)' })).toBeVisible();
@@ -143,9 +143,9 @@ test.describe('The island (local Supabase)', () => {
     await capsKey(page, 'CapsLock');
     await shape(page, 'caps');
     await expect(surface(page)).toContainText('put away');
-    await expect(island(page).getByRole('link', { name: 'Today', exact: true })).toBeVisible();
-    // Q is the first control on show — here, the Lounge's message search.
-    await capsKey(page, 'Q');
+    await expect(island(page).getByRole('link', { name: 'Community', exact: true })).toBeVisible();
+    // E is Find on every page that has one (a slot, not a position) — here, the Lounge's message search.
+    await capsKey(page, 'E');
     await expect(page.getByRole('dialog', { name: 'Search the Lounge' })).toBeVisible();
     await capsKey(page, 'Escape');
     await shape(page, 'rest'); // put away with Escape…
@@ -154,8 +154,8 @@ test.describe('The island (local Supabase)', () => {
     await capsOff(page);
     await capsKey(page, 'CapsLock');
     await shape(page, 'caps'); // a fresh Caps Lock brings it back
-    await capsKey(page, '2'); // the second app: Today
-    await page.waitForURL(/\/today/);
+    await capsKey(page, '1'); // the first app: Community
+    await page.waitForURL(/\/community/);
     await capsOff(page);
     await shape(page, 'rest');
 
@@ -193,7 +193,7 @@ test.describe('The island (local Supabase)', () => {
 
     // Kept on this device: still that size on another page, after a reload.
     await slider.fill('1.3');
-    await page.goto('/today');
+    await page.goto('/community');
     await expect(island(page)).toBeVisible({ timeout: 30_000 });
     await page.mouse.move(10, 10);
     await expect.poll(reserve).toBe('77px');

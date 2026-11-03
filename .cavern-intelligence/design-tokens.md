@@ -170,8 +170,8 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 
 | Theme | Mode | Look |
 |---|---|---|
-| `default` (Cavern) | dark | near-black, cream text, ember accent |
-| `paper` (Paper) | light | warm off-white, ink text, rust accent |
+| `paper` (Paper) — **the default** | light | warm off-white, ink text, rust accent |
+| `default` (Cavern) | dark | near-black, cool white text, ember accent — the brand's night look |
 | `vampire` (Vampire) | dark | black, blood red accent |
 | `blueprint` (Blueprint) | dark | drafting blue, sky accent, grid |
 | `terminal` (Terminal) | dark | green phosphor, mono type |
@@ -184,7 +184,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | `lagoon` | light | pale teal, teal accent |
 | `forest` | dark | deep green, sage accent |
 
-Plus **System** (Paper when the device is light, Cavern when dark) and
+Paper is what a person sees until they choose (owner, 2026-11-03; `DEFAULT_THEME_ID` in `lib/themes/themes.ts`, first in the picker, the rest in the order below). Someone who chose Cavern keeps it. Plus **System** (Paper when the device is light, Cavern when dark) and
 **Custom** (a background + an accent; `customTokens()` derives readable text,
 lines and status colours from the background's luminance).
 
@@ -192,8 +192,10 @@ lines and status colours from the background's luminance).
   `set_my_ui_prefs`) and copied to the device (`localStorage.mc_theme`, plus
   `mc_theme_vars` for Custom). An inline script in `<head>` paints the device
   copy before first paint; `ThemeInitializer` then applies the account's.
-- Public pages (`/p`, `/s`, `/shared`) set `data-theme="default"` on their
-  root — a shared page always looks the way its maker designed it.
+- Public pages (`/p`, `/s`, `/shared`) set `data-theme="default"` (Cavern) on their
+  root — a shared page always looks the way its maker designed it, whatever the
+  suite's default is. The PWA's `theme_color` / `background_color` follow the default (Paper).
+- **Check a theme with `npm run theme:scan`** (`THEME=<id>`, `PHONE=1`): it walks the screens as the demo account and lists text under 3:1 against what is really behind it. A brand or role colour used as *text* goes through `readable()` (`lib/util/color.ts`) or the `--ok` / `--info` / `--warn` / `--danger` tokens, never a bare hex; words on a video frame or poster use `--media-fg` / `--media-fg-dim` (set once in `:root`: light in every theme, since the frame is dark in every theme).
 - **Never hard-code** white/black/cream in UI. Use the tokens every theme sets:
   `--fg`, `--fg-strong`, `--fg-muted`, `--fg-dim`; `rgba(var(--fg-rgb), a)`
   for text-coloured tints; `rgba(var(--ink-rgb), a)` for hairlines and

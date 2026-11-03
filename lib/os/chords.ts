@@ -20,15 +20,16 @@ export const CHORDS: readonly Chord[] = [
   { id: 'palette', key: 'k', scope: 'global', label: 'Search everything: the command palette' },
   { id: 'split', key: '\\', scope: 'global', label: 'Split screen: this page and another side by side' },
   { id: 'help', key: '/', scope: 'global', label: 'Show the keyboard shortcuts' },
+  // Undo and redo: in a text box, that box's own history (the editor's, or the browser's); anywhere else, the last thing done in this tool.
+  { id: 'undo', key: 'z', scope: 'global', label: 'Undo: in a text box its typing, elsewhere the last thing you did here' },
+  { id: 'redo', key: 'z', shift: true, scope: 'global', label: 'Redo, in a text box' },
+  { id: 'redo-y', key: 'y', scope: 'global', label: 'Redo, in a text box' },
   // The editor's own.
   { id: 'editor.save', key: 's', scope: 'editor', label: 'Save the script' },
   { id: 'editor.find', key: 'f', scope: 'editor', label: 'Find and replace' },
   { id: 'editor.focus', key: 'e', scope: 'editor', label: 'Focus mode' },
   { id: 'editor.goto', key: 'g', scope: 'editor', label: 'Go to a scene' },
-  { id: 'editor.undo', key: 'z', scope: 'editor', label: 'Undo' },
-  { id: 'editor.redo', key: 'z', shift: true, scope: 'editor', label: 'Redo' },
   { id: 'editor.tagmode', key: 'b', shift: true, scope: 'editor', label: 'Breakdown tag mode' },
-  { id: 'editor.redo-y', key: 'y', scope: 'editor', label: 'Redo' },
 ];
 
 export interface KeyLike { key?: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }

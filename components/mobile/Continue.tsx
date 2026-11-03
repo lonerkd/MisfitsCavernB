@@ -123,7 +123,7 @@ export function ContinueOffer({ inline = false, className = '' }: { inline?: boo
   const firstPath = !inline && hydrated ? firstPathOfVisit(pathname) : null;
 
   if (!isAuthenticated || !offer) return null;
-  if (!inline && (pathname !== firstPath || pathname === '/today' || pathname.startsWith('/editor') || pathname === '/split' || /^\/(auth|login|shared|p|s|call)(\/|$)/.test(pathname))) return null;
+  if (!inline && (pathname !== firstPath || pathname === '/community' || pathname.startsWith('/editor') || pathname === '/split' || /^\/(auth|login|shared|p|s|call)(\/|$)/.test(pathname))) return null;
   const Icon = offer.from === 'phone' ? Smartphone : Laptop;
   const take = () => { dismiss(offer.place); go(offer.place); };
   return (

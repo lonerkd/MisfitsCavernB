@@ -341,6 +341,23 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /**
+   * Writes the patch only if the scene still holds what `expected` says, in one statement, so nothing can slip in between.
+   * The undo of a move or a status change uses it, so it never overwrites a newer change (another device's, or a later one
+   * of your own). Null when the scene has changed since, or is gone, or you can't edit it.
+   */
+  async function updateSceneIf(
+    id: string,
+    expected: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>,
+    patch: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>,
+  ): Promise<SceneRow | null> {
+    let q = db.from('scenes').update(patch).eq('id', id);
+    for (const [col, val] of Object.entries(expected)) q = val === null || val === undefined ? q.is(col, null) : q.eq(col, val);
+    const { data, error } = await q.select('*').maybeSingle();
+    if (error) fail(error, 'Could not save the scene');
+    return data;
+  }
+
   // ── Shot list ────────────────────────────────────────────────────────────
 
   async function listShots(projectId: string): Promise<Shot[]> {
@@ -957,7 +974,7 @@ export function createStudioApi(db: Client) {
 
   return {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
-    listScenes, listProjectScenes, syncScriptScenes, updateScene,
+    listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,

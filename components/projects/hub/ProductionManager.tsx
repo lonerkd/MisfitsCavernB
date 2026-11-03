@@ -470,7 +470,7 @@ function BudgetRowItem({
       { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
       ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? 'var(--danger)' : undefined }] : []),
     ],
-    actions: posted ? [] : [{ id: 'post-job', label: '→ Post as Job', onClick: onPostJob }],
+    actions: posted ? [] : [{ id: 'post-job', slot: 'create', label: '→ Post as Job', onClick: onPostJob }],
   }, 2);
 
   return (

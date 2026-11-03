@@ -157,8 +157,8 @@ export function useLounge() {
         ...(unreadTotal > 0 ? [{ label: 'Unread', value: `${unreadTotal}`, color: 'var(--ok)' }] : []),
       ],
       actions: [
-        { id: 'lounge-search', label: 'Search messages', onClick: () => { setShowPinned(false); setShowSearch(true); } },
-        ...(!dmTarget && activeChannel && activeChannel.type !== 'voice' ? [{ id: 'lounge-pinned', label: 'Pinned', onClick: () => { setShowSearch(false); setShowPinned(true); } }] : []),
+        { id: 'lounge-search', slot: 'find', label: 'Search messages', onClick: () => { setShowPinned(false); setShowSearch(true); } },
+        ...(!dmTarget && activeChannel && activeChannel.type !== 'voice' ? [{ id: 'lounge-pinned', slot: 'view' as const, label: 'Pinned', onClick: () => { setShowSearch(false); setShowPinned(true); } }] : []),
       ],
     }
   );

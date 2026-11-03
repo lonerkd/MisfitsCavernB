@@ -468,9 +468,9 @@ export default function EditorPage() {
       else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
       else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
       else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
-      else if (document.activeElement === textareaRef.current && (chord === 'editor.undo' || chord === 'editor.redo' || chord === 'editor.redo-y')) {
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
         e.preventDefault();
-        if (chord === 'editor.undo') undo(); else redo();
+        if (chord === 'undo') undo(); else redo();
       }
       if (e.key === 'Escape') {
         if (focusMode) setFocusMode(false);
@@ -768,7 +768,7 @@ export default function EditorPage() {
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
       actions: [
-        { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
       ],
     }
   );
@@ -853,7 +853,7 @@ export default function EditorPage() {
         </AnimatePresence>
 
         {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
-        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: 'var(--bg)', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
