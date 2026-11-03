@@ -81,7 +81,7 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       await expect(island(page).getByText('1 person')).toBeVisible();
 
       // Leave the Lounge entirely: the page that started the call is gone, the call is not.
-      await goTo(page, 'Today', /\/today/);
+      await goTo(page, 'Community', /\/community/);
       await expect(island(page).getByText(`In voice · ${room}`)).toBeVisible({ timeout: 30_000 });
 
       await shot(page, 'call-live');
@@ -101,7 +101,7 @@ test.describe('The island holds a voice call (local Supabase)', () => {
       await expect(island(page).getByRole('button', { name: 'Room', exact: true })).toHaveCount(0); // already there
 
       // Leave from the island itself, from another page.
-      await goTo(page, 'Today', /\/today/);
+      await goTo(page, 'Community', /\/community/);
       await island(page).getByRole('button', { name: 'Leave', exact: true }).click();
       await expect(island(page).getByText(/In voice/)).toHaveCount(0);
     } finally { await ctx.close(); await browser.close(); }

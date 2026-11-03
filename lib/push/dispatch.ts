@@ -22,7 +22,7 @@ export interface DispatchResult { sent: number; removed: number; failed: number;
 
 /** The message a device shows: title, a short body, a link inside the app. */
 export function toPayload(n: { id: string; type: string; title: string; body: string | null; link: string | null }): PushPayload {
-  const link = n.link && n.link.startsWith('/') && !n.link.startsWith('//') ? n.link : '/today';
+  const link = n.link && n.link.startsWith('/') && !n.link.startsWith('//') ? n.link : '/community';
   return { id: n.id, title: n.title.slice(0, 120), body: (n.body ?? '').slice(0, 300), link, tag: n.type };
 }
 

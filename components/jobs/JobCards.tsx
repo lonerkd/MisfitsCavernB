@@ -59,7 +59,7 @@ export function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (
               background: `${color}14`,
               border: `1px solid ${color}33`,
               fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
-              color, textTransform: 'var(--caps)',
+              color: readable(color), textTransform: 'var(--caps)',
             }}>
               {job.role}
             </div>
@@ -93,7 +93,7 @@ export function JobCard({ job, onApply, applied, index }: { job: Job; onApply: (
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {job.rate && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, color }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 11, color: readable(color) }}>
                 <DollarSign size={10} /> {job.rate}/hr
               </div>
             )}
@@ -171,7 +171,7 @@ export function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: str
               padding: '3px 9px', borderRadius: 9999,
               background: `${color}14`, border: `1px solid ${color}33`,
               fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
-              color, textTransform: 'var(--caps)',
+              color: readable(color), textTransform: 'var(--caps)',
             }}>
               {job.role}
             </div>

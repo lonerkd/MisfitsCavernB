@@ -65,6 +65,10 @@ function Split() {
         setHere((h) => (h[from].href === msg.href && h[from].title === msg.title ? h : { ...h, [from]: { href: msg.href, title: msg.title } }));
         return;
       }
+      if (msg.type === 'chord') {
+        window.dispatchEvent(new Event(msg.id === 'palette' ? 'mc-open-command-palette' : 'mc-open-shortcuts'));
+        return;
+      }
       if (!layout?.linked) return;
       const to: Side = from === 'a' ? 'b' : 'a';
       frames[to].current?.contentWindow?.postMessage(msg, window.location.origin);

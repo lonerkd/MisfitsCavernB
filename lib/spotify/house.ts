@@ -10,6 +10,9 @@ const HOUSE = [
   { name: 'Solitude', url: 'https://open.spotify.com/playlist/3iFM46jnAkoQmsucygQMas' },
 ] as const;
 
+/** The playlist a listener sees first (owner, 2026-11-03). */
+export const DEFAULT_HOUSE_PLAYLIST = 'Solitude';
+
 export interface HousePlaylist { name: string; ref: SpotifyRef }
 
 export const HOUSE_PLAYLISTS: HousePlaylist[] = HOUSE.flatMap((p) => {
