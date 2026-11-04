@@ -10,7 +10,7 @@ import { Pin } from 'lucide-react';
 import { useCurrentUser } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
 import {
-  listPosts, listReadIds, forAudience, isPublished, HUB_AUDIENCES, AUDIENCE_LABEL, KIND_LABEL,
+  listPosts, listReadIds, forAudience, isPublished, HUB_AUDIENCES, HUB_KINDS, AUDIENCE_LABEL, KIND_LABEL,
   type HubAudience, type HubKind, type HubPost,
 } from '@/lib/hub/posts';
 import { plainText } from '@/lib/hub/markdown';
@@ -35,8 +35,18 @@ export function HubFeed() {
     const [posts, read] = await Promise.all([listPosts(), listReadIds()]);
     return { posts, read };
   });
-  const [kind, setKind] = useState<HubKind>('update');
-  const [audience, setAudience] = useState<HubAudience>('everyone');
+  const [kind, setKind] = useState<HubKind>(() => HUB_KINDS.find((x) => typeof window !== 'undefined' && x === new URLSearchParams(window.location.search).get('kind')) ?? 'update');
+  const [audience, setAudience] = useState<HubAudience>(() => HUB_AUDIENCES.find((x) => typeof window !== 'undefined' && x === new URLSearchParams(window.location.search).get('audience')) ?? 'everyone');
+  // The tab and audience live in the URL (?kind=guide&audience=filmmakers), so a link opens on the same view.
+  const choose = (k: HubKind, a: HubAudience) => {
+    setKind(k);
+    setAudience(a);
+    const q = new URLSearchParams(window.location.search);
+    if (k === 'update') q.delete('kind'); else q.set('kind', k);
+    if (a === 'everyone') q.delete('audience'); else q.set('audience', a);
+    const qs = q.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+  };
   const statusOn = useFlag('hub_status');
   const helpOn = useFlag('hub_help');
   const studiesOn = useFlag('hub_case_studies');
@@ -57,14 +67,14 @@ export function HubFeed() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
           <div role="tablist" aria-label="Section" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {kinds.map((k) => (
-              <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => setKind(k)} style={pill(kind === k)}>{KIND_LABEL[k]}</button>
+              <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => choose(k, audience)} style={pill(kind === k)}>{KIND_LABEL[k]}</button>
             ))}
           </div>
           {helpOn && <Link href="/hub/help" style={{ ...pill(false), textDecoration: 'none' }}>Help</Link>}
         </div>
         {kind !== 'incident' && <div role="group" aria-label="Audience" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
           {HUB_AUDIENCES.map((a) => (
-            <button key={a} type="button" aria-pressed={audience === a} onClick={() => setAudience(a)} style={pill(audience === a)}>{AUDIENCE_LABEL[a]}</button>
+            <button key={a} type="button" aria-pressed={audience === a} onClick={() => choose(kind, a)} style={pill(audience === a)}>{AUDIENCE_LABEL[a]}</button>
           ))}
         </div>}
         {kind === 'incident' && <div style={{ marginBottom: 24 }} />}

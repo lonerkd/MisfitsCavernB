@@ -1,5 +1,6 @@
 'use client';
 
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, MapPin, PenLine, Plus, Trash2 } from 'lucide-react';
@@ -90,7 +91,16 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
   const id = `loc-${row.name.replace(/[^A-Z0-9]+/g, '-')}`;
 
   const save = async (patch: LocationPatch) => {
-    try { onSaved(await studio.saveLocation(project.id, row.name, patch)); }
+    const origin = undoOrigin();
+    const before = rec;
+    try {
+      onSaved(await studio.saveLocation(project.id, row.name, patch));
+      if (before) {
+        const back: LocationPatch = {};
+        for (const k of Object.keys(patch) as Array<keyof LocationPatch>) (back as Record<string, unknown>)[k] = (before as unknown as Record<string, unknown>)[k] ?? null;
+        pushUndo(`Changed ${row.name}`, async () => { onSaved(await studio.saveLocation(project.id, row.name, back)); }, origin);
+      }
+    }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not save the location', 'error'); }
   };
   const text = (key: 'address' | 'contact' | 'notes', value: string) => {

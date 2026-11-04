@@ -8,23 +8,26 @@ type SheetFields = {
   shoot_date: string | null; general_call: string | null; shooting_call: string | null; estimated_wrap: string | null;
   location_address: string | null; weather: string | null; notes: string | null;
 };
-type CallFields = { crew_user_id: string | null; character_name: string | null; call_time: string | null; remarks: string | null };
+type CallFields = { crew_user_id: string | null; character_id?: string | null; character_name: string | null; call_time: string | null; remarks: string | null };
 
 export interface CallEntry { call_time: string | null; remarks: string | null }
 export interface CallSheetSnapshot extends SheetFields {
   calls: Record<string, CallEntry>;
   cast_calls: Record<string, CallEntry>;
+  /** The same calls by character id (with the name each had when issued); absent on a sheet issued before this existed. */
+  cast_by_id?: Record<string, CallEntry & { name: string | null }>;
 }
 
 const FIELDS: (keyof SheetFields)[] = ['shoot_date', 'general_call', 'shooting_call', 'estimated_wrap', 'location_address', 'weather', 'notes'];
 
 export function snapshotOf(sheet: SheetFields, calls: CallFields[]): CallSheetSnapshot {
-  const out = { calls: {}, cast_calls: {} } as CallSheetSnapshot;
+  const out = { calls: {}, cast_calls: {}, cast_by_id: {} } as CallSheetSnapshot;
   for (const k of FIELDS) out[k] = sheet[k] ?? null;
   for (const c of calls) {
     const entry = { call_time: c.call_time ?? null, remarks: c.remarks ?? null };
     if (c.crew_user_id) out.calls[c.crew_user_id] = entry;
     else if (c.character_name) out.cast_calls[c.character_name] = entry;
+    if (!c.crew_user_id && c.character_id) out.cast_by_id![c.character_id] = { ...entry, name: c.character_name ?? null };
   }
   return out;
 }
@@ -43,6 +46,13 @@ export function toSnapshot(raw: Json | null | undefined): CallSheetSnapshot | nu
       }
     }
   }
+  const byId = r.cast_by_id;
+  if (byId && typeof byId === 'object' && !Array.isArray(byId)) {
+    out.cast_by_id = {};
+    for (const [id, v] of Object.entries(byId as Record<string, Record<string, unknown> | null>)) {
+      out.cast_by_id[id] = { call_time: typeof v?.call_time === 'string' ? v.call_time : null, remarks: typeof v?.remarks === 'string' ? v.remarks : null, name: typeof v?.name === 'string' ? v.name : null };
+    }
+  }
   return out;
 }
 
@@ -51,8 +61,12 @@ const canonical = (v: unknown): unknown =>
     ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canonical((v as Record<string, unknown>)[k])]))
     : v;
 
+// A sheet issued before `cast_by_id` existed has none: compare by name only, so it does not read as changed.
+const comparable = (v: CallSheetSnapshot | null, byId: boolean) => (v && !byId ? { ...v, cast_by_id: undefined } : v);
+
 export function sameSnapshot(a: CallSheetSnapshot | null, b: CallSheetSnapshot | null): boolean {
-  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+  const byId = !!a?.cast_by_id && !!b?.cast_by_id;
+  return JSON.stringify(canonical(comparable(a, byId))) === JSON.stringify(canonical(comparable(b, byId)));
 }
 
 /** What changed between two versions, in the words the crew get. */
@@ -84,8 +98,14 @@ export function issueState(sheet: (SheetFields & { version: number; issued: Json
 }
 
 /** One person's call: their own, else the call of a role they're cast in. */
-export function callFor(snap: CallSheetSnapshot, userId: string, castAs: string[]): (CallEntry & { as?: string }) | null {
+export function callFor(snap: CallSheetSnapshot, userId: string, castAs: string[], castIds: string[] = []): (CallEntry & { as?: string }) | null {
   if (snap.calls[userId]) return snap.calls[userId];
+  // By the character's id when the sheet has it: a character renamed since issuing still finds its call.
+  const byId = snap.cast_by_id && [...castIds].sort().find((id) => snap.cast_by_id![id]);
+  if (byId && snap.cast_by_id) {
+    const { name, ...entry } = snap.cast_by_id[byId];
+    return { ...entry, as: castAs[castIds.indexOf(byId)] ?? name ?? undefined };
+  }
   // A call is filed under the name as it was typed ("Dock Boy"), a casting under the character's upper-case name: match on
   // the name, not on how it was cased. `cast_calls` can contain case-variant keys (e.g. "Maya" and "MAYA") because the
   // column is case-sensitive; search with exact-case priority so we never silently pick the wrong entry.

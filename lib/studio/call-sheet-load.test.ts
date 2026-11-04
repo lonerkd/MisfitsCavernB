@@ -4,7 +4,7 @@ import type { CallSheetView } from './api';
 
 const view = (project: CallSheetView['project']): CallSheetView => ({
   sheet: { id: 's1' } as CallSheetView['sheet'],
-  calls: [], project, scenes: [], people: new Map(), castAs: [], acked: null,
+  calls: [], project, scenes: [], people: new Map(), castAs: [], castIds: [], acked: null,
 });
 
 describe('loadCallSheet', () => {

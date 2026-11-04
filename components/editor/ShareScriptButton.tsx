@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useEffectEvent, useState, type CSSProperties } from 'react';
 import { Link2, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -17,6 +17,15 @@ import type { StoredScript } from '@/lib/scriptos/storage';
 
 const label: CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' };
 
+/** Whether this person may share this script: the rule the button and the island's Share action both follow. */
+export function useCanShareScript(script: StoredScript | null, projectCreatorId?: string | null): boolean {
+  const { user } = useCurrentUser();
+  const me = user?.id ?? null;
+  const projectId = script?.project_id ?? null;
+  const canShape = useCanShape(projectId, !!me && projectCreatorId === me);
+  return !!script && !!me && (projectId ? canShape : script.user_id === me);
+}
+
 export function ShareScriptButton({ script, projectCreatorId }: { script: StoredScript | null; projectCreatorId?: string | null }) {
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -32,11 +41,11 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
   const close = useCallback(() => setOpen(false), []);
   useEscapeKey(close, open);
 
-  if (!allowed || !script) return null;
-  const current = share?.id === script.id ? share.value : null;
+  const current = script && share?.id === script.id ? share.value : null;
   const url = current?.shared && current.token ? scriptShareUrl(current.token) : '';
 
   const toggleOpen = async () => {
+    if (!script) return;
     if (open) { setOpen(false); return; }
     if (script.syncPending) { toast('Save the script first — it isn’t on the server yet.', 'info'); return; }
     setOpen(true);
@@ -49,6 +58,7 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
   };
 
   const run = async (fn: () => Promise<ScriptShare>, done: (s: ScriptShare) => string) => {
+    if (!script) return;
     setBusy(true);
     try {
       const value = await fn();
@@ -62,13 +72,13 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
   };
 
   const toggleShared = () => run(
-    () => setScriptShared(script.id, !current?.shared, current?.token ?? null),
+    () => setScriptShared(script!.id, !current?.shared, current?.token ?? null),
     (s) => (s.shared ? 'Link on — anyone with it can read the script.' : 'Link off — it no longer opens.'),
   );
 
   const newLink = async () => {
     if (!await confirm({ title: 'Make a new link?', message: 'The old link stops working at once. Anyone you sent it to will need the new one.', confirmLabel: 'NEW LINK', danger: true })) return;
-    await run(() => rotateScriptShareToken(script.id), () => 'New link ready — the old one is closed.');
+    await run(() => rotateScriptShareToken(script!.id), () => 'New link ready — the old one is closed.');
   };
 
   const copy = async () => {
@@ -79,6 +89,16 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
       toast('Couldn’t copy — select the link and copy it.', 'error');
     }
   };
+
+  const openLink = useEffectEvent(() => { if (!open) void toggleOpen(); });
+  useEffect(() => {
+    if (!allowed) return;
+    const h = () => openLink();
+    window.addEventListener('mc-share-script', h);
+    return () => window.removeEventListener('mc-share-script', h);
+  }, [allowed]);
+
+  if (!allowed || !script) return null;
 
   return (
     <div style={{ position: 'relative' }}>

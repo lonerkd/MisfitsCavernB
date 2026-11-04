@@ -103,3 +103,29 @@ describe('call_sheet_calls.character_id', () => {
     expect(moved.data).toEqual({ character_id: nell, character_name: 'NELL' });
   });
 });
+
+describe('an issued call sheet follows a character through a rename', () => {
+  it('Jordan still gets the call after the character is renamed; Riley sees nothing', async () => {
+    const { createCrewedProject } = await import('./support/project');
+    const { createCast, destroyCast } = await import('./support/personas');
+    const cast = await createCast();
+    try {
+      const { projectId } = await createCrewedProject(cast, 'Snapshot by id');
+      const sheet = (await cast.sam.client.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: '2026-12-05' }).select('id').single()).data!.id;
+      await cast.sam.client.from('character_castings').insert({ project_id: projectId, character_name: 'NORA', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
+      await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet, project_id: projectId, character_name: 'NORA', call_time: '07:15:00' });
+      expect((await cast.sam.client.rpc('issue_call_sheet', { p_sheet: sheet })).error).toBeNull();
+      const nora = (await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'NORA').single()).data!.id;
+      const issued = (await cast.sam.client.from('call_sheets').select('issued').eq('id', sheet).single()).data!.issued as { cast_by_id?: Record<string, unknown> };
+      expect(Object.keys(issued.cast_by_id ?? {})).toEqual([nora]);
+
+      expect((await cast.sam.client.from('characters').update({ name: 'NORA VANCE' }).eq('id', nora)).error).toBeNull();
+      const view = await (await import('@/lib/studio/api')).createStudioApi(cast.jordan.client).getCallSheetView(sheet, cast.jordan.id);
+      const { callFor, toSnapshot } = await import('@/lib/studio/call-sheet');
+      const mine = callFor(toSnapshot(view!.sheet.issued)!, cast.jordan.id, view!.castAs, view!.castIds);
+      expect(mine?.call_time).toBe('07:15:00');
+      expect(mine?.as).toBe('NORA VANCE');
+      expect(await (await import('@/lib/studio/api')).createStudioApi(cast.riley.client).getCallSheetView(sheet, cast.riley.id)).toBeNull();
+    } finally { await destroyCast(cast); }
+  });
+});

@@ -70,6 +70,7 @@ import { WriteFooter } from '@/components/editor/WriteFooter';
 import { SyncStatusChip } from '@/components/editor/SyncStatusChip';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
+import { useCanShareScript } from '@/components/editor/ShareScriptButton';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
@@ -166,6 +167,7 @@ export default function EditorPage() {
   const parseSource = useDeferredValue(content);
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
+  const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
