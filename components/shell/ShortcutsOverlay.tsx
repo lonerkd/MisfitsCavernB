@@ -27,13 +27,14 @@ export default function ShortcutsOverlay() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setOpen(false); return; }
-      if (matchChord(e)?.id === 'help') { e.preventDefault(); setOpen(o => !o); return; }
+      if (e.key === 'Escape') { setOpen(false); setFilter(''); return; }
+      if (matchChord(e)?.id === 'help') { e.preventDefault(); setFilter(''); setOpen(o => !o); return; }
 
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         const t = e.target as HTMLElement;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
         e.preventDefault();
+        setFilter('');
         setOpen(o => !o);
       }
     };
@@ -44,7 +45,7 @@ export default function ShortcutsOverlay() {
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mc-open-shortcuts', onOpen); };
   }, []);
 
-  useOnChange(pathname, () => setOpen(false));
+  useOnChange(pathname, () => { setOpen(false); setFilter(''); });
 
   if (pathname === '/auth' || pathname === '/login') return null;
 
@@ -55,7 +56,7 @@ export default function ShortcutsOverlay() {
       {open && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onMouseDown={() => setOpen(false)}
+          onMouseDown={() => { setOpen(false); setFilter(''); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
           <motion.div
@@ -69,7 +70,7 @@ export default function ShortcutsOverlay() {
                 <Keyboard size={17} />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: '-0.02em', margin: 0, color: 'var(--fg)' }}>KEYBOARD SHORTCUTS</h2>
               </div>
-              <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
+              <button aria-label="Close" onClick={() => { setOpen(false); setFilter(''); }} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
             <input

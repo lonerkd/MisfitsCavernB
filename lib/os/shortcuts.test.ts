@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { shortcuts, matchesShortcut } from './shortcuts';
+import { shortcuts, matchesShortcut, looksLikeKeys } from './shortcuts';
 import { CHORDS } from './chords';
 
 const find = (q: string, mac = false) => shortcuts(mac).filter((s) => matchesShortcut(q, s));
@@ -34,5 +34,23 @@ describe('shortcuts', () => {
   it('an empty query matches everything and nonsense matches nothing', () => {
     expect(find('').length).toBe(shortcuts(false).length);
     expect(find('qwertyuiop')).toEqual([]);
+  });
+
+  it('a query of only symbols matches nothing, but an empty one matches everything', () => {
+    expect(find('+')).toEqual([]);
+    expect(find('…')).toEqual([]);
+    expect(find('   ').length).toBe(shortcuts(false).length);
+  });
+
+  it('lists the keys that are bound but were missing: the plot board and the projects page', () => {
+    expect(find('reorder').some((s) => s.group === 'Plot board' && /Alt/.test(s.keys))).toBe(true);
+    expect(find('phase').some((s) => s.group === 'Projects')).toBe(true);
+    // The island's app keys are not given as a fixed range.
+    expect(shortcuts(false).some((s) => s.keys.startsWith('1 –'))).toBe(false);
+  });
+
+  it('knows a query written like a key press', () => {
+    for (const q of ['ctrl z', 'cmd k', '⌘k', 'caps q', 'alt 1']) expect(looksLikeKeys(q)).toBe(true);
+    for (const q of ['undo', 'projects', 'create']) expect(looksLikeKeys(q)).toBe(false);
   });
 });

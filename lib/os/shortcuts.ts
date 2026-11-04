@@ -41,7 +41,7 @@ export function shortcuts(mac: boolean): Shortcut[] {
     { group: 'Global', keys: '?', desc: 'Show this shortcuts panel' },
     { group: 'Global', keys: 'Esc', desc: 'Close any dialog or palette', aliases: 'escape' },
     { group: 'The island (Caps Lock on)', keys: 'Caps Lock', desc: 'Hold the island open, with a key on every control', aliases: 'capslock' },
-    { group: 'The island (Caps Lock on)', keys: '1 – 6', desc: 'Go to that app' },
+    { group: 'The island (Caps Lock on)', keys: '1  2  3 …', desc: 'Go to the app with that number in the island', aliases: 'number numbers app apps' },
     { group: 'The island (Caps Lock on)', keys: '/', desc: 'Search', aliases: 'slash' },
     { group: 'The island (Caps Lock on)', keys: '\\', desc: 'Split screen', aliases: 'backslash' },
     { group: 'The island (Caps Lock on)', keys: 'P', desc: 'Switch project' },
@@ -49,7 +49,7 @@ export function shortcuts(mac: boolean): Shortcut[] {
     { group: 'The island (Caps Lock on)', keys: 'Esc', desc: 'Put the island away until Caps Lock is next turned on', aliases: 'escape' },
     // The same key means the same thing on every page that has the action.
     ...(Object.keys(SLOT_KEYS) as PillSlot[]).map((s) => ({
-      group: 'The island (Caps Lock on)', keys: `Caps Lock ${SLOT_KEYS[s].toUpperCase()}`, desc: SLOT_WORDS[s], aliases: `${s} capslock`,
+      group: 'The island (Caps Lock on)', keys: `Caps Lock ${SLOT_KEYS[s].toUpperCase()}`, desc: `${SLOT_WORDS[s]} (on pages that have it)`, aliases: `${s} capslock`,
     })),
     ...editor,
     { group: 'ScriptOS editor', keys: 'Tab', desc: 'Smart element insert (scene / dialogue)' },
@@ -60,7 +60,9 @@ export function shortcuts(mac: boolean): Shortcut[] {
     { group: 'ScriptOS editor', keys: '(', desc: 'Auto-close parenthetical' },
     { group: 'ScriptOS editor', keys: 'Enter', desc: 'Auto-format a scene heading' },
     { group: 'Plot board', keys: 'Drag card', desc: 'Reorder the scene in the script' },
-    { group: 'Plot board', keys: 'Click card', desc: 'Jump to that scene' },
+    { group: 'Plot board', keys: 'Click card  ·  Enter', desc: 'Jump to that scene (Enter on a focused card)' },
+    { group: 'Plot board', keys: 'Alt ← → ↑ ↓  ·  Alt Home / End', desc: 'Move the focused scene card earlier or later, to the first or the last', aliases: 'option reorder arrows' },
+    { group: 'Projects', keys: 'Alt ← →', desc: 'Move a project card to the previous or next phase', aliases: 'option arrows' },
   ];
 }
 
@@ -72,11 +74,18 @@ const words = (s: string): string[] => s.toLowerCase().split(/[^a-z0-9⌘⇧←-
  * so `ctrl z`, `cmd z`, `caps q` and `undo` all land where you would expect. An empty query matches everything.
  */
 export function matchesShortcut(query: string, s: Shortcut): boolean {
+  // Nothing typed matches everything; something typed with no letter, digit or key in it (`+`, `…`) matches nothing.
+  if (!query.trim()) return true;
   const q = words(query);
-  if (q.length === 0) return true;
+  if (q.length === 0) return false;
   const w = words(`${s.keys} ${s.desc} ${s.group} ${s.aliases ?? ''}`);
   // A chord written without a space (⌘Z) is also its parts: the glyph, then the key.
   const extra = w.flatMap((x) => (/^[⌘⇧]+./.test(x) ? [x.replace(/^[⌘⇧]+/, '')] : []));
   const all = [...w, ...extra];
   return q.every((t) => all.some((x) => (t.length === 1 ? x === t : x.startsWith(t))));
+}
+
+/** Whether a query is written like a key press (`ctrl z`, `cmd k`, `caps q`, `alt 1`, `⌘k`): shortcuts then lead the palette's results. */
+export function looksLikeKeys(query: string): boolean {
+  return words(query).some((t) => ['ctrl', 'control', 'cmd', 'command', 'caps', 'capslock', 'alt', 'option', 'shift', 'esc', 'escape'].includes(t) || /^[\u2318\u21e7]/.test(t));
 }

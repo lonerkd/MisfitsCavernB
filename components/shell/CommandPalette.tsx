@@ -7,7 +7,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
-import { shortcuts, matchesShortcut } from '@/lib/os/shortcuts';
+import { shortcuts, matchesShortcut, looksLikeKeys } from '@/lib/os/shortcuts';
 import { isMac } from '@/lib/os/chords';
 import { supabase } from '@/lib/supabase/client';
 import { listScriptsBy } from '@/lib/supabase/scripts';
@@ -205,7 +205,8 @@ export default function CommandPalette() {
           run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent('mc-open-shortcuts', { detail: { query } })), 60); },
         }))
       : [];
-    return [...list.slice(0, 80), ...keys];
+    // Typed like a key press (ctrl z, caps q), the shortcuts lead, so Enter opens the one asked for; otherwise they follow the results.
+    return looksLikeKeys(query) ? [...keys, ...list.slice(0, 80)] : [...list.slice(0, 80), ...keys];
   }, [commands, query]);
 
   const groups = useMemo(() => {
