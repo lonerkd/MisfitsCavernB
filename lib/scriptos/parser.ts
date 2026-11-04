@@ -123,6 +123,30 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
+  /** Places known to exist (from project_locations): a heading with one of these names is believed. */
+  places?: readonly string[];
+  /** Cues from the previous draft (line indices + names): a line that was a cue last time is likely still one. */
+  previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
+  /** Per-writer private memory (L6): confirmed names, rejected names, learned patterns. */
+  writerMemory?: WriterMemory;
+  /** Per-project line overrides (L6): a person's correction on specific lines. */
+  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
+}
+
+/** Per-writer private memory (L6 of the deep-brain plan). */
+export interface WriterMemory {
+  /** Names this writer has confirmed as characters (across projects). */
+  confirmedNames: readonly string[];
+  /** Names this writer has rejected as non-characters. */
+  rejectedNames: readonly string[];
+  /** Title-case cues this writer uses (e.g., "Maya" not "MAYA"). */
+  titleCaseCues: readonly string[];
+  /** Colon cues this writer uses (e.g., "MARCUS:"). */
+  colonCues: readonly string[];
+  /** Extensions this writer uses. */
+  extensions: readonly string[];
+  /** Transition patterns this writer uses. */
+  transitionPatterns: readonly string[];
 }
 
 export interface ParseOptions {
@@ -182,15 +206,35 @@ export class ScriptParser {
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
   private useDecoder: boolean;
   private rejectedNames: Set<string>;
+  private writerMemory?: WriterMemory;
+  private lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
+  private places?: readonly string[];
+  private previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
+    this.writerMemory = options.context?.writerMemory;
+    this.lineOverrides = options.context?.lineOverrides;
+    this.places = options.context?.places;
+    this.previousDraftCues = options.context?.previousDraftCues;
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
+    // Add writer's rejected names to the rejected set
+    if (this.writerMemory?.rejectedNames) {
+      for (const n of this.writerMemory.rejectedNames) this.rejectedNames.add(this.clean(n).toUpperCase());
+    }
     this.learnedNames = new Set([...learnedNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
+    // Add writer's confirmed names to learned names
+    if (this.writerMemory?.confirmedNames) {
+      for (const n of this.writerMemory.confirmedNames) this.learnedNames.add(this.clean(n).toUpperCase());
+    }
+    // Add previous draft cues to learned names
+    if (this.previousDraftCues) {
+      for (const cue of this.previousDraftCues) this.learnedNames.add(this.clean(cue.name).toUpperCase());
+    }
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -569,7 +613,22 @@ export class ScriptParser {
       const trim = this.rawLines[i].trim();
       const prevBlank = i === 0 || !this.rawLines[i - 1].trim();
       const next = (this.rawLines[i + 1] ?? '').trim();
-      const base = { text: trim, prevBlank, next };
+      const base = {
+        text: trim,
+        prevBlank,
+        next,
+        _isCaps: this.isCaps(trim),
+        _isCapsNamePart: this.isCaps(trim.replace(/\s*\([^)]*\)\s*$/, '').trim()),
+        _isHeading: this.isSceneHeading(trim),
+        _isTransition: this.isTransitionText(trim.toUpperCase()),
+        _looksUncasedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.looksLikeUncasedName(np, prevBlank, next) || (prevBlank && !!next && this.titleCaseCues.has(this.clean(np).toUpperCase())); })(),
+        _isKnownName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.characterStats.has(this.clean(np)) || this.characterStats.has(this.clean(np).toUpperCase()) || (this.writerMemory?.confirmedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
+        _isRejectedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.rejectedNames.has(this.clean(np)) || (this.writerMemory?.rejectedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
+        _hasExtension: [...KNOWLEDGE.EXTENSIONS].some((e) => trim.toUpperCase().includes(e)),
+        _opensWithKnownName: this.opensWithKnownName(trim),
+        _isHeadingNext: next ? this.isSceneHeading(next) : false,
+        _isTransitionNext: next ? this.isTransitionText(next.toUpperCase()) : false,
+      };
       if (!trim) { obs.push({ ...base, kind: 'empty' }); continue; }
       if (titleLines.has(i)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
       if (boneyard || trim.startsWith('/*')) {
@@ -582,6 +641,9 @@ export class ScriptParser {
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      // Check for line override
+      const override = this.lineOverrides?.find((o) => o.line_index === i);
+      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override.forced_type as any }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {
@@ -589,8 +651,8 @@ export class ScriptParser {
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
       looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n) || (pb && !!n && this.titleCaseCues.has(this.clean(t).toUpperCase())),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.characterStats.has(this.clean(n).toUpperCase()),
-      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
+      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.characterStats.has(this.clean(n).toUpperCase()) || (this.writerMemory?.confirmedNames?.includes(this.clean(n).toUpperCase()) ?? false),
+      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)) || (this.writerMemory?.rejectedNames?.includes(this.clean(n).toUpperCase()) ?? false),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
       opensWithKnownName: (t) => this.opensWithKnownName(t),
     });

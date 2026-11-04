@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { contextFromCastings, contextFromProject, contextKey } from './context';
+import { contextFromCastings, contextFromProject, contextFromPlaces, contextWithMemory, contextKey } from './context';
 
 describe('contextFromCastings', () => {
 	it('extracts character names from castings array', () => {
@@ -103,11 +103,60 @@ describe('contextFromProject', () => {
 	});
 });
 
+describe('contextFromPlaces', () => {
+	it('extracts place names, upper-cased and deduplicated', () => {
+		const result = contextFromPlaces([{ name: 'room' }, { name: 'ROOM ' }, { name: 'Pier' }, { name: '  ' }]);
+		expect(result).toEqual({ places: ['ROOM', 'PIER'] });
+	});
+
+	it('returns empty places for empty input', () => {
+		const result = contextFromPlaces([]);
+		expect(result).toEqual({ places: [] });
+	});
+});
+
+describe('contextWithMemory', () => {
+	it('merges project context with writer memory and line overrides', () => {
+		const projectContext = { characters: ['ALICE'], rejectedNames: ['BOB'] };
+		const writerMemory = {
+			confirmedNames: ['CHARLIE'],
+			rejectedNames: ['DAVE'],
+			titleCaseCues: [],
+			colonCues: [],
+			extensions: [],
+			transitionPatterns: [],
+		};
+		const lineOverrides = [{ line_index: 5, forced_type: 'dialogue' }];
+		const places = [{ name: 'room' }];
+		const previousDraftCues = [{ line_index: 10, name: 'EVE' }];
+
+		const result = contextWithMemory(projectContext, writerMemory, lineOverrides, places, previousDraftCues);
+		expect(result.characters).toContain('ALICE');
+		expect(result.characters).toContain('CHARLIE');
+		expect(result.rejectedNames).toContain('BOB');
+		expect(result.rejectedNames).toContain('DAVE');
+		expect(result.places).toEqual(['ROOM']);
+		expect(result.previousDraftCues).toEqual(previousDraftCues);
+		expect(result.writerMemory).toBe(writerMemory);
+		expect(result.lineOverrides).toEqual(lineOverrides);
+	});
+
+	it('works with undefined optional params', () => {
+		const result = contextWithMemory({ characters: ['ALICE'], rejectedNames: [] }, undefined, undefined, undefined, undefined);
+		expect(result.characters).toEqual(['ALICE']);
+		expect(result.rejectedNames).toEqual([]);
+		expect(result.places).toBeUndefined();
+		expect(result.previousDraftCues).toBeUndefined();
+		expect(result.writerMemory).toBeUndefined();
+		expect(result.lineOverrides).toBeUndefined();
+	});
+});
+
 describe('contextKey', () => {
 	it('generates a stable key from a context object', () => {
 		const context = { characters: ['ALICE', 'BOB'], rejectedNames: ['CHARLIE'] };
 		const key = contextKey(context);
-		expect(key).toEqual('ALICE|BOB#CHARLIE');
+		expect(key).toEqual('ALICE|BOB#CHARLIE##0##0');
 	});
 
 	it('returns empty string for undefined context', () => {
@@ -123,18 +172,18 @@ describe('contextKey', () => {
 	it('handles context with no characters and no rejectedNames', () => {
 		const context = { characters: [], rejectedNames: [] };
 		const key = contextKey(context);
-		expect(key).toEqual('#');
+		expect(key).toEqual('###0##0');
 	});
 
 	it('handles context with only characters', () => {
 		const context = { characters: ['ALICE'], rejectedNames: [] };
 		const key = contextKey(context);
-		expect(key).toEqual('ALICE#');
+		expect(key).toEqual('ALICE###0##0');
 	});
 
 	it('handles context with only rejectedNames', () => {
 		const context = { characters: [], rejectedNames: ['BOB'] };
 		const key = contextKey(context);
-		expect(key).toEqual('#BOB');
+		expect(key).toEqual('#BOB##0##0');
 	});
 });

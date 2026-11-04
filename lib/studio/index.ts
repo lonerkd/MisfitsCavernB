@@ -145,6 +145,74 @@ export function useSceneStates(projectId: string | null) {
   });
 }
 
+export function useLineOverrides(scriptId: string | null) {
+  return useLiveRows<{ line_index: number; forced_type: string }>({
+    scope: scriptId,
+    table: 'reading_line_overrides',
+    filter: `script_id=eq.${scriptId}`,
+    load: () => studio.listLineOverrides(scriptId!),
+    keyOf: (x) => String(x.line_index),
+  });
+}
+
+export function useReadingMemory(userId: string | null) {
+  const [memory, setMemory] = useState<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) {
+      queueMicrotask(() => setMemory([]));
+      return;
+    }
+    queueMicrotask(() => setLoading(true));
+    let cancelled = false;
+    studio.getReadingMemory(userId).then((rows) => {
+      if (!cancelled) {
+        setMemory(rows);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setMemory([]);
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const writerMemory = useMemo(() => {
+    if (!memory.length) return undefined;
+    const confirmedNames: string[] = [];
+    const rejectedNames: string[] = [];
+    const titleCaseCues: string[] = [];
+    const colonCues: string[] = [];
+    const extensions: string[] = [];
+    const transitionPatterns: string[] = [];
+
+    for (const row of memory) {
+      switch (row.kind) {
+        case 'confirmed_name': confirmedNames.push(row.name); break;
+        case 'rejected_name': rejectedNames.push(row.name); break;
+        case 'title_case_cue': titleCaseCues.push(row.name); break;
+        case 'colon_cue': colonCues.push(row.name); break;
+        case 'extension': extensions.push(row.name); break;
+        case 'transition_pattern': transitionPatterns.push(row.name); break;
+      }
+    }
+
+    return {
+      confirmedNames,
+      rejectedNames,
+      titleCaseCues,
+      colonCues,
+      extensions,
+      transitionPatterns,
+    };
+  }, [memory]);
+
+  return { memory, writerMemory, loading };
+}
+
 export function useProjectLocations(projectId: string | null) {
   return useLiveRows<ProjectLocation>({
     scope: projectId,

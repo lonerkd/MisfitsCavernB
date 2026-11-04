@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { BookOpen, Calendar, Clapperboard, ClipboardCheck, DollarSign, Eye, FileCheck2, Lock, MapPin, Tags, Users } from 'lucide-react';
+import { BookOpen, Calendar, Camera, Clapperboard, ClipboardCheck, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, Tags, Users } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -24,21 +24,27 @@ const MoneyView = dynamic(() => import('../production/MoneyView').then((m) => m.
 const PaperworkView = dynamic(() => import('../production/PaperworkView').then((m) => m.PaperworkView), { loading: viewLoading });
 const OnSetView = dynamic(() => import('../production/OnSetView').then((m) => m.OnSetView), { loading: viewLoading });
 const ContinuityView = dynamic(() => import('../production/ContinuityView').then((m) => m.ContinuityView), { loading: viewLoading });
+const ShotListView = dynamic(() => import('../production/ShotListView').then((m) => m.ShotListView), { loading: viewLoading });
 const CrewView = dynamic(() => import('../production/CrewView').then((m) => m.CrewView), { loading: viewLoading });
+const ProductionReportView = dynamic(() => import('../production/ProductionReportView').then((m) => m.ProductionReportView), { loading: viewLoading });
 
 type View = ProductionView;
-const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode }> = [
-  { id: 'story', label: 'Story', icon: <BookOpen size={12} /> },
-  { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} /> },
-  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} /> },
-  { id: 'locations', label: 'Locations', icon: <MapPin size={12} /> },
-  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} /> },
-  { id: 'money', label: 'Money', icon: <DollarSign size={12} /> },
-  { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} /> },
-  { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} /> },
-  { id: 'onset', label: 'On set', icon: <Clapperboard size={12} /> },
-  { id: 'crew', label: 'Cast & crew', icon: <Users size={12} /> },
+const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
+  { id: 'story', label: 'Story', icon: <BookOpen size={12} />, group: 'Pre-production' },
+  { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Pre-production' },
+  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Pre-production' },
+  { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Pre-production' },
+  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Pre-production' },
+  { id: 'money', label: 'Money', icon: <DollarSign size={12} />, group: 'Budget & docs' },
+  { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} />, group: 'Budget & docs' },
+  { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} />, group: 'Shoot' },
+  { id: 'onset', label: 'On set', icon: <Clapperboard size={12} />, group: 'Shoot' },
+  { id: 'shots', label: 'Shot list', icon: <Camera size={12} />, group: 'Shoot' },
+  { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
+  { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
+
+const GROUPS = ['Pre-production', 'Budget & docs', 'Shoot', 'People'];
 
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
 export function ProductionTab({ view, onView, onNavigate }: { view: View; onView: (view: View) => void; onNavigate?: (place: Place) => boolean }) {
@@ -61,24 +67,33 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   return (
     <section aria-labelledby="production-title">
       <SectionHeader id="production-title" title="Production" />
-      <div className={s.chips} role="tablist" aria-label="Production views" style={{ marginBottom: 24 }}>
-        {VIEWS.map((v) => (
-          <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
-            {v.icon} {v.label}
-            {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}
-          </button>
-        ))}
-      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+              {GROUPS.map((group) => (
+                <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>{group}</span>
+                  <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
+                    {VIEWS.filter((v) => v.group === group).map((v) => (
+                      <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
+                        {v.icon} {v.label}
+                        {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       {!lock && view === 'story' && <StoryView />}
-      {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
+      {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
       {!lock && view === 'locations' && <LocationsView />}
       {!lock && view === 'continuity' && <ContinuityView />}
       {!lock && view === 'money' && <MoneyView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
       {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}
       {!lock && view === 'onset' && <OnSetView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
+      {!lock && view === 'shots' && <ShotListView />}
+      {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
     </section>

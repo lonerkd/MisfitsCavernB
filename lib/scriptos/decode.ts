@@ -40,6 +40,19 @@ export interface Observation {
   prevBlank: boolean;
   /** The next raw line, trimmed ('' if blank or none). */
   next: string;
+  // Pre-computed evidence (for worker serialization). When present, emission()
+  // uses these instead of calling the Evidence functions.
+  _isCaps?: boolean;
+  _isCapsNamePart?: boolean;
+  _isHeading?: boolean;
+  _isTransition?: boolean;
+  _isHeadingNext?: boolean;
+  _isTransitionNext?: boolean;
+  _looksUncasedName?: boolean;
+  _isKnownName?: boolean;
+  _isRejectedName?: boolean;
+  _hasExtension?: boolean;
+  _opensWithKnownName?: boolean;
 }
 
 /** The weights. Lower cost is a better fit. Tuned on the corpus (lib/scriptos/corpus); change one, re-measure. */
@@ -79,26 +92,26 @@ export const TIME_CARD = /^(?:(?:AN?|\d+|[A-Z-]+) (?:SECONDS?|MINUTES?|HOURS?|DA
 export function emission(o: Observation, ev: Evidence, p: Params, tight = false): Record<State, number> {
   const t = o.text;
   const upper = t.toUpperCase();
-  const heading = ev.isHeading(t);
-  const isTransition = ev.isTransition(upper);
+  const heading = o._isHeading ?? ev.isHeading(t);
+  const isTransition = o._isTransition ?? ev.isTransition(upper);
   const timeCard = TIME_CARD.test(upper.trim());
   const paren = t.startsWith('(') && t.endsWith(')');
   const namePart = t.replace(/\s*\([^)]*\)\s*$/, '').trim();
-  const caps = ev.isCaps(namePart);
-  const nameShape = (caps || ev.looksUncasedName(namePart, o.prevBlank || tight, o.next)) && namePart.length >= 1 && namePart.length < 60;
+  const caps = o._isCapsNamePart ?? ev.isCaps(namePart);
+  const nameShape = (caps || (tight ? ev.looksUncasedName(namePart, o.prevBlank || tight, o.next) : (o._looksUncasedName ?? ev.looksUncasedName(namePart, o.prevBlank || tight, o.next)))) && namePart.length >= 1 && namePart.length < 60;
   const words = namePart.split(/\s+/).filter(Boolean).length;
   const sentenceEnd = /[.!?…]$/.test(namePart);
 
   const slug = heading ? 0 : p.impossible;
-  const transition = isTransition ? 0 : (upper.endsWith(' TO:') && ev.isCaps(t) && t.length < 40 ? 4 : p.impossible);
+  const transition = isTransition ? 0 : (upper.endsWith(' TO:') && (o._isCaps ?? ev.isCaps(t)) && t.length < 40 ? 4 : p.impossible);
   const parenthetical = paren ? 0 : (t.startsWith('(') ? 30 : p.impossible);
 
   let character = p.impossible;
   if (nameShape && !heading && !isTransition && !paren && !timeCard) {
     character = p.cue;
-    if (ev.isKnownName(namePart)) character -= p.knownName;
-    if (ev.hasExtension(upper)) character -= p.extension;
-    if (ev.isRejectedName?.(namePart)) character += p.rejectedName;
+    if (o._isKnownName ?? ev.isKnownName(namePart)) character -= p.knownName;
+    if (o._hasExtension ?? ev.hasExtension(upper)) character -= p.extension;
+    if (o._isRejectedName ?? ev.isRejectedName?.(namePart)) character += p.rejectedName;
     // Nothing under it, or a scene heading or transition under it: nobody can be speaking.
     if (!o.next || ev.isHeading(o.next) || ev.isTransition(o.next.toUpperCase())) character += p.noSpeechUnder;
     if (sentenceEnd) character += p.cueSentence;
@@ -106,15 +119,13 @@ export function emission(o: Observation, ev: Evidence, p: Params, tight = false)
   }
 
   const strong = heading || isTransition || paren;
-  // A time card is narration, but "LATER." can also be the whole of someone's reply: so it is dearer as speech
-  // rather than impossible, and the grammar decides (under a cue it stays speech; after a speech it ends it).
-  const dialogue = strong ? p.impossible : p.dialogue + (ev.isCaps(t) ? p.dialogueCaps : 0) + (timeCard ? 4 : 0);
+  const dialogue = strong ? p.impossible : p.dialogue + ((o._isCaps ?? ev.isCaps(t)) ? p.dialogueCaps : 0) + (timeCard ? 4 : 0);
 
   let action = p.action;
   if (heading || isTransition) action = 40;
   else if (timeCard) action = 0;
-  else if (hasLower(t)) action = p.actionProse - (ev.opensWithKnownName?.(t) ? p.actionNamesSomeone : 0);
-  else if (ev.isCaps(t)) action = p.actionCaps;
+  else if (hasLower(t)) action = p.actionProse - ((o._opensWithKnownName ?? ev.opensWithKnownName?.(t)) ? p.actionNamesSomeone : 0);
+  else if (o._isCaps ?? ev.isCaps(t)) action = p.actionCaps;
 
   return { slug, transition, character, parenthetical, dialogue, action };
 }

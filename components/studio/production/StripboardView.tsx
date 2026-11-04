@@ -39,7 +39,7 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
 export function StripboardView({ elementCounts, costs }: { elementCounts: Map<string, number>; costs: SceneCosts | null }) {
-  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard } = useStudio();
+  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard, doubtfulSceneOrdinals } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -55,7 +55,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
   const [announce, setAnnounce] = useState('');
   const stripRefs = useRef(new Map<string, HTMLLIElement>());
 
-  const list = scenes.rows;
+  const list = scenes.rows.map((sc) => ({ ...sc, doubtful: sc.ordinal != null && doubtfulSceneOrdinals.has(sc.ordinal) }));
   const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
   const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
@@ -263,6 +263,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
+                    {d.doubtful > 0 && <span style={{ color: 'var(--warning, #b45309)' }}>⚠ {d.doubtful} review</span>}
                     {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => {
                       // Sum from byScene so unscheduled scenes (board day 1, costs day null) are included.
                       const total = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.total ?? 0), 0);
