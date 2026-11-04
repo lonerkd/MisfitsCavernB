@@ -7,6 +7,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
+import { shortcuts, matchesShortcut } from '@/lib/os/shortcuts';
+import { isMac } from '@/lib/os/chords';
 import { supabase } from '@/lib/supabase/client';
 import { listScriptsBy } from '@/lib/supabase/scripts';
 import { listMediaBy } from '@/lib/supabase/media';
@@ -196,7 +198,14 @@ export default function CommandPalette() {
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => c.found || fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
-    return list.slice(0, 80);
+    // Shortcuts are found by their keys or their name (Ctrl Z, cmd k, caps q, undo): the first few, and Enter opens the panel on them.
+    const keys: Command[] = query.trim()
+      ? shortcuts(isMac()).filter((x) => matchesShortcut(query, x)).slice(0, 6).map((x, i) => ({
+          id: `kb-${i}`, label: x.desc, hint: x.keys, icon: <Keyboard size={15} />, group: 'Shortcuts', found: true,
+          run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent('mc-open-shortcuts', { detail: { query } })), 60); },
+        }))
+      : [];
+    return [...list.slice(0, 80), ...keys];
   }, [commands, query]);
 
   const groups = useMemo(() => {
