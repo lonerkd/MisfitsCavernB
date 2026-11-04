@@ -49,6 +49,11 @@ describe('shortcuts', () => {
     expect(shortcuts(false).some((s) => s.keys.startsWith('1 –'))).toBe(false);
   });
 
+  it('finds a shortcut by a symbol it is written with, such as the backspace glyph', () => {
+    expect(find('⌫').some((s) => s.keys.includes('⌫'))).toBe(true);
+    expect(find('alt ⌫').some((s) => s.keys.includes('⌫'))).toBe(true);
+  });
+
   it('knows a query written like a key press', () => {
     for (const q of ['ctrl z', 'cmd k', '⌘k', 'caps q', 'alt 1']) expect(looksLikeKeys(q)).toBe(true);
     for (const q of ['undo', 'projects', 'create']) expect(looksLikeKeys(q)).toBe(false);

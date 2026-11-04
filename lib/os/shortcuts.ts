@@ -66,7 +66,7 @@ export function shortcuts(mac: boolean): Shortcut[] {
   ];
 }
 
-const words = (s: string): string[] => s.toLowerCase().split(/[^a-z0-9⌘⇧←-↓\\/?(]+/).filter(Boolean);
+const words = (s: string): string[] => s.toLowerCase().split(/[^a-z0-9⌘⇧←-↓⌫\\/?(]+/).filter(Boolean);
 
 /**
  * Whether a shortcut answers a typed query, by its keys or its name. Every word typed has to match a word of the shortcut:
