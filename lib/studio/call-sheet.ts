@@ -87,11 +87,19 @@ export function issueState(sheet: (SheetFields & { version: number; issued: Json
 export function callFor(snap: CallSheetSnapshot, userId: string, castAs: string[]): (CallEntry & { as?: string }) | null {
   if (snap.calls[userId]) return snap.calls[userId];
   // A call is filed under the name as it was typed ("Dock Boy"), a casting under the character's upper-case name: match on
-  // the name, not on how it was cased.
-  const byName = new Map(Object.entries(snap.cast_calls).map(([name, entry]) => [name.trim().toUpperCase(), { name, entry }]));
-  const role = [...castAs].sort().find((name) => byName.has(name.trim().toUpperCase()));
-  const hit = role ? byName.get(role.trim().toUpperCase()) : undefined;
-  return role && hit ? { ...hit.entry, as: role } : null;
+  // the name, not on how it was cased. `cast_calls` can contain case-variant keys (e.g. "Maya" and "MAYA") because the
+  // column is case-sensitive; search with exact-case priority so we never silently pick the wrong entry.
+  const entries = Object.entries(snap.cast_calls);
+  const role = [...castAs].sort().find(
+    (name) =>
+      entries.some(([k]) => k.trim() === name.trim()) ||
+      entries.some(([k]) => k.trim().toUpperCase() === name.trim().toUpperCase()),
+  );
+  if (!role) return null;
+  const hit =
+    entries.find(([k]) => k.trim() === role.trim()) ??
+    entries.find(([k]) => k.trim().toUpperCase() === role.trim().toUpperCase());
+  return hit ? { ...hit[1], as: role } : null;
 }
 
 export const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
