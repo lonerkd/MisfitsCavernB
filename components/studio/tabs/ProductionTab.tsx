@@ -31,6 +31,7 @@ const WeatherView = dynamic(() => import('../production/WeatherView').then((m) =
 const CateringView = dynamic(() => import('../production/CateringView').then((m) => m.CateringView), { loading: viewLoading });
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
+const CastBreakdownView = dynamic(() => import('../production/CastBreakdownView').then((m) => m.CastBreakdownView), { loading: viewLoading });
 const TransportView = dynamic(() => import('../production/TransportView').then((m) => m.TransportView), { loading: viewLoading });
 
 type View = ProductionView;
@@ -51,6 +52,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot' },
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
+  { id: 'cast', label: 'Cast', icon: <Users size={12} />, group: 'People' },
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
 
@@ -107,6 +109,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'catering' && <CateringView />}
       {!lock && view === 'safety' && <SafetyView />}
       {!lock && view === 'props' && <PropsView />}
+      {!lock && view === 'cast' && <CastBreakdownView />}
       {!lock && view === 'transport' && <TransportView />}
       {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
