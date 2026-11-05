@@ -56,6 +56,8 @@ export interface ProjectSettings {
   permits?: Array<{ id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' }>;
   /** Script supervisor notes (per-take). */
   scriptNotes?: Array<{ id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean }>;
+  /** Purchase orders / petty cash. */
+  purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
