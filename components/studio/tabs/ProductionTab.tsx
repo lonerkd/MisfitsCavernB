@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { BookOpen, Calendar, Camera, Car, ChefHat, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, Shield, Tags, Users } from 'lucide-react';
+import { BookOpen, Calendar, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, Shield, Tags, Users } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -30,6 +30,7 @@ const ProductionReportView = dynamic(() => import('../production/ProductionRepor
 const WeatherView = dynamic(() => import('../production/WeatherView').then((m) => m.WeatherView), { loading: viewLoading });
 const CateringView = dynamic(() => import('../production/CateringView').then((m) => m.CateringView), { loading: viewLoading });
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
+const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const TransportView = dynamic(() => import('../production/TransportView').then((m) => m.TransportView), { loading: viewLoading });
 
 type View = ProductionView;
@@ -38,6 +39,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Pre-production' },
   { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Pre-production' },
   { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Pre-production' },
+  { id: 'props', label: 'Props', icon: <ClipboardList size={12} />, group: 'Pre-production' },
   { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Pre-production' },
   { id: 'money', label: 'Money', icon: <DollarSign size={12} />, group: 'Budget & docs' },
   { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} />, group: 'Budget & docs' },
@@ -104,6 +106,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'weather' && <WeatherView />}
       {!lock && view === 'catering' && <CateringView />}
       {!lock && view === 'safety' && <SafetyView />}
+      {!lock && view === 'props' && <PropsView />}
       {!lock && view === 'transport' && <TransportView />}
       {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
