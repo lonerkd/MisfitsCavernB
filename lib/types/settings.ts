@@ -60,6 +60,8 @@ export interface ProjectSettings {
   purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
   /** Media offload log (DIT). */
   mediaOffloads?: Array<{ id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' }>;
+  /** Makeup / hair continuity. */
+  makeup?: Array<{ id: string; character: string; scene: string; look: string; artist: string; notes: string; photo: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
