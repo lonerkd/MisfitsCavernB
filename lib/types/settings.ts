@@ -34,6 +34,8 @@ export interface ProjectSettings {
   gear?: Array<{ id: string; item: string; category: string; owner: string; status: 'needed' | 'packed' | 'on-set' | 'returned' }>;
   /** Daily wrap reports. */
   wraps?: Array<{ id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string }>;
+  /** Rehearsal schedule. */
+  rehearsals?: Array<{ id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
