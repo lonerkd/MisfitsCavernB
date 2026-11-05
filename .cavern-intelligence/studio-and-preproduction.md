@@ -47,6 +47,8 @@ position.
 
 ## 3. Library and references
 
+**Mood boards** (Library > Mood boards, `components/studio/boards/BoardsPanel.tsx`): boards as objects of their own, unlimited per project, with a type (free, character, location, tone, colour; a type starts the board with note cards to fill in). A card is a library item or a note; drag it (or arrow keys, Shift for bigger steps), resize it (small, medium, large), bring it to front, edit a note (double click or Enter), remove it. Moves, resizes and note edits go on the suite's undo (Ctrl/Cmd Z outside a text box). The colours on a board are read from its images in the browser (`dominantColours`); Print / PDF opens a printable page of the board (`lib/studio/boards-print.ts`). The pure parts are in `lib/studio/boards.ts`.
+
 - Uploads: private `project-media` bucket, `<project>/<media id>/<file>`,
   50 MB, images/video/audio/PDF. Upload first, then the row; a failed row
   removes the file. Delete removes the row, then the file.

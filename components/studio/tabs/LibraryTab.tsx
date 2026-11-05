@@ -11,6 +11,7 @@ import { AddLinkForm, AddNoteForm, DropOverlay, UploadButton, UploadQueue, useFi
 import { MediaDetail } from '../media/MediaDetail';
 import { useUploader } from '../media/useUploader';
 import { FindReferences } from '../media/FindReferences';
+import { BoardsPanel } from '../boards/BoardsPanel';
 import s from '../studio.module.css';
 
 /**
@@ -19,6 +20,7 @@ import s from '../studio.module.css';
  * crew, live.
  */
 export function LibraryTab() {
+  const [view, setView] = useState<'library' | 'boards'>(() => (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('view') === 'boards' ? 'boards' : 'library'));
   const { project, userId, media, scenesByMedia } = useStudio();
   const [openId, setOpenId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -33,6 +35,12 @@ export function LibraryTab() {
   const count = media.rows.length;
   return (
     <section aria-labelledby="library-title">
+      <div role="tablist" aria-label="Library views" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        {(['library', 'boards'] as const).map((v) => (
+          <button key={v} type="button" role="tab" aria-selected={view === v} className={s.btn} style={view === v ? { borderColor: 'var(--accent)' } : undefined} onClick={() => setView(v)}>{v === 'library' ? 'Library' : 'Mood boards'}</button>
+        ))}
+      </div>
+      {view === 'boards' ? <BoardsPanel /> : (<>
       <SectionHeader
         id="library-title"
         title="References & Media"
@@ -89,6 +97,7 @@ export function LibraryTab() {
         />
       )}
       {dragging && <DropOverlay label={`Drop to upload to ${project.title}`} />}
+      </>)}
     </section>
   );
 }
