@@ -54,6 +54,8 @@ export interface ProjectSettings {
   costumes?: Array<{ id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' }>;
   /** Location permits & insurance. */
   permits?: Array<{ id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' }>;
+  /** Script supervisor notes (per-take). */
+  scriptNotes?: Array<{ id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
