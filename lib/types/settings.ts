@@ -52,6 +52,8 @@ export interface ProjectSettings {
   vfxShots?: Array<{ id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' }>;
   /** Costume / wardrobe tracking. */
   costumes?: Array<{ id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' }>;
+  /** Location permits & insurance. */
+  permits?: Array<{ id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
