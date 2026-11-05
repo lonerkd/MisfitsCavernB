@@ -46,6 +46,8 @@ export interface ProjectSettings {
   risks?: Array<{ id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' }>;
   /** Camera report entries. */
   cameraReports?: Array<{ id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string }>;
+  /** Sound report entries. */
+  soundReports?: Array<{ id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
