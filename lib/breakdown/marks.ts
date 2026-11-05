@@ -7,6 +7,7 @@ import { findMentions, suggestForScene, type BreakdownCategory, type BreakdownEl
 export interface EditorLine {
   text: string;
   type: string;
+  confidence?: number;
 }
 
 export interface SceneRange {
@@ -75,8 +76,12 @@ export function buildBreakdownView(input: {
   ranges.forEach((range, n) => {
     const taggedIds = new Set(range.sceneId ? tags.filter((t) => t.scene_id === range.sceneId).map((t) => t.element_id) : []);
     const tagged = Array.from(taggedIds).map((id) => byId.get(id)).filter(Boolean) as BreakdownElement[];
+    const sceneLines = lines.slice(range.start, range.end + 1);
+    const minConfidence = sceneLines.length
+      ? Math.min(...sceneLines.map((l) => l.confidence ?? 100))
+      : 100;
     const sceneSuggestions = range.sceneId
-      ? suggestForScene({ actionText: actionTextOf(lines, range), characters: range.characters, taggedElementIds: taggedIds, elements, categories, dismissed, memory })
+      ? suggestForScene({ actionText: actionTextOf(lines, range), characters: range.characters, taggedElementIds: taggedIds, elements, categories, dismissed, memory, confidence: minConfidence })
       : [];
     suggestions.set(n, sceneSuggestions);
 

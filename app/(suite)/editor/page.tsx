@@ -77,6 +77,7 @@ import { sceneGutter } from '@/lib/film/gutter';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
+import { LineOverrideButton } from '@/components/editor/LineOverrideButton';
 import { doubtfulReads } from '@/lib/scriptos/review';
 import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
@@ -84,7 +85,7 @@ import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
 import { useActivity } from '@/lib/island/activities';
 import { sprintActivity } from '@/lib/island/sprintActivity';
-import { useCharacters, useReadingCorrections, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
+import { useCharacters, useReadingCorrections, useProjectLocations, useLineOverrides, useReadingMemory, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -170,7 +171,17 @@ export default function EditorPage() {
   const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
-  const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
+  const locations = useProjectLocations(activeProject?.id ?? null);
+  const lineOverrides = useLineOverrides(currentScript?.id ?? null);
+  const { writerMemory } = useReadingMemory(sessionUser?.id ?? null);
+  const readContext = useMemo(() => contextFromProject(
+    Object.values(castings),
+    corrections.rows,
+    writerMemory,
+    lineOverrides.rows.map((r: { line_index: number; forced_type: string }) => ({ line_index: r.line_index, forced_type: r.forced_type })),
+    locations.rows.map((l: { name: string }) => ({ name: l.name })),
+    undefined, // previousDraftCues
+  ), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
     const result = parseScript(parseSource, readingFormat(scriptFormat), undefined, { context: readContext });
@@ -941,7 +952,18 @@ export default function EditorPage() {
                   currentScript={currentScript}
                   projectAudioRefs={projectAudioRefs}
                   playAudioRef={playAudioRef}
-                  readingPanel={<DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />}
+                  readingPanel={
+                    <>
+                      <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
+                      <LineOverrideButton
+                        projectId={currentScript?.project_id ?? null}
+                        scriptId={currentScript?.id ?? null}
+                        lineIndex={cursorLine}
+                        currentType={lines[cursorLine]?.type ?? 'action'}
+                        onSaved={() => { lineOverrides.reload(); }}
+                      />
+                    </>
+                  }
                   breakdownPanel={
                     <BreakdownPanel
                       bd={bd}

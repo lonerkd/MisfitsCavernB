@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Trash2, X } from 'lucide-react';
+import { Calendar, DollarSign, Trash2, Users, X } from 'lucide-react';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { breakdown, ELEMENT_STATUSES, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
@@ -18,7 +18,7 @@ export const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
  * notes, and the scenes it's tagged in. Used beside the script and in the
  * Studio's breakdown.
  */
-export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpToScene, onUntagHere, onClose }: {
+export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpToScene, onUntagHere, onClose, onNavigate }: {
   element: BreakdownElement;
   state: BreakdownState;
   crew: Array<{ user_id: string; username: string }>;
@@ -29,6 +29,8 @@ export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpT
   /** Offered when the host has a current scene the element is tagged in. */
   onUntagHere?: () => void;
   onClose: () => void;
+  /** Navigate to another production view (schedule, money, crew). */
+  onNavigate?: (view: string) => void;
 }) {
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -137,6 +139,13 @@ export function ElementCard({ element, state, crew, scenes, scenesLabel, onJumpT
       </div>
 
       <div className={b.barActions} style={{ marginTop: 0 }}>
+        {onNavigate && (
+          <>
+            <button type="button" className={b.btn} onClick={() => onNavigate('schedule')}><Calendar size={11} aria-hidden /> Schedule</button>
+            <button type="button" className={b.btn} onClick={() => onNavigate('money')}><DollarSign size={11} aria-hidden /> Budget</button>
+            <button type="button" className={b.btn} onClick={() => onNavigate('crew')}><Users size={11} aria-hidden /> Cast</button>
+          </>
+        )}
         {onUntagHere && (
           <button type="button" className={b.btn} onClick={onUntagHere}>Untag in this scene</button>
         )}

@@ -113,6 +113,7 @@ test.describe('Studio journey (local Supabase)', () => {
     // 4. Publish: link-share the project and include the still.
     await openStudio(page, projectId, 'share');
     await page.getByRole('radio', { name: /Anyone with the link/ }).click();
+    await expect.poll(async () => (await admin.from('projects').select('visibility').eq('id', projectId).single()).data?.visibility).toBe('link');
     await page.getByRole('switch', { name: 'Include firelight in the lookbook' }).click();
     await expect(page.getByRole('switch', { name: 'Include firelight in the lookbook' })).toHaveAttribute('aria-checked', 'true');
     const shareUrl = await page.locator('#share-url').inputValue();

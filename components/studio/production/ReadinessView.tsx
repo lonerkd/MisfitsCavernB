@@ -25,6 +25,7 @@ const FIX: Record<CheckId, { label: string; place: Place }> = {
   shots: { label: 'Plan shots', place: { kind: 'studio', tab: 'scenes' } },
   date: { label: 'Schedule it', place: { kind: 'studio', tab: 'production', view: 'schedule' } },
   refs: { label: 'Add references', place: { kind: 'studio', tab: 'scenes' } },
+  script: { label: 'Review the script', place: { kind: 'studio', tab: 'scenes' } },
 };
 
 function localToday(): string {
@@ -41,7 +42,7 @@ const fmtDate = (iso: string) => new Date(`${iso}T00:00:00`).toLocaleDateString(
  * here is ticked by hand: it all follows the project's data, live.
  */
 export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => boolean }) {
-  const { project, scenes, shots, mediaByScene, scriptId, followScene, openInScript, castOf } = useStudio();
+  const { project, scenes, shots, mediaByScene, scriptId, followScene, openInScript, castOf, doubtfulSceneOrdinals } = useStudio();
   const bd = useBreakdown(project.id);
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
@@ -71,8 +72,9 @@ export function ReadinessView({ onNavigate }: { onNavigate: (place: Place) => bo
     const refsByScene = new Map(Array.from(mediaByScene.entries()).map(([id, list]) => [id, list.length]));
     const dateOfDay = dateOfDayMap(shootDays.rows, sheets.rows);
     const locationMap = new Map(locations.rows.map((l) => [locationKey(l.name), { status: l.status, permit: l.permit }]));
-    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, placeOf: placeResolver(locations.rows), elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap };
-  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, shootDays.rows, castings.rows, locations.rows, castOf]);
+    const doubtfulSceneIds = new Set(scenes.rows.filter((sc) => sc.ordinal != null && doubtfulSceneOrdinals.has(sc.ordinal)).map((sc) => sc.id));
+    return { cast: new Set(castings.rows.map((c) => c.character_name.toUpperCase())), castOf, placeOf: placeResolver(locations.rows), elementsByScene, shotsByScene, refsByScene, dateOfDay, locations: locationMap, doubtfulScenes: doubtfulSceneIds };
+  }, [bd.tags.rows, bd.elementById, shots.rows, mediaByScene, sheets.rows, shootDays.rows, castings.rows, locations.rows, castOf, doubtfulSceneOrdinals, scenes.rows]);
 
   const days = useMemo(() => readinessByDay(scenes.rows, input), [scenes.rows, input]);
   const all = useMemo(() => days.flatMap((d) => d.scenes), [days]);

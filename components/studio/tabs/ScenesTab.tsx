@@ -13,6 +13,7 @@ import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaDetail } from '../media/MediaDetail';
 import { MediaPicker } from '../media/MediaPicker';
 import { ShotDesigner } from '../shots/ShotDesigner';
+import { ScenePassport } from '../ScenePassport';
 import s from '../studio.module.css';
 
 /**
@@ -21,7 +22,7 @@ import s from '../studio.module.css';
  * scene through rewrites.
  */
 export function ScenesTab() {
-  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene } = useStudio();
+  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene, doubtfulSceneOrdinals } = useStudio();
 
   // Linked split screen: bring the script's current scene into view.
   useEffect(() => {
@@ -150,7 +151,7 @@ export function ScenesTab() {
 }
 
 function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote> }) {
-  const { scenes, links, postNotes, followScene, openInScript, castOf } = useStudio();
+  const { scenes, links, postNotes, followScene, openInScript, castOf, doubtfulSceneOrdinals } = useStudio();
   const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
   const { toast } = useToast();
@@ -201,6 +202,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
             <div className={s.sceneHeading}>{scene.heading ?? scene.title}</div>
             {meta && <div className={s.sceneMeta}>{meta}</div>}
             {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: 'var(--warn)' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
+            <ScenePassport sceneId={scene.id} compact />
           </div>
           <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript(scene)} aria-label={`In script — open scene ${scene.scene_number}`}>
             <FileText size={11} aria-hidden /> In script
@@ -234,7 +236,7 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
           </button>
         </div>
 
-        <ShotDesigner scene={scene} notes={shotNotes} />
+<ShotDesigner scene={scene} notes={shotNotes} doubtful={scene.ordinal != null && doubtfulSceneOrdinals.has(scene.ordinal)} />
 
         <label>
           <span className={s.srOnly}>Scene note</span>

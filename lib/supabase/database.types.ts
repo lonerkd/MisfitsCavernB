@@ -3219,6 +3219,89 @@ export type Database = {
           },
         ];
       };
+      reading_line_overrides: {
+        Row: {
+          created_at: string;
+          forced_by: string | null;
+          forced_type: string;
+          id: string;
+          line_index: number;
+          project_id: string;
+          script_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          forced_by?: string | null;
+          forced_type: string;
+          id?: string;
+          line_index: number;
+          project_id: string;
+          script_id: string;
+        };
+        Update: {
+          created_at?: string;
+          forced_by?: string | null;
+          forced_type?: string;
+          id?: string;
+          line_index?: number;
+          project_id?: string;
+          script_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reading_line_overrides_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reading_line_overrides_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reading_memory: {
+        Row: {
+          count: number;
+          created_at: string;
+          id: string;
+          kind: string;
+          metadata: NonNullable<Json>;
+          name: string;
+          script_format: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          count?: number;
+          created_at?: string;
+          id?: string;
+          kind: string;
+          metadata?: NonNullable<Json>;
+          name: string;
+          script_format?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          count?: number;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          metadata?: NonNullable<Json>;
+          name?: string;
+          script_format?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       reports: {
         Row: {
           created_at: string;
@@ -5038,6 +5121,15 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      reading_memory_for_user: {
+        Args: { p_format?: string; p_user_id: string };
+        Returns: {
+          count: number;
+          kind: string;
+          metadata: Json;
+          name: string;
+        }[];
+      };
       report_client_error: {
         Args: {
           p_digest: string;

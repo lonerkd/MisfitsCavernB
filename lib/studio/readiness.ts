@@ -6,7 +6,7 @@
 import { castOf } from './stripboard';
 import { locationKey, locationReadiness } from './locations';
 
-export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs';
+export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs' | 'script';
 export type CheckState = 'done' | 'todo' | 'none';
 
 export interface ReadinessCheck {
@@ -57,6 +57,8 @@ export interface ReadinessInput {
   locations?: Map<string, { status: string; permit: string }>;
   /** Where a scene shoots (graph first). Defaults to the heading's text. */
   placeOf?: (scene: ReadinessScene) => string;
+  /** Scene ids whose read was doubtful (deep brain). */
+  doubtfulScenes?: Set<string>;
 }
 
 const list = (names: string[], max = 3) =>
@@ -96,6 +98,7 @@ export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): Sc
       detail: date ? '' : day != null ? `Day ${day} has no date` : 'Not scheduled',
     },
     { id: 'refs', label: 'References', state: refs > 0 ? 'done' : 'todo', detail: refs > 0 ? '' : 'No references', optional: true },
+    { id: 'script', label: 'Script read', state: input.doubtfulScenes?.has(scene.id) ? 'todo' : 'done', detail: input.doubtfulScenes?.has(scene.id) ? 'Doubtful read — review the script' : '', optional: true },
   ];
 
   const required = checks.filter((c) => !c.optional && c.state !== 'none');

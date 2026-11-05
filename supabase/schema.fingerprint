@@ -576,6 +576,22 @@ column reading_corrections.id uuid default gen_random_uuid() not null
 column reading_corrections.kind text not null
 column reading_corrections.name text not null
 column reading_corrections.project_id uuid not null
+column reading_line_overrides.created_at timestamp with time zone default now() not null
+column reading_line_overrides.forced_by uuid default auth.uid()
+column reading_line_overrides.forced_type text not null
+column reading_line_overrides.id uuid default gen_random_uuid() not null
+column reading_line_overrides.line_index integer not null
+column reading_line_overrides.project_id uuid not null
+column reading_line_overrides.script_id uuid not null
+column reading_memory.count integer default 1 not null
+column reading_memory.created_at timestamp with time zone default now() not null
+column reading_memory.id uuid default gen_random_uuid() not null
+column reading_memory.kind text not null
+column reading_memory.metadata jsonb default '{}'::jsonb not null
+column reading_memory.name text not null
+column reading_memory.script_format text default 'screenplay'::text not null
+column reading_memory.updated_at timestamp with time zone default now() not null
+column reading_memory.user_id uuid not null
 column reports.created_at timestamp with time zone default now() not null
 column reports.id uuid default gen_random_uuid() not null
 column reports.kind text not null
@@ -1214,6 +1230,18 @@ constraint reading_corrections.reading_corrections_name_check CHECK ((((char_len
 constraint reading_corrections.reading_corrections_pkey PRIMARY KEY (id)
 constraint reading_corrections.reading_corrections_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint reading_corrections.reading_corrections_project_name_key UNIQUE (project_id, name)
+constraint reading_line_overrides.reading_line_overrides_forced_by_fkey FOREIGN KEY (forced_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint reading_line_overrides.reading_line_overrides_line_check CHECK ((line_index >= 0))
+constraint reading_line_overrides.reading_line_overrides_pkey PRIMARY KEY (id)
+constraint reading_line_overrides.reading_line_overrides_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint reading_line_overrides.reading_line_overrides_project_script_line_key UNIQUE (project_id, script_id, line_index)
+constraint reading_line_overrides.reading_line_overrides_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint reading_line_overrides.reading_line_overrides_type_check CHECK ((forced_type = ANY (ARRAY['slug'::text, 'action'::text, 'character'::text, 'dialogue'::text, 'parenthetical'::text, 'transition'::text, 'shot'::text, 'text'::text, 'title'::text, 'centered'::text, 'section'::text, 'synopsis'::text, 'lyric'::text, 'scene'::text, 'note'::text, 'dual'::text, 'pagebreak'::text, 'boneyard'::text, 'empty'::text])))
+constraint reading_memory.reading_memory_kind_check CHECK ((kind = ANY (ARRAY['confirmed_name'::text, 'rejected_name'::text, 'title_case_cue'::text, 'colon_cue'::text, 'extension'::text, 'transition_pattern'::text])))
+constraint reading_memory.reading_memory_name_check CHECK (((char_length(name) >= 1) AND (char_length(name) <= 200)))
+constraint reading_memory.reading_memory_pkey PRIMARY KEY (id)
+constraint reading_memory.reading_memory_user_format_kind_name_key UNIQUE (user_id, script_format, kind, name)
+constraint reading_memory.reading_memory_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint reports.reports_kind_check CHECK ((kind = ANY (ARRAY['message'::text, 'job'::text, 'profile'::text])))
 constraint reports.reports_once_key UNIQUE (reporter_id, kind, target_id)
 constraint reports.reports_pkey PRIMARY KEY (id)
@@ -1415,6 +1443,7 @@ function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d
 function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
 function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
+function internal.line_overrides_check_script() body=5eefdfb8837a9027246ae1a3d2804f35
 function internal.live_review_link(p_token text) body=971884db2ab87ec35d014433112e3758
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
@@ -1435,6 +1464,7 @@ function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.reading_memory_from_correction() body=96c479637c5d8149b8ddfea24a65d414
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
@@ -1492,6 +1522,7 @@ function public.project_availability(p_project uuid, p_from date, p_to date) bod
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
 function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a08bb2b7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
+function public.reading_memory_for_user(p_user_id uuid, p_format text) body=2a66ee1818dfad753f1ee9a348cafd3d
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=9ebf4ce019e4068e892c89fa924e25f0
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
@@ -1547,6 +1578,7 @@ grant function internal.is_shared_media_object(object_name text) anon,authentica
 grant function internal.item_versions_guard() postgres
 grant function internal.item_versions_prepare() postgres
 grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
+grant function internal.line_overrides_check_script() postgres
 grant function internal.live_review_link(p_token text) postgres
 grant function internal.media_guard() postgres,service_role
 grant function internal.media_lifecycle_guard() postgres
@@ -1567,6 +1599,7 @@ grant function internal.projects_approval_gate() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
+grant function internal.reading_memory_from_correction() postgres
 grant function internal.review_links_check() postgres
 grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
@@ -1624,6 +1657,7 @@ grant function public.project_availability(p_project uuid, p_from date, p_to dat
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
 grant function public.project_progress(p_project uuid) authenticated,postgres,service_role
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
+grant function public.reading_memory_for_user(p_user_id uuid, p_format text) authenticated,postgres,service_role
 grant function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) anon,authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
@@ -1801,6 +1835,10 @@ index CREATE INDEX projects_sample_idx ON public.projects USING btree (id) WHERE
 index CREATE INDEX push_subscriptions_user_id_idx ON public.push_subscriptions USING btree (user_id)
 index CREATE INDEX reading_corrections_created_by_fkey_idx ON public.reading_corrections USING btree (created_by)
 index CREATE INDEX reading_corrections_project_idx ON public.reading_corrections USING btree (project_id)
+index CREATE INDEX reading_line_overrides_forced_by_idx ON public.reading_line_overrides USING btree (forced_by)
+index CREATE INDEX reading_line_overrides_project_script_idx ON public.reading_line_overrides USING btree (project_id, script_id)
+index CREATE INDEX reading_line_overrides_script_idx ON public.reading_line_overrides USING btree (script_id)
+index CREATE INDEX reading_memory_user_format_idx ON public.reading_memory USING btree (user_id, script_format)
 index CREATE INDEX reports_resolved_by_fkey_idx ON public.reports USING btree (resolved_by)
 index CREATE INDEX reports_status_idx ON public.reports USING btree (status, created_at DESC)
 index CREATE INDEX review_comments_author_idx ON public.review_comments USING btree (author_id)
@@ -1953,6 +1991,10 @@ index CREATE UNIQUE INDEX push_subscriptions_endpoint_key ON public.push_subscri
 index CREATE UNIQUE INDEX push_subscriptions_pkey ON public.push_subscriptions USING btree (id)
 index CREATE UNIQUE INDEX reading_corrections_pkey ON public.reading_corrections USING btree (id)
 index CREATE UNIQUE INDEX reading_corrections_project_name_key ON public.reading_corrections USING btree (project_id, name)
+index CREATE UNIQUE INDEX reading_line_overrides_pkey ON public.reading_line_overrides USING btree (id)
+index CREATE UNIQUE INDEX reading_line_overrides_project_script_line_key ON public.reading_line_overrides USING btree (project_id, script_id, line_index)
+index CREATE UNIQUE INDEX reading_memory_pkey ON public.reading_memory USING btree (id)
+index CREATE UNIQUE INDEX reading_memory_user_format_kind_name_key ON public.reading_memory USING btree (user_id, script_format, kind, name)
 index CREATE UNIQUE INDEX reports_once_key ON public.reports USING btree (reporter_id, kind, target_id)
 index CREATE UNIQUE INDEX reports_pkey ON public.reports USING btree (id)
 index CREATE UNIQUE INDEX review_comments_pkey ON public.review_comments USING btree (id)
@@ -2159,6 +2201,8 @@ policy public.push_subscriptions "push_subscriptions add own" PERMISSIVE INSERT 
 policy public.push_subscriptions "push_subscriptions read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.push_subscriptions "push_subscriptions remove own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.reading_corrections "reading_corrections access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.reading_line_overrides "reading_line_overrides access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.reading_memory "reading_memory own" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.reports "reports insert" PERMISSIVE INSERT to authenticated using - check ((reporter_id = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text) AND (resolved_by IS NULL))
 policy public.reports "reports settle" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.reports "reports view" PERMISSIVE SELECT to authenticated using ((reporter_id = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
@@ -2270,6 +2314,7 @@ realtime public.project_documents
 realtime public.project_locations
 realtime public.projects
 realtime public.reading_corrections
+realtime public.reading_line_overrides
 realtime public.scene_characters
 realtime public.scene_elements
 realtime public.scene_media
@@ -2342,6 +2387,8 @@ rls project_tasks enabled=true forced=false
 rls projects enabled=true forced=false
 rls push_subscriptions enabled=true forced=false
 rls reading_corrections enabled=true forced=false
+rls reading_line_overrides enabled=true forced=false
+rls reading_memory enabled=true forced=false
 rls reports enabled=true forced=false
 rls review_comments enabled=true forced=false
 rls review_links enabled=true forced=false
@@ -2435,6 +2482,8 @@ trigger CREATE TRIGGER projects_approval_gate BEFORE UPDATE OF status ON public.
 trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.projects_seed_breakdown()
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
+trigger CREATE TRIGGER reading_corrections_sync_memory AFTER INSERT ON public.reading_corrections FOR EACH ROW EXECUTE FUNCTION internal.reading_memory_from_correction()
+trigger CREATE TRIGGER reading_line_overrides_check_script BEFORE INSERT OR UPDATE OF project_id, script_id ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_check_script()
 trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
