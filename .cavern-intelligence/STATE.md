@@ -4,10 +4,10 @@
 > session only. Every open task, scoped: [BACKLOG.md](BACKLOG.md). Older
 > sessions: [STATE-history.md](STATE-history.md).
 
-## Resume here (handoff, 2026-11-02)
+## Resume here (handoff, 2026-11-05)
 
 1. **`main` is current.** Start with `git switch main && git pull`; then `node scripts/latest-sessions.js` for what the last PRs did, and `gh pr list` for what is open.
-2. **Production matches `main`** (2026-10-25: schema drift green). Previews run on the staging project `cavern-staging` (ADR 0006); each merged migration goes to production, then staging (`database-and-security.md` §3).
+2. **Production matches `main`** (2026-11-05: schema drift green on `1c65f795`, every migration through `20261105000000` applied). Previews run on the staging project `cavern-staging` (ADR 0006); each merged migration goes to production, then staging (`database-and-security.md` §3).
 3. **Web Push is live in production** (2026-10-25): VAPID keys and `PUSH_DISPATCH_SECRET` in Vercel (Production), `internal.push_config` set; a test notification reached the owner's iPhone (`sent: 1`). Staging has no push config (off, by design).
 4. **Owner's dashboard list for password recovery (3.4, shipped):** a custom
    SMTP sender (Supabase's built-in one only mails team members, so real users
@@ -22,7 +22,7 @@
    (mail catcher on :54324), `npx supabase stop` first if it came up from stale
    containers. Never push to `main`; PR from a `claude/*` branch; merge only
    once checks are green (owner, 2026-10-27: merge without waiting for the word; production follows main; flags are on in production).
-6. **Owner, stats (2026-11-03):** production's public totals were inflated by old QA accounts; 10 were flagged as sample by hand and the stats function fix is in PR #419 (apply to production after merge). Tell Claude whether `thekid` is a test or bot account (it is counted as real now), and delete the throwaway QA accounts when convenient (BACKLOG 3.37).
+6. **Stats are real (2026-11-03/05):** the public totals leave out sample, test and bot accounts (10 old QA accounts flagged `is_sample` by hand; migration `20261103100000` also leaves out a sample account's loose scripts; both live in production). The owner confirmed `thekid` is a real account (counted). Still to do: delete the throwaway QA accounts (BACKLOG 3.37).
 7. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
