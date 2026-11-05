@@ -26,6 +26,8 @@ export interface ProjectSettings {
   dayLengthEighths?: number;
   /** Per-shoot-day meal plans (catering). */
   catering?: Record<string, { headcount: number; mealTime: string; dietary: string; vendor: string; notes: string; status: 'planned' | 'ordered' | 'delivered' }>;
+  /** Safety and risk items. */
+  safety?: Array<{ id: string; hazard: string; location: string; severity: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'identified' | 'mitigated' | 'resolved' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
