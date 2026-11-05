@@ -42,6 +42,8 @@ export interface ProjectSettings {
   revisions?: Array<{ id: string; color: string; date: string; pages: string; notes: string; author: string }>;
   /** Director's notebook entries. */
   directorNotes?: Array<{ id: string; scene: string; title: string; notes: string; reference: string; createdAt: string }>;
+  /** Production risk register. */
+  risks?: Array<{ id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
