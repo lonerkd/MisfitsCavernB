@@ -30,6 +30,8 @@ export interface ProjectSettings {
   safety?: Array<{ id: string; hazard: string; location: string; severity: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'identified' | 'mitigated' | 'resolved' }>;
   /** Crew communication log. */
   comms?: Array<{ id: string; date: string; to: string; channel: 'call' | 'email' | 'text' | 'in-person'; subject: string; notes: string; status: 'sent' | 'replied' | 'pending' }>;
+  /** Equipment / gear inventory. */
+  gear?: Array<{ id: string; item: string; category: string; owner: string; status: 'needed' | 'packed' | 'on-set' | 'returned' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { BookOpen, Calendar, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, MessageCircle, Shield, Tags, Users } from 'lucide-react';
+import { BookOpen, Calendar, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, MessageCircle, Shield, Tags, Users, Wrench } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -32,6 +32,7 @@ const CateringView = dynamic(() => import('../production/CateringView').then((m)
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.DoodView), { loading: viewLoading });
+const GearView = dynamic(() => import('../production/GearView').then((m) => m.GearView), { loading: viewLoading });
 const CommsView = dynamic(() => import('../production/CommsView').then((m) => m.CommsView), { loading: viewLoading });
 const CastBreakdownView = dynamic(() => import('../production/CastBreakdownView').then((m) => m.CastBreakdownView), { loading: viewLoading });
 const TransportView = dynamic(() => import('../production/TransportView').then((m) => m.TransportView), { loading: viewLoading });
@@ -54,6 +55,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot' },
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
+  { id: 'gear', label: 'Gear', icon: <Wrench size={12} />, group: 'Shoot' },
   { id: 'dood', label: 'Day out of days', icon: <Calendar size={12} />, group: 'Shoot' },
   { id: 'comms', label: 'Comms', icon: <MessageCircle size={12} />, group: 'People' },
   { id: 'cast', label: 'Cast', icon: <Users size={12} />, group: 'People' },
@@ -113,6 +115,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'catering' && <CateringView />}
       {!lock && view === 'safety' && <SafetyView />}
       {!lock && view === 'props' && <PropsView />}
+      {!lock && view === 'gear' && <GearView />}
       {!lock && view === 'dood' && <DoodView />}
       {!lock && view === 'comms' && <CommsView />}
       {!lock && view === 'cast' && <CastBreakdownView />}
