@@ -25,7 +25,7 @@ const byOrder = (a: Shot, b: Shot) => (a.order_index ?? 0) - (b.order_index ?? 0
  * picker. Drag cards — or use the arrows — to reorder. Shots made from a
  * "Shot" margin note show the script line they came from.
  */
-export function ShotDesigner({ scene, notes }: { scene: SceneRow; notes: Map<string, ShotNote> }) {
+export function ShotDesigner({ scene, notes, doubtful }: { scene: SceneRow; notes: Map<string, ShotNote>; doubtful?: boolean }) {
   const { project, userId, shots, media, mediaById } = useStudio();
   const { toast } = useToast();
   const list = useMemo(() => shots.rows.filter((x) => x.scene_id === scene.id).sort(byOrder), [shots.rows, scene.id]);
@@ -62,6 +62,11 @@ export function ShotDesigner({ scene, notes }: { scene: SceneRow; notes: Map<str
 
   return (
     <div className={d.wrap} aria-label={`Shots for scene ${scene.scene_number}`}>
+      {doubtful && (
+        <div style={{ padding: '6px 10px', marginBottom: 8, borderRadius: 4, background: 'rgba(232, 160, 32, 0.08)', border: '1px solid rgba(232, 160, 32, 0.2)', fontSize: 11, color: 'var(--fg-muted)' }}>
+                  The reader wasn&apos;t sure about this scene. Review the script before designing shots.
+                </div>
+      )}
       <div className={s.shotsHead}>
         <span className={s.hint}>Shots · {list.length}</span>
         <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void add()} disabled={adding}>

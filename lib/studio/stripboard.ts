@@ -16,6 +16,8 @@ export interface StripScene {
   cast_list: string | null;
   shoot_day: number | null;
   status?: string | null;
+  /** Whether the reader was unsure about this scene's read (deep brain). */
+  doubtful?: boolean;
 }
 
 /** The industry strip colours: white INT day, yellow EXT day, blue INT night, green EXT night. */
@@ -46,6 +48,8 @@ export interface BoardDay {
   locations: string[];
   cast: string[];
   over: boolean;
+  /** How many scenes in this day had a doubtful read. */
+  doubtful: number;
 }
 
 /**
@@ -66,7 +70,8 @@ export function buildBoard(
     const eighths = list.reduce((n, s) => n + eighthsOf(s.est_duration), 0);
     const locations = Array.from(new Set(list.map(placeFor).filter(Boolean)));
     const cast = Array.from(new Set(list.flatMap(castFor))).sort();
-    return { day, scenes: list, eighths, locations, cast, over: eighths > capacityEighths };
+    const doubtful = list.filter((s) => s.doubtful).length;
+    return { day, scenes: list, eighths, locations, cast, over: eighths > capacityEighths, doubtful };
   });
 }
 

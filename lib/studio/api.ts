@@ -610,6 +610,29 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not take that back');
   }
 
+  async function listLineOverrides(scriptId: string): Promise<{ line_index: number; forced_type: string }[]> {
+    const { data, error } = await (db as any).from('reading_line_overrides').select('line_index, forced_type').eq('script_id', scriptId).order('line_index');
+    if (error) fail(error, 'Could not load line overrides');
+    return data ?? [];
+  }
+
+  async function setLineOverride(projectId: string, scriptId: string, lineIndex: number, forcedType: string): Promise<void> {
+    const { error } = await (db as any).from('reading_line_overrides')
+      .upsert({ project_id: projectId, script_id: scriptId, line_index: lineIndex, forced_type: forcedType }, { onConflict: 'project_id,script_id,line_index' });
+    if (error) fail(error, 'Could not save the line override');
+  }
+
+  async function removeLineOverride(projectId: string, scriptId: string, lineIndex: number): Promise<void> {
+    const { error } = await (db as any).from('reading_line_overrides').delete().eq('project_id', projectId).eq('script_id', scriptId).eq('line_index', lineIndex);
+    if (error) fail(error, 'Could not remove the line override');
+  }
+
+  async function getReadingMemory(userId: string, format: string = 'screenplay'): Promise<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]> {
+    const { data, error } = await (db as any).rpc('reading_memory_for_user', { p_user_id: userId, p_format: format });
+    if (error) fail(error, 'Could not load reading memory');
+    return data ?? [];
+  }
+
   /** One record per character per scene; the first save makes it. */
   async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
     const { data, error } = await db.from('scene_states')
@@ -978,7 +1001,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
