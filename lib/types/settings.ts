@@ -40,6 +40,8 @@ export interface ProjectSettings {
   scouts?: Array<{ id: string; locationName: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' }>;
   /** Script revision history (colored pages). */
   revisions?: Array<{ id: string; color: string; date: string; pages: string; notes: string; author: string }>;
+  /** Director's notebook entries. */
+  directorNotes?: Array<{ id: string; scene: string; title: string; notes: string; reference: string; createdAt: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
