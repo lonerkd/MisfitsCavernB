@@ -36,6 +36,8 @@ export interface ProjectSettings {
   wraps?: Array<{ id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string }>;
   /** Rehearsal schedule. */
   rehearsals?: Array<{ id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string }>;
+  /** Location scout notes. */
+  scouts?: Array<{ id: string; locationId: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
