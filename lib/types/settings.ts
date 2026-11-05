@@ -28,6 +28,8 @@ export interface ProjectSettings {
   catering?: Record<string, { headcount: number; mealTime: string; dietary: string; vendor: string; notes: string; status: 'planned' | 'ordered' | 'delivered' }>;
   /** Safety and risk items. */
   safety?: Array<{ id: string; hazard: string; location: string; severity: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'identified' | 'mitigated' | 'resolved' }>;
+  /** Crew communication log. */
+  comms?: Array<{ id: string; date: string; to: string; channel: 'call' | 'email' | 'text' | 'in-person'; subject: string; notes: string; status: 'sent' | 'replied' | 'pending' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
