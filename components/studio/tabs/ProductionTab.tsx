@@ -32,6 +32,7 @@ const CateringView = dynamic(() => import('../production/CateringView').then((m)
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.DoodView), { loading: viewLoading });
+const CameraReportView = dynamic(() => import('../production/CameraReportView').then((m) => m.CameraReportView), { loading: viewLoading });
 const RiskRegisterView = dynamic(() => import('../production/RiskRegisterView').then((m) => m.RiskRegisterView), { loading: viewLoading });
 const DirectorNotebookView = dynamic(() => import('../production/DirectorNotebookView').then((m) => m.DirectorNotebookView), { loading: viewLoading });
 const RevisionsView = dynamic(() => import('../production/RevisionsView').then((m) => m.RevisionsView), { loading: viewLoading });
@@ -61,6 +62,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot' },
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
+  { id: 'camera', label: 'Camera report', icon: <Camera size={12} />, group: 'Shoot' },
   { id: 'risk', label: 'Risk register', icon: <AlertTriangle size={12} />, group: 'Budget & docs' },
   { id: 'director', label: 'Director notebook', icon: <Clapperboard size={12} />, group: 'Pre-production' },
   { id: 'revisions', label: 'Script revisions', icon: <FileText size={12} />, group: 'Pre-production' },
@@ -127,6 +129,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'catering' && <CateringView />}
       {!lock && view === 'safety' && <SafetyView />}
       {!lock && view === 'props' && <PropsView />}
+      {!lock && view === 'camera' && <CameraReportView />}
       {!lock && view === 'risk' && <RiskRegisterView />}
       {!lock && view === 'director' && <DirectorNotebookView />}
       {!lock && view === 'revisions' && <RevisionsView />}
