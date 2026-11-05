@@ -32,6 +32,8 @@ export interface ProjectSettings {
   comms?: Array<{ id: string; date: string; to: string; channel: 'call' | 'email' | 'text' | 'in-person'; subject: string; notes: string; status: 'sent' | 'replied' | 'pending' }>;
   /** Equipment / gear inventory. */
   gear?: Array<{ id: string; item: string; category: string; owner: string; status: 'needed' | 'packed' | 'on-set' | 'returned' }>;
+  /** Daily wrap reports. */
+  wraps?: Array<{ id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
