@@ -58,6 +58,8 @@ export interface ProjectSettings {
   scriptNotes?: Array<{ id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean }>;
   /** Purchase orders / petty cash. */
   purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
+  /** Media offload log (DIT). */
+  mediaOffloads?: Array<{ id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

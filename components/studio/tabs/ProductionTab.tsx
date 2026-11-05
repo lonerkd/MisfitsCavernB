@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, Lock, MapPin, MessageCircle, Mic, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Lock, MapPin, MessageCircle, Mic, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -32,6 +32,7 @@ const CateringView = dynamic(() => import('../production/CateringView').then((m)
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.DoodView), { loading: viewLoading });
+const MediaOffloadView = dynamic(() => import('../production/MediaOffloadView').then((m) => m.MediaOffloadView), { loading: viewLoading });
 const PoView = dynamic(() => import('../production/PoView').then((m) => m.PoView), { loading: viewLoading });
 const ScriptSupView = dynamic(() => import('../production/ScriptSupView').then((m) => m.ScriptSupView), { loading: viewLoading });
 const PermitView = dynamic(() => import('../production/PermitView').then((m) => m.PermitView), { loading: viewLoading });
@@ -68,6 +69,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot' },
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
+  { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Shoot' },
   { id: 'po', label: 'Purchase orders', icon: <Receipt size={12} />, group: 'Budget & docs' },
   { id: 'scriptsup', label: 'Script sup', icon: <Star size={12} />, group: 'Shoot' },
   { id: 'permit', label: 'Permits', icon: <FileCheck size={12} />, group: 'Pre-production' },
@@ -141,6 +143,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'catering' && <CateringView />}
       {!lock && view === 'safety' && <SafetyView />}
       {!lock && view === 'props' && <PropsView />}
+      {!lock && view === 'mediaoffload' && <MediaOffloadView />}
       {!lock && view === 'po' && <PoView />}
       {!lock && view === 'scriptsup' && <ScriptSupView />}
       {!lock && view === 'permit' && <PermitView />}
