@@ -48,6 +48,8 @@ export interface ProjectSettings {
   cameraReports?: Array<{ id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string }>;
   /** Sound report entries. */
   soundReports?: Array<{ id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string }>;
+  /** VFX shot tracking. */
+  vfxShots?: Array<{ id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
