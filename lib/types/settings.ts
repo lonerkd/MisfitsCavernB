@@ -24,6 +24,8 @@ export interface ProjectSettings {
   unlockAllTools?: boolean;
   /** How many pages the crew shoots in a day, in eighths (stripboard, auto-schedule). */
   dayLengthEighths?: number;
+  /** Per-shoot-day meal plans (catering). */
+  catering?: Record<string, { headcount: number; mealTime: string; dietary: string; vendor: string; notes: string; status: 'planned' | 'ordered' | 'delivered' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
