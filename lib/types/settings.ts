@@ -50,6 +50,8 @@ export interface ProjectSettings {
   soundReports?: Array<{ id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string }>;
   /** VFX shot tracking. */
   vfxShots?: Array<{ id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' }>;
+  /** Costume / wardrobe tracking. */
+  costumes?: Array<{ id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
