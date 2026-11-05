@@ -1,0 +1,9 @@
+# Session - 2026-11-05: mood boards, built properly
+
+Taken over from another session's prototype (boards that showed raw media ids, no way to add an item, swallowed errors, a migration outside the database rules, and a "story interview" that typed fake scene headings into the script). The prototype is kept in a local stash ("wip prototype: boards, characters, story, world"); only mood boards were rebuilt, the rest are not shipped half-built.
+
+**Built:** migration `20261105000000` (`mood_boards`, `mood_board_items`: composite keys to the project and its media, one policy per operation through `internal.can_access_project`, indexed foreign keys, Realtime, `updated_at` trigger); the Studio API (`createMoodBoard`, `addBoardMedia`, `addBoardNote`, `updateBoardItem`, ...) and live hooks; `components/studio/boards/BoardsPanel.tsx` under Library > Mood boards (types with starter note cards, add from the library picker, drag and keyboard arranging, resize, note editing, colours from the images, print / PDF, undo, delete with confirmation); pure helpers and tests (`lib/studio/boards.ts`, `boards-print.ts`). **Why now:** a competitor (Cineboard.io, launched with moodboards, AI frames, shot cards and presentation links) leads with exactly this.
+
+**Verified:** typecheck, lint; unit tests; `tests/integration/mood-boards.test.ts` (Sam and Jordan arrange, Riley sees and writes nothing, cross-project media refused, one-thing and bounds checks, cascade on delete) plus the index-hygiene test against the local stack; `e2e/mood-boards.spec.ts` in a real browser. **To do by hand after merge:** apply `20261105000000` to production, drift check, then staging.
+
+**Left (BACKLOG 4.5):** a share link for a board, annotations pinned to a spot, a slideshow, AI frames (an owner decision), the story interview and structure templates (3.25, 3.26: the prototype's `lib/story/structures.ts` has real template data worth reusing), character depth and world building (4.8, 4.11).

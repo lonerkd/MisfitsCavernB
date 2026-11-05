@@ -13,6 +13,7 @@ import type { Database, Tables } from '@/lib/supabase/database.types';
 import { logActivity } from '@/lib/supabase/activity';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
+import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -21,6 +22,8 @@ export type SceneRow = Tables<'scenes'>;
 export type SceneMedia = Tables<'scene_media'>;
 export type CharacterMedia = Tables<'character_media'>;
 export type Shot = Tables<'shots'>;
+export type MoodBoard = Tables<'mood_boards'>;
+export type MoodBoardItem = Tables<'mood_board_items'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
@@ -610,6 +613,95 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not take that back');
   }
 
+
+  // ── Mood boards ──────────────────────────────────────────────────────────
+  async function listMoodBoards(projectId: string): Promise<MoodBoard[]> {
+    const { data, error } = await db.from('mood_boards').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load the mood boards');
+    return data ?? [];
+  }
+
+  async function listMoodBoardItems(projectId: string): Promise<MoodBoardItem[]> {
+    const { data, error } = await db.from('mood_board_items').select('*').eq('project_id', projectId).order('z').order('created_at');
+    if (error) fail(error, 'Could not load the items on the boards');
+    return data ?? [];
+  }
+
+  /** A new board; a template starts it with its note cards. Returns the board and the cards it started with. */
+  async function createMoodBoard(projectId: string, userId: string, name: string, template: BoardTemplate = 'free'): Promise<{ board: MoodBoard; items: MoodBoardItem[] }> {
+    const clean = name.trim();
+    if (!clean) throw new StudioError('Give the board a name.');
+    if (clean.length > 120) throw new StudioError('Keep the name under 120 characters.');
+    if (!isTemplate(template)) throw new StudioError('Pick one of the board types.');
+    const { data: board, error } = await db.from('mood_boards').insert({ project_id: projectId, name: clean, template, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not make the board');
+    const seed = templateSeed(template);
+    if (!seed.length) return { board, items: [] };
+    const { data: items, error: itemError } = await db.from('mood_board_items')
+      .insert(seed.map((c, i) => ({ board_id: board.id, project_id: projectId, note: c.note, x: c.x, y: c.y, w: c.w, z: i, created_by: userId })))
+      .select('*');
+    if (itemError) fail(itemError, 'The board was made, but its starting cards were not');
+    return { board, items: items ?? [] };
+  }
+
+  async function renameMoodBoard(id: string, name: string): Promise<MoodBoard> {
+    const clean = name.trim();
+    if (!clean) throw new StudioError('Give the board a name.');
+    if (clean.length > 120) throw new StudioError('Keep the name under 120 characters.');
+    const { data, error } = await db.from('mood_boards').update({ name: clean }).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not rename the board');
+    return data;
+  }
+
+  async function deleteMoodBoard(id: string): Promise<void> {
+    const { error } = await db.from('mood_boards').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete the board');
+  }
+
+  /** Library items onto a board, each in the next free spot. */
+  async function addBoardMedia(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, mediaIds: string[], existing: readonly MoodBoardItem[]): Promise<MoodBoardItem[]> {
+    if (!mediaIds.length) return [];
+    const placed: Array<{ x: number; y: number; w: number }> = existing.map((i) => ({ x: i.x, y: i.y, w: i.w }));
+    const top = existing.reduce((m, i) => Math.max(m, i.z), -1);
+    const rows = mediaIds.map((media_id, i) => {
+      const spot = nextSpot(placed, SIZES.medium);
+      placed.push({ ...spot, w: SIZES.medium });
+      return { board_id: board.id, project_id: board.project_id, media_id, x: spot.x, y: spot.y, w: SIZES.medium, z: top + 1 + i, created_by: userId };
+    });
+    const { data, error } = await db.from('mood_board_items').insert(rows).select('*');
+    if (error) fail(error, 'Could not add that to the board');
+    return data ?? [];
+  }
+
+  async function addBoardNote(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, text: string, existing: readonly MoodBoardItem[]): Promise<MoodBoardItem> {
+    const note = text.trim();
+    if (!note) throw new StudioError('Write something first.');
+    if (note.length > 1000) throw new StudioError('Keep a note card under 1,000 characters.');
+    const spot = nextSpot(existing.map((i) => ({ x: i.x, y: i.y, w: i.w })), SIZES.medium);
+    const top = existing.reduce((m, i) => Math.max(m, i.z), -1);
+    const { data, error } = await db.from('mood_board_items').insert({ board_id: board.id, project_id: board.project_id, note, ...spot, w: SIZES.medium, z: top + 1, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not add the note');
+    return data;
+  }
+
+  async function updateBoardItem(id: string, patch: Partial<Pick<MoodBoardItem, 'x' | 'y' | 'w' | 'z' | 'note'>>): Promise<MoodBoardItem> {
+    const next = { ...patch };
+    if (next.x !== undefined && next.y !== undefined) {
+      const c = clampPoint(next.x, next.y, next.w ?? SIZES.medium);
+      next.x = c.x;
+      next.y = c.y;
+    }
+    if (next.note !== undefined && (!next.note?.trim() || next.note.length > 1000)) throw new StudioError('A note card needs 1 to 1,000 characters.');
+    const { data, error } = await db.from('mood_board_items').update(next).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not save that change');
+    return data;
+  }
+
+  async function removeBoardItem(id: string): Promise<void> {
+    const { error } = await db.from('mood_board_items').delete().eq('id', id);
+    if (error) fail(error, 'Could not take that off the board');
+  }
+
   /** One record per character per scene; the first save makes it. */
   async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
     const { data, error } = await db.from('scene_states')
@@ -975,6 +1067,7 @@ export function createStudioApi(db: Client) {
   }
 
   return {
+    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
