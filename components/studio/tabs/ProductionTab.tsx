@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { BookOpen, Calendar, Camera, Clapperboard, ClipboardCheck, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, Tags, Users } from 'lucide-react';
+import { BookOpen, Calendar, Camera, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck2, FileText, Lock, MapPin, Tags, Users } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -27,6 +27,7 @@ const ContinuityView = dynamic(() => import('../production/ContinuityView').then
 const ShotListView = dynamic(() => import('../production/ShotListView').then((m) => m.ShotListView), { loading: viewLoading });
 const CrewView = dynamic(() => import('../production/CrewView').then((m) => m.CrewView), { loading: viewLoading });
 const ProductionReportView = dynamic(() => import('../production/ProductionReportView').then((m) => m.ProductionReportView), { loading: viewLoading });
+const WeatherView = dynamic(() => import('../production/WeatherView').then((m) => m.WeatherView), { loading: viewLoading });
 
 type View = ProductionView;
 const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
@@ -40,6 +41,7 @@ const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: stri
   { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} />, group: 'Shoot' },
   { id: 'onset', label: 'On set', icon: <Clapperboard size={12} />, group: 'Shoot' },
   { id: 'shots', label: 'Shot list', icon: <Camera size={12} />, group: 'Shoot' },
+  { id: 'weather', label: 'Weather', icon: <Cloud size={12} />, group: 'Shoot' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
@@ -93,6 +95,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}
       {!lock && view === 'onset' && <OnSetView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
       {!lock && view === 'shots' && <ShotListView />}
+      {!lock && view === 'weather' && <WeatherView />}
       {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
