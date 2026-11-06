@@ -834,7 +834,7 @@ export default function EditorPage() {
         )}
 
         <AnimatePresence>
-          {showSidebar && !focusMode && (
+          {false && showSidebar && !focusMode && (
             <motion.div
               initial={{ x: -260, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -860,9 +860,6 @@ export default function EditorPage() {
                 jumpToScene={jumpToScene} reorderScenes={reorderScenes}
                 dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
                 dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
-                sceneFilter={sceneFilter} setSceneFilter={setSceneFilter}
-                sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
-                tagScene={sceneIndex.tag}
               />
             </motion.div>
           )}
@@ -901,6 +898,15 @@ export default function EditorPage() {
               sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
               scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
               jumpToScene={jumpToScene} tagScene={sceneIndex.tag}
+              scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+              setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
+              fileInputRef={fileInputRef} handleImportFile={handleImportFile}
+              showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
+              templates={TEMPLATES} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
+              sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
+              actStructure={actStructure} reorderScenes={reorderScenes}
+              dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+              dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
             />
           )}
 
