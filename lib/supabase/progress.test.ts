@@ -116,27 +116,26 @@ describe('owner-only changes', () => {
 
 describe('patchProjectSettings', () => {
   it('merges the patch into what is saved, and returns the result', async () => {
-    const f = useFake({ projects: [{ data: { settings: { dayLength: 5, unlockAllTools: false } } }, owned] });
-    const merged = await patchProjectSettings('p1', { unlockAllTools: true });
-    expect(merged).toEqual({ dayLength: 5, unlockAllTools: true });
-    expect(f.argsOf('projects', 'update')[0]).toEqual([{ settings: merged }]);
+    const merged = { dayLength: 5, unlockAllTools: true };
+    const f = useFake({}, { patch_project_settings: { data: merged } });
+    const result = await patchProjectSettings('p1', { unlockAllTools: true });
+    expect(result).toEqual(merged);
+    expect(f.calls[0].table).toBe('rpc:patch_project_settings');
   });
 
   it('starts from nothing when no settings are saved yet', async () => {
-    useFake({ projects: [{ data: { settings: null } }, owned] });
+    const f = useFake({}, { patch_project_settings: { data: { unlockAllTools: true } } });
     expect(await patchProjectSettings('p1', { unlockAllTools: true })).toEqual({ unlockAllTools: true });
   });
 
   it('fails when it cannot read the settings, or is not the owner', async () => {
-    useFake({ projects: { error: boom } });
+    useFake({}, { patch_project_settings: { error: boom } });
     await expect(patchProjectSettings('p1', {})).rejects.toThrow('rls says no');
-    useFake({ projects: [{ data: { settings: {} } }, { data: [] }] });
-    await expect(patchProjectSettings('p1', {})).rejects.toThrow('Only the project owner can change this');
   });
 
   it('setUnlockAllTools goes through it', async () => {
-    const f = useFake({ projects: [{ data: { settings: {} } }, owned] });
+    const f = useFake({}, { patch_project_settings: { data: { unlockAllTools: true } } });
     await setUnlockAllTools('p1', true);
-    expect(f.argsOf('projects', 'update')[0]).toEqual([{ settings: { unlockAllTools: true } }]);
+    expect(f.calls[0].table).toBe('rpc:patch_project_settings');
   });
 });

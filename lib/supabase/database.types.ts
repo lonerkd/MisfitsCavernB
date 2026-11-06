@@ -5197,6 +5197,10 @@ export type Database = {
         Args: { p_emoji: string; p_message: string };
         Returns: Json;
       };
+      patch_project_settings: {
+        Args: { p_project_id: string; p_patch: Json };
+        Returns: Json;
+      };
       transfer_project: {
         Args: { p_project: string; p_to: string };
         Returns: undefined;
