@@ -342,6 +342,25 @@ column messages.pinned_by uuid
 column messages.reactions jsonb default '{}'::jsonb
 column messages.receiver_id uuid
 column messages.sender_id uuid
+column mood_board_items.board_id uuid not null
+column mood_board_items.created_at timestamp with time zone default now() not null
+column mood_board_items.created_by uuid default auth.uid()
+column mood_board_items.id uuid default gen_random_uuid() not null
+column mood_board_items.media_id uuid
+column mood_board_items.note text
+column mood_board_items.project_id uuid not null
+column mood_board_items.updated_at timestamp with time zone default now() not null
+column mood_board_items.w real default 24 not null
+column mood_board_items.x real default 5 not null
+column mood_board_items.y real default 5 not null
+column mood_board_items.z integer default 0 not null
+column mood_boards.created_at timestamp with time zone default now() not null
+column mood_boards.created_by uuid default auth.uid()
+column mood_boards.id uuid default gen_random_uuid() not null
+column mood_boards.name text not null
+column mood_boards.project_id uuid not null
+column mood_boards.template text default 'free'::text not null
+column mood_boards.updated_at timestamp with time zone default now() not null
 column notifications.body text
 column notifications.created_at timestamp with time zone default now()
 column notifications.created_by uuid default auth.uid()
@@ -1064,6 +1083,21 @@ constraint messages.messages_pinned_by_fkey FOREIGN KEY (pinned_by) REFERENCES p
 constraint messages.messages_pkey PRIMARY KEY (id)
 constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_board_items.mood_board_items_board_fkey FOREIGN KEY (board_id, project_id) REFERENCES mood_boards(id, project_id) ON DELETE CASCADE
+constraint mood_board_items.mood_board_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_board_items.mood_board_items_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
+constraint mood_board_items.mood_board_items_note_check CHECK (((note IS NULL) OR ((char_length(note) >= 1) AND (char_length(note) <= 1000))))
+constraint mood_board_items.mood_board_items_one_thing CHECK (((media_id IS NOT NULL) <> (note IS NOT NULL)))
+constraint mood_board_items.mood_board_items_pkey PRIMARY KEY (id)
+constraint mood_board_items.mood_board_items_w_check CHECK (((w >= (5)::double precision) AND (w <= (100)::double precision)))
+constraint mood_board_items.mood_board_items_x_check CHECK (((x >= (0)::double precision) AND (x <= (100)::double precision)))
+constraint mood_board_items.mood_board_items_y_check CHECK (((y >= (0)::double precision) AND (y <= (100)::double precision)))
+constraint mood_boards.mood_boards_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_boards.mood_boards_id_project_key UNIQUE (id, project_id)
+constraint mood_boards.mood_boards_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 120)))
+constraint mood_boards.mood_boards_pkey PRIMARY KEY (id)
+constraint mood_boards.mood_boards_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint mood_boards.mood_boards_template_check CHECK ((template = ANY (ARRAY['free'::text, 'character'::text, 'location'::text, 'tone'::text, 'colour'::text])))
 constraint notifications.notifications_body_len CHECK ((char_length(body) <= 1000))
 constraint notifications.notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_link_internal CHECK (((link IS NULL) OR (link ~ '^/[^/\\]'::text)))
@@ -1415,6 +1449,7 @@ function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
+function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
@@ -1549,6 +1584,7 @@ grant function internal.media_guard() postgres,service_role
 grant function internal.media_lifecycle_guard() postgres
 grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
+grant function internal.mood_boards_touch() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
@@ -1754,6 +1790,12 @@ index CREATE INDEX messages_content_search_idx ON public.messages USING gin (to_
 index CREATE INDEX messages_parent_idx ON public.messages USING btree (parent_message_id)
 index CREATE INDEX messages_pinned_by_fkey_idx ON public.messages USING btree (pinned_by)
 index CREATE INDEX messages_pinned_idx ON public.messages USING btree (channel_uuid) WHERE pinned
+index CREATE INDEX mood_board_items_board_idx ON public.mood_board_items USING btree (board_id, project_id)
+index CREATE INDEX mood_board_items_created_by_idx ON public.mood_board_items USING btree (created_by)
+index CREATE INDEX mood_board_items_media_idx ON public.mood_board_items USING btree (media_id, project_id)
+index CREATE INDEX mood_board_items_project_idx ON public.mood_board_items USING btree (project_id)
+index CREATE INDEX mood_boards_created_by_idx ON public.mood_boards USING btree (created_by)
+index CREATE INDEX mood_boards_project_idx ON public.mood_boards USING btree (project_id)
 index CREATE INDEX notifications_created_by_fkey_idx ON public.notifications USING btree (created_by)
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX phase_gates_decided_by_idx ON public.phase_gates USING btree (decided_by)
@@ -1917,6 +1959,9 @@ index CREATE UNIQUE INDEX media_id_project_key ON public.media USING btree (id, 
 index CREATE UNIQUE INDEX media_pkey ON public.media USING btree (id)
 index CREATE UNIQUE INDEX media_storage_path_key ON public.media USING btree (storage_path)
 index CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
+index CREATE UNIQUE INDEX mood_board_items_pkey ON public.mood_board_items USING btree (id)
+index CREATE UNIQUE INDEX mood_boards_id_project_key ON public.mood_boards USING btree (id, project_id)
+index CREATE UNIQUE INDEX mood_boards_pkey ON public.mood_boards USING btree (id)
 index CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)
 index CREATE UNIQUE INDEX phase_gates_pkey ON public.phase_gates USING btree (id)
 index CREATE UNIQUE INDEX portfolio_blocks_pkey ON public.portfolio_blocks USING btree (id)
@@ -2089,6 +2134,14 @@ policy public.media "media view" PERMISSIVE SELECT to authenticated using intern
 policy public.messages "messages delete" PERMISSIVE DELETE to authenticated using ((hidden_at IS NULL) AND ((sender_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND can_manage_channel(channel_uuid)))) check -
 policy public.messages "messages read" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid))) check -
 policy public.messages "messages send" PERMISSIVE INSERT to authenticated using - check ((sender_id = ( SELECT auth.uid() AS uid)) AND (((receiver_id IS NOT NULL) AND (channel_uuid IS NULL)) OR ((receiver_id IS NULL) AND (channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid))) AND (COALESCE(reactions, '{}'::jsonb) = '{}'::jsonb) AND (NOT pinned) AND (pinned_by IS NULL) AND (edited_at IS NULL))
+policy public.mood_board_items "mood_board_items delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_board_items "mood_board_items insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.mood_board_items "mood_board_items update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.mood_board_items "mood_board_items view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_boards "mood_boards delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_boards "mood_boards insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.mood_boards "mood_boards view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
@@ -2249,6 +2302,8 @@ realtime public.expenses
 realtime public.links
 realtime public.media
 realtime public.messages
+realtime public.mood_board_items
+realtime public.mood_boards
 realtime public.notifications
 realtime public.post_cuts
 realtime public.post_items
@@ -2310,6 +2365,8 @@ rls links enabled=true forced=false
 rls lounge_reads enabled=true forced=false
 rls media enabled=true forced=false
 rls messages enabled=true forced=false
+rls mood_board_items enabled=true forced=false
+rls mood_boards enabled=true forced=false
 rls notifications enabled=true forced=false
 rls phase_gates enabled=true forced=false
 rls portfolio_blocks enabled=true forced=false
@@ -2408,6 +2465,8 @@ trigger CREATE TRIGGER media_guard BEFORE INSERT OR UPDATE ON public.media FOR E
 trigger CREATE TRIGGER media_lifecycle_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.media_lifecycle_guard()
 trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_delete_guard()
 trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
+trigger CREATE TRIGGER mood_board_items_touch BEFORE UPDATE ON public.mood_board_items FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
+trigger CREATE TRIGGER mood_boards_touch BEFORE UPDATE ON public.mood_boards FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()

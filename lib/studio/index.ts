@@ -5,12 +5,13 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
 export * from './api';
 export * from './media-kind';
+export * from './boards';
 export * from './call-sheet';
 export * from './call-sheet-load';
 export * from './locations';
@@ -45,6 +46,28 @@ export function useSceneMedia(projectId: string | null) {
     load: () => studio.listSceneMedia(projectId!),
     keyOf: sceneMediaKey,
     sort: (a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function useMoodBoards(projectId: string | null) {
+  return useLiveRows<MoodBoard>({
+    scope: projectId,
+    table: 'mood_boards',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listMoodBoards(projectId!),
+    keyOf: (b) => String(b.id),
+    sort: (a, b) => a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function useMoodBoardItems(projectId: string | null) {
+  return useLiveRows<MoodBoardItem>({
+    scope: projectId,
+    table: 'mood_board_items',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listMoodBoardItems(projectId!),
+    keyOf: (i) => String(i.id),
+    sort: (a, b) => a.z - b.z || a.created_at.localeCompare(b.created_at),
   });
 }
 

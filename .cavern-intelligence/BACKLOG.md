@@ -239,11 +239,8 @@ links, Pinterest boards via `/api/links`, Openverse search with credit,
 boards); a look-board per character (`character_media`); scene references
 (`scene_media`, the editor's Refs panel); tags; publishing per item
 (`media.shared`); the pitch deck's full-screen presenting.
-**To add**: boards as objects of their own (unlimited; templates: character,
-location, tone, colour), drag-and-drop arranging, colour palette
-extraction, annotating images, search within a board, board-level
-permissions, PDF export, slideshow; Google Images import (licensing —
-prefer Openverse); AI mood suggestions (service).
+**Built 2026-11-05 (slice 1):** boards as objects of their own (unlimited; types: free, character, location, tone, colour, each starting with note cards), library items and note cards arranged by drag or keyboard, resize, edit, colours read from the images, print / PDF, undo, live for the crew (Studio > Library > Mood boards; `20261105000000`).
+**To add**: annotating an image (a note pinned to a spot), search within a board, board-level permissions, a slideshow, a public share link for a board (the way a script has one: this is Cineboard's "presentation" link), Google Images import (licensing: prefer Openverse); AI mood suggestions and AI frame generation (an outside service: owner's call, 4.5 competitor note in the session log).
 
 ### 4.6 Budget and money
 **Built**: budget lines and actuals (project page, Studio › Money), vendors,

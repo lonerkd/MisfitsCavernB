@@ -1941,6 +1941,120 @@ export type Database = {
           },
         ];
       };
+      mood_board_items: {
+        Row: {
+          board_id: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          media_id: string | null;
+          note: string | null;
+          project_id: string;
+          updated_at: string;
+          w: number;
+          x: number;
+          y: number;
+          z: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          board_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          note?: string | null;
+          project_id: string;
+          updated_at?: string;
+          w?: number;
+          x?: number;
+          y?: number;
+          z?: number;
+        };
+        Update: {
+          board_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          note?: string | null;
+          project_id?: string;
+          updated_at?: string;
+          w?: number;
+          x?: number;
+          y?: number;
+          z?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_board_items_board_fkey";
+            columns: ["board_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "mood_boards";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "mood_board_items_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mood_board_items_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
+      mood_boards: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          project_id: string;
+          template: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          project_id: string;
+          template?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          project_id?: string;
+          template?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_boards_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mood_boards_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           body: string | null;
