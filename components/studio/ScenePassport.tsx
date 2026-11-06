@@ -40,6 +40,8 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
 
   if (!scene) return null;
 
+  const statusColor = scene.status === 'wrapped' ? '#6ee7b7' : scene.status === 'planned' ? 'var(--fg-muted)' : 'var(--accent)';
+  
   const chips: Array<{ icon: React.ReactNode; label: string; value: string | number; tone?: string }> = [
     { icon: <Layers size={11} />, label: 'Refs', value: mediaCount },
     { icon: <Camera size={11} />, label: 'Shots', value: shotCount },
@@ -59,9 +61,25 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
     return (
       <div
         className={s.row}
-        style={{ gap: 6, flexWrap: 'wrap', marginTop: 6 }}
+        style={{ gap: 6, flexWrap: 'wrap', marginTop: 6, alignItems: 'center' }}
         aria-label={`Scene ${scene.scene_number} status: ${mediaCount} refs, ${shotCount} shots`}
       >
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '2px 7px',
+          borderRadius: 4,
+          background: 'rgba(var(--ink-rgb), 0.04)',
+          border: '1px solid rgba(var(--ink-rgb), 0.06)',
+          fontFamily: 'var(--mono)',
+          fontSize: 11,
+          color: statusColor,
+          letterSpacing: 'var(--caps-track)',
+          textTransform: 'var(--caps)',
+        }}>
+          {scene.status ?? 'planned'}
+        </span>
         {chips.map((c) => (
           <span
             key={c.label}
