@@ -25,7 +25,11 @@ export function VfxView() {
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
   const save = async (next: VfxEntry[]) => {
-    await patchProjectSettings(project.id, { vfxShots: next } as any);
+    try {
+      await patchProjectSettings(project.id, { vfxShots: next } as any);
+    } catch (e) {
+      console.error('Failed to save VFX shots', e);
+    }
   };
 
   const add = async () => {
