@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Mic, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -35,17 +34,7 @@ export function SoundReportView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
     return (
-      <EmptyState
-        icon={<Mic size={26} />}
-        title="No sound reports"
-        subtitle="Log per-take mic, wild tracks, room tone, and sound notes."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

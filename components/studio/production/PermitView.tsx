@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { FileCheck, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -43,17 +42,7 @@ export function PermitView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
     return (
-      <EmptyState
-        icon={<FileCheck size={26} />}
-        title="No permits tracked"
-        subtitle="Track location permits, insurance certs, and expiry dates."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

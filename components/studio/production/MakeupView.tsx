@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -35,17 +34,7 @@ export function MakeupView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
     return (
-      <EmptyState
-        icon={<Palette size={26} />}
-        title="No makeup / hair notes"
-        subtitle="Track looks per character per scene, artist, and continuity photos."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>
@@ -99,7 +88,7 @@ export function MakeupView() {
               </button>
             </div>
             {m.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{m.notes}</p>}
-            {m.photo && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={m.photo} target="_blank" rel="noreferrer">{m.photo}</a></p>}
+            {m.photo && (m.photo.startsWith('http://') || m.photo.startsWith('https://')) && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={m.photo} target="_blank" rel="noreferrer">{m.photo}</a></p>}
           </li>
         ))}
       </ul>

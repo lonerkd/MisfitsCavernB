@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { FileText, Plus, Trash2, Star } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -39,17 +38,7 @@ export function ScriptSupView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
     return (
-      <EmptyState
-        icon={<FileText size={26} />}
-        title="No script notes"
-        subtitle="Log per-take slate, lens, notes, and circle takes for editorial."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

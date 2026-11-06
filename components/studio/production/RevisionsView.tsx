@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { FileText, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -36,17 +35,7 @@ export function RevisionsView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<FileText size={26} />}
-        title="No script revisions"
-        subtitle="Track colored-page revisions: White, Blue, Pink, Yellow…"
-      />
-    );
-  }
-
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

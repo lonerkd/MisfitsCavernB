@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Cloud, CloudRain, CloudSun, Loader2, MapPin, PenLine, Sun, Wind } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useProjectLocations, useShootDays, studio, type ShootDay } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
@@ -51,7 +51,7 @@ function isBad(code: number | null, precip: number | null, wind: number | null):
 }
 
 export function WeatherView() {
-  const { project, scenes, scriptId } = useStudio();
+  const { project, scriptId } = useStudio();
   const locations = useProjectLocations(project.id);
   const shootDays = useShootDays(project.id);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export function WeatherView() {
   }, [located, selectedLocation]);
 
   useEffect(() => {
-    if (!loc?.latitude || !loc?.longitude) return;
+    if (loc?.latitude == null || loc?.longitude == null) return;
     const dated = shootDays.rows.filter((d) => d.shoot_date);
     if (dated.length === 0) return;
 

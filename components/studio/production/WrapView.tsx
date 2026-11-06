@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { ClipboardCheck, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -34,17 +33,7 @@ export function WrapView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<ClipboardCheck size={26} />}
-        title="No wrap reports"
-        subtitle="Log daily wrap reports: shots got, pages completed, incidents, notes."
-      />
-    );
-  }
-
-  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+    const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

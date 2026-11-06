@@ -1,15 +1,14 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Check, ClipboardList, PenLine } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useBreakdown } from '@/lib/breakdown';
 import { useStudio } from '../StudioContext';
-import { cx } from '../ui';
 import s from '../studio.module.css';
 
-const PROP_CATS = new Set(['props', 'wardrobe', 'makeup', 'set-dressing', 'vehicles']);
+const PROP_CATS = new Set(['props', 'wardrobe', 'hair-makeup', 'set-dressing', 'vehicles']);
 
 export function PropsView() {
   const { project, scenes, scriptId } = useStudio();

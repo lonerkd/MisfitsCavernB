@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -46,17 +45,7 @@ export function RiskRegisterView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<AlertTriangle size={26} />}
-        title="No risks logged"
-        subtitle="Track production risks: schedule, budget, weather, safety, talent."
-      />
-    );
-  }
-
-  const scoreColor = (p: string, i: string) => {
+    const scoreColor = (p: string, i: string) => {
     const v = LEVELS.indexOf(p as any) + LEVELS.indexOf(i as any);
     if (v >= 4) return 'var(--danger, #ef4444)';
     if (v >= 2) return 'var(--warn, #fbbf24)';

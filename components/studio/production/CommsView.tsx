@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { MessageCircle, Plus, Trash2, Send, Reply } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
+import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import { cx } from '../ui';
@@ -50,17 +49,7 @@ export function CommsView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
     return (
-      <EmptyState
-        icon={<MessageCircle size={26} />}
-        title="No communications logged"
-        subtitle="Track calls, emails, and confirmations with crew and cast."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

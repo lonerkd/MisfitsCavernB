@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Car, MapPin, PenLine, Route } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useProjectLocations, useShootDays } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';

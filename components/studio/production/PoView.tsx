@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Receipt, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -43,17 +42,7 @@ export function PoView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<Receipt size={26} />}
-        title="No purchase orders"
-        subtitle="Track POs, vendors, departments, and payment status."
-      />
-    );
-  }
-
-  const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+    const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

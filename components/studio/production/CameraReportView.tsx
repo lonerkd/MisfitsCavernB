@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Camera, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -37,17 +36,7 @@ export function CameraReportView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
     return (
-      <EmptyState
-        icon={<Camera size={26} />}
-        title="No camera reports"
-        subtitle="Log per-shot lens, T-stop, filter, camera body, and media card."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

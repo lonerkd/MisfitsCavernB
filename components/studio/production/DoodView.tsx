@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Calendar, Users } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Calendar } from 'lucide-react';
 import { useStudio } from '../StudioContext';
 import { castByScene } from '@/lib/film/cast';
 import { useCharacters, useSceneCharacters } from '@/lib/studio';
@@ -47,8 +47,19 @@ export function DoodView() {
         m.get(name)?.set(sc.shoot_day, 'W');
       }
     }
+    // Fill hold days: days between first and last work day with no scene
+    for (const c of chars) {
+      const dayMap = m.get(c)!;
+      const workDays = [...dayMap.entries()].filter(([, v]) => v === 'W').map(([d]) => d).sort((a, b) => a - b);
+      if (workDays.length < 2) continue;
+      const first = workDays[0];
+      const last = workDays[workDays.length - 1];
+      for (const d of days) {
+        if (d > first && d < last && !dayMap.has(d)) dayMap.set(d, 'H');
+      }
+    }
     return m;
-  }, [chars, scenes.rows, castByScn]);
+  }, [chars, scenes.rows, castByScn, days]);
 
   if (days.length === 0 || chars.length === 0) {
     return (

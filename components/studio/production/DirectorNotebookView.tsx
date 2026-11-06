@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Clapperboard, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -39,17 +38,7 @@ export function DirectorNotebookView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<Clapperboard size={26} />}
-        title="No director notes"
-        subtitle="Capture vision, blocking, references, and per-scene intent."
-      />
-    );
-  }
-
-  const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

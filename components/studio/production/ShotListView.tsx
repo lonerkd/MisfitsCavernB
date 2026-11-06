@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Camera, Check, Filter, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Camera, Check, Filter, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { studio, type SceneRow, type Shot } from '@/lib/studio';

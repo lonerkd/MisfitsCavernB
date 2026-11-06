@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Users, PenLine, Check, X } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { useScriptCharacters } from './useScriptCharacters';
 import { useCharacters, useSceneCharacters, useCastings } from '@/lib/studio';

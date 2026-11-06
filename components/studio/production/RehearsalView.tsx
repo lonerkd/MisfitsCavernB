@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -35,17 +34,7 @@ export function RehearsalView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<CalendarDays size={26} />}
-        title="No rehearsals scheduled"
-        subtitle="Plan table reads and blocking rehearsals with cast and crew."
-      />
-    );
-  }
-
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

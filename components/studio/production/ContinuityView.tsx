@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Eye, PenLine, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import EmptyState from '@/components/ui/EmptyState';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { studio, useCharacters, useSceneCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
 import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';

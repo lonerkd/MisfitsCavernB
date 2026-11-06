@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, PenLine, Plus, Shield, Trash2 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { AlertTriangle, Plus, Shield, Trash2 } from 'lucide-react';
 import { useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useStudio } from '../StudioContext';

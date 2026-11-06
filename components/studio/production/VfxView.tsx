@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -43,17 +42,7 @@ export function VfxView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
     return (
-      <EmptyState
-        icon={<Sparkles size={26} />}
-        title="No VFX shots"
-        subtitle="Track VFX shots, plate requirements, vendor, and delivery status."
-      />
-    );
-  }
-
-  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

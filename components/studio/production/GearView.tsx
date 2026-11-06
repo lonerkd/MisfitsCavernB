@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Wrench, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
@@ -37,17 +36,7 @@ export function GearView() {
     await save(items.filter((i) => i.id !== id));
   };
 
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<Wrench size={26} />}
-        title="No gear tracked"
-        subtitle="Track camera, lighting, sound, and other equipment."
-      />
-    );
-  }
-
-  const counts = STATUSES.reduce((acc, st) => ({ ...acc, [st]: items.filter((i) => i.status === st).length }), {} as Record<string, number>);
+    const counts = STATUSES.reduce((acc, st) => ({ ...acc, [st]: items.filter((i) => i.status === st).length }), {} as Record<string, number>);
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
