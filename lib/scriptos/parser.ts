@@ -630,6 +630,9 @@ export class ScriptParser {
         _isTransitionNext: next ? this.isTransitionText(next.toUpperCase()) : false,
       };
       if (!trim) { obs.push({ ...base, kind: 'empty' }); continue; }
+      // Check for line override first, so it takes precedence over all fixed classifications
+      const override = this.lineOverrides?.find((o) => o.line_index === i);
+      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override.forced_type as any }); continue; }
       if (titleLines.has(i)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
       if (boneyard || trim.startsWith('/*')) {
         const closes = trim.endsWith('*/');
@@ -641,9 +644,6 @@ export class ScriptParser {
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
-      // Check for line override
-      const override = this.lineOverrides?.find((o) => o.line_index === i);
-      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override.forced_type as any }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {
