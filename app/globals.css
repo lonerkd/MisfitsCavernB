@@ -842,7 +842,7 @@ section { padding: 90px 18px; }
   color-scheme: dark;
 }
 
-[data-theme="inkrust"] {
+[data-theme="misfit"] {
   --bg: #040710; --bg-2: #050a14; --bg-3: #070d18; --bg-4: #0a131e; --glass: rgba(4, 7, 13, 0.78);
   --fg: #e0ddae; --fg-muted: rgba(224, 221, 174, 0.74); --fg-dim: rgba(224, 221, 174, 0.58); --fg-ghost: rgba(224, 221, 174, 0.12); --cream: #e0ddae;
   --accent: #d7340b; --accent-dim: rgba(215, 52, 11, 0.18); --accent-glow: rgba(215, 52, 11, 0.10);
