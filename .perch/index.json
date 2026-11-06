@@ -1,19 +1,19 @@
 {
   "schemaVersion": "perch-folder-index-v1",
-  "generatedAt": "2026-11-06T04:10:10.902Z",
+  "generatedAt": "2026-11-06T04:20:29.606Z",
   "rootId": "root_1793069443615_34ndnv",
   "rootPath": "C:\\Users\\kings\\Desktop\\MisfitsCavernB",
   "counts": {
-    "totalFiles": 1201,
+    "totalFiles": 1202,
     "registeredSources": 1000,
-    "indexedFiles": 1153,
+    "indexedFiles": 1154,
     "skippedFiles": 48,
     "failedFiles": 0,
-    "staleFiles": 144,
-    "sourceChunkCount": 1898,
-    "sourceChunkFiles": 962,
-    "retrievalChunkCount": 1898,
-    "retrievalReadyFiles": 1153,
+    "staleFiles": 145,
+    "sourceChunkCount": 1899,
+    "sourceChunkFiles": 963,
+    "retrievalChunkCount": 1899,
+    "retrievalReadyFiles": 1154,
     "embeddedChunkCount": 32,
     "vectorReadyFiles": 40,
     "filesNeedingOcr": 0
@@ -26,11 +26,11 @@
     "retrieval chunks",
     "embeddings"
   ],
-  "lastIndexedAt": "2026-11-06T04:10:10.902Z",
+  "lastIndexedAt": "2026-11-06T04:20:29.605Z",
   "diagnostics": [
-    "Indexed 1153/1201 file(s) for retrieval.",
-    "1898 text/source chunk(s) available for keyword search.",
-    "1898 retrieval chunk(s) available.",
+    "Indexed 1154/1202 file(s) for retrieval.",
+    "1899 text/source chunk(s) available for keyword search.",
+    "1899 retrieval chunk(s) available.",
     "32 embedded retrieval chunk(s) available for vector search.",
     "48 file(s) were skipped."
   ],
@@ -38,7 +38,7 @@
     {
       "relativePath": "tsconfig.tsbuildinfo",
       "fileName": "tsconfig.tsbuildinfo",
-      "modifiedAt": "2026-11-06T04:09:04.009Z",
+      "modifiedAt": "2026-11-06T04:14:31.861Z",
       "status": "skipped",
       "retrievalReady": false,
       "vectorReady": false,
@@ -3945,6 +3945,20 @@
       "message": "Changed since last indexing pass."
     },
     {
+      "relativePath": "components\\studio\\NextSteps.tsx",
+      "fileName": "NextSteps.tsx",
+      "modifiedAt": "2026-11-06T04:14:13.803Z",
+      "status": "indexed",
+      "retrievalReady": true,
+      "vectorReady": false,
+      "sourceChunkCount": 1,
+      "retrievalChunkCount": 1,
+      "embeddedChunkCount": 0,
+      "supabaseSourceId": "03efc8e8-5936-4c90-8195-860e03099ac9",
+      "contentHash": "9ff07c4f835410326dee37bec493c3e03148930ca343ec496e5838643d2600e5",
+      "message": "Changed since last indexing pass."
+    },
+    {
       "relativePath": "components\\studio\\ScenePassport.tsx",
       "fileName": "ScenePassport.tsx",
       "modifiedAt": "2026-11-06T04:08:38.783Z",
@@ -4271,9 +4285,22 @@
       "contentHash": "d839ed6c68efc7d46c005e4b689511f25e24430d20b303dc0b58e612d0cd5e10"
     },
     {
+      "relativePath": "components\\studio\\production\\LocationsView.tsx",
+      "fileName": "LocationsView.tsx",
+      "modifiedAt": "2026-11-06T04:19:04.293Z",
+      "status": "indexed",
+      "retrievalReady": true,
+      "vectorReady": false,
+      "sourceChunkCount": 4,
+      "retrievalChunkCount": 4,
+      "embeddedChunkCount": 0,
+      "supabaseSourceId": "ea4e13e3-f555-45d2-a47e-9b4c47c713a1",
+      "contentHash": "f1503b5ef1bf51e98f321666b95b38eeed6141bf8ed4ae5c22aa616fa51ee4a1"
+    },
+    {
       "relativePath": "components\\studio\\production\\MoneyView.tsx",
       "fileName": "MoneyView.tsx",
-      "modifiedAt": "2026-11-06T04:00:50.102Z",
+      "modifiedAt": "2026-11-06T04:13:35.107Z",
       "status": "indexed",
       "retrievalReady": true,
       "vectorReady": false,
@@ -4281,7 +4308,7 @@
       "retrievalChunkCount": 8,
       "embeddedChunkCount": 0,
       "supabaseSourceId": "d311531c-498e-4bd9-8a16-a524378d3f75",
-      "contentHash": "5030ecd922b8833d0be9c1a412a49987185abadfb8589f51694a2b5fc81a8ef4"
+      "contentHash": "a166594fcd8b221f750bbb3c3093ebc739b2713733e2194bb0029883bbba8c7b"
     },
     {
       "relativePath": "components\\studio\\production\\WrapView.tsx",
@@ -4698,19 +4725,6 @@
       "embeddedChunkCount": 0,
       "supabaseSourceId": "0c975007-8693-4b54-a54f-b333662251af",
       "contentHash": "15609fd0ac28eea3ec70010374fe0273f784a156d1f66fb3d2f8a7098f41e899"
-    },
-    {
-      "relativePath": "components\\studio\\production\\LocationsView.tsx",
-      "fileName": "LocationsView.tsx",
-      "modifiedAt": "2026-11-05T16:05:21.202Z",
-      "status": "indexed",
-      "retrievalReady": true,
-      "vectorReady": false,
-      "sourceChunkCount": 4,
-      "retrievalChunkCount": 4,
-      "embeddedChunkCount": 0,
-      "supabaseSourceId": "ea4e13e3-f555-45d2-a47e-9b4c47c713a1",
-      "contentHash": "ed185eac2cf5789ef2e22c68f09370dd4dbbeab88fb751cbf4a1365b4fcdbbef"
     },
     {
       "relativePath": "components\\studio\\production\\stripboard.module.css",
