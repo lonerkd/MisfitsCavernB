@@ -22,7 +22,13 @@ const STUDIO_TABS: Record<string, string> = {
 };
 const PRODUCTION_VIEWS: Record<string, string> = {
   story: 'Story', breakdown: 'Breakdown', readiness: 'Readiness', locations: 'Locations', money: 'Money',
-  paperwork: 'Paperwork', schedule: 'Schedule', onset: 'On Set', crew: 'Crew',
+  paperwork: 'Paperwork', schedule: 'Schedule', onset: 'On Set', crew: 'Crew', continuity: 'Continuity',
+  shots: 'Shot list', reports: 'Reports', weather: 'Weather', transport: 'Transport', catering: 'Catering',
+  safety: 'Safety', props: 'Props', cast: 'Cast breakdown', comms: 'Comms', dood: 'Day out of days',
+  gear: 'Gear', wrap: 'Wrap reports', rehearsal: 'Rehearsals', scout: 'Location scouts',
+  revisions: 'Script revisions', director: 'Director notebook', risk: 'Risk register', camera: 'Camera report',
+  sound: 'Sound report', vfx: 'VFX shots', costume: 'Costumes', permit: 'Permits', scriptsup: 'Script sup',
+  po: 'Purchase orders', mediaoffload: 'Media offload', makeup: 'Makeup / hair',
 };
 
 const withProject = (title: string | null | undefined, what: string) => (title ? `${title} — ${what}` : what).slice(0, 120);

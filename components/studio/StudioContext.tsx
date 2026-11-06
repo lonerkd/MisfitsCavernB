@@ -13,7 +13,6 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
-import { doubtfulScenes } from '@/lib/scriptos/scene-doubts';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { useFlag } from '@/components/Flag';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
