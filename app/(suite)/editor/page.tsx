@@ -860,6 +860,9 @@ export default function EditorPage() {
                 jumpToScene={jumpToScene} reorderScenes={reorderScenes}
                 dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
                 dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
+                sceneFilter={sceneFilter} setSceneFilter={setSceneFilter}
+                sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
+                tagScene={sceneIndex.tag}
               />
             </motion.div>
           )}

@@ -32,6 +32,11 @@ export interface EditorLeftNavProps {
   setDragSceneIdx: (i: number | null) => void;
   dropSceneIdx: number | null;
   setDropSceneIdx: (i: number | null) => void;
+  sceneFilter: 'all' | 'int' | 'ext' | 'day' | 'night';
+  setSceneFilter: (f: 'all' | 'int' | 'ext' | 'day' | 'night') => void;
+  sceneColors: Array<string | null>;
+  sceneNotes: string[];
+  tagScene: (sceneIndex: number, color: string) => void;
 }
 
 export function EditorLeftNav({
@@ -40,6 +45,7 @@ export function EditorLeftNav({
   scenesList, sceneWordCounts, currentSceneIdx, sceneTypeColor, getSceneType,
   sceneCharMap, actStructure,
   jumpToScene, reorderScenes, dragSceneIdx, setDragSceneIdx, dropSceneIdx, setDropSceneIdx,
+  sceneFilter, setSceneFilter, sceneColors, sceneNotes, tagScene,
 }: EditorLeftNavProps) {
   const openImport = () => fileInputRef.current?.click();
   const toggleTitleEditor = () => setShowTitleEditor(!showTitleEditor);
@@ -137,9 +143,30 @@ export function EditorLeftNav({
                   </div>
                 )}
 
+                <div style={{ display: 'flex', gap: 4, marginBottom: 8, flexWrap: 'wrap' }}>
+                  {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
+                    <button key={f} onClick={() => setSceneFilter(f)} style={{
+                      padding: '3px 8px', borderRadius: 4, fontSize: 11, fontWeight: 600, border: 'none',
+                      background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)',
+                      color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-dim)',
+                      cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 'var(--caps-track)', fontFamily: 'var(--mono)',
+                    }}>{f}</button>
+                  ))}
+                </div>
+
                 {(() => {
                   const maxWc = Math.max(...sceneWordCounts, 1);
-                  return scenesList.map((scene, i) => {
+                  const filteredIndices = scenesList.map((s, i) => i).filter(i => {
+                    if (sceneFilter === 'all') return true;
+                    const { isInt, isExt, isDay, isNight } = getSceneType(scenesList[i]);
+                    if (sceneFilter === 'int') return isInt;
+                    if (sceneFilter === 'ext') return isExt;
+                    if (sceneFilter === 'day') return isDay;
+                    if (sceneFilter === 'night') return isNight;
+                    return true;
+                  });
+                  return filteredIndices.map((i) => {
+                    const scene = scenesList[i];
                     const isActive = i === currentSceneIdx;
                     const wc = sceneWordCounts[i] || 0;
                     const barPct = Math.max(8, Math.round((wc / maxWc) * 100));
