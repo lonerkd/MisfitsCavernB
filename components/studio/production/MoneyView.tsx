@@ -15,6 +15,7 @@ import {
 import { useStudio } from '../StudioContext';
 import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
+import { NextSteps } from '../NextSteps';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -284,6 +285,9 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
           ))}
         </ul>
       )}
+      <NextSteps steps={[
+        { label: 'Review budget vs actual', description: 'Compare planned vs spent', onClick: () => {} },
+      ]} />
     </section>
   );
 }

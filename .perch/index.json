@@ -1,6 +1,6 @@
 {
   "schemaVersion": "perch-folder-index-v1",
-  "generatedAt": "2026-11-06T04:00:18.204Z",
+  "generatedAt": "2026-11-06T04:10:10.902Z",
   "rootId": "root_1793069443615_34ndnv",
   "rootPath": "C:\\Users\\kings\\Desktop\\MisfitsCavernB",
   "counts": {
@@ -10,9 +10,9 @@
     "skippedFiles": 48,
     "failedFiles": 0,
     "staleFiles": 144,
-    "sourceChunkCount": 1897,
+    "sourceChunkCount": 1898,
     "sourceChunkFiles": 962,
-    "retrievalChunkCount": 1897,
+    "retrievalChunkCount": 1898,
     "retrievalReadyFiles": 1153,
     "embeddedChunkCount": 32,
     "vectorReadyFiles": 40,
@@ -26,15 +26,29 @@
     "retrieval chunks",
     "embeddings"
   ],
-  "lastIndexedAt": "2026-11-06T04:00:18.203Z",
+  "lastIndexedAt": "2026-11-06T04:10:10.902Z",
   "diagnostics": [
     "Indexed 1153/1201 file(s) for retrieval.",
-    "1897 text/source chunk(s) available for keyword search.",
-    "1897 retrieval chunk(s) available.",
+    "1898 text/source chunk(s) available for keyword search.",
+    "1898 retrieval chunk(s) available.",
     "32 embedded retrieval chunk(s) available for vector search.",
     "48 file(s) were skipped."
   ],
   "files": [
+    {
+      "relativePath": "tsconfig.tsbuildinfo",
+      "fileName": "tsconfig.tsbuildinfo",
+      "modifiedAt": "2026-11-06T04:09:04.009Z",
+      "status": "skipped",
+      "retrievalReady": false,
+      "vectorReady": false,
+      "sourceChunkCount": 0,
+      "retrievalChunkCount": 0,
+      "embeddedChunkCount": 0,
+      "supabaseSourceId": null,
+      "contentHash": null,
+      "message": "tsconfig.tsbuildinfo: unsupported file type (.tsbuildinfo). Supported: text, csv, xlsx, pdf, docx, pptx, common images."
+    },
     {
       "relativePath": "tsconfig.check.tsbuildinfo",
       "fileName": "tsconfig.check.tsbuildinfo",
@@ -48,20 +62,6 @@
       "supabaseSourceId": null,
       "contentHash": null,
       "message": "tsconfig.check.tsbuildinfo: unsupported file type (.tsbuildinfo). Supported: text, csv, xlsx, pdf, docx, pptx, common images."
-    },
-    {
-      "relativePath": "tsconfig.tsbuildinfo",
-      "fileName": "tsconfig.tsbuildinfo",
-      "modifiedAt": "2026-11-05T17:24:14.277Z",
-      "status": "skipped",
-      "retrievalReady": false,
-      "vectorReady": false,
-      "sourceChunkCount": 0,
-      "retrievalChunkCount": 0,
-      "embeddedChunkCount": 0,
-      "supabaseSourceId": null,
-      "contentHash": null,
-      "message": "tsconfig.tsbuildinfo: unsupported file type (.tsbuildinfo). Supported: text, csv, xlsx, pdf, docx, pptx, common images."
     },
     {
       "relativePath": "performance-budget.json",
@@ -3945,6 +3945,19 @@
       "message": "Changed since last indexing pass."
     },
     {
+      "relativePath": "components\\studio\\ScenePassport.tsx",
+      "fileName": "ScenePassport.tsx",
+      "modifiedAt": "2026-11-06T04:08:38.783Z",
+      "status": "indexed",
+      "retrievalReady": true,
+      "vectorReady": false,
+      "sourceChunkCount": 2,
+      "retrievalChunkCount": 2,
+      "embeddedChunkCount": 0,
+      "supabaseSourceId": "12c1199a-4760-4c7b-8b69-c77ce57e2da3",
+      "contentHash": "1f61a9e87d9280a127017f2ae68b06b3c77f9b7dcbe594228d2e5227afec893c"
+    },
+    {
       "relativePath": "components\\studio\\StudioContext.tsx",
       "fileName": "StudioContext.tsx",
       "modifiedAt": "2026-11-05T17:14:19.707Z",
@@ -3956,19 +3969,6 @@
       "embeddedChunkCount": 0,
       "supabaseSourceId": "84c46e2a-385a-4450-97a7-7e2fd186b89e",
       "contentHash": "af03b11d2b69e2b6e873a86227c033194367abd16013693d5cbfe0c815d48f5a"
-    },
-    {
-      "relativePath": "components\\studio\\ScenePassport.tsx",
-      "fileName": "ScenePassport.tsx",
-      "modifiedAt": "2026-11-05T17:14:19.706Z",
-      "status": "indexed",
-      "retrievalReady": true,
-      "vectorReady": false,
-      "sourceChunkCount": 1,
-      "retrievalChunkCount": 1,
-      "embeddedChunkCount": 0,
-      "supabaseSourceId": "12c1199a-4760-4c7b-8b69-c77ce57e2da3",
-      "contentHash": "1294ffd9c7bd85431bd2312fd08600a2b59ccc4363e1f4c948fa473d0f8525b1"
     },
     {
       "relativePath": "components\\studio\\PitchDeck.tsx",
@@ -4273,7 +4273,7 @@
     {
       "relativePath": "components\\studio\\production\\MoneyView.tsx",
       "fileName": "MoneyView.tsx",
-      "modifiedAt": "2026-11-06T03:59:48.367Z",
+      "modifiedAt": "2026-11-06T04:00:50.102Z",
       "status": "indexed",
       "retrievalReady": true,
       "vectorReady": false,
@@ -4281,7 +4281,7 @@
       "retrievalChunkCount": 8,
       "embeddedChunkCount": 0,
       "supabaseSourceId": "d311531c-498e-4bd9-8a16-a524378d3f75",
-      "contentHash": "f72333cbfe830219f88efea80a70a3f9bf37ae93db91e005b18630c6f1f730d3"
+      "contentHash": "5030ecd922b8833d0be9c1a412a49987185abadfb8589f51694a2b5fc81a8ef4"
     },
     {
       "relativePath": "components\\studio\\production\\WrapView.tsx",
