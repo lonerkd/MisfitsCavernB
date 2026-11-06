@@ -14,6 +14,7 @@ import {
 import { deviceZone, placeLight } from '@/lib/film/studio';
 import { PlacePicker } from './PlacePicker';
 import { useStudio } from '../StudioContext';
+import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 
@@ -30,7 +31,7 @@ export function LocationsView() {
   const records = useProjectLocations(project.id);
   const days = useShootDays(project.id);
   const [open, setOpen] = useState<string | null>(null);
-  const [adding, setAdding] = useState('');
+  const [adding, setAdding] = useDraft('locations-adding', '');
   const { toast } = useToast();
 
   const rows = useMemo(() => locationRows(scenes.rows, records.rows), [scenes.rows, records.rows]);
