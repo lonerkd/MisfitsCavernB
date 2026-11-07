@@ -146,7 +146,7 @@ function main() {
   const args = process.argv.slice(2);
   const pr = args[args.indexOf('--pr') + 1];
   if (!/^\d+$/.test(pr || '')) { console.error('usage: node scripts/pr-risk.mjs --pr <number> [--apply] [--request-copilot]'); process.exit(2); }
-  const files = lines(gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[].filename']));
+  const files = lines(gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[] | .filename, (.previous_filename // empty)']));
   const result = classify(files);
   console.log(`#${pr}: ${result.tier} risk (${files.length} files)`);
   for (const h of result.high) console.log(`  high: ${h.file} — ${h.why}`);

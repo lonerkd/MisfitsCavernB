@@ -54,6 +54,24 @@ describe('the merge gate', () => {
       const q = { ...mig, added: ["CREATE FUNCTION public.patch_things() RETURNS int LANGUAGE sql SECURITY DEFINER AS 'select 1; select 2';"] };
       expect(run([q, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
     });
+    it('an unqualified name is a public function; another schema is not', () => {
+      const bare = { ...mig, added: ['CREATE FUNCTION get_all() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      expect(run([bare, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+      const internal = { ...mig, added: ['CREATE FUNCTION internal.helper() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      expect(run([internal, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).byId['definer-allowlist'].ok).toBe(true);
+      const alter = { ...mig, added: ['ALTER FUNCTION get_all(uuid) SECURITY DEFINER;'] };
+      expect(run([alter, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+    });
+    it('the words SECURITY DEFINER inside a body or comment do not make an invoker function a definer', () => {
+      const inv = { ...mig, added: ["CREATE FUNCTION public.safe_one() RETURNS int LANGUAGE sql AS $$ select 1 -- SECURITY DEFINER is not used here $$;", "COMMENT ON FUNCTION public.safe_one() IS 'not SECURITY DEFINER';"] };
+      expect(run([inv, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).byId['definer-allowlist'].ok).toBe(true);
+    });
+    it('an apostrophe in a block comment or an escaped quote does not swallow the next statement', () => {
+      const two = { ...mig, added: ["/* it's here */ CREATE FUNCTION public.a() RETURNS int LANGUAGE sql AS E'select \\'x\\'';", 'CREATE FUNCTION public.b() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      const r = run([two, NOTE], { definerDoc: '### D. The definer-function allowlist\n| `a()` | x |' });
+      expect(r.failed).toContain('definer-allowlist');
+      expect(r.byId['definer-allowlist'].message).toContain('b (');
+    });
     it('an invoker function needs no entry', () => {
       const inv = { ...mig, added: sql.filter((l) => l !== 'SECURITY DEFINER') };
       expect(run([inv, NOTE]).byId['definer-allowlist'].ok).toBe(true);
@@ -93,6 +111,10 @@ describe('the merge gate', () => {
       expect(run([file('scripts/x.mjs', 'M', 80), NOTE]).failed).toContain('tests-with-code');
       const skipped = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ['it.skip("x", () => {});'] };
       expect(run([file('lib/x/x.ts', 'M', 80), skipped, NOTE]).failed).toContain('tests-with-code');
+    });
+    it('a skip further down the same file is not coverage, even with an assertion inside it', () => {
+      const f = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ["it.skip('x', () => {", '  expect(foo()).toBe(1);', '});'] };
+      expect(run([file('lib/x/x.ts', 'M', 80), f, NOTE]).failed).toContain('tests-with-code');
     });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);

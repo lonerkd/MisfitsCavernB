@@ -18,7 +18,8 @@ import { pathToFileURL } from 'node:url';
 import { classify } from './pr-risk.mjs';
 
 export const CONTEXT = 'claude-review';
-const MARKER = /<!--\s*claude-review:v1\s+sha=([0-9a-f]{40})\s+verdict=(approved|changes)\s*-->/gi;
+// The marker must OPEN the comment (as `reviewComment` writes it): a marker quoted in a reply or shown in a code block is not a verdict.
+const MARKER = /^\s*<!--\s*claude-review:v1\s+sha=([0-9a-f]{40})\s+verdict=(approved|changes)\s*-->/i;
 const TRUSTED = new Set(['OWNER', 'MEMBER', 'COLLABORATOR']);
 
 /** Is this comment's author allowed to review? Bots and drive-by contributors are not (unless named in `extra`). */
@@ -38,7 +39,8 @@ export function evaluate(ctx) {
   const marks = [];
   for (const c of ctx.comments ?? []) {
     if (!trusted(c, ctx.extraTrusted)) continue;
-    for (const m of String(c.body ?? '').matchAll(MARKER)) marks.push({ sha: m[1].toLowerCase(), verdict: m[2].toLowerCase(), at: c.updated_at ?? c.created_at ?? '', id: c.id ?? 0 });
+    const m = MARKER.exec(String(c.body ?? ''));
+    if (m) marks.push({ sha: m[1].toLowerCase(), verdict: m[2].toLowerCase(), at: c.updated_at ?? c.created_at ?? '', id: c.id ?? 0 });
   }
   const order = (a, b) => (a.at === b.at ? a.id - b.id : a.at < b.at ? -1 : 1);
   const forHead = marks.filter((m) => m.sha === String(ctx.headSha).toLowerCase()).sort(order);
@@ -63,13 +65,13 @@ function main() {
   const pr = arg('--pr');
   if (!/^\d+$/.test(pr || '')) { console.error('usage: claude-review.mjs --pr <n> [--apply] [--post approved|changes --summary "..."]'); process.exit(2); }
   const head = JSON.parse(gh(['api', `repos/${REPO}/pulls/${pr}`])).head.sha;
-  if (arg('--post')) {
+  if (a.includes('--post')) {
     const verdict = arg('--post');
     if (!['approved', 'changes'].includes(verdict) || !(arg('--summary') ?? '').trim()) { console.error('--post needs approved|changes and a --summary of what was reviewed'); process.exit(2); }
     gh(['api', `repos/${REPO}/issues/${pr}/comments`, '-f', `body=${reviewComment(head, verdict, arg('--summary'))}`]);
     console.log(`posted ${verdict} for ${head}`);
   }
-  const files = gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[].filename']).split('\n').filter(Boolean);
+  const files = gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[] | .filename, (.previous_filename // empty)']).split('\n').filter(Boolean);
   // --jq '.[]' prints one object per line across every page (a bare --paginate prints one array per page).
   const flat = gh(['api', `repos/${REPO}/issues/${pr}/comments`, '--paginate', '--jq', '.[]']).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const result = evaluate({ headSha: head, tier: classify(files).tier, comments: flat, extraTrusted: (process.env.CLAUDE_REVIEW_LOGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean) });

@@ -27,7 +27,11 @@ export const LIMITS = { testsFromAddedLines: 60, newComponentLines: 60, largeAdd
 export function statementEnd(sql, from) {
   for (let i = from; i < sql.length; i++) {
     const c = sql[i];
-    if (c === "'") { i++; while (i < sql.length && !(sql[i] === "'" && sql[i + 1] !== "'")) i += sql[i] === "'" ? 2 : 1; }
+    if (c === "'") {
+      const escaped = /[eE]/.test(sql[i - 1] ?? '') && !/[A-Za-z0-9_]/.test(sql[i - 2] ?? ' '); // E'...' honours backslashes
+      i++;
+      while (i < sql.length && !(sql[i] === "'" && sql[i + 1] !== "'")) i += escaped && sql[i] === '\\' ? 2 : sql[i] === "'" ? 2 : 1;
+    } else if (c === '/' && sql[i + 1] === '*') { const close = sql.indexOf('*/', i + 2); i = close < 0 ? sql.length : close + 1; }
     else if (c === '"') { i++; while (i < sql.length && sql[i] !== '"') i++; }
     else if (c === '$') {
       const tag = /^\$[A-Za-z0-9_]*\$/.exec(sql.slice(i));
@@ -36,6 +40,15 @@ export function statementEnd(sql, from) {
     else if (c === ';') return i;
   }
   return sql.length;
+}
+
+/** The statement without its string, dollar-quoted and comment bodies: what is left is the header and attributes, so words in a body don't count. */
+export function withoutBodies(stmt) {
+  return stmt
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/--[^\n]*/g, ' ')
+    .replace(/(\$[A-Za-z0-9_]*\$)[\s\S]*?\1/g, ' ')
+    .replace(/[eE]?'(?:[^'\\]|''|\\.)*'/g, ' ');
 }
 
 // Only a row of the §2.D allowlist table counts, not a mention elsewhere in the document.
@@ -70,12 +83,11 @@ export function evaluate(ctx) {
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
     // The whole statement, whatever the body form (dollar-quoted, single-quoted, attributes before or after it).
-    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?/gi)) {
-      const stmt = sql.slice(m.index, statementEnd(sql, m.index));
-      if (/SECURITY\s+DEFINER/i.test(stmt) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
-    }
-    for (const m of sql.matchAll(/ALTER\s+FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?[^;]*?SECURITY\s+DEFINER/gi)) {
-      if (!allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
+    // An unqualified name is a public function (the default search path); another schema (internal.*) is not exposed.
+    for (const m of sql.matchAll(/(CREATE\s+(?:OR\s+REPLACE\s+)?|ALTER\s+)FUNCTION\s+(?:"?([a-z0-9_]+)"?\.)?"?([a-z0-9_]+)"?/gi)) {
+      if (m[2] && m[2].toLowerCase() !== 'public') continue;
+      const stmt = withoutBodies(sql.slice(m.index, statementEnd(sql, m.index)));
+      if (/SECURITY\s+DEFINER/i.test(stmt) && !allowlisted(ctx.definerDoc, m[3])) missing.push(`${m[3]} (${f.path})`);
     }
   }
   add('definer-allowlist', missing.length === 0,
@@ -97,7 +109,7 @@ export function evaluate(ctx) {
   const src = files.filter((f) => SRC.test(f.path) && !TEST.test(f.path) && !GENERATED.test(f.path) && f.status !== 'D');
   const srcAdded = src.reduce((n, f) => n + f.added.length, 0);
   // A changed test counts only if it adds an assertion or a case (a test whose assertions were only removed is not coverage).
-  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.(?!skip|todo|fixme)\w+)*\s*\(/.test(l)));
+  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.(?!skip|todo|fixme)\w+)*\s*\(/.test(l)) && !f.added.some((l) => /\b(it|test|describe)\.(skip|todo|fixme)\b/.test(l)));
   const noTests = waiver(body, 'No tests needed');
   add('tests-with-code', isDeps || srcAdded < LIMITS.testsFromAddedLines || touchedTests.length > 0 || !!noTests,
     `This PR adds ${srcAdded} lines of source and changes no test (unit, tests/integration or e2e). Add one that fails without the change, or put a line "No tests needed: <why, 20+ characters>" in the description.`);
@@ -156,8 +168,10 @@ const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 256 
 export function contextFromGit(base, head, title, body) {
   const names = git('diff', '--name-status', '-M', `${base}...${head}`).split('\n').filter(Boolean).map((l) => {
     const p = l.split('\t');
-    return { status: p[0][0], path: p[p.length - 1] };
+    return { status: p[0][0], path: p[p.length - 1], from: p[0][0] === 'R' ? p[1] : undefined };
   });
+  // A rename is also a deletion of the old path (moving a migration out of supabase/migrations/ must not slip past).
+  const renamedAway = names.filter((n) => n.from).map((n) => ({ path: n.from, status: 'D', added: [] }));
   const files = names.map(({ status, path }) => {
     let added = [];
     if (status !== 'D') {
@@ -165,7 +179,7 @@ export function contextFromGit(base, head, title, body) {
       added = d.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++')).map((l) => l.slice(1));
     }
     return { path, status, added };
-  });
+  }).concat(renamedAway);
   const show = (ref, p) => { try { return git('show', `${ref}:${p}`); } catch { return ''; } };
   const css = git('ls-tree', '-r', '--name-only', head).split('\n').filter((p) => /\.(css|tsx?)$/.test(p) && /^(app|components|lib)\//.test(p));
   const definedTokens = new Set();

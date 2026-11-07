@@ -33,6 +33,12 @@ describe('the Claude review check', () => {
     const newer = c(mark(H1, 'approved'), { id: 2, created_at: '2026-11-07T02:00:00Z', updated_at: '2026-11-07T02:00:00Z' });
     expect(evaluate({ headSha: H1, tier: 'high', comments: [older, newer] }).state).toBe('failure');
   });
+  it('a marker quoted inside a reply or a code block is not a verdict', () => {
+    const quoted = c('> ' + mark(H1, 'approved'));
+    const fenced = c('Example:\n```\n' + mark(H1, 'approved') + '\n```');
+    const reply = c('Thanks!\n\n' + mark(H1, 'approved'));
+    expect(evaluate({ headSha: H1, tier: 'high', comments: [quoted, fenced, reply] }).state).toBe('pending');
+  });
   it('a bot or a stranger cannot approve, however the marker is written', () => {
     const bot = c(mark(H1, 'approved'), { user: { type: 'Bot', login: 'copilot-pull-request-reviewer[bot]' }, author_association: 'CONTRIBUTOR' });
     const stranger = c(mark(H1, 'approved'), { user: { type: 'User', login: 'x' }, author_association: 'NONE' });
