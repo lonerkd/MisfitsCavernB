@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { getValidToken, logoutSpotify } from '../spotify/auth';
+import { controlPlayback, fetchPlayback, type PlaybackDevice } from '../spotify/playback';
 
 interface SpotifyContextValue {
   isAuthenticated: boolean;
@@ -16,6 +17,11 @@ interface SpotifyContextValue {
   volume: number;
   useIframeFallback: boolean;
   setUseIframeFallback: (v: boolean) => void;
+  /** The device the music is on right now when it is not this browser (the phone's Spotify app, the desktop app…); null when it is here or nothing plays. */
+  elsewhere: PlaybackDevice | null;
+  /** Move the music to this browser's player. */
+  playHere: () => Promise<boolean>;
+  seek: (positionMs: number) => void;
   playUri: (uri: string) => Promise<void>;
   togglePlay: () => void;
   nextTrack: () => void;
@@ -45,6 +51,9 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
   const [durationMs, setDurationMs] = useState(0);
   const [volume, setVolume] = useState(0.5);
 
+  // Music already playing on another of the person's devices: read it, show it, drive it (lib/spotify/playback.ts).
+  const [elsewhereDevice, setElsewhere] = useState<PlaybackDevice | null>(null);
+  const elsewhere = isAuthenticated ? elsewhereDevice : null; // signed out: nothing is playing "elsewhere"
   const [isPremium, setIsPremium] = useState(true);
   const [useIframeFallback, setUseIframeFallback] = useState(false);
 
@@ -146,6 +155,36 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     };
   }, [isSDKReady, isAuthenticated, useIframeFallback]);
 
+  // Poll what Spotify is playing while the page is in view: a song started on the phone appears here (and the other way round).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let waitUntil = 0;
+    const tick = async () => {
+      if (!alive) return;
+      if (document.visibilityState === 'visible' && Date.now() >= waitUntil) {
+        const r = await fetchPlayback();
+        if (!alive) return;
+        if (!r.ok) waitUntil = Date.now() + r.retryAfterMs;
+        else if (r.playback && r.playback.device.id !== deviceId) {
+          const pb = r.playback;
+          setElsewhere(pb.device);
+          setCurrentTrack(pb.track as unknown as Spotify.Track);
+          setIsPlaying(pb.isPlaying);
+          setProgressMs(pb.progressMs);
+          setDurationMs(pb.durationMs);
+          if (pb.device.volumePercent != null) setVolume(pb.device.volumePercent / 100);
+        } else setElsewhere(null);
+      }
+      timer = setTimeout(tick, 4000);
+    };
+    void tick();
+    const onVisible = () => { if (document.visibilityState === 'visible') { clearTimeout(timer); void tick(); } };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { alive = false; clearTimeout(timer); document.removeEventListener('visibilitychange', onVisible); };
+  }, [isAuthenticated, deviceId]);
+
   useEffect(() => {
     if (!isPlaying) return;
     const interval = setInterval(() => {
@@ -160,12 +199,14 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (!deviceId) return;
+    // Music goes where the music already is: the phone's app if that is playing, otherwise this browser.
+    const target = elsewhere?.id ?? deviceId;
+    if (!target) return;
     const token = await getValidToken();
     if (!token) return;
 
     try {
-      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+      await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${target}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -179,31 +220,49 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to play URI', err);
     }
-  }, [deviceId, useIframeFallback]);
+  }, [deviceId, elsewhere, useIframeFallback]);
 
+  // Controls drive whichever device has the music: the phone's app through the Web API, or this browser's player.
   const togglePlay = useCallback(() => {
+    if (elsewhere) { void controlPlayback({ kind: isPlaying ? 'pause' : 'play' }, elsewhere.id).then((ok) => { if (ok) setIsPlaying(!isPlaying); }); return; }
     if (player) player.togglePlay();
-  }, [player]);
+  }, [player, elsewhere, isPlaying]);
 
   const nextTrack = useCallback(() => {
+    if (elsewhere) { void controlPlayback({ kind: 'next' }, elsewhere.id); return; }
     if (player) player.nextTrack();
-  }, [player]);
+  }, [player, elsewhere]);
 
   const prevTrack = useCallback(() => {
+    if (elsewhere) { void controlPlayback({ kind: 'previous' }, elsewhere.id); return; }
     if (player) player.previousTrack();
-  }, [player]);
+  }, [player, elsewhere]);
 
   const setVolumeLevel = useCallback((vol: number) => {
+    if (elsewhere) { void controlPlayback({ kind: 'volume', percent: vol * 100 }, elsewhere.id).then((ok) => { if (ok) setVolume(vol); }); return; }
     if (player) {
       player.setVolume(vol).then(() => setVolume(vol));
     }
-  }, [player]);
+  }, [player, elsewhere]);
+
+  const seek = useCallback((positionMs: number) => {
+    if (elsewhere) { void controlPlayback({ kind: 'seek', positionMs }, elsewhere.id).then((ok) => { if (ok) setProgressMs(positionMs); }); return; }
+    if (player) void player.seek(positionMs).then(() => setProgressMs(positionMs));
+  }, [player, elsewhere]);
+
+  const playHere = useCallback(async () => {
+    if (!deviceId) return false;
+    const ok = await controlPlayback({ kind: 'transfer', deviceId, play: true });
+    if (ok) setElsewhere(null);
+    return ok;
+  }, [deviceId]);
 
   return (
     <Ctx.Provider value={{
       isAuthenticated, isPremium, isSDKReady, player, deviceId,
       currentTrack, isPlaying, progressMs, durationMs, volume,
       useIframeFallback, setUseIframeFallback,
+      elsewhere, playHere, seek,
       playUri, togglePlay, nextTrack, prevTrack, setVolumeLevel,
       logout: logoutSpotify
     }}>

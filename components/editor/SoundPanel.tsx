@@ -89,12 +89,24 @@ export function SoundPanel(p: SoundPanelProps) {
           <span>{p.sceneLabel ?? 'No scene yet'} reads as <strong style={{ color: 'var(--fg)' }}>{mood.mood}</strong></span>
         </div>
         {spotify.currentTrack && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 8 }}>
-            <button type="button" aria-label={spotify.isPlaying ? 'Pause music' : 'Play music'} style={round} onClick={spotify.togglePlay}>{spotify.isPlaying ? <Pause size={18} /> : <Play size={18} />}</button>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spotify.currentTrack.name}</div>
-              <div style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spotify.currentTrack.artists?.map((a) => a.name).join(', ')}</div>
+          <div style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button type="button" aria-label={spotify.isPlaying ? 'Pause music' : 'Play music'} style={round} onClick={spotify.togglePlay}>{spotify.isPlaying ? <Pause size={18} /> : <Play size={18} />}</button>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spotify.currentTrack.name}</div>
+                <div style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{spotify.currentTrack.artists?.map((a) => a.name).join(', ')}</div>
+              </div>
             </div>
+            {spotify.durationMs > 0 && (
+              <input type="range" aria-label="Position in the song" min={0} max={spotify.durationMs} step={1000} value={Math.min(spotify.progressMs, spotify.durationMs)}
+                onChange={(e) => spotify.seek(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
+            )}
+            {spotify.elsewhere && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, fontSize: 11, color: 'var(--fg-muted)' }}>
+                <span style={{ flex: 1, minWidth: 0 }}>Playing on {spotify.elsewhere.name}. These controls drive it.</span>
+                <button type="button" style={{ ...ghost, minHeight: 44 }} onClick={() => { void spotify.playHere().then((ok) => { if (!ok) toast('Could not move the music here: open the Cavern player first', 'error'); }); }}>Play here</button>
+              </div>
+            )}
           </div>
         )}
         {!isAuthenticated ? (

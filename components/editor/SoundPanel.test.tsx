@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const toast = vi.fn();
-const spotify = vi.hoisted(() => ({ isAuthenticated: true, currentTrack: null as null | { name: string; artists: Array<{ name: string }> }, isPlaying: false, togglePlay: vi.fn(), playUri: vi.fn() }));
+const spotify = vi.hoisted(() => ({ isAuthenticated: true, currentTrack: null as null | { name: string; artists: Array<{ name: string }> }, isPlaying: false, progressMs: 30_000, durationMs: 180_000, elsewhere: null as null | { name: string }, togglePlay: vi.fn(), playUri: vi.fn(), seek: vi.fn(), playHere: vi.fn().mockResolvedValue(true) }));
 const search = vi.hoisted(() => vi.fn());
 const audio = vi.hoisted(() => ({ addAudioRef: vi.fn(), listAudioRefs: vi.fn() }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
@@ -18,7 +18,7 @@ const base = (over: Partial<SoundPanelProps> = {}): SoundPanelProps => ({
   projectId: 'p1', userId: 'u1', refs: [], onRefsChanged: vi.fn(), playRef: vi.fn(), ...over,
 });
 
-beforeEach(() => { spotify.isAuthenticated = true; spotify.currentTrack = null; search.mockResolvedValue([{ id: 't1', uri: 'spotify:track:t1', name: 'Chase Theme', artists: [{ name: 'Ada' }] }]); audio.addAudioRef.mockResolvedValue(undefined); audio.listAudioRefs.mockResolvedValue([{ id: 'r1' }]); });
+beforeEach(() => { spotify.isAuthenticated = true; spotify.currentTrack = null; spotify.elsewhere = null; search.mockResolvedValue([{ id: 't1', uri: 'spotify:track:t1', name: 'Chase Theme', artists: [{ name: 'Ada' }] }]); audio.addAudioRef.mockResolvedValue(undefined); audio.listAudioRefs.mockResolvedValue([{ id: 'r1' }]); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('SoundPanel: the table read', () => {
@@ -87,6 +87,32 @@ describe('SoundPanel: music for the scene', () => {
     expect(screen.getByText('Already On')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Play music' }));
     expect(spotify.togglePlay).toHaveBeenCalled();
+  });
+});
+
+describe('SoundPanel: music that is already playing', () => {
+  it('says which device it is on, lets you move it here, and seek', async () => {
+    spotify.currentTrack = { name: 'On The Phone', artists: [{ name: 'Ada' }] };
+    spotify.elsewhere = { name: 'Pixel 8' };
+    render(<SoundPanel {...base()} />);
+    expect(screen.getByText(/Playing on Pixel 8/)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Position in the song'), { target: { value: '90000' } });
+    expect(spotify.seek).toHaveBeenCalledWith(90000);
+    fireEvent.click(screen.getByRole('button', { name: 'Play here' }));
+    await waitFor(() => expect(spotify.playHere).toHaveBeenCalled());
+  });
+  it('a failed move says so', async () => {
+    spotify.currentTrack = { name: 'X', artists: [] };
+    spotify.elsewhere = { name: 'Pixel 8' };
+    spotify.playHere.mockResolvedValueOnce(false);
+    render(<SoundPanel {...base()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Play here' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/Could not move/), 'error'));
+  });
+  it('without a device elsewhere there is no "Play here"', () => {
+    spotify.currentTrack = { name: 'X', artists: [] };
+    render(<SoundPanel {...base()} />);
+    expect(screen.queryByRole('button', { name: 'Play here' })).toBeNull();
   });
 });
 
