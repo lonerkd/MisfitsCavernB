@@ -73,22 +73,6 @@ REVOKE ALL ON FUNCTION internal.line_overrides_check_script() FROM PUBLIC, anon,
 CREATE TRIGGER reading_line_overrides_check_script BEFORE INSERT OR UPDATE OF project_id, script_id ON public.reading_line_overrides
   FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_check_script();
 
--- An override's forced_by is always the acting user, never a client-supplied value.
-CREATE FUNCTION internal.line_overrides_set_forced_by()
- RETURNS trigger
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO ''
-AS $function$
-begin
-  new.forced_by := auth.uid();
-  return new;
-end;
-$function$;
-REVOKE ALL ON FUNCTION internal.line_overrides_set_forced_by() FROM PUBLIC, anon, authenticated;
-CREATE TRIGGER reading_line_overrides_set_forced_by BEFORE INSERT OR UPDATE ON public.reading_line_overrides
-  FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_set_forced_by();
-
 -- Helpers for the reader (invoker: row security still decides what a caller sees).
 CREATE FUNCTION public.reading_memory_for_user(p_user_id uuid, p_format text DEFAULT 'screenplay')
  RETURNS TABLE(kind text, name text, metadata jsonb, count integer)
@@ -113,9 +97,9 @@ CREATE FUNCTION internal.reading_memory_from_correction()
  SET search_path TO ''
 AS $function$
 begin
-  if auth.uid() is null then return new; end if;
+  if new.created_by is null then return new; end if;
   insert into public.reading_memory (user_id, script_format, kind, name)
-  values (auth.uid(), 'screenplay', case new.kind when 'character' then 'confirmed_name' else 'rejected_name' end, new.name)
+  values (new.created_by, 'screenplay', case new.kind when 'character' then 'confirmed_name' else 'rejected_name' end, new.name)
   on conflict (user_id, script_format, kind, name) do update set count = public.reading_memory.count + 1, updated_at = now();
   return new;
 end;

@@ -5085,6 +5085,10 @@ export type Database = {
         Args: { p_channel?: string; p_partner?: string };
         Returns: undefined;
       };
+      patch_project_settings: {
+        Args: { p_patch: Json; p_project_id: string };
+        Returns: Json;
+      };
       pin_message: {
         Args: { p_message: string; p_pinned: boolean };
         Returns: {
@@ -5195,10 +5199,6 @@ export type Database = {
       };
       toggle_message_reaction: {
         Args: { p_emoji: string; p_message: string };
-        Returns: Json;
-      };
-      patch_project_settings: {
-        Args: { p_project_id: string; p_patch: Json };
         Returns: Json;
       };
       transfer_project: {

@@ -1444,6 +1444,7 @@ function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
 function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
 function internal.line_overrides_check_script() body=5eefdfb8837a9027246ae1a3d2804f35
+function internal.line_overrides_set_forced_by() body=c8eeafbd092d3e2d935511489889ea3f
 function internal.live_review_link(p_token text) body=971884db2ab87ec35d014433112e3758
 function internal.media_guard() body=887de08bd61e84332e8c1a4d7369da24
 function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
@@ -1464,7 +1465,7 @@ function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
-function internal.reading_memory_from_correction() body=96c479637c5d8149b8ddfea24a65d414
+function internal.reading_memory_from_correction() body=6a65f2e2cdaacdfb4d58fed6f29abac6
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
@@ -1517,6 +1518,7 @@ function public.log_password_breach(p_breach_count integer, p_context text, p_em
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
 function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
+function public.patch_project_settings(p_project_id uuid, p_patch jsonb) body=8e1b308fa68bea295ecb87c1e84bd5af
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
@@ -1579,6 +1581,7 @@ grant function internal.item_versions_guard() postgres
 grant function internal.item_versions_prepare() postgres
 grant function internal.job_listed(p_creator uuid, p_project uuid) anon,authenticated,postgres
 grant function internal.line_overrides_check_script() postgres
+grant function internal.line_overrides_set_forced_by() postgres
 grant function internal.live_review_link(p_token text) postgres
 grant function internal.media_guard() postgres,service_role
 grant function internal.media_lifecycle_guard() postgres
@@ -1652,6 +1655,7 @@ grant function public.log_password_breach(p_breach_count integer, p_context text
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.lounge_unread() authenticated,postgres,service_role
 grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
+grant function public.patch_project_settings(p_project_id uuid, p_patch jsonb) authenticated,postgres,service_role
 grant function public.pin_message(p_message uuid, p_pinned boolean) authenticated,postgres,service_role
 grant function public.project_availability(p_project uuid, p_from date, p_to date) authenticated,postgres,service_role
 grant function public.project_context(p_project uuid) authenticated,postgres,service_role
@@ -2484,6 +2488,7 @@ trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR 
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
 trigger CREATE TRIGGER reading_corrections_sync_memory AFTER INSERT ON public.reading_corrections FOR EACH ROW EXECUTE FUNCTION internal.reading_memory_from_correction()
 trigger CREATE TRIGGER reading_line_overrides_check_script BEFORE INSERT OR UPDATE OF project_id, script_id ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_check_script()
+trigger CREATE TRIGGER reading_line_overrides_set_forced_by BEFORE INSERT OR UPDATE ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_set_forced_by()
 trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
