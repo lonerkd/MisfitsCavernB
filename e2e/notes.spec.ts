@@ -50,8 +50,9 @@ test.describe('Notes (local Supabase)', () => {
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByTitle('Notes', { exact: true }).click();
-    // The first list has settled (empty): anything Jordan sees afterwards arrived live, not through that first fetch.
-    await expect(page.getByText('No notes yet.')).toBeVisible({ timeout: 30_000 });
+    // The first list has settled : anything Jordan sees afterwards arrived live, not through that first fetch.
+    await expect(page.getByLabel('New note')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Loading notes…')).toHaveCount(0, { timeout: 30_000 });
     return { ctx, page };
   }
 
@@ -93,6 +94,32 @@ test.describe('Notes (local Supabase)', () => {
 
     // The island's Note key opens the Notes tab and focuses the box, from another tab.
     await a.page.getByTitle('Write', { exact: true }).click();
+    await capsKey(a.page, 'CapsLock');
+    await capsKey(a.page, 'U');
+    await expect(a.page.getByLabel('New note')).toBeFocused();
+    await a.page.evaluate(() => window.dispatchEvent(new KeyboardEvent('keyup', { key: 'CapsLock', modifierCapsLock: false, bubbles: true })));
+
+    await a.ctx.close();
+    await b.ctx.close();
+  });
+
+  test('a writer note reaches Jordan on the script, and U opens the box on the Studio overview', async ({ browser }) => {
+    test.setTimeout(180_000);
+    const a = await openEditor(browser, sam);
+    const b = await openEditor(browser, jordan);
+
+    await a.page.getByRole('button', { name: /Writers/ }).click();
+    await a.page.getByLabel('New note').fill('cut the second beat');
+    await a.page.getByRole('button', { name: 'Add note' }).click();
+    await expect(a.page.getByText('cut the second beat')).toBeVisible();
+    // Jordan opens the same script: the writer note is in his list, labelled as one.
+    await expect(b.page.getByText('cut the second beat')).toBeVisible({ timeout: 30_000 });
+    const told = await admin.from('notifications').select('title, link').eq('user_id', jordan.id).eq('type', 'note');
+    expect(told.data?.some((n) => n.link === `/editor?script=${scriptId}` && /writer note/.test(n.title))).toBe(true);
+
+    // The Studio overview: Caps Lock then U focuses its note box.
+    await a.page.goto(`/studio?project=${projectId}`);
+    await expect(a.page.getByLabel('New note')).toBeVisible({ timeout: 30_000 });
     await capsKey(a.page, 'CapsLock');
     await capsKey(a.page, 'U');
     await expect(a.page.getByLabel('New note')).toBeFocused();
