@@ -40,4 +40,16 @@ describe('PhoneToolStrip', () => {
     mount({ compact: true });
     for (const b of screen.getAllByRole('button')) expect(Number.parseInt(b.style.minHeight, 10)).toBeGreaterThanOrEqual(40);
   });
+  it('gives the field back after a tool, so the keyboard stays up (not for "put the keyboard away")', () => {
+    const ta = document.createElement('textarea'); document.body.appendChild(ta); ta.focus();
+    const f = mount();
+    const bar = screen.getByRole('toolbar');
+    fireEvent.touchStart(bar); ta.blur();
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(f.undo).toHaveBeenCalled(); expect(document.activeElement).toBe(ta);
+    fireEvent.touchStart(bar); ta.blur();
+    fireEvent.click(screen.getByRole('button', { name: 'Put the keyboard away' }));
+    expect(document.activeElement).not.toBe(ta);
+    ta.remove();
+  });
 });
