@@ -1,0 +1,3 @@
+# Session — 2026-11-07: the gate reads a waiver written as Markdown
+
+On the production-tools PR the gate rejected `**Large change:** why it is one change` because it only matched the plain text at the start of a line, and the failure message said nothing about bold. A waiver is a person's explicit, visible reason; its formatting should not decide whether it counts. `scripts/pr-gate.mjs` now accepts a bullet, a quote and bold around the label. A reason shorter than 20 characters still does not count. Tested in `lib/ci/pr-gate.test.ts`. High risk (it is the gate); no marker was posted for it, `claude-review` is not required yet.

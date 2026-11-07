@@ -59,7 +59,8 @@ const allowlisted = (doc, name) => {
 };
 
 const waiver = (body, label) => {
-  const m = new RegExp(`^\\s*${label}:\\s*(.{20,})`, 'im').exec(body ?? '');
+  // The line may be dressed as Markdown (a bullet, a quote, **bold**): `**Large change:** why` is the same waiver as `Large change: why`.
+  const m = new RegExp(`^[\\s>*_-]*${label}:?\\**_*\\s*:?\\s*(.{20,})`, 'im').exec(body ?? '');
   return m ? m[1].trim() : null;
 };
 

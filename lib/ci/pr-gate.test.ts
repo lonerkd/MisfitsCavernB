@@ -116,6 +116,13 @@ describe('the merge gate', () => {
       const f = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ["it.skip('x', () => {", '  expect(foo()).toBe(1);', '});'] };
       expect(run([file('lib/x/x.ts', 'M', 80), f, NOTE]).failed).toContain('tests-with-code');
     });
+    it('a waiver written as Markdown (bold, a bullet, a quote) still counts, and a short reason still does not', () => {
+      const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), NOTE];
+      for (const body of ['**No tests needed:** the existing suite covers every call site', '- No tests needed: the existing suite covers every call site', '> **No tests needed**: the existing suite covers every call site']) {
+        expect(run(f, { body }).byId['tests-with-code'].ok).toBe(true);
+      }
+      expect(run(f, { body: '**No tests needed:** ok' }).failed).toContain('tests-with-code');
+    });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);
       expect(run([file('lib/x/x.ts', 'M', 500)], { title: 'chore(deps): bump a', author: 'dependabot[bot]' } as never).byId['tests-with-code'].ok).toBe(true);
