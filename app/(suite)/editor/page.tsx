@@ -249,7 +249,7 @@ export default function EditorPage() {
   const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, matchCase, setMatchCase, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
     useFindReplace(content, setContent);
 
-  const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
+  const [rightPanel, setRightPanel] = useState<RightPanelTab>('scene');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
@@ -640,7 +640,7 @@ export default function EditorPage() {
   const [openElementId, setOpenElementId] = useState<string | null>(null);
   const openBreakdown = useCallback((elementId?: string | null) => {
     if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
-    setRightPanel('breakdown');
+    setRightPanel('scene');
     if (elementId !== undefined) setOpenElementId(elementId);
   }, [isMobile, setSheet, setRightPanel, setShowRightSidebar, setOpenElementId]);
 
@@ -962,7 +962,7 @@ export default function EditorPage() {
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
-        ? <PhoneEditorBar ctx={editorCtx} slim={phone.landscape && phone.typing} onScripts={() => setSheet('scripts')} onViews={() => setSheet('views')} onTools={() => { setRightPanel('write'); setSheet('tools'); }} onMore={() => setSheet('more')} />
+        ? <PhoneEditorBar ctx={editorCtx} slim={phone.landscape && phone.typing} onScripts={() => setSheet('scripts')} onViews={() => setSheet('views')} onTools={() => { setRightPanel('scene'); setSheet('tools'); }} onMore={() => setSheet('more')} />
         : <EditorHeader ctx={editorCtx} />)}
 
       <AnimatePresence>
@@ -1293,7 +1293,7 @@ export default function EditorPage() {
           insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
           lineUp={() => moveCaretLine(-1)} lineDown={() => moveCaretLine(1)}
           prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
-          find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('write'); setSheet('tools'); }} more={() => setSheet('more')}
+          find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('scene'); setSheet('tools'); }} more={() => setSheet('more')}
           hideKeyboard={() => (document.activeElement as HTMLElement | null)?.blur?.()}
         />
       )}
