@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { isTypable, scrollToReveal } from './PhoneKeyboard';
+import { isTypable, scrollParent, scrollToReveal } from './PhoneKeyboard';
 
 describe('scrollToReveal', () => {
   const visible = { top: 0, height: 516 }; // iPhone 15 Pro portrait with the keyboard up
@@ -33,5 +33,23 @@ describe('isTypable', () => {
     expect(isTypable(mk('input', 'file'))).toBe(false);
     expect(isTypable(mk('button'))).toBe(false);
     expect(isTypable(null)).toBe(false);
+  });
+});
+
+describe('scrollParent', () => {
+  it('finds the nearest vertically scrolling ancestor, or null for the page', () => {
+    const outer = document.createElement('div'); const inner = document.createElement('div'); const input = document.createElement('input');
+    document.body.append(outer); outer.append(inner); inner.append(input);
+    expect(scrollParent(input)).toBeNull();
+    inner.style.overflowY = 'auto';
+    Object.defineProperty(inner, 'scrollHeight', { value: 500 }); Object.defineProperty(inner, 'clientHeight', { value: 200 });
+    expect(scrollParent(input)).toBe(inner);
+    outer.remove();
+  });
+  it('ignores a container that does not actually overflow', () => {
+    const box = document.createElement('div'); const input = document.createElement('input');
+    box.style.overflowY = 'auto'; document.body.append(box); box.append(input);
+    expect(scrollParent(input)).toBeNull();
+    box.remove();
   });
 });

@@ -11,6 +11,15 @@ export const isTypable = (el: Element | null): boolean => {
   return el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color', 'file', 'image'].includes(el.type);
 };
 
+/** The nearest ancestor that scrolls vertically (a modal, the Lounge thread…), or null for the page itself. */
+export function scrollParent(el: HTMLElement): HTMLElement | null {
+  for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+    const o = getComputedStyle(p).overflowY;
+    if ((o === 'auto' || o === 'scroll') && p.scrollHeight > p.clientHeight + 1) return p;
+  }
+  return null;
+}
+
 /**
  * Pure: how far to scroll so a field is clear of the keyboard and the top edge. The visible area is [top, top + height]; a field
  * above or below it (or too close to either edge) is brought to the middle of it. 0 when it is already comfortably in view.
@@ -48,9 +57,10 @@ export function PhoneKeyboard() {
       const r = (el as HTMLElement).getBoundingClientRect();
       // Rects are in layout-viewport coordinates; the visible area starts at the visual viewport's offset.
       const by = scrollToReveal({ top: r.top, bottom: r.bottom }, { top: vv?.offsetTop ?? 0, height: vv?.height ?? window.innerHeight });
-      if (by !== 0) window.scrollBy({ top: by, behavior: 'smooth' });
-      // Pages that scroll inside a container: bring the field to the middle of that.
-      else if (r.bottom > (vv?.height ?? window.innerHeight)) (el as HTMLElement).scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (by === 0) return;
+      // A field inside a scrolling container (a modal, a thread) scrolls that container; otherwise the page does.
+      const box = scrollParent(el as HTMLElement);
+      if (box) box.scrollBy({ top: by, behavior: 'smooth' }); else window.scrollBy({ top: by, behavior: 'smooth' });
     };
     const onFocus = (e: FocusEvent) => { if (!isTypable(e.target as Element)) return; clearTimeout(timer); timer = setTimeout(reveal, 350); };
     document.addEventListener('focusin', onFocus);
