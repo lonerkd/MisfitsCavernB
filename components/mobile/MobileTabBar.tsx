@@ -29,6 +29,7 @@ import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -44,22 +45,6 @@ const TOOLS = [
 
 /** Pages that are the whole screen, or for people outside the suite. */
 const hiddenOn = (path: string) => path === '/auth' || path === '/login' || path === '/privacy' || path === '/terms' || path === '/split' || path.startsWith('/editor') || /^\/(shared|p|s|call)\//.test(path);
-
-function useKeyboardOpen() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const typing = () => {
-      const el = document.activeElement as HTMLElement | null;
-      const field = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'range', 'color', 'file'].includes((el as HTMLInputElement).type)));
-      setOpen(field);
-    };
-    const left = () => setTimeout(typing, 0);
-    document.addEventListener('focusin', typing);
-    document.addEventListener('focusout', left);
-    return () => { document.removeEventListener('focusin', typing); document.removeEventListener('focusout', left); };
-  }, []);
-  return open;
-}
 
 const PLACES: { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }[] = [
   { href: '/community', label: 'Community', icon: Sun, match: (p) => p.startsWith('/community') || p.startsWith('/hub') },
@@ -168,7 +153,9 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
 export default function MobileTabBar() {
   const pathname = usePathname();
   const { status } = useSession();
-  const keyboard = useKeyboardOpen();
+  // The same word as every other part of the phone layout (PhoneKeyboard measures the real keyboard through visualViewport), not a
+  // second guess from which element has focus.
+  const keyboard = usePhoneLayout().typing;
   const [more, setMore] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [start, setStart] = useState<CaptureStart | null>(null);
