@@ -23,7 +23,7 @@ export function WrapView() {
     setDraft({ date: new Date().toISOString().slice(0, 10), dayNumber: items.length + 2, shotsGot: 0, pages: '', incidents: '', notes: '' });
   };
 
-    const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

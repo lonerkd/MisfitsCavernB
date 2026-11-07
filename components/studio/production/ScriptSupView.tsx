@@ -28,7 +28,7 @@ export function ScriptSupView() {
     await save(items.map((i) => (i.id === id ? { ...i, circle: !i.circle } : i)));
   };
 
-    return (
+  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

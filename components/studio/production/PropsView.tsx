@@ -8,7 +8,8 @@ import { useBreakdown } from '@/lib/breakdown';
 import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-const PROP_CATS = new Set(['props', 'wardrobe', 'hair-makeup', 'set-dressing', 'vehicles']);
+// 'makeup' is the key the breakdown seeds for "Hair & makeup"; 'hair-makeup' is what a custom category of that name would get.
+const PROP_CATS = new Set(['props', 'wardrobe', 'makeup', 'hair-makeup', 'set-dressing', 'vehicles']);
 
 export function PropsView() {
   const { project, scenes, scriptId } = useStudio();

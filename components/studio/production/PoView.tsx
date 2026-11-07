@@ -32,7 +32,7 @@ export function PoView() {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
-    const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+  const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

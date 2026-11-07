@@ -24,7 +24,7 @@ export function RehearsalView() {
     setDraft({ date: new Date().toISOString().slice(0, 10), time: '10:00', location: '', participants: '', scenes: '', notes: '' });
   };
 
-    const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

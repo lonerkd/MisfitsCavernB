@@ -36,7 +36,7 @@ export function RiskRegisterView() {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
-    const scoreColor = (p: Level, i: Level) => {
+  const scoreColor = (p: Level, i: Level) => {
     const v = LEVELS.indexOf(p) + LEVELS.indexOf(i);
     if (v >= 4) return 'var(--danger)';
     if (v >= 2) return 'var(--warn)';

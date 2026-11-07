@@ -26,7 +26,7 @@ export function GearView() {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
-    const counts = STATUSES.reduce((acc, st) => ({ ...acc, [st]: items.filter((i) => i.status === st).length }), {} as Record<string, number>);
+  const counts = STATUSES.reduce((acc, st) => ({ ...acc, [st]: items.filter((i) => i.status === st).length }), {} as Record<string, number>);
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

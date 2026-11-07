@@ -61,7 +61,16 @@ describe('useSettingsList', () => {
     expect(patch).toHaveBeenCalledWith('p1', { permits: [permit('b')] });
   });
 
-  it('a second save while the first is still going is ignored (no double add)', async () => {
+  it('the next save is built from what was just saved, not from the settings before the echo arrives', async () => {
+    const { result } = renderHook(() => useSettingsList('permits'));
+    await act(async () => { await result.current.save([...result.current.items, permit('c')]); });
+    expect(result.current.items.map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    await act(async () => { await result.current.save([...result.current.items, permit('d')]); });
+    expect(patch).toHaveBeenLastCalledWith('p1', { permits: [permit('a'), permit('b'), permit('c'), permit('d')] });
+  });
+
+  it('a second save while the first is still going is ignored, and the person is told', async () => {
+    toast.mockClear();
     let release: (v: unknown) => void = () => {};
     patch.mockReturnValue(new Promise((r) => { release = r; }));
     const { result } = renderHook(() => useSettingsList('permits'));
@@ -72,6 +81,7 @@ describe('useSettingsList', () => {
       second = await result.current.save([permit('y')]);
     });
     expect(second).toBe(false);
+    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/still saving/i), 'info');
     await act(async () => { release({}); await first; });
     expect(patch).toHaveBeenCalledTimes(1);
   });

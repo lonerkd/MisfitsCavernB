@@ -28,7 +28,7 @@ export function DirectorNotebookView() {
     setDraft({ scene: '', title: '', notes: '', reference: '' });
   };
 
-    const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

@@ -32,7 +32,7 @@ export function PermitView() {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
-    return (
+  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

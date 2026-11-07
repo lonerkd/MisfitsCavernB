@@ -7,6 +7,8 @@
 //
 // Pure: what counts as a place, what it's called, and when to offer it.
 
+import type { ProductionView } from '@/lib/os/progress';
+
 export type Device = 'phone' | 'desktop';
 
 /**
@@ -27,7 +29,8 @@ const STUDIO_TABS: Record<string, string> = {
   overview: 'Overview', library: 'Library', scenes: 'Scenes', production: 'Production',
   post: 'Post', promos: 'Promos', pitch: 'Pitch', share: 'Share',
 };
-const PRODUCTION_VIEWS: Record<string, string> = {
+// Typed by the one list of views (lib/os/progress): a view added there without a label here is a compile error.
+const PRODUCTION_VIEW_LABELS: Record<ProductionView, string> = {
   story: 'Story', breakdown: 'Breakdown', readiness: 'Readiness', locations: 'Locations', money: 'Money',
   paperwork: 'Paperwork', schedule: 'Schedule', onset: 'On Set', crew: 'Crew', continuity: 'Continuity',
   shots: 'Shot list', reports: 'Reports', weather: 'Weather', transport: 'Transport', catering: 'Catering',
@@ -56,9 +59,9 @@ export function placeFor(pathname: string, search: URLSearchParams, project: { i
     const tab = search.get('tab') ?? 'overview';
     if (!STUDIO_TABS[tab]) return null;
     const view = tab === 'production' ? search.get('view') ?? 'story' : null;
-    if (view && !PRODUCTION_VIEWS[view]) return null;
+    if (view && !(view in PRODUCTION_VIEW_LABELS)) return null;
     const path = `/studio?tab=${tab}${view ? `&view=${view}` : ''}`;
-    return keep(path, withProject(project.title, view ? PRODUCTION_VIEWS[view] : `Studio › ${STUDIO_TABS[tab]}`), project.id);
+    return keep(path, withProject(project.title, view ? PRODUCTION_VIEW_LABELS[view as ProductionView] : `Studio › ${STUDIO_TABS[tab]}`), project.id);
   }
   const proj = pathname.match(/^\/projects\/([0-9a-f-]{36})(\/pitch)?$/);
   if (proj && UUID.test(proj[1])) {
