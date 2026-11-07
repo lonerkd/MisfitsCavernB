@@ -269,9 +269,15 @@ body.custom-cursor-active * {
   .mc-lounge-channels button, .mc-lounge-crew > div[title] { min-height: 44px; font-size: 14px !important; }
   .mc-lounge-chathead { padding: 8px 10px !important; gap: 8px; }
   .mc-lounge-chathead button { min-height: 40px; min-width: 40px; justify-content: center; }
+  .mc-lounge-topic { display: none; }
   .mc-lounge-back { align-items: center; justify-content: center; width: 40px; height: 40px; border: 0; border-radius: 8px; background: rgba(var(--ink-rgb), 0.06); color: var(--fg); flex-shrink: 0; }
   .mc-lounge-thread { padding: 16px 12px !important; }
   .mc-lounge-composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important; }
+  /* The keyboard is up (PhoneKeyboard publishes its height as --kb): the room ends where the keyboard starts, so the composer sits on
+     top of it instead of under it, and the pill's 76 px and the home indicator are not reserved (the keyboard covers both). */
+  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - 62px - var(--kb, 0px)); }
+  html[data-typing='true'] .mc-lounge-composer { padding-bottom: 8px !important; }
+  html[data-typing='true'] .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
 }
 
 @media (max-width: 860px) {
