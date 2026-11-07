@@ -6,9 +6,9 @@
 // the whole suite when you reach for it; a keyboard deck under Caps Lock; a dot
 // while you type. Which shape, and why: lib/island/mode.
 
-import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -25,6 +25,7 @@ import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/componen
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { assignKeys, type PillSlot } from '@/lib/island/slots';
 import { countKeyUse } from '@/lib/island/keyUse';
+import { peekUndo, subscribeUndo } from '@/lib/os/undo';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
@@ -297,6 +298,8 @@ export default function EcosystemTaskbar() {
   // Switching project is worth a word.
   const lastProject = useRef<string | null>(null);
   const projectId = activeProject?.id ?? null;
+  // What O would take back here, if anything: the label of the newest undoable action in this tool.
+  const undoLabel = useSyncExternalStore(subscribeUndo, () => peekUndo()?.label ?? null, () => null);
   const projectTitle = activeProject?.title;
   useEffect(() => {
     // From one project to another — not the first one arriving as the page loads.
@@ -534,6 +537,14 @@ export default function EcosystemTaskbar() {
             </div>
 
             <span className={s.rule} aria-hidden />
+
+            {undoLabel && (
+              <span className={s.slot} data-tip={`Undo: ${undoLabel}`}>
+                <button type="button" className={s.btn} aria-label={`Undo: ${undoLabel}`} onClick={() => window.dispatchEvent(new Event('mc-undo'))}>
+                  <Undo2 size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>O</Key>}
+                </button>
+              </span>
+            )}
 
             <span className={s.slot} data-tip={activeProject ? activeProject.title : 'Projects'} data-open={projectsOpen}>
               <button

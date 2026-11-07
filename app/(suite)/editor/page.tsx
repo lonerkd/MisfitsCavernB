@@ -782,6 +782,10 @@ export default function EditorPage() {
       ],
       actions: [
         { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        // Live: the writing sprint (held on the island while it runs).
+        sprint.active
+          ? { id: 'sprint', slot: 'live', label: 'Pause sprint', onClick: sprint.pause }
+          : { id: 'sprint', slot: 'live', label: sprint.running ? 'Resume sprint' : 'Start sprint', onClick: sprint.start },
       ],
     }
   );

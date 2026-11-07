@@ -16,7 +16,7 @@
 | `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position (conditional) |
 | `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
 | `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project (conditional) |
-| `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | **R** `next-tab` Next tab → |
+| `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | **R** `next-tab` Next tab → · **T** `open-share` Share (conditional) |
 | `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | **W** `jump-scene` → Jump to Scene |
 | `components/lounge/useLounge.ts` | stage | (computed) | `Online` · `Msgs` · `Unread (conditional)` | — | **E** `lounge-search` Search messages · **R** `lounge-pinned` Pinned (conditional) |
 | `components/projects/hub/ProductionManager.tsx` | zone | (computed) | `Planned` · `Actual (conditional)` | — | **Q** `post-job` → Post as Job (conditional) |

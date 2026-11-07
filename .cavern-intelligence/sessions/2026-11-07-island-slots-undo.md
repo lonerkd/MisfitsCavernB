@@ -1,0 +1,7 @@
+# Session — 2026-11-07: island slots for Live and Share, and the undo on the island
+
+**Built:** (1) the editor's **Live** slot (`i`): *Start / Pause / Resume sprint*, the writing sprint that the island already holds as an activity; (2) the Studio's **Share** slot (`t`): opens the Share tab (hidden while you are on it); (3) an **Undo tile** in the island's strip, shown only when there is something to take back in this tool: its tooltip and accessible name say what ("Undo: Move scene"), it runs the same undo as Ctrl/⌘ Z, and in the Caps Lock deck it carries the `O` key (the key already worked but had no face). The island-coverage reference is regenerated.
+
+**Not built, and why:** the **Note** slot (`u`). No page has a real "add a note" action to tag: the editor's right panel has no notes tab, and the hub's "Tell the team" is an announcement, not a note. Tagging something else would be a label with no action behind it. It needs a quick-note feature first (a decision). **Continue under the compact dock** was already done in #428 (the note sits at 76 px, clear of the dock). The Lounge's Live slot (join the voice room) is left: joining needs a chosen room.
+
+**Verified:** typecheck, lint (0 errors), island and OS unit tests. **Not verified in a browser** (no Docker in this session): the Undo tile, the Share and sprint slots; the PR's browser job and the nightly run the island specs, but none of them presses these new keys.
