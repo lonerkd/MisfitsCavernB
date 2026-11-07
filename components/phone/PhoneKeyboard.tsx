@@ -56,7 +56,10 @@ export function PhoneKeyboard() {
       const vv = window.visualViewport;
       const r = (el as HTMLElement).getBoundingClientRect();
       // Rects are in layout-viewport coordinates; the visible area starts at the visual viewport's offset.
-      const by = scrollToReveal({ top: r.top, bottom: r.bottom }, { top: vv?.offsetTop ?? 0, height: vv?.height ?? window.innerHeight });
+      // A tool strip riding above the keyboard takes room too: the field must clear it, not just the keyboard.
+      const strip = document.querySelector('[role="toolbar"][aria-label="Writing tools"]');
+      const stripH = strip ? strip.getBoundingClientRect().height : 0;
+      const by = scrollToReveal({ top: r.top, bottom: r.bottom }, { top: vv?.offsetTop ?? 0, height: (vv?.height ?? window.innerHeight) - stripH });
       if (by === 0) return;
       // A field inside a scrolling container (a modal, a thread) scrolls that container; otherwise the page does.
       const box = scrollParent(el as HTMLElement);

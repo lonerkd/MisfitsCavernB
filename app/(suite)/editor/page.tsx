@@ -663,6 +663,36 @@ export default function EditorPage() {
     }, 60);
   };
 
+  // Caret one line up/down by the script's own lines (same column where the line is long enough), for a keyboard with no arrows.
+  const moveCaretLine = (dir: -1 | 1) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const text = ta.value;
+    const start = text.lastIndexOf('\n', pos - 1) + 1;
+    const col = pos - start;
+    let target: number;
+    if (dir < 0) {
+      if (start === 0) { target = 0; } else {
+        const prevStart = text.lastIndexOf('\n', start - 2) + 1;
+        target = Math.min(prevStart + col, start - 1);
+      }
+    } else {
+      const end = text.indexOf('\n', pos);
+      if (end === -1) { target = text.length; } else {
+        const nextEnd = text.indexOf('\n', end + 1);
+        const nextStop = nextEnd === -1 ? text.length : nextEnd;
+        target = Math.min(end + 1 + col, nextStop);
+      }
+    }
+    ta.focus();
+    ta.setSelectionRange(target, target);
+    setCursorLine(text.substring(0, target).split('\n').length);
+    const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
+    const lineTop = (text.substring(0, target).split('\n').length - 1) * lh;
+    if (lineTop < ta.scrollTop || lineTop > ta.scrollTop + ta.clientHeight - lh * 2) ta.scrollTop = Math.max(0, lineTop - ta.clientHeight / 2);
+  };
+
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -1261,6 +1291,7 @@ export default function EditorPage() {
         <PhoneToolStrip
           bottom={phone.keyboard} compact={phone.landscape}
           insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
+          lineUp={() => moveCaretLine(-1)} lineDown={() => moveCaretLine(1)}
           prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
           find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('write'); setSheet('tools'); }} more={() => setSheet('more')}
           hideKeyboard={() => (document.activeElement as HTMLElement | null)?.blur?.()}

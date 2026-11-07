@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { ArrowRightToLine, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, PanelRight, Redo2, Search, StickyNote, Undo2 } from 'lucide-react';
+import { ArrowRightToLine, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, MoreHorizontal, PanelRight, Redo2, Search, StickyNote, Undo2 } from 'lucide-react';
 
 const ELEMENTS: Array<[string, string]> = [['scene', 'Scene'], ['action', 'Action'], ['character', 'Character'], ['dialogue', 'Dialogue'], ['transition', 'Transition']];
 
@@ -13,6 +13,9 @@ export interface PhoneToolStripProps {
   cycle: (reverse: boolean) => void;
   undo: () => void;
   redo: () => void;
+  /** Move the caret one line up / down (a phone keyboard has no arrow keys). */
+  lineUp: () => void;
+  lineDown: () => void;
   prevScene: () => void;
   nextScene: () => void;
   find: () => void;
@@ -49,8 +52,10 @@ export function PhoneToolStrip(p: PhoneToolStripProps) {
       {btn('redo', 'Redo', p.redo, <Redo2 size={18} />, false)}
       {sep('s1')}
       {btn('type', 'Change element type', () => p.cycle(false), <ArrowRightToLine size={18} />, false)}
-      {btn('prev', 'Previous scene', p.prevScene, <ChevronLeft size={18} />, false)}
-      {btn('next', 'Next scene', p.nextScene, <ChevronRight size={18} />, false)}
+      {btn('prev', 'Previous scene', p.prevScene, <ChevronsUp size={18} />, false)}
+      {btn('next', 'Next scene', p.nextScene, <ChevronsDown size={18} />, false)}
+      {btn('up', 'Line up', p.lineUp, <ChevronUp size={18} />, false)}
+      {btn('down', 'Line down', p.lineDown, <ChevronDown size={18} />, false)}
       {sep('s2')}
       {ELEMENTS.map(([type, label]) => btn(type, label, () => p.insert(type)))}
       {sep('s3')}
