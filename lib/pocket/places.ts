@@ -8,6 +8,13 @@
 // Pure: what counts as a place, what it's called, and when to offer it.
 
 export type Device = 'phone' | 'desktop';
+
+/**
+ * Which device this is, for "continue from your phone / desktop": a phone is a narrow window with a touch screen. A narrow
+ * window with a mouse (a split screen, a small desktop window) is still the desktop, so its places are filed under the
+ * desktop and it is never offered a phone's.
+ */
+export const deviceFor = (narrow: boolean, coarsePointer: boolean): Device => (narrow && coarsePointer ? 'phone' : 'desktop');
 export interface Place { path: string; label: string; at: string; project?: string | null }
 export type Places = Partial<Record<Device, Place | null>>;
 
