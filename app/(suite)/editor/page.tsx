@@ -895,6 +895,7 @@ export default function EditorPage() {
             sceneBody={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? lines.slice(parsedScenes[currentSceneIdx].startIndex + 1, parsedScenes[currentSceneIdx].endIndex + 1).map((l) => l.text).join('\n') : ''}
             timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
             projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
             refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
           />
         }

@@ -5,20 +5,21 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 const toast = vi.fn();
 const spotify = vi.hoisted(() => ({ isAuthenticated: true, currentTrack: null as null | { name: string; artists: Array<{ name: string }> }, isPlaying: false, progressMs: 30_000, durationMs: 180_000, elsewhere: null as null | { name: string }, togglePlay: vi.fn(), playUri: vi.fn(), seek: vi.fn(), playHere: vi.fn().mockResolvedValue(true) }));
 const search = vi.hoisted(() => vi.fn());
-const audio = vi.hoisted(() => ({ addAudioRef: vi.fn(), listAudioRefs: vi.fn() }));
+const audio = vi.hoisted(() => ({ addAudioRef: vi.fn(), listAudioRefs: vi.fn(), tagAudioRef: vi.fn() }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
 vi.mock('@/lib/spotify/search', () => ({ searchSpotify: search }));
-vi.mock('@/lib/supabase/audio', () => audio);
+vi.mock('@/lib/supabase/client', () => ({ supabase: {} }));
+vi.mock('@/lib/supabase/audio', async (orig) => ({ ...(await orig<typeof import('@/lib/supabase/audio')>()), ...audio }));
 import { SoundPanel, type SoundPanelProps } from './SoundPanel';
 
 const base = (over: Partial<SoundPanelProps> = {}): SoundPanelProps => ({
   tableRead: { supported: true, playing: false, lineIdx: null, totalLines: 40, sceneStartLine: 12, start: vi.fn(), pause: vi.fn(), resume: vi.fn(), stop: vi.fn() },
-  sceneLabel: 'Scene 2', sceneBody: 'He runs. Guns fire. A chase through the market.', timeOfDay: 'DAY',
+  sceneId: 'sc2', sceneLabel: 'Scene 2', sceneBody: 'He runs. Guns fire. A chase through the market.', timeOfDay: 'DAY',
   projectId: 'p1', userId: 'u1', refs: [], onRefsChanged: vi.fn(), playRef: vi.fn(), ...over,
 });
 
-beforeEach(() => { spotify.isAuthenticated = true; spotify.currentTrack = null; spotify.elsewhere = null; search.mockResolvedValue([{ id: 't1', uri: 'spotify:track:t1', name: 'Chase Theme', artists: [{ name: 'Ada' }] }]); audio.addAudioRef.mockResolvedValue(undefined); audio.listAudioRefs.mockResolvedValue([{ id: 'r1' }]); });
+beforeEach(() => { spotify.isAuthenticated = true; spotify.currentTrack = null; spotify.elsewhere = null; search.mockResolvedValue([{ id: 't1', uri: 'spotify:track:t1', name: 'Chase Theme', artists: [{ name: 'Ada' }] }]); audio.addAudioRef.mockResolvedValue(undefined); audio.tagAudioRef.mockResolvedValue(undefined); audio.listAudioRefs.mockResolvedValue([{ id: 'r1' }]); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('SoundPanel: the table read', () => {
@@ -113,6 +114,51 @@ describe('SoundPanel: music that is already playing', () => {
     spotify.currentTrack = { name: 'X', artists: [] };
     render(<SoundPanel {...base()} />);
     expect(screen.queryByRole('button', { name: 'Play here' })).toBeNull();
+  });
+});
+
+describe('SoundPanel: tags', () => {
+  const saved = { id: 'a', title: 'Saved One', reference_type: 'spotify', uri: 'spotify:track:x', for_scene: null, role: null, tags: [] as string[] };
+  it('tags a saved track: a role, tags, and this scene', async () => {
+    const p = base({ refs: [saved] });
+    render(<SoundPanel {...p} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tag Saved One' }));
+    fireEvent.change(screen.getByLabelText('Role in the scene'), { target: { value: 'theme' } });
+    fireEvent.change(screen.getByLabelText(/Tags/), { target: { value: 'tense, Strings ,tense' } });
+    fireEvent.click(screen.getByLabelText('For this scene'));
+    fireEvent.click(screen.getByRole('button', { name: 'Save tags' }));
+    await waitFor(() => expect(audio.tagAudioRef).toHaveBeenCalledWith('a', { sceneId: 'sc2', role: 'theme', tags: ['tense', 'Strings'] }));
+    await waitFor(() => expect(p.onRefsChanged).toHaveBeenCalled());
+  });
+  it('shows a track\'s role, tags and "this scene", and lists this scene\'s tracks first', () => {
+    const tagged = { ...saved, id: 'b', title: 'Tagged', for_scene: 'sc2', role: 'source', tags: ['radio'] };
+    render(<SoundPanel {...base({ refs: [saved, tagged] })} />);
+    const items = screen.getAllByRole('listitem').filter((li) => li.textContent?.includes('Saved One') || li.textContent?.includes('Tagged'));
+    expect(items[0].textContent).toContain('Tagged');
+    expect(items[0].textContent).toContain('this scene');
+    expect(items[0].textContent).toContain('Source music');
+    expect(items[0].textContent).toContain('radio');
+  });
+  it('a refused tag says so', async () => {
+    audio.tagAudioRef.mockRejectedValueOnce(new Error('You cannot tag this track.'));
+    render(<SoundPanel {...base({ refs: [saved] })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tag Saved One' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save tags' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('You cannot tag this track.', 'error'));
+  });
+  it('the song playing now is saved and tagged to the scene in one tap, as a temp score', async () => {
+    spotify.currentTrack = { name: 'Playing', artists: [{ name: 'Bo' }], uri: 'spotify:track:now' } as never;
+    const p = base();
+    render(<SoundPanel {...p} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tag this song to Scene 2' }));
+    await waitFor(() => expect(audio.addAudioRef).toHaveBeenCalledWith(expect.objectContaining({ uri: 'spotify:track:now', sceneId: 'sc2', role: 'temp' })));
+  });
+  it('a song already saved is only tagged, not saved twice', async () => {
+    spotify.currentTrack = { name: 'Saved One', artists: [{ name: 'Bo' }], uri: 'spotify:track:x' } as never;
+    render(<SoundPanel {...base({ refs: [saved] })} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tag this song to Scene 2' }));
+    await waitFor(() => expect(audio.tagAudioRef).toHaveBeenCalledWith('a', { sceneId: 'sc2', role: 'temp', tags: [] }));
+    expect(audio.addAudioRef).not.toHaveBeenCalled();
   });
 });
 

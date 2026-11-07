@@ -28,7 +28,7 @@ Phone: the four sections are the Tools sheet's four tabs.
 ## Order of work
 1. **Sound section** in the editor (the table read moves in; saved tracks; mood suggestions from `lib/spotify/moods.ts`; no schema change). Widget label removed.
 2. **Sync (built 2026-11-07)** with the playing Spotify session (`lib/spotify/playback.ts`: read + control the active device; `SpotifyContext` learns "the player is somewhere else").
-3. **Tags** (migration + persona test, the tag UI, the scene card).
+3. **Tags (built 2026-11-07: migration, persona test, the tag UI; the scene card showing its music is left)**.
 4. **The rail's four sections** (merge Write/Refs/Breakdown into Scene; Insights/History into Script; retire the centre Stats view), phone Tools sheet follows.
 5. **Studio:** Production's 36 views grouped (by phase and role) with search; Scenes opens the same scene card as the editor.
 6. **A tool strip over the keyboard for every writing surface** (Lounge composer, Studio forms, On set notes), as the editor has.
