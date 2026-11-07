@@ -1040,3 +1040,17 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 /* A phone that is typing gives the whole screen to the page: the floating island steps aside (lib/os/usePhone.ts). */
 html[data-typing='true'] [data-taskbar] { display: none !important; }
 html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
+
+/* Touch (the phone): a thumb is about 44 pt. Controls are at least that tall (!important: a screen's own compact height must not
+   win on a phone), fields are 16 px so iOS does not zoom the page into them, and a link's tappable area grows past its text
+   without moving anything. scripts/mobile-audit.mjs measures this. */
+@media (pointer: coarse) {
+  button, select, summary, [role='button'], [role='tab'], [role='menuitem'], input[type='button'], input[type='submit'], input[type='reset'] { min-height: 44px !important; }
+  button, [role='button'], [role='tab'] { min-width: 44px !important; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em) !important; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select { min-height: 44px; }
+  input[type='checkbox'], input[type='radio'] { min-width: 24px; min-height: 24px; }
+  .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
+  :where(a[href]) { position: relative; }
+  :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: -14px; bottom: -14px; }
+}

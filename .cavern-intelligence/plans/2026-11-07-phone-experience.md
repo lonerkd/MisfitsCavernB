@@ -18,7 +18,7 @@
 
 ## Order of work
 1. **Editor (built 2026-11-07, PR "feat(phone)")**: the bar, the four sheets, the element strip over the keyboard, landscape typing, the island stepping aside. Left in the editor: the Board and Outline views on a phone, Find/Replace as a sheet, the table read controls, a hardware-keyboard check.
-2. The shell: the tab bar and the island on every page (one phone shell), the 44 pt pass over the 13–100 small controls per page (`/projects/[id]` first).
+2. **The 44 pt pass (built 2026-11-07):** one coarse-pointer block in `globals.css` (buttons/tabs/selects 44 pt with `!important`, fields 16 px, links' tappable area), the Studio tab row fixed; small targets 97 → 0 on a project page. **Left in this step:** the shell as one phone layout (the pill over content, a tab bar that rides the keyboard) and the keyboard-hides-field cases the audit still flags in landscape (Studio, Profile, Settings, Jobs).
 3. Studio: tabs as a sheet or segmented bar, production tools, the stripboard as a horizontal-only view, forms above the keyboard.
 4. Lounge: list → conversation → composer that rides the keyboard; call controls.
 5. Forms everywhere (Profile, Settings, Jobs, Crew, Auth): 16 px fields, the focused field stays visible, the submit rides the keyboard.
