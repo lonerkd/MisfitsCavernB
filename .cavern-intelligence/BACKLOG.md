@@ -45,6 +45,9 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
 
 ## 3. Upgrades (scoped — in suggested order)
 
+### 3.41 The phone experience (iPhone 15 Pro, both orientations) — L (owner, 2026-11-07)
+Plan, audit and rules: [plans/2026-11-07-phone-experience.md](plans/2026-11-07-phone-experience.md). **Built 2026-11-07:** the phone hook (`usePhoneLayout`: phone, landscape, keyboard, offset), the bottom sheet, and the editor on a phone (a slim bar with four doors, sheets for scripts/scenes, view, tools and more, an element strip over the keyboard, landscape typing, the island stepping aside). **Left, in order:** the shell and the 44 pt pass over every page; Studio; Lounge; forms (16 px fields, the focused field and its submit above the keyboard); On set, Today, Community; horizontal-only views where a row needs width; a browser spec per surface at 393×852 and 852×393; a CI audit (`scripts/mobile-audit.mjs`) that fails on sideways scroll and small targets; and a pass on the real iPhone. Done when each surface passes the audit in both orientations and the owner has used it on the phone.
+
 ### 3.36 Community — one page for Today, the Hub, the Lounge, crew discovery and the front door — S (owner, 2026-11-03)
 Plan: [plans/2026-11-03-community-page.md](plans/2026-11-03-community-page.md). **Built:** the hub feed's tab and audience are in the URL (`?kind=`, `?audience=`) and the lower sections load when they near the screen (`WhenNear`, 2026-11-03); `/community` with Your day (incl. the Lounge's unread), What's new, Crew open to work, The Cavern (numbers + preview picker) and Music; `/today` and `/hub` redirect; one nav entry everywhere. Left: the phone pass by eye, Home sharing `TheCavern`'s data, a calmer loading state on the phone, decisions for the owner (signed-in `/` to Community; whether the Lounge keeps its own island entry), a persona spec for Jordan/Riley. Done when those hold.
 

@@ -1036,3 +1036,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mc-legal li { margin-bottom: 8px; }
 .mc-legal strong { color: var(--fg); font-weight: 600; }
 .mc-legal article a { color: var(--accent); overflow-wrap: anywhere; }
+
+/* A phone that is typing gives the whole screen to the page: the floating island steps aside (lib/os/usePhone.ts). */
+html[data-typing='true'] [data-taskbar] { display: none !important; }
+html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
