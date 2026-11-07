@@ -130,7 +130,7 @@
       "count": 46
     },
     "no-restricted-syntax": {
-      "count": 7
+      "count": 6
     }
   },
   "app/(suite)/hub/help/page.tsx": {
