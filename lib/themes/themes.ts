@@ -18,7 +18,7 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'misfit', label: 'Misfit', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#d7340b'] },
+  { id: 'misfit', label: 'Misfit', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#f34013'] },
   { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'paper', label: 'Paper', hint: 'Warm off-white, ink and terracotta', mode: 'light', swatch: ['#f6f1e7', '#1f1a14', '#b3361a'] },
   { id: 'vampire', label: 'Vampire', hint: 'Crimson and violet on black', mode: 'dark', swatch: ['#090101', '#f5eedc', '#f04444'] },

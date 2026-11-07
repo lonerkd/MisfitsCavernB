@@ -263,7 +263,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
-                    {d.doubtful > 0 && <span style={{ color: 'var(--warning, #b45309)' }}>⚠ {d.doubtful} review</span>}
+                    {d.doubtful > 0 && <span style={{ color: 'var(--warn)' }}>⚠ {d.doubtful} review</span>}
                     {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => {
                       // Sum from byScene so unscheduled scenes (board day 1, costs day null) are included.
                       const total = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.total ?? 0), 0);

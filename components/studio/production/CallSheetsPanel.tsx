@@ -386,7 +386,7 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
               ? <span><button type="button" onClick={() => openCard(sc.id)} title="Open the card" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', textDecoration: 'underline dotted' }}>{sc.heading ?? sc.title}</button></span>
               : <span>{sc.heading ?? sc.title}</span>}
             <em>{String(sc.est_duration || '').match(/\d+\s*\/\s*8/)?.[0]?.replace(/\s/g, '') ?? ''}</em>
-            {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span style={{ color: 'var(--warning, #b45309)', fontSize: '0.75rem', marginLeft: 4 }}>⚠ review</span>}
+            {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span style={{ color: 'var(--warn)', fontSize: '0.75rem', marginLeft: 4 }}>⚠ review</span>}
           </div>
         ))}
 

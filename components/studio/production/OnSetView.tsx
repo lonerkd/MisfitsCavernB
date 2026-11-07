@@ -310,7 +310,7 @@ function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScri
             <span>{pages(eighthsOf(scene.est_duration) || 1)} pg</span>
             {castOf(scene).length > 0 && <span>{castOf(scene).join(', ')}</span>}
             <span>{got}/{shots.filter((sh) => sh.status !== 'omitted').length} shots</span>
-            {doubtfulSceneOrdinals.has(scene.ordinal ?? -1) && <span style={{ color: 'var(--warning, #b45309)' }}>⚠ review</span>}
+            {doubtfulSceneOrdinals.has(scene.ordinal ?? -1) && <span style={{ color: 'var(--warn)' }}>⚠ review</span>}
           </p>
         </div>
         <div className={o.sceneActions}>
