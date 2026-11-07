@@ -36,8 +36,6 @@ export interface EditorRightPanelsProps {
   dialogueRatio: number;
   typewriterMode: boolean;
   setTypewriterMode: (v: boolean) => void;
-  nightModePreview: boolean;
-  setNightModePreview: (v: boolean) => void;
   chars: string[];
   charStats: CharacterStats[];
   handleLockRevision: () => void;
@@ -101,8 +99,8 @@ export function EditorRightPanels({
   rightPanel, setRightPanel, activeView, currentSceneIdx, scenesList,
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
   writingPanel, wordCount,
-  pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
+  pageEst, dialogueRatio, typewriterMode, setTypewriterMode,
+  chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
   referencesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
@@ -216,10 +214,6 @@ export function EditorRightPanels({
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                           <span>Typewriter Mode</span>
                           <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: '#0099ff' }} />
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                          <span>Dark Mode (Preview)</span>
-                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: '#0099ff' }} />
                         </label>
                       </div>
                     </div>

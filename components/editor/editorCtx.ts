@@ -40,9 +40,8 @@ export interface EditorCtx {
   handleNormalize: any;
   handleSave: any;
   highlightRef: any;
-  lines: any;
-  nightModePreview: any;
-  pauseTableRead: any;
+    lines: any;
+    pauseTableRead: any;
   removeAnnotation: any;
   resumeTableRead: any;
   revisionMode: any;

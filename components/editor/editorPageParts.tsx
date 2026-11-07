@@ -119,14 +119,12 @@ export function transformLineForType(text: string, type: LineType): string {
   }
 }
 
-export function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
+export function LinePreview({ line, index, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; sceneNumber?: number; showSceneNumbers?: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'var(--script)',
     fontSize: 14,
     lineHeight: '1.7',
-    color: nightModePreview
-      ? (line.type === 'slug' || line.type === 'character' ? '#fff' : '#ccc')
-      : (PRINT_COLORS[line.type] || '#000'),
+    color: PRINT_COLORS[line.type] || '#000',
     fontWeight: (line.type === 'slug' || line.type === 'character') ? 700 : 400,
     textTransform: (line.type === 'slug' || line.type === 'character' || line.type === 'transition') ? 'uppercase' : 'none',
     marginBottom: 2,
@@ -151,8 +149,8 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
       <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(var(--ink-rgb), 0.02)', padding: '4px 8px', borderRadius: 4 }}>
         {showSceneNumbers && sceneNumber != null && (
           <>
-            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
-            <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
+            <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: 'var(--fg-dim)' }}>{sceneNumber}</span>
+                        <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: 'var(--fg-dim)' }}>{sceneNumber}</span>
           </>
         )}
         {displayContent}

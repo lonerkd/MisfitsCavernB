@@ -47,10 +47,10 @@ import {
 import type { EditorCtx } from './editorCtx';
 
 export function PreviewView({ ctx }: { ctx: EditorCtx }) {
-  const { lines, nightModePreview, scenesList, showSceneNumbers, showWatermark, titlePage } = ctx;
+  const { lines, scenesList, showSceneNumbers, showWatermark, titlePage } = ctx;
   return (
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: nightModePreview ? '#111' : '#fff', color: nightModePreview ? '#ddd' : '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '60px 80px', width: '100%', maxWidth: 850, margin: '20px auto', background: '#fff', color: '#000', boxShadow: '0 0 40px rgba(0,0,0,0.5)', borderRadius: 4, position: 'relative' }}>
               <div style={{ position: 'absolute', top: 24, right: 40, fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--script)' }}>Page 1</div>
               {showWatermark && (
                 <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%) rotate(-30deg)', fontSize: 80, fontWeight: 900, color: 'rgba(0,0,0,0.04)', textTransform: 'uppercase', fontFamily: 'var(--script)', pointerEvents: 'none', whiteSpace: 'nowrap', zIndex: 0 }}>DRAFT</div>
@@ -77,7 +77,7 @@ export function PreviewView({ ctx }: { ctx: EditorCtx }) {
                           <span style={{ position: 'absolute', right: 0, top: -10, fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--script)', background: '#fff', padding: '0 8px' }}>Page {Math.floor(i / 55) + 1}</span>
                         </div>
                       )}
-                      <LinePreview line={line} index={i} nightModePreview={nightModePreview} sceneNumber={line.type === 'slug' ? scenesList.indexOf(line) + 1 : undefined} showSceneNumbers={showSceneNumbers} />
+                      <LinePreview line={line} index={i} sceneNumber={line.type === 'slug' ? scenesList.indexOf(line) + 1 : undefined} showSceneNumbers={showSceneNumbers} />
                     </React.Fragment>
                   );
                 })
