@@ -180,3 +180,42 @@ describe('who is told', () => {
     expect(await inbox('jordan')).toHaveLength(before.jordan);
   });
 });
+
+describe('someone who has left the project', () => {
+  it('is not told, cannot read, and cannot edit their own earlier shared note', async () => {
+    const { projectId: pid } = await createCrewedProject(cast, 'Left behind');
+    const sid = await createScript(cast, pid, 'INT. HALL - DAY\n');
+    // Jordan edited the script and wrote a project note while on the crew.
+    expect((await cast.sam.client.from('scripts').update({ last_edited_by: cast.jordan.id }).eq('id', sid)).error).toBeNull();
+    const mine = await write('jordan', 'project', 'my earlier note', { project_id: pid });
+    expect(mine.error).toBeNull();
+    expect((await cast.sam.client.from('project_crew').delete().eq('project_id', pid).eq('user_id', cast.jordan.id)).error).toBeNull();
+
+    const before = (await inbox('jordan')).length;
+    expect((await write('sam', 'writer', 'cut the betrayal scene', { script_id: sid })).error).toBeNull();
+    expect((await write('sam', 'project', 'new call time', { project_id: pid })).error).toBeNull();
+    expect(await inbox('jordan')).toHaveLength(before);
+
+    const edit = await cast.jordan.client.from('notes').update({ body: 'still here?' }).eq('id', mine.data!.id).select('id');
+    expect(edit.data ?? []).toEqual([]);
+    expect((await write('jordan', 'project', 'let me back in', { project_id: pid })).error).not.toBeNull();
+  });
+});
+
+describe('what the guard fixes', () => {
+  it('a note\'s time is the server\'s, not the client\'s', async () => {
+    const n = await write('sam', 'private', 'backdated?', { created_at: '2000-01-01T00:00:00Z', updated_at: '2000-01-01T00:00:00Z' });
+    const row = await cast.sam.client.from('notes').select('created_at').eq('id', n.data!.id).single();
+    expect(Date.parse(row.data!.created_at)).toBeGreaterThan(Date.parse('2026-01-01'));
+  });
+
+  it('a script from another project than the one named is refused', async () => {
+    const r = await write('sam', 'project', 'mixed up', { project_id: otherProjectId, script_id: scriptId });
+    expect(r.error?.message).toMatch(/not in this project/);
+  });
+
+  it('a project note can hang on a scene of that project without naming a script, but not on another project\'s', async () => {
+    expect((await write('sam', 'project', 'on a scene', { project_id: projectId, scene_id: sceneId })).error).toBeNull();
+    expect((await write('sam', 'project', 'wrong project', { project_id: otherProjectId, scene_id: sceneId })).error?.message).toMatch(/not in this script/);
+  });
+});

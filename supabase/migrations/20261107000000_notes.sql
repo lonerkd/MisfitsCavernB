@@ -53,7 +53,14 @@ CREATE POLICY "notes insert" ON public.notes FOR INSERT TO authenticated
     )
   );
 CREATE POLICY "notes update" ON public.notes FOR UPDATE TO authenticated
-  USING (created_by = (SELECT auth.uid()))
+  USING (
+    created_by = (SELECT auth.uid())
+    AND (
+      scope = 'private'
+      OR (scope = 'project' AND internal.can_access_project(project_id))
+      OR (scope = 'writer' AND internal.can_access_script(script_id))
+    )
+  )
   WITH CHECK (created_by = (SELECT auth.uid()));
 CREATE POLICY "notes delete" ON public.notes FOR DELETE TO authenticated
   USING (
@@ -74,10 +81,23 @@ AS $function$
 begin
   if TG_OP = 'INSERT' then
     if (select auth.uid()) is not null then new.created_by := (select auth.uid()); end if;
+    new.created_at := now();
+    new.updated_at := now();
     if new.script_id is not null then
-      select s.project_id into new.project_id from public.scripts s where s.id = new.script_id;
+      declare sp uuid;
+      begin
+        select s.project_id into sp from public.scripts s where s.id = new.script_id;
+        if new.project_id is not null and new.project_id is distinct from sp then
+          raise exception 'That script is not in this project' using errcode = '23514';
+        end if;
+        new.project_id := sp;
+      end;
     end if;
-    if new.scene_id is not null and not exists (select 1 from public.scenes sc where sc.id = new.scene_id and sc.script_id is not distinct from new.script_id) then
+    if new.scene_id is not null and not exists (
+      select 1 from public.scenes sc
+      where sc.id = new.scene_id
+        and case when new.script_id is not null then sc.script_id = new.script_id else sc.project_id is not distinct from new.project_id end
+    ) then
       raise exception 'That scene is not in this script' using errcode = '23514';
     end if;
   else
@@ -120,9 +140,9 @@ begin
     select u from (
       select internal.call_sheet_recipients(new.project_id) as u where new.scope = 'project'
       union
-      select s.created_by from public.scripts s where s.id = new.script_id and new.scope = 'writer'
-      union
-      select s.last_edited_by from public.scripts s where s.id = new.script_id and new.scope = 'writer'
+      -- A loose script (no project) is read by its owner only; a project's script, by the project's people. Everyone is
+      -- chosen by their access today, never by who last touched the script.
+      select s.created_by from public.scripts s where s.id = new.script_id and new.scope = 'writer' and s.project_id is null
       union
       select internal.call_sheet_recipients(new.project_id) where new.scope = 'writer' and new.project_id is not null
     ) r where u is not null and u <> new.created_by

@@ -1470,8 +1470,8 @@ function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
-function internal.notes_guard() body=9f9064134c301c4832032b8f5dc359aa
-function internal.notes_notify() body=f2cdf5cf9d61aba7530ec1ddbd6aa02f
+function internal.notes_guard() body=f037e936e037827c228459c730a1349b
+function internal.notes_notify() body=bf299502a7ddf025a2219d93b6215467
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
@@ -2176,7 +2176,7 @@ policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticate
 policy public.mood_boards "mood_boards view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.notes "notes delete" PERMISSIVE DELETE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR ((scope = 'project'::text) AND internal.is_project_creator(project_id))) check -
 policy public.notes "notes insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (((scope = 'private'::text) AND ((project_id IS NULL) OR internal.can_access_project(project_id)) AND ((script_id IS NULL) OR internal.can_access_script(script_id))) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id))))
-policy public.notes "notes update" PERMISSIVE UPDATE to authenticated using (created_by = ( SELECT auth.uid() AS uid)) check (created_by = ( SELECT auth.uid() AS uid))
+policy public.notes "notes update" PERMISSIVE UPDATE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) AND ((scope = 'private'::text) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id)))) check (created_by = ( SELECT auth.uid() AS uid))
 policy public.notes "notes view" PERMISSIVE SELECT to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id))) check -
 policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
