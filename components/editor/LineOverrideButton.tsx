@@ -61,7 +61,7 @@ export function LineOverrideButton({ projectId, scriptId, lineIndex, currentType
         <Lock size={10} /> Force type
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: 'var(--card)', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: 4, maxHeight: 240, overflow: 'auto', minWidth: 140 }}>
+        <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: 4, maxHeight: 240, overflow: 'auto', minWidth: 140 }}>
           {LINE_TYPES.map((t) => (
             <button
               key={t}

@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { ClipboardCheck, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type WrapEntry = { id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string };
 
 export function WrapView() {
-  const { project } = useStudio();
-  const items: WrapEntry[] = useMemo(() => (project.settings as any)?.wraps ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('wraps');
   const [draft, setDraft] = useState<Omit<WrapEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     dayNumber: 1,
@@ -21,28 +18,10 @@ export function WrapView() {
     notes: '',
   });
 
-  const save = async (next: WrapEntry[]) => {
-    await patchProjectSettings(project.id, { wraps: next } as any);
-  };
-
   const add = async () => {
-    await save([...items, { ...draft, id: `w-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `w-${Date.now()}` }]))) return;
     setDraft({ date: new Date().toISOString().slice(0, 10), dayNumber: items.length + 2, shotsGot: 0, pages: '', incidents: '', notes: '' });
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<ClipboardCheck size={26} />}
-        title="No wrap reports"
-        subtitle="Log daily wrap reports: shots got, pages completed, incidents, notes."
-      />
-    );
-  }
 
   const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
 

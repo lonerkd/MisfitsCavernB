@@ -66,7 +66,9 @@ export type Place =
   | { kind: 'path'; path: string };
 
 export type StudioTab = 'overview' | 'library' | 'scenes' | 'production' | 'post' | 'promos' | 'pitch' | 'share';
-export type ProductionView = 'story' | 'breakdown' | 'readiness' | 'locations' | 'money' | 'paperwork' | 'schedule' | 'onset' | 'crew' | 'continuity' | 'shots' | 'reports' | 'weather' | 'transport' | 'catering' | 'safety' | 'props' | 'cast' | 'comms' | 'dood' | 'gear' | 'wrap' | 'rehearsal' | 'scout' | 'revisions' | 'director' | 'risk' | 'camera' | 'sound' | 'vfx' | 'costume' | 'permit' | 'scriptsup' | 'po' | 'mediaoffload' | 'makeup';
+/** Every Production view, in the order of the tab. The type is derived from this list, so a page that validates `?view=` can never disagree with it. */
+export const PRODUCTION_VIEWS = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew', 'continuity', 'shots', 'reports', 'weather', 'transport', 'catering', 'safety', 'props', 'cast', 'comms', 'dood', 'gear', 'wrap', 'rehearsal', 'scout', 'revisions', 'director', 'risk', 'camera', 'sound', 'vfx', 'costume', 'permit', 'scriptsup', 'po', 'mediaoffload', 'makeup'] as const;
+export type ProductionView = (typeof PRODUCTION_VIEWS)[number];
 
 export function placeHref(place: Place, projectId: string): string {
   if (place.kind === 'hub') return `/projects/${projectId}${place.anchor ? `#${place.anchor}` : ''}`;

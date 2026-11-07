@@ -22,7 +22,7 @@ import s from '../studio.module.css';
  * scene through rewrites.
  */
 export function ScenesTab() {
-  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene, doubtfulSceneOrdinals } = useStudio();
+  const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene } = useStudio();
 
   // Linked split screen: bring the script's current scene into view.
   useEffect(() => {

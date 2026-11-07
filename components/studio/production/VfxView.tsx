@@ -2,9 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type VfxEntry = { id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
@@ -12,8 +10,7 @@ type VfxEntry = { id: string; shot: string; scene: string; vendor: string; plate
 const STATUSES: VfxEntry['status'][] = ['identified', 'shot', 'delivered', 'approved'];
 
 export function VfxView() {
-  const { project } = useStudio();
-  const items: VfxEntry[] = useMemo(() => (project.settings as any)?.vfxShots ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('vfxShots');
   const [draft, setDraft] = useState<Omit<VfxEntry, 'id'>>({
     shot: '',
     scene: '',
@@ -25,33 +22,15 @@ export function VfxView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: VfxEntry[]) => {
-    await patchProjectSettings(project.id, { vfxShots: next } as any);
-  };
-
   const add = async () => {
     if (!draft.shot.trim()) return;
-    await save([...items, { ...draft, id: `vfx-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `vfx-${Date.now()}` }]))) return;
     setDraft({ shot: '', scene: '', vendor: '', plateReq: '', status: 'identified' });
   };
 
   const updateStatus = async (id: string, status: VfxEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<Sparkles size={26} />}
-        title="No VFX shots"
-        subtitle="Track VFX shots, plate requirements, vendor, and delivery status."
-      />
-    );
-  }
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -62,7 +41,7 @@ export function VfxView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

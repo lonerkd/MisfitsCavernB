@@ -22,6 +22,7 @@ import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { DoodTable } from './DoodTable';
 import s from '../studio.module.css';
 import b from './stripboard.module.css';
 
@@ -263,7 +264,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
-                    {d.doubtful > 0 && <span style={{ color: 'var(--warning, #b45309)' }}>⚠ {d.doubtful} review</span>}
+                    {d.doubtful > 0 && <span style={{ color: 'var(--warn)' }}>⚠ {d.doubtful} review</span>}
                     {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => {
                       // Sum from byScene so unscheduled scenes (board day 1, costs day null) are included.
                       const total = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.total ?? 0), 0);
@@ -350,29 +351,8 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
             ))}
           </div>
         </>
-      ) : dood.length === 0 ? (
-        <p className={b.hint}>No cast yet — speaking parts come from the script’s dialogue; they appear here once scenes are scheduled.</p>
       ) : (
-        <div className={b.dood}>
-          <table className={b.doodTable}>
-            <caption className="sr-only">Day out of days: S start, W work, H hold, F finish, SF start and finish</caption>
-            <thead>
-              <tr><th scope="col">Cast</th>{board.map((d) => <th key={d.day} scope="col">{d.day}</th>)}<th scope="col">Days</th></tr>
-            </thead>
-            <tbody>
-              {dood.map((r) => (
-                <tr key={r.name}>
-                  <th scope="row" style={{ fontWeight: 400 }}>{r.name}</th>
-                  {r.cells.map((c, i) => <td key={i} className={c ? b[`code_${c}`] : undefined}>{c || '·'}</td>)}
-                  <td>{r.worked}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className={b.legend}>
-            <span>S start</span><span>W work</span><span>H hold (paid, not shooting)</span><span>F finish</span><span>SF start & finish</span>
-          </div>
-        </div>
+        <DoodTable board={board} dood={dood} />
       )}
     </div>
   );

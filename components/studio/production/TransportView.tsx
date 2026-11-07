@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Car, MapPin, PenLine, Route } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useProjectLocations, useShootDays } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -79,7 +79,7 @@ export function TransportView() {
                             <span style={{ fontSize: 13, fontWeight: 500 }}>{name}</span>
                             {rec?.address && <span className={s.hint} style={{ display: 'block' }}>{rec.address}</span>}
                             {rec?.contact && <span className={s.hint} style={{ display: 'block' }}>Contact: {rec.contact}</span>}
-                            {!rec && <span className={s.hint} style={{ display: 'block', color: 'var(--warn, #fbbf24)' }}>No location record — add one in Locations</span>}
+                            {!rec && <span className={s.hint} style={{ display: 'block', color: 'var(--warn)' }}>No location record — add one in Locations</span>}
                           </div>
                           {rec?.address && (
                             <a href={'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(rec.address)} target="_blank" rel="noopener noreferrer" className={cx(s.btnGhost, s.small)}>
@@ -98,7 +98,7 @@ export function TransportView() {
                   )}
 
                   {!hasAddresses && dayLocs.length > 0 && (
-                    <p className={s.hint} style={{ margin: '8px 0 0', color: 'var(--warn, #fbbf24)', fontSize: 12 }}>
+                    <p className={s.hint} style={{ margin: '8px 0 0', color: 'var(--warn)', fontSize: 12 }}>
                       No addresses on file — add them in Locations so the crew can navigate.
                     </p>
                   )}
