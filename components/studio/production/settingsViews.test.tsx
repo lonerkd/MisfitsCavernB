@@ -86,3 +86,15 @@ describe('adding a record', () => {
     expect(patch).not.toHaveBeenCalled();
   });
 });
+
+describe('links in a record', () => {
+  it('a reference that is not an http(s) address is shown as text, never as a link', () => {
+    settings = { directorNotes: [
+      { id: 'a', scene: '1', title: 'Safe', notes: '', reference: 'https://example.com/ref', createdAt: '2026-11-07T10:00:00Z' },
+      { id: 'b', scene: '2', title: 'Unsafe', notes: '', reference: 'javascript:alert(1)', createdAt: '2026-11-07T11:00:00Z' },
+    ] };
+    render(<DirectorNotebookView />);
+    expect(screen.getByText('https://example.com/ref').closest('a')?.getAttribute('href')).toBe('https://example.com/ref');
+    expect(screen.getByText('javascript:alert(1)').closest('a')).toBeNull();
+  });
+});

@@ -82,7 +82,11 @@ export function DirectorNotebookView() {
               </button>
             </div>
             {n.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{n.notes}</p>}
-            {n.reference && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={n.reference} target="_blank" rel="noreferrer">{n.reference}</a></p>}
+            {n.reference && (
+              <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}>
+                {/^https?:\/\//i.test(n.reference) ? <a href={n.reference} target="_blank" rel="noreferrer">{n.reference}</a> : n.reference}
+              </p>
+            )}
           </li>
         ))}
       </ul>
