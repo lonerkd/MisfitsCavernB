@@ -1465,7 +1465,7 @@ function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
-function internal.reading_memory_from_correction() body=6a65f2e2cdaacdfb4d58fed6f29abac6
+function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82eebf338f
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
@@ -2487,6 +2487,7 @@ trigger CREATE TRIGGER projects_seed_breakdown AFTER INSERT ON public.projects F
 trigger CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER projects_withdraw_case_study AFTER UPDATE OF case_study_ok ON public.projects FOR EACH ROW WHEN ((old.case_study_ok AND (NOT new.case_study_ok))) EXECUTE FUNCTION internal.projects_withdraw_case_study()
 trigger CREATE TRIGGER reading_corrections_sync_memory AFTER INSERT ON public.reading_corrections FOR EACH ROW EXECUTE FUNCTION internal.reading_memory_from_correction()
+trigger CREATE TRIGGER reading_corrections_sync_memory_update AFTER UPDATE OF kind, name ON public.reading_corrections FOR EACH ROW WHEN (((old.kind IS DISTINCT FROM new.kind) OR (old.name IS DISTINCT FROM new.name))) EXECUTE FUNCTION internal.reading_memory_from_correction()
 trigger CREATE TRIGGER reading_line_overrides_check_script BEFORE INSERT OR UPDATE OF project_id, script_id ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_check_script()
 trigger CREATE TRIGGER reading_line_overrides_set_forced_by BEFORE INSERT OR UPDATE ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_set_forced_by()
 trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
