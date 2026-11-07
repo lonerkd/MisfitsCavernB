@@ -57,6 +57,8 @@ export interface EditorRightPanelsProps {
   /** The current scene's references panel (rendered by the page, which owns the scene index). */
   referencesPanel?: React.ReactNode;
   notesPanel?: React.ReactNode;
+  /** The scene's tagged music (components/editor/SceneMusic), shown on the Scene section. */
+  sceneMusic?: React.ReactNode;
   /** The sound desk (table read, music for the scene, saved tracks), built by the page. */
   soundPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
@@ -109,7 +111,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -230,6 +232,7 @@ export function EditorRightPanels({
                   </>
                 )}
 
+                {rightPanel === 'scene' && sceneMusic}
                 {rightPanel === 'scene' && showBreakdown && breakdownPanel && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <SectionHeader icon={Tags} label="Breakdown" open={sceneBreakdownOpen} onToggle={() => setSceneBreakdownOpen(o => !o)} />
