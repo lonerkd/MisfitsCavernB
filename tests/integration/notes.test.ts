@@ -219,3 +219,24 @@ describe('what the guard fixes', () => {
     expect((await write('sam', 'project', 'wrong project', { project_id: otherProjectId, scene_id: sceneId })).error?.message).toMatch(/not in this script/);
   });
 });
+
+describe('the guard after review', () => {
+  it('the author cannot rewrite a note\'s context or clear its scene', async () => {
+    const n = await write('sam', 'writer', 'pinned', { script_id: scriptId, scene_id: sceneId, context: 'Scene 1' });
+    expect(n.error).toBeNull();
+    const ctx = await cast.sam.client.from('notes').update({ context: 'Scene 99' }).eq('id', n.data!.id);
+    expect(ctx.error).not.toBeNull();
+    const clear = await cast.sam.client.from('notes').update({ scene_id: null }).eq('id', n.data!.id);
+    expect(clear.error).not.toBeNull();
+    const row = await cast.sam.client.from('notes').select('scene_id, context').eq('id', n.data!.id).single();
+    expect(row.data).toEqual({ scene_id: sceneId, context: 'Scene 1' });
+  });
+
+  it('a script\'s author fields are not a mailing list: Riley is not told even when named as the last editor', async () => {
+    const before = (await inbox('riley')).length;
+    const sid = await createScript(cast, projectId, 'INT. ROOF - NIGHT\n');
+    await cast.sam.client.from('scripts').update({ last_edited_by: cast.riley.id }).eq('id', sid);
+    expect((await write('sam', 'writer', 'for the crew only', { script_id: sid })).error).toBeNull();
+    expect(await inbox('riley')).toHaveLength(before);
+  });
+});
