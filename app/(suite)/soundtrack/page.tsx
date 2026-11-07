@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
-import { searchSpotify, contextAwareSearch } from '@/lib/spotify/search';
+import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
+import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject } from '@/lib/os';
 import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
@@ -20,7 +21,7 @@ export default function SoundtrackPage() {
   const { toast } = useToast();
   const reportError = useEffectEvent((message: string) => toast(message, 'error'));
 
-  const [activeTab, setActiveTab] = useState<'moods'|'sfx'|'project'|'search'>('moods');
+  const [activeTab, setActiveTab] = useState<'search'|'moods'|'sfx'|'project'>('search');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -100,27 +101,29 @@ export default function SoundtrackPage() {
     }
   };
 
-  const handleMagicSearch = async () => {
-    if (!activeProject?.id) {
-      toast('Select an active project in the Hub first', 'error');
-      return;
-    }
+  // The script's own mood fills the search: its words become the query and the tracks load, with nothing to press. Done once a
+  // project is in view and Spotify is connected; "Refresh from the script" does it again, and typing a query is still yours.
+  const [filledFor, setFilledFor] = useState<string | null>(null);
+  const fillFromScript = useCallback(async (projectId: string, quiet: boolean) => {
     setIsSearching(true);
     try {
-
-      const content = (await getLatestScript(activeProject.id))?.content;
-      if (!content || !content.trim()) {
-        toast('This project has no script content yet to read mood from', 'error');
-        return;
-      }
-      const results = await contextAwareSearch(content);
-      setSearchResults(results || []);
+      const content = (await getLatestScript(projectId))?.content;
+      if (!content || !content.trim()) { if (!quiet) toast('This project has no script content yet to read mood from', 'error'); return; }
+      const query = await generateContextualSearchQuery(content);
+      setSearchQuery(query);
+      setSearchResults((await searchSpotify(query, 'track')) || []);
+      setFilledFor(projectId);
     } catch (err: any) {
-      toast('Magic search failed: ' + err.message, 'error');
+      if (!quiet) toast('Could not search from the script: ' + err.message, 'error');
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [toast]);
+  useEffect(() => {
+    if (activeTab !== 'search' || !isAuthenticated || !activeProject?.id || filledFor === activeProject.id) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the script's mood once per project
+    void fillFromScript(activeProject.id, true);
+  }, [activeTab, isAuthenticated, activeProject?.id, filledFor, fillFromScript]);
 
   const handleSfxUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -202,7 +205,7 @@ export default function SoundtrackPage() {
       </header>
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
-        {(['moods', 'sfx', 'project', 'search'] as const).map(tab => (
+        {(['search', 'moods', 'sfx', 'project'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -407,14 +410,19 @@ export default function SoundtrackPage() {
                 <Button type="submit" variant="solid" className="h-[52px] px-8" isLoading={isSearching && searchQuery.length > 0}>
                   <Search size={16} className="mr-2" /> Search
                 </Button>
-                <Button type="button" variant="outline" className="h-[52px] px-6 border-accent text-accent hover:bg-accent/10" onClick={handleMagicSearch} isLoading={isSearching && searchQuery.length === 0}>
-                  <Wand2 size={16} className="mr-2" /> Magic Context Fill
-                </Button>
+                {activeProject?.id && (
+                  <Button type="button" variant="outline" className="h-[52px] px-6 border-accent text-accent hover:bg-accent/10" onClick={() => void fillFromScript(activeProject.id, false)}>
+                    <Wand2 size={16} className="mr-2" /> Refresh from the script
+                  </Button>
+                )}
               </form>
+              {filledFor && filledFor === activeProject?.id && <p className="mc-text text-xs text-[var(--fg-dim)] -mt-4 mb-6">Filled from {activeProject.title}’s script. Change it to search for anything.</p>}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {searchResults.map((item: any) => (
-                  <div key={item.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
+                  <SpotifyPreview key={item.id} kind={item.type === 'playlist' ? 'playlist' : item.type === 'album' ? 'album' : 'track'} id={item.id} label={item.name}>{(previewButton, previewFrame) => (
+                  <div className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 overflow-hidden">
                       {(item.album?.images?.[2]?.url || item.images?.[0]?.url) ? (
                         // eslint-disable-next-line @next/next/no-img-element -- playlist art comes from several Spotify CDNs
@@ -428,14 +436,15 @@ export default function SoundtrackPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {previewButton}
                       <button aria-label="Play"
-                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
+                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
                         onClick={() => playUri(item.uri)}
                       >
                         <Play size={16} />
                       </button>
                       <button aria-label="Save to Project Bible"
-                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
+                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
                         title="Save to Project Bible"
                         onClick={() => saveToProject(item, 'spotify')}
                       >
@@ -443,6 +452,9 @@ export default function SoundtrackPage() {
                       </button>
                     </div>
                   </div>
+                  {previewFrame}
+                  </div>
+                  )}</SpotifyPreview>
                 ))}
               </div>
 
