@@ -121,7 +121,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       <SectionHeader id="production-title" title="Production" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
               <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
-                style={{ alignSelf: 'flex-start', width: 'min(100%, 280px)', minHeight: 36, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
+                style={{ alignSelf: 'flex-start', width: 'min(100%, 280px)', minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
               {q && !VIEWS.some((v) => v.id !== view && v.label.toLowerCase().includes(q)) && <p role="status" style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)' }}>No tool matches “{find}”.</p>}
               {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => (
                 <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
