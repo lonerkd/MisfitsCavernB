@@ -2648,11 +2648,14 @@ export type Database = {
           added_by: string | null;
           created_at: string | null;
           description: string | null;
+          for_scene: string | null;
           id: string;
           project_id: string | null;
           reference_type: string | null;
+          role: string | null;
           scene_id: string | null;
           script_id: string | null;
+          tags: string[];
           title: string;
           uri: string;
         };
@@ -2661,11 +2664,14 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title: string;
           uri: string;
         };
@@ -2673,15 +2679,25 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title?: string;
           uri?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "project_audio_references_for_scene_fkey";
+            columns: ["for_scene"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "project_audio_references_project_id_fkey";
             columns: ["project_id"];
