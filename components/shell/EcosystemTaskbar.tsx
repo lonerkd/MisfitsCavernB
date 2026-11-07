@@ -25,7 +25,7 @@ import { ACTIVITY_TONE_COLOR, ActivityControls, ActivityLabel } from '@/componen
 import { CONTROL_KEYS, islandRoute, type IslandApp } from '@/lib/island/routes';
 import { assignKeys, type PillSlot } from '@/lib/island/slots';
 import { countKeyUse } from '@/lib/island/keyUse';
-import { peekUndo, subscribeUndo } from '@/lib/os/undo';
+import { peekUndo, scopeOf, subscribeUndo } from '@/lib/os/undo';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
@@ -299,7 +299,7 @@ export default function EcosystemTaskbar() {
   const lastProject = useRef<string | null>(null);
   const projectId = activeProject?.id ?? null;
   // What O would take back here, if anything: the label of the newest undoable action in this tool.
-  const undoLabel = useSyncExternalStore(subscribeUndo, () => peekUndo()?.label ?? null, () => null);
+  const undoLabel = useSyncExternalStore(subscribeUndo, () => peekUndo(scopeOf(pathname))?.label ?? null, () => null);
   const projectTitle = activeProject?.title;
   useEffect(() => {
     // From one project to another — not the first one arriving as the page loads.

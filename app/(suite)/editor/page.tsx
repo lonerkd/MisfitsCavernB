@@ -421,10 +421,6 @@ export default function EditorPage() {
   // The writing loop: words typed today, the streak, sprints (lib/writing).
   const writing = useWritingLoop(sessionUser?.id ?? null);
   const sprint = useSprint(writing, toast);
-  // The island's Live action (Start / Pause sprint, in the pill stage below) reads the sprint through this ref: the island
-  // refreshes its actions only when their labels change, so a handler closed over `sprint` would start a stale length.
-  const sprintRef = useRef(sprint);
-  useEffect(() => { sprintRef.current = sprint; });
   useActivity(sprintActivity(sprint)); // a running sprint is held on the island, with pause and reset
 
   const handleSave = useCallback(async () => {
@@ -786,9 +782,7 @@ export default function EditorPage() {
       ],
       actions: [
         { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
-        ...(sprint.active
-          ? [{ id: 'sprint', slot: 'live' as const, label: 'Pause sprint', onClick: () => sprintRef.current.pause() }]
-          : [{ id: 'sprint', slot: 'live' as const, label: sprint.running ? 'Resume sprint' : 'Start sprint', onClick: () => sprintRef.current.start() }]),
+        { id: 'sprint', slot: 'live', label: sprint.active ? 'Pause sprint' : sprint.running ? 'Resume sprint' : 'Start sprint', onClick: sprint.active ? sprint.pause : sprint.start },
       ],
     }
   );
