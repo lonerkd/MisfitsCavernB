@@ -56,6 +56,7 @@ import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
+import { SceneMusic } from '@/components/editor/SceneMusic';
 import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { NotesPanel } from '@/components/notes/NotesPanel';
@@ -927,6 +928,12 @@ export default function EditorPage() {
             projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
             sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
             refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
+          />
+        }
+        sceneMusic={
+          <SceneMusic
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            refs={projectAudioRefs} play={playAudioRef} openSound={() => setRightPanel('audio')}
           />
         }
         notesPanel={
