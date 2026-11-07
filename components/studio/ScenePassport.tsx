@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Camera, Clapperboard, DollarSign, Layers, MapPin, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Camera, DollarSign, Layers, MapPin, Users } from 'lucide-react';
 import { useStudio } from '@/components/studio/StudioContext';
 import s from '@/components/studio/studio.module.css';
 
@@ -18,7 +18,7 @@ interface ScenePassportProps {
  * and jump to the right tool.
  */
 export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
-  const { scenes, mediaByScene, shots, project, doubtfulSceneOrdinals } = useStudio();
+  const { scenes, mediaByScene, shots, project, doubtfulSceneOrdinals, castOf } = useStudio();
 
   const scene = scenes.rows.find((sc) => sc.id === sceneId);
   const mediaCount = (mediaByScene.get(sceneId) ?? []).length;
@@ -40,9 +40,14 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
 
   if (!scene) return null;
 
+  const statusColor = scene.status === 'wrapped' ? '#6ee7b7' : scene.status === 'planned' ? 'var(--fg-muted)' : 'var(--accent)';
+  
+  const castCount = scene ? castOf(scene).length : 0;
+
   const chips: Array<{ icon: React.ReactNode; label: string; value: string | number; tone?: string }> = [
     { icon: <Layers size={11} />, label: 'Refs', value: mediaCount },
     { icon: <Camera size={11} />, label: 'Shots', value: shotCount },
+    ...(castCount > 0 ? [{ icon: <Users size={11} />, label: 'Cast', value: castCount }] : []),
   ];
 
   if (shootDay != null) {
@@ -59,9 +64,25 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
     return (
       <div
         className={s.row}
-        style={{ gap: 6, flexWrap: 'wrap', marginTop: 6 }}
+        style={{ gap: 6, flexWrap: 'wrap', marginTop: 6, alignItems: 'center' }}
         aria-label={`Scene ${scene.scene_number} status: ${mediaCount} refs, ${shotCount} shots`}
       >
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          padding: '2px 7px',
+          borderRadius: 4,
+          background: 'rgba(var(--ink-rgb), 0.04)',
+          border: '1px solid rgba(var(--ink-rgb), 0.06)',
+          fontFamily: 'var(--mono)',
+          fontSize: 11,
+          color: statusColor,
+          letterSpacing: 'var(--caps-track)',
+          textTransform: 'var(--caps)',
+        }}>
+          {scene.status ?? 'planned'}
+        </span>
         {chips.map((c) => (
           <span
             key={c.label}

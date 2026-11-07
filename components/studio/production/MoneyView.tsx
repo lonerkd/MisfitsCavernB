@@ -13,7 +13,9 @@ import {
   type BudgetItem, type Expense, type Timesheet, type Vendor,
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
+import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
+import { NextSteps } from '../NextSteps';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -185,7 +187,7 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
   const { project } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const [form, setForm] = useState({ description: '', amount: '', line: '', vendor: '', newVendor: '', status: 'committed', po: '', date: today() });
+  const [form, setForm, clearForm] = useDraft('money-spend-form', { description: '', amount: '', line: '', vendor: '', newVendor: '', status: 'committed', po: '', date: today() });
   const [busy, setBusy] = useState(false);
   const lineName = new Map(lines.map((l) => [l.id, l.description ? `${l.category} — ${l.description}` : l.category]));
   const vendorName = new Map(vendors.map((v) => [v.id, v.name]));
@@ -206,7 +208,8 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
         description: form.description.trim(), amount, budget_item_id: form.line || null, vendor_id: vendorId,
         status: form.status, po_number: form.po.trim() || null, spent_on: form.date,
       }));
-      setForm((f) => ({ ...f, description: '', amount: '', po: '', newVendor: '', vendor: vendorId ?? '' }));
+      clearForm();
+      setForm((f) => ({ ...f, vendor: vendorId ?? '' }));
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Could not add the spend', 'error');
     } finally {
@@ -282,6 +285,9 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
           ))}
         </ul>
       )}
+      <NextSteps steps={[
+        { label: 'Review budget vs actual', description: 'Compare planned vs spent', onClick: () => {} },
+      ]} />
     </section>
   );
 }

@@ -14,7 +14,9 @@ import {
 import { deviceZone, placeLight } from '@/lib/film/studio';
 import { PlacePicker } from './PlacePicker';
 import { useStudio } from '../StudioContext';
+import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
+import { NextSteps } from '../NextSteps';
 import s from '../studio.module.css';
 
 /**
@@ -30,7 +32,7 @@ export function LocationsView() {
   const records = useProjectLocations(project.id);
   const days = useShootDays(project.id);
   const [open, setOpen] = useState<string | null>(null);
-  const [adding, setAdding] = useState('');
+  const [adding, setAdding] = useDraft('locations-adding', '');
   const { toast } = useToast();
 
   const rows = useMemo(() => locationRows(scenes.rows, records.rows), [scenes.rows, records.rows]);
@@ -76,6 +78,7 @@ export function LocationsView() {
           value={adding} maxLength={200} onChange={(e) => setAdding(e.target.value)} />
         <button type="submit" className={cx(s.btn, s.small)} disabled={!adding.trim()}><Plus size={11} /> Add</button>
       </form>
+      <NextSteps steps={[{ label: "Lock down locations", description: "Mark locations as ready for shooting", onClick: () => {} }]} />
     </div>
   );
 }
