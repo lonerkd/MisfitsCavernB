@@ -232,11 +232,12 @@ describe('the guard after review', () => {
     expect(row.data).toEqual({ scene_id: sceneId, context: 'Scene 1' });
   });
 
-  it('a script\'s author fields are not a mailing list: Riley is not told even when named as the last editor', async () => {
+  it('a loose script\'s author fields are not a mailing list: a note tells nobody, even if Riley is named as its author', async () => {
     const before = (await inbox('riley')).length;
-    const sid = await createScript(cast, projectId, 'INT. ROOF - NIGHT\n');
-    await cast.sam.client.from('scripts').update({ last_edited_by: cast.riley.id }).eq('id', sid);
-    expect((await write('sam', 'writer', 'for the crew only', { script_id: sid })).error).toBeNull();
+    const sid = await createScript(cast, null, 'INT. ROOF - NIGHT\n');
+    // Whether or not the database lets this field be rewritten, the note must not read it.
+    await cast.sam.client.from('scripts').update({ created_by: cast.riley.id, last_edited_by: cast.riley.id }).eq('id', sid);
+    expect((await write('sam', 'writer', 'a private thought on a loose script', { script_id: sid })).error).toBeNull();
     expect(await inbox('riley')).toHaveLength(before);
   });
 });
