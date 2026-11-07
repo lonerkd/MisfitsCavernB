@@ -47,7 +47,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    (grace period over — which line?), lawyer review of `/privacy`, `/terms`
    and `LICENSE`, leaked-password protection, the two old Windows stashes,
    signed commits, the first `v*` tag, the domain. (Branch protection is done: 2026-11-07, `main-2`.)
-3. **Next code work**: **notes e2e** (the three-layer notes are built, database and screens, 2026-11-07; the browser spec and a real press of the island's `U` key are not), then restructure
+3. **Next code work**: the three-layer notes are built and browser-tested (2026-11-07); then restructure
    phases 7–8 (`restructure-proposal.md`: thin pages, optional Studio
    routes); admin catalogues + moderation (3.14); email (3.15);
    activity feed (3.5, product call); dev-toolchain advisories
