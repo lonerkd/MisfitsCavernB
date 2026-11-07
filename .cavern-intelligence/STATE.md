@@ -22,7 +22,7 @@
    (mail catcher on :54324), `npx supabase stop` first if it came up from stale
    containers. Never push to `main`; PR from a `claude/*` branch; merge only
    once checks are green (owner, 2026-10-27: merge without waiting for the word; production follows main; flags are on in production).
-6. **Stats are real (2026-11-03/05):** the public totals leave out sample, test and bot accounts (10 old QA accounts flagged `is_sample` by hand; migration `20261103100000` also leaves out a sample account's loose scripts; both live in production). The owner confirmed `thekid` is a real account (counted). Still to do: delete the throwaway QA accounts (BACKLOG 3.37).
+6. **Stats are real (2026-11-03/05):** the public totals leave out sample, test and bot accounts (10 old QA accounts flagged `is_sample` by hand; migration `20261103100000` also leaves out a sample account's loose scripts; both live in production). Still to do: delete the throwaway QA accounts (BACKLOG 3.37).
 7. Decided: the internal `mc_` / `mc-` prefixes stay. Open with the owner:
    the domain. An installed iPhone app keeps its old icon until re-added to
    the Home Screen (iOS caches it).
