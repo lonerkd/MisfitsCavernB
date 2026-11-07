@@ -4,7 +4,7 @@ import { readable } from '@/lib/util/color';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images, StickyNote } from 'lucide-react';
+import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images, StickyNote } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -53,11 +53,11 @@ export interface EditorRightPanelsProps {
   stash: LiveRows<StashItem>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   currentScript: { title?: string, id?: string } | null;
-  projectAudioRefs?: any[];
-  playAudioRef?: (ref: any) => void;
   /** The current scene's references panel (rendered by the page, which owns the scene index). */
   referencesPanel?: React.ReactNode;
   notesPanel?: React.ReactNode;
+  /** The sound desk (table read, music for the scene, saved tracks), built by the page. */
+  soundPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
   readingPanel?: React.ReactNode;
 }
@@ -105,8 +105,8 @@ export function EditorRightPanels({
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, notesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  setShowWatermark, lintIssues, stash, textareaRef, currentScript,
+  referencesPanel, notesPanel, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -125,7 +125,7 @@ export function EditorRightPanels({
     ['refs', Images, 'Refs'],
     ['insights', Lightbulb, 'Insights'],
     ['history', History, 'History'],
-    ['audio', Music, 'Audio'],
+    ['audio', Music, 'Sound'],
     ['notes', StickyNote, 'Notes'],
   ];
 
@@ -434,36 +434,7 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {rightPanel === 'audio' && (
-                  <>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 }}><Music size={14} /> Project Audio</div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4 }}>Reference tracks and sound design linked to this project.</div>
-                    {projectAudioRefs.length === 0 ? (
-                      <div style={{ fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No audio references yet.<br/><br/>Link tracks from the Soundtrack module or upload sound design to populate this panel.</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {projectAudioRefs.map((ref: any) => (
-                          <div key={ref.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <button aria-label="Play"
-                              onClick={() => playAudioRef?.(ref)}
-                              disabled={!playAudioRef}
-                              title="Play"
-                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
-                            >
-                              <Play size={13} />
-                            </button>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontSize: 12, color: 'var(--fg-strong)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ref.title || ref.name || ref.uri || 'Untitled track'}</div>
-                              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
-                                {ref.reference_type === 'spotify' ? 'Spotify' : ref.reference_type === 'custom_upload' ? 'Upload' : (ref.reference_type || 'audio')}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                {rightPanel === 'audio' && soundPanel}
               </div>
     </>
   );
