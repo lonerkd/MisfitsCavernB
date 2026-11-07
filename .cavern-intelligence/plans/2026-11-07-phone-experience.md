@@ -21,7 +21,7 @@
 2. **The 44 pt pass (built 2026-11-07):** one coarse-pointer block in `globals.css` (buttons/tabs/selects 44 pt with `!important`, fields 16 px, links' tappable area), the Studio tab row fixed; small targets 97 → 0 on a project page. **Left in this step:** the shell as one phone layout (the pill over content, a tab bar that rides the keyboard) and the keyboard-hides-field cases the audit still flags in landscape (Studio, Profile, Settings, Jobs).
 3. Studio: tabs as a sheet or segmented bar, production tools, the stripboard as a horizontal-only view, forms above the keyboard.
 4. Lounge: list → conversation → composer that rides the keyboard; call controls.
-5. Forms everywhere (Profile, Settings, Jobs, Crew, Auth): 16 px fields, the focused field stays visible, the submit rides the keyboard.
+5. **Forms and the keyboard (built 2026-11-07, slice 3):** `PhoneKeyboard` for every page (marks `html[data-typing]`, publishes `--kb`, pads the scroll area, scrolls a tapped field into the visible middle). Left: a form's submit button riding above the keyboard where the form is long (Settings), per-screen checks on a real iPhone.
 6. On set (a phone is the tool there) and Today/Community.
 7. A browser spec per surface at the iPhone 15 Pro size in both orientations, and a CI audit that fails on sideways scroll and sub-44 pt targets.
 

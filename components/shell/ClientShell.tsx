@@ -9,6 +9,7 @@ const ShortcutsOverlay = dynamic(() => import('@/components/shell/ShortcutsOverl
 const UndoKeys = dynamic(() => import('@/components/shell/UndoKeys'), { ssr: false });
 const ErrorReporter = dynamic(() => import('@/components/shell/ErrorReporter'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/shell/ThemeInitializer'), { ssr: false });
+const PhoneKeyboard = dynamic(() => import('@/components/phone/PhoneKeyboard').then((x) => x.PhoneKeyboard), { ssr: false });
 const MobileTabBar = dynamic(() => import('@/components/mobile/MobileTabBar'), { ssr: false });
 const PlaceTracker = dynamic(() => import('@/components/mobile/Continue').then((x) => x.PlaceTracker), { ssr: false });
 const OutboxFlusher = dynamic(() => import('@/components/mobile/Capture').then((x) => x.OutboxFlusher), { ssr: false });
@@ -33,6 +34,7 @@ export default function ClientShell() {
       <ThemeInitializer />
       <EcosystemTaskbar />
       <MobileTabBar />
+      <PhoneKeyboard />
       <PlaceTracker />
       <OutboxFlusher />
       <ContinueOffer />

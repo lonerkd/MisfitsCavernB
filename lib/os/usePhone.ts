@@ -57,11 +57,5 @@ export function usePhoneLayout(): PhoneState {
       window.removeEventListener('resize', read);
     };
   }, []);
-  // The suite's floating island steps aside while a phone is typing (CSS: html[data-typing]).
-  useEffect(() => {
-    const root = document.documentElement;
-    if (state.typing) root.setAttribute('data-typing', 'true'); else root.removeAttribute('data-typing');
-    return () => root.removeAttribute('data-typing');
-  }, [state.typing]);
   return state;
 }
