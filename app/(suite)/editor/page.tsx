@@ -57,6 +57,11 @@ import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { NotesPanel } from '@/components/notes/NotesPanel';
+import { ShareScriptButton } from '@/components/editor/ShareScriptButton';
+import { usePhoneLayout } from '@/lib/os/usePhone';
+import { BottomSheet } from '@/components/phone/BottomSheet';
+import { PhoneEditorBar, VIEW_LABELS } from '@/components/editor/PhoneEditorBar';
+import { PhoneElementBar } from '@/components/editor/PhoneElementBar';
 import { requestNoteFocus } from '@/lib/notes/focus';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
@@ -214,15 +219,12 @@ export default function EditorPage() {
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 820px)');
-    const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
-    apply();
-    mq.addEventListener?.('change', apply);
-    return () => mq.removeEventListener?.('change', apply);
-  }, []);
+  // The phone has its own layout (a slim bar, bottom sheets, an element strip over the keyboard), chosen by size and touch, not by a breakpoint alone.
+  const phone = usePhoneLayout();
+  const isMobile = phone.phone;
+  const [sheet, setSheet] = useState<null | 'scripts' | 'views' | 'tools' | 'more'>(null);
+  // Picking a scene or a view on a phone puts the sheet away.
+  const closeSheet = () => setSheet(null);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
   // True while the latest save is only on this device (server unreachable);
@@ -632,10 +634,10 @@ export default function EditorPage() {
   });
   const [openElementId, setOpenElementId] = useState<string | null>(null);
   const openBreakdown = useCallback((elementId?: string | null) => {
-    setShowRightSidebar(true);
+    if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
     setRightPanel('breakdown');
     if (elementId !== undefined) setOpenElementId(elementId);
-  }, []);
+  }, [isMobile]);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -769,7 +771,7 @@ export default function EditorPage() {
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
-  const openNotes = () => { setFocusMode(false); setShowRightSidebar(true); setRightPanel('notes'); requestNoteFocus(); };
+  const openNotes = () => { setFocusMode(false); setRightPanel('notes'); if (isMobile) setSheet('tools'); else setShowRightSidebar(true); requestNoteFocus(); };
   usePillStage(
     {
       module: 'editor',
@@ -810,13 +812,110 @@ export default function EditorPage() {
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
   const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
+  const leftNavEl = (
+    <EditorLeftNav
+      scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+      setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
+      fileInputRef={fileInputRef} handleImportFile={handleImportFile}
+      showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
+      templates={TEMPLATES}
+      scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
+      sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
+      actStructure={actStructure}
+      jumpToScene={(i: number) => { jumpToScene(i); if (isMobile) closeSheet(); }} reorderScenes={reorderScenes}
+      dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+      dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
+    />
+  );
+
+  const rightPanelsEl = (
+    <EditorErrorBoundary onCrash={() => {
+      try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+    }}>
+      <EditorRightPanels
+        showBreakdown={tools.breakdown}
+        currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
+        rightPanel={rightPanel} setRightPanel={setRightPanel}
+        activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
+        getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
+        sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
+        insertElement={insertElement}
+        writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
+        wordCount={wordCount}
+        pageEst={pageEst} dialogueRatio={dialogueRatio}
+        typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
+        nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
+        chars={chars} charStats={charStats}
+        handleLockRevision={handleLockRevision} revisions={revisions}
+        onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
+        setContent={setContent} toast={toast}
+        showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
+        showWatermark={showWatermark} setShowWatermark={setShowWatermark}
+        lintIssues={lintIssues}
+        stash={stash} textareaRef={textareaRef}
+        currentScript={currentScript}
+        projectAudioRefs={projectAudioRefs}
+        playAudioRef={playAudioRef}
+        readingPanel={
+          <>
+            <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
+            <LineOverrideButton
+              projectId={currentScript?.project_id ?? null}
+              scriptId={currentScript?.id ?? null}
+              lineIndex={cursorLine}
+              currentType={lines[cursorLine]?.type ?? 'action'}
+              onSaved={() => { lineOverrides.reload(); }}
+            />
+          </>
+        }
+        breakdownPanel={
+          <BreakdownPanel
+            bd={bd}
+            projectId={currentScript?.project_id ?? null}
+            sceneIdx={currentSceneIdx}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
+            crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
+            openElementId={openElementId}
+            setOpenElementId={setOpenElementId}
+            onJumpToScene={jumpToScene}
+          />
+        }
+        notesPanel={
+          <NotesPanel
+            scriptId={currentScript?.id ?? null}
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            isProjectOwner={!!sessionUser?.id && activeProject?.id === currentScript?.project_id && activeProject?.creator_id === sessionUser.id}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            context={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1} · ${parsedScenes[currentSceneIdx].heading}`.slice(0, 200) : null}
+          />
+        }
+        referencesPanel={
+          <SceneReferencesPanel
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
+            note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
+            color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
+            onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
+            onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
+            syncState={sceneIndex.sync.state}
+          />
+        }
+      />
+    </EditorErrorBoundary>
+  );
+
   return (
-    <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height } : { height: '100dvh' }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
-      {!focusMode && (
-        <EditorHeader ctx={editorCtx} />
-      )}
+      {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
+        ? <PhoneEditorBar ctx={editorCtx} slim={phone.landscape && phone.typing} onScripts={() => setSheet('scripts')} onViews={() => setSheet('views')} onTools={() => { setRightPanel('write'); setSheet('tools'); }} onMore={() => setSheet('more')} />
+        : <EditorHeader ctx={editorCtx} />)}
 
       <AnimatePresence>
         {showFindReplace && (
@@ -834,12 +933,10 @@ export default function EditorPage() {
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
-          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
-        )}
+        {/* On a phone the panels are bottom sheets (below), so there is no drawer to dim. */}
 
         <AnimatePresence>
-          {showSidebar && !focusMode && (
+          {showSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: -260, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -853,19 +950,7 @@ export default function EditorPage() {
                 ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
-              <EditorLeftNav
-                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
-                setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
-                fileInputRef={fileInputRef} handleImportFile={handleImportFile}
-                showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
-                templates={TEMPLATES}
-                scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
-                sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
-                actStructure={actStructure}
-                jumpToScene={jumpToScene} reorderScenes={reorderScenes}
-                dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
-                dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
-              />
+              {leftNavEl}
             </motion.div>
           )}
         </AnimatePresence>
@@ -885,7 +970,7 @@ export default function EditorPage() {
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
                     {/* The beat timeline hugs the screen's left edge — only when the story map isn't open there already. */}
-                    {activeView === 'write' && !focusMode && !showSidebar && <WriteFooter ctx={editorCtx} />}
+                    {activeView === 'write' && !focusMode && !showSidebar && !(isMobile && phone.typing) && <WriteFooter ctx={editorCtx} />}
 
                     {activeView === 'preview' && <PreviewView ctx={editorCtx} />}
 
@@ -922,7 +1007,7 @@ export default function EditorPage() {
         </div>
 
         <AnimatePresence>
-          {showRightSidebar && !focusMode && (
+          {showRightSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: 272, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -930,84 +1015,7 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'var(--surface)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              <EditorErrorBoundary onCrash={() => {
-                try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
-              }}>
-                <EditorRightPanels
-                  showBreakdown={tools.breakdown}
-                  currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
-                  rightPanel={rightPanel} setRightPanel={setRightPanel}
-                  activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
-                  getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
-                  sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
-                  insertElement={insertElement}
-                  writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
-                  wordCount={wordCount}
-                  pageEst={pageEst} dialogueRatio={dialogueRatio}
-                  typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
-                  nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
-                  chars={chars} charStats={charStats}
-                  handleLockRevision={handleLockRevision} revisions={revisions}
-                  onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
-                  setContent={setContent} toast={toast}
-                  showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
-                  showWatermark={showWatermark} setShowWatermark={setShowWatermark}
-                  lintIssues={lintIssues}
-                  stash={stash} textareaRef={textareaRef}
-                  currentScript={currentScript}
-                  projectAudioRefs={projectAudioRefs}
-                  playAudioRef={playAudioRef}
-                  readingPanel={
-                    <>
-                      <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
-                      <LineOverrideButton
-                        projectId={currentScript?.project_id ?? null}
-                        scriptId={currentScript?.id ?? null}
-                        lineIndex={cursorLine}
-                        currentType={lines[cursorLine]?.type ?? 'action'}
-                        onSaved={() => { lineOverrides.reload(); }}
-                      />
-                    </>
-                  }
-                  breakdownPanel={
-                    <BreakdownPanel
-                      bd={bd}
-                      projectId={currentScript?.project_id ?? null}
-                      sceneIdx={currentSceneIdx}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
-                      crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
-                      openElementId={openElementId}
-                      setOpenElementId={setOpenElementId}
-                      onJumpToScene={jumpToScene}
-                    />
-                  }
-                  notesPanel={
-                    <NotesPanel
-                      scriptId={currentScript?.id ?? null}
-                      projectId={currentScript?.project_id ?? null}
-                      userId={sessionUser?.id ?? null}
-                      isProjectOwner={!!sessionUser?.id && activeProject?.id === currentScript?.project_id && activeProject?.creator_id === sessionUser.id}
-                      sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
-                      context={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1} · ${parsedScenes[currentSceneIdx].heading}`.slice(0, 200) : null}
-                    />
-                  }
-                  referencesPanel={
-                    <SceneReferencesPanel
-                      projectId={currentScript?.project_id ?? null}
-                      userId={sessionUser?.id ?? null}
-                      sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
-                      note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
-                      color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
-                      onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
-                      onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
-                      syncState={sceneIndex.sync.state}
-                    />
-                  }
-                />
-              </EditorErrorBoundary>
+              {rightPanelsEl}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1173,8 +1181,9 @@ export default function EditorPage() {
         background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: isMobile && phone.typing && phone.landscape ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(12px, 4vw, 20px)',
+        paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box',
         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
@@ -1229,6 +1238,41 @@ export default function EditorPage() {
           </span>
         </div>
       </div>
+
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && (
+        <PhoneElementBar insert={insertElement} bottom={phone.keyboard} compact={phone.landscape} />
+      )}
+      {isMobile && (
+        <>
+          <BottomSheet open={sheet === 'scripts'} onClose={closeSheet} title="Scripts and scenes" keyboard={phone.keyboard} full>{leftNavEl}</BottomSheet>
+          <BottomSheet open={sheet === 'views'} onClose={closeSheet} title="View">
+            <div role="group" aria-label="View" style={{ display: 'grid', gap: 8 }}>
+              {(Object.keys(VIEW_LABELS) as Array<keyof typeof VIEW_LABELS>).map((v) => (
+                <button key={v} type="button" aria-pressed={activeView === v} onClick={() => { setActiveView(v); closeSheet(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: activeView === v ? 'var(--accent)' : 'transparent', color: activeView === v ? 'var(--on-accent)' : 'var(--fg)' }}>{VIEW_LABELS[v]}</button>
+              ))}
+            </div>
+          </BottomSheet>
+          <BottomSheet open={sheet === 'tools'} onClose={closeSheet} title="Tools" keyboard={phone.keyboard} full>{rightPanelsEl}</BottomSheet>
+          <BottomSheet open={sheet === 'more'} onClose={closeSheet} title="More">
+            <div style={{ display: 'grid', gap: 8 }}>
+              {[
+                { label: saving ? 'Saving…' : 'Save now', run: () => { void handleSave(); } },
+                { label: 'Find and replace', run: () => setShowFindReplace(true) },
+                { label: 'Character bible', run: () => setShowCharBible(true) },
+                { label: 'Focus mode', run: () => setFocusMode(true) },
+                ...['pdf', 'fdx', 'fountain', 'txt'].map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
+              ].map((a) => (
+                <button key={a.label} type="button" onClick={() => { closeSheet(); a.run(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg)' }}>{a.label}</button>
+              ))}
+              <div style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
+                <ShareScriptButton script={currentScript} projectCreatorId={activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null} />
+              </div>
+            </div>
+          </BottomSheet>
+        </>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
