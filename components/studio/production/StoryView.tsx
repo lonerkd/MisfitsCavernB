@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { BookOpen, Plus } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { BookOpen, Plus } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';

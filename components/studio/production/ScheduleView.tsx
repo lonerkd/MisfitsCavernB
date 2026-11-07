@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Calendar, PenLine } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useBreakdown } from '@/lib/breakdown';
 import { sceneCosts } from '@/lib/studio/scene-cost';
 import { StripboardView } from './StripboardView';

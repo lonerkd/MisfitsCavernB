@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { FileText, Printer } from 'lucide-react';
+import React, { useMemo } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
+import { FileText, Printer } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { studio, useCallSheets, useCallSheetCalls, useSetLog, type CallSheet, type SceneRow, type Shot } from '@/lib/studio';
+import { studio, useCallSheets, useSetLog, type CallSheet } from '@/lib/studio';
 import { dayClock } from '@/lib/studio/onset';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -18,7 +18,6 @@ export function ProductionReportView() {
   const { project, scenes, shots } = useStudio();
   const { toast } = useToast();
   const sheets = useCallSheets(project.id);
-  const calls = useCallSheetCalls(project.id);
   const log = useSetLog(project.id);
 
   const days = useMemo(() => [...sheets.rows].sort((a, b) => a.shoot_day - b.shoot_day), [sheets.rows]);

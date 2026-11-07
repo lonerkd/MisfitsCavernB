@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { ChefHat, PenLine, Plus, Trash2, Users } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useShootDays } from '@/lib/studio';

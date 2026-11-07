@@ -110,6 +110,15 @@ pitch boards and portfolios.
 
 - **Continuity** (`ContinuityView`, `lib/film/story.ts`, `continuity.ts`): the film in story order. Story day and time are read from the headings (NEXT MORNING, N DAYS LATER, DAY n, a night then a morning; flashbacks and dreams are off the line) and offered with one button — never forced; a person's edit is confirmed and kept. Per scene, each character's look (`scene_states`, saved on blur); a look that changes inside one story day is flagged.
 
+## 5a. The record-keeping tools (settings-backed)
+
+Sixteen Production views keep a simple list per project: Camera reports, Comms, Costumes, Director's notebook, Gear, Makeup, Media offload, Permits, Purchase orders, Rehearsals, Risk register, Scouting, Script supervisor, Sound reports, VFX and Wrap (`components/studio/production/*View.tsx`; Safety, Catering, Weather, the shot list and the production report are built separately).
+
+- **Storage**: each list is an array under its own key in `projects.settings` (typed in `lib/types/settings.ts`; written only through `patch_project_settings`, an atomic merge that **only the project owner** may call). One shared hook, `useSettingsList(key)` (`components/studio/production/useSettingsList.ts`), reads the list, saves it, **tells the person when a save fails** (a crew member's save is refused by design), ignores a second click while one is saving, and asks through `useConfirm()` before a delete. A view resets its form only after a save succeeded.
+- **Who can write**: the owner. A director, mixer or camera operator can read their tool but cannot add to it. Letting crew write needs real per-record tables with RLS (`can_access_project` / `can_shape_project`), not a wider write to project settings. This is an open owner decision (BACKLOG 3.38).
+- **Known limits**: scene and character are free text in these records (the film graph links by id: BACKLOG 3.18 is removing the text columns elsewhere); a list lives in one JSON blob (no per-record history, no Realtime). Tests: `settingsViews.test.tsx` (every view offers its Add form on a project with no records; a refused save says so and keeps the form; a delete asks first) and `useSettingsList.test.tsx`.
+- **Two views are not lists**: **Script revisions** reads the locked revisions the editor wrote (`script_revisions`; lock a draft in the editor), read-only, and shows a failed read as a failure. **Day out of days** is the Stripboard's: the same `dayOutOfDays()` engine and the same `DoodTable` (S / W / H / F / SF).
+
 ## 5b. On set
 
 - **Studio › Production › On set** (`production/OnSetView.tsx`, logic in

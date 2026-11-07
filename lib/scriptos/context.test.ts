@@ -156,7 +156,7 @@ describe('contextKey', () => {
 	it('generates a stable key from a context object', () => {
 		const context = { characters: ['ALICE', 'BOB'], rejectedNames: ['CHARLIE'] };
 		const key = contextKey(context);
-		expect(key).toEqual('ALICE|BOB#CHARLIE##0##0');
+		expect(key).toEqual('ALICE|BOB#CHARLIE##0##');
 	});
 
 	it('returns empty string for undefined context', () => {
@@ -172,18 +172,18 @@ describe('contextKey', () => {
 	it('handles context with no characters and no rejectedNames', () => {
 		const context = { characters: [], rejectedNames: [] };
 		const key = contextKey(context);
-		expect(key).toEqual('###0##0');
+		expect(key).toEqual('###0##');
 	});
 
 	it('handles context with only characters', () => {
 		const context = { characters: ['ALICE'], rejectedNames: [] };
 		const key = contextKey(context);
-		expect(key).toEqual('ALICE###0##0');
+		expect(key).toEqual('ALICE###0##');
 	});
 
 	it('handles context with only rejectedNames', () => {
 		const context = { characters: [], rejectedNames: ['BOB'] };
 		const key = contextKey(context);
-		expect(key).toEqual('#BOB##0##0');
+		expect(key).toEqual('#BOB##0##');
 	});
 });

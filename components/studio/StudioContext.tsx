@@ -13,7 +13,6 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
-import { doubtfulScenes } from '@/lib/scriptos/scene-doubts';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { useFlag } from '@/components/Flag';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
@@ -29,6 +28,8 @@ import {
   useCharacters,
   useSceneCharacters,
   useReadingCorrections,
+  useProjectLocations,
+  useLineOverrides,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -141,8 +142,18 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   // The cast people have chosen is what the reader knows; the same one the editor reads with.
   const castings = useCastings(projectId);
   const corrections = useReadingCorrections(projectId);
-  const readContextRef = useRef(contextFromProject(castings.rows, corrections.rows));
-  useLayoutEffect(() => { readContextRef.current = contextFromProject(castings.rows, corrections.rows); });
+  const locations = useProjectLocations(projectId);
+  const lineOverrides = useLineOverrides(scriptId);
+  // The shared scene index is built from PROJECT data only (the cast, the "not a character" list, the places, the forced line
+  // types). A writer's private reading memory shapes what THEY see in the editor; it must never decide rows the whole crew shares,
+  // or two people with different memories would keep overwriting each other's scenes.
+  const readContext = () => contextFromProject(
+    castings.rows, corrections.rows, undefined,
+    lineOverrides.rows?.map((r: { line_index: number; forced_type: string }) => ({ line_index: r.line_index, forced_type: r.forced_type })),
+    locations.rows?.map((l: { name: string }) => ({ name: l.name })),
+  );
+  const readContextRef = useRef(readContext());
+  useLayoutEffect(() => { readContextRef.current = readContext(); });
   // The script's own reading rules (the same ones the editor uses), kept in a ref so the sync callback stays steady.
   const formatsRef = useRef<Record<string, string | null>>({});
   useLayoutEffect(() => { formatsRef.current = Object.fromEntries(scripts.map((sc) => [sc.id, sc.format])); });

@@ -48,15 +48,15 @@ describe('dim text', () => {
 });
 
 describe('the default', () => {
-  it('is Paper, first in the picker, and what a person with no choice sees', () => {
-    expect(DEFAULT_THEME_ID).toBe('paper');
-    expect(DEFAULT_CHOICE).toEqual({ id: 'paper' });
-    expect(THEMES[0].id).toBe('paper');
-    expect(THEMES[0].mode).toBe('light');
+  it('is Misfit, first in the picker, and what a person with no choice sees', () => {
+    expect(DEFAULT_THEME_ID).toBe('misfit');
+    expect(DEFAULT_CHOICE).toEqual({ id: 'misfit' });
+    expect(THEMES[0].id).toBe('misfit');
+    expect(THEMES[0].mode).toBe('dark');
   });
 
   it('keeps the rest in their order after it', () => {
-    expect(THEMES.map((t) => t.id)).toEqual(['paper', 'default', 'vampire', 'blueprint', 'terminal', 'editorial', 'inkrust', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'forest']);
+    expect(THEMES.map((t) => t.id)).toEqual(['misfit', 'default', 'paper', 'vampire', 'blueprint', 'terminal', 'editorial', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'forest']);
   });
 });
 
@@ -78,8 +78,8 @@ describe('the early script (first paint)', () => {
   });
 
   it('falls back to the default for an id the catalogue does not have (no CSS block would style it)', () => {
-    expect(paint(JSON.stringify({ id: 'nope' }))).toBe('paper');
-    expect(paint('"<script>"')).toBe('paper');
+    expect(paint(JSON.stringify({ id: 'nope' }))).toBe('misfit');
+    expect(paint('"<script>"')).toBe('misfit');
   });
 
   it('follows the device for System, and leaves the page as rendered when nothing is stored', () => {
@@ -96,9 +96,9 @@ describe('choosing', () => {
     expect(toThemeChoice('paper')).toEqual({ id: 'paper' });
     expect(toThemeChoice({ id: 'system' })).toEqual({ id: 'system' });
     expect(toThemeChoice({ id: 'custom', bg: '#FFFFFF', accent: '#0b7a78' })).toEqual({ id: 'custom', bg: '#ffffff', accent: '#0b7a78' });
-    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual({ id: 'paper' });
-    expect(toThemeChoice('nope')).toEqual({ id: 'paper' });
-    expect(toThemeChoice(null)).toEqual({ id: 'paper' });
+    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual({ id: 'misfit' });
+    expect(toThemeChoice('nope')).toEqual({ id: 'misfit' });
+    expect(toThemeChoice(null)).toEqual({ id: 'misfit' });
     // Someone who chose Cavern keeps it: only a missing or unreadable choice falls back.
     expect(toThemeChoice('default')).toEqual({ id: 'default' });
   });
