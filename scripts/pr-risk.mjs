@@ -73,7 +73,7 @@ export function classify(files) {
 const SUMMARY = {
   low: 'Docs, notes or tests only. CI is the whole review: merge once it is green.',
   medium: 'App code. CI plus one AI review (Copilot).',
-  high: 'Touches something where a mistake is costly. Do not merge on a green CI alone: it needs a review in a Claude session (and persona tests where it touches data or access).',
+  high: 'Touches something where a mistake is costly. Do not merge on a green CI alone: it needs a review in a Claude session (and persona tests where it touches data or access). The `claude-review` status stays pending until a review of this exact commit is posted: `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "..."`. A new push needs a new review.',
 };
 
 /**

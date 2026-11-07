@@ -11,8 +11,10 @@
 // `Large change: <reason>`. The script that runs in CI is read from the BASE branch, so a pull request cannot weaken it.
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 
-const SRC = /^(app|components|lib)\/.+\.(ts|tsx)$/;
+// Source: the app, the engine, the auth gate, edge functions and the scripts CI itself runs.
+const SRC = /^((app|components|lib|scripts|supabase\/functions)\/.+\.(ts|tsx|js|mjs|jsx)|proxy\.ts)$/;
 const TEST = /(\.test\.(ts|tsx)$|^tests\/|^e2e\/)/;
 const GENERATED = /^(lib\/supabase\/database\.types\.ts|supabase\/schema\.fingerprint|\.cavern-intelligence\/|package-lock\.json|eslint-suppressions\.json|performance-budget\.json)/;
 const SESSIONS = /^\.cavern-intelligence\/sessions\/[^/]+\.md$/;
@@ -39,7 +41,8 @@ export function evaluate(ctx) {
   const add = (id, ok, message) => out.push({ id, ok, message });
   const files = ctx.files;
   const body = ctx.body ?? '';
-  const isDeps = /^chore\(deps/.test(ctx.title ?? '');
+  // A dependency bump is exempt only when a dependency bot opened it: the title alone is the author's to choose.
+  const isDeps = /^chore\(deps/.test(ctx.title ?? '') && /^(dependabot|renovate)(\[bot\])?$/i.test(ctx.author ?? '');
 
   // 1. A merged migration is never edited: production has it applied, so an edit is drift. New files only.
   const edited = files.filter((f) => MIGRATION.test(f.path) && f.status !== 'A');
@@ -50,9 +53,12 @@ export function evaluate(ctx) {
   const missing = [];
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
-    // Everything from the function name to the end of its body: any valid dollar tag ($$, $fn1$), attributes may follow the body.
-    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.([a-z0-9_]+)([\s\S]*?)(\$[A-Za-z0-9_]*\$)[\s\S]*?\3/gi)) {
-      if (/SECURITY\s+DEFINER/i.test(m[2]) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
+    // The whole statement: any dollar tag ($$, $fn1$), quoted names, and attributes before or after the body.
+    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?([\s\S]*?)(\$[A-Za-z0-9_]*\$)[\s\S]*?\3([^;]*);/gi)) {
+      if (/SECURITY\s+DEFINER/i.test(m[2] + m[4]) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
+    }
+    for (const m of sql.matchAll(/ALTER\s+FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?[^;]*?SECURITY\s+DEFINER/gi)) {
+      if (!allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
     }
   }
   add('definer-allowlist', missing.length === 0,
@@ -62,8 +68,8 @@ export function evaluate(ctx) {
   const noRls = [];
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
-    for (const m of sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?public\.([a-z0-9_]+)/gi)) {
-      if (!new RegExp(`ALTER\\s+TABLE\\s+(?:ONLY\\s+)?public\\.${m[1]}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, 'i').test(sql)) noRls.push(`${m[1]} (${f.path})`);
+    for (const m of sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?public"?\.)?"?([a-z0-9_]+)"?/gi)) {
+      if (!new RegExp(`ALTER\\s+TABLE\\s+(?:ONLY\\s+)?(?:"?public"?\\.)?"?${m[1]}"?\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, 'i').test(sql)) noRls.push(`${m[1]} (${f.path})`);
     }
   }
   add('rls-from-birth', noRls.length === 0, noRls.length ? `New table(s) without ENABLE ROW LEVEL SECURITY in the same migration: ${noRls.join(', ')}.` : '');
@@ -72,7 +78,7 @@ export function evaluate(ctx) {
   const src = files.filter((f) => SRC.test(f.path) && !TEST.test(f.path) && !GENERATED.test(f.path) && f.status !== 'D');
   const srcAdded = src.reduce((n, f) => n + f.added.length, 0);
   // A changed test counts only if it adds an assertion or a case (a test whose assertions were only removed is not coverage).
-  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.\w+)*\s*\(/.test(l)));
+  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.(?!skip|todo|fixme)\w+)*\s*\(/.test(l)));
   const noTests = waiver(body, 'No tests needed');
   add('tests-with-code', isDeps || srcAdded < LIMITS.testsFromAddedLines || touchedTests.length > 0 || !!noTests,
     `This PR adds ${srcAdded} lines of source and changes no test (unit, tests/integration or e2e). Add one that fails without the change, or put a line "No tests needed: <why, 20+ characters>" in the description.`);
@@ -98,8 +104,8 @@ export function evaluate(ctx) {
   const counted = files.filter((f) => !GENERATED.test(f.path) && !TEST.test(f.path));
   const lines = counted.reduce((n, f) => n + f.added.length, 0);
   const large = waiver(body, 'Large change');
-  add('reviewable-size', isDeps || (lines <= LIMITS.largeAddedLines && files.length <= LIMITS.largeFiles) || !!large,
-    `${lines} added lines in ${files.length} files is more than can be reviewed under one title (limit ${LIMITS.largeAddedLines} lines / ${LIMITS.largeFiles} files). Split it, or put "Large change: <what it contains and why it is one change>" in the description.`);
+  add('reviewable-size', isDeps || (lines <= LIMITS.largeAddedLines && counted.length <= LIMITS.largeFiles) || !!large,
+    `${lines} added lines in ${counted.length} files (generated files and tests not counted) is more than can be reviewed under one title (limit ${LIMITS.largeAddedLines} lines / ${LIMITS.largeFiles} files). Split it, or put "Large change: <what it contains and why it is one change>" in the description.`);
 
   // 8. Every theme token used in new code is defined (var(--warning, #b45309) used one that was not, so it followed no theme).
   const used = new Set();
@@ -156,7 +162,7 @@ export function contextFromGit(base, head, title, body) {
     title, body, files, definedTokens,
     suppressions: { base: parse(base), head: parse(head) },
     definerDoc: show(head, '.cavern-intelligence/database-and-security.md'),
-    grep: (word) => new RegExp(`\\b${word}\\b`).test(testText),
+    grep: (word) => new RegExp(`\\b${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(testText),
   };
 }
 
@@ -166,7 +172,7 @@ export function render(results) {
   return { text: lines.join('\n'), failed };
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const a = process.argv.slice(2);
   const arg = (n) => { const i = a.indexOf(n); return i >= 0 ? a[i + 1] : undefined; };
   let base = arg('--base'), head = arg('--head');
@@ -175,7 +181,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   if (!base || !head) { console.error('usage: pr-gate.mjs --base <sha> --head <sha> [--title t] [--body-file f] | --replay <sha>'); process.exit(2); }
   const body = arg('--body-file') ? readFileSync(arg('--body-file'), 'utf8') : (process.env.PR_BODY ?? '');
   const title = arg('--title') ?? process.env.PR_TITLE ?? '';
-  const { text, failed } = render(evaluate(contextFromGit(base, head, title, body)));
+  const author = arg('--author') ?? process.env.PR_AUTHOR ?? '';
+  const { text, failed } = render(evaluate({ ...contextFromGit(base, head, title, body), author }));
   console.log(text);
   if (failed.length) { console.error(`\n${failed.length} check(s) failed.`); process.exit(1); }
   console.log('\nThe gate passes.');

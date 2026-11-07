@@ -271,7 +271,7 @@ checked by a program is. Both run for **every** pull request whoever wrote it
   `SECURITY DEFINER` function is on the §2.D allowlist in the same PR; a new
   table has RLS in its migration; tests move with source; new components bring
   new tests in proportion; a session note exists; the change is small enough to
-  review; every `var(--token)` used is defined; the lint baseline (`eslint-suppressions.json`) only shrinks. A changed test counts only if it adds an assertion or case. The allowlist lookup reads only the §2.D table. The CI copy of the script is read
+  review; every `var(--token)` used is defined; the lint baseline (`eslint-suppressions.json`) only shrinks (nine checks in all). A `chore(deps)` title exempts only a PR a dependency bot opened. A changed test counts only if it adds an assertion or case. The allowlist lookup reads only the §2.D table. The CI copy of the script is read
   from the **base** branch, so a PR cannot weaken the gate that judges it.
   Waivers are visible lines in the PR description: `No tests needed: <20+
   characters>`, `Large change: <what and why>`. Replay on a merged commit:
@@ -282,6 +282,7 @@ checked by a program is. Both run for **every** pull request whoever wrote it
   suppressions file; new ones fail, and one you fix must be removed from it with
   `npm run lint:ratchet`.
 - **Limit, stated plainly:** the `gate` job lives in `ci.yml`, which a PR can edit, and until `gate` is a *required* status check in the ruleset a PR that deletes the job is not stopped by it. The base-branch script closes the script hole, not the workflow hole; only the ruleset closes that. (The bootstrap PR that introduced the gate ran its own copy, as there was no base copy yet.)
-- **Not yet enforced** (owner decisions, BACKLOG 3.40): marking `gate` a required
-  status check and removing the admin bypass in the `main-2` ruleset; a
+- **Claude review, bound to the commit** (`claude-review.yml`, `scripts/claude-review.mjs`, tests in `lib/ci/claude-review.test.ts`). A **high-risk** PR (`pr-risk`) gets a `claude-review` commit status that is *pending* until a trusted comment carries `<!-- claude-review:v1 sha=<head> verdict=approved -->` for the **current head SHA**. A new push changes the SHA, so an earlier approval goes stale on its own; a later `changes` verdict beats an earlier `approved`. Trusted = the repository owner, a member or collaborator (never a bot such as Copilot, never the PR description) or a login in the repository variable `CLAUDE_REVIEW_LOGINS` (the worker). Post a review with `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "<what was read and found>"` after a real review (the `code-review` skill, plus persona tests where data or access is touched). Low and medium risk need no marker. The script is read from the base branch.
+- **Not yet enforced** (owner decisions, BACKLOG 3.40): marking `gate` and `claude-review` required
+  status checks and removing the admin bypass in the `main-2` ruleset; a
   SHA-bound Claude review check; a PR-level browser job.
