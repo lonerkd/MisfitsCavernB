@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { BookmarkPlus, Mic2, Music, Pause, Play, Square } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -70,8 +70,13 @@ function TrackTagger({ track, sceneId, onSave, onClose }: { track: SoundPanelPro
  * in a voice per character), the music for the scene in view (its mood, suggestions, save to the project, what is playing now),
  * and the project's saved tracks. The table read used to be a floating control in the writing area; it lives here now.
  */
+const noSubscribe = () => () => {};
+const isIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 export function SoundPanel(p: SoundPanelProps) {
   const { toast } = useToast();
+  // iOS plays speech through the ringer channel: the side switch silences the table read. Only said where it applies.
+  const ios = useSyncExternalStore(noSubscribe, isIos, () => false);
   const spotify = useSpotify();
   const mood = sceneMood(p.sceneBody, p.timeOfDay);
   const [tracks, setTracks] = useState<Track[] | null>(null);
@@ -137,6 +142,11 @@ export function SoundPanel(p: SoundPanelProps) {
           {reading && <button type="button" aria-label="Stop table read" style={{ ...round, background: 'transparent', color: 'var(--fg)', border: '1px solid rgba(var(--ink-rgb), 0.2)' }} onClick={tr.stop}><Square size={16} /></button>}
           {tr.sceneStartLine != null && <button type="button" style={ghost} disabled={!tr.supported} onClick={() => tr.start(tr.sceneStartLine!)}>From this scene</button>}
         </div>
+        {ios && (
+          <p role="note" style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--fg-muted)', lineHeight: 1.4 }}>
+            Hearing nothing on iPhone? The table read follows the side switch: it stays silent unless the phone is out of silent mode (switch up, no orange) and the volume is up.
+          </p>
+        )}
       </section>
 
       <section aria-label="Music for this scene">
