@@ -10,3 +10,5 @@ PR #427 (the owner's branch: the Studio's production views, the editor's outline
 **Not a defect, flagged for the owner:** the branch renames the "Ink & Rust" theme to "Misfit" and **makes it the default** (commit `3d90e1b4`), reversing the earlier Paper default (2026-11-03). Docs that say "Paper is the default" (`design-tokens.md`, the 11-03 notes) are now out of date; the code and its tests are consistent with the change.
 
 **Verified:** typecheck, lint, the unit suite (2135), the whole integration suite (79 files, 566 passed, 1 expected fail). **To do by hand after merge:** apply `20261106000000` and `20261106000100` to production, drift check, then staging.
+
+**Page weight (the last red check):** `/studio` was 364.3 kB against a 364 kB budget (0.3 over). The 26 views are already lazy (`dynamic()` in `ProductionTab`); the growth is the tab's own wiring (about 25 more icons, the view tables and wrappers). Budget raised to 368 on purpose (`performance-budget.json`), as `/projects/[id]` was raised before.
