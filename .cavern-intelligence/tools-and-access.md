@@ -274,7 +274,7 @@ checked by a program is. Both run for **every** pull request whoever wrote it
   review; every `var(--token)` used is defined; the lint baseline (`eslint-suppressions.json`) only shrinks (nine checks in all). A `chore(deps)` title exempts only a PR a dependency bot opened. A changed test counts only if it adds an assertion or case. The allowlist lookup reads only the §2.D table. The CI copy of the script is read
   from the **base** branch, so a PR cannot weaken the gate that judges it.
   Waivers are visible lines in the PR description: `No tests needed: <20+
-  characters>`, `Large change: <what and why>`. Replay on a merged commit:
+  characters>`, `Large change: <what and why>`. The line may be a bullet, a quote, a heading, a number, a task box or **bold**; the label and its colon are on one line and the reason follows on that line (or alone on the next); a line inside a code fence is quoted text and does not count; the 20 characters are the reason itself, not the Markdown around it. Replay on a merged commit:
   `node scripts/pr-gate.mjs --replay <sha>`.
 - **Lint ratchet** (`eslint.config.mjs` + `eslint-suppressions.json`). Dead code
   (`false &&`), `as any`, unused variables, `supabase.from/rpc` in components and
