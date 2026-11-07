@@ -361,6 +361,16 @@ column mood_boards.name text not null
 column mood_boards.project_id uuid not null
 column mood_boards.template text default 'free'::text not null
 column mood_boards.updated_at timestamp with time zone default now() not null
+column notes.body text not null
+column notes.context text
+column notes.created_at timestamp with time zone default now() not null
+column notes.created_by uuid default auth.uid() not null
+column notes.id uuid default gen_random_uuid() not null
+column notes.project_id uuid
+column notes.scene_id uuid
+column notes.scope text not null
+column notes.script_id uuid
+column notes.updated_at timestamp with time zone default now() not null
 column notifications.body text
 column notifications.created_at timestamp with time zone default now()
 column notifications.created_by uuid default auth.uid()
@@ -1098,6 +1108,15 @@ constraint mood_boards.mood_boards_name_check CHECK (((char_length(btrim(name)) 
 constraint mood_boards.mood_boards_pkey PRIMARY KEY (id)
 constraint mood_boards.mood_boards_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint mood_boards.mood_boards_template_check CHECK ((template = ANY (ARRAY['free'::text, 'character'::text, 'location'::text, 'tone'::text, 'colour'::text])))
+constraint notes.notes_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 4000)))
+constraint notes.notes_context_check CHECK (((context IS NULL) OR (char_length(context) <= 200)))
+constraint notes.notes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint notes.notes_pkey PRIMARY KEY (id)
+constraint notes.notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint notes.notes_scene_id_fkey FOREIGN KEY (scene_id) REFERENCES scenes(id) ON DELETE SET NULL
+constraint notes.notes_scope_check CHECK ((scope = ANY (ARRAY['private'::text, 'project'::text, 'writer'::text])))
+constraint notes.notes_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
+constraint notes.notes_target_check CHECK (((scope = 'private'::text) OR ((scope = 'project'::text) AND (project_id IS NOT NULL)) OR ((scope = 'writer'::text) AND (script_id IS NOT NULL))))
 constraint notifications.notifications_body_len CHECK ((char_length(body) <= 1000))
 constraint notifications.notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_link_internal CHECK (((link IS NULL) OR (link ~ '^/[^/\\]'::text)))
@@ -1451,6 +1470,8 @@ function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
+function internal.notes_guard() body=f037e936e037827c228459c730a1349b
+function internal.notes_notify() body=bf299502a7ddf025a2219d93b6215467
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
@@ -1588,6 +1609,8 @@ grant function internal.media_lifecycle_guard() postgres
 grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
 grant function internal.mood_boards_touch() postgres
+grant function internal.notes_guard() postgres
+grant function internal.notes_notify() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
@@ -1800,6 +1823,10 @@ index CREATE INDEX mood_board_items_media_idx ON public.mood_board_items USING b
 index CREATE INDEX mood_board_items_project_idx ON public.mood_board_items USING btree (project_id)
 index CREATE INDEX mood_boards_created_by_idx ON public.mood_boards USING btree (created_by)
 index CREATE INDEX mood_boards_project_idx ON public.mood_boards USING btree (project_id)
+index CREATE INDEX notes_created_by_idx ON public.notes USING btree (created_by, created_at DESC)
+index CREATE INDEX notes_project_idx ON public.notes USING btree (project_id, created_at DESC)
+index CREATE INDEX notes_scene_idx ON public.notes USING btree (scene_id)
+index CREATE INDEX notes_script_idx ON public.notes USING btree (script_id, created_at DESC)
 index CREATE INDEX notifications_created_by_fkey_idx ON public.notifications USING btree (created_by)
 index CREATE INDEX notifications_user_unread_idx ON public.notifications USING btree (user_id, read, created_at DESC)
 index CREATE INDEX phase_gates_decided_by_idx ON public.phase_gates USING btree (decided_by)
@@ -1966,6 +1993,7 @@ index CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
 index CREATE UNIQUE INDEX mood_board_items_pkey ON public.mood_board_items USING btree (id)
 index CREATE UNIQUE INDEX mood_boards_id_project_key ON public.mood_boards USING btree (id, project_id)
 index CREATE UNIQUE INDEX mood_boards_pkey ON public.mood_boards USING btree (id)
+index CREATE UNIQUE INDEX notes_pkey ON public.notes USING btree (id)
 index CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)
 index CREATE UNIQUE INDEX phase_gates_pkey ON public.phase_gates USING btree (id)
 index CREATE UNIQUE INDEX portfolio_blocks_pkey ON public.portfolio_blocks USING btree (id)
@@ -2146,6 +2174,10 @@ policy public.mood_boards "mood_boards delete" PERMISSIVE DELETE to authenticate
 policy public.mood_boards "mood_boards insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.mood_boards "mood_boards view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.notes "notes delete" PERMISSIVE DELETE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR ((scope = 'project'::text) AND internal.is_project_creator(project_id))) check -
+policy public.notes "notes insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (((scope = 'private'::text) AND ((project_id IS NULL) OR internal.can_access_project(project_id)) AND ((script_id IS NULL) OR internal.can_access_script(script_id))) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id))))
+policy public.notes "notes update" PERMISSIVE UPDATE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) AND ((scope = 'private'::text) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id)))) check (created_by = ( SELECT auth.uid() AS uid))
+policy public.notes "notes view" PERMISSIVE SELECT to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id))) check -
 policy public.notifications "Users can delete their own notifications" PERMISSIVE DELETE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can update their own notifications" PERMISSIVE UPDATE to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
@@ -2308,6 +2340,7 @@ realtime public.media
 realtime public.messages
 realtime public.mood_board_items
 realtime public.mood_boards
+realtime public.notes
 realtime public.notifications
 realtime public.post_cuts
 realtime public.post_items
@@ -2371,6 +2404,7 @@ rls media enabled=true forced=false
 rls messages enabled=true forced=false
 rls mood_board_items enabled=true forced=false
 rls mood_boards enabled=true forced=false
+rls notes enabled=true forced=false
 rls notifications enabled=true forced=false
 rls phase_gates enabled=true forced=false
 rls portfolio_blocks enabled=true forced=false
@@ -2471,6 +2505,8 @@ trigger CREATE TRIGGER messages_delete_guard BEFORE DELETE ON public.messages FO
 trigger CREATE TRIGGER messages_insert_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.messages_insert_guard()
 trigger CREATE TRIGGER mood_board_items_touch BEFORE UPDATE ON public.mood_board_items FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER mood_boards_touch BEFORE UPDATE ON public.mood_boards FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
+trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_guard()
+trigger CREATE TRIGGER notes_notify AFTER INSERT ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_notify()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()

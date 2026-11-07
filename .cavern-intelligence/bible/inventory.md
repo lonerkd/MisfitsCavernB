@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**48 pages · 6 API routes · 88 tables · 62 database functions · 89 e2e specs**
+**48 pages · 6 API routes · 89 tables · 62 database functions · 89 e2e specs**
 
 ## Routes
 
@@ -408,6 +408,7 @@
 | `messages` | `/community`, `/lounge`, `/`, `/projects/[id]` |
 | `mood_board_items` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `mood_boards` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
+| `notes` | **no route** (server-side, triggers or functions only) |
 | `notifications` | `/p/[token]`, `/admin/hub`, `/admin`, `/auth/callback`, `/auth`, `/community`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/welcome`, `/api/push/dispatch` |
 | `phase_gates` | **no route** (server-side, triggers or functions only) |
 | `portfolio_blocks` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |

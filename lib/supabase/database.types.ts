@@ -2055,6 +2055,68 @@ export type Database = {
           },
         ];
       };
+      notes: {
+        Row: {
+          body: string;
+          context: string | null;
+          created_at: string;
+          created_by: string;
+          id: string;
+          project_id: string | null;
+          scene_id: string | null;
+          scope: string;
+          script_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope?: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notes_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_scene_id_fkey";
+            columns: ["scene_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           body: string | null;
