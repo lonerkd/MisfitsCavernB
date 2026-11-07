@@ -5,10 +5,10 @@ import { Trash2, Pencil, Lock, Users, PenLine } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { supabase } from '@/lib/supabase/client';
+import { NOTE_FOCUS_EVENT, noteFocusDone, noteFocusWanted } from '@/lib/notes/focus';
 import { NOTE_SCOPES, addNote, deleteNote, editNote, listNotes, type Note, type NoteScope, type NoteTarget } from '@/lib/supabase/notes';
 
 const ICON = { private: Lock, project: Users, writer: PenLine } as const;
-export const NOTE_FOCUS_EVENT = 'mc-notes-focus';
 
 interface Props extends NoteTarget {
   userId: string | null;
@@ -56,7 +56,8 @@ export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, contex
 
   // The island's Note slot asks for the box.
   useEffect(() => {
-    const focus = () => box.current?.focus();
+    const focus = () => { if (box.current) { box.current.focus(); noteFocusDone(); } };
+    if (noteFocusWanted()) focus();
     window.addEventListener(NOTE_FOCUS_EVENT, focus);
     return () => window.removeEventListener(NOTE_FOCUS_EVENT, focus);
   }, []);

@@ -28,7 +28,9 @@ export interface NoteTarget { scriptId?: string | null; projectId?: string | nul
 export async function listNotes(target: NoteTarget): Promise<Note[]> {
   if (!target.scriptId && !target.projectId) return [];
   let q = supabase.from('notes').select('*').order('created_at', { ascending: false }).limit(200);
-  if (target.scriptId) q = q.eq('script_id', target.scriptId);
+  // A script's list holds its own notes and, when its project is known, the project's notes (a project note has no script).
+  if (target.scriptId && target.projectId) q = q.or(`script_id.eq.${target.scriptId},and(project_id.eq.${target.projectId},script_id.is.null)`);
+  else if (target.scriptId) q = q.eq('script_id', target.scriptId);
   else q = q.eq('project_id', target.projectId!).is('script_id', null);
   const { data, error } = await q;
   if (error) throw error;

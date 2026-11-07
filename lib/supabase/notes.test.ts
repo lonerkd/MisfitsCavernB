@@ -30,6 +30,11 @@ describe('listNotes', () => {
     await listNotes({ projectId: 'p1' });
     expect(f.calls.some((c) => c.method === 'is' && c.args[0] === 'script_id')).toBe(true);
   });
+  it('a script list also holds the project\'s own notes', async () => {
+    const f = useFake({ notes: { data: [] } });
+    await listNotes({ scriptId: 's1', projectId: 'p1' });
+    expect(f.calls.find((c) => c.method === 'or')?.args[0]).toMatch(/script_id\.eq\.s1.*project_id\.eq\.p1.*script_id\.is\.null/);
+  });
   it('throws what the database said', async () => {
     useFake({ notes: { error: { message: 'no' } } });
     await expect(listNotes({ projectId: 'p' })).rejects.toMatchObject({ message: 'no' });
