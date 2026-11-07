@@ -110,7 +110,8 @@ export function evaluate(ctx) {
   add('tokens-defined', undefinedTokens.length === 0, `Token(s) used but defined nowhere: ${undefinedTokens.join(', ')}. Use one from app/globals.css (design-tokens.md).`);
 
   // 9. The lint baseline only shrinks: a new violation is fixed, not recorded.
-  if (ctx.suppressions) {
+  // (Skipped when the base has no baseline yet: the PR that creates it is the baseline.)
+  if (ctx.suppressions?.base) {
     const grew = [];
     const { base, head } = ctx.suppressions;
     for (const [file, rules] of Object.entries(head ?? {})) for (const [rule, v] of Object.entries(rules)) {

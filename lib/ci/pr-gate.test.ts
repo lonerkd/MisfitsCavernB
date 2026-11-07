@@ -110,6 +110,9 @@ describe('the merge gate', () => {
   describe('lint-baseline-shrinks', () => {
     const sup = (n: number) => ({ 'a.ts': { 'no-unused-vars': { count: n } } });
     const withSup = (base: unknown, head: unknown) => run([NOTE], { suppressions: { base, head } } as never);
+    it('is skipped while the base has no baseline (the PR that creates it)', () => {
+      expect(withSup(null, sup(3)).results.some((r) => r.id === 'lint-baseline-shrinks')).toBe(false);
+    });
     it('may shrink or stay, never grow or add', () => {
       expect(withSup(sup(3), sup(2)).byId['lint-baseline-shrinks'].ok).toBe(true);
       expect(withSup(sup(3), sup(3)).byId['lint-baseline-shrinks'].ok).toBe(true);
