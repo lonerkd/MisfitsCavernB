@@ -1254,7 +1254,7 @@ export default function EditorPage() {
       {isMobile && (
         <>
           <BottomSheet open={sheet === 'scripts'} onClose={closeSheet} title="Scripts and scenes" keyboard={phone.keyboard} full>{leftNavEl}</BottomSheet>
-          <BottomSheet open={sheet === 'views'} onClose={closeSheet} title="View">
+          <BottomSheet open={sheet === 'views'} onClose={closeSheet} title="View" keyboard={phone.keyboard}>
             <div role="group" aria-label="View" style={{ display: 'grid', gap: 8 }}>
               {(Object.keys(VIEW_LABELS) as Array<keyof typeof VIEW_LABELS>).map((v) => (
                 <button key={v} type="button" aria-pressed={activeView === v} onClick={() => { setActiveView(v); closeSheet(); }}
@@ -1263,7 +1263,7 @@ export default function EditorPage() {
             </div>
           </BottomSheet>
           <BottomSheet open={sheet === 'tools'} onClose={closeSheet} title="Tools" keyboard={phone.keyboard} full>{rightPanelsEl}</BottomSheet>
-          <BottomSheet open={sheet === 'more'} onClose={closeSheet} title="More">
+          <BottomSheet open={sheet === 'more'} onClose={closeSheet} title="More" keyboard={phone.keyboard}>
             <div style={{ display: 'grid', gap: 8 }}>
               {[
                 { label: saving ? 'Saving…' : 'Save now', run: () => { void handleSave(); } },
