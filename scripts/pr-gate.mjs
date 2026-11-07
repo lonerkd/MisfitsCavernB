@@ -60,8 +60,10 @@ const allowlisted = (doc, name) => {
 
 const waiver = (body, label) => {
   // The line may be dressed as Markdown (a bullet, a quote, **bold**): `**Large change:** why` is the same waiver as `Large change: why`.
-  const m = new RegExp(`^[\\s>*_-]*${label}:?\\**_*\\s*:?\\s*(.{20,})`, 'im').exec(body ?? '');
-  return m ? m[1].trim() : null;
+  // The label must be followed by its colon (so `No tests neededly:` is not a waiver), and the reason is measured after trimming.
+  const m = new RegExp(`^[\\s>*_-]*${label}[*_]*\\s*:[*_]*[ \\t]*(.*)$`, 'im').exec(body ?? '');
+  const reason = m ? m[1].trim() : '';
+  return reason.length >= 20 ? reason : null;
 };
 
 /** ctx: { title, body, files: [{ path, status: 'A'|'M'|'D'|'R', added: string[] }], tracked: (path)=>string|null, grep: (word)=>boolean,

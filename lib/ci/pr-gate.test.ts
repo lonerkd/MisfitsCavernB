@@ -123,6 +123,12 @@ describe('the merge gate', () => {
       }
       expect(run(f, { body: '**No tests needed:** ok' }).failed).toContain('tests-with-code');
     });
+    it('a longer label is not the waiver, and the reason is counted after trimming', () => {
+      const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), NOTE];
+      expect(run(f, { body: 'No tests neededly: this is a long unrelated sentence about nothing' }).failed).toContain('tests-with-code');
+      expect(run(f, { body: 'No tests needed: 1234567890123456789   ' }).failed).toContain('tests-with-code'); // 19 characters + spaces
+      expect(run(f, { body: 'No tests needed: 12345678901234567890' }).byId['tests-with-code'].ok).toBe(true); // exactly 20
+    });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);
       expect(run([file('lib/x/x.ts', 'M', 500)], { title: 'chore(deps): bump a', author: 'dependabot[bot]' } as never).byId['tests-with-code'].ok).toBe(true);
