@@ -173,4 +173,10 @@ describe('SoundPanel: saved tracks', () => {
     render(<SoundPanel {...base()} />);
     expect(screen.getByText(/Nothing saved yet/)).toBeTruthy();
   });
+  it('tells an iPhone writer about the side switch', () => {
+    const spy = vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)');
+    render(<SoundPanel {...base()} />);
+    expect(screen.getByRole('note').textContent).toMatch(/side switch/);
+    spy.mockRestore();
+  });
 });
