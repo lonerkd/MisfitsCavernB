@@ -9,7 +9,7 @@ ALTER TABLE public.project_audio_references
 ALTER TABLE public.project_audio_references
   ADD CONSTRAINT project_audio_references_role_check CHECK (role IS NULL OR role IN ('theme', 'source', 'temp', 'needle_drop', 'ambience')),
   ADD CONSTRAINT project_audio_references_tags_check CHECK (cardinality(tags) <= 12);
-CREATE INDEX project_audio_references_for_scene_idx ON public.project_audio_references USING btree (for_scene) WHERE for_scene IS NOT NULL;
+CREATE INDEX project_audio_references_for_scene_idx ON public.project_audio_references USING btree (for_scene);
 
 -- Anyone who can open the project may tag its tracks (the tag is about the scene, not about who found the song).
 CREATE POLICY "audio refs update" ON public.project_audio_references FOR UPDATE TO authenticated

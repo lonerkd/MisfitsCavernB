@@ -1857,7 +1857,7 @@ index CREATE INDEX post_notes_scene_fkey_idx ON public.post_notes USING btree (s
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
 index CREATE INDEX project_audio_references_added_by_fkey_idx ON public.project_audio_references USING btree (added_by)
-index CREATE INDEX project_audio_references_for_scene_idx ON public.project_audio_references USING btree (for_scene) WHERE (for_scene IS NOT NULL)
+index CREATE INDEX project_audio_references_for_scene_idx ON public.project_audio_references USING btree (for_scene)
 index CREATE INDEX project_audio_references_project_id_fkey_idx ON public.project_audio_references USING btree (project_id)
 index CREATE INDEX project_audio_references_script_id_fkey_idx ON public.project_audio_references USING btree (script_id)
 index CREATE INDEX project_brief_answered_by_fkey_idx ON public.project_brief USING btree (answered_by)
