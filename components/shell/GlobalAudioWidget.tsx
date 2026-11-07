@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-import { Play, Pause, SkipBack, SkipForward, Disc, Volume2, LogOut, Link2Off, RefreshCw } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Disc, Volume2, LogOut, Link2Off, RefreshCw, Maximize2 } from 'lucide-react';
+import { CavernVisualizer } from './CavernVisualizer';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
@@ -61,6 +62,7 @@ export default function GlobalAudioWidget() {
   const { toast } = useToast();
 
   const [expanded, setExpanded] = useState(false);
+  const [visualizer, setVisualizer] = useState(false);
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const sources = useListeningSources(isAuthenticated && expanded && useIframeFallback);
   const active = sources?.find((x) => x.key === activeKey) ?? sources?.[0] ?? null;
@@ -253,6 +255,7 @@ export default function GlobalAudioWidget() {
         </motion.div>
       </button>
 
+      {visualizer && <CavernVisualizer onClose={() => setVisualizer(false)} />}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -273,6 +276,8 @@ export default function GlobalAudioWidget() {
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>
                 Mode: {useIframeFallback ? 'Free' : 'Premium'}
               </span>
+              <button type="button" aria-label="Full screen visualizer" title="Full screen" onClick={() => { setVisualizer(true); setExpanded(false); }}
+                style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', minWidth: 28, minHeight: 28, justifyContent: 'center' }}><Maximize2 size={14} /></button>
               <button
                 onClick={() => setUseIframeFallback(!useIframeFallback)}
                 style={{

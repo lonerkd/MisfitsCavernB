@@ -122,8 +122,10 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
         <>
           <div aria-hidden onClick={close} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
           <div role="dialog" aria-label="Share this script" style={{
-            position: 'absolute', top: 'calc(100% + 8px)', right: 0, zIndex: 200,
-            width: 'min(340px, calc(100vw - 32px))', padding: 16,
+            // Fixed to the screen's top-right, under the header: the header scrolls sideways on a phone (overflow-x), which clips
+            // an absolutely positioned popdown at its own edge.
+            position: 'fixed', top: 'calc(64px + env(safe-area-inset-top))', right: 'max(12px, env(safe-area-inset-right))', zIndex: 200,
+            width: 'min(340px, calc(100vw - 24px))', padding: 16,
             background: 'var(--surface)', backdropFilter: 'blur(20px)',
             border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 14,
             boxShadow: '0 16px 48px rgba(0,0,0,0.6)', display: 'flex', flexDirection: 'column', gap: 12,
