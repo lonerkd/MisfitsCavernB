@@ -47,10 +47,12 @@ const measure = () => {
       for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) { if (['auto', 'scroll', 'hidden', 'clip'].includes(getComputedStyle(p).overflowX) && p.getBoundingClientRect().right <= vw + 1) { clipped = true; break; } }
       if (!clipped && getComputedStyle(el).position !== 'fixed') out.wide.push(`${label} +${Math.round(r.right - vw)}px`);
     }
-    // A link's tappable area can reach past its text (a ::after with negative top and bottom): count it.
-    let tallest = r.height;
-    if (el.matches('a[href]')) { const a = getComputedStyle(el, '::after'); if (a.content !== 'none' && a.position === 'absolute') tallest = r.height - (parseFloat(a.top) || 0) - (parseFloat(a.bottom) || 0); }
-    if (interactive && (r.width < 40 || tallest < 40) && r.width > 0 && !el.closest('[aria-hidden=true]') && !(el.matches('a') && el.closest('p,li') && r.height >= 20)) out.small.push(`${label} ${Math.round(r.width)}×${Math.round(r.height)}`);
+    // A link's tappable area can reach past its text (a ::after with negative offsets): count it. Apple's target is 44 pt; a text link
+    // may be narrower (24 pt, WCAG 2.5.8) because a sentence sets its width.
+    let tall = r.height, wide = r.width;
+    if (el.matches('a[href]')) { const a = getComputedStyle(el, '::after'); if (a.content !== 'none' && a.position === 'absolute') { tall = r.height - (parseFloat(a.top) || 0) - (parseFloat(a.bottom) || 0); wide = r.width - (parseFloat(a.left) || 0) - (parseFloat(a.right) || 0); } }
+    const minWide = el.matches('a[href]') ? 24 : 44;
+    if (interactive && (wide < minWide || tall < 44) && r.width > 0 && !el.closest('[aria-hidden=true]') && !(el.matches('a') && el.closest('p,li') && r.height >= 20)) out.small.push(`${label} ${Math.round(r.width)}×${Math.round(r.height)}`);
     if (el.childNodes.length && [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()) && parseFloat(getComputedStyle(el).fontSize) < 11) out.tiny.push(`${label} ${getComputedStyle(el).fontSize}`);
     if (interactive && r.top >= 0 && r.bottom <= vh) {
       for (const b of bars) { if (b.contains(el)) continue; const br = b.getBoundingClientRect(); if (r.bottom > br.top + 4 && r.top < br.bottom - 4 && r.left < br.right && r.right > br.left && getComputedStyle(b).zIndex !== 'auto') { out.hiddenUnderBar.push(`${label} under ${b.tagName.toLowerCase()}.${String(b.className).split(' ')[0]}`); break; } }

@@ -1047,10 +1047,10 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
 @media (pointer: coarse) {
   button, select, summary, [role='button'], [role='tab'], [role='menuitem'], input[type='button'], input[type='submit'], input[type='reset'] { min-height: 44px !important; }
   button, [role='button'], [role='tab'] { min-width: 44px !important; }
-  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em); }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em) !important; }
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select { min-height: 44px; }
   input[type='checkbox'], input[type='radio'] { min-width: 24px; min-height: 24px; }
   .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
   :where(a[href]) { position: relative; }
-  :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: min(-13px, calc((22px - 44px) / 2)); bottom: min(-13px, calc((22px - 44px) / 2)); }
+  :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: -14px; bottom: -14px; }
 }
