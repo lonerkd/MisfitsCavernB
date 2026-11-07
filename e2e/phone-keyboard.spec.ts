@@ -57,4 +57,40 @@ test.describe('The keyboard on a phone (local Supabase)', () => {
       await ctx.close();
     });
   }
+
+  test('portrait: the Lounge composer sits on top of the keyboard, not under it', async ({ browser }) => {
+    test.setTimeout(90_000);
+    const ctx = await browser.newContext(PHONE);
+    await ctx.addInitScript(() => {
+      const w = window as unknown as { __kb: number; __setKb: (n: number) => void };
+      w.__kb = 0;
+      Object.defineProperty(window, 'visualViewport', { configurable: true, get: () => ({ get height() { return window.innerHeight - w.__kb; }, offsetTop: 0, addEventListener() {}, removeEventListener() {} }) });
+      w.__setKb = (n) => { w.__kb = n; window.dispatchEvent(new Event('resize')); };
+    });
+    const page = await ctx.newPage();
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', me.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await page.goto('/lounge');
+    // The first channels are read-only guides: open channels until one has a composer.
+    const channels = page.locator('.mc-lounge-channels button');
+    await expect(channels.first()).toBeVisible({ timeout: 30_000 });
+    const box = page.locator('.mc-lounge-composer textarea').first();
+    for (let i = 0; i < await channels.count() && !(await box.isVisible()); i++) {
+      if (!(await page.locator('.mc-lounge-channels').first().isVisible())) await page.locator('.mc-lounge-back').first().click();
+      await channels.nth(i).click();
+      await page.waitForTimeout(400);
+    }
+    await expect(box).toBeVisible({ timeout: 20_000 });
+    await box.focus();
+    await page.evaluate((n) => (window as unknown as { __setKb: (n: number) => void }).__setKb(n), 336);
+    await expect(page.locator('html')).toHaveAttribute('data-typing', 'true');
+    await expect.poll(async () => {
+      const b = (await page.locator('.mc-lounge-composer').first().boundingBox())!;
+      return b.y >= 0 && b.y + b.height <= page.viewportSize()!.height - 336 + 1;
+    }, { timeout: 10_000 }).toBe(true);
+    await ctx.close();
+  });
 });
