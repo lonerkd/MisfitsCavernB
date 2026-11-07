@@ -50,7 +50,7 @@ test.describe('Notes (local Supabase)', () => {
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByTitle('Notes', { exact: true }).click();
-    // The first list has settled : anything Jordan sees afterwards arrived live, not through that first fetch.
+    // The first list has settled: anything Jordan sees afterwards arrived live, not through that first fetch.
     await expect(page.getByLabel('New note')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('Loading notes…')).toHaveCount(0, { timeout: 30_000 });
     return { ctx, page };
@@ -113,7 +113,9 @@ test.describe('Notes (local Supabase)', () => {
     await a.page.getByRole('button', { name: 'Add note' }).click();
     await expect(a.page.getByText('cut the second beat')).toBeVisible();
     // Jordan opens the same script: the writer note is in his list, labelled as one.
-    await expect(b.page.getByText('cut the second beat')).toBeVisible({ timeout: 30_000 });
+    const card = b.page.locator('li', { hasText: 'cut the second beat' });
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    await expect(card.getByText('Writers', { exact: true })).toBeVisible();
     const told = await admin.from('notifications').select('title, link').eq('user_id', jordan.id).eq('type', 'note');
     expect(told.data?.some((n) => n.link === `/editor?script=${scriptId}` && /writer note/.test(n.title))).toBe(true);
 
