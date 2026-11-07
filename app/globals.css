@@ -1054,3 +1054,8 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
   :where(a[href]) { position: relative; }
   :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: -14px; bottom: -14px; }
 }
+
+/* The keyboard is up (components/phone/PhoneKeyboard.tsx publishes --kb): the page's scroll area leaves room for it, so the last
+   field and its button can be scrolled above the keyboard. */
+html[data-typing='true'] body { padding-bottom: var(--kb, 0px); }
+html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb, 0px) + 24px); }

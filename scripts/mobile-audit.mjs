@@ -28,8 +28,8 @@ const ROUTES = [
 
 const base = devices['iPhone 15 Pro'];
 const MODES = [
-  { name: 'portrait', ctx: { ...base }, keyboard: 852 - 336 },
-  { name: 'landscape', ctx: { ...base, viewport: { width: 852, height: 393 }, screen: { width: 852, height: 393 } }, keyboard: 393 - 200 },
+  { name: 'portrait', ctx: { ...base } },
+  { name: 'landscape', ctx: { ...base, viewport: { width: 852, height: 393 }, screen: { width: 852, height: 393 } } },
 ];
 
 const measure = () => {
@@ -68,6 +68,12 @@ try {
 browser = await chromium.launch(process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : {});
 for (const mode of MODES) {
   const ctx = await browser.newContext(mode.ctx);
+  // Chromium cannot raise an iOS keyboard: fake the only thing the app reads for it, `visualViewport`.
+  await ctx.addInitScript(() => {
+    window.__kb = 0;
+    Object.defineProperty(window, 'visualViewport', { configurable: true, get: () => ({ get height() { return window.innerHeight - window.__kb; }, offsetTop: 0, addEventListener() {}, removeEventListener() {} }) });
+    window.__setKb = (n) => { window.__kb = n; window.dispatchEvent(new Event('resize')); };
+  });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/auth`);
   await page.fill('input[name="email"]', EMAIL);
@@ -87,18 +93,19 @@ for (const mode of MODES) {
       if (await field.count()) {
         await field.scrollIntoViewIfNeeded().catch(() => {});
         await field.focus({ timeout: 3000 }).catch(() => {});
-        await page.setViewportSize({ width: mode.ctx.viewport?.width ?? 393, height: mode.keyboard });
-        await page.waitForTimeout(400);
+        const kb = mode.name === 'portrait' ? 336 : 200;
+        await page.evaluate((n) => window.__setKb(n), kb);
+        await page.waitForTimeout(1200);
         entry.keyboard = await page.evaluate(() => {
           const el = document.activeElement; if (!el || el === document.body) return { focused: false };
-          const r = el.getBoundingClientRect(), vh = window.innerHeight;
+          const r = el.getBoundingClientRect(), vh = window.innerHeight - window.__kb;
           const form = el.closest('form') || el.closest('[role=dialog]') || el.parentElement?.parentElement;
           const act = form ? [...form.querySelectorAll('button[type=submit],button:not([type])')].find((b) => b.offsetParent) : null;
           const ar = act ? act.getBoundingClientRect() : null;
           return { focused: true, inView: r.top >= 0 && r.bottom <= vh, actionInView: ar ? ar.top >= 0 && ar.bottom <= vh : null, action: act ? (act.getAttribute('aria-label') || act.textContent || '').trim().slice(0, 24) : null, top: Math.round(r.top), bottom: Math.round(r.bottom), screen: vh, name: `${el.tagName.toLowerCase()} ${(el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').slice(0, 30)}` };
         });
         await page.screenshot({ path: `${OUT}/${slug}-keyboard.png` });
-        await page.setViewportSize(mode.ctx.viewport ?? { width: 393, height: 852 });
+        await page.evaluate(() => window.__setKb(0));
       }
     } catch (e) { entry.error = String(e).slice(0, 200); }
     report.push(entry);
