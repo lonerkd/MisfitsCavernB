@@ -1,0 +1,1146 @@
+{
+  ".claude/skills/run-misfits-cavern/driver.mjs": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    }
+  },
+  "app/(public)/p/[token]/PortfolioView.tsx": {
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "app/(public)/review/[token]/ReviewClient.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(public)/s/[token]/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/(suite)/admin/analytics/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/(suite)/admin/audit-logs/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "app/(suite)/admin/brief-questions/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/channel-presets/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/crafts/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/admin/errors/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/formats/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/hub/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/page.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "app/(suite)/admin/support/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/admin/users/page.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/auth/callback/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/auth/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "app/(suite)/auth/reset/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/crew/[id]/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "app/(suite)/crew/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/crew/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/editor/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 46
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "app/(suite)/hub/help/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/jobs/[id]/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 11
+    }
+  },
+  "app/(suite)/jobs/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/jobs/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "app/(suite)/lounge/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/opengraph-image.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/(suite)/portfolio/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/portfolio/manage/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/portfolio/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "app/(suite)/profile/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/profile/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/(suite)/projects/[id]/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 5
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "app/(suite)/projects/[id]/pitch/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "app/(suite)/projects/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "app/(suite)/settings/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/settings/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "app/(suite)/showcase/page.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "app/(suite)/soundtrack/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "app/(suite)/soundtrack/page.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 10
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "app/(suite)/studio/loading.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/api/references/search/route.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "app/error.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "app/global-error.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "app/not-found.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/ad/BrandKitPanel.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/availability/AwayEditor.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/breakdown/ElementCard.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/brief/BriefPanel.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/community/TheCavern.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/CutNoteMarkers.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/editor/DiffModal.tsx": {
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "components/editor/DoubtfulReads.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/EditorCenterViews.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "components/editor/EditorErrorBoundary.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/editor/EditorHeader.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 103
+    },
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "components/editor/EditorLeftNav.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "components/editor/EditorModals.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "components/editor/EditorSidePanels.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 17
+    }
+  },
+  "components/editor/PreviewView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 121
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/editor/ReadingCorrections.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/SceneReferencesPanel.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "components/editor/ShareScriptButton.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/SyncStatusChip.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/TimingPanel.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/editor/WriteFooter.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 122
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "components/editor/WriteView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 112
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/editor/WritingLoop.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/editor/editorCtx.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 51
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/editor/editorPageParts.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "components/editor/useEditUndo.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/hub/HubMarkdown.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/hub/IncidentDetail.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/hub/SupportThread.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/jobs/JobCards.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/jobs/PostModal.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/lounge/ChannelModals.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "components/lounge/ChannelRail.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/lounge/ChatHeader.tsx": {
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "components/lounge/Composer.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/lounge/CrewList.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/lounge/LoungePanels.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "components/lounge/LoungeTopBar.tsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "components/lounge/MessageParts.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/lounge/ThreadPanel.tsx": {
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "components/lounge/useLounge.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    }
+  },
+  "components/mobile/Continue.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/progress/LoglineEditor.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/projects/AnnouncementBox.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/projects/ViewAs.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/projects/hub/DeptWindow.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/projects/hub/ProductionManager.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 8
+    }
+  },
+  "components/settings/DeleteAccount.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/shell/CommandPalette.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/shell/EcosystemTaskbar.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/shell/GlobalAudioWidget.tsx": {
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "components/shell/Navigation.tsx": {
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "components/shell/NotificationBell.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/shell/ShortcutsOverlay.tsx": {
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "components/studio/CastingBoard.tsx": {
+    "no-restricted-syntax": {
+      "count": 7
+    }
+  },
+  "components/studio/CrewBoards.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 6
+    },
+    "no-restricted-syntax": {
+      "count": 5
+    }
+  },
+  "components/studio/PitchDeck.tsx": {
+    "no-restricted-syntax": {
+      "count": 6
+    }
+  },
+  "components/studio/ScenePassport.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/studio/StudioContext.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/studio/media/MediaDetail.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/studio/post/CutPlayer.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "components/studio/production/CallSheetsPanel.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/CameraReportView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/CastBreakdownView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/studio/production/CommsView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
+  "components/studio/production/ContinuityView.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/CostumeView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/DirectorNotebookView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/DoodView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "components/studio/production/GearView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/MakeupView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/MediaOffloadView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/OnSetView.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/PermitView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/PoView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/ProductionReportView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 5
+    }
+  },
+  "components/studio/production/PropsView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 3
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/RehearsalView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/RevisionsView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/RiskRegisterView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "no-restricted-syntax": {
+      "count": 4
+    }
+  },
+  "components/studio/production/SafetyView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/studio/production/ScoutView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/ScriptSupView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/ShotListView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 5
+    }
+  },
+  "components/studio/production/SoundReportView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/production/StripboardView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/TransportView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/studio/production/VfxView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/production/WeatherView.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "no-restricted-syntax": {
+      "count": 3
+    }
+  },
+  "components/studio/production/WrapView.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "components/studio/shots/ShotDesigner.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/studio/tabs/PromosTab.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/studio/tabs/ScenesTab.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/ui/Avatar.tsx": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/ui/Button.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 8
+    }
+  },
+  "components/ui/Confirm.tsx": {
+    "no-restricted-syntax": {
+      "count": 1
+    }
+  },
+  "components/ui/ParticleBackground.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "components/ui/PhotoGallery.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/ui/ReportButton.tsx": {
+    "no-restricted-syntax": {
+      "count": 2
+    }
+  },
+  "components/ui/Textarea.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "e2e/cut-notes.spec.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "e2e/push.spec.ts": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "lib/film/days.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/island/scale.test.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/os/PresenceContext.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "lib/os/SpotifyContext.tsx": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-namespace": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/os/boot.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "lib/os/hooks.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/os/queries.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "lib/os/sync.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "lib/scriptos/bible.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "lib/scriptos/blocks.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "lib/scriptos/cowriting.test.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/scriptos/normalize.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "lib/scriptos/parser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 10
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/scriptos/revisions.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "lib/scriptos/storage.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "lib/scriptos/sync.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "lib/scriptos/types.test.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 5
+    }
+  },
+  "lib/spotify/search.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "lib/storage/cache-versioning.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "lib/studio/api.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 4
+    }
+  },
+  "lib/supabase/activity.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "lib/supabase/audit.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    }
+  },
+  "lib/supabase/casting.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "lib/supabase/channels.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "lib/supabase/crew-management.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "lib/supabase/messages.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "lib/supabase/portfolio.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "lib/supabase/projects.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "lib/webrtc/voice.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 7
+    }
+  },
+  "next.config.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    }
+  },
+  "scripts/check-sessions.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    }
+  },
+  "scripts/copy-pdf-worker.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    }
+  },
+  "scripts/latest-sessions.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 3
+    }
+  },
+  "scripts/scan-staged.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 1
+    }
+  },
+  "scripts/sync-intel.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    }
+  },
+  "scripts/test-anon-rls.js": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    }
+  }
+}

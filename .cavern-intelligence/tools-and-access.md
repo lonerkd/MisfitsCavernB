@@ -259,3 +259,28 @@ Labels: `backlog`, `size/S|M|L|XL`, `needs-owner` (waiting on a decision), `agen
 **Safety.** The repository is public, so issue and comment text is untrusted: only the owner's label starts a run, the prompt tells the agent to treat issue text as a description, and the allowed commands cannot push anywhere except `claude/*` branches. Agents never merge and never push `main`; the owner's merge and CI are the gate.
 
 **What does not exist any more.** GitHub Models (the free model quota for Actions) was retired on 2026-07-30, and the earlier local daemon was removed, so there is no free AI worker; the pipeline around it is free.
+
+## 9. The merge gate and the lint ratchet (same for every author)
+
+Rules a weaker model or a tired person can skip are not rules, so what can be
+checked by a program is. Both run for **every** pull request whoever wrote it
+(a person, Claude, Copilot, another agent).
+
+- **`gate` job** (`ci.yml`, `scripts/pr-gate.mjs`, unit-tested in
+  `lib/ci/pr-gate.test.ts`). Checks: a merged migration is never edited; a new
+  `SECURITY DEFINER` function is on the §2.D allowlist in the same PR; a new
+  table has RLS in its migration; tests move with source; new components bring
+  new tests in proportion; a session note exists; the change is small enough to
+  review; every `var(--token)` used is defined. The CI copy of the script is read
+  from the **base** branch, so a PR cannot weaken the gate that judges it.
+  Waivers are visible lines in the PR description: `No tests needed: <20+
+  characters>`, `Large change: <what and why>`. Replay on a merged commit:
+  `node scripts/pr-gate.mjs --replay <sha>`.
+- **Lint ratchet** (`eslint.config.mjs` + `eslint-suppressions.json`). Dead code
+  (`false &&`), `as any`, unused variables, `supabase.from/rpc` in components and
+  hard-coded colours are errors. Existing violations are recorded in the
+  suppressions file; new ones fail, and one you fix must be removed from it with
+  `npm run lint:ratchet`.
+- **Not yet enforced** (owner decisions, BACKLOG 3.40): marking `gate` a required
+  status check and removing the admin bypass in the `main-2` ruleset; a
+  SHA-bound Claude review check; a PR-level browser job.

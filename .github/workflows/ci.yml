@@ -46,6 +46,35 @@ jobs:
           if echo "$CHANGED" | grep -qE '^(app|components|lib|public|e2e|supabase)/|^proxy\.ts$|^(next|playwright|tailwind|postcss)\.config|^package(-lock)?\.json$|^\.github/workflows/(ci|e2e-scheduled)\.yml$'; then APP=true; else APP=false; fi
           { echo "code=$CODE"; echo "db=$DB"; echo "app=$APP"; } | tee -a "$GITHUB_OUTPUT"
 
+  # The merge gate: the same deterministic checks for every author (person, Claude, Copilot, any agent).
+  # The script is read from the BASE branch, so a pull request cannot weaken the gate that judges it.
+  # Title and description reach the script through the environment, never interpolated into the shell.
+  gate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Run the gate from the base branch
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git cat-file -e "$BASE_SHA:scripts/pr-gate.mjs" 2>/dev/null; then
+            git show "$BASE_SHA:scripts/pr-gate.mjs" > "$RUNNER_TEMP/pr-gate.mjs"
+            cp "$RUNNER_TEMP/pr-gate.mjs" scripts/.pr-gate-base.mjs
+            node scripts/.pr-gate-base.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
+          else
+            echo "::notice::scripts/pr-gate.mjs is not on the base branch yet (this PR introduces it); running the PR's copy."
+            node scripts/pr-gate.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
+          fi
+
   # The generated-file guards (agent files, bible inventory, session notes) always run; typecheck,
   # lint, tests, build and the size budget only when the change can affect the app (`code`).
   checks:
