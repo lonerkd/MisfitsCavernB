@@ -22,6 +22,22 @@ const MIGRATION = /^supabase\/migrations\/[^/]+\.sql$/;
 
 export const LIMITS = { testsFromAddedLines: 60, newComponentLines: 60, largeAddedLines: 1200, largeFiles: 40 };
 
+// The end of the SQL statement starting at `from`: the first `;` outside a single-quoted string, a "quoted identifier"
+// and a dollar-quoted body ($$ ... $$, $fn1$ ... $fn1$), so every body form is covered (not only dollar quotes).
+export function statementEnd(sql, from) {
+  for (let i = from; i < sql.length; i++) {
+    const c = sql[i];
+    if (c === "'") { i++; while (i < sql.length && !(sql[i] === "'" && sql[i + 1] !== "'")) i += sql[i] === "'" ? 2 : 1; }
+    else if (c === '"') { i++; while (i < sql.length && sql[i] !== '"') i++; }
+    else if (c === '$') {
+      const tag = /^\$[A-Za-z0-9_]*\$/.exec(sql.slice(i));
+      if (tag) { const close = sql.indexOf(tag[0], i + tag[0].length); i = close < 0 ? sql.length : close + tag[0].length - 1; }
+    } else if (c === '-' && sql[i + 1] === '-') { while (i < sql.length && sql[i] !== '\n') i++; }
+    else if (c === ';') return i;
+  }
+  return sql.length;
+}
+
 // Only a row of the §2.D allowlist table counts, not a mention elsewhere in the document.
 const allowlisted = (doc, name) => {
   const m = /(^|\n)#+\s*[^\n]*definer-function allowlist[^\n]*\n([\s\S]*?)(?=\n#{1,3}\s|$)/i.exec(doc ?? '');
@@ -53,9 +69,10 @@ export function evaluate(ctx) {
   const missing = [];
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
-    // The whole statement: any dollar tag ($$, $fn1$), quoted names, and attributes before or after the body.
-    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?([\s\S]*?)(\$[A-Za-z0-9_]*\$)[\s\S]*?\3([^;]*);/gi)) {
-      if (/SECURITY\s+DEFINER/i.test(m[2] + m[4]) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
+    // The whole statement, whatever the body form (dollar-quoted, single-quoted, attributes before or after it).
+    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?/gi)) {
+      const stmt = sql.slice(m.index, statementEnd(sql, m.index));
+      if (/SECURITY\s+DEFINER/i.test(stmt) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
     }
     for (const m of sql.matchAll(/ALTER\s+FUNCTION\s+"?public"?\."?([a-z0-9_]+)"?[^;]*?SECURITY\s+DEFINER/gi)) {
       if (!allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
@@ -68,7 +85,9 @@ export function evaluate(ctx) {
   const noRls = [];
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
-    for (const m of sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?public"?\.)?"?([a-z0-9_]+)"?/gi)) {
+    for (const m of sql.matchAll(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:"?([a-z0-9_]+)"?\.)?"?([a-z0-9_]+)"?/gi)) {
+      if (m[1] && m[1].toLowerCase() !== 'public') continue; // another schema (internal.*) is not exposed by the API
+      m[1] = m[2];
       if (!new RegExp(`ALTER\\s+TABLE\\s+(?:ONLY\\s+)?(?:"?public"?\\.)?"?${m[1]}"?\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, 'i').test(sql)) noRls.push(`${m[1]} (${f.path})`);
     }
   }

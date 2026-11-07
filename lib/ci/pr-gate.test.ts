@@ -50,6 +50,10 @@ describe('the merge gate', () => {
       const alter = { ...mig, added: ['ALTER FUNCTION public.patch_things(uuid) SECURITY DEFINER;'] };
       expect(run([alter, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
     });
+    it('a single-quoted body is seen too', () => {
+      const q = { ...mig, added: ["CREATE FUNCTION public.patch_things() RETURNS int LANGUAGE sql SECURITY DEFINER AS 'select 1; select 2';"] };
+      expect(run([q, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+    });
     it('an invoker function needs no entry', () => {
       const inv = { ...mig, added: sql.filter((l) => l !== 'SECURITY DEFINER') };
       expect(run([inv, NOTE]).byId['definer-allowlist'].ok).toBe(true);
@@ -62,6 +66,13 @@ describe('the merge gate', () => {
       expect(run([t, NOTE]).failed).toContain('rls-from-birth');
       const ok = { ...t, added: [...t.added, 'ALTER TABLE public.boards ENABLE ROW LEVEL SECURITY;'] };
       expect(run([ok, NOTE]).byId['rls-from-birth'].ok).toBe(true);
+    });
+  });
+
+  describe('rls-from-birth, other schemas', () => {
+    it('a table in another schema (internal.*) is not a public table', () => {
+      const t = { path: 'supabase/migrations/20261106000000_y.sql', status: 'A' as const, added: ['CREATE TABLE internal.push_config (id int);'] };
+      expect(run([t, NOTE]).byId['rls-from-birth'].ok).toBe(true);
     });
   });
 

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { evaluate, trusted, reviewComment } from '../../scripts/claude-review.mjs';
+import { classifyFile } from '../../scripts/pr-risk.mjs';
 
 const H1 = 'a'.repeat(40);
 const H2 = 'b'.repeat(40);
@@ -27,6 +28,11 @@ describe('the Claude review check', () => {
     const changesThenApproved = [c(mark(H1, 'changes'), { id: 1, created_at: '2026-11-07T01:00:00Z' }), c(mark(H1, 'approved'), { id: 2, created_at: '2026-11-07T02:00:00Z' })];
     expect(evaluate({ headSha: H1, tier: 'high', comments: changesThenApproved }).state).toBe('success');
   });
+  it('an edit counts as a new statement: an old approval edited to changes outranks a newer approval', () => {
+    const older = c(mark(H1, 'changes'), { id: 1, created_at: '2026-11-07T01:00:00Z', updated_at: '2026-11-07T03:00:00Z' });
+    const newer = c(mark(H1, 'approved'), { id: 2, created_at: '2026-11-07T02:00:00Z', updated_at: '2026-11-07T02:00:00Z' });
+    expect(evaluate({ headSha: H1, tier: 'high', comments: [older, newer] }).state).toBe('failure');
+  });
   it('a bot or a stranger cannot approve, however the marker is written', () => {
     const bot = c(mark(H1, 'approved'), { user: { type: 'Bot', login: 'copilot-pull-request-reviewer[bot]' }, author_association: 'CONTRIBUTOR' });
     const stranger = c(mark(H1, 'approved'), { user: { type: 'User', login: 'x' }, author_association: 'NONE' });
@@ -39,5 +45,11 @@ describe('the Claude review check', () => {
   });
   it('a marker with a short or malformed sha does not count', () => {
     expect(evaluate({ headSha: H1, tier: 'high', comments: [c('<!-- claude-review:v1 sha=abc verdict=approved -->')] }).state).toBe('pending');
+  });
+});
+
+describe('the classifier protects the enforcement scripts', () => {
+  it.each(['scripts/pr-gate.mjs', 'scripts/claude-review.mjs', 'eslint.config.mjs', 'eslint-suppressions.json', '.github/workflows/claude-review.yml'])('%s is high risk', (f) => {
+    expect(classifyFile(f).tier).toBe('high');
   });
 });

@@ -6,10 +6,12 @@ name: Claude review
 # changed since the last review, failure when the review asked for changes. How to post the review:
 # `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "..."` (tools-and-access.md §9).
 #
-# The script is the base branch's, never the pull request's: for `pull_request` the checkout is the base SHA, for
-# `issue_comment` it is the default branch. A pull request cannot weaken the check that judges it.
+# Both the workflow file and the script are the base branch's, never the pull request's: `pull_request_target` and
+# `issue_comment` both run the default branch's definition. A pull request cannot weaken the check that judges it.
 on:
-  pull_request:
+  # pull_request_target runs THIS FILE FROM THE BASE BRANCH, so a pull request cannot rewrite the job that judges it. It never
+  # runs code from the pull request: the checkout below is the base commit, and the script only reads GitHub's API.
+  pull_request_target:
     types: [opened, synchronize, reopened, ready_for_review]
   issue_comment:
     types: [created, edited, deleted]
@@ -26,17 +28,14 @@ concurrency:
 
 jobs:
   review:
-    # Only pull requests (an issue comment event also fires for plain issues) and only same-repository ones
-    # (a fork's token cannot write statuses).
-    if: >-
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request)
+    # Only pull requests (an issue comment event also fires for plain issues).
+    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.repository.default_branch }}
+          ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 1
       - name: Set the claude-review status on the head commit
         env:

@@ -29,7 +29,8 @@ export function trusted(comment, extra = []) {
 }
 
 /**
- * ctx: { headSha, tier, comments: [{ id, body, user: { login, type }, author_association, created_at }], extraTrusted? }
+ * ctx: { headSha, tier, comments: [{ id, body, user: { login, type }, author_association, created_at, updated_at }], extraTrusted? }
+ * (Ordered by updated_at: an edit is a new statement, so an old approval edited to "changes" outranks a newer approval.)
  * -> { state: 'success'|'pending'|'failure', description }
  */
 export function evaluate(ctx) {
@@ -37,7 +38,7 @@ export function evaluate(ctx) {
   const marks = [];
   for (const c of ctx.comments ?? []) {
     if (!trusted(c, ctx.extraTrusted)) continue;
-    for (const m of String(c.body ?? '').matchAll(MARKER)) marks.push({ sha: m[1].toLowerCase(), verdict: m[2].toLowerCase(), at: c.created_at ?? '', id: c.id ?? 0 });
+    for (const m of String(c.body ?? '').matchAll(MARKER)) marks.push({ sha: m[1].toLowerCase(), verdict: m[2].toLowerCase(), at: c.updated_at ?? c.created_at ?? '', id: c.id ?? 0 });
   }
   const order = (a, b) => (a.at === b.at ? a.id - b.id : a.at < b.at ? -1 : 1);
   const forHead = marks.filter((m) => m.sha === String(ctx.headSha).toLowerCase()).sort(order);
@@ -69,8 +70,8 @@ function main() {
     console.log(`posted ${verdict} for ${head}`);
   }
   const files = gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[].filename']).split('\n').filter(Boolean);
-  const comments = JSON.parse(gh(['api', `repos/${REPO}/issues/${pr}/comments`, '--paginate']) || '[]');
-  const flat = Array.isArray(comments[0]) ? comments.flat() : comments;
+  // --jq '.[]' prints one object per line across every page (a bare --paginate prints one array per page).
+  const flat = gh(['api', `repos/${REPO}/issues/${pr}/comments`, '--paginate', '--jq', '.[]']).split('\n').filter(Boolean).map((l) => JSON.parse(l));
   const result = evaluate({ headSha: head, tier: classify(files).tier, comments: flat, extraTrusted: (process.env.CLAUDE_REVIEW_LOGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean) });
   console.log(`${CONTEXT}: ${result.state} — ${result.description} (head ${head.slice(0, 8)})`);
   if (a.includes('--apply')) {

@@ -35,6 +35,8 @@ const HIGH = [
   [/^\.github\/CODEOWNERS$/, 'who owns what'],
   [/^scripts\/agent-push\.sh$/, 'the agent push boundary'],
   [/^scripts\/pr-risk\.mjs$/, 'the risk classifier itself'],
+  [/^scripts\/(pr-gate|claude-review)\.mjs$/, 'the merge gate and the Claude review check'],
+  [/^eslint\.config\.mjs$|^eslint-suppressions\.json$/, 'the lint rules and their baseline'],
   [/^(CLAUDE|AGENTS)\.md$|^\.github\/copilot-instructions\.md$|^\.cavern-intelligence\/RULES\.md$/, 'the rules the agents follow'],
   [/^package(-lock)?\.json$/, 'dependencies'],
   [/^vercel\.json$/, 'deployment'],
