@@ -14,7 +14,7 @@ export function PhoneElementBar({ insert, bottom, compact = false }: { insert: (
     }}>
       {KEYS.map(([type, label]) => (
         <button key={type} type="button" onPointerDown={(e) => e.preventDefault()} onClick={() => insert(type)}
-          style={{ flex: '0 0 auto', minHeight: compact ? 36 : 44, padding: compact ? '0 12px' : '0 16px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'var(--bg)', color: 'var(--fg)', fontSize: 14, cursor: 'pointer' }}>{label}</button>
+          style={{ flex: '0 0 auto', minHeight: compact ? 40 : 44, padding: compact ? '0 12px' : '0 16px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'var(--bg)', color: 'var(--fg)', fontSize: 14, cursor: 'pointer' }}>{label}</button>
       ))}
     </div>
   );

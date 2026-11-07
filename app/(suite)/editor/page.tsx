@@ -637,7 +637,7 @@ export default function EditorPage() {
     if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
     setRightPanel('breakdown');
     if (elementId !== undefined) setOpenElementId(elementId);
-  }, []);
+  }, [isMobile]);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -933,9 +933,7 @@ export default function EditorPage() {
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
-          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
-        )}
+        {/* On a phone the panels are bottom sheets (below), so there is no drawer to dim. */}
 
         <AnimatePresence>
           {showSidebar && !focusMode && !isMobile && (
@@ -1242,7 +1240,7 @@ export default function EditorPage() {
       </div>
 
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
-        <PhoneElementBar insert={insertElement} bottom={phone.keyboard - phone.offset} compact={phone.landscape} />
+        <PhoneElementBar insert={insertElement} bottom={phone.keyboard} compact={phone.landscape} />
       )}
       {isMobile && (
         <>

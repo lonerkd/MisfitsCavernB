@@ -57,8 +57,10 @@ const measure = () => {
   return { ...out, wide: cut(out.wide), small: cut(out.small), tiny: cut(out.tiny), hiddenUnderBar: cut(out.hiddenUnderBar), counts: { wide: out.wide.length, small: out.small.length, tiny: out.tiny.length, hiddenUnderBar: out.hiddenUnderBar.length } };
 };
 
-const browser = await chromium.launch(process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : {});
 const report = [];
+let browser;
+try {
+browser = await chromium.launch(process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : {});
 for (const mode of MODES) {
   const ctx = await browser.newContext(mode.ctx);
   const page = await ctx.newPage();
@@ -85,7 +87,10 @@ for (const mode of MODES) {
         entry.keyboard = await page.evaluate(() => {
           const el = document.activeElement; if (!el || el === document.body) return { focused: false };
           const r = el.getBoundingClientRect(), vh = window.innerHeight;
-          return { focused: true, inView: r.top >= 0 && r.bottom <= vh, top: Math.round(r.top), bottom: Math.round(r.bottom), screen: vh, name: `${el.tagName.toLowerCase()} ${(el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').slice(0, 30)}` };
+          const form = el.closest('form') || el.closest('[role=dialog]') || el.parentElement?.parentElement;
+          const act = form ? [...form.querySelectorAll('button[type=submit],button:not([type])')].find((b) => b.offsetParent) : null;
+          const ar = act ? act.getBoundingClientRect() : null;
+          return { focused: true, inView: r.top >= 0 && r.bottom <= vh, actionInView: ar ? ar.top >= 0 && ar.bottom <= vh : null, action: act ? (act.getAttribute('aria-label') || act.textContent || '').trim().slice(0, 24) : null, top: Math.round(r.top), bottom: Math.round(r.bottom), screen: vh, name: `${el.tagName.toLowerCase()} ${(el.getAttribute('aria-label') || el.getAttribute('placeholder') || '').slice(0, 30)}` };
         });
         await page.screenshot({ path: `${OUT}/${slug}-keyboard.png` });
         await page.setViewportSize(mode.ctx.viewport ?? { width: 393, height: 852 });
@@ -95,10 +100,12 @@ for (const mode of MODES) {
   }
   await ctx.close();
 }
-await browser.close();
-await admin.from('scripts').delete().eq('id', script.id); await admin.from('projects').delete().eq('id', project.id); await admin.auth.admin.deleteUser(user.id);
+} finally {
+  await browser?.close();
+  await admin.from('scripts').delete().eq('id', script.id); await admin.from('projects').delete().eq('id', project.id); await admin.auth.admin.deleteUser(user.id);
+}
 writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 1));
 for (const r of report) {
   const c = r.counts || {};
-  console.log(`${r.mode.padEnd(9)} ${r.route.slice(0, 52).padEnd(52)} ${r.error ? 'ERROR ' + r.error : `wide ${c.wide} small ${c.small} tiny ${c.tiny} underBar ${c.hiddenUnderBar}${r.scrollsSideways ? ' SIDEWAYS' : ''}${r.keyboard && r.keyboard.focused && !r.keyboard.inView ? ' KEYBOARD-HIDES-FIELD' : ''}`}`);
+  console.log(`${r.mode.padEnd(9)} ${r.route.slice(0, 52).padEnd(52)} ${r.error ? 'ERROR ' + r.error : `wide ${c.wide} small ${c.small} tiny ${c.tiny} underBar ${c.hiddenUnderBar}${r.scrollsSideways ? ' SIDEWAYS' : ''}${r.keyboard && r.keyboard.focused && !r.keyboard.inView ? ' KEYBOARD-HIDES-FIELD' : ''}${r.keyboard && r.keyboard.actionInView === false ? ` KEYBOARD-HIDES-ACTION(${r.keyboard.action})` : ''}`}`);
 }
