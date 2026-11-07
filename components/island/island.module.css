@@ -9,8 +9,8 @@
   --island-scale: 1;
   --island-text: max(var(--text-2xs), calc(var(--text-2xs) * var(--island-scale)));
   --island-title: max(var(--text-2xs), calc(var(--text-sm) * var(--island-scale)));
-  position: fixed; left: 0; right: 0; bottom: 14px; z-index: 9999;
-  display: flex; justify-content: center; padding: 0 12px;
+  position: fixed; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); z-index: 9999;
+  display: flex; justify-content: center; padding: 0 max(12px, env(safe-area-inset-right)) 0 max(12px, env(safe-area-inset-left));
   pointer-events: none;
 }
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { BookmarkPlus, Mic2, Music, Pause, Play, Square } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { sceneMood } from '@/lib/spotify/moods';
 import { searchSpotify } from '@/lib/spotify/search';
@@ -187,13 +188,19 @@ export function SoundPanel(p: SoundPanelProps) {
           : (
             <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
               {tracks.map((t) => (
-                <li key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button type="button" aria-label={`Play ${t.name}`} style={{ ...round, width: 44, height: 44 }} onClick={() => { void spotify.playUri(t.uri); }}><Play size={16} /></button>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.artist}</div>
-                  </div>
-                  <button type="button" aria-label={`Save ${t.name} to the project`} style={{ ...ghost, minWidth: 44, padding: 0 }} onClick={() => void save(t)}><BookmarkPlus size={16} /></button>
+                <li key={t.id}>
+                  <SpotifyPreview id={t.id} label={t.name}>{(previewButton, previewFrame) => (<>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button type="button" aria-label={`Play ${t.name}`} style={{ ...round, width: 44, height: 44 }} onClick={() => { void spotify.playUri(t.uri); }}><Play size={16} /></button>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.artist}</div>
+                      </div>
+                      {previewButton}
+                      <button type="button" aria-label={`Save ${t.name} to the project`} style={{ ...ghost, minWidth: 44, padding: 0 }} onClick={() => void save(t)}><BookmarkPlus size={16} /></button>
+                    </div>
+                    {previewFrame}
+                  </>)}</SpotifyPreview>
                 </li>
               ))}
             </ul>

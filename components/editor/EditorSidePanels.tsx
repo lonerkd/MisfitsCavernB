@@ -127,7 +127,7 @@ export function EditorRightPanels({
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
     ['scene', Wand2, 'Scene'],
     ['audio', Music, 'Sound'],
-    ['script', Lightbulb, 'Script'],
+    ['script', Lightbulb, 'Insights'],
     ['notes', StickyNote, 'Notes'],
   ];
 
