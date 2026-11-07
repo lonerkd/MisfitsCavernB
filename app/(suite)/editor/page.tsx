@@ -55,6 +55,8 @@ import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
 import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
+import { SoundPanel } from '@/components/editor/SoundPanel';
+import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
 import { NotesPanel } from '@/components/notes/NotesPanel';
 import { ShareScriptButton } from '@/components/editor/ShareScriptButton';
@@ -857,8 +859,6 @@ export default function EditorPage() {
         lintIssues={lintIssues}
         stash={stash} textareaRef={textareaRef}
         currentScript={currentScript}
-        projectAudioRefs={projectAudioRefs}
-        playAudioRef={playAudioRef}
         readingPanel={
           <>
             <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
@@ -882,6 +882,20 @@ export default function EditorPage() {
             openElementId={openElementId}
             setOpenElementId={setOpenElementId}
             onJumpToScene={jumpToScene}
+          />
+        }
+        soundPanel={
+          <SoundPanel
+            tableRead={{
+              supported: isTableReadSupported(), playing: tableReadPlaying, lineIdx: tableReadLineIdx, totalLines: lines.length,
+              sceneStartLine: currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.startIndex ?? null : null,
+              start: startTableRead, pause: pauseTableRead, resume: resumeTableRead, stop: stopTableRead,
+            }}
+            sceneLabel={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1}` : null}
+            sceneBody={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? lines.slice(parsedScenes[currentSceneIdx].startIndex + 1, parsedScenes[currentSceneIdx].endIndex + 1).map((l) => l.text).join('\n') : ''}
+            timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
+            projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
+            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
           />
         }
         notesPanel={
@@ -1248,7 +1262,7 @@ export default function EditorPage() {
           insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
           prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
           find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('write'); setSheet('tools'); }} more={() => setSheet('more')}
-          hideKeyboard={() => textareaRef.current?.blur()}
+          hideKeyboard={() => (document.activeElement as HTMLElement | null)?.blur?.()}
         />
       )}
       {isMobile && (

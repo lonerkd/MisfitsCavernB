@@ -388,13 +388,10 @@
   },
   "components/editor/EditorSidePanels.tsx": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 4
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
+      "count": 1
     },
     "no-restricted-syntax": {
-      "count": 17
+      "count": 16
     }
   },
   "components/editor/PreviewView.tsx": {
