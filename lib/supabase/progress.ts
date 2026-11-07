@@ -108,7 +108,8 @@ export async function setProjectLogline(projectId: string, logline: string): Pro
 
 /** Owner only (RLS): merges `patch` into the project's settings. */
 export async function patchProjectSettings(projectId: string, patch: Partial<ProjectSettings>): Promise<ProjectSettings> {
-  const { data, error } = await supabase.rpc('patch_project_settings', {
+type RpcClient = { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message?: string; code?: string } | null }> };
+  const { data, error } = await (supabase as unknown as RpcClient).rpc('patch_project_settings', {
     p_project_id: projectId,
     p_patch: patch as unknown as Json,
   });

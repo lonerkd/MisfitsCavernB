@@ -13,7 +13,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { await destroyCast(cast); });
 
-const patch = (who: Cast['sam'], p: Record<string, unknown>) => who.client.rpc('patch_project_settings', { p_project_id: projectId, p_patch: p as never });
+const patch = (who: Cast['sam'], p: Record<string, unknown>) => (who.client as any).rpc('patch_project_settings', { p_project_id: projectId, p_patch: p as never });
 
 describe('patch_project_settings', () => {
   it('Sam, the owner, merges a patch and gets the merged settings back', async () => {
@@ -42,10 +42,10 @@ describe('patch_project_settings', () => {
 
   it('Riley, an outsider, cannot, and a patch that is not an object is refused', async () => {
     expect((await patch(cast.riley, { x: 1 })).error?.code).toBe('42501');
-    expect((await cast.sam.client.rpc('patch_project_settings', { p_project_id: projectId, p_patch: [1, 2] as never })).error?.code).toBe('22023');
+    expect((await (cast.sam.client as any).rpc('patch_project_settings', { p_project_id: projectId, p_patch: [1, 2] as never })).error?.code).toBe('22023');
   });
 
   it('nobody signed out can call it', async () => {
-    expect((await anonClient().rpc('patch_project_settings', { p_project_id: projectId, p_patch: {} as never })).error).not.toBeNull();
+    expect((await (anonClient() as any).rpc('patch_project_settings', { p_project_id: projectId, p_patch: {} as never })).error).not.toBeNull();
   });
 });
