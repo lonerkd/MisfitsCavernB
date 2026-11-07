@@ -111,7 +111,7 @@ export function ContinuityView() {
               <div className={s.row}>
                 <strong>{sc.scene_number}. {sc.heading ?? sc.title}</strong>
                                 <span className={s.hint}>{storyLabel(sc.story_day, sc.story_time)}{sc.story_confirmed ? '' : sc.story_day != null ? ' (read from the script)' : ''}</span>
-                                {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warning, #b45309)' }}>⚠ review</span>}
+                                {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warn)' }}>⚠ review</span>}
               </div>
               <div className={s.row}>
                 <label className={s.stack}>

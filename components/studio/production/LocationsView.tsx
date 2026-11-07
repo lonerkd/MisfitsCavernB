@@ -145,7 +145,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
           <span style={{ display: 'block', fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{row.name}</span>
           <span className={s.hint}>{summary}{rec?.address ? ` · ${rec.address}` : ''}</span>
         </span>
-        <span className={s.hint} style={{ color: ready.ready ? '#6ee7b7' : undefined }}>
+        <span className={s.hint} style={{ color: ready.ready ? 'var(--ok)' : undefined }}>
           {ready.ready ? 'Locked down' : rec ? `${status?.label ?? 'Scouting'}${rec.permit === 'needed' ? ' · permit needed' : rec.permit === 'applied' ? ' · permit pending' : ''}` : 'Not scouted'}
         </span>
         <ChevronDown size={14} aria-hidden style={{ transform: expanded ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }} />

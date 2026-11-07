@@ -124,7 +124,7 @@ describe('patchProjectSettings', () => {
   });
 
   it('starts from nothing when no settings are saved yet', async () => {
-    const f = useFake({}, { patch_project_settings: { data: { unlockAllTools: true } } });
+    useFake({}, { patch_project_settings: { data: { unlockAllTools: true } } });
     expect(await patchProjectSettings('p1', { unlockAllTools: true })).toEqual({ unlockAllTools: true });
   });
 

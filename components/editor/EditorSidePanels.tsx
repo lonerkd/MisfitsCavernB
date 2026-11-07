@@ -4,7 +4,7 @@ import { readable } from '@/lib/util/color';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
+import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images, StickyNote } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -12,7 +12,8 @@ import type { GutterItem } from '@/lib/film/gutter';
 
 const CHARACTER_COLOR = '#ffaa00';
 
-export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio';
+/** The rail's four sections: the scene (card, tools, breakdown, references), sound, the script (insights, history), notes. */
+export type RightPanelTab = 'scene' | 'audio' | 'script' | 'notes';
 
 export interface EditorRightPanelsProps {
   /** Hide the Breakdown tab until the project reaches it (see lib/os/progress). */
@@ -51,10 +52,13 @@ export interface EditorRightPanelsProps {
   stash: LiveRows<StashItem>;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   currentScript: { title?: string, id?: string } | null;
-  projectAudioRefs?: any[];
-  playAudioRef?: (ref: any) => void;
   /** The current scene's references panel (rendered by the page, which owns the scene index). */
   referencesPanel?: React.ReactNode;
+  notesPanel?: React.ReactNode;
+  /** The scene's tagged music (components/editor/SceneMusic), shown on the Scene section. */
+  sceneMusic?: React.ReactNode;
+  /** The sound desk (table read, music for the scene, saved tracks), built by the page. */
+  soundPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
   readingPanel?: React.ReactNode;
 }
@@ -72,7 +76,9 @@ function SectionHeader({
 }) {
   return (
     <div
+      role="button" tabIndex={0} aria-expanded={open} aria-label={label}
       onClick={onToggle}
+      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         cursor: 'pointer', padding: '10px 12px', borderRadius: 8,
@@ -102,8 +108,8 @@ export function EditorRightPanels({
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode,
   chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
-  setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  setShowWatermark, lintIssues, stash, textareaRef, currentScript,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -112,23 +118,23 @@ export function EditorRightPanels({
   const [lintOpen, setLintOpen] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(true);
   const [stashOpen, setStashOpen] = useState(false);
+  const [sceneBreakdownOpen, setSceneBreakdownOpen] = useState(true);
+  const [sceneRefsOpen, setSceneRefsOpen] = useState(true);
 
   const errorCount = lintIssues.filter(i => i.type === 'error').length;
   const warnCount = lintIssues.filter(i => i.type === 'warning').length;
 
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
-    ['write', Wand2, 'Write'],
-    ['breakdown', Tags, 'Breakdown'],
-    ['refs', Images, 'Refs'],
-    ['insights', Lightbulb, 'Insights'],
-    ['history', History, 'History'],
-    ['audio', Music, 'Audio'],
+    ['scene', Wand2, 'Scene'],
+    ['audio', Music, 'Sound'],
+    ['script', Lightbulb, 'Script'],
+    ['notes', StickyNote, 'Notes'],
   ];
 
   return (
     <>
               <div style={{ padding: '10px 8px 0', display: 'flex', gap: 2, flexShrink: 0, borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
-                {TABS.filter(([key]) => key !== 'breakdown' || showBreakdown || rightPanel === 'breakdown').map(([key, Icon, label]) => (
+                {TABS.map(([key, Icon, label]) => (
                   <button key={key} onClick={() => setRightPanel(key)} aria-pressed={rightPanel === key} title={label} style={{
                     flex: 1, minWidth: 0, padding: '8px 0', background: 'transparent', border: 'none',
                     borderBottom: rightPanel === key ? '2px solid var(--accent)' : '2px solid transparent',
@@ -140,14 +146,14 @@ export function EditorRightPanels({
                   onMouseLeave={e => { if (rightPanel !== key) e.currentTarget.style.color = 'var(--fg-dim)'; }}
                   >
                     <Icon size={15} />
-                    {/* Six tabs share a narrow panel: each label stays inside its own tab. */}
+                    {/* Four tabs share a narrow panel: each label stays inside its own tab. */}
                     <span style={{ fontSize: 'max(9.5px, var(--mc-min-font, 0px))', fontWeight: 600, letterSpacing: 0.2, whiteSpace: 'nowrap', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', padding: '0 2px' }}>{label}</span>
                   </button>
                 ))}
               </div>
 
               <div style={{ padding: '18px 18px 110px', display: 'flex', flexDirection: 'column', gap: 22, flex: 1, minHeight: 0, overflowY: 'auto' }}>
-                {rightPanel === 'write' && (
+                {rightPanel === 'scene' && (
                   <>
                     {activeView === 'write' && currentSceneIdx >= 0 && scenesList[currentSceneIdx] && (() => {
                       const scene = scenesList[currentSceneIdx];
@@ -220,11 +226,22 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {rightPanel === 'breakdown' && breakdownPanel}
+                {rightPanel === 'scene' && sceneMusic}
+                {rightPanel === 'scene' && showBreakdown && breakdownPanel && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <SectionHeader icon={Tags} label="Breakdown" open={sceneBreakdownOpen} onToggle={() => setSceneBreakdownOpen(o => !o)} />
+                    {sceneBreakdownOpen && breakdownPanel}
+                  </div>
+                )}
+                {rightPanel === 'scene' && referencesPanel && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <SectionHeader icon={Images} label="References" open={sceneRefsOpen} onToggle={() => setSceneRefsOpen(o => !o)} />
+                    {sceneRefsOpen && referencesPanel}
+                  </div>
+                )}
+                {rightPanel === 'notes' && notesPanel}
 
-                {rightPanel === 'refs' && referencesPanel}
-
-                {rightPanel === 'insights' && (
+                {rightPanel === 'script' && (
                   <>
                     {readingPanel}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -321,7 +338,7 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {rightPanel === 'history' && (
+                {rightPanel === 'script' && (
                   <>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader
@@ -425,36 +442,7 @@ export function EditorRightPanels({
                   </>
                 )}
 
-                {rightPanel === 'audio' && (
-                  <>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 }}><Music size={14} /> Project Audio</div>
-                    <div style={{ fontSize: 11, color: 'var(--fg-muted)', lineHeight: 1.4 }}>Reference tracks and sound design linked to this project.</div>
-                    {projectAudioRefs.length === 0 ? (
-                      <div style={{ fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic', textAlign: 'center', padding: 20 }}>No audio references yet.<br/><br/>Link tracks from the Soundtrack module or upload sound design to populate this panel.</div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {projectAudioRefs.map((ref: any) => (
-                          <div key={ref.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <button aria-label="Play"
-                              onClick={() => playAudioRef?.(ref)}
-                              disabled={!playAudioRef}
-                              title="Play"
-                              style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', background: 'var(--accent)', border: 'none', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: playAudioRef ? 'pointer' : 'default' }}
-                            >
-                              <Play size={13} />
-                            </button>
-                            <div style={{ minWidth: 0, flex: 1 }}>
-                              <div style={{ fontSize: 12, color: 'var(--fg-strong)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{ref.title || ref.name || ref.uri || 'Untitled track'}</div>
-                              <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
-                                {ref.reference_type === 'spotify' ? 'Spotify' : ref.reference_type === 'custom_upload' ? 'Upload' : (ref.reference_type || 'audio')}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </>
-                )}
+                {rightPanel === 'audio' && soundPanel}
               </div>
     </>
   );

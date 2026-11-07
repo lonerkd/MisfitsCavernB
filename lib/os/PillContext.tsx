@@ -168,8 +168,22 @@ export function usePillStage(descriptor: PillDescriptor | null) {
   const { setDescriptor } = usePill();
   const shown = JSON.stringify(descriptor);
   const latest = useEffectEvent(() => descriptor);
-  useEffect(() => { setDescriptor(latest()); }, [shown, setDescriptor]);
+  // The descriptor is republished only when its visible shape changes, so the handlers it carries are stable wrappers that
+  // call the current render's handler: an action closed over state that is not in a label or field never runs stale.
+  const live = useRef(descriptor);
+  useLayoutEffect(() => { live.current = descriptor; });
+  useEffect(() => { setDescriptor(withLiveHandlers(latest(), () => live.current)); }, [shown, setDescriptor]);
   useEffect(() => () => setDescriptor(null), [setDescriptor]);
+}
+
+/** The descriptor with each action's and toggle's handler replaced by one that calls the newest descriptor's handler of the same id. */
+export function withLiveHandlers(d: PillDescriptor | null, current: () => PillDescriptor | null): PillDescriptor | null {
+  if (!d) return d;
+  return {
+    ...d,
+    ...(d.toggles ? { toggles: d.toggles.map((t) => ({ ...t, onToggle: () => (current()?.toggles?.find((x) => x.id === t.id) ?? t).onToggle() })) } : {}),
+    ...(d.actions ? { actions: d.actions.map((a) => ({ ...a, onClick: () => (current()?.actions?.find((x) => x.id === a.id) ?? a).onClick() })) } : {}),
+  };
 }
 
 let zoneSeq = 0;

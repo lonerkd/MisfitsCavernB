@@ -2,15 +2,13 @@
 
 import React, { useMemo, useState } from 'react';
 import { Clapperboard, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type NoteEntry = { id: string; scene: string; title: string; notes: string; reference: string; createdAt: string };
 
 export function DirectorNotebookView() {
-  const { project } = useStudio();
-  const items: NoteEntry[] = useMemo(() => (project.settings as any)?.directorNotes ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('directorNotes');
   const [draft, setDraft] = useState<Omit<NoteEntry, 'id' | 'createdAt'>>({
     scene: '',
     title: '',
@@ -24,21 +22,13 @@ export function DirectorNotebookView() {
     [items, filter],
   );
 
-  const save = async (next: NoteEntry[]) => {
-    await patchProjectSettings(project.id, { directorNotes: next } as any);
-  };
-
   const add = async () => {
     if (!draft.title.trim()) return;
-    await save([...items, { ...draft, id: `dn-${Date.now()}`, createdAt: new Date().toISOString() }]);
+    if (!(await save([...items, { ...draft, id: `dn-${Date.now()}`, createdAt: new Date().toISOString() }]))) return;
     setDraft({ scene: '', title: '', notes: '', reference: '' });
   };
 
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-    const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -92,7 +82,11 @@ export function DirectorNotebookView() {
               </button>
             </div>
             {n.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{n.notes}</p>}
-            {n.reference && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={n.reference} target="_blank" rel="noreferrer">{n.reference}</a></p>}
+            {n.reference && (
+              <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}>
+                {/^https?:\/\//i.test(n.reference) ? <a href={n.reference} target="_blank" rel="noreferrer">{n.reference}</a> : n.reference}
+              </p>
+            )}
           </li>
         ))}
       </ul>

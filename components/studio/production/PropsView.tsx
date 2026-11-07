@@ -8,7 +8,8 @@ import { useBreakdown } from '@/lib/breakdown';
 import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-const PROP_CATS = new Set(['props', 'wardrobe', 'hair-makeup', 'set-dressing', 'vehicles']);
+// 'makeup' is the key the breakdown seeds for "Hair & makeup"; 'hair-makeup' is what a custom category of that name would get.
+const PROP_CATS = new Set(['props', 'wardrobe', 'makeup', 'hair-makeup', 'set-dressing', 'vehicles']);
 
 export function PropsView() {
   const { project, scenes, scriptId } = useStudio();
@@ -91,7 +92,7 @@ export function PropsView() {
                 const isReady = el.status === 'ready';
                 return (
                   <li key={el.id} className={s.row} style={{ gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                    <span style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', display: 'grid', placeItems: 'center', background: isReady ? 'var(--ok, #6ee7b7)' : undefined, flexShrink: 0 }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 4, border: '1px solid var(--border)', display: 'grid', placeItems: 'center', background: isReady ? 'var(--ok)' : undefined, flexShrink: 0 }}>
                       {isReady && <Check size={12} />}
                     </span>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 13, textDecoration: isReady ? 'line-through' : undefined, opacity: isReady ? 0.6 : 1 }}>{el.name}</span>

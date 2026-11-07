@@ -236,6 +236,8 @@ export default function GlobalAudioWidget() {
       <button
         onClick={() => setExpanded(o => !o)}
         aria-expanded={expanded}
+        aria-label={isPlaying ? 'Music, playing' : 'Music'}
+        title={isPlaying ? 'Music, playing' : 'Music'}
         style={{
           display: 'flex', alignItems: 'center', gap: 8,
           padding: '7px 14px',
@@ -249,12 +251,6 @@ export default function GlobalAudioWidget() {
         <motion.div animate={{ rotate: isPlaying ? 360 : 0 }} transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}>
           <Disc size={11} style={{ color: 'var(--ok)', flexShrink: 0 }} />
         </motion.div>
-        <span style={{
-          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
-          color: 'var(--fg-muted)', textTransform: 'var(--caps)',
-        }}>
-          {isPlaying ? 'Playing' : 'Audio Engine'}
-        </span>
       </button>
 
       <AnimatePresence>

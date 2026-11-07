@@ -183,7 +183,7 @@ export default function SoundtrackPage() {
     return (
       <div className="mc-page p-12 flex flex-col items-center justify-center text-center">
         <Disc size={48} className="mb-6 opacity-20" />
-        <h1 className="mc-title text-4xl mb-4">Cinematic Audio Engine</h1>
+        <h1 className="mc-title text-4xl mb-4">Soundtrack</h1>
         <p className="mc-text mb-8 max-w-md text-[var(--fg-dim)]">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
         <Button variant="solid" onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }} className="gap-2 px-8">
           <Disc size={16} /> Connect Spotify

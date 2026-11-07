@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Mic, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type SoundEntry = { id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string };
 
 export function SoundReportView() {
-  const { project } = useStudio();
-  const items: SoundEntry[] = useMemo(() => (project.settings as any)?.soundReports ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('soundReports');
   const [draft, setDraft] = useState<Omit<SoundEntry, 'id'>>({
     scene: '',
     take: '',
@@ -20,21 +18,13 @@ export function SoundReportView() {
     notes: '',
   });
 
-  const save = async (next: SoundEntry[]) => {
-    await patchProjectSettings(project.id, { soundReports: next } as any);
-  };
-
   const add = async () => {
     if (!draft.take.trim()) return;
-    await save([...items, { ...draft, id: `snd-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `snd-${Date.now()}` }]))) return;
     setDraft({ scene: '', take: '', mic: '', wildTrack: '', roomTone: '', notes: '' });
   };
 
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-    return (
+  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>

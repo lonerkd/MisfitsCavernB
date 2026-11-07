@@ -18,7 +18,7 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
-  { id: 'misfit', label: 'Misfit', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#d7340b'] },
+  { id: 'misfit', label: 'Misfit', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#f34013'] },
   { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'paper', label: 'Paper', hint: 'Warm off-white, ink and terracotta', mode: 'light', swatch: ['#f6f1e7', '#1f1a14', '#b3361a'] },
   { id: 'vampire', label: 'Vampire', hint: 'Crimson and violet on black', mode: 'dark', swatch: ['#090101', '#f5eedc', '#f04444'] },
@@ -41,7 +41,7 @@ export type ThemeChoice =
   | { id: ThemeId | 'system' }
   | { id: 'custom'; bg: string; accent: string };
 
-/** What a person who has not chosen sees: Paper, the light look. (Cavern, the dark house look, stays one tap away, and System still gives it on a dark device.) */
+/** What a person who has not chosen sees: Misfit (owner, 2026-11-05). Paper and Cavern stay one tap away, and System gives Paper on a light device and Cavern on a dark one. */
 export const DEFAULT_THEME_ID: ThemeId = 'misfit';
 export const DEFAULT_CHOICE: ThemeChoice = { id: DEFAULT_THEME_ID };
 const HEX = /^#[0-9a-f]{6}$/i;

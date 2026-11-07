@@ -1,0 +1,3 @@
+# Session — 2026-11-07: notes guard, after review
+
+Copilot's review of #437 landed after I had merged it (my miss: I merged on green checks without reading the review that arrived minutes earlier). Three findings were real and are fixed in a new migration, `20261107000100_notes_guard_tighten.sql` (the first is already in production, so it is a new migration, not an edit): the author could rewrite `context`; the author could clear `scene_id` (only the scene's deletion may — `pg_trigger_depth()`); and writer notes on a loose script went to `scripts.created_by`, a field a project member can edit — recipients now come only from the project roster. Tests added (24 pass). **By hand after merge:** apply to production, drift check, then staging.

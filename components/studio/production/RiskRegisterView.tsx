@@ -2,18 +2,17 @@
 
 import React, { useMemo, useState } from 'react';
 import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type RiskEntry = { id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' };
 
-const LEVELS: Array<'low' | 'medium' | 'high'> = ['low', 'medium', 'high'];
+type Level = 'low' | 'medium' | 'high';
+const LEVELS: Level[] = ['low', 'medium', 'high'];
 const STATUSES: RiskEntry['status'][] = ['open', 'mitigated', 'closed'];
 
 export function RiskRegisterView() {
-  const { project } = useStudio();
-  const items: RiskEntry[] = useMemo(() => (project.settings as any)?.risks ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('risks');
   const [draft, setDraft] = useState<Omit<RiskEntry, 'id'>>({
     risk: '',
     category: 'schedule',
@@ -27,13 +26,9 @@ export function RiskRegisterView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: RiskEntry[]) => {
-    await patchProjectSettings(project.id, { risks: next } as any);
-  };
-
   const add = async () => {
     if (!draft.risk.trim()) return;
-    await save([...items, { ...draft, id: `r-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `r-${Date.now()}` }]))) return;
     setDraft({ risk: '', category: 'schedule', probability: 'medium', impact: 'medium', mitigation: '', owner: '', status: 'open' });
   };
 
@@ -41,15 +36,11 @@ export function RiskRegisterView() {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
 
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-    const scoreColor = (p: string, i: string) => {
-    const v = LEVELS.indexOf(p as any) + LEVELS.indexOf(i as any);
-    if (v >= 4) return 'var(--danger, #ef4444)';
-    if (v >= 2) return 'var(--warn, #fbbf24)';
-    return 'var(--ok, #6ee7b7)';
+  const scoreColor = (p: Level, i: Level) => {
+    const v = LEVELS.indexOf(p) + LEVELS.indexOf(i);
+    if (v >= 4) return 'var(--danger)';
+    if (v >= 2) return 'var(--warn)';
+    return 'var(--ok)';
   };
 
   return (
@@ -61,7 +52,7 @@ export function RiskRegisterView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

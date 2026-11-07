@@ -8,7 +8,7 @@ import { useStudio } from '../StudioContext';
 import { useScriptCharacters } from './useScriptCharacters';
 import { useCharacters, useSceneCharacters, useCastings } from '@/lib/studio';
 import { castByScene } from '@/lib/film/cast';
-import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 
@@ -53,15 +53,15 @@ export function CastBreakdownView() {
     return m;
   }, [castings.rows]);
 
-  const [crewList, setCrewList] = useState<Array<{ user_id: string; profiles?: { username?: string | null } | null }>>([]);
+  const [crewList, setCrewList] = useState<CrewMember[]>([]);
   React.useEffect(() => {
-    getProjectCrew(project.id).then((rows) => setCrewList(rows as any)).catch(() => {});
+    getProjectCrew(project.id).then((rows) => setCrewList(rows)).catch(() => {});
   }, [project.id]);
 
   const crewById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of crewList) {
-      m.set(c.user_id, c.profiles?.username ?? c.user_id);
+      m.set(c.user_id, c.username ?? c.user_id);
     }
     return m;
   }, [crewList]);
@@ -107,11 +107,11 @@ export function CastBreakdownView() {
                 <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', flex: 1, minWidth: 0 }}>{c.name}</span>
                 {actorName ? (
                   <span className={s.row} style={{ gap: 4 }}>
-                    <Check size={12} style={{ color: 'var(--ok, #6ee7b7)' }} />
+                    <Check size={12} style={{ color: 'var(--ok)' }} />
                     <span style={{ fontSize: 13 }}>{actorName}</span>
                   </span>
                 ) : (
-                  <span className={s.row} style={{ gap: 4, color: 'var(--warn, #fbbf24)' }}>
+                  <span className={s.row} style={{ gap: 4, color: 'var(--warn)' }}>
                     <X size={12} />
                     <span style={{ fontSize: 13 }}>Uncast</span>
                   </span>

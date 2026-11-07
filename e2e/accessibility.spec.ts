@@ -16,6 +16,12 @@ async function violations(page: Page, route: string | null) {
     await page.goto(route, { waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
   }
+  // Measure the settled page: colours sampled part-way through an entrance fade (opacity 0.9 over the page) are not what
+  // anyone reads. Finite animations are waited for (up to 5 s); endless decorative ones (an orb that breathes) are not.
+  await page.evaluate(async () => {
+    const finite = document.getAnimations().filter((a) => a.effect?.getComputedTiming().iterations !== Infinity);
+    await Promise.race([Promise.all(finite.map((a) => a.finished.catch(() => undefined))), new Promise((r) => setTimeout(r, 5000))]);
+  });
   await page.addScriptTag({ content: AXE });
   const result = await page.evaluate(async (tags) => {
     const r = await (window as any).axe.run(document, { runOnly: { type: 'tag', values: tags }, resultTypes: ['violations'] });

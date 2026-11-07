@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { FileText, Plus, Trash2, Star } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type ScriptNoteEntry = { id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean };
 
 export function ScriptSupView() {
-  const { project } = useStudio();
-  const items: ScriptNoteEntry[] = useMemo(() => (project.settings as any)?.scriptNotes ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('scriptNotes');
   const [draft, setDraft] = useState<Omit<ScriptNoteEntry, 'id'>>({
     scene: '',
     take: '',
@@ -20,13 +18,9 @@ export function ScriptSupView() {
     circle: false,
   });
 
-  const save = async (next: ScriptNoteEntry[]) => {
-    await patchProjectSettings(project.id, { scriptNotes: next } as any);
-  };
-
   const add = async () => {
     if (!draft.take.trim()) return;
-    await save([...items, { ...draft, id: `ss-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `ss-${Date.now()}` }]))) return;
     setDraft({ scene: '', take: '', slate: '', lens: '', notes: '', circle: false });
   };
 
@@ -34,11 +28,7 @@ export function ScriptSupView() {
     await save(items.map((i) => (i.id === id ? { ...i, circle: !i.circle } : i)));
   };
 
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-    return (
+  return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>
@@ -91,7 +81,7 @@ export function ScriptSupView() {
                 className={s.btn}
                 onClick={() => toggleCircle(n.id)}
                 title={n.circle ? 'Uncircle' : 'Circle'}
-                style={n.circle ? { color: 'var(--warn, #fbbf24)' } : {}}
+                style={n.circle ? { color: 'var(--warn)' } : {}}
               >
                 <Star size={12} fill={n.circle ? 'currentColor' : 'none'} />
               </button>
