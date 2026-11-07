@@ -17,7 +17,7 @@ import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage } from '@/lib/os/PillContext';
 import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
-import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
+import { PRODUCTION_VIEWS, STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
 import { cx } from '@/components/studio/ui';
@@ -49,8 +49,6 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew', 'continuity'];
-
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
   // The address is the source of truth; choosing a tab rewrites it and re-renders.
@@ -65,7 +63,7 @@ function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?
     window.history.replaceState(null, '', url);
     rerender();
   }, []);
-  return [t && valid.includes(t) ? t : 'overview', v && VIEWS.includes(v) ? v : null, setTab];
+  return [t && valid.includes(t) ? t : 'overview', v && (PRODUCTION_VIEWS as readonly string[]).includes(v) ? v : null, setTab];
 }
 
 export default function StudioPage() {

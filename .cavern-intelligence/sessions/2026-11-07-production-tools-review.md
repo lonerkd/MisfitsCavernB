@@ -12,3 +12,5 @@ PR #427 (the owner's branch: the Studio's production views, the editor's outline
 **Verified:** typecheck, lint, the unit suite (2135), the whole integration suite (79 files, 566 passed, 1 expected fail). **To do by hand after merge:** apply `20261106000000` and `20261106000100` to production, drift check, then staging.
 
 **Page weight (the last red check):** `/studio` was 364.3 kB against a 364 kB budget (0.3 over). The 26 views are already lazy (`dynamic()` in `ProductionTab`); the growth is the tab's own wiring (about 25 more icons, the view tables and wrappers). Budget raised to 368 on purpose (`performance-budget.json`), as `/projects/[id]` was raised before.
+
+**Also fixed before merge:** deep links to the new views (the Studio page validated `?view=` against ten hard-coded views, so a reload on any of the 26 new ones fell back to the default; `PRODUCTION_VIEWS` is now the single list the `ProductionView` type is derived from, with a test), and an unused import. **Left for the owner (BACKLOG 3.38):** crew cannot save in the new views (they write to owner-only project settings: a storage design, not a wider write), plus four smaller gaps Copilot found.

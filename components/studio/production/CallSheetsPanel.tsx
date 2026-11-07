@@ -16,7 +16,6 @@ import { lightNoteBrief } from '@/lib/film/sky';
 import { buildSides } from '@/lib/film/sides';
 import { sidesHtml } from '@/lib/film/sides-print';
 import { buildBoard, stripKind, type StripKind } from '@/lib/studio/stripboard';
-import { autoCallSheet } from '@/lib/studio/auto-call-sheet';
 import { Sky } from '@/components/film/Sky';
 import { Stamp } from '@/components/film/Stamp';
 import { Paper, PaperHead } from '@/components/film/Paper';
