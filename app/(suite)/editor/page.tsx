@@ -61,7 +61,7 @@ import { ShareScriptButton } from '@/components/editor/ShareScriptButton';
 import { usePhoneLayout } from '@/lib/os/usePhone';
 import { BottomSheet } from '@/components/phone/BottomSheet';
 import { PhoneEditorBar, VIEW_LABELS } from '@/components/editor/PhoneEditorBar';
-import { PhoneElementBar } from '@/components/editor/PhoneElementBar';
+import { PhoneToolStrip } from '@/components/editor/PhoneToolStrip';
 import { requestNoteFocus } from '@/lib/notes/focus';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
@@ -569,16 +569,19 @@ export default function EditorPage() {
       }
     }
 
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (!editor) return;
-      const cursor = editor.selectionStart;
-      const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
-      const edit = cycleLine(content, cursor, lines[lineIdx]?.type, e.shiftKey, TAB_TYPE_CYCLE, transformLineForType);
-      if (edit === 'empty') { insertElement('scene'); return; }
-      setContent(edit.next);
-      placeCaret(editor, edit.caret);
-    }
+    if (e.key === 'Tab') { e.preventDefault(); cycleElement(e.shiftKey); }
+  };
+
+  // Tab on a desk keyboard; a button on the phone's tool strip (a phone keyboard has no Tab).
+  const cycleElement = (reverse: boolean) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
+    const edit = cycleLine(content, cursor, lines[lineIdx]?.type, reverse, TAB_TYPE_CYCLE, transformLineForType);
+    if (edit === 'empty') { insertElement('scene'); return; }
+    setContent(edit.next);
+    placeCaret(editor, edit.caret);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -637,7 +640,7 @@ export default function EditorPage() {
     if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
     setRightPanel('breakdown');
     if (elementId !== undefined) setOpenElementId(elementId);
-  }, [isMobile]);
+  }, [isMobile, setSheet, setRightPanel, setShowRightSidebar, setOpenElementId]);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -910,7 +913,7 @@ export default function EditorPage() {
   );
 
   return (
-    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height } : { height: '100dvh' }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingBottom: phone.landscape ? 50 : 62 /* room for the tool strip */ } : { height: '100dvh' }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
@@ -1181,7 +1184,7 @@ export default function EditorPage() {
         background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
-        display: isMobile && phone.typing && phone.landscape ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: isMobile && phone.typing ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(12px, 4vw, 20px)',
         paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box',
         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
@@ -1240,7 +1243,13 @@ export default function EditorPage() {
       </div>
 
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
-        <PhoneElementBar insert={insertElement} bottom={phone.keyboard} compact={phone.landscape} />
+        <PhoneToolStrip
+          bottom={phone.keyboard} compact={phone.landscape}
+          insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
+          prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
+          find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('write'); setSheet('tools'); }} more={() => setSheet('more')}
+          hideKeyboard={() => textareaRef.current?.blur()}
+        />
       )}
       {isMobile && (
         <>
