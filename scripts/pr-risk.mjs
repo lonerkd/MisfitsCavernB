@@ -35,6 +35,8 @@ const HIGH = [
   [/^\.github\/CODEOWNERS$/, 'who owns what'],
   [/^scripts\/agent-push\.sh$/, 'the agent push boundary'],
   [/^scripts\/pr-risk\.mjs$/, 'the risk classifier itself'],
+  [/^scripts\/(pr-gate|claude-review)\.mjs$/, 'the merge gate and the Claude review check'],
+  [/^eslint\.config\.mjs$|^eslint-suppressions\.json$/, 'the lint rules and their baseline'],
   [/^(CLAUDE|AGENTS)\.md$|^\.github\/copilot-instructions\.md$|^\.cavern-intelligence\/RULES\.md$/, 'the rules the agents follow'],
   [/^package(-lock)?\.json$/, 'dependencies'],
   [/^vercel\.json$/, 'deployment'],
@@ -73,7 +75,7 @@ export function classify(files) {
 const SUMMARY = {
   low: 'Docs, notes or tests only. CI is the whole review: merge once it is green.',
   medium: 'App code. CI plus one AI review (Copilot).',
-  high: 'Touches something where a mistake is costly. Do not merge on a green CI alone: it needs a review in a Claude session (and persona tests where it touches data or access).',
+  high: 'Touches something where a mistake is costly. Do not merge on a green CI alone: it needs a review in a Claude session (and persona tests where it touches data or access). The `claude-review` status stays pending until a review of this exact commit is posted: `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "..."`. A new push needs a new review.',
 };
 
 /**
@@ -144,7 +146,7 @@ function main() {
   const args = process.argv.slice(2);
   const pr = args[args.indexOf('--pr') + 1];
   if (!/^\d+$/.test(pr || '')) { console.error('usage: node scripts/pr-risk.mjs --pr <number> [--apply] [--request-copilot]'); process.exit(2); }
-  const files = lines(gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[].filename']));
+  const files = lines(gh(['api', `repos/${REPO}/pulls/${pr}/files`, '--paginate', '--jq', '.[] | .filename, (.previous_filename // empty)']));
   const result = classify(files);
   console.log(`#${pr}: ${result.tier} risk (${files.length} files)`);
   for (const h of result.high) console.log(`  high: ${h.file} — ${h.why}`);

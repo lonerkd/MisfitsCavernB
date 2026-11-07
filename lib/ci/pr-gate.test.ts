@@ -44,6 +44,34 @@ describe('the merge gate', () => {
       const listed = '### D. The definer-function allowlist\n\n| `patch_things(a)` | gate |\n';
       expect(run([mig, NOTE], { definerDoc: listed }).byId['definer-allowlist'].ok).toBe(true);
     });
+    it('attributes after the body, quoted names and ALTER FUNCTION are seen', () => {
+      const after = { ...mig, added: ['CREATE FUNCTION "public"."patch_things"() RETURNS void AS $$ select 1 $$ LANGUAGE sql SECURITY DEFINER;'] };
+      expect(run([after, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+      const alter = { ...mig, added: ['ALTER FUNCTION public.patch_things(uuid) SECURITY DEFINER;'] };
+      expect(run([alter, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+    });
+    it('a single-quoted body is seen too', () => {
+      const q = { ...mig, added: ["CREATE FUNCTION public.patch_things() RETURNS int LANGUAGE sql SECURITY DEFINER AS 'select 1; select 2';"] };
+      expect(run([q, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+    });
+    it('an unqualified name is a public function; another schema is not', () => {
+      const bare = { ...mig, added: ['CREATE FUNCTION get_all() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      expect(run([bare, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+      const internal = { ...mig, added: ['CREATE FUNCTION internal.helper() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      expect(run([internal, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).byId['definer-allowlist'].ok).toBe(true);
+      const alter = { ...mig, added: ['ALTER FUNCTION get_all(uuid) SECURITY DEFINER;'] };
+      expect(run([alter, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).failed).toContain('definer-allowlist');
+    });
+    it('the words SECURITY DEFINER inside a body or comment do not make an invoker function a definer', () => {
+      const inv = { ...mig, added: ["CREATE FUNCTION public.safe_one() RETURNS int LANGUAGE sql AS $$ select 1 -- SECURITY DEFINER is not used here $$;", "COMMENT ON FUNCTION public.safe_one() IS 'not SECURITY DEFINER';"] };
+      expect(run([inv, NOTE], { definerDoc: '### D. The definer-function allowlist\n| x |' }).byId['definer-allowlist'].ok).toBe(true);
+    });
+    it('an apostrophe in a block comment or an escaped quote does not swallow the next statement', () => {
+      const two = { ...mig, added: ["/* it's here */ CREATE FUNCTION public.a() RETURNS int LANGUAGE sql AS E'select \\'x\\'';", 'CREATE FUNCTION public.b() RETURNS int LANGUAGE sql SECURITY DEFINER AS $$ select 1 $$;'] };
+      const r = run([two, NOTE], { definerDoc: '### D. The definer-function allowlist\n| `a()` | x |' });
+      expect(r.failed).toContain('definer-allowlist');
+      expect(r.byId['definer-allowlist'].message).toContain('b (');
+    });
     it('an invoker function needs no entry', () => {
       const inv = { ...mig, added: sql.filter((l) => l !== 'SECURITY DEFINER') };
       expect(run([inv, NOTE]).byId['definer-allowlist'].ok).toBe(true);
@@ -59,6 +87,13 @@ describe('the merge gate', () => {
     });
   });
 
+  describe('rls-from-birth, other schemas', () => {
+    it('a table in another schema (internal.*) is not a public table', () => {
+      const t = { path: 'supabase/migrations/20261106000000_y.sql', status: 'A' as const, added: ['CREATE TABLE internal.push_config (id int);'] };
+      expect(run([t, NOTE]).byId['rls-from-birth'].ok).toBe(true);
+    });
+  });
+
   describe('tests-with-code', () => {
     it('a large source change with no test fails; the waiver (20+ characters) lets it through', () => {
       const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), NOTE];
@@ -70,9 +105,23 @@ describe('the merge gate', () => {
       const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), { path: 'lib/x/x.test.ts', status: 'M' as const, added: ['// tidy'] }, NOTE];
       expect(run(f).failed).toContain('tests-with-code');
     });
+    it('the auth gate, edge functions and scripts count as source; a skipped test is not coverage', () => {
+      expect(run([file('proxy.ts', 'M', 80), NOTE]).failed).toContain('tests-with-code');
+      expect(run([file('supabase/functions/push/index.ts', 'M', 80), NOTE]).failed).toContain('tests-with-code');
+      expect(run([file('scripts/x.mjs', 'M', 80), NOTE]).failed).toContain('tests-with-code');
+      const skipped = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ['it.skip("x", () => {});'] };
+      expect(run([file('lib/x/x.ts', 'M', 80), skipped, NOTE]).failed).toContain('tests-with-code');
+    });
+    it('a skip further down the same file is not coverage, even with an assertion inside it', () => {
+      const f = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ["it.skip('x', () => {", '  expect(foo()).toBe(1);', '});'] };
+      expect(run([file('lib/x/x.ts', 'M', 80), f, NOTE]).failed).toContain('tests-with-code');
+    });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);
-      expect(run([file('lib/x/x.ts', 'M', 500)], { title: 'chore(deps): bump a' }).byId['tests-with-code'].ok).toBe(true);
+      expect(run([file('lib/x/x.ts', 'M', 500)], { title: 'chore(deps): bump a', author: 'dependabot[bot]' } as never).byId['tests-with-code'].ok).toBe(true);
+    });
+    it('a deps-looking title from a person is not an exemption', () => {
+      expect(run([file('lib/x/x.ts', 'M', 500), NOTE], { title: 'chore(deps): bump a', author: 'lonerkd' } as never).failed).toContain('tests-with-code');
     });
   });
 
@@ -100,6 +149,10 @@ describe('the merge gate', () => {
       const many = Array.from({ length: LIMITS.largeFiles + 1 }, (_, i) => file(`lib/f${i}.ts`, 'M', 1));
       expect(run([...many, NOTE, TEST]).failed).toContain('reviewable-size');
       expect(run([...many, NOTE, TEST], { body: 'Large change: a mechanical rename across every module, nothing else' }).byId['reviewable-size'].ok).toBe(true);
+    });
+    it('forty-one generated files do not count as forty-one files', () => {
+      const gen = Array.from({ length: 41 }, (_, i) => file(`.cavern-intelligence/bible/screens/s${i}.png`, 'M', 0));
+      expect(run([...gen, file('lib/a.ts', 'M', 10), NOTE, TEST]).byId['reviewable-size'].ok).toBe(true);
     });
     it('generated files and tests do not count toward the size', () => {
       const g = [file('lib/supabase/database.types.ts', 'M', 5000), file('supabase/schema.fingerprint', 'M', 5000), file('lib/a.ts', 'M', 20), NOTE, TEST];
