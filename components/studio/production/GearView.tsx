@@ -2,8 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Wrench, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type GearEntry = { id: string; item: string; category: string; owner: string; status: 'needed' | 'packed' | 'on-set' | 'returned' };
@@ -11,29 +10,20 @@ type GearEntry = { id: string; item: string; category: string; owner: string; st
 const STATUSES: GearEntry['status'][] = ['needed', 'packed', 'on-set', 'returned'];
 
 export function GearView() {
-  const { project } = useStudio();
-  const items: GearEntry[] = useMemo(() => (project.settings as any)?.gear ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('gear');
   const [draft, setDraft] = useState<Omit<GearEntry, 'id'>>({ item: '', category: 'camera', owner: '', status: 'needed' });
   const [filter, setFilter] = useState<'all' | GearEntry['status']>('all');
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: GearEntry[]) => {
-    await patchProjectSettings(project.id, { gear: next } as any);
-  };
-
   const add = async () => {
     if (!draft.item.trim()) return;
-    await save([...items, { ...draft, id: `g-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `g-${Date.now()}` }]))) return;
     setDraft({ item: '', category: 'camera', owner: '', status: 'needed' });
   };
 
   const updateStatus = async (id: string, status: GearEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
-  };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
   };
 
     const counts = STATUSES.reduce((acc, st) => ({ ...acc, [st]: items.filter((i) => i.status === st).length }), {} as Record<string, number>);
@@ -47,7 +37,7 @@ export function GearView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

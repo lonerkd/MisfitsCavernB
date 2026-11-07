@@ -1,16 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Camera, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type CameraEntry = { id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
 
 export function CameraReportView() {
-  const { project } = useStudio();
-  const items: CameraEntry[] = useMemo(() => (project.settings as any)?.cameraReports ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('cameraReports');
   const [draft, setDraft] = useState<Omit<CameraEntry, 'id'>>({
     scene: '',
     shot: '',
@@ -22,18 +20,10 @@ export function CameraReportView() {
     notes: '',
   });
 
-  const save = async (next: CameraEntry[]) => {
-    await patchProjectSettings(project.id, { cameraReports: next } as any);
-  };
-
   const add = async () => {
     if (!draft.shot.trim()) return;
-    await save([...items, { ...draft, id: `cam-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `cam-${Date.now()}` }]))) return;
     setDraft({ scene: '', shot: '', lens: '', tStop: '', filter: '', camera: '', media: '', notes: '' });
-  };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
   };
 
     return (

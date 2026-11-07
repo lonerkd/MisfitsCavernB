@@ -2,8 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { FileCheck, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type PermitEntry = { id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' };
@@ -11,8 +10,7 @@ type PermitEntry = { id: string; location: string; permitType: string; issuedBy:
 const STATUSES: PermitEntry['status'][] = ['pending', 'approved', 'expired'];
 
 export function PermitView() {
-  const { project } = useStudio();
-  const items: PermitEntry[] = useMemo(() => (project.settings as any)?.permits ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('permits');
   const [draft, setDraft] = useState<Omit<PermitEntry, 'id'>>({
     location: '',
     permitType: '',
@@ -24,22 +22,14 @@ export function PermitView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: PermitEntry[]) => {
-    await patchProjectSettings(project.id, { permits: next } as any);
-  };
-
   const add = async () => {
     if (!draft.location.trim()) return;
-    await save([...items, { ...draft, id: `pm-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `pm-${Date.now()}` }]))) return;
     setDraft({ location: '', permitType: '', issuedBy: '', expiry: '', status: 'pending' });
   };
 
   const updateStatus = async (id: string, status: PermitEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
-  };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
   };
 
     return (
@@ -51,7 +41,7 @@ export function PermitView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

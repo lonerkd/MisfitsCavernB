@@ -85,6 +85,17 @@ export async function fetchRevisionsDB(scriptId: string): Promise<Revision[]> {
   return data.map((r: any) => ({ id: r.id, colorIndex: r.color_index, date: r.created_at, label: r.label, snapshot: r.snapshot }));
 }
 
+/** Like `fetchRevisionsDB`, but a failed read is an error to show, not an empty list (an empty list reads as "none locked"). */
+export async function loadRevisionsDB(scriptId: string): Promise<Revision[]> {
+  const { data, error } = await supabase
+    .from('script_revisions')
+    .select('id,color_index,label,snapshot,created_at')
+    .eq('script_id', scriptId)
+    .order('created_at', { ascending: true });
+  if (error) throw new Error(error.message || 'Could not load the locked revisions');
+  return (data ?? []).map((r) => ({ id: r.id, colorIndex: r.color_index, date: r.created_at ?? '', label: r.label, snapshot: r.snapshot }));
+}
+
 export async function createRevisionDB(scriptId: string, content: string, existingCount: number, label?: string, projectId?: string): Promise<Revision | null> {
   const colorIndex = existingCount % REVISION_COLORS.length;
   const user = await awaitOSUser();

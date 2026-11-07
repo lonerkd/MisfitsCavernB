@@ -2,8 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { HardDrive, Plus, Trash2 } from 'lucide-react';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type MediaEntry = { id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' };
@@ -11,8 +10,7 @@ type MediaEntry = { id: string; card: string; camera: string; size: string; chec
 const STATUSES: MediaEntry['status'][] = ['pending', 'verified', 'archived'];
 
 export function MediaOffloadView() {
-  const { project } = useStudio();
-  const items: MediaEntry[] = useMemo(() => (project.settings as any)?.mediaOffloads ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('mediaOffloads');
   const [draft, setDraft] = useState<Omit<MediaEntry, 'id'>>({
     card: '',
     camera: '',
@@ -25,22 +23,14 @@ export function MediaOffloadView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: MediaEntry[]) => {
-    await patchProjectSettings(project.id, { mediaOffloads: next } as any);
-  };
-
   const add = async () => {
     if (!draft.card.trim()) return;
-    await save([...items, { ...draft, id: `mo-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `mo-${Date.now()}` }]))) return;
     setDraft({ card: '', camera: '', size: '', checksum: '', destination: '', status: 'pending' });
   };
 
   const updateStatus = async (id: string, status: MediaEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
-  };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
   };
 
     return (
@@ -52,7 +42,7 @@ export function MediaOffloadView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

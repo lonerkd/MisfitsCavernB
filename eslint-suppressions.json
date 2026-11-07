@@ -680,79 +680,8 @@
       "count": 1
     }
   },
-  "components/studio/production/CameraReportView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
   "components/studio/production/CastBreakdownView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "components/studio/production/CommsView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "components/studio/production/CostumeView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/DirectorNotebookView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "components/studio/production/DoodView.tsx": {
-    "no-restricted-syntax": {
-      "count": 3
-    }
-  },
-  "components/studio/production/GearView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/MakeupView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "components/studio/production/MediaOffloadView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/PermitView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/PoView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
       "count": 1
     }
   },
@@ -764,52 +693,10 @@
   "components/studio/production/PropsView.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/RehearsalView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "components/studio/production/RevisionsView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "components/studio/production/RiskRegisterView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 4
-    },
-    "no-restricted-syntax": {
-      "count": 4
-    }
-  },
-  "components/studio/production/ScoutView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/ScriptSupView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "components/studio/production/ShotListView.tsx": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
-  "components/studio/production/SoundReportView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
       "count": 2
     }
   },
@@ -821,27 +708,6 @@
   "components/studio/production/TransportView.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "components/studio/production/VfxView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/studio/production/WeatherView.tsx": {
-    "no-restricted-syntax": {
-      "count": 3
-    }
-  },
-  "components/studio/production/WrapView.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
     }
   },
   "components/studio/shots/ShotDesigner.tsx": {

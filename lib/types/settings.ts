@@ -38,8 +38,6 @@ export interface ProjectSettings {
   rehearsals?: Array<{ id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string }>;
   /** Location scout notes. */
   scouts?: Array<{ id: string; locationName: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' }>;
-  /** Script revision history (colored pages). */
-  revisions?: Array<{ id: string; color: string; date: string; pages: string; notes: string; author: string }>;
   /** Director's notebook entries. */
   directorNotes?: Array<{ id: string; scene: string; title: string; notes: string; reference: string; createdAt: string }>;
   /** Production risk register. */
