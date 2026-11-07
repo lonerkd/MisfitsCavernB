@@ -72,9 +72,22 @@ test.describe('Notes (local Supabase)', () => {
     // Jordan sees the project note arrive (live), never the private one.
     await expect(b.page.getByText('we shoot the kitchen first')).toBeVisible({ timeout: 30_000 });
     await expect(b.page.getByText('only for me')).toHaveCount(0);
-    // …and a notification row was written for him (the bell's own rendering is covered elsewhere).
+    // …and a notification row was written for him (and the bell shows it, below).
     const told = await admin.from('notifications').select('title, link').eq('user_id', jordan.id).eq('type', 'note');
     expect(told.data?.some((n) => n.link === `/studio?project=${projectId}`)).toBe(true);
+    // The bell itself shows it. The bell fetches once on mount and listens for new rows; if the row landed in the gap between
+    // the two, a fresh load (the bell's own initial fetch) must show it, so reload once rather than fail on that race.
+    const bellRow = b.page.getByText(/added a project note/).first();
+    const openBell = async () => {
+      await b.page.locator('[data-taskbar]').hover();
+      await b.page.getByRole('button', { name: 'Notifications' }).first().click({ timeout: 15_000 });
+    };
+    await openBell();
+    if (!(await bellRow.isVisible({ timeout: 8_000 }).catch(() => false))) {
+      await b.page.reload();
+      await openBell();
+    }
+    await expect(bellRow).toBeVisible({ timeout: 15_000 });
     const samTold = await admin.from('notifications').select('id').eq('user_id', sam.id).eq('type', 'note');
     expect(samTold.data ?? []).toHaveLength(0);
 
