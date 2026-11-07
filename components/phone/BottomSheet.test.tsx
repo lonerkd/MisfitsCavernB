@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { BottomSheet } from './BottomSheet';
-import { PhoneElementBar } from '@/components/editor/PhoneElementBar';
 
 afterEach(cleanup);
 
@@ -32,24 +31,5 @@ describe('BottomSheet', () => {
     const b = screen.getByRole('button', { name: 'Close' });
     expect(b.style.width).toBe('44px');
     expect(b.style.height).toBe('44px');
-  });
-});
-
-describe('PhoneElementBar', () => {
-  it('one tap inserts the element and keeps the keyboard (pointerdown is cancelled)', () => {
-    const insert = vi.fn();
-    render(<PhoneElementBar insert={insert} bottom={336} />);
-    const bar = screen.getByRole('toolbar', { name: 'Insert an element' });
-    expect(bar.style.bottom).toBe('336px');
-    const btn = screen.getByRole('button', { name: 'Character' });
-    const down = new Event('pointerdown', { bubbles: true, cancelable: true });
-    btn.dispatchEvent(down);
-    expect(down.defaultPrevented).toBe(true);
-    fireEvent.click(btn);
-    expect(insert).toHaveBeenCalledWith('character');
-  });
-  it('offers the six elements', () => {
-    render(<PhoneElementBar insert={() => {}} bottom={0} />);
-    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Scene', 'Action', 'Character', 'Dialogue', 'Transition', 'Note']);
   });
 });

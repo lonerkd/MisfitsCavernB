@@ -79,7 +79,7 @@ test.describe('The editor on a phone (local Supabase)', () => {
       await script.click();
       await page.keyboard.press('Control+End');
       await page.evaluate((kb) => (window as unknown as { __setKb: (n: number) => void }).__setKb(kb), name === 'portrait' ? 336 : 200);
-      const strip = page.getByRole('toolbar', { name: 'Insert an element' });
+      const strip = page.getByRole('toolbar', { name: 'Writing tools' });
       await expect(strip).toBeVisible();
       const stripBox = (await strip.boundingBox())!;
       const innerH = page.viewportSize()!.height;
@@ -87,6 +87,18 @@ test.describe('The editor on a phone (local Supabase)', () => {
       await expect(page.locator('[data-taskbar]')).toBeHidden();
       await strip.getByRole('button', { name: 'Action' }).click();
       await expect(script).toHaveValue(/Action description here\./);
+      // What a phone keyboard lacks is on the strip: undo takes the insert back, redo restores it, the type button changes a line,
+      // and the keyboard can be put away without losing the text.
+      await strip.getByRole('button', { name: 'Undo' }).click();
+      await expect(script).not.toHaveValue(/Action description here\./);
+      await strip.getByRole('button', { name: 'Redo' }).click();
+      await expect(script).toHaveValue(/Action description here\./);
+      await script.evaluate((el: HTMLTextAreaElement) => { const i = el.value.indexOf('Action description'); el.focus(); el.setSelectionRange(i + 3, i + 3); });
+      const before = await script.inputValue();
+      await strip.getByRole('button', { name: 'Change element type' }).click();
+      await expect(script).not.toHaveValue(before);
+      await strip.getByRole('button', { name: 'Put the keyboard away' }).click();
+      await expect(script).not.toBeFocused();
       await ctx.close();
     });
   }
