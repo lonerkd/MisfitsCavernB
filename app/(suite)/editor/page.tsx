@@ -56,6 +56,8 @@ import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
+import { NotesPanel } from '@/components/notes/NotesPanel';
+import { requestNoteFocus } from '@/lib/notes/focus';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
@@ -767,6 +769,7 @@ export default function EditorPage() {
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
+  const openNotes = () => { setFocusMode(false); setShowRightSidebar(true); setRightPanel('notes'); requestNoteFocus(); };
   usePillStage(
     {
       module: 'editor',
@@ -782,6 +785,7 @@ export default function EditorPage() {
       ],
       actions: [
         { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'note', slot: 'note', label: 'Add a note', onClick: openNotes },
         { id: 'sprint', slot: 'live', label: sprint.active ? 'Pause sprint' : sprint.running ? 'Resume sprint' : 'Start sprint', onClick: sprint.active ? sprint.pause : sprint.start },
       ],
     }
@@ -976,6 +980,16 @@ export default function EditorPage() {
                       openElementId={openElementId}
                       setOpenElementId={setOpenElementId}
                       onJumpToScene={jumpToScene}
+                    />
+                  }
+                  notesPanel={
+                    <NotesPanel
+                      scriptId={currentScript?.id ?? null}
+                      projectId={currentScript?.project_id ?? null}
+                      userId={sessionUser?.id ?? null}
+                      isProjectOwner={!!sessionUser?.id && activeProject?.id === currentScript?.project_id && activeProject?.creator_id === sessionUser.id}
+                      sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+                      context={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1} · ${parsedScenes[currentSceneIdx].heading}`.slice(0, 200) : null}
                     />
                   }
                   referencesPanel={

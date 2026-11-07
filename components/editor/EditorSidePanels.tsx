@@ -4,7 +4,7 @@ import { readable } from '@/lib/util/color';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
-import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images } from 'lucide-react';
+import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Target, Pause, Play, Settings, Tags, BarChart3, ChevronDown, ChevronRight, Music, Lightbulb, Images, StickyNote } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -12,7 +12,7 @@ import type { GutterItem } from '@/lib/film/gutter';
 
 const CHARACTER_COLOR = '#ffaa00';
 
-export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio';
+export type RightPanelTab = 'write' | 'breakdown' | 'refs' | 'insights' | 'history' | 'audio' | 'notes';
 
 export interface EditorRightPanelsProps {
   /** Hide the Breakdown tab until the project reaches it (see lib/os/progress). */
@@ -57,6 +57,7 @@ export interface EditorRightPanelsProps {
   playAudioRef?: (ref: any) => void;
   /** The current scene's references panel (rendered by the page, which owns the scene index). */
   referencesPanel?: React.ReactNode;
+  notesPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
   readingPanel?: React.ReactNode;
 }
@@ -105,7 +106,7 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript, projectAudioRefs = [], playAudioRef,
-  referencesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, notesPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
@@ -125,6 +126,7 @@ export function EditorRightPanels({
     ['insights', Lightbulb, 'Insights'],
     ['history', History, 'History'],
     ['audio', Music, 'Audio'],
+    ['notes', StickyNote, 'Notes'],
   ];
 
   return (
@@ -229,6 +231,7 @@ export function EditorRightPanels({
                 {rightPanel === 'breakdown' && breakdownPanel}
 
                 {rightPanel === 'refs' && referencesPanel}
+                {rightPanel === 'notes' && notesPanel}
 
                 {rightPanel === 'insights' && (
                   <>

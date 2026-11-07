@@ -1,5 +1,6 @@
 'use client';
 
+import { requestNoteFocus } from '@/lib/notes/focus';
 // The Studio — the production workspace of the suite. One project at a time:
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
@@ -125,6 +126,7 @@ export default function StudioPage() {
           accent: activeProject.accent_color || '#6366f1',
           fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: 'var(--violet)' }],
           actions: [
+            { id: 'note', slot: 'note' as const, label: 'Add a note', onClick: () => { setTab('overview'); requestNoteFocus(); } },
             { id: 'next-tab', slot: 'view', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) },
             ...(tab !== 'share' ? [{ id: 'open-share', slot: 'share' as const, label: 'Share tab', onClick: () => setTab('share') }] : []),
           ],
