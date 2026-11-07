@@ -12,7 +12,7 @@
 
 | Where | Kind | Title | Fields | Toggles | Actions |
 | --- | --- | --- | --- | --- | --- |
-| `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | **Q** `Focus` | **E** `find` Find & replace |
+| `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | **Q** `Focus` | **E** `find` Find & replace · **I** `sprint` Pause sprint (conditional) · **W** `sprint` (computed) (conditional) |
 | `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position (conditional) |
 | `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
 | `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project (conditional) |
