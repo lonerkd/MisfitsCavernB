@@ -58,12 +58,32 @@ const allowlisted = (doc, name) => {
   return section.split('\n').some((l) => l.trim().startsWith('|') && new RegExp(`\\b${name}\\b`).test(l));
 };
 
-const waiver = (body, label) => {
-  // The line may be dressed as Markdown (a bullet, a quote, **bold**): `**Large change:** why` is the same waiver as `Large change: why`.
-  // The label must be followed by its colon (so `No tests neededly:` is not a waiver), and the reason is measured after trimming.
-  const m = new RegExp(`^[\\s>*_-]*${label}[*_]*\\s*:[*_]*[ \\t]*(.*)$`, 'im').exec(body ?? '');
-  const reason = m ? m[1].trim() : '';
-  return reason.length >= 20 ? reason : null;
+/**
+ * A waiver is a line of the pull request description: `No tests needed: <why>` / `Large change: <why>`. The reason is the
+ * person's own words, at least 20 characters, so the line is read as a person writes it, one line at a time:
+ *   - the label may be dressed as Markdown: a bullet (- * +), a quote (>), a heading (#), a number (1.), a task box ([x]),
+ *     **bold** or _emphasis_ around it (`**Large change:** why` is the same waiver as `Large change: why`);
+ *   - the label is followed by its colon on the same line (`No tests neededly:` is not a waiver);
+ *   - the reason follows on that line, or alone on the next line;
+ *   - lines inside a fenced code block are quoted text, not waivers;
+ *   - every line is tried, so a short placeholder (`- No tests needed: tbd`) does not hide a real waiver further down;
+ *   - the 20 characters are the reason itself, not the Markdown around it (closing ** do not count).
+ */
+export const waiver = (body, label) => {
+  const lead = new RegExp(`^[ \\t>*_+#-]*(?:\\d+[.)][ \\t]+)?(?:\\[[ xX]\\][ \\t]+)?${label}[*_]*[ \\t]*:(?:[*_]+(?=[ \\t]|$))?[ \\t]*`, 'i');
+  const lines = String(body ?? '').split(/\r?\n/);
+  let fenced = false;
+  for (let i = 0; i < lines.length; i++) {
+    if (/^\s*(```|~~~)/.test(lines[i])) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    const m = lead.exec(lines[i]);
+    if (!m) continue;
+    let reason = lines[i].slice(m[0].length);
+    if (!reason.trim()) reason = lines.slice(i + 1).find((l) => l.trim()) ?? '';
+    reason = reason.trim().replace(/[*_]+$/, '').trim();
+    if (reason.length >= 20) return reason;
+  }
+  return null;
 };
 
 /** ctx: { title, body, files: [{ path, status: 'A'|'M'|'D'|'R', added: string[] }], tracked: (path)=>string|null, grep: (word)=>boolean,
@@ -115,7 +135,7 @@ export function evaluate(ctx) {
   const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.(?!skip|todo|fixme)\w+)*\s*\(/.test(l)) && !f.added.some((l) => /\b(it|test|describe)\.(skip|todo|fixme)\b/.test(l)));
   const noTests = waiver(body, 'No tests needed');
   add('tests-with-code', isDeps || srcAdded < LIMITS.testsFromAddedLines || touchedTests.length > 0 || !!noTests,
-    `This PR adds ${srcAdded} lines of source and changes no test (unit, tests/integration or e2e). Add one that fails without the change, or put a line "No tests needed: <why, 20+ characters>" in the description.`);
+    `This PR adds ${srcAdded} lines of source and changes no test (unit, tests/integration or e2e). Add one that fails without the change, or put a line "No tests needed: <why, 20+ characters>" in the description (it may be a bullet, a quote or bold, but the label and its colon must be on one line).`);
 
   // 5. New components come with new tests in proportion: one new test file (unit, integration or e2e spec) per five new
   // components that no existing test names. (An e2e spec drives the UI by text and rarely names the component.)
@@ -139,7 +159,7 @@ export function evaluate(ctx) {
   const lines = counted.reduce((n, f) => n + f.added.length, 0);
   const large = waiver(body, 'Large change');
   add('reviewable-size', isDeps || (lines <= LIMITS.largeAddedLines && counted.length <= LIMITS.largeFiles) || !!large,
-    `${lines} added lines in ${counted.length} files (generated files and tests not counted) is more than can be reviewed under one title (limit ${LIMITS.largeAddedLines} lines / ${LIMITS.largeFiles} files). Split it, or put "Large change: <what it contains and why it is one change>" in the description.`);
+    `${lines} added lines in ${counted.length} files (generated files and tests not counted) is more than can be reviewed under one title (limit ${LIMITS.largeAddedLines} lines / ${LIMITS.largeFiles} files). Split it, or put "Large change: <what it contains and why it is one change>" in the description (the reason is at least 20 characters; the label and its colon must be on one line).`);
 
   // 8. Every theme token used in new code is defined (var(--warning, #b45309) used one that was not, so it followed no theme).
   const used = new Set();

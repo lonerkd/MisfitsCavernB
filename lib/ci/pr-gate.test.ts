@@ -116,18 +116,56 @@ describe('the merge gate', () => {
       const f = { path: 'lib/x/x.test.ts', status: 'M' as const, added: ["it.skip('x', () => {", '  expect(foo()).toBe(1);', '});'] };
       expect(run([file('lib/x/x.ts', 'M', 80), f, NOTE]).failed).toContain('tests-with-code');
     });
-    it('a waiver written as Markdown (bold, a bullet, a quote) still counts, and a short reason still does not', () => {
+    describe('how a waiver may be written', () => {
       const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), NOTE];
-      for (const body of ['**No tests needed:** the existing suite covers every call site', '- No tests needed: the existing suite covers every call site', '> **No tests needed**: the existing suite covers every call site']) {
-        expect(run(f, { body }).byId['tests-with-code'].ok).toBe(true);
-      }
-      expect(run(f, { body: '**No tests needed:** ok' }).failed).toContain('tests-with-code');
-    });
-    it('a longer label is not the waiver, and the reason is counted after trimming', () => {
-      const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), NOTE];
-      expect(run(f, { body: 'No tests neededly: this is a long unrelated sentence about nothing' }).failed).toContain('tests-with-code');
-      expect(run(f, { body: 'No tests needed: 1234567890123456789   ' }).failed).toContain('tests-with-code'); // 19 characters + spaces
-      expect(run(f, { body: 'No tests needed: 12345678901234567890' }).byId['tests-with-code'].ok).toBe(true); // exactly 20
+      const REASON = 'the existing suite covers every call site';
+      const ok = (body: string) => expect(run(f, { body }).byId['tests-with-code'].ok).toBe(true);
+      const no = (body: string) => expect(run(f, { body }).failed).toContain('tests-with-code');
+
+      it.each([
+        ['plain', `No tests needed: ${REASON}`],
+        ['bold label', `**No tests needed:** ${REASON}`],
+        ['bold with the colon outside', `**No tests needed**: ${REASON}`],
+        ['a bullet', `- No tests needed: ${REASON}`],
+        ['a plus bullet', `+ No tests needed: ${REASON}`],
+        ['a quote', `> **No tests needed**: ${REASON}`],
+        ['a heading', `## No tests needed: ${REASON}`],
+        ['a numbered item', `1. No tests needed: ${REASON}`],
+        ['a task box', `- [x] No tests needed: ${REASON}`],
+        ['Windows line endings', `No tests needed: ${REASON}\r\n`],
+        ['the reason alone on the next line', `No tests needed:\n${REASON}`],
+        ['lower case', `no tests needed: ${REASON}`],
+      ])('counts: %s', (_name, body) => ok(body));
+
+      it.each([
+        ['a longer label', `No tests neededly: ${REASON}`],
+        ['the label without a colon', `No tests needed ${REASON}`],
+        ['the colon on a later line', `No tests needed\n\n: ${REASON}`],
+        ['a 19-character reason followed by spaces', 'No tests needed: 1234567890123456789   '],
+        ['a reason padded to 20 by closing bold', '**No tests needed: 18 char reason here**'],
+        ['quoted inside a code fence', '```\nNo tests needed: ' + REASON + '\n```'],
+      ])('does not count: %s', (_name, body) => no(body));
+
+      it('counts exactly 20 characters, and keeps a leading *emphasis* of the reason', () => {
+        ok('No tests needed: 12345678901234567890');
+        ok('No tests needed: *all* call sites are covered');
+      });
+
+      it('a short placeholder earlier does not hide a real waiver further down', () => {
+        ok(`- No tests needed: tbd\n\nNotes\n**No tests needed:** ${REASON}`);
+      });
+
+      it('the Large change label reads the same way', () => {
+        const big = [file('lib/a.ts', 'M', LIMITS.largeAddedLines + 1), NOTE, TEST];
+        expect(run(big, { body: `**Large change:** ${REASON}` }).byId['reviewable-size'].ok).toBe(true);
+        expect(run(big, { body: 'Large change: tbd' }).failed).toContain('reviewable-size');
+      });
+
+      it('a body of thousands of blank lines is read in linear time', () => {
+        const t0 = Date.now();
+        no(' \n'.repeat(30000));
+        expect(Date.now() - t0).toBeLessThan(500);
+      });
     });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);
