@@ -50,10 +50,12 @@ test.describe('Notes (local Supabase)', () => {
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByTitle('Notes', { exact: true }).click();
+    // The first list has settled (empty): anything Jordan sees afterwards arrived live, not through that first fetch.
+    await expect(page.getByText('No notes yet.')).toBeVisible({ timeout: 30_000 });
     return { ctx, page };
   }
 
-  test('private stays private, project reaches the crew and their bell, and U opens the box', async ({ browser }) => {
+  test('private stays private, project reaches the crew live and in their notifications, and U opens the box', async ({ browser }) => {
     test.setTimeout(180_000);
     const a = await openEditor(browser, sam);
     const b = await openEditor(browser, jordan);
@@ -70,7 +72,7 @@ test.describe('Notes (local Supabase)', () => {
     // Jordan sees the project note arrive (live), never the private one.
     await expect(b.page.getByText('we shoot the kitchen first')).toBeVisible({ timeout: 30_000 });
     await expect(b.page.getByText('only for me')).toHaveCount(0);
-    // …and was told.
+    // …and a notification row was written for him (the bell's own rendering is covered elsewhere).
     const told = await admin.from('notifications').select('title, link').eq('user_id', jordan.id).eq('type', 'note');
     expect(told.data?.some((n) => n.link === `/studio?project=${projectId}`)).toBe(true);
     const samTold = await admin.from('notifications').select('id').eq('user_id', sam.id).eq('type', 'note');
