@@ -93,7 +93,7 @@ test.describe('Notes (local Supabase)', () => {
     expect(samTold.data ?? []).toHaveLength(0);
 
     // The island's Note key opens the Notes tab and focuses the box, from another tab.
-    await a.page.getByTitle('Write', { exact: true }).click();
+    await a.page.getByTitle('Scene', { exact: true }).click();
     await capsKey(a.page, 'CapsLock');
     await capsKey(a.page, 'U');
     await expect(a.page.getByLabel('New note')).toBeFocused();
