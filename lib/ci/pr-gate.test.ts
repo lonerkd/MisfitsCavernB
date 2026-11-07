@@ -12,7 +12,7 @@ const run = (files: F[], over: Partial<typeof base> = {}) => {
   return { results, byId, failed: results.filter((r) => !r.ok).map((r) => r.id) };
 };
 const NOTE = file('.cavern-intelligence/sessions/2026-11-07-x.md', 'A');
-const TEST = file('lib/x/x.test.ts', 'A', 30);
+const TEST = file('lib/x/x.test.ts', 'A', 30, 'it("works", () => { expect(1).toBe(1); });');
 
 describe('the merge gate', () => {
   it('passes a small change with a test and a note', () => {
@@ -34,7 +34,15 @@ describe('the merge gate', () => {
     const mig = { path: 'supabase/migrations/20261106000000_y.sql', status: 'A' as const, added: sql };
     it('a new definer function must be on the allowlist in the same PR', () => {
       expect(run([mig, NOTE], { definerDoc: '| `advance_phase` | creator |' }).failed).toContain('definer-allowlist');
-      expect(run([mig, NOTE], { definerDoc: '| `patch_things(a)` | creator only |' }).byId['definer-allowlist'].ok).toBe(true);
+      expect(run([mig, NOTE], { definerDoc: '### D. The definer-function allowlist\n| `patch_things(a)` | creator only |' }).byId['definer-allowlist'].ok).toBe(true);
+    });
+    it('a name mentioned only in prose, or a custom dollar tag, does not slip through', () => {
+      const doc = '### D. The definer-function allowlist\n\n| Function | Gate |\n|---|---|\n| `other_fn` | x |\n\n### E. Other\npatch_things is discussed here.';
+      expect(run([mig, NOTE], { definerDoc: doc }).failed).toContain('definer-allowlist');
+      const tagged = { ...mig, added: sql.map((l) => l.replace(/\$function\$/g, '$fn1$')).concat(['LANGUAGE plpgsql;']) };
+      expect(run([tagged, NOTE], { definerDoc: doc }).failed).toContain('definer-allowlist');
+      const listed = '### D. The definer-function allowlist\n\n| `patch_things(a)` | gate |\n';
+      expect(run([mig, NOTE], { definerDoc: listed }).byId['definer-allowlist'].ok).toBe(true);
     });
     it('an invoker function needs no entry', () => {
       const inv = { ...mig, added: sql.filter((l) => l !== 'SECURITY DEFINER') };
@@ -57,6 +65,10 @@ describe('the merge gate', () => {
       expect(run(f).failed).toContain('tests-with-code');
       expect(run(f, { body: 'No tests needed: pure rename, the existing suite covers every call site' }).byId['tests-with-code'].ok).toBe(true);
       expect(run(f, { body: 'No tests needed: ok' }).failed).toContain('tests-with-code');
+    });
+    it('a test file that only removes assertions is not coverage', () => {
+      const f = [file('lib/x/x.ts', 'M', LIMITS.testsFromAddedLines + 1), { path: 'lib/x/x.test.ts', status: 'M' as const, added: ['// tidy'] }, NOTE];
+      expect(run(f).failed).toContain('tests-with-code');
     });
     it('a small change needs none, and a dependency bump is exempt', () => {
       expect(run([file('lib/x/x.ts', 'M', 10), NOTE]).byId['tests-with-code'].ok).toBe(true);
@@ -92,6 +104,17 @@ describe('the merge gate', () => {
     it('generated files and tests do not count toward the size', () => {
       const g = [file('lib/supabase/database.types.ts', 'M', 5000), file('supabase/schema.fingerprint', 'M', 5000), file('lib/a.ts', 'M', 20), NOTE, TEST];
       expect(run(g).byId['reviewable-size'].ok).toBe(true);
+    });
+  });
+
+  describe('lint-baseline-shrinks', () => {
+    const sup = (n: number) => ({ 'a.ts': { 'no-unused-vars': { count: n } } });
+    const withSup = (base: unknown, head: unknown) => run([NOTE], { suppressions: { base, head } } as never);
+    it('may shrink or stay, never grow or add', () => {
+      expect(withSup(sup(3), sup(2)).byId['lint-baseline-shrinks'].ok).toBe(true);
+      expect(withSup(sup(3), sup(3)).byId['lint-baseline-shrinks'].ok).toBe(true);
+      expect(withSup(sup(3), sup(4)).failed).toContain('lint-baseline-shrinks');
+      expect(withSup(sup(3), { ...sup(3), 'b.ts': { 'no-explicit-any': { count: 1 } } }).failed).toContain('lint-baseline-shrinks');
     });
   });
 

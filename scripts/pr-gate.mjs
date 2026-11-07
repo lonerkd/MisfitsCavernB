@@ -20,6 +20,13 @@ const MIGRATION = /^supabase\/migrations\/[^/]+\.sql$/;
 
 export const LIMITS = { testsFromAddedLines: 60, newComponentLines: 60, largeAddedLines: 1200, largeFiles: 40 };
 
+// Only a row of the §2.D allowlist table counts, not a mention elsewhere in the document.
+const allowlisted = (doc, name) => {
+  const m = /(^|\n)#+\s*[^\n]*definer-function allowlist[^\n]*\n([\s\S]*?)(?=\n#{1,3}\s|$)/i.exec(doc ?? '');
+  const section = m ? m[2] : '';
+  return section.split('\n').some((l) => l.trim().startsWith('|') && new RegExp(`\\b${name}\\b`).test(l));
+};
+
 const waiver = (body, label) => {
   const m = new RegExp(`^\\s*${label}:\\s*(.{20,})`, 'im').exec(body ?? '');
   return m ? m[1].trim() : null;
@@ -43,8 +50,9 @@ export function evaluate(ctx) {
   const missing = [];
   for (const f of files.filter((x) => MIGRATION.test(x.path) && x.status === 'A')) {
     const sql = f.added.join('\n');
-    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.([a-z0-9_]+)([\s\S]*?)\$[a-z_]*\$;/gi)) {
-      if (/SECURITY\s+DEFINER/i.test(m[2]) && !new RegExp(`\\b${m[1]}\\b`).test(ctx.definerDoc ?? '')) missing.push(`${m[1]} (${f.path})`);
+    // Everything from the function name to the end of its body: any valid dollar tag ($$, $fn1$), attributes may follow the body.
+    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+public\.([a-z0-9_]+)([\s\S]*?)(\$[A-Za-z0-9_]*\$)[\s\S]*?\3/gi)) {
+      if (/SECURITY\s+DEFINER/i.test(m[2]) && !allowlisted(ctx.definerDoc, m[1])) missing.push(`${m[1]} (${f.path})`);
     }
   }
   add('definer-allowlist', missing.length === 0,
@@ -63,7 +71,8 @@ export function evaluate(ctx) {
   // 4. Tests move with code.
   const src = files.filter((f) => SRC.test(f.path) && !TEST.test(f.path) && !GENERATED.test(f.path) && f.status !== 'D');
   const srcAdded = src.reduce((n, f) => n + f.added.length, 0);
-  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D');
+  // A changed test counts only if it adds an assertion or a case (a test whose assertions were only removed is not coverage).
+  const touchedTests = files.filter((f) => TEST.test(f.path) && f.status !== 'D' && f.added.some((l) => /\b(expect|assert|it|test)(\.\w+)*\s*\(/.test(l)));
   const noTests = waiver(body, 'No tests needed');
   add('tests-with-code', isDeps || srcAdded < LIMITS.testsFromAddedLines || touchedTests.length > 0 || !!noTests,
     `This PR adds ${srcAdded} lines of source and changes no test (unit, tests/integration or e2e). Add one that fails without the change, or put a line "No tests needed: <why, 20+ characters>" in the description.`);
@@ -100,6 +109,18 @@ export function evaluate(ctx) {
   const undefinedTokens = [...used].filter((t) => !ctx.definedTokens.has(t));
   add('tokens-defined', undefinedTokens.length === 0, `Token(s) used but defined nowhere: ${undefinedTokens.join(', ')}. Use one from app/globals.css (design-tokens.md).`);
 
+  // 9. The lint baseline only shrinks: a new violation is fixed, not recorded.
+  if (ctx.suppressions) {
+    const grew = [];
+    const { base, head } = ctx.suppressions;
+    for (const [file, rules] of Object.entries(head ?? {})) for (const [rule, v] of Object.entries(rules)) {
+      const before = base?.[file]?.[rule]?.count ?? 0;
+      if ((v?.count ?? 0) > before) grew.push(`${file} › ${rule} (${before} → ${v.count})`);
+    }
+    add('lint-baseline-shrinks', grew.length === 0,
+      `eslint-suppressions.json grew: ${grew.slice(0, 6).join('; ')}${grew.length > 6 ? '; …' : ''}. Fix the new violation instead of recording it. (An owner-approved baseline change is not a thing an author can grant.)`);
+  }
+
   return out;
 }
 
@@ -129,8 +150,10 @@ export function contextFromGit(base, head, title, body) {
   }
   const tests = git('ls-tree', '-r', '--name-only', head).split('\n').filter((p) => TEST.test(p));
   const testText = tests.map((p) => show(head, p)).join('\n');
+  const parse = (ref) => { try { return JSON.parse(show(ref, 'eslint-suppressions.json') || 'null'); } catch { return null; } };
   return {
     title, body, files, definedTokens,
+    suppressions: { base: parse(base), head: parse(head) },
     definerDoc: show(head, '.cavern-intelligence/database-and-security.md'),
     grep: (word) => new RegExp(`\\b${word}\\b`).test(testText),
   };
