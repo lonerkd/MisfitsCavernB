@@ -3,7 +3,7 @@
   "routes": {
     "/editor": 488,
     "/projects/[id]/pitch": 431,
-    "/projects/[id]": 420,
+    "/projects/[id]": 422,
     "/studio": 368,
     "/lounge": 363,
     "/welcome": 358,

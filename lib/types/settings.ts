@@ -58,6 +58,8 @@ export interface ProjectSettings {
   purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
   /** Media offload log (DIT). */
   mediaOffloads?: Array<{ id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' }>;
+  /** Stills log (the unit photographer). */
+  stills?: Array<{ id: string; scene_ids?: string[]; scene: string; frames: string; photographer: string; subject: string; status: 'shot' | 'selected' | 'delivered'; notes: string }>;
   /** Makeup / hair continuity. */
   makeup?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; look: string; artist: string; notes: string; photo: string }>;
 }
