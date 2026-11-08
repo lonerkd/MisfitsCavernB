@@ -363,6 +363,7 @@ export default function PortfolioPage() {
              {header.line && <p style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--accent)', marginBottom: 12 }}>{header.line}</p>}
              {header.bio && <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', lineHeight: 1.6 }}>{header.bio}</p>}
              {uid && <PortfolioLinks userId={uid} />}
+             <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', marginTop: 12 }}><Link href="/portfolios" style={{ color: 'var(--accent)' }}>Browse other filmmakers’ portfolios</Link></p>
              {header.sparse && !loading && (
                <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', marginTop: 12 }}>
                  Say what you do and where, in your <Link href="/profile" style={{ color: 'var(--accent)' }}>profile</Link>, and it shows here.
