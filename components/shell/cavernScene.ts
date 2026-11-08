@@ -19,8 +19,10 @@ export interface SceneState {
   /** The light's colour (from the cover). */
   tint: Rgb;
   spores: Spore[];
-  /** 0..1: how loud the music is, when it can be heard (the opt-in audio level); 0 when not. */
+  /** What the cavern hears, when the person has shared audio (all 0..1; 0 when not listening): the loudness, the low end, and a pulse that is 1 on a beat and falls away. */
   level?: number;
+  bass?: number;
+  pulse?: number;
 }
 
 /** Where on the screen the runner stands, as a fraction of the width: left of centre, so the cave opens ahead of it. */
@@ -82,7 +84,8 @@ export function drawScene(ctx: CanvasRenderingContext2D, w: number, h: number, s
   const cam = r.x;
   const pose = poseOf(r, w, h, t);
   const [lx, ly] = pose.lantern;
-  const flicker = 1 + Math.sin(t * 13) * 0.025 + Math.sin(t * 5.3 + 1) * 0.03 + (s.level ?? 0) * 0.18;
+  const level = s.level ?? 0, bass = s.bass ?? 0, pulse = s.pulse ?? 0;
+  const flicker = 1 + Math.sin(t * 13) * 0.025 + Math.sin(t * 5.3 + 1) * 0.03 + level * 0.14 + bass * 0.1 + pulse * 0.16;
   const radius = h * 0.78 * flicker * (0.5 + 0.5 * energy);
 
   // The deep background: black, faintly warmed by the light's colour toward the middle.
@@ -113,7 +116,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, w: number, h: number, s
   // The lantern's glow, added to what is there.
   ctx.globalCompositeOperation = 'lighter';
   const glow = ctx.createRadialGradient(lx, ly, 0, lx, ly, radius);
-  glow.addColorStop(0, rgba(tint, 0.34 * (0.35 + 0.65 * energy)));
+  glow.addColorStop(0, rgba(tint, Math.min(0.9, 0.34 * (0.35 + 0.65 * energy) + level * 0.12 + pulse * 0.3)));
   glow.addColorStop(0.45, rgba(tint, 0.1 * energy));
   glow.addColorStop(1, rgba(tint, 0));
   ctx.fillStyle = glow; ctx.fillRect(0, 0, w, h);
@@ -122,7 +125,7 @@ export function drawScene(ctx: CanvasRenderingContext2D, w: number, h: number, s
   const lit = ctx.createRadialGradient(lx, ly, 0, lx, ly, radius * 1.3);
   lit.addColorStop(0, rgba(tint, 0.2 * (0.4 + 0.6 * energy))); lit.addColorStop(1, rgba(tint, 0));
   const rim = ctx.createRadialGradient(lx, ly, 0, lx, ly, radius * 1.15);
-  rim.addColorStop(0, rgba(tint, 0.95)); rim.addColorStop(0.6, rgba(tint, 0.35)); rim.addColorStop(1, rgba(tint, 0));
+  rim.addColorStop(0, rgba(tint, 0.95)); rim.addColorStop(0.6, rgba(tint, Math.min(0.9, 0.35 + bass * 0.25 + pulse * 0.3))); rim.addColorStop(1, rgba(tint, 0));
   for (const edge of ['ceiling', 'floor'] as const) {
     wall(ctx, s.cave, w, h, cam, 1, 1, edge, lit, rim, 3);
     wall(ctx, s.cave, w, h, cam, 1, 1, edge, null, lit, 12);
@@ -133,8 +136,8 @@ export function drawScene(ctx: CanvasRenderingContext2D, w: number, h: number, s
     const px = ((p.x - cam) * h) + w * RUNNER_AT + Math.sin(t * 0.8 + p.phase) * 6, py = p.y * h;
     const near = Math.max(0, 1 - Math.hypot(px - lx, py - ly) / (radius * 1.15));
     if (near <= 0) continue;
-    ctx.fillStyle = rgba(tint, (0.1 + near * 0.7) * (0.3 + energy * 0.7));
-    ctx.beginPath(); ctx.arc(px, py, p.size * (1 + near), 0, 6.283); ctx.fill();
+    ctx.fillStyle = rgba(tint, Math.min(1, (0.1 + near * 0.7) * (0.3 + energy * 0.7) + pulse * 0.2 * near));
+    ctx.beginPath(); ctx.arc(px, py, p.size * (1 + near + pulse * 0.6 + (s.level ?? 0) * 0.3), 0, 6.283); ctx.fill();
   }
   ctx.globalCompositeOperation = 'source-over';
 

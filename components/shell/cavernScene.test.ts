@@ -38,6 +38,13 @@ describe('drawing the cavern', () => {
     expect(r.x).toBeGreaterThan(5);
   });
 
+  it('draws with the music: loud, a bass hit and a beat, with no NaN', () => {
+    const { ctx, calls } = fakeCtx();
+    for (const [level, bass, pulse] of [[0, 0, 0], [0.6, 0.8, 1], [1, 1, 1], [0.2, 0.1, 0.3]]) drawScene(ctx, 900, 500, { ...scene(), level, bass, pulse });
+    expect(calls.some((c) => c.endsWith(':NaN'))).toBe(false);
+    expect(calls.filter((c) => c === 'fill').length).toBeGreaterThan(30);
+  });
+
   it('puts the runner left of centre on the ground, with the lantern ahead of it and above the feet', () => {
     const r = newRunner(cave);
     const p = poseOf(r, 1000, 600, 0);

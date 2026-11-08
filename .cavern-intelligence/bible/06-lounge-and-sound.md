@@ -122,7 +122,7 @@ fetch.
 
 ## `/soundtrack`
 
-**The full-screen cavern** (the button on the deck and the corner player; `components/shell/CavernVisualizer.tsx`, `cavernScene.ts`, `lib/cavern/`): a stick-figure ninja runs through endless seeded dark caves with a lantern in its right hand. Arrow keys / WASD or a held pointer steer (right faster, left slower, up leaps, down crouches); idle for 6 s and it explores on its own; no way to lose. It follows the player (the cave is seeded by the song, the light takes the cover's colour, it strolls when paused) but is not beat-synced: Spotify gives a page no audio signal.
+**The full-screen cavern** (the button on the deck and the corner player; `components/shell/CavernVisualizer.tsx`, `cavernScene.ts`, `lib/cavern/`): a stick-figure ninja runs through endless seeded dark caves with a lantern in its right hand. Arrow keys / WASD or a held pointer steer (right faster, left slower, up leaps, down crouches); idle for 6 s and it explores on its own; no way to lose. It follows the player (the cave is seeded by the song, the light takes the cover's colour, it strolls when paused) but is not beat-synced by default: Spotify gives a page no audio signal. **Opt-in listening** ("Listen to the music", desktop Chrome / Edge): the person shares a tab or the screen with audio and the lantern flares on the beat and swells with the loudness; nothing is recorded or sent. **`/cavern`** is the cave as its own page, for a second screen.
 
 `app/(suite)/soundtrack/page.tsx`, `lib/spotify/*`, `GlobalAudioWidget`:
 - **Scenes timeline** (a tab; `components/audio/SceneTimeline.tsx`,

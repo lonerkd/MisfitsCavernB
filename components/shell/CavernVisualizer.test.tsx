@@ -7,6 +7,9 @@ const spotify = {
   togglePlay: vi.fn(), nextTrack: vi.fn(), prevTrack: vi.fn(), seek: vi.fn(),
 };
 vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
+const cap = vi.hoisted(() => ({ supported: true, start: vi.fn(), toast: vi.fn() }));
+vi.mock('@/lib/cavern/capture', async (orig) => ({ ...(await orig<typeof import('@/lib/cavern/capture')>()), captureSupported: () => cap.supported, startCapture: cap.start }));
+vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: cap.toast }) }));
 import { CavernVisualizer } from './CavernVisualizer';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -68,5 +71,45 @@ describe('CavernVisualizer', () => {
     const ev = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
     slider.dispatchEvent(ev);
     expect(ev.defaultPrevented).toBe(false);
+  });
+  describe('listening to the music (opt-in)', () => {
+    const fake = () => ({ read: () => ({ bass: 0.5, mid: 0.3, treble: 0.2, level: 0.4 }), hearing: () => true, stop: vi.fn(), onEnded: vi.fn() });
+    it('offers it only where the browser can share audio', () => {
+      cap.supported = false;
+      render(<CavernVisualizer onClose={() => {}} />);
+      expect(screen.queryByRole('button', { name: /Listen to the music/ })).toBeNull();
+      cleanup(); cap.supported = true;
+      render(<CavernVisualizer onClose={() => {}} />);
+      expect(screen.getByRole('button', { name: /Listen to the music/ })).toBeTruthy();
+    });
+    it('starts only when asked, turns into Stop listening, and lets go of the share', async () => {
+      const c = fake(); cap.start.mockResolvedValueOnce(c);
+      render(<CavernVisualizer onClose={() => {}} />);
+      expect(cap.start).not.toHaveBeenCalled(); // never on its own
+      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
+      const stop = await screen.findByRole('button', { name: /Stop listening/ });
+      expect(stop.getAttribute('aria-pressed')).toBe('true');
+      fireEvent.click(stop);
+      expect(c.stop).toHaveBeenCalled();
+      expect(await screen.findByRole('button', { name: /Listen to the music/ })).toBeTruthy();
+    });
+    it('lets go of the share when the cave closes', async () => {
+      const c = fake(); cap.start.mockResolvedValueOnce(c);
+      const { unmount } = render(<CavernVisualizer onClose={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
+      await screen.findByRole('button', { name: /Stop listening/ });
+      unmount();
+      expect(c.stop).toHaveBeenCalled();
+    });
+    it('says why when it could not start, and a cancelled share is not an error', async () => {
+      const { CaptureError } = await import('@/lib/cavern/capture');
+      cap.start.mockRejectedValueOnce(new CaptureError('no-audio', 'No audio was shared.'));
+      render(<CavernVisualizer onClose={() => {}} />);
+      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
+      await vi.waitFor(() => expect(cap.toast).toHaveBeenCalledWith('No audio was shared.', 'error'));
+      cap.start.mockRejectedValueOnce(new CaptureError('denied', 'Sharing was cancelled.'));
+      fireEvent.click(await screen.findByRole('button', { name: /Listen to the music/ }));
+      await vi.waitFor(() => expect(cap.toast).toHaveBeenCalledWith('Sharing was cancelled.', 'info'));
+    });
   });
 });
