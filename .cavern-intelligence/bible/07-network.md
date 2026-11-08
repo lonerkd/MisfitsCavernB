@@ -53,13 +53,18 @@ refused ("just filled") and the page reloads what the database holds. One
 answer at a time on the page too: the buttons wait while one is saving.
 
 ### `/portfolio` — your work, presented
-A cinematic page of the person's pieces (featured work, the work, a project
-bible per piece, festival circuit, campaigns): embeds for YouTube / Vimeo /
-Drive, images, links.
+A cinematic page of the person's pieces (the work, a project bible per piece,
+festival circuit, campaigns): embeds for YouTube / Vimeo / Drive, images,
+links. **The header is the person** (name, role and location, bio, avatar and
+"Open to work" from their profile, `lib/portfolio/header.ts`); a bare profile
+says what to add. A piece can carry a **cover image** (`portfolio_projects.cover_url`,
+an https link, checked by the database; shown on the cards here and on the
+crew page). Plan for the rest (private until published, a shareable handle
+page, project portfolios, verified credits): `plans/2026-11-08-portfolio-upgrade.md`.
 
 ### `/portfolio/manage`
-Add / edit / remove pieces (title, format, year, role, description, media
-links), copy each piece's share link (`/p/<token>`). Projects finished in
+Add / remove pieces (title, format, year, role, description, a cover image link
+with a preview, media links), copy each piece's share link (`/p/<token>`). Projects finished in
 the suite are added from their Delivery phase (milestone "Add it to your
 portfolio").
 

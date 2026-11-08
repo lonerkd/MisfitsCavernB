@@ -50,7 +50,18 @@ Owner: "the next major upgrade needed is the portfolio." Nothing here is built. 
 
 Each step: a test with the code, the doc that owns the change, a session note, and a browser look at both a desktop and a phone (the phone audit covers the pages).
 
-## Questions for the owner
+## Decisions (owner, 2026-11-08)
+
+1. **Audience: it depends on the project and its needs.** So the page is not one fixed layout: what leads (the reel, the credits, the films, the festivals) is the person's choice per portfolio, with sensible defaults (step 4).
+2. **Private until published: yes.**
+3. **Video comes from the library, not a second upload.** The Studio library already takes uploads (audio and video included) and links; a portfolio piece shows a library item the person chooses to publish (the library's `media.shared` already says which are public), so there is one place media lives. Embeds (YouTube, Vimeo, Drive) stay for work that lives elsewhere. No separate video upload for the portfolio.
+4. **Verified credits: yes, confirmed credits so that every person who deserves recognition has it, whatever their role.** The project's crew confirm credits; a person left off can ask to be added and the project's owner decides; a credit is shown as confirmed or as self-reported.
+5. **Both individual and project portfolios (and more where needed).** A person has a portfolio; a **project** has its own public page too (its credits, stills, festivals, press kit: one page for the film, many people on it); a company or collective could be a third kind later. One piece of work can appear on several. This widens step 3 (a project page as well as a handle page) and step 5.
+6. **Findable: yes** (directory and search engines), with a per-portfolio opt-out.
+
+**Built 2026-11-08 (step 1, the honest page):** the header is the person (name, role, location, bio from the profile) instead of a hardcoded "The Cavern Collection"; the filler marquee is gone; a piece can carry a cover image (`cover_url`, an https image link, with a preview) and cards show it; the empty state says what to do. **Left:** steps 2–6, now including the project portfolio page.
+
+## Questions for the owner (answered above)
 
 1. **Who is the portfolio for first?** Hirers (a producer choosing a crew member), festivals, investors, or the person's own pride? It changes what leads the page (the reel, the credits, or the films).
 2. **Public by default, or private by default?** Today everything is world-readable. Recommendation: **private until the person publishes**, with a clear "publish" step, because a half-finished portfolio that is already public is worse than none.

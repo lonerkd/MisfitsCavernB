@@ -13,6 +13,7 @@ import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { getProfile, type Profile } from '@/lib/supabase/profiles';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
+const thumbOf = (p: { cover_url?: string | null; portfolio_media: { thumbnail_url?: string | null; url: string }[] }) => p.cover_url || portfolioThumb(p.portfolio_media[0]);
 const portfolioThumb = (m?: { thumbnail_url?: string | null; url: string } | null) =>
   !m ? null : m.thumbnail_url || videoEmbed(m.url)?.thumbnail || (/\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(m.url) ? m.url : null);
 import Avatar from '@/components/ui/Avatar';
@@ -27,6 +28,7 @@ interface MediaItem {
 }
 
 interface PortfolioProject {
+  cover_url?: string | null;
   id: string;
   user_id: string;
   title: string;
@@ -309,14 +311,14 @@ export default function CrewMemberPage() {
                     onMouseEnter={() => setHoveredCard(project.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
-                    {portfolioThumb(project.portfolio_media[0]) && (
+                    {thumbOf(project) && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9', background: '#111',
                         marginBottom: 14, overflow: 'hidden', position: 'relative'
                       }}>
                         {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails come from YouTube, Drive or the owner's links */}
                         <img
-                          src={portfolioThumb(project.portfolio_media[0])!}
+                          src={thumbOf(project)!}
                           alt={project.title}
                           loading="lazy"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.75 }}
@@ -334,7 +336,7 @@ export default function CrewMemberPage() {
                       </div>
                     )}
 
-                    {project.portfolio_media.length === 0 && (
+                    {project.portfolio_media.length === 0 && !project.cover_url && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9',
                         background: 'rgba(var(--ink-rgb), 0.02)',

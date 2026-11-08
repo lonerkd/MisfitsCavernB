@@ -8,7 +8,8 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import SectionLabel from '@/components/ui/SectionLabel';
 import AnimatedSection from '@/components/ui/AnimatedSection';
-import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { getPortfolioProjects, getPortfolioOwner } from '@/lib/supabase/portfolio';
+import { headerOf, type OwnerProfile } from '@/lib/portfolio/header';
 import { listReleases } from '@/lib/supabase/campaigns';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/os';
@@ -255,6 +256,7 @@ interface CampaignEntry { id: string; title: string; platform?: string; budget?:
 export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [videosList, setVideosList] = useState<Video[]>([]);
+  const [owner, setOwner] = useState<OwnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -291,7 +293,8 @@ export default function PortfolioPage() {
         const user = await awaitOSUser();
         if (!user) { setLoading(false); return; }
 
-        const data = await getPortfolioProjects(user.id);
+        const [data, profile] = await Promise.all([getPortfolioProjects(user.id), getPortfolioOwner(user.id).catch(() => null)]);
+        setOwner(profile);
         const fetchedVideos: Video[] = (data || []).map((p: any) => {
           const media = p.portfolio_media?.[0];
           const url: string | null = media?.url || null;
@@ -304,7 +307,7 @@ export default function PortfolioPage() {
             description: p.description || '',
             year: p.year?.toString() || '',
             url,
-            thumb: media?.thumbnail_url || embed?.thumbnail || (isImageUrl(url) ? url : null),
+            thumb: p.cover_url || media?.thumbnail_url || embed?.thumbnail || (isImageUrl(url) ? url : null),
             embedSrc: embed?.src ?? null,
             sourceProjectId: p.source_project_id ?? null,
           };
@@ -321,13 +324,12 @@ export default function PortfolioPage() {
   // The first two pieces lead in a wider row; the rest follow in threes.
   const lead = videosList.slice(0, 2);
   const rest = videosList.slice(2);
-  // What this person actually does, from their own pieces.
-  const crafts = Array.from(new Set(videosList.flatMap(v => [v.role, v.category]).filter(Boolean).map(t => t.toUpperCase())));
+  const header = headerOf(owner);
 
   usePillStage(
     {
       module: 'portfolio',
-      title: 'The Cavern Collection',
+      title: header.name,
       accent: '#f59e0b',
       fields: [
         { label: 'Works', value: `${videosList.length}`, color: 'var(--warn)' },
@@ -340,16 +342,28 @@ export default function PortfolioPage() {
       <div style={{ background: 'var(--bg)', color: 'var(--fg)', minHeight: '100vh' }}>
       <GrainOverlay />
 
-      <div style={{ position: 'relative', height: '80vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 80px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
+      <div style={{ position: 'relative', minHeight: '56vh', width: '100%', overflow: 'hidden', display: 'flex', alignItems: 'flex-end', padding: '0 20px 64px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, rgba(245,158,11,0.10), transparent 60%), radial-gradient(80% 60% at 80% 20%, rgba(232, 67, 26,0.08), transparent 55%), #060606' }} />
+           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), var(--bg)' }} />
            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 10%, transparent 80%)' }} />
         </div>
         <div style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--w-content)', margin: '0 auto', width: '100%' }}>
            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.8, delay: 0.2 }}>
-             <SectionLabel text="Featured Work" />
-             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(4rem, 8vw, 6rem)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 20 }}>THE CAVERN<br/>COLLECTION</h1>
-             <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', lineHeight: 1.6 }}>A curated selection of cinematic projects, from conceptual ideation to final delivery. Built with precision, driven by story.</p>
+             <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+               {header.avatarUrl && (
+                 // eslint-disable-next-line @next/next/no-img-element -- the person's own avatar, from their profile
+                 <img src={header.avatarUrl} alt="" width={72} height={72} style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover' }} />
+               )}
+               <SectionLabel text={header.openToWork ? 'Open to work' : 'Portfolio'} />
+             </div>
+             <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 7vw, 5.5rem)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 16, textTransform: 'uppercase', overflowWrap: 'anywhere' }}>{header.name}</h1>
+             {header.line && <p style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--accent)', marginBottom: 12 }}>{header.line}</p>}
+             {header.bio && <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', lineHeight: 1.6 }}>{header.bio}</p>}
+             {header.sparse && !loading && (
+               <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', marginTop: 12 }}>
+                 Say what you do and where, in your <Link href="/profile" style={{ color: 'var(--accent)' }}>profile</Link>, and it shows here.
+               </p>
+             )}
            </motion.div>
         </div>
       </div>
@@ -455,29 +469,6 @@ export default function PortfolioPage() {
         )}
       </section>
 
-      {crafts.length > 0 && (
-      <div style={{
-        padding: '28px 0',
-        overflow: 'hidden',
-        borderTop: '1px solid rgba(var(--ink-rgb), 0.03)',
-        borderBottom: '1px solid rgba(var(--ink-rgb), 0.03)',
-        marginBottom: 0,
-      }}>
-        <div style={{ display: 'flex', gap: 44, animation: 'marquee 28s linear infinite', whiteSpace: 'nowrap' }}>
-          {[...crafts, ...crafts, ...crafts].map((text, i) => (
-            <span key={i} style={{
-              fontFamily: 'var(--display)',
-              fontSize: '1rem',
-              letterSpacing: '-0.02em',
-              flexShrink: 0,
-              color: i % 2 === 0 ? 'var(--accent)' : 'var(--fg-dim)',
-            }}>
-              {text}
-            </span>
-          ))}
-        </div>
-      </div>
-      )}
       </>)}
 
       <ProjectBible project={activeVideo} onClose={() => setActiveVideo(null)} />
