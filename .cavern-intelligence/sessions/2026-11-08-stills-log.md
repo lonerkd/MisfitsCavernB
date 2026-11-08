@@ -1,3 +1,5 @@
 # Session — 2026-11-08: the stills log
 
 A new role tool in Production › Reports & logs: **Stills log** (the unit photographer's frames: scene, subject, frame range, photographer, shot / selected / delivered, notes). It is one more `kind` (`stills`) in `production_records`, so it inherits the table's rules: crew who shape the project write, a viewer reads, an outsider sees nothing; the scene is a real link (`scene_ids`) so the scene passport counts it. Migration `20261108080000` only widens the kind CHECK. **Tests:** the view is in the all-views Add-form test; the persona test now has crew writing a `stills` record and an outsider refused. **Other missing tools** (production calendar, extras, editorial handoff, insurance claims): the calendar mostly repeats Schedule (shoot dates and call sheets); each of the rest would be one more kind the same way. **To do by hand after merge:** apply `20261108080000` to production, then staging, then the drift check.
+
+The project page's budget went 420 → 422 kB (the stills log's icon and view entry ride the Production tab it loads; 420.1 measured).
