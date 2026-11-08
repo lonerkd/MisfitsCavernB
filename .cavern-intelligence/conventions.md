@@ -106,6 +106,10 @@ Rules:
 
 ---
 
+## 6a. Printing and PDFs — one kit (`lib/print/`)
+
+Everything the suite prints or saves as a PDF goes through the print kit (owner, 2026-11-08: almost every tool should export as "an intuitive, gorgeous file"). A tool builds a `PrintDoc` (kind, title, subtitle, meta strip, then blocks: section, text, facts, table, list, tags, note, columns, image, pageBreak) and calls `printDocument(doc)` (`lib/print/print.ts`: a hidden frame and the browser's print dialog, so a pop-up blocker cannot stop it; "Save as PDF" there makes the file). The kit (`lib/print/kit.ts`, pure, tested) owns the look: one type system, a header with the project accent, tables whose header row repeats and whose rows never split, sections that stay with their heading, the footer and "Page n of N" in the page margin, Letter or A4, portrait or landscape. Never write a new `window.open` + inline-style print page; describe the content and let the kit lay it out. Everything typed by a person is escaped; the accent must be `#rrggbb`; images only from https. The portfolio one-sheet (`lib/portfolio/one-sheet.ts`) is the reference use; the tools still on their own print pages are listed in BACKLOG 3.45.
+
 ## 7. Verify before claiming
 
 Every change: `npx tsc --noEmit && npm run lint && npm run test && npm run build`.

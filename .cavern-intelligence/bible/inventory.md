@@ -15,7 +15,7 @@
 | `/s/[token]` | open (page checks) | `app/(public)/s/[token]/page.tsx` (173) | 11 files · components: — · lib: formats, scriptos, supabase | **none** |
 | `/shared/[token]` | open (page checks) | `app/(public)/shared/[token]/page.tsx` (202) | 44 files · components: ui · lib: auth, credits, film, formats, island, os, push, scriptos, studio, supabase, types, validation | accessibility, credits, keyboard-audit, portfolio-page |
 | `/terms` | open (page checks) | `app/(public)/terms/page.tsx` (116) | 3 files · components: legal · lib: legal | legal |
-| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (129) | 8 files · components: — · lib: credits, portfolio, supabase | portfolio-page |
+| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (132) | 13 files · components: portfolio, ui · lib: credits, portfolio, print, supabase | portfolio-page |
 | `/admin/analytics` | admin | `app/(suite)/admin/analytics/page.tsx` (243) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility |
 | `/admin/audit-logs` | admin | `app/(suite)/admin/audit-logs/page.tsx` (434) | 33 files · components: ui · lib: audit, auth, formats, hooks, os, push, supabase, types, util, validation | accessibility, suspend-user |
 | `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (127) | 43 files · components: ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | **none** |
