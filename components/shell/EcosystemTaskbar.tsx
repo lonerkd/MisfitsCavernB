@@ -65,11 +65,12 @@ interface Control {
   run: () => void;
 }
 
-function ProjectSwitcher({ onClose }: { onClose: () => void }) {
+function ProjectSwitcher({ onClose, highlight = -1 }: { onClose: () => void; highlight?: number }) {
   const { projects, activeProject, setActiveProject } = useProject();
   const router = useRouter();
   return (
     <motion.div
+      role="listbox" aria-label="Projects"
       // x centres it over its button (a CSS transform here would be overwritten by the animation).
       initial={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
       animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
@@ -118,12 +119,20 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
           No projects yet.
         </div>
       )}
+      {highlight >= 0 && projects.length > 0 && (
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', padding: '0 8px 6px' }}>↑↓ choose · Enter opens · 1–9 picks</div>
+      )}
       {projects.map((proj, i) => {
         const color = proj.accent_color || 'var(--accent)';
         const isActive = activeProject?.id === proj.id;
+        const focused = highlight === i;
         return (
           <motion.div
             key={proj.id}
+            role="option"
+            aria-selected={focused}
+            data-key-focus={focused ? 'true' : undefined}
+            ref={focused ? (el) => { el?.scrollIntoView?.({ block: 'nearest' }); } : undefined}
             initial={{ opacity: 0, x: -8 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
@@ -131,11 +140,13 @@ function ProjectSwitcher({ onClose }: { onClose: () => void }) {
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               padding: '8px 8px', borderRadius: 8, cursor: 'pointer',
-              background: isActive ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
+              background: focused ? 'var(--border)' : isActive ? 'rgba(var(--ink-rgb), 0.06)' : 'transparent',
+              outline: focused ? '2px solid var(--accent)' : 'none', outlineOffset: -2,
               transition: 'background 0.2s',
             }}
             whileHover={{ background: 'rgba(var(--ink-rgb), 0.05)' } as any}
           >
+            {i < 9 && highlight >= 0 && <kbd aria-hidden style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', minWidth: 10 }}>{i + 1}</kbd>}
             <div style={{ width: 7, height: 7, borderRadius: '50%', background: color, boxShadow: `0 0 8px ${color}`, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontFamily: 'var(--display)', fontSize: '0.78rem', letterSpacing: '-0.02em', color: 'var(--fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -220,6 +231,8 @@ export default function EcosystemTaskbar() {
   const [typing, setTyping] = useState(false);
   const [capsDismissed, setCapsDismissed] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const { projects: allProjects, activeProject: currentProject, setActiveProject: pickProject } = useProject();
+  const [projIdx, setProjIdx] = useState(-1);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
 
   // What is running (a sprint, the offline queue, a call, music) is held on the island; "+N" shows the next when there are several.
@@ -243,6 +256,8 @@ export default function EcosystemTaskbar() {
     if (intentTimer.current) clearTimeout(intentTimer.current);
   }, []);
   useOnChange(kbActive, (on) => { if (!on) setCapsDismissed(false); });
+  // The project list opens on the active project; its keys (arrows, Enter, 1–9) are the list's while it is open.
+  useOnChange(projectsOpen, (open) => { setProjIdx(open ? Math.max(0, allProjects.findIndex((p) => p.id === currentProject?.id)) : -1); });
 
   // A new page: put the island away.
   useOnChange(pathname, () => { setProjectsOpen(false); setPinned(false); setHeld(false); setKbFocus(false); });
@@ -348,6 +363,13 @@ export default function EcosystemTaskbar() {
     const done = () => { e.preventDefault(); };
 
     if (key === 'escape') { done(); setCapsDismissed(true); setProjectsOpen(false); return; }
+    if (projectsOpen && allProjects.length) {
+      const pick = (i: number) => { const proj = allProjects[i]; if (proj) { pickProject(proj); setProjectsOpen(false); } };
+      if (key === 'arrowdown' || key === 'arrowright') { done(); setProjIdx((i) => (i + 1) % allProjects.length); return; }
+      if (key === 'arrowup' || key === 'arrowleft') { done(); setProjIdx((i) => (i - 1 + allProjects.length) % allProjects.length); return; }
+      if (key === 'enter') { done(); pick(Math.max(0, projIdx)); return; }
+      if (key >= '1' && key <= '9') { done(); pick(parseInt(key, 10) - 1); return; }
+    }
     if (key >= '1' && key <= '9') {
       const target = visibleApps[parseInt(key, 10) - 1];
       if (target) { done(); router.push(target.path); }
@@ -561,7 +583,7 @@ export default function EcosystemTaskbar() {
                 {keys && <Key>P</Key>}
               </button>
               <AnimatePresence>
-                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} />}
+                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} highlight={keys ? projIdx : -1} />}
               </AnimatePresence>
             </span>
 
