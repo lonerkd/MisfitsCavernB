@@ -180,3 +180,16 @@ describe('SoundPanel: saved tracks', () => {
     spy.mockRestore();
   });
 });
+
+describe('SoundPanel: who may tag', () => {
+  const refs = [{ id: 'r1', title: 'Chase Theme', uri: 'spotify:track:t1', for_scene: 'sc2', role: 'temp', tags: [] }];
+  it('shows the Tag buttons to an owner or writer', () => {
+    render(<SoundPanel {...base({ refs, canTag: true })} />);
+    expect(screen.getByRole('button', { name: 'Tag Chase Theme' })).toBeTruthy();
+  });
+  it('hides them from everyone else, who still sees the track', () => {
+    render(<SoundPanel {...base({ refs, canTag: false })} />);
+    expect(screen.queryByRole('button', { name: 'Tag Chase Theme' })).toBeNull();
+    expect(screen.getAllByText(/Chase Theme/).length).toBeGreaterThan(0);
+  });
+});

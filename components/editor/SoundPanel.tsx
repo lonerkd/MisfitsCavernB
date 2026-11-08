@@ -26,6 +26,8 @@ export interface SoundPanelProps {
   refs: Array<{ id: string; title?: string | null; name?: string; uri?: string; reference_type?: string | null; for_scene?: string | null; role?: string | null; tags?: string[] | null }>;
   onRefsChanged: (refs: Array<Record<string, unknown>>) => void;
   playRef: (ref: SoundPanelProps['refs'][number]) => void;
+  /** Tagging a track to a scene is for the project's owner and writers (the database says the same); others read the tags. Default true. */
+  canTag?: boolean;
 }
 
 const heading = (icon: React.ReactNode, text: string) => (
@@ -75,6 +77,7 @@ const noSubscribe = () => () => {};
 const isIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export function SoundPanel(p: SoundPanelProps) {
+  const canTag = p.canTag ?? true;
   const { toast } = useToast();
   // iOS plays speech through the ringer channel: the side switch silences the table read. Only said where it applies.
   const ios = useSyncExternalStore(noSubscribe, isIos, () => false);
@@ -171,7 +174,7 @@ export function SoundPanel(p: SoundPanelProps) {
               <input type="range" aria-label="Position in the song" min={0} max={spotify.durationMs} step={1000} value={Math.min(spotify.progressMs, spotify.durationMs)}
                 onChange={(e) => spotify.seek(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
             )}
-            {p.sceneId && p.projectId && (
+            {canTag && p.sceneId && p.projectId && (
               <button type="button" style={{ ...ghost, marginTop: 6, width: '100%' }} onClick={() => void tagPlaying()}>Tag this song to {p.sceneLabel ?? 'this scene'}</button>
             )}
             {spotify.elsewhere && (
@@ -228,9 +231,9 @@ export function SoundPanel(p: SoundPanelProps) {
                         {(ref.tags ?? []).map((t) => <span key={t} style={{ padding: '0 6px', borderRadius: 4, border: '1px solid rgba(var(--ink-rgb), 0.14)' }}>{t}</span>)}
                       </div>
                     </div>
-                    <button type="button" aria-label={`Tag ${ref.title || ref.name || 'track'}`} style={{ ...ghost, padding: '0 12px' }} onClick={() => setTagging(tagging === ref.id ? null : ref.id)}>Tag</button>
+                    {canTag && <button type="button" aria-label={`Tag ${ref.title || ref.name || 'track'}`} style={{ ...ghost, padding: '0 12px' }} onClick={() => setTagging(tagging === ref.id ? null : ref.id)}>Tag</button>}
                   </div>
-                  {tagging === ref.id && <TrackTagger track={ref} sceneId={p.sceneId} onSave={(t) => retag(ref.id, t)} onClose={() => setTagging(null)} />}
+                  {canTag && tagging === ref.id && <TrackTagger track={ref} sceneId={p.sceneId} onSave={(t) => retag(ref.id, t)} onClose={() => setTagging(null)} />}
                 </li>
               );
             })}

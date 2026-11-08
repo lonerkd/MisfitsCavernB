@@ -40,7 +40,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
-import { useBriefAnswer } from '@/lib/brief';
+import { useBriefAnswer, useCanShape } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/os/PillContext';
@@ -178,6 +178,7 @@ export default function EditorPage() {
   const parseSource = useDeferredValue(content);
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
+  const canTagMusic = useCanShape(activeProject?.id, !!sessionUser?.id && activeProject?.creator_id === sessionUser.id);
   const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
@@ -927,7 +928,7 @@ export default function EditorPage() {
             timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
             projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
             sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
-            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
+            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef} canTag={canTagMusic}
           />
         }
         sceneMusic={
