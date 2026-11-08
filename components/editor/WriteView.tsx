@@ -316,8 +316,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 </div>
               )}
 
-              {!focusMode && (
-                <div style={{
+              {!focusMode && tableReadLineIdx != null && (
+                <div data-hide-when-typing style={{
                   position: 'absolute', top: 16, right: 16, zIndex: 5,
                   display: 'flex', alignItems: 'center', gap: 6,
                   background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.08)',

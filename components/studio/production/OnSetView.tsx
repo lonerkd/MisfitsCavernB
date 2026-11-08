@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
@@ -310,7 +310,7 @@ function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScri
             <span>{pages(eighthsOf(scene.est_duration) || 1)} pg</span>
             {castOf(scene).length > 0 && <span>{castOf(scene).join(', ')}</span>}
             <span>{got}/{shots.filter((sh) => sh.status !== 'omitted').length} shots</span>
-            {doubtfulSceneOrdinals.has(scene.ordinal ?? -1) && <span style={{ color: 'var(--warning, #b45309)' }}>⚠ review</span>}
+            {doubtfulSceneOrdinals.has(scene.ordinal ?? -1) && <span style={{ color: 'var(--warn)' }}>⚠ review</span>}
           </p>
         </div>
         <div className={o.sceneActions}>

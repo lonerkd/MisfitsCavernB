@@ -2055,6 +2055,68 @@ export type Database = {
           },
         ];
       };
+      notes: {
+        Row: {
+          body: string;
+          context: string | null;
+          created_at: string;
+          created_by: string;
+          id: string;
+          project_id: string | null;
+          scene_id: string | null;
+          scope: string;
+          script_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope?: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notes_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_scene_id_fkey";
+            columns: ["scene_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           body: string | null;
@@ -2586,11 +2648,14 @@ export type Database = {
           added_by: string | null;
           created_at: string | null;
           description: string | null;
+          for_scene: string | null;
           id: string;
           project_id: string | null;
           reference_type: string | null;
+          role: string | null;
           scene_id: string | null;
           script_id: string | null;
+          tags: string[];
           title: string;
           uri: string;
         };
@@ -2599,11 +2664,14 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title: string;
           uri: string;
         };
@@ -2611,15 +2679,25 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title?: string;
           uri?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "project_audio_references_for_scene_fkey";
+            columns: ["for_scene"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "project_audio_references_project_id_fkey";
             columns: ["project_id"];
@@ -5084,6 +5162,10 @@ export type Database = {
       mark_lounge_read: {
         Args: { p_channel?: string; p_partner?: string };
         Returns: undefined;
+      };
+      patch_project_settings: {
+        Args: { p_patch: Json; p_project_id: string };
+        Returns: Json;
       };
       pin_message: {
         Args: { p_message: string; p_pinned: boolean };

@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { Camera, Check, Filter, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Camera, Check } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { useConfirm } from '@/components/ui/Confirm';
 import { studio, type SceneRow, type Shot } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -20,7 +19,6 @@ const STATUSES = ['planned', 'shot', 'omitted'] as const;
 export function ShotListView() {
   const { project, scenes, shots } = useStudio();
   const { toast } = useToast();
-  const confirm = useConfirm();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sceneFilter, setSceneFilter] = useState<string>('all');
 

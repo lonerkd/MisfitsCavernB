@@ -842,13 +842,13 @@ section { padding: 90px 18px; }
   color-scheme: dark;
 }
 
-[data-theme="inkrust"] {
+[data-theme="misfit"] {
   --bg: #040710; --bg-2: #050a14; --bg-3: #070d18; --bg-4: #0a131e; --glass: rgba(4, 7, 13, 0.78);
   --fg: #e0ddae; --fg-muted: rgba(224, 221, 174, 0.74); --fg-dim: rgba(224, 221, 174, 0.58); --fg-ghost: rgba(224, 221, 174, 0.12); --cream: #e0ddae;
-  --accent: #d7340b; --accent-dim: rgba(215, 52, 11, 0.18); --accent-glow: rgba(215, 52, 11, 0.10);
+  --accent: #f34013; --accent-dim: rgba(243, 64, 19, 0.18); --accent-glow: rgba(243, 64, 19, 0.10);
   --secondary: #336467; --secondary-dim: rgba(51, 100, 103, 0.25);
-  --border: rgba(224, 221, 174, 0.08); --border-2: rgba(224, 221, 174, 0.14); --border-accent: rgba(215, 52, 11, 0.32);
-  --fg-rgb: 224, 221, 174; --ink-rgb: 255, 255, 255; --fg-strong: #ffffff; --surface: rgba(10, 19, 30, 0.92); --surface-2: rgba(4, 7, 13, 0.92); --on-accent: #ffffff;
+  --border: rgba(224, 221, 174, 0.08); --border-2: rgba(224, 221, 174, 0.14); --border-accent: rgba(243, 64, 19, 0.32);
+  --fg-rgb: 224, 221, 174; --ink-rgb: 255, 255, 255; --fg-strong: #ffffff; --surface: rgba(10, 19, 30, 0.92); --surface-2: rgba(4, 7, 13, 0.92); --on-accent: #040710;
   color-scheme: dark;
 }
 
@@ -1036,3 +1036,34 @@ input:focus-visible, select:focus-visible, textarea:focus-visible {
 .mc-legal li { margin-bottom: 8px; }
 .mc-legal strong { color: var(--fg); font-weight: 600; }
 .mc-legal article a { color: var(--accent); overflow-wrap: anywhere; }
+
+/* A phone that is typing gives the whole screen to the page: the floating island steps aside (lib/os/usePhone.ts). */
+html[data-typing='true'] [data-taskbar] { display: none !important; }
+html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
+
+/* Touch (the phone): a thumb is about 44 pt. Controls are at least that tall (!important: a screen's own compact height must not
+   win on a phone), fields are 16 px so iOS does not zoom the page into them, and a link's tappable area grows past its text
+   without moving anything. scripts/mobile-audit.mjs measures this. */
+@media (pointer: coarse) {
+  button, select, summary, [role='button'], [role='tab'], [role='menuitem'], input[type='button'], input[type='submit'], input[type='reset'] { min-height: 44px !important; }
+  button, [role='button'], [role='tab'] { min-width: 44px !important; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em) !important; }
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select { min-height: 44px; }
+  input[type='checkbox'], input[type='radio'] { min-width: 24px; min-height: 24px; }
+  .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
+  :where(a[href]) { position: relative; }
+  :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: -14px; bottom: -14px; }
+}
+
+/* A phone on its side (the viewport covers the notch or Dynamic Island on one side and the home indicator below): page content keeps
+   clear of both, and leaves room for the island at the foot, which on a screen under 500 px tall would otherwise sit on the last
+   lines of every page. (Under 760 px wide the tab pill and its own padding apply; this is the wider-than-760 landscape phone.) */
+@media (pointer: coarse) and (max-height: 500px) {
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  .main-content-container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+}
+
+/* The keyboard is up (components/phone/PhoneKeyboard.tsx publishes --kb): the page's scroll area leaves room for it, so the last
+   field and its button can be scrolled above the keyboard. */
+html[data-typing='true'] body { padding-bottom: var(--kb, 0px); }
+html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb, 0px) + 24px); }

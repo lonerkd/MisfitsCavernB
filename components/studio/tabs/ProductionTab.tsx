@@ -53,46 +53,46 @@ const CastBreakdownView = dynamic(() => import('../production/CastBreakdownView'
 const TransportView = dynamic(() => import('../production/TransportView').then((m) => m.TransportView), { loading: viewLoading });
 
 type View = ProductionView;
-const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
-  { id: 'story', label: 'Story', icon: <BookOpen size={12} />, group: 'Pre-production' },
-  { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Pre-production' },
-  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Pre-production' },
-  { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Pre-production' },
-  { id: 'props', label: 'Props', icon: <ClipboardList size={12} />, group: 'Pre-production' },
-  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Pre-production' },
+export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
+  { id: 'story', label: 'Story', icon: <BookOpen size={12} />, group: 'Story & planning' },
+  { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Story & planning' },
+  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Story & planning' },
+  { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Story & planning' },
+  { id: 'props', label: 'Props', icon: <ClipboardList size={12} />, group: 'Departments' },
+  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Story & planning' },
   { id: 'money', label: 'Money', icon: <DollarSign size={12} />, group: 'Budget & docs' },
   { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} />, group: 'Budget & docs' },
-  { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} />, group: 'Shoot' },
-  { id: 'onset', label: 'On set', icon: <Clapperboard size={12} />, group: 'Shoot' },
-  { id: 'shots', label: 'Shot list', icon: <Camera size={12} />, group: 'Shoot' },
-  { id: 'weather', label: 'Weather', icon: <Cloud size={12} />, group: 'Shoot' },
-  { id: 'catering', label: 'Catering', icon: <ChefHat size={12} />, group: 'Shoot' },
-  { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot' },
-  { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot' },
-  { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Shoot' },
-  { id: 'makeup', label: 'Makeup / hair', icon: <Palette size={12} />, group: 'Pre-production' },
-  { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Shoot' },
+  { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} />, group: 'Shoot day' },
+  { id: 'onset', label: 'On set', icon: <Clapperboard size={12} />, group: 'Shoot day' },
+  { id: 'shots', label: 'Shot list', icon: <Camera size={12} />, group: 'Shoot day' },
+  { id: 'weather', label: 'Weather', icon: <Cloud size={12} />, group: 'Shoot day' },
+  { id: 'catering', label: 'Catering', icon: <ChefHat size={12} />, group: 'Shoot day' },
+  { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot day' },
+  { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot day' },
+  { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Reports & logs' },
+  { id: 'makeup', label: 'Makeup / hair', icon: <Palette size={12} />, group: 'Departments' },
+  { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Reports & logs' },
   { id: 'po', label: 'Purchase orders', icon: <Receipt size={12} />, group: 'Budget & docs' },
-  { id: 'scriptsup', label: 'Script sup', icon: <Star size={12} />, group: 'Shoot' },
-  { id: 'permit', label: 'Permits', icon: <FileCheck size={12} />, group: 'Pre-production' },
-  { id: 'costume', label: 'Costumes', icon: <Shirt size={12} />, group: 'Pre-production' },
-  { id: 'vfx', label: 'VFX shots', icon: <Sparkles size={12} />, group: 'Shoot' },
-  { id: 'sound', label: 'Sound report', icon: <Mic size={12} />, group: 'Shoot' },
-  { id: 'camera', label: 'Camera report', icon: <Camera size={12} />, group: 'Shoot' },
+  { id: 'scriptsup', label: 'Script sup', icon: <Star size={12} />, group: 'Reports & logs' },
+  { id: 'permit', label: 'Permits', icon: <FileCheck size={12} />, group: 'Departments' },
+  { id: 'costume', label: 'Costumes', icon: <Shirt size={12} />, group: 'Departments' },
+  { id: 'vfx', label: 'VFX shots', icon: <Sparkles size={12} />, group: 'Departments' },
+  { id: 'sound', label: 'Sound report', icon: <Mic size={12} />, group: 'Reports & logs' },
+  { id: 'camera', label: 'Camera report', icon: <Camera size={12} />, group: 'Reports & logs' },
   { id: 'risk', label: 'Risk register', icon: <AlertTriangle size={12} />, group: 'Budget & docs' },
-  { id: 'director', label: 'Director notebook', icon: <Clapperboard size={12} />, group: 'Pre-production' },
-  { id: 'revisions', label: 'Script revisions', icon: <FileText size={12} />, group: 'Pre-production' },
-  { id: 'scout', label: 'Location scouts', icon: <MapPin size={12} />, group: 'Pre-production' },
-  { id: 'rehearsal', label: 'Rehearsals', icon: <CalendarDays size={12} />, group: 'Pre-production' },
-  { id: 'wrap', label: 'Wrap reports', icon: <ClipboardCheck size={12} />, group: 'Shoot' },
-  { id: 'gear', label: 'Gear', icon: <Wrench size={12} />, group: 'Shoot' },
-  { id: 'dood', label: 'Day out of days', icon: <Calendar size={12} />, group: 'Shoot' },
+  { id: 'director', label: 'Director notebook', icon: <Clapperboard size={12} />, group: 'Story & planning' },
+  { id: 'revisions', label: 'Script revisions', icon: <FileText size={12} />, group: 'Story & planning' },
+  { id: 'scout', label: 'Location scouts', icon: <MapPin size={12} />, group: 'Story & planning' },
+  { id: 'rehearsal', label: 'Rehearsals', icon: <CalendarDays size={12} />, group: 'Story & planning' },
+  { id: 'wrap', label: 'Wrap reports', icon: <ClipboardCheck size={12} />, group: 'Reports & logs' },
+  { id: 'gear', label: 'Gear', icon: <Wrench size={12} />, group: 'Departments' },
+  { id: 'dood', label: 'Day out of days', icon: <Calendar size={12} />, group: 'Shoot day' },
   { id: 'comms', label: 'Comms', icon: <MessageCircle size={12} />, group: 'People' },
   { id: 'cast', label: 'Cast', icon: <Users size={12} />, group: 'People' },
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
 
-const GROUPS = ['Pre-production', 'Budget & docs', 'Shoot', 'People'];
+export const GROUPS = ['Story & planning', 'Departments', 'Budget & docs', 'Shoot day', 'Reports & logs', 'People'];
 
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
 export function ProductionTab({ view, onView, onNavigate }: { view: View; onView: (view: View) => void; onNavigate?: (place: Place) => boolean }) {
@@ -106,6 +106,10 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   };
   const lock = lockOf(view);
   const [crew, setCrew] = useState<CrewRow[]>([]);
+  const [find, setFind] = useState('');
+  const q = find.trim().toLowerCase();
+  // A search keeps the open view's chip in sight, so the list never hides where you are.
+  const shown = (v: (typeof VIEWS)[number]) => !q || v.label.toLowerCase().includes(q) || v.id === view;
 
   const loadCrew = useCallback(() => getProjectCrew(project.id).then((rows) => setCrew(rows as unknown as CrewRow[])), [project.id]);
   // The OS store's crew changes live (Realtime); refetch the joined rows then.
@@ -116,11 +120,14 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
     <section aria-labelledby="production-title">
       <SectionHeader id="production-title" title="Production" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-              {GROUPS.map((group) => (
+              <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
+                style={{ alignSelf: 'flex-start', width: 'min(100%, 280px)', minHeight: 36, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
+              {q && !VIEWS.some((v) => v.id !== view && v.label.toLowerCase().includes(q)) && <p role="status" style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)' }}>No tool matches “{find}”.</p>}
+              {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => (
                 <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>{group}</span>
                   <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
-                    {VIEWS.filter((v) => v.group === group).map((v) => (
+                    {VIEWS.filter((v) => v.group === group && shown(v)).map((v) => (
                       <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
                         {v.icon} {v.label}
                         {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}

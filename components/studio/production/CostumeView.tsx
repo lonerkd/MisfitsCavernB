@@ -2,9 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Shirt, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type CostumeEntry = { id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' };
@@ -12,8 +10,7 @@ type CostumeEntry = { id: string; character: string; scene: string; change: stri
 const STATUSES: CostumeEntry['status'][] = ['fitting', 'ready', 'on-set', 'cleaning', 'returned'];
 
 export function CostumeView() {
-  const { project } = useStudio();
-  const items: CostumeEntry[] = useMemo(() => (project.settings as any)?.costumes ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('costumes');
   const [draft, setDraft] = useState<Omit<CostumeEntry, 'id'>>({
     character: '',
     scene: '',
@@ -24,33 +21,15 @@ export function CostumeView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: CostumeEntry[]) => {
-    await patchProjectSettings(project.id, { costumes: next } as any);
-  };
-
   const add = async () => {
     if (!draft.character.trim()) return;
-    await save([...items, { ...draft, id: `cos-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `cos-${Date.now()}` }]))) return;
     setDraft({ character: '', scene: '', change: '', status: 'fitting' });
   };
 
   const updateStatus = async (id: string, status: CostumeEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<Shirt size={26} />}
-        title="No costumes tracked"
-        subtitle="Track fittings, changes per scene, and wardrobe status."
-      />
-    );
-  }
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -61,7 +40,7 @@ export function CostumeView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

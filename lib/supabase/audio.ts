@@ -49,6 +49,31 @@ export async function listAudioRefs(projectId: string): Promise<AudioReference[]
   return data ?? [];
 }
 
+export type AudioRole = 'theme' | 'source' | 'temp' | 'needle_drop' | 'ambience';
+/** What a track is doing in its scene. */
+export const AUDIO_ROLES: Record<AudioRole, string> = { theme: 'Theme', source: 'Source music', temp: 'Temp score', needle_drop: 'Needle drop', ambience: 'Ambience' };
+
+/** "tense, strings ,Tense" → ['tense', 'strings']: trimmed, no empties, no repeats (case aside), 40 characters each, twelve at most. */
+export function normalizeTags(input: string): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of input.split(',')) {
+    const t = raw.trim().slice(0, 40);
+    if (!t || seen.has(t.toLowerCase())) continue;
+    seen.add(t.toLowerCase());
+    out.push(t);
+    if (out.length === 12) break;
+  }
+  return out;
+}
+
+/** Tag a saved track: the scene it is for, its role there, and free tags. Anyone on the project may; RLS and a trigger decide. */
+export async function tagAudioRef(id: string, tag: { sceneId: string | null; role: AudioRole | null; tags: string[] }): Promise<void> {
+  const { data, error } = await supabase.from('project_audio_references').update({ for_scene: tag.sceneId, role: tag.role, tags: tag.tags }).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('You cannot tag this track.');
+}
+
 export async function addAudioRef(ref: {
   projectId: string;
   userId: string | null;
@@ -56,6 +81,9 @@ export async function addAudioRef(ref: {
   uri: string;
   title: string;
   description: string;
+  sceneId?: string | null;
+  role?: AudioRole | null;
+  tags?: string[];
 }): Promise<void> {
   const { error } = await supabase.from('project_audio_references').insert({
     project_id: ref.projectId,
@@ -64,6 +92,9 @@ export async function addAudioRef(ref: {
     uri: ref.uri,
     title: ref.title,
     description: ref.description,
+    for_scene: ref.sceneId ?? null,
+    role: ref.role ?? null,
+    tags: ref.tags ?? [],
   });
   if (error) throw error;
 }

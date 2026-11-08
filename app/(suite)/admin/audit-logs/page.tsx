@@ -340,8 +340,8 @@ export default function AuditLogsPage() {
                           {describeAction(log.action, log.resource_type)}
                         </span>
                       </td>
-                      <td style={{ padding: 12, opacity: 0.7 }}>
-                        {log.resource_type}
+                      <td style={{ padding: 12 }}>
+                        <span style={{ color: 'var(--fg-muted)' }}>{log.resource_type}</span>
                         {log.resource_id && (resourceHref(log.resource_type, log.resource_id)
                           ? <> · <Link href={resourceHref(log.resource_type, log.resource_id)!} style={{ color: 'var(--accent)' }}>Look at it</Link></>
                           : ` (${log.resource_id})`)}

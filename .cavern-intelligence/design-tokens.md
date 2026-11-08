@@ -170,13 +170,13 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 
 | Theme | Mode | Look |
 |---|---|---|
-| `paper` (Paper) — **the default** | light | warm off-white, ink text, rust accent |
+| `misfit` (Misfit) — **the default** | dark | ink-blue night, pale-gold text, rust accent (`#f34013`, lifted so it passes AA) |
+| `paper` (Paper) | light | warm off-white, ink text, rust accent |
 | `default` (Cavern) | dark | near-black, cool white text, ember accent — the brand's night look |
 | `vampire` (Vampire) | dark | black, blood red accent |
 | `blueprint` (Blueprint) | dark | drafting blue, sky accent, grid |
 | `terminal` (Terminal) | dark | green phosphor, mono type |
 | `editorial` (Editorial) | light | white, black type, red accent, serif display |
-| `inkrust` (Ink & Rust) | dark | ink-blue night, pale-gold text, muted rust accent |
 | `mono` | dark | black and white |
 | `glass` | dark | frosted gradients, periwinkle accent |
 | `neon` | dark | violet night, magenta accent |
@@ -184,7 +184,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | `lagoon` | light | pale teal, teal accent |
 | `forest` | dark | deep green, sage accent |
 
-Paper is what a person sees until they choose (owner, 2026-11-03; `DEFAULT_THEME_ID` in `lib/themes/themes.ts`, first in the picker, the rest in the order below). Someone who chose Cavern keeps it. Plus **System** (Paper when the device is light, Cavern when dark) and
+Misfit is what a person sees until they choose (owner: Paper on 2026-11-03, then Misfit on 2026-11-05 — commit `3d90e1b4`; `DEFAULT_THEME_ID` in `lib/themes/themes.ts`, first in the picker, the rest in the order below). Someone who chose Cavern or Paper keeps it; the old id `inkrust` reads as `misfit`. Plus **System** (Paper when the device is light, Cavern when dark) and
 **Custom** (a background + an accent; `customTokens()` derives readable text,
 lines and status colours from the background's luminance).
 
@@ -194,7 +194,7 @@ lines and status colours from the background's luminance).
   copy before first paint; `ThemeInitializer` then applies the account's.
 - Public pages (`/p`, `/s`, `/shared`) set `data-theme="default"` (Cavern) on their
   root — a shared page always looks the way its maker designed it, whatever the
-  suite's default is. The PWA's `theme_color` / `background_color` follow the default (Paper).
+  suite's default is. The PWA's `theme_color` / `background_color` follow the default (Misfit's night, `#040710`).
 - **Check a theme with `npm run theme:scan`** (`THEME=<id>`, `PHONE=1`): it walks the screens as the demo account and lists text under 3:1 against what is really behind it. A brand or role colour used as *text* goes through `readable()` (`lib/util/color.ts`) or the `--ok` / `--info` / `--warn` / `--danger` tokens, never a bare hex; words on a video frame or poster use `--media-fg` / `--media-fg-dim` (set once in `:root`: light in every theme, since the frame is dark in every theme).
 - **Never hard-code** white/black/cream in UI. Use the tokens every theme sets:
   `--fg`, `--fg-strong`, `--fg-muted`, `--fg-dim`; `rgba(var(--fg-rgb), a)`
@@ -209,7 +209,7 @@ lines and status colours from the background's luminance).
 - `lib/themes.test.ts` checks every preset's block: tokens present, text ≥ 7:1
   on the background, accent ≥ 3:1, `--on-accent` ≥ 4.5:1 on the accent.
   `e2e/themes.spec.ts` checks it applies, persists, follows the account, and
-  passes axe colour-contrast in Paper.
+  passes axe colour-contrast in the default theme (`accessibility.spec.ts` checks every page in Misfit).
 
 
 ## Accessibility (WCAG 2.2 AA — enforced in CI)

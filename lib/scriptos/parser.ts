@@ -609,6 +609,8 @@ export class ScriptParser {
   private decode(titleLines: Set<number>): Decoded {
     const obs: Observation[] = [];
     let boneyard = false;
+    // One lookup table per read (not a search of the overrides for every line).
+    const overrideAt = new Map((this.lineOverrides ?? []).map((o) => [o.line_index, o.forced_type]));
     for (let i = 0; i < this.rawLines.length; i++) {
       const trim = this.rawLines[i].trim();
       const prevBlank = i === 0 || !this.rawLines[i - 1].trim();
@@ -630,20 +632,22 @@ export class ScriptParser {
         _isTransitionNext: next ? this.isTransitionText(next.toUpperCase()) : false,
       };
       if (!trim) { obs.push({ ...base, kind: 'empty' }); continue; }
-      if (titleLines.has(i)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
-      if (boneyard || trim.startsWith('/*')) {
+      // A person's override wins over every fixed classification, but the boneyard state must still advance on that line:
+      // forcing the type of a `/*` or `*/` line must not leave every later line inside the comment.
+      const override = overrideAt.get(i);
+      const isTitle = titleLines.has(i);
+      const inBoneyard = !isTitle && (boneyard || trim.startsWith('/*'));
+      if (inBoneyard) {
         const closes = trim.endsWith('*/');
         boneyard = boneyard ? !closes : !trim.includes('*/');
-        obs.push({ ...base, kind: 'fixed', fixed: 'boneyard' });
-        continue;
       }
+      if (override !== undefined) { obs.push({ ...base, kind: 'fixed', fixed: override as any }); continue; }
+      if (isTitle) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      if (inBoneyard) { obs.push({ ...base, kind: 'fixed', fixed: 'boneyard' }); continue; }
       if (trim === '^') { obs.push({ ...base, kind: 'fixed', fixed: 'dual' }); continue; }
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
-      // Check for line override
-      const override = this.lineOverrides?.find((o) => o.line_index === i);
-      if (override) { obs.push({ ...base, kind: 'fixed', fixed: override.forced_type as any }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {

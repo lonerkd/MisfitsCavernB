@@ -1,0 +1,3 @@
+# Session — 2026-11-07: the scene shows its music (sound plan, step 3's left-over)
+
+The Scene section of the editor's rail now has a **Music** block (`components/editor/SceneMusic.tsx`): the tracks tagged to the scene in view, each with its role and tags and a one-tap play, and a button that opens Sound ("Find music in Sound" when there are none, "Manage in Sound" otherwise). It reads the same project track list as Sound, so a tag made there shows here at once. **Tests:** 2 (only this scene's tracks with role and tags, play; the empty state and the button). **Not verified:** a browser run of the block, and a real tagged track played through Spotify.

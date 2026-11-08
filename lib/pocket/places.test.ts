@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ago, placeFor, resumeOffer, toPlaces, worthSaving } from './places';
+import { ago, deviceFor, placeFor, resumeOffer, toPlaces, worthSaving } from './places';
 
 const P = { id: '11111111-2222-4333-8444-555555555555', title: 'Night Shift' };
 const S = '99999999-8888-4777-8666-555555555555';
@@ -70,5 +70,18 @@ describe('ago', () => {
     expect(ago('2026-09-29T09:00:00Z', now)).toBe('3 h ago');
     expect(ago('2026-09-28T10:00:00Z', now)).toBe('yesterday');
     expect(ago('2026-09-26T12:00:00Z', now)).toBe('3 days ago');
+  });
+});
+
+describe('deviceFor', () => {
+  it('a phone is a narrow window with a touch screen', () => {
+    expect(deviceFor(true, true)).toBe('phone');
+  });
+  it('a narrow window with a mouse is still the desktop, so it is never offered a phone’s place', () => {
+    expect(deviceFor(true, false)).toBe('desktop');
+  });
+  it('a wide window is the desktop, touch screen or not', () => {
+    expect(deviceFor(false, false)).toBe('desktop');
+    expect(deviceFor(false, true)).toBe('desktop');
   });
 });

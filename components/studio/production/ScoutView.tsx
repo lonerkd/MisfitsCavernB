@@ -2,9 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type ScoutEntry = { id: string; locationName: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' };
@@ -12,8 +10,7 @@ type ScoutEntry = { id: string; locationName: string; date: string; scout: strin
 const STATUSES: ScoutEntry['status'][] = ['scouted', 'approved', 'rejected'];
 
 export function ScoutView() {
-  const { project } = useStudio();
-  const items: ScoutEntry[] = useMemo(() => (project.settings as any)?.scouts ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('scouts');
   const [draft, setDraft] = useState<Omit<ScoutEntry, 'id'>>({
     locationName: '',
     date: new Date().toISOString().slice(0, 10),
@@ -26,33 +23,15 @@ export function ScoutView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: ScoutEntry[]) => {
-    await patchProjectSettings(project.id, { scouts: next } as any);
-  };
-
   const add = async () => {
     if (!draft.locationName.trim()) return;
-    await save([...items, { ...draft, id: `sc-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `sc-${Date.now()}` }]))) return;
     setDraft({ locationName: '', date: new Date().toISOString().slice(0, 10), scout: '', photos: '', notes: '', status: 'scouted' });
   };
 
   const updateStatus = async (id: string, status: ScoutEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<MapPin size={26} />}
-        title="No location scouts"
-        subtitle="Track location scouting visits, photos, and approvals."
-      />
-    );
-  }
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -63,7 +42,7 @@ export function ScoutView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

@@ -80,6 +80,7 @@
 .tab {
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto; /* never squeezed: a tab keeps its label and the row scrolls */
   gap: 6px;
   height: 32px;
   padding: 0 14px;
@@ -96,6 +97,7 @@
   transition: color 0.2s, background 0.2s;
 }
 .tab:hover { color: var(--fg-muted); }
+@media (pointer: coarse) { .tab { height: 44px; padding: 0 16px; font-size: 12px; } .tabList { scroll-snap-type: x proximity; overscroll-behavior-x: contain; } .tab { scroll-snap-align: center; } }
 .tab:focus-visible { outline: 2px solid var(--studio-color, #6366f1); outline-offset: 1px; }
 .tabOn {
   color: var(--fg);

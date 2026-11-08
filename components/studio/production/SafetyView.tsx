@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, PenLine, Plus, Shield, Trash2 } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { AlertTriangle, Plus, Shield, Trash2 } from 'lucide-react';
 import { useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useStudio } from '../StudioContext';
@@ -25,9 +25,9 @@ interface SafetyItem {
 }
 
 const SEV_LABEL: Record<Severity, string> = { low: 'Low', medium: 'Medium', high: 'High' };
-const SEV_COLOR: Record<Severity, string> = { low: '#6ee7b7', medium: '#fbbf24', high: '#fca5a5' };
+const SEV_COLOR: Record<Severity, string> = { low: 'var(--ok)', medium: 'var(--warn)', high: 'var(--danger)' };
 const STATUS_LABEL: Record<ItemStatus, string> = { identified: 'Identified', mitigated: 'Mitigated', resolved: 'Resolved' };
-const STATUS_COLOR: Record<ItemStatus, string> = { identified: '#fca5a5', mitigated: '#fbbf24', resolved: '#6ee7b7' };
+const STATUS_COLOR: Record<ItemStatus, string> = { identified: 'var(--danger)', mitigated: 'var(--warn)', resolved: 'var(--ok)' };
 
 export function SafetyView() {
   const { project } = useStudio();

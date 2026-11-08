@@ -1,108 +1,72 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { FileText, Plus, Trash2 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { FileText } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { REVISION_COLORS, loadRevisionsDB, type Revision } from '@/lib/scriptos/revisions';
 import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
 import s from '../studio.module.css';
 
-type RevisionEntry = { id: string; color: string; date: string; pages: string; notes: string; author: string };
-
-const COLORS = ['White', 'Blue', 'Pink', 'Yellow', 'Green', 'Goldenrod', 'Buff', 'Salmon', 'Cherry'];
-
+/**
+ * The script's locked revisions, as the editor made them (Lock revision → `script_revisions`, the coloured pages and the
+ * diff view). Read-only: a revision is locked in the editor, so this list can never disagree with the script.
+ */
 export function RevisionsView() {
-  const { project } = useStudio();
-  const items: RevisionEntry[] = useMemo(() => (project.settings as any)?.revisions ?? [], [project.settings]);
-  const [draft, setDraft] = useState<Omit<RevisionEntry, 'id'>>({
-    color: 'White',
-    date: new Date().toISOString().slice(0, 10),
-    pages: '',
-    notes: '',
-    author: '',
-  });
+  const { scripts, scriptId, scriptsStatus } = useStudio();
+  const script = scripts.find((sc) => sc.id === scriptId) ?? null;
+  const [got, setGot] = useState<{ scriptId: string; rows: Revision[] | null; error: string | null } | null>(null);
 
-  const save = async (next: RevisionEntry[]) => {
-    await patchProjectSettings(project.id, { revisions: next } as any);
-  };
+  useEffect(() => {
+    if (!scriptId) return;
+    let live = true;
+    loadRevisionsDB(scriptId)
+      .then((rows) => { if (live) setGot({ scriptId, rows, error: null }); })
+      .catch((e: unknown) => { if (live) setGot({ scriptId, rows: null, error: e instanceof Error ? e.message : 'Could not load the locked revisions' }); });
+    return () => { live = false; };
+  }, [scriptId]);
 
-  const add = async () => {
-    if (!draft.pages.trim()) return;
-    await save([...items, { ...draft, id: `rev-${Date.now()}` }]);
-    setDraft({ color: 'White', date: new Date().toISOString().slice(0, 10), pages: '', notes: '', author: '' });
-  };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<FileText size={26} />}
-        title="No script revisions"
-        subtitle="Track colored-page revisions: White, Blue, Pink, Yellow…"
-      />
-    );
+  if (scriptsStatus === 'loading') return <div className={s.stack}><p className={s.hint}>Loading…</p></div>;
+  if (!script || !scriptId) {
+    return <EmptyState icon={<FileText size={26} />} title="No script yet" subtitle="Revisions are locked from a script in the editor." />;
   }
+  const mine = got?.scriptId === scriptId ? got : null;
+  if (!mine) return <div className={s.stack}><p className={s.hint}>Loading revisions…</p></div>;
+  if (mine.error) return <div className={s.stack}><p className={s.hint} role="alert">{mine.error}</p></div>;
 
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date));
-
+  const rows = mine.rows ?? [];
+  const editorHref = `/editor?script=${scriptId}`;
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <div className={s.toolbar}>
         <div className={s.panelTitle} style={{ marginBottom: 0 }}>
           <FileText size={14} /> Script revisions
-          <span className={s.hint}> · {items.length} revisions · latest: {sorted[sorted.length - 1]?.color}</span>
+          <span className={s.hint}> · {script.title} · {rows.length} locked</span>
         </div>
+        <Link className={s.btn} href={editorHref}>Open in the editor</Link>
       </div>
-
-      <div className={s.panel} style={{ padding: 12 }}>
-        <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 120px' }}>
-            <span className={s.label}>Color</span>
-            <select className={s.input} value={draft.color} onChange={(e) => setDraft({ ...draft, color: e.target.value })}>
-              {COLORS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </label>
-          <label className={s.field} style={{ flex: '0 0 120px' }}>
-            <span className={s.label}>Date</span>
-            <input type="date" className={s.input} value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
-          </label>
-          <label className={s.field} style={{ flex: '1 1 160px' }}>
-            <span className={s.label}>Pages</span>
-            <input className={s.input} value={draft.pages} onChange={(e) => setDraft({ ...draft, pages: e.target.value })} placeholder="1-12, 15" />
-          </label>
-          <label className={s.field} style={{ flex: '0 0 140px' }}>
-            <span className={s.label}>Author</span>
-            <input className={s.input} value={draft.author} onChange={(e) => setDraft({ ...draft, author: e.target.value })} placeholder="Writer" />
-          </label>
-          <button className={s.btnPrimary} onClick={add} disabled={!draft.pages.trim()}>
-            <Plus size={12} /> Log
-          </button>
-        </div>
-        <label className={s.field} style={{ marginTop: 8 }}>
-          <span className={s.label}>Notes / changes</span>
-          <textarea className={s.textarea} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} rows={2} />
-        </label>
-      </div>
-
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {sorted.map((r) => (
-          <li key={r.id} className={s.panel} style={{ padding: 12, borderLeft: `4px solid ${r.color.toLowerCase()}` }}>
-            <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontWeight: 600 }}>{r.color} pages</span>
-              <span className={s.hint}>{r.date}</span>
-              <span className={s.chip}>{r.pages}</span>
-              {r.author && <span className={s.hint}>{r.author}</span>}
-              <button className={s.btn} onClick={() => remove(r.id)} title="Delete" style={{ marginLeft: 'auto' }}>
-                <Trash2 size={12} />
-              </button>
-            </div>
-            {r.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{r.notes}</p>}
-          </li>
-        ))}
-      </ul>
+      {rows.length === 0 ? (
+        <EmptyState
+          icon={<FileText size={26} />}
+          title="No locked revisions yet"
+          subtitle="Lock a draft in the editor (Lock revision) and it appears here with its colour; the editor shows what changed page by page."
+        />
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {[...rows].reverse().map((r) => {
+            const c = REVISION_COLORS[r.colorIndex % REVISION_COLORS.length];
+            return (
+              <li key={r.id} className={s.panel} style={{ padding: 12 }}>
+                <div className={s.row} style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className={s.chip} style={{ background: c.bg, color: 'var(--fg-strong)', border: `1px solid ${c.color}` }}>{c.name}</span>
+                  <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{r.label}</span>
+                  <span className={s.hint}>{r.date ? new Date(r.date).toLocaleDateString() : ''}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

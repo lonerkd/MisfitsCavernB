@@ -2,9 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Receipt, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type PoEntry = { id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' };
@@ -12,8 +10,7 @@ type PoEntry = { id: string; poNumber: string; vendor: string; department: strin
 const STATUSES: PoEntry['status'][] = ['draft', 'approved', 'paid'];
 
 export function PoView() {
-  const { project } = useStudio();
-  const items: PoEntry[] = useMemo(() => (project.settings as any)?.purchaseOrders ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('purchaseOrders');
   const [draft, setDraft] = useState<Omit<PoEntry, 'id'>>({
     poNumber: '',
     vendor: '',
@@ -25,33 +22,15 @@ export function PoView() {
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
 
-  const save = async (next: PoEntry[]) => {
-    await patchProjectSettings(project.id, { purchaseOrders: next } as any);
-  };
-
   const add = async () => {
     if (!draft.vendor.trim()) return;
-    await save([...items, { ...draft, id: `po-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `po-${Date.now()}` }]))) return;
     setDraft({ poNumber: '', vendor: '', department: '', amount: '', status: 'draft' });
   };
 
   const updateStatus = async (id: string, status: PoEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<Receipt size={26} />}
-        title="No purchase orders"
-        subtitle="Track POs, vendors, departments, and payment status."
-      />
-    );
-  }
 
   const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
 
@@ -64,7 +43,7 @@ export function PoView() {
         </div>
         <div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
-            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: '#fff' } : {}}>
+            <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}

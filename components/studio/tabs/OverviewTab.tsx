@@ -9,6 +9,7 @@ import { PhasePanel } from '@/components/progress/PhasePanel';
 import { useProgressContext } from '@/components/progress/LockedTool';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
+import { NotesPanel } from '@/components/notes/NotesPanel';
 import { SectionHeader } from '../ui';
 import s from '../studio.module.css';
 
@@ -16,7 +17,7 @@ type TabId = 'library' | 'scenes' | 'production' | 'share';
 
 /** The project at a glance — every number here is counted from live data. */
 export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => void; onNavigate: (place: Place) => boolean }) {
-  const { project, media, scenes, links, scripts, isOwner } = useStudio();
+  const { project, media, scenes, links, scripts, isOwner, userId } = useStudio();
   const progressState = useProgressContext();
   const [activity, setActivity] = useState<Activity[]>([]);
 
@@ -107,6 +108,11 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
             <p className={s.hint}>Nothing yet. Beats, casting, schedule changes and shares show up here for the whole team.</p>
           )}
         </div>
+      </div>
+
+      <div className={s.panel}>
+        <div className={s.panelTitle}>Notes</div>
+        <NotesPanel projectId={project.id} userId={userId} isProjectOwner={isOwner} />
       </div>
 
       {scripts.length === 0 && (

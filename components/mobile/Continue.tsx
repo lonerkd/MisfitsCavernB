@@ -13,17 +13,18 @@ import { ArrowRight, Laptop, Smartphone, X } from 'lucide-react';
 import { getScriptMeta } from '@/lib/supabase/scripts';
 import { useProject, useSession } from '@/lib/os';
 import { loadUiPrefs, saveUiPrefs, useUiPrefs } from '@/lib/os/uiPrefs';
-import { ago, placeFor, resumeOffer, worthSaving, type Device, type Place } from '@/lib/pocket/places';
+import { ago, deviceFor, placeFor, resumeOffer, worthSaving, type Device, type Place } from '@/lib/pocket/places';
+import { NARROW_QUERY } from '@/lib/island/compact';
 import { useDeviceValue, writeDeviceValue } from '@/lib/hooks/useDeviceValue';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import { useHydrated } from '@/lib/hooks/useSearchParam';
 import m from './mobile.module.css';
 
-const PHONE_QUERY = '(max-width: 760px)';
+const COARSE_QUERY = '(pointer: coarse)';
 const DISMISSED = 'mc-continue-dismissed';
 const STAY_MS = 4000;
 
-export const thisDevice = (): Device => (typeof window !== 'undefined' && window.matchMedia(PHONE_QUERY).matches ? 'phone' : 'desktop');
+export const thisDevice = (): Device => (typeof window !== 'undefined' ? deviceFor(window.matchMedia(NARROW_QUERY).matches, window.matchMedia(COARSE_QUERY).matches) : 'desktop');
 
 /** Remembers where you are, once you've stayed a moment. Renders nothing. */
 export function PlaceTracker() {
@@ -78,7 +79,7 @@ export function useContinueOffer() {
   const { prefs, loaded } = useUiPrefs();
   const pathname = usePathname();
   const dismissed = useDeviceValue(DISMISSED);
-  const device: Device = useMediaQuery(PHONE_QUERY) ? 'phone' : 'desktop';
+  const device: Device = deviceFor(useMediaQuery(NARROW_QUERY), useMediaQuery(COARSE_QUERY));
   const here = typeof window !== 'undefined' ? location.pathname + location.search : pathname;
   const offer = loaded ? resumeOffer(prefs.places, device, new Date(), here) : null;
   const dismiss = useCallback((p: Place) => {
