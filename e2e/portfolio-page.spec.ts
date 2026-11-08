@@ -90,6 +90,12 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     await expect(credits.getByRole('link', { name: new RegExp(`Pier Film ${TAG}`) })).toHaveAttribute('href', `/shared/${filmToken}`);
     await expect(page.getByText(`Hidden Film ${TAG}`)).toHaveCount(0);
 
+    // Reachable from inside the suite: the owner's portfolio links to their page, and their crew page does too.
+    await me.goto('/portfolio');
+    await expect(me.getByRole('link', { name: 'Your public page →' })).toHaveAttribute('href', `/u/${owner.name}`);
+    await me.goto(`/crew/${owner.id}`);
+    await expect(me.getByRole('link', { name: 'PUBLIC PAGE →' })).toHaveAttribute('href', `/u/${owner.name}`);
+
     // The directory lists a public page and links to it; a search page is never indexed, the plain directory is.
     const dir = await visitor(browser);
     await dir.goto(`/portfolios?q=${owner.name}`);
@@ -119,6 +125,10 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     const again = await visitor(browser);
     await again.goto(`/u/${owner.name}`);
     await expect(again.getByText("This page doesn't exist.")).toBeVisible();
+    // With the page off the owner is offered to publish it, and there is no link to a page that is not there.
+    await me.goto('/portfolio');
+    await expect(me.getByRole('link', { name: 'Publish your page →' })).toBeVisible();
+    await expect(me.getByRole('link', { name: 'Your public page →' })).toHaveCount(0);
   });
 
   test('a piece’s own page shows its cover', async ({ browser }) => {

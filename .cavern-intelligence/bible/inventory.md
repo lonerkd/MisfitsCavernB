@@ -15,7 +15,7 @@
 | `/s/[token]` | open (page checks) | `app/(public)/s/[token]/page.tsx` (173) | 11 files · components: — · lib: formats, scriptos, supabase | **none** |
 | `/shared/[token]` | open (page checks) | `app/(public)/shared/[token]/page.tsx` (202) | 44 files · components: ui · lib: auth, credits, film, formats, island, os, push, scriptos, studio, supabase, types, validation | accessibility, credits, keyboard-audit, portfolio-page |
 | `/terms` | open (page checks) | `app/(public)/terms/page.tsx` (116) | 3 files · components: legal · lib: legal | legal |
-| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (104) | 7 files · components: — · lib: credits, portfolio, supabase | portfolio-page |
+| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (108) | 7 files · components: — · lib: credits, portfolio, supabase | portfolio-page |
 | `/admin/analytics` | admin | `app/(suite)/admin/analytics/page.tsx` (243) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility |
 | `/admin/audit-logs` | admin | `app/(suite)/admin/audit-logs/page.tsx` (434) | 33 files · components: ui · lib: audit, auth, formats, hooks, os, push, supabase, types, util, validation | accessibility, suspend-user |
 | `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (127) | 43 files · components: ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | **none** |
@@ -35,7 +35,7 @@
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (228) | 60 files · components: projects, ui · lib: auth, brief, film, formats, island, os, push, scriptos, studio, supabase, types, validation | call-sheets, push |
 | `/cavern` | signed in | `app/(suite)/cavern/page.tsx` (14) | 41 files · components: shell, ui · lib: auth, cavern, errors, formats, os, push, spotify, supabase, types, validation | **none** |
 | `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 70 files · components: Flag, community, home, landing, mobile, ui · lib: auth, film, flags, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, spotify, supabase, themes, today, types, util, validation | auth-journey, community-page, community-phone, editor-offline-merge, errors, global-chords, home-music, install, island-compact-dock, island-projects-keys, island, layout, mobile, script-formats, shortcut-search, today-owner |
-| `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (366) | 45 files · components: ui · lib: auth, credits, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, suspend-user |
+| `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 45 files · components: ui · lib: auth, credits, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 42 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1351) | 205 files · components: Flag, ad, audio, breakdown, editor, notes, phone, studio, ui · lib: ad, auth, breakdown, brief, errors, film, flags, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, push, scriptos, split, spotify, storage, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, cut-notes, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, mobile, notes, onboarding, phases, phone-editor, reading-corrections, route-smoke, script-share, split, studio-journey, table-read, writing-loop |
 | `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (68) | 38 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
@@ -48,7 +48,7 @@
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
 | `/` | public | `app/(suite)/page.tsx` (470) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (292) | 40 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
-| `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (479) | 41 files · components: ui · lib: auth, formats, island, os, portfolio, push, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, route-smoke |
+| `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (483) | 42 files · components: portfolio, ui · lib: auth, formats, island, os, portfolio, push, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, portfolio-page, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 41 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, your-data |
 | `/projects/[id]` | signed in | `app/(suite)/projects/[id]/page.tsx` (407) | 115 files · components: Flag, brief, crafts, film, formats, guides, progress, projects, studio, ui · lib: auth, breakdown, brief, crafts, film, flags, formats, guides, hooks, island, lounge, notifications, os, pocket, push, review, scriptos, studio, supabase, themes, types, util, validation, writing | accessibility, announcements, brief, guides, keyboard-audit, layout, mobile, phases, project-manager, table-read, themes, view-as |
 | `/projects/[id]/pitch` | signed in | `app/(suite)/projects/[id]/pitch/page.tsx` (626) | 45 files · components: ui · lib: auth, formats, notifications, os, portfolio, push, scriptos, supabase, types, util, validation | accessibility, project-manager |
@@ -224,7 +224,7 @@
 ### `/crew/[id]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `media`, `notifications`, `portfolio_blocks`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_shared_portfolio`
+- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_portfolio_page`, `get_shared_portfolio`
 - **Realtime:** `lounge-presence`, `project`, `projects:list`
 
 ### `/crew`
@@ -294,13 +294,13 @@
 ### `/portfolio/manage`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `media`, `portfolio_blocks`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_formats`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
 - **Realtime:** `project`, `projects:list`
 
 ### `/portfolio`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `media`, `portfolio_blocks`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
 - **Realtime:** `project`, `projects:list`
 
 ### `/profile`
@@ -318,7 +318,7 @@
 ### `/projects/[id]/pitch`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `media`, `notifications`, `portfolio_blocks`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `script_annotations`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
 - **Realtime:** `project`, `projects:list`
 
 ### `/projects`
@@ -621,7 +621,7 @@
 | `phases.spec.ts` | `/auth`, `/editor`, `/projects/*`, `/settings`, `/studio` |
 | `phone-editor.spec.ts` | `/auth`, `/editor` |
 | `phone-keyboard.spec.ts` | `/auth`, `/lounge`, `/settings` |
-| `portfolio-page.spec.ts` | `/auth`, `/p/*`, `/portfolio/manage`, `/portfolios`, `/shared/*`, `/u/*`, `/u/*$` |
+| `portfolio-page.spec.ts` | `/auth`, `/crew/*`, `/p/*`, `/portfolio`, `/portfolio/manage`, `/portfolios`, `/shared/*`, `/u/*`, `/u/*$` |
 | `project-manager.spec.ts` | `/auth`, `/projects/*`, `/projects/*/pitch`, `/studio` |
 | `projects-keyboard-phase.spec.ts` | `/auth`, `/projects` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |

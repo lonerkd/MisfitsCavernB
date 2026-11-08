@@ -121,6 +121,7 @@ export default function CommandPalette() {
       { id: 'nav-lounge', label: 'Open Lounge', hint: 'Community feed', icon: <MessageSquare size={15} />, run: go('/lounge'), group: 'Navigate', keywords: 'chat community feed' },
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },
+      { id: 'nav-portfolios', label: 'Browse Portfolios', hint: 'Filmmakers who have published their work', icon: <Briefcase size={15} />, run: go('/portfolios'), group: 'Navigate', keywords: 'directory people find filmmakers crew work' },
       { id: 'nav-jobs', label: 'Browse Jobs', icon: <Briefcase size={15} />, run: go('/jobs'), group: 'Navigate', keywords: 'casting hire gigs' },
       { id: 'act-split', label: 'Split screen', hint: 'This page and another, side by side (Ctrl \\)', icon: <Columns2 size={15} />, group: 'Navigate', keywords: 'side by side multitask two panes editor studio', run: () => { setOpen(false); router.push(splitHref(window.location.pathname + window.location.search)); } },
       { id: 'nav-profile', label: 'Edit Profile', icon: <User size={15} />, run: go('/profile'), group: 'Account' },
