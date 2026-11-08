@@ -7,6 +7,7 @@ import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { recordKindOfView } from '@/lib/studio/records-print';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
 import type { CrewRow } from '../production/CrewView';
@@ -35,6 +36,7 @@ const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.Do
 const EditorialView = dynamic(() => import('../production/EditorialView').then((m) => m.EditorialView), { loading: viewLoading });
 const ClaimsView = dynamic(() => import('../production/ClaimsView').then((m) => m.ClaimsView), { loading: viewLoading });
 const ExtrasView = dynamic(() => import('../production/ExtrasView').then((m) => m.ExtrasView), { loading: viewLoading });
+const PrintRecordsButton = dynamic(() => import('../production/PrintRecordsButton').then((m) => m.PrintRecordsButton), { loading: () => null });
 const StillsView = dynamic(() => import('../production/StillsView').then((m) => m.StillsView), { loading: viewLoading });
 const MakeupView = dynamic(() => import('../production/MakeupView').then((m) => m.MakeupView), { loading: viewLoading });
 const MediaOffloadView = dynamic(() => import('../production/MediaOffloadView').then((m) => m.MediaOffloadView), { loading: viewLoading });
@@ -147,6 +149,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
             </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
+      {!lock && recordKindOfView(view) && <PrintRecordsButton kind={recordKindOfView(view)!} />}
       {!lock && view === 'story' && <StoryView />}
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
