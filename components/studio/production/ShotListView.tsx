@@ -7,6 +7,8 @@ import { useToast } from '@/components/ui/Toast';
 import { studio, type SceneRow, type Shot } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { shotListDoc } from '@/lib/studio/shotlist-print';
 import s from '../studio.module.css';
 
 const STATUSES = ['planned', 'shot', 'omitted'] as const;
@@ -60,6 +62,12 @@ export function ShotListView() {
       <div className={s.toolbar}>
         <div className={s.panelTitle}>Shot list</div>
         <span className={s.hint}>{shots.rows.length} shot{shots.rows.length === 1 ? '' : 's'} · {counts.shot} shot · {counts.planned} planned · {counts.omitted} omitted</span>
+        {filtered.length > 0 && <PrintButton label="the shot list" build={() => shotListDoc({
+          project: project.title, accent: project.accent_color,
+          filter: [statusFilter !== 'all' ? `Status: ${statusFilter}` : null, sceneFilter !== 'all' ? `Scene ${sceneById.get(sceneFilter)?.scene_number ?? ''}` : null].filter(Boolean).join(' · ') || null,
+          shots: filtered.map((sh) => ({ scene: sceneById.get(sh.scene_id)?.scene_number ?? '?', number: sh.shot_number, size: sh.shot_size, angle: sh.angle, movement: sh.movement, lens: sh.lens, description: sh.description, status: sh.status ?? 'planned' })),
+          generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+        })} />}
       </div>
 
       <div className={s.chips} role="tablist" aria-label="Filter by status">
