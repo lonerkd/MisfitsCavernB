@@ -174,7 +174,7 @@
   },
   "app/(suite)/page.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "app/(suite)/portfolio/loading.tsx": {
@@ -402,7 +402,7 @@
       "count": 121
     },
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/editor/ReadingCorrections.tsx": {
@@ -459,7 +459,7 @@
   },
   "components/editor/editorCtx.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 51
+      "count": 50
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
