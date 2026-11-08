@@ -44,3 +44,12 @@ export function subscribeToRecords(projectId: string, kind: RecordKind, onChange
     .subscribe();
   return () => { void supabase.removeChannel(channel); };
 }
+
+/** Which scenes each record of the project is linked to (for the scene cards: only records that link a scene). */
+export type RecordLinkRow = { id: string; kind: string; scene_ids: string[] };
+export async function listRecordLinks(projectId: string): Promise<RecordLinkRow[]> {
+  const { data, error } = await supabase.from('production_records').select('id, kind, scene_ids')
+    .eq('project_id', projectId).not('scene_ids', 'eq', '{}');
+  if (error) throw error;
+  return (data ?? []).map((r) => ({ id: r.id, kind: r.kind, scene_ids: r.scene_ids ?? [] }));
+}

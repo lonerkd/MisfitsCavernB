@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { Camera, Clapperboard, DollarSign, Layers, MapPin, AlertTriangle } from 'lucide-react';
+import { Camera, Clapperboard, ClipboardList, DollarSign, Layers, MapPin, AlertTriangle } from 'lucide-react';
+import { recordTotal } from '@/lib/studio/record-links';
 import { useStudio } from '@/components/studio/StudioContext';
 import s from '@/components/studio/studio.module.css';
 
@@ -18,7 +19,7 @@ interface ScenePassportProps {
  * and jump to the right tool.
  */
 export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
-  const { scenes, mediaByScene, shots, project, doubtfulSceneOrdinals } = useStudio();
+  const { scenes, mediaByScene, shots, project, doubtfulSceneOrdinals, recordsByScene } = useStudio();
 
   const scene = scenes.rows.find((sc) => sc.id === sceneId);
   const mediaCount = (mediaByScene.get(sceneId) ?? []).length;
@@ -40,10 +41,17 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
 
   if (!scene) return null;
 
-  const chips: Array<{ icon: React.ReactNode; label: string; value: string | number; tone?: string }> = [
+  const chips: Array<{ icon: React.ReactNode; label: string; value: string | number; tone?: string; title?: string }> = [
     { icon: <Layers size={11} />, label: 'Refs', value: mediaCount },
     { icon: <Camera size={11} />, label: 'Shots', value: shotCount },
   ];
+
+  // Camera / sound reports, costumes, makeup, notes and rehearsals the crew linked to this scene.
+  const records = recordsByScene?.get(sceneId);
+  const recordCount = recordTotal(records);
+  if (recordCount > 0) {
+    chips.push({ icon: <ClipboardList size={11} />, label: 'Records', value: recordCount, title: (records ?? []).map((r) => `${r.count} ${r.label.toLowerCase()}`).join(', ') });
+  }
 
   if (shootDay != null) {
     chips.push({ icon: <MapPin size={11} />, label: 'Day', value: shootDay });
@@ -65,7 +73,7 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
         {chips.map((c) => (
           <span
             key={c.label}
-            title={c.label}
+            title={c.title ?? c.label}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -92,6 +100,7 @@ export function ScenePassport({ sceneId, compact = true }: ScenePassportProps) {
       {chips.map((c) => (
         <div
           key={c.label}
+          title={c.title ?? c.label}
           style={{
             display: 'flex',
             flexDirection: 'column',

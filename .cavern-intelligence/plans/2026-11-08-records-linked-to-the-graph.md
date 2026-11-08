@@ -38,4 +38,4 @@ The film graph (`scenes`, `characters`, `scene_characters`, locations, shoot day
 
 ## Built (2026-11-08)
 
-Owner: "all up 2 u", so the recommendations stood: **several scenes per record, and a scene not written yet may be a label with no link.** Steps 1, 2 and 4 are built (migration, pickers in eight views, browser spec). **Step 3 is left:** the scene and entity cards listing a scene's records, and the Costumes / Makeup "not in this scene" report.
+Owner: "all up 2 u", so the recommendations stood: **several scenes per record, and a scene not written yet may be a label with no link.** Steps 1, 2 and 4 are built (migration, pickers in eight views, browser spec). **Step 3 built the same day:** the scene passport counts a scene's records and Costumes / Makeup note a look for a scene the character is not in. **Left:** the entity card (flag `entity_cards`) listing them too.

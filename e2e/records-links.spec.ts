@@ -52,7 +52,7 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     const scene = await admin.from('scenes').insert({ project_id: projectId, script_id: script.data.id, scene_number: 1, heading: 'INT. KITCHEN - DAY', title: 'KITCHEN', ordinal: 0 }).select('id').single();
     if (scene.error) throw scene.error;
     sceneId = scene.data.id;
-    const character = await admin.from('characters').insert({ project_id: projectId, name: 'MAYA' });
+    const character = await admin.from('characters').insert([{ project_id: projectId, name: 'MAYA' }, { project_id: projectId, name: 'ELI' }]);
     if (character.error) throw character.error;
   });
 
@@ -85,6 +85,11 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     await expect(page.getByText('Sc 2', { exact: true })).toBeVisible();
     const still = await admin.from('production_records').select('scene_ids').eq('project_id', projectId).eq('kind', 'cameraReports').single();
     expect(still.data?.scene_ids).toEqual([sceneId]);
+
+    // The scene's card on the Scenes tab counts the record.
+    await page.goto('/studio?tab=scenes');
+    await page.getByLabel('Active project').waitFor();
+    await expect(page.getByTitle(/1 camera report/i).first()).toBeVisible();
   });
 
   test('a scene not written yet stays a label with no link, and Costumes link a real character', async ({ browser }) => {
@@ -98,5 +103,15 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     const stored = await admin.from('production_records').select('scene_ids, character_id').eq('project_id', projectId).eq('kind', 'costumes').single();
     expect(stored.data?.scene_ids).toEqual([]);
     expect(stored.data?.character_id).not.toBeNull();
+  });
+
+  test('a look for a scene its character is not in is flagged (a note, never a change)', async ({ browser }) => {
+    const page = await signIn(browser, crew);
+    await openTool(page, 'Costumes');
+    await page.getByLabel('Scene: add a scene').selectOption(sceneId);
+    await page.getByRole('combobox', { name: 'Character' }).selectOption({ label: 'ELI' });
+    await page.getByRole('button', { name: /^(add|log|schedule)/i }).dispatchEvent('click');
+    // MAYA speaks in the kitchen scene; ELI does not appear in it.
+    await expect(page.getByRole('note').filter({ hasText: /ELI is not in scene/ })).toBeVisible();
   });
 });

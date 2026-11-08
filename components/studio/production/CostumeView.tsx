@@ -3,7 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Shirt, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
-import { CharacterLinkField, SceneLinkField, useRecordTargets } from './RecordLinks';
+import { CharacterLinkField, NotInSceneNote, SceneLinkField, useRecordTargets } from './RecordLinks';
 import { characterName, sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
@@ -83,6 +83,7 @@ export function CostumeView() {
                 <Trash2 size={12} />
               </button>
             </div>
+            <NotInSceneNote record={c} t={t} />
           </li>
         ))}
       </ul>

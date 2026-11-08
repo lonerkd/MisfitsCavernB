@@ -3,10 +3,10 @@
 // The scene and character fields of the role tools. A record links to real scenes and characters of the project (chosen from
 // the project's own, so a renumbered scene or a renamed character follows); "Other…" lets a person name a scene that is not
 // written yet, which stays a label with no link (shoot notes often come before the script).
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { useProjectScenes, useCharacters } from '@/lib/studio';
-import { sceneLabelFor, sceneOption, type LinkableScene } from '@/lib/studio/record-links';
+import { characterName, sceneLabelFor, sceneOption, scenesWithoutCharacter, type LinkableScene } from '@/lib/studio/record-links';
 import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
@@ -14,12 +14,31 @@ const OTHER = '__other__';
 
 /** The project's scenes and characters, keyed by id, for a view to resolve its records' links. */
 export function useRecordTargets() {
-  const { project } = useStudio();
+  const { project, castOf } = useStudio();
   const scenes = useProjectScenes(project.id);
   const characters = useCharacters(project.id);
   const sceneById = useMemo(() => new Map<string, LinkableScene>(scenes.rows.map((r) => [r.id, r])), [scenes.rows]);
   const characterById = useMemo(() => new Map(characters.rows.map((c) => [c.id, c])), [characters.rows]);
-  return { scenes: scenes.rows, sceneById, characters: characters.rows, characterById };
+  /** Who is in a scene (upper-case names, from the film graph); empty when nothing says yet. */
+  const castFor = useCallback((sceneId: string) => {
+    const scene = scenes.rows.find((r) => r.id === sceneId);
+    return scene && castOf ? castOf(scene) : [];
+  }, [scenes.rows, castOf]);
+  return { scenes: scenes.rows, sceneById, characters: characters.rows, characterById, castFor };
+}
+
+type Targets = ReturnType<typeof useRecordTargets>;
+
+/** A look planned for a scene its character is not in: a note under the record (a report, never a change). */
+export function NotInSceneNote({ record, t }: { record: { scene_ids?: string[]; character_id?: string | null; character?: string }; t: Targets }) {
+  const off = scenesWithoutCharacter(record, t.sceneById, t.characterById, t.castFor);
+  if (off.length === 0) return null;
+  const who = characterName(record, t.characterById);
+  return (
+    <p className={s.hint} role="note" style={{ marginTop: 4, color: 'var(--warn)' }}>
+      {who} is not in scene{off.length > 1 ? 's' : ''} {off.join(', ')}. Check the look is for the right scene.
+    </p>
+  );
 }
 
 interface SceneFieldProps {
