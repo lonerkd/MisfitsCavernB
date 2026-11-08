@@ -12,6 +12,11 @@ let store: Record<string, unknown[]> = {};
 vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings: null } }) }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/components/ui/Confirm', () => ({ useConfirm: () => confirm }));
+// The views read the project's scenes and characters through Realtime-backed hooks; no test here opens a real socket.
+vi.mock('@/lib/studio', () => ({
+  useProjectScenes: () => ({ rows: [] }),
+  useCharacters: () => ({ rows: [] }),
+}));
 vi.mock('@/lib/supabase/productionRecords', () => ({
   listRecords: async (_p: string, kind: string) => store[kind] ?? [],
   upsertRecords: (...a: unknown[]) => upsert(...a),
