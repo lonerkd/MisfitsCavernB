@@ -7,6 +7,7 @@ import { useSpotify } from '@/lib/os/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
 import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
+import { SoundDeck } from '@/components/audio/SoundDeck';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject } from '@/lib/os';
 import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
@@ -186,7 +187,7 @@ export default function SoundtrackPage() {
     return (
       <div className="mc-page p-12 flex flex-col items-center justify-center text-center">
         <Disc size={48} className="mb-6 opacity-20" />
-        <h1 className="mc-title text-4xl mb-4">Soundtrack</h1>
+        <h1 className="mc-title text-4xl mb-4">Sound</h1>
         <p className="mc-text mb-8 max-w-md text-[var(--fg-dim)]">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
         <Button variant="solid" onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }} className="gap-2 px-8">
           <Disc size={16} /> Connect Spotify
@@ -197,12 +198,14 @@ export default function SoundtrackPage() {
 
   return (
     <div className="mc-page p-12">
-      <header className="mb-12 flex items-end justify-between">
+      <header className="mb-8 flex items-end justify-between">
         <div>
-          <h1 className="mc-title text-4xl tracking-wide">Soundtrack & Audio</h1>
-          <p className="mc-text text-[var(--fg-dim)] [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs mt-2">Manage cinematic moods, SFX, and project references</p>
+          <h1 className="mc-title text-4xl tracking-wide">Sound</h1>
+          <p className="mc-text text-[var(--fg-dim)] [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs mt-2">Find music, place it in scenes, and keep the project’s sound</p>
         </div>
       </header>
+
+      <SoundDeck />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
         {(['search', 'moods', 'sfx', 'project'] as const).map(tab => (

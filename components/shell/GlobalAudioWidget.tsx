@@ -171,7 +171,7 @@ export default function GlobalAudioWidget() {
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', padding: '12px 0' }}>Loading…</div>
       ) : sources.length === 0 ? (
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, lineHeight: 1.6, color: 'var(--fg-muted)', padding: '8px 0 12px' }}>
-          Nothing to play yet. Add Spotify links to the project’s sound (Soundtrack › Project, or the editor’s Audio panel), or make a playlist on Spotify — they show up here.
+          Nothing to play yet. Add Spotify links to the project’s sound (Sound › Project, or the editor’s Audio panel), or make a playlist on Spotify — they show up here.
         </div>
       ) : (
         <>
