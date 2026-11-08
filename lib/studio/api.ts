@@ -892,7 +892,9 @@ export function createStudioApi(db: Client) {
     if (!ok) throw new StudioError(`${file.name}: attach a PDF or an image.`);
     if (file.size > 20 * 1024 * 1024) throw new StudioError(`${file.name}: files up to 20 MB.`);
     const path = `${doc.project_id}/${doc.id}/${crypto.randomUUID().slice(0, 8)}-${safeFileName(file.name)}`;
-    const up = await db.storage.from(PAPERS_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+    const tracker = beginUpload(file.name, file.size);
+    const up = await uploadWithProgress(db.storage.from(PAPERS_BUCKET), path, file, { contentType: file.type, upsert: false }, tracker.progress)
+      .finally(tracker.end);
     if (up.error) throw new StudioError(`Upload failed: ${up.error.message}`);
     const { data, error } = await db.from('project_documents')
       .update({ storage_path: path, file_name: file.name.slice(0, 200), mime_type: file.type, size_bytes: file.size })

@@ -2,6 +2,8 @@
 // project's audio references (its "audio bible"). RLS decides who sees what:
 // a sound belongs to a project; its uploader and the project's people see it.
 import { supabase } from './client';
+import { beginUpload } from '@/lib/island/uploads';
+import { uploadWithProgress } from './uploadProgress';
 import type { Tables } from './database.types';
 
 export type SfxAsset = Tables<'sfx_assets'>;
@@ -28,8 +30,11 @@ export async function listSfx(): Promise<SfxAsset[]> {
 /** Uploads an audio file to the uploader's own folder and lists it under the project. */
 export async function uploadSfx(file: File, userId: string, projectId: string): Promise<void> {
   const path = `${userId}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
-  const { error: uploadError } = await supabase.storage.from(SFX_BUCKET).upload(path, file);
-  if (uploadError) throw uploadError;
+  // The island shows the upload and how far along it is.
+  const tracker = beginUpload(file.name, file.size);
+  const { error: uploadError } = await uploadWithProgress(supabase.storage.from(SFX_BUCKET), path, file, { contentType: file.type || undefined }, tracker.progress)
+    .finally(tracker.end);
+  if (uploadError) throw new Error(uploadError.message);
   const { data: url } = supabase.storage.from(SFX_BUCKET).getPublicUrl(path);
   const { error } = await supabase.from('sfx_assets').insert({
     title: file.name,
