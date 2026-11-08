@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getPortfolioPage, publicClient } from '@/lib/supabase/public';
 import { headerOf } from '@/lib/portfolio/header';
 import { pageIsIndexable } from '@/lib/portfolio/page-setting';
+import { PrintOneSheetButton } from '@/components/portfolio/PrintOneSheetButton';
 import { laurelLine } from '@/lib/portfolio/laurels';
 import { groupPageCredits } from '@/lib/portfolio/page-credits';
 
@@ -54,6 +55,8 @@ export default async function PersonPortfolioPage({ params }: Params) {
           {head.openToWork && <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--accent)', margin: '6px 0 0' }}>Open to work</p>}
         </div>
       </header>
+
+      <div style={{ maxWidth: 960, margin: '0 auto 24px' }}><PrintOneSheetButton data={data} /></div>
 
       {head.bio && <p style={{ maxWidth: 640, margin: '0 auto 40px', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{head.bio}</p>}
 
