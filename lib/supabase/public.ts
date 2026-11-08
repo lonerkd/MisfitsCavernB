@@ -67,3 +67,16 @@ export async function getPortfolioPage(db: PublicClient | null, handle: string):
   if (!d.profile || (d.page !== 'public' && d.page !== 'unlisted')) return null;
   return { page: d.page, profile: d.profile, pieces: Array.isArray(d.pieces) ? d.pieces : [], credits: Array.isArray(d.credits) ? d.credits : [] };
 }
+
+export interface PublicPortfolioCard {
+  username: string; role: string | null; location: string | null; bio: string | null; avatar_url: string | null;
+  status: string | null; pieces: number; cover_url: string | null;
+}
+
+/** People whose portfolio page is public, for the public directory; empty when there is no client or the read fails. */
+export async function listPublicPortfolios(db: PublicClient | null, opts: { q?: string; limit: number; offset: number }): Promise<PublicPortfolioCard[]> {
+  if (!db) return [];
+  const { data, error } = await db.rpc('list_public_portfolios', { p_query: opts.q || undefined, p_limit: opts.limit, p_offset: opts.offset });
+  if (error || !Array.isArray(data)) return [];
+  return data as PublicPortfolioCard[];
+}

@@ -89,6 +89,14 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     await expect(credits.getByText(`Pier Film ${TAG}`)).toBeVisible();
     await expect(credits.getByRole('link', { name: new RegExp(`Pier Film ${TAG}`) })).toHaveAttribute('href', `/shared/${filmToken}`);
     await expect(page.getByText(`Hidden Film ${TAG}`)).toHaveCount(0);
+
+    // The directory lists a public page and links to it; a search page is never indexed, the plain directory is.
+    const dir = await visitor(browser);
+    await dir.goto(`/portfolios?q=${owner.name}`);
+    await expect(dir.getByRole('link', { name: new RegExp(owner.name) })).toHaveAttribute('href', `/u/${owner.name}`);
+    expect(await robots(dir)).toContain('noindex');
+    await dir.goto('/portfolios');
+    expect(await robots(dir)).not.toContain('noindex');
   });
 
   test('link only is reachable but told not to be indexed; off is a not-found again', async ({ browser }) => {
@@ -96,6 +104,10 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     await me.goto('/portfolio/manage');
     await me.getByLabel('Your page', { exact: true }).selectOption('unlisted');
     await expect(me.getByText(/Link only: /)).toBeVisible();
+    // The opt-out: reachable by name (below) but not in the directory.
+    const dir = await visitor(browser);
+    await dir.goto(`/portfolios?q=${owner.name}`);
+    await expect(dir.getByText(/No portfolio matches/)).toBeVisible();
 
     const page = await visitor(browser);
     await page.goto(`/u/${owner.name}`);

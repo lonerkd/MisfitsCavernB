@@ -2,13 +2,14 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**50 pages · 6 API routes · 90 tables · 65 database functions · 98 e2e specs**
+**51 pages · 6 API routes · 90 tables · 66 database functions · 98 e2e specs**
 
 ## Routes
 
 | Route | Access | File (lines) | Built from | e2e |
 |---|---|---|---|---|
 | `/p/[token]` | open (page checks) | `app/(public)/p/[token]/page.tsx` (49) | 41 files · components: ui · lib: auth, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, portfolio-page, share-pages, split |
+| `/portfolios` | open (page checks) | `app/(public)/portfolios/page.tsx` (86) | 6 files · components: — · lib: portfolio, supabase | portfolio-page |
 | `/privacy` | open (page checks) | `app/(public)/privacy/page.tsx` (138) | 3 files · components: legal · lib: legal | legal |
 | `/review/[token]` | open (page checks) | `app/(public)/review/[token]/page.tsx` (40) | 7 files · components: — · lib: ad, review, supabase | **none** |
 | `/s/[token]` | open (page checks) | `app/(public)/s/[token]/page.tsx` (173) | 11 files · components: — · lib: formats, scriptos, supabase | **none** |
@@ -70,8 +71,13 @@
 ### `/p/[token]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `media`, `notifications`, `portfolio_blocks`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`, `list_public_portfolios`
 - **Realtime:** `project`, `projects:list`
+
+### `/portfolios`
+
+- **Tables:** —
+- **Functions:** `get_portfolio_page`, `get_shared_portfolio`, `list_public_portfolios`
 
 ### `/privacy`
 
@@ -80,17 +86,17 @@
 ### `/review/[token]`
 
 - **Tables:** `item_versions`, `review_comments`, `review_links`
-- **Functions:** `add_review_comment`, `decide_review`, `get_portfolio_page`, `get_review`, `get_shared_portfolio`
+- **Functions:** `add_review_comment`, `decide_review`, `get_portfolio_page`, `get_review`, `get_shared_portfolio`, `list_public_portfolios`
 
 ### `/s/[token]`
 
 - **Tables:** —
-- **Functions:** `get_portfolio_page`, `get_shared_portfolio`, `get_shared_script`
+- **Functions:** `get_portfolio_page`, `get_shared_portfolio`, `get_shared_script`, `list_public_portfolios`
 
 ### `/shared/[token]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `character_castings`, `character_media`, `characters`, `expenses`, `media`, `mood_board_items`, `mood_boards`, `post_cuts`, `post_items`, `post_notes`, `profiles`, `project_beats`, `project_crew`, `project_documents`, `project_locations`, `projects`, `push_subscriptions`, `reading_corrections`, `reading_line_overrides`, `scene_characters`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `set_log`, `shoot_days`, `shots`, `timeline_items`, `timesheets`, `transcript_lines`, `vendors`
-- **Functions:** `ack_call_sheet`, `get_my_account`, `get_portfolio_page`, `get_press_kit`, `get_shared_lookbook`, `get_shared_portfolio`, `get_shared_project`, `issue_call_sheet`, `reading_memory_for_user`, `set_paper_edit`, `sync_script_scenes`
+- **Functions:** `ack_call_sheet`, `get_my_account`, `get_portfolio_page`, `get_press_kit`, `get_shared_lookbook`, `get_shared_portfolio`, `get_shared_project`, `issue_call_sheet`, `list_public_portfolios`, `reading_memory_for_user`, `set_paper_edit`, `sync_script_scenes`
 - **Realtime:** `project`, `projects:list`
 
 ### `/terms`
@@ -100,7 +106,7 @@
 ### `/u/[handle]`
 
 - **Tables:** —
-- **Functions:** `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_portfolio_page`, `get_shared_portfolio`, `list_public_portfolios`
 
 ### `/admin/analytics`
 
@@ -276,7 +282,7 @@
 ### `/m/[id]`
 
 - **Tables:** —
-- **Functions:** `get_portfolio_page`, `get_published_media`, `get_shared_portfolio`
+- **Functions:** `get_portfolio_page`, `get_published_media`, `get_shared_portfolio`, `list_public_portfolios`
 - **Storage:** `project-media`
 
 ### `/`
@@ -516,6 +522,7 @@
 | `has_discord_webhook` | called from a route |
 | `hub_case_study_project` | called from a route |
 | `issue_call_sheet` | called from a route |
+| `list_public_portfolios` | called from a route |
 | `log_password_breach` | called from a route |
 | `log_writing` | called from a route |
 | `lounge_unread` | called from a route |
@@ -614,7 +621,7 @@
 | `phases.spec.ts` | `/auth`, `/editor`, `/projects/*`, `/settings`, `/studio` |
 | `phone-editor.spec.ts` | `/auth`, `/editor` |
 | `phone-keyboard.spec.ts` | `/auth`, `/lounge`, `/settings` |
-| `portfolio-page.spec.ts` | `/auth`, `/p/*`, `/portfolio/manage`, `/shared/*`, `/u/*`, `/u/*$` |
+| `portfolio-page.spec.ts` | `/auth`, `/p/*`, `/portfolio/manage`, `/portfolios`, `/shared/*`, `/u/*`, `/u/*$` |
 | `project-manager.spec.ts` | `/auth`, `/projects/*`, `/projects/*/pitch`, `/studio` |
 | `projects-keyboard-phase.spec.ts` | `/auth`, `/projects` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |
