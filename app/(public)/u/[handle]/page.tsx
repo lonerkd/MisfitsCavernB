@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getPortfolioPage, publicClient } from '@/lib/supabase/public';
 import { headerOf } from '@/lib/portfolio/header';
 import { pageIsIndexable } from '@/lib/portfolio/page-setting';
+import { laurelLine } from '@/lib/portfolio/laurels';
 import { groupPageCredits } from '@/lib/portfolio/page-credits';
 
 export const dynamic = 'force-dynamic';
@@ -75,11 +76,31 @@ export default async function PersonPortfolioPage({ params }: Params) {
                     {[p.role, p.category, p.year].filter(Boolean).join(' · ')}
                   </p>
                 </Link>
+                {p.laurels.length > 0 && (
+                  <ul aria-label={`${p.title}: festivals and awards, as the filmmaker reports them`} style={{ listStyle: 'none', margin: '6px 0 0', padding: 0, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', display: 'grid', gap: 2 }}>
+                    {p.laurels.map((l, i) => <li key={i}>{laurelLine(l)}</li>)}
+                    <li>reported by the filmmaker</li>
+                  </ul>
+                )}
               </li>
             ))}
           </ul>
         )}
       </section>
+
+      {data.verified_laurels.length > 0 && (
+        <section aria-label="Festivals and awards" style={{ maxWidth: 960, margin: '48px auto 0' }}>
+          <h2 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', margin: '0 0 12px' }}>FESTIVALS · RECORDED BY THE FILM’S OWN TEAM</h2>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 6 }}>
+            {data.verified_laurels.map((l, i) => (
+              <li key={i} style={{ borderTop: '1px solid var(--border)', padding: '8px 0', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem' }}>{l.name}</span>
+                <Link href={`/shared/${l.share_token}`} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)' }}>{l.film}</Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {films.length > 0 && (
         <section aria-label="Credits" style={{ maxWidth: 960, margin: '48px auto 0' }}>

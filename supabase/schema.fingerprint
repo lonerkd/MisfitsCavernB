@@ -398,6 +398,13 @@ column portfolio_blocks.portfolio_project_id uuid not null
 column portfolio_blocks.position integer default 0 not null
 column portfolio_blocks.source_ref_id uuid
 column portfolio_blocks.title text
+column portfolio_laurels.created_at timestamp with time zone default now() not null
+column portfolio_laurels.id uuid default gen_random_uuid() not null
+column portfolio_laurels.kind text default 'selection'::text not null
+column portfolio_laurels.name text not null
+column portfolio_laurels.portfolio_project_id uuid not null
+column portfolio_laurels.user_id uuid default auth.uid() not null
+column portfolio_laurels.year integer
 column portfolio_media.created_at timestamp with time zone default now()
 column portfolio_media.id uuid default uuid_generate_v4() not null
 column portfolio_media.media_type text default 'youtube'::text
@@ -1148,6 +1155,12 @@ constraint phase_gates.phase_gates_project_id_fkey FOREIGN KEY (project_id) REFE
 constraint portfolio_blocks.portfolio_blocks_block_type_check CHECK ((block_type = ANY (ARRAY['cover'::text, 'concept'::text, 'scene'::text, 'budget'::text, 'crew'::text, 'script'::text, 'text'::text, 'media'::text])))
 constraint portfolio_blocks.portfolio_blocks_pkey PRIMARY KEY (id)
 constraint portfolio_blocks.portfolio_blocks_portfolio_project_id_fkey FOREIGN KEY (portfolio_project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
+constraint portfolio_laurels.portfolio_laurels_kind_check CHECK ((kind = ANY (ARRAY['selection'::text, 'award'::text, 'nomination'::text, 'screening'::text])))
+constraint portfolio_laurels.portfolio_laurels_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 120)))
+constraint portfolio_laurels.portfolio_laurels_pkey PRIMARY KEY (id)
+constraint portfolio_laurels.portfolio_laurels_portfolio_project_id_fkey FOREIGN KEY (portfolio_project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
+constraint portfolio_laurels.portfolio_laurels_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint portfolio_laurels.portfolio_laurels_year_check CHECK (((year IS NULL) OR ((year >= 1888) AND (year <= 2100))))
 constraint portfolio_media.portfolio_media_media_type_check CHECK ((media_type = ANY (ARRAY['youtube'::text, 'gdrive'::text, 'image'::text])))
 constraint portfolio_media.portfolio_media_pkey PRIMARY KEY (id)
 constraint portfolio_media.portfolio_media_project_id_fkey FOREIGN KEY (project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
@@ -1510,6 +1523,7 @@ function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
+function internal.portfolio_laurels_guard() body=92df427843493295fdf81484d5461323
 function internal.portfolio_pin_limit() body=4e0816ac860ac4927edf856512e82b69
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.production_records_guard() body=9400f898c173a52968123c0fb5bb741c
@@ -1563,7 +1577,7 @@ function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=8aa74b7aff289a3a75a440891a57c43c
 function public.get_platform_stats() body=39a42ba00421b8d21eea0b8685b47ff7
-function public.get_portfolio_page(p_handle text) body=0b06f789bc38be4226dd99b5ee7d680e
+function public.get_portfolio_page(p_handle text) body=c199d67439c3d4db77ef286777a13ad8
 function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
@@ -1658,6 +1672,7 @@ grant function internal.notes_notify() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
+grant function internal.portfolio_laurels_guard() postgres
 grant function internal.portfolio_pin_limit() postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.production_records_guard() postgres
@@ -1884,6 +1899,8 @@ index CREATE INDEX notifications_user_unread_idx ON public.notifications USING b
 index CREATE INDEX phase_gates_decided_by_idx ON public.phase_gates USING btree (decided_by)
 index CREATE INDEX phase_gates_project_idx ON public.phase_gates USING btree (project_id, decided_at DESC)
 index CREATE INDEX portfolio_blocks_project_idx ON public.portfolio_blocks USING btree (portfolio_project_id, "position")
+index CREATE INDEX portfolio_laurels_piece_idx ON public.portfolio_laurels USING btree (portfolio_project_id)
+index CREATE INDEX portfolio_laurels_user_idx ON public.portfolio_laurels USING btree (user_id)
 index CREATE INDEX portfolio_projects_category_idx ON public.portfolio_projects USING btree (category)
 index CREATE INDEX portfolio_projects_user_id_fkey_idx ON public.portfolio_projects USING btree (user_id)
 index CREATE INDEX post_cuts_created_by_idx ON public.post_cuts USING btree (created_by)
@@ -2054,6 +2071,7 @@ index CREATE UNIQUE INDEX notes_pkey ON public.notes USING btree (id)
 index CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)
 index CREATE UNIQUE INDEX phase_gates_pkey ON public.phase_gates USING btree (id)
 index CREATE UNIQUE INDEX portfolio_blocks_pkey ON public.portfolio_blocks USING btree (id)
+index CREATE UNIQUE INDEX portfolio_laurels_pkey ON public.portfolio_laurels USING btree (id)
 index CREATE UNIQUE INDEX portfolio_media_pkey ON public.portfolio_media USING btree (id)
 index CREATE UNIQUE INDEX portfolio_projects_pkey ON public.portfolio_projects USING btree (id)
 index CREATE UNIQUE INDEX portfolio_projects_share_token_key ON public.portfolio_projects USING btree (share_token)
@@ -2246,6 +2264,10 @@ policy public.portfolio_blocks "portfolio_blocks delete own" PERMISSIVE DELETE t
 policy public.portfolio_blocks "portfolio_blocks insert own" PERMISSIVE INSERT to authenticated using - check (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
 policy public.portfolio_blocks "portfolio_blocks update own" PERMISSIVE UPDATE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_blocks "portfolio_blocks view" PERMISSIVE SELECT to anon,authenticated using (EXISTS ( SELECT 1 FROM portfolio_projects p WHERE (p.id = portfolio_blocks.portfolio_project_id))) check -
+policy public.portfolio_laurels "portfolio laurels add" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM portfolio_projects p WHERE ((p.id = portfolio_laurels.portfolio_project_id) AND (p.user_id = ( SELECT auth.uid() AS uid))))))
+policy public.portfolio_laurels "portfolio laurels edit" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
+policy public.portfolio_laurels "portfolio laurels remove" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_laurels "portfolio laurels view" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.portfolio_media "portfolio_media delete own" PERMISSIVE DELETE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_media "portfolio_media insert own" PERMISSIVE INSERT to authenticated using - check (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
 policy public.portfolio_media "portfolio_media update own" PERMISSIVE UPDATE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
@@ -2473,6 +2495,7 @@ rls notes enabled=true forced=false
 rls notifications enabled=true forced=false
 rls phase_gates enabled=true forced=false
 rls portfolio_blocks enabled=true forced=false
+rls portfolio_laurels enabled=true forced=false
 rls portfolio_media enabled=true forced=false
 rls portfolio_projects enabled=true forced=false
 rls post_cuts enabled=true forced=false
@@ -2576,6 +2599,7 @@ trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR E
 trigger CREATE TRIGGER notes_notify AFTER INSERT ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_notify()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
+trigger CREATE TRIGGER portfolio_laurels_guard BEFORE INSERT OR UPDATE ON public.portfolio_laurels FOR EACH ROW EXECUTE FUNCTION internal.portfolio_laurels_guard()
 trigger CREATE TRIGGER portfolio_pin_limit BEFORE INSERT OR UPDATE OF pinned ON public.portfolio_projects FOR EACH ROW WHEN (new.pinned) EXECUTE FUNCTION internal.portfolio_pin_limit()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()

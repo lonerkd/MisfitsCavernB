@@ -8,6 +8,7 @@ import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, delete
 import { arrange, move, placements, togglePin, MAX_PINNED } from '@/lib/portfolio/curation';
 import { hasLiveLink, VISIBILITIES, VISIBILITY_LABEL, VISIBILITY_NOTE, visibilityOf, type PortfolioVisibility } from '@/lib/portfolio/visibility';
 import { isCoverUrl } from '@/lib/portfolio/header';
+import { LaurelsEditor } from '@/components/portfolio/LaurelsEditor';
 import { PagePublishSetting } from '@/components/portfolio/PagePublishSetting';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -283,6 +284,8 @@ export default function ManagePortfolioPage() {
                   <Button onClick={() => saveCover(project.id, coverForm[project.id] ?? '')} disabled={!(coverForm[project.id] ?? '').trim()}>SET COVER</Button>
                   {project.cover_url && <Button variant="outline" onClick={() => saveCover(project.id, null)}>REMOVE</Button>}
                 </div>
+
+                <LaurelsEditor pieceId={project.id} title={project.title} />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {project.portfolio_media.map(media => (
