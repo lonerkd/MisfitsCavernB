@@ -21,6 +21,20 @@ const input = (over: Partial<CardInput> = {}): CardInput => ({
   ...over,
 });
 
+describe('a scene card’s records', () => {
+  it('lists the role-tool records linked to the scene, by tool, as a fact', () => {
+    const by = new Map([['s1', [{ label: 'Camera reports', count: 2 }, { label: 'Makeup', count: 1 }]]]);
+    const card = cardOf('s1', input({ recordsByScene: by }))!;
+    expect(card.facts.find((f) => f.label === 'Records')?.value).toBe('2 camera reports, 1 makeup');
+  });
+
+  it('says nothing about records when none is linked, or when the card has no records to read', () => {
+    expect(cardOf('s1', input({ recordsByScene: new Map() }))!.facts.some((f) => f.label === 'Records')).toBe(false);
+    expect(cardOf('s1', input())!.facts.some((f) => f.label === 'Records')).toBe(false);
+    expect(cardOf('s2', input({ recordsByScene: new Map([['s1', [{ label: 'Makeup', count: 1 }]]]) }))!.facts.some((f) => f.label === 'Records')).toBe(false);
+  });
+});
+
 describe('cardOf', () => {
   it('is null for something that is not an entity', () => {
     expect(cardOf('nope', input())).toBeNull();
