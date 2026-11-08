@@ -1,5 +1,6 @@
 import { supabase } from './client';
 import { isCoverUrl, type OwnerProfile } from '@/lib/portfolio/header';
+import { isVisibility, type PortfolioVisibility } from '@/lib/portfolio/visibility';
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -41,6 +42,14 @@ export async function getPortfolioOwner(userId: string): Promise<OwnerProfile | 
 export async function setPortfolioCover(id: string, url: string | null): Promise<void> {
   if (url !== null && !isCoverUrl(url)) throw new Error('A cover is a link to an image that starts with https://');
   const { data, error } = await supabase.from('portfolio_projects').update({ cover_url: url === null ? null : url.trim() }).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('You cannot change this piece.');
+}
+
+/** Publishes or hides a piece: public, unlisted (its link only) or private. Only its owner can; the database refuses anyone else. */
+export async function setPortfolioVisibility(id: string, visibility: PortfolioVisibility): Promise<void> {
+  if (!isVisibility(visibility)) throw new Error('Choose private, link only or public.');
+  const { data, error } = await supabase.from('portfolio_projects').update({ visibility }).eq('id', id).select('id');
   if (error) throw error;
   if (!data?.length) throw new Error('You cannot change this piece.');
 }
@@ -138,8 +147,8 @@ export async function reorderPortfolioBlocks(orderedIds: string[]): Promise<void
  * lookup fails, so a failed lookup is never mistaken for "none yet" (which
  * would create a second board).
  */
-export async function findPitchBoard(projectId: string, userId: string): Promise<{ id: string; share_token: string | null } | null> {
-  const { data, error } = await supabase.from('portfolio_projects').select('id, share_token')
+export async function findPitchBoard(projectId: string, userId: string): Promise<{ id: string; share_token: string | null; visibility: string } | null> {
+  const { data, error } = await supabase.from('portfolio_projects').select('id, share_token, visibility')
     .eq('source_project_id', projectId).eq('user_id', userId).limit(1);
   if (error) throw error;
   return data?.[0] ?? null;
@@ -170,13 +179,25 @@ export async function getPitchMaterial(projectId: string): Promise<PitchMaterial
   };
 }
 
-/** A published portfolio by its share link, with its media, ordered blocks and author; null when the link leads nowhere. */
-export async function getPublicPortfolio(token: string) {
-  const { data, error } = await supabase.from('portfolio_projects')
-    .select('*, portfolio_media(*), portfolio_blocks(*), profiles(username, role, avatar_url)')
-    .eq('share_token', token)
-    .order('position', { foreignTable: 'portfolio_blocks' })
-    .maybeSingle();
+/** A piece by its share link (public or link-only, never private), with its media, ordered blocks and author; null when the link leads nowhere. */
+export interface SharedPortfolio {
+  id: string;
+  title: string;
+  description: string | null;
+  year: number | null;
+  role: string | null;
+  category: string | null;
+  accent_color: string | null;
+  cover_url: string | null;
+  share_token: string;
+  created_at: string;
+  portfolio_media: { id: string; title: string; media_type: string; url: string; thumbnail_url?: string }[];
+  portfolio_blocks: PortfolioBlock[];
+  profiles: { username: string | null; role: string | null; avatar_url: string | null } | null;
+}
+
+export async function getPublicPortfolio(token: string): Promise<SharedPortfolio | null> {
+  const { data, error } = await supabase.rpc('get_shared_portfolio', { p_token: token });
   if (error) throw error;
-  return data;
+  return (data ?? null) as unknown as SharedPortfolio | null;
 }

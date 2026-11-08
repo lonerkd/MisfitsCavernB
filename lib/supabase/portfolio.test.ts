@@ -4,7 +4,7 @@ import { useFake } from '@/tests/unit-support/fakeSupabase';
 vi.mock('./client', async () => ({ supabase: (await import('@/tests/unit-support/fakeSupabase')).supabaseProxy }));
 
 import {
-  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioOwner, getPortfolioProjects, getPublicPortfolio, reorderPortfolioBlocks, setPortfolioCover,
+  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioOwner, getPortfolioProjects, getPublicPortfolio, reorderPortfolioBlocks, setPortfolioCover, setPortfolioVisibility,
 } from './portfolio';
 
 const boom = { message: 'nope' };
@@ -120,13 +120,6 @@ describe('getPitchMaterial', () => {
   });
 });
 
-describe('getPublicPortfolio', () => {
-  it('is null when the link leads nowhere', async () => {
-    useFake({ portfolio_projects: { data: null } });
-    expect(await getPublicPortfolio('bad')).toBeNull();
-  });
-});
-
 describe('the person a portfolio belongs to', () => {
   it('reads their profile, and none when there is none', async () => {
     const f = useFake({ profiles: { data: { username: 'mara', role: 'DP', location: null, bio: null, avatar_url: null, status: 'OPEN' } } });
@@ -158,5 +151,32 @@ describe('setPortfolioCover', () => {
     await expect(setPortfolioCover('p1', 'https://img.example.com/a.jpg')).rejects.toThrow('You cannot change this piece.');
     useFake({ portfolio_projects: { error: boom } });
     await expect(setPortfolioCover('p1', 'https://img.example.com/a.jpg')).rejects.toBe(boom);
+  });
+});
+
+describe('who may see a piece', () => {
+  it('publishes and hides a piece, only to a known state', async () => {
+    const f = useFake({ portfolio_projects: { data: [{ id: 'p1' }] } });
+    await setPortfolioVisibility('p1', 'unlisted');
+    await setPortfolioVisibility('p1', 'private');
+    expect(f.argsOf('portfolio_projects', 'update')).toEqual([[{ visibility: 'unlisted' }], [{ visibility: 'private' }]]);
+    const g = useFake({ portfolio_projects: {} });
+    await expect(setPortfolioVisibility('p1', 'friends' as never)).rejects.toThrow('Choose private');
+    expect(g.calls).toEqual([]);
+  });
+  it('says so when nothing changed (not the owner), and when the write fails', async () => {
+    useFake({ portfolio_projects: { data: [] } });
+    await expect(setPortfolioVisibility('p1', 'public')).rejects.toThrow('You cannot change this piece.');
+    useFake({ portfolio_projects: { error: boom } });
+    await expect(setPortfolioVisibility('p1', 'public')).rejects.toBe(boom);
+  });
+  it('reads a shared piece by its link through the share function', async () => {
+    const f = useFake({}, { get_shared_portfolio: { data: { id: 'p1', title: 'T', portfolio_media: [], portfolio_blocks: [], profiles: null } } });
+    expect(await getPublicPortfolio('tok')).toMatchObject({ id: 'p1' });
+    expect(f.argsOf('rpc:get_shared_portfolio', 'rpc')).toEqual([[{ p_token: 'tok' }]]);
+    useFake({}, { get_shared_portfolio: { data: null } });
+    expect(await getPublicPortfolio('nope')).toBeNull();
+    useFake({}, { get_shared_portfolio: { error: boom } });
+    await expect(getPublicPortfolio('tok')).rejects.toBe(boom);
   });
 });
