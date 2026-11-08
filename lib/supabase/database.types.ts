@@ -2259,6 +2259,45 @@ export type Database = {
           },
         ];
       };
+      portfolio_laurels: {
+        Row: {
+          created_at: string;
+          id: string;
+          kind: string;
+          name: string;
+          portfolio_project_id: string;
+          user_id: string;
+          year: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name: string;
+          portfolio_project_id: string;
+          user_id?: string;
+          year?: number | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name?: string;
+          portfolio_project_id?: string;
+          user_id?: string;
+          year?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_laurels_portfolio_project_id_fkey";
+            columns: ["portfolio_project_id"];
+            isOneToOne: false;
+            referencedRelation: "portfolio_projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       portfolio_media: {
         Row: {
           created_at: string | null;

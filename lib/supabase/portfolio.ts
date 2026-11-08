@@ -228,3 +228,28 @@ export async function hasPortfolioPage(handle: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('get_portfolio_page', { p_handle: handle });
   return !error && !!data;
 }
+
+export type LaurelKind = 'selection' | 'award' | 'nomination' | 'screening';
+export interface Laurel { id: string; portfolio_project_id: string; name: string; kind: LaurelKind; year: number | null }
+
+/** A person's own laurels on one of their pieces (the table is private to its owner). */
+export async function listLaurels(pieceId: string): Promise<Laurel[]> {
+  const { data, error } = await supabase.from('portfolio_laurels').select('id, portfolio_project_id, name, kind, year').eq('portfolio_project_id', pieceId).order('created_at');
+  if (error) throw error;
+  return (data ?? []) as Laurel[];
+}
+
+/** Adds a self-reported laurel to one of the person's own pieces; the database refuses another's piece, a bad kind or year, and a thirteenth. */
+export async function addLaurel(pieceId: string, laurel: { name: string; kind: LaurelKind; year: number | null }): Promise<Laurel> {
+  const name = laurel.name.trim();
+  if (!name) throw new Error('Say which festival or award.');
+  const { data, error } = await supabase.from('portfolio_laurels').insert({ portfolio_project_id: pieceId, name, kind: laurel.kind, year: laurel.year }).select('id, portfolio_project_id, name, kind, year').single();
+  if (error) throw error;
+  return data as Laurel;
+}
+
+export async function removeLaurel(id: string): Promise<void> {
+  const { data, error } = await supabase.from('portfolio_laurels').delete().eq('id', id).select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('You cannot remove this laurel.');
+}

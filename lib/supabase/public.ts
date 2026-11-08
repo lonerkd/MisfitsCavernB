@@ -45,6 +45,8 @@ export async function getPortfolioPreview(db: PublicClient | null, token: string
 export interface PortfolioPagePiece {
   title: string; year: number | null; role: string | null; category: string | null; description: string | null;
   cover_url: string | null; accent_color: string | null; share_token: string; pinned?: boolean;
+  /** What the person says about this piece (festivals, awards): their own word, so the page labels it. */
+  laurels: Array<{ name: string; kind: string; year: number | null }>;
 }
 export interface PortfolioPageCredit {
   title: string; year: number | null; project_type: string | null; accent_color: string | null; share_token: string;
@@ -56,6 +58,8 @@ export interface PortfolioPageData {
   pieces: PortfolioPagePiece[];
   /** The public films they are credited on (the creator, confirmed crew, cast), one row per credit. */
   credits: PortfolioPageCredit[];
+  /** Accepted festival submissions of public films they are credited on: recorded by the film's owner, not typed by the person. */
+  verified_laurels: Array<{ film: string; share_token: string; name: string }>;
 }
 
 /** A person's page by handle (their username), for the public /u/<handle> page; null when there is none or it is off. */
@@ -65,7 +69,8 @@ export async function getPortfolioPage(db: PublicClient | null, handle: string):
   if (error || !data) return null;
   const d = data as Partial<PortfolioPageData>;
   if (!d.profile || (d.page !== 'public' && d.page !== 'unlisted')) return null;
-  return { page: d.page, profile: d.profile, pieces: Array.isArray(d.pieces) ? d.pieces : [], credits: Array.isArray(d.credits) ? d.credits : [] };
+  const pieces = (Array.isArray(d.pieces) ? d.pieces : []).map((p) => ({ ...p, laurels: Array.isArray(p.laurels) ? p.laurels : [] }));
+  return { page: d.page, profile: d.profile, pieces, credits: Array.isArray(d.credits) ? d.credits : [], verified_laurels: Array.isArray(d.verified_laurels) ? d.verified_laurels : [] };
 }
 
 export interface PublicPortfolioCard {
