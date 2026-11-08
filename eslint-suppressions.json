@@ -694,7 +694,7 @@
   },
   "components/studio/production/ShotListView.tsx": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "components/studio/production/StripboardView.tsx": {
