@@ -1,7 +1,7 @@
 {
   "note": "First-load JS per page, kB gzipped. Raise a number only on purpose.",
   "routes": {
-    "/editor": 486,
+    "/editor": 487,
     "/projects/[id]/pitch": 430,
     "/projects/[id]": 420,
     "/studio": 368,
@@ -10,7 +10,7 @@
     "/projects": 349,
     "/call/[id]": 349,
     "/jobs/[id]": 338,
-    "/soundtrack": 343,
+    "/soundtrack": 349,
     "/settings": 336,
     "/portfolio/manage": 334,
     "/today": 331,

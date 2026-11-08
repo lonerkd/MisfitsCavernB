@@ -8,7 +8,8 @@ import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { sceneMood } from '@/lib/spotify/moods';
 import { searchSpotify } from '@/lib/spotify/search';
-import { AUDIO_ROLES, addAudioRef, listAudioRefs, normalizeTags, tagAudioRef, type AudioRole } from '@/lib/supabase/audio';
+import { TrackTagger } from '@/components/audio/TrackTagger';
+import { AUDIO_ROLES, addAudioRef, listAudioRefs, tagAudioRef, type AudioRole } from '@/lib/supabase/audio';
 
 interface Track { id: string; uri: string; name: string; artist: string }
 
@@ -37,37 +38,6 @@ const round = { flexShrink: 0, width: 44, height: 44, borderRadius: '50%', borde
 const ghost = { minHeight: 44, padding: '0 14px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13, cursor: 'pointer' } as const;
 
 /** The inline editor for one saved track: which role it plays, whether it is for this scene, and its tags. */
-function TrackTagger({ track, sceneId, onSave, onClose }: { track: SoundPanelProps['refs'][number]; sceneId: string | null; onSave: (t: { sceneId: string | null; role: AudioRole | null; tags: string[] }) => Promise<void>; onClose: () => void }) {
-  const [role, setRole] = useState<AudioRole | ''>((track.role as AudioRole | null) ?? '');
-  const [forThis, setForThis] = useState(!!sceneId && track.for_scene === sceneId);
-  const [tags, setTags] = useState((track.tags ?? []).join(', '));
-  const [busy, setBusy] = useState(false);
-  const field = { minHeight: 44, borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'var(--bg)', color: 'var(--fg)', padding: '0 10px', fontSize: 14 } as const;
-  return (
-    <div style={{ display: 'grid', gap: 8, marginTop: 8, padding: 10, borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)' }}>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>Role in the scene
-        <select value={role} onChange={(e) => setRole(e.target.value as AudioRole | '')} style={field}>
-          <option value="">No role</option>
-          {(Object.entries(AUDIO_ROLES) as Array<[AudioRole, string]>).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-      </label>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>Tags (comma separated)
-        <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tense, strings, radio" style={field} />
-      </label>
-      {sceneId && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <input type="checkbox" checked={forThis} onChange={(e) => setForThis(e.target.checked)} /> For this scene
-        </label>
-      )}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" style={ghost} onClick={onClose}>Cancel</button>
-        <button type="button" disabled={busy} style={{ ...ghost, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none' }}
-          onClick={() => { setBusy(true); void onSave({ sceneId: forThis ? sceneId : null, role: role || null, tags: normalizeTags(tags) }).then(onClose, () => { /* the caller already said why */ }).finally(() => setBusy(false)); }}>{busy ? 'Saving…' : 'Save tags'}</button>
-      </div>
-    </div>
-  );
-}
-
 /**
  * The sound desk in ScriptOS: everything about how this script sounds, in one place. The table read (the browser reads the script
  * in a voice per character), the music for the scene in view (its mood, suggestions, save to the project, what is playing now),

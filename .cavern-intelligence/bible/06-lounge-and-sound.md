@@ -141,8 +141,11 @@ fetch.
   work, `http://127.0.0.1:<port>/auth/spotify-callback`; remove any
   `http://localhost…` entry. The address sent at sign-in is kept and reused for
   the token exchange, so the two can't drift.
-- **Save to the project** (`project_audio_references`) — the project's audio
-  bible.
+- **Save to the project** (`project_audio_references`) — the project's sound
+  **Library** (a tab on the page; `components/audio/SoundLibrary.tsx`,
+  `lib/audio/library.ts`): saved songs, uploaded sound files and the project's
+  sound effects in one list, filtered by kind, role, scene and tag, tagged in
+  place (owners and writers only), played, removed and uploaded.
 - **SFX library**: upload sounds (≤ 20 MB) to the public `sfx_library`
   bucket (`sfx_assets`), play them back.
 - States: not connected · connected (Premium needed for playback) · no active
