@@ -30,9 +30,8 @@ describe('a forced line type and the /* ... */ comment', () => {
     expect(t[idx('ELI')]).toBe('character');
   });
 
-  // KNOWN GAP (BACKLOG 3.21 B8): a forced type is a 'fixed' observation with no decoder state, so it steers the lines around it
-  // but the emit loop never applies it to the line itself. `it.fails` passes while that is true and fails the day it is fixed.
-  it.fails('an override on an ordinary line changes that line', () => {
+  // Fixed: a forced type now applies to the line itself (BACKLOG 3.21 B8 resolved).
+  it('an override on an ordinary line changes that line', () => {
     const t = types([{ line_index: idx('MAYA'), forced_type: 'action' }]);
     expect(t[idx('MAYA')]).toBe('action');
   });

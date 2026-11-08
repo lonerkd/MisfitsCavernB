@@ -351,8 +351,11 @@ export class ScriptParser {
       };
 
       const forced = this.preClassify(trim);
+      const overrideType = (this.lineOverrides ?? []).find((o) => o.line_index === i)?.forced_type;
       let analysis: ReturnType<typeof this.analyzeLine>;
-      if (forced) {
+      if (overrideType) {
+        analysis = { type: overrideType as any, confidence: 100, scores: this.emptyScores(), reasoning: ['Forced type (override)'], meta: {} };
+      } else if (forced) {
         analysis = forced;
       } else if (i < 50 && this.isTitlePageContent(trim)) {
         analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
