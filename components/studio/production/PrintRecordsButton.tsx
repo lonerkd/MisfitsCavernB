@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Printer } from 'lucide-react';
+import { Download, Printer } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { listRecords, type RecordKind } from '@/lib/supabase/productionRecords';
 import { recordsDoc, RECORD_PRINT } from '@/lib/studio/records-print';
 import { characterName, sceneChip } from '@/lib/studio/record-links';
 import { printDocument } from '@/lib/print/print';
+import { downloadCsv } from '@/lib/print/download';
+import type { PrintDoc } from '@/lib/print/kit';
 import { useStudio } from '../StudioContext';
 import { useRecordTargets } from './RecordLinks';
 import { cx } from '../ui';
@@ -19,28 +21,31 @@ export function PrintRecordsButton({ kind }: { kind: RecordKind }) {
   const t = useRecordTargets();
   const [busy, setBusy] = useState(false);
 
-  const go = async () => {
+  const run = async (act: (doc: PrintDoc) => boolean, failed: string) => {
     if (busy) return;
     setBusy(true);
     try {
       const rows = await listRecords(project.id, kind);
-      const ok = printDocument(recordsDoc({
+      const doc = recordsDoc({
         kind, project: project.title, accent: project.accent_color,
         rows,
         sceneOf: (r) => sceneChip(r as never, t.sceneById),
         characterOf: (r) => characterName(r as never, t.characterById),
         generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
-      }));
-      if (!ok) toast('Could not open the print dialog.', 'error');
+      });
+      if (!act(doc)) toast(failed, 'error');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not read the list to print it.', 'error');
     } finally { setBusy(false); }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-      <button type="button" className={cx(s.btn, s.small)} onClick={() => void go()} disabled={busy} aria-label={`Print ${RECORD_PRINT[kind].title} (or save as PDF)`}>
+    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 8 }}>
+      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(printDocument, 'Could not open the print dialog.')} disabled={busy} aria-label={`Print ${RECORD_PRINT[kind].title} (or save as PDF)`}>
         <Printer size={11} aria-hidden /> Print / PDF
+      </button>
+      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(downloadCsv, 'Could not save the file.')} disabled={busy} aria-label={`Save ${RECORD_PRINT[kind].title} as a spreadsheet (CSV)`}>
+        <Download size={11} aria-hidden /> CSV
       </button>
     </div>
   );

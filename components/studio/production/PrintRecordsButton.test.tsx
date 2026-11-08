@@ -8,6 +8,7 @@ const print = vi.fn();
 const list = vi.fn();
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/lib/print/print', () => ({ printDocument: (...a: unknown[]) => print(...a) }));
+vi.mock('@/lib/print/download', () => ({ downloadCsv: () => true }));
 vi.mock('@/lib/supabase/productionRecords', () => ({ listRecords: (...a: unknown[]) => list(...a) }));
 vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', title: 'The Pier', accent_color: '#0f766e' } }) }));
 vi.mock('./RecordLinks', () => ({ useRecordTargets: () => ({ sceneById: new Map([['s1', { id: 's1', scene_number: 12, heading: 'EXT. PIER', title: '' }]]), characterById: new Map() }) }));
