@@ -44,7 +44,7 @@ export async function getPortfolioPreview(db: PublicClient | null, token: string
 
 export interface PortfolioPagePiece {
   title: string; year: number | null; role: string | null; category: string | null; description: string | null;
-  cover_url: string | null; accent_color: string | null; share_token: string;
+  cover_url: string | null; accent_color: string | null; share_token: string; pinned?: boolean;
 }
 export interface PortfolioPageCredit {
   title: string; year: number | null; project_type: string | null; accent_color: string | null; share_token: string;

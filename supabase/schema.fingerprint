@@ -411,6 +411,8 @@ column portfolio_projects.cover_url text
 column portfolio_projects.created_at timestamp with time zone default now()
 column portfolio_projects.description text
 column portfolio_projects.id uuid default uuid_generate_v4() not null
+column portfolio_projects.pinned boolean default false not null
+column portfolio_projects.position integer
 column portfolio_projects.role text
 column portfolio_projects.share_token text default encode(gen_random_bytes(16), 'hex'::text)
 column portfolio_projects.source_project_id uuid
@@ -1152,6 +1154,7 @@ constraint portfolio_media.portfolio_media_project_id_fkey FOREIGN KEY (project_
 constraint portfolio_projects.portfolio_projects_category_fkey FOREIGN KEY (category) REFERENCES project_formats(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint portfolio_projects.portfolio_projects_cover_url_check CHECK (((cover_url IS NULL) OR ((char_length(cover_url) <= 2000) AND (cover_url ~* '^https://[^\s]+$'::text))))
 constraint portfolio_projects.portfolio_projects_pkey PRIMARY KEY (id)
+constraint portfolio_projects.portfolio_projects_position_check CHECK ((("position" IS NULL) OR (("position" >= 0) AND ("position" <= 10000))))
 constraint portfolio_projects.portfolio_projects_share_token_key UNIQUE (share_token)
 constraint portfolio_projects.portfolio_projects_source_project_id_fkey FOREIGN KEY (source_project_id) REFERENCES projects(id) ON DELETE SET NULL
 constraint portfolio_projects.portfolio_projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -1507,6 +1510,7 @@ function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
+function internal.portfolio_pin_limit() body=4e0816ac860ac4927edf856512e82b69
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.production_records_guard() body=9400f898c173a52968123c0fb5bb741c
 function internal.production_records_links_guard() body=1e5a6ac38b8ea9d29952704cfa3cf8d3
@@ -1559,7 +1563,7 @@ function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=8aa74b7aff289a3a75a440891a57c43c
 function public.get_platform_stats() body=39a42ba00421b8d21eea0b8685b47ff7
-function public.get_portfolio_page(p_handle text) body=f9af002b4d267b4b076cde5c563d8b96
+function public.get_portfolio_page(p_handle text) body=0b06f789bc38be4226dd99b5ee7d680e
 function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
@@ -1654,6 +1658,7 @@ grant function internal.notes_notify() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
+grant function internal.portfolio_pin_limit() postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.production_records_guard() postgres
 grant function internal.production_records_links_guard() postgres
@@ -2571,6 +2576,7 @@ trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR E
 trigger CREATE TRIGGER notes_notify AFTER INSERT ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_notify()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
+trigger CREATE TRIGGER portfolio_pin_limit BEFORE INSERT OR UPDATE OF pinned ON public.portfolio_projects FOR EACH ROW WHEN (new.pinned) EXECUTE FUNCTION internal.portfolio_pin_limit()
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()
 trigger CREATE TRIGGER production_records_guard BEFORE UPDATE ON public.production_records FOR EACH ROW EXECUTE FUNCTION internal.production_records_guard()

@@ -32,6 +32,13 @@ export async function getPortfolioProjects(userId?: string) {
   return data;
 }
 
+/** Saves the pins and the order of a person's pieces (their own only: the database refuses others, and a fourth pin). */
+export async function savePortfolioOrder(places: Array<{ id: string; pinned: boolean; position: number }>): Promise<void> {
+  const results = await Promise.all(places.map((p) => supabase.from('portfolio_projects').update({ pinned: p.pinned, position: p.position }).eq('id', p.id).select('id')));
+  const failed = results.find((r) => r.error || !r.data?.length);
+  if (failed) throw failed.error ?? new Error('You cannot change this piece.');
+}
+
 /** The person a portfolio belongs to, from their profile: what the page's header says. */
 export async function getPortfolioOwner(userId: string): Promise<OwnerProfile | null> {
   const { data, error } = await supabase.from('profiles').select('username, role, location, bio, avatar_url, status').eq('id', userId).maybeSingle();
