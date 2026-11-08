@@ -1,4 +1,4 @@
-# Soundtrack as the home of sound — a sketch (2026-11-08)
+# Sound (was Soundtrack) as the home of sound — a sketch (2026-11-08), decided the same day
 
 Owner, 2026-11-07: "totally forgot we had Soundtrack! that should be the home/extension of the player and all the other sound stuff." This is a sketch to decide on, not a build. It starts from what exists, so nothing is built twice.
 
@@ -65,7 +65,24 @@ Three homes, none of them the home: the player is a popover, Soundtrack is a pag
 5. **Editor ↔ Soundtrack** deep links (`/soundtrack?scene=<id>`), and the phone layout of the deck and rooms. (S/M)
 6. A browser spec per room, both orientations (the CI phone audit covers the page once it is in its list), and persona checks that tags show only to the people who can open the project (the table already enforces it).
 
-## Decisions for the owner
+## Decisions (owner, 2026-11-08) — these replace the proposal where they differ
+
+1. **Scenes is a timeline**, not rows: the film's scenes left to right (width by length, so the shape of the film reads at a glance), with each scene's tagged music as bars beneath it and its mood as the colour. A scene's details (find music, read from here, tags) open under its block. This is the larger build: it is step 3 and gets its own sketch before it starts.
+2. **The Moods tab is retired**; its content (scenes grouped by mood) becomes a colour and a filter on the timeline.
+3. **The corner player becomes a mini panel** (title, transport, "Open Sound"); the source picker and the free-mode embed list move to a "Listen without Premium" section on the page.
+4. **Renamed: Sound** (the page title, the nav, the island, the Studio's tool list; the path `/soundtrack` stays for now so no link or bookmark breaks, and redirects when the path is renamed).
+5. **Tagging is limited** to the project's owner and its writers (`can_shape_project`), not every member: a migration (the `audio refs update` policy and its guard) with a persona test (owner yes, writer yes, crew no, outsider no), applied to production then staging by hand after merge. It also closes the review's finding that any member could update any column. Step 2b below.
+
+## Order of work, revised
+
+1. **The deck** on the Sound page (built 2026-11-08: `SoundDeck`; the page and nav renamed to Sound).
+2. **(2a)** the corner player slims to the mini panel. **(2b)** the tagging migration (owner and writers only). **(2c)** Library merges Project + SFX + uploads with role/tag/scene filters and the shared tag editor.
+3. **Scenes timeline** (own sketch first).
+4. **Find** gets Tag-to-scene on every result; Moods leaves as a tab; the tabs become the three rooms.
+5. Editor ↔ Sound deep links (`/sound?scene=<id>`), and the phone layout of the deck and rooms.
+6. A browser spec per room, both orientations.
+
+## The questions, as asked (answered above)
 
 1. **Is "Scenes" the right heart?** The alternative is a timeline view (scenes left to right with their music as bars) that shows how the film sounds as a whole; it is a better picture and a bigger build. Recommendation: rows now, a timeline later if rows prove too flat.
 2. **Mood as a filter, not a tab:** agreed to retire the Moods tab? Its content (scenes grouped by mood) moves into Scenes as a grouping option.

@@ -183,7 +183,7 @@ export function SoundPanel(p: SoundPanelProps) {
           </div>
         )}
         {!isAuthenticated ? (
-          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Connect Spotify to get music for each scene. <Link href="/soundtrack" style={{ color: 'var(--accent)' }}>Connect in Soundtrack</Link></p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Connect Spotify to get music for each scene. <Link href="/soundtrack" style={{ color: 'var(--accent)' }}>Connect in Sound</Link></p>
         ) : tracks === null ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Looking for {mood.mood.toLowerCase()} music…</p>
           : error ? <p role="alert" style={{ margin: 0, fontSize: 12, color: 'var(--danger)' }}>{error}</p>
           : tracks.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Nothing found for this mood.</p>
@@ -211,7 +211,7 @@ export function SoundPanel(p: SoundPanelProps) {
 
       <section aria-label="Saved tracks">
         {heading(<Music size={14} />, 'Saved to this project')}
-        {p.refs.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic' }}>Nothing saved yet. Save a suggestion above, or link tracks from Soundtrack.</p> : (
+        {p.refs.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic' }}>Nothing saved yet. Save a suggestion above, or link tracks from Sound.</p> : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...p.refs].sort((a, b) => Number(!!p.sceneId && b.for_scene === p.sceneId) - Number(!!p.sceneId && a.for_scene === p.sceneId)).map((ref) => {
               const here = !!p.sceneId && ref.for_scene === p.sceneId;

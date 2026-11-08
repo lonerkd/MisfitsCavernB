@@ -67,7 +67,7 @@ describe('SoundPanel: music for the scene', () => {
   it('without Spotify it says how to connect and searches for nothing', () => {
     spotify.isAuthenticated = false;
     render(<SoundPanel {...base()} />);
-    expect(screen.getByRole('link', { name: 'Connect in Soundtrack' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Connect in Sound' })).toBeTruthy();
     expect(search).not.toHaveBeenCalled();
   });
   it('a failed search says why', async () => {

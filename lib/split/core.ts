@@ -88,7 +88,7 @@ export const SURFACES: Surface[] = [
   { id: 'post', label: 'Post', group: 'Studio', href: '/studio?tab=post' },
   { id: 'projects', label: 'Projects', group: 'Project', href: '/projects' },
   { id: 'lounge', label: 'Lounge', group: 'Suite', href: '/lounge' },
-  { id: 'soundtrack', label: 'Soundtrack', group: 'Suite', href: '/soundtrack' },
+  { id: 'soundtrack', label: 'Sound', group: 'Suite', href: '/soundtrack' },
   { id: 'jobs', label: 'Jobs', group: 'Suite', href: '/jobs' },
 ];
 

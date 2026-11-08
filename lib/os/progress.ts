@@ -174,7 +174,7 @@ export const TOOLS: ToolDef[] = [
   { id: 'library', label: 'Library & boards', blurb: 'References, mood boards, uploads.', phase: 'development', place: { kind: 'studio', tab: 'library' } },
   { id: 'story', label: 'Beat board', blurb: 'Outline the story.', phase: 'development', place: { kind: 'studio', tab: 'production', view: 'story' } },
   { id: 'pitch', label: 'Pitch deck', blurb: 'Present the idea.', phase: 'development', place: { kind: 'studio', tab: 'pitch' } },
-  { id: 'soundtrack', label: 'Soundtrack', blurb: 'Music to work to, and for the film.', phase: 'development', place: { kind: 'path', path: '/soundtrack' } },
+  { id: 'soundtrack', label: 'Sound', blurb: 'Music to work to, and for the film.', phase: 'development', place: { kind: 'path', path: '/soundtrack' } },
   { id: 'share', label: 'Share page', blurb: 'A lookbook for crew and backers.', phase: 'development', place: { kind: 'studio', tab: 'share' } },
 
   { id: 'scenes', label: 'Scenes & shot lists', blurb: 'Every scene, its references and shots.', phase: 'pre-production',
