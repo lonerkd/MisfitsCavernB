@@ -19,6 +19,16 @@ export type SettingsListKey =
 
 export type SettingsListItem<K extends SettingsListKey> = NonNullable<ProjectSettings[K]> extends Array<infer T> ? T : never;
 
+/** What to tell the person. The database's refusal is a plain object (not an Error): a permission refusal says so, never "check your connection". */
+export function saveFailureMessage(e: unknown): string {
+  const err = (e ?? {}) as { message?: unknown; code?: unknown };
+  const message = typeof err.message === 'string' ? err.message : '';
+  if (err.code === '42501' || /row-level security|permission denied/i.test(message)) {
+    return 'You can read this tool, but only the owner and crew who shape the project can add to it or change it.';
+  }
+  return message || 'Could not save. Check your connection and try again.';
+}
+
 export function useSettingsList<K extends SettingsListKey>(key: K) {
   type Item = SettingsListItem<K> & { id: string };
   const { project } = useStudio();
@@ -34,7 +44,7 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
     let live = true;
     listRecords(project.id, key).then(
       (rows) => { if (live) setItems(rows as Item[]); },
-      (e) => { if (live) toast(e instanceof Error && e.message ? e.message : 'Could not load this list.', 'error'); },
+      (e) => { if (live) toast(saveFailureMessage(e) || 'Could not load this list.', 'error'); },
     );
     return () => { live = false; };
   }, [project.id, key, tick, toast]);
@@ -56,7 +66,7 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
       setItems(next);
       return true;
     } catch (e) {
-      toast(e instanceof Error && e.message ? e.message : 'Could not save. Check your connection and try again.', 'error');
+      toast(saveFailureMessage(e), 'error');
       reload();
       return false;
     } finally {
