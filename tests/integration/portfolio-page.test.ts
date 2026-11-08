@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, anonClient, type Cast } from './support/personas';
+import { createCrewedProject, setVisibility } from './support/project';
 
 // A person's own page: off until they publish it; then only their PUBLIC pieces and a few public profile fields, to anyone.
 let cast: Cast;
@@ -85,5 +86,60 @@ describe('a person’s portfolio page', () => {
     }
     expect((await anon().rpc('get_my_portfolio_page')).error?.code).toBe('42501');
     expect(await (async () => (await cast.riley.client.rpc('get_my_portfolio_page')).data)()).toBe('off');
+  });
+});
+
+// ── Credits: the films a person is credited on, public ones only, vouched for by the work itself ──────────────────────
+describe('a person’s page lists their credits on public films', () => {
+  let publicProject: string;
+  let pendingProject: string;
+
+  beforeAll(async () => {
+    // Sam makes three films with Jordan on the crew of each; only the first is public, and Jordan is a pending invite on the third.
+    ({ projectId: publicProject } = await createCrewedProject(cast, 'Credits Public'));
+    const hidden = await createCrewedProject(cast, 'Credits Private');
+    await setVisibility(cast, hidden.projectId, 'private');
+    ({ projectId: pendingProject } = await createCrewedProject(cast, 'Credits Pending'));
+    await setVisibility(cast, publicProject, 'public');
+    await setVisibility(cast, pendingProject, 'public');
+    const pending = await cast.sam.client.from('project_crew').update({ status: 'pending' }).eq('project_id', pendingProject).eq('user_id', cast.jordan.id);
+    if (pending.error) throw pending.error;
+    expect((await cast.jordan.client.from('profiles').update({ portfolio_page: 'public' }).eq('id', cast.jordan.id)).error).toBeNull();
+    expect((await cast.sam.client.from('profiles').update({ portfolio_page: 'public' }).eq('id', cast.sam.id)).error).toBeNull();
+  });
+
+  type Credit = { title: string; share_token: string; kind: string; credit: string };
+  const creditsOf = async (who: 'anon' | 'riley', h: string) => ((await page(who, h)).data as { credits: Credit[] }).credits;
+  const jordanHandle = async () => (await cast.jordan.client.from('profiles').select('username').eq('id', cast.jordan.id).single()).data!.username;
+
+  it('lists the public film a person is confirmed crew on, with the credit and a link token, to anyone', async () => {
+    const h = await jordanHandle();
+    for (const who of ['anon', 'riley'] as const) {
+      const c = await creditsOf(who, h);
+      expect(c.map((x) => x.title), who).toEqual(['Credits Public']);
+      expect(c[0].kind).toBe('crew');
+      expect(c[0].credit).toBe('Production designer');
+      expect(c[0].share_token).toBeTruthy();
+    }
+  });
+
+  it('never lists a private film, nor a credit the person has only been invited to (pending)', async () => {
+    const titles = (await creditsOf('anon', await jordanHandle())).map((x) => x.title);
+    expect(titles).not.toContain('Credits Private');
+    expect(titles).not.toContain('Credits Pending');
+  });
+
+  it('the creator is credited on their own public films, and a film made private drops off at once', async () => {
+    const mineTitles = async () => (await creditsOf('anon', handle)).map((x) => x.title);
+    expect(await mineTitles()).toEqual(expect.arrayContaining(['Credits Public', 'Credits Pending']));
+    expect(await mineTitles()).not.toContain('Credits Private');
+    await setVisibility(cast, publicProject, 'private');
+    expect(await mineTitles()).not.toContain('Credits Public');
+    expect((await creditsOf('anon', await jordanHandle())).map((x) => x.title)).toEqual([]);
+  });
+
+  it('a person whose page is off has no credits shown either', async () => {
+    await cast.jordan.client.from('profiles').update({ portfolio_page: 'off' }).eq('id', cast.jordan.id);
+    expect((await page('anon', await jordanHandle())).data).toBeNull();
   });
 });

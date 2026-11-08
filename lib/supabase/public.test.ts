@@ -69,6 +69,8 @@ describe('getPortfolioPage', () => {
     expect(await getPortfolioPage(dbPage({ ...page, page: 'off' }), 'maya')).toBeNull();
     expect(await getPortfolioPage(dbPage({ ...page, page: 'whatever' }), 'maya')).toBeNull();
     expect((await getPortfolioPage(dbPage({ ...page, pieces: null }), 'maya'))?.pieces).toEqual([]);
+    expect((await getPortfolioPage(dbPage({ ...page, credits: null }), 'maya'))?.credits).toEqual([]);
+    expect((await getPortfolioPage(dbPage({ ...page, credits: [{ title: 'Pier', share_token: 't' }] }), 'maya'))?.credits).toHaveLength(1);
     expect((await getPortfolioPage(dbPage({ ...page, page: 'unlisted' }), 'maya'))?.page).toBe('unlisted');
   });
 });

@@ -12,9 +12,9 @@
 | `/privacy` | open (page checks) | `app/(public)/privacy/page.tsx` (138) | 3 files · components: legal · lib: legal | legal |
 | `/review/[token]` | open (page checks) | `app/(public)/review/[token]/page.tsx` (40) | 7 files · components: — · lib: ad, review, supabase | **none** |
 | `/s/[token]` | open (page checks) | `app/(public)/s/[token]/page.tsx` (173) | 11 files · components: — · lib: formats, scriptos, supabase | **none** |
-| `/shared/[token]` | open (page checks) | `app/(public)/shared/[token]/page.tsx` (202) | 44 files · components: ui · lib: auth, credits, film, formats, island, os, push, scriptos, studio, supabase, types, validation | accessibility, credits, keyboard-audit |
+| `/shared/[token]` | open (page checks) | `app/(public)/shared/[token]/page.tsx` (202) | 44 files · components: ui · lib: auth, credits, film, formats, island, os, push, scriptos, studio, supabase, types, validation | accessibility, credits, keyboard-audit, portfolio-page |
 | `/terms` | open (page checks) | `app/(public)/terms/page.tsx` (116) | 3 files · components: legal · lib: legal | legal |
-| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (84) | 5 files · components: — · lib: portfolio, supabase | portfolio-page |
+| `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (104) | 7 files · components: — · lib: credits, portfolio, supabase | portfolio-page |
 | `/admin/analytics` | admin | `app/(suite)/admin/analytics/page.tsx` (243) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility |
 | `/admin/audit-logs` | admin | `app/(suite)/admin/audit-logs/page.tsx` (434) | 33 files · components: ui · lib: audit, auth, formats, hooks, os, push, supabase, types, util, validation | accessibility, suspend-user |
 | `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (127) | 43 files · components: ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | **none** |
@@ -614,7 +614,7 @@
 | `phases.spec.ts` | `/auth`, `/editor`, `/projects/*`, `/settings`, `/studio` |
 | `phone-editor.spec.ts` | `/auth`, `/editor` |
 | `phone-keyboard.spec.ts` | `/auth`, `/lounge`, `/settings` |
-| `portfolio-page.spec.ts` | `/auth`, `/p/*`, `/portfolio/manage`, `/u/*`, `/u/*$` |
+| `portfolio-page.spec.ts` | `/auth`, `/p/*`, `/portfolio/manage`, `/shared/*`, `/u/*`, `/u/*$` |
 | `project-manager.spec.ts` | `/auth`, `/projects/*`, `/projects/*/pitch`, `/studio` |
 | `projects-keyboard-phase.spec.ts` | `/auth`, `/projects` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |

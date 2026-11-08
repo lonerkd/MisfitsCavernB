@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import { getPortfolioPage, publicClient } from '@/lib/supabase/public';
 import { headerOf } from '@/lib/portfolio/header';
 import { pageIsIndexable } from '@/lib/portfolio/page-setting';
+import { groupPageCredits } from '@/lib/portfolio/page-credits';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,6 +38,7 @@ export default async function PersonPortfolioPage({ params }: Params) {
   const data = await getPortfolioPage(publicClient(), handle);
   if (!data) notFound();
   const head = headerOf(data.profile);
+  const films = groupPageCredits(data.credits);
 
   return (
     <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: 'clamp(24px, 5vw, 64px)' }}>
@@ -78,6 +80,24 @@ export default async function PersonPortfolioPage({ params }: Params) {
           </ul>
         )}
       </section>
+
+      {films.length > 0 && (
+        <section aria-label="Credits" style={{ maxWidth: 960, margin: '48px auto 0' }}>
+          <h2 style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', margin: '0 0 12px' }}>CREDITS</h2>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8 }}>
+            {films.map((f) => (
+              <li key={f.token} style={{ borderTop: '1px solid var(--border)', padding: '10px 0' }}>
+                <Link href={`/shared/${f.token}`} style={{ color: 'inherit', textDecoration: 'none', display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'baseline' }}>
+                  <span style={{ fontFamily: 'var(--display)', fontSize: '1.1rem' }}>{f.title}</span>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)' }}>
+                    {[f.labels.join(', '), f.type, f.year].filter(Boolean).join(' · ')}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </main>
   );
 }
