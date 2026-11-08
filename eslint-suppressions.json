@@ -618,7 +618,7 @@
   },
   "components/shell/GlobalAudioWidget.tsx": {
     "no-restricted-syntax": {
-      "count": 6
+      "count": 1
     }
   },
   "components/shell/Navigation.tsx": {
