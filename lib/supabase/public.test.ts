@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createFakeSupabase } from '@/tests/unit-support/fakeSupabase';
-import { getPortfolioPage, getPortfolioPreview } from './public';
+import { getPortfolioPage, getPortfolioPreview, listPublicPortfolios } from './public';
 
 type Db = Parameters<typeof getPortfolioPreview>[0];
 const dbWith = (data: unknown, error: { message: string } | null = null) => createFakeSupabase({}, { get_shared_portfolio: { data, error } }).client as unknown as Db;
@@ -72,5 +72,26 @@ describe('getPortfolioPage', () => {
     expect((await getPortfolioPage(dbPage({ ...page, credits: null }), 'maya'))?.credits).toEqual([]);
     expect((await getPortfolioPage(dbPage({ ...page, credits: [{ title: 'Pier', share_token: 't' }] }), 'maya'))?.credits).toHaveLength(1);
     expect((await getPortfolioPage(dbPage({ ...page, page: 'unlisted' }), 'maya'))?.page).toBe('unlisted');
+  });
+});
+
+describe('listPublicPortfolios', () => {
+  const dbList = (data: unknown, error: { message: string } | null = null) => createFakeSupabase({}, { list_public_portfolios: { data, error } }).client as unknown as Db;
+  it('is empty without a client, and when the read fails or returns something else', async () => {
+    expect(await listPublicPortfolios(null, { limit: 5, offset: 0 })).toEqual([]);
+    expect(await listPublicPortfolios(dbList([{ username: 'a' }], { message: 'x' }), { limit: 5, offset: 0 })).toEqual([]);
+    expect(await listPublicPortfolios(dbList(null), { limit: 5, offset: 0 })).toEqual([]);
+  });
+  it('asks the directory function (never the profiles table), with the search, limit and offset', async () => {
+    const f = createFakeSupabase({}, { list_public_portfolios: { data: [{ username: 'maya', pieces: 2 }] } });
+    const rows = await listPublicPortfolios(f.client as unknown as Db, { q: 'gaffer', limit: 25, offset: 24 });
+    expect(rows).toEqual([{ username: 'maya', pieces: 2 }]);
+    expect(f.argsOf('rpc:list_public_portfolios', 'rpc')).toEqual([[{ p_query: 'gaffer', p_limit: 25, p_offset: 24 }]]);
+    expect(f.calls.filter((c) => c.table === 'profiles')).toEqual([]);
+  });
+  it('sends no search text (so the database default applies) when there is none', async () => {
+    const f = createFakeSupabase({}, { list_public_portfolios: { data: [] } });
+    await listPublicPortfolios(f.client as unknown as Db, { q: '', limit: 25, offset: 0 });
+    expect(f.argsOf('rpc:list_public_portfolios', 'rpc')).toEqual([[{ p_limit: 25, p_offset: 0 }]]);
   });
 });

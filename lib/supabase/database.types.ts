@@ -5199,6 +5199,19 @@ export type Database = {
           isSetofReturn: false;
         };
       };
+      list_public_portfolios: {
+        Args: { p_limit?: number; p_offset?: number; p_query?: string };
+        Returns: {
+          avatar_url: string;
+          bio: string;
+          cover_url: string;
+          location: string;
+          pieces: number;
+          role: string;
+          status: string;
+          username: string;
+        }[];
+      };
       log_password_breach: {
         Args: { p_breach_count: number; p_context: string; p_email: string };
         Returns: undefined;

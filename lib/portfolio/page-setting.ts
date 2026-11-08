@@ -8,8 +8,8 @@ export const PAGE_LABEL: Record<PagePublish, string> = { off: 'Off', unlisted: '
 
 export const PAGE_NOTE: Record<PagePublish, string> = {
   off: 'You have no page. Nobody can open your name as a link.',
-  unlisted: 'Anyone with your page’s link can open it. It is not listed and search engines are told to skip it.',
-  public: 'Your page is open to everyone and findable. It shows your public pieces only.',
+  unlisted: 'Anyone with your page’s link can open it. It is not in the portfolio directory and search engines are told to skip it.',
+  public: 'Your page is open to everyone, listed in the portfolio directory and findable. It shows your public pieces and credits only.',
 };
 
 export const isPageSetting = (v: unknown): v is PagePublish => v === 'off' || v === 'unlisted' || v === 'public';

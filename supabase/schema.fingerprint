@@ -1573,6 +1573,7 @@ function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
 function public.hub_case_study_project(p_post uuid) body=fec46019f2d6f2c42655f9f6736a8b28
 function public.issue_call_sheet(p_sheet uuid, p_note text) body=f35f1a842b33c28ca4bacd847b17916d
+function public.list_public_portfolios(p_query text, p_limit integer, p_offset integer) body=ffd399bcd01451c58f1f1b42bd5686b4
 function public.log_password_breach(p_breach_count integer, p_context text, p_email text) body=0a18cd7dd10da49d159bdaa9f158e0ea
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
@@ -1719,6 +1720,7 @@ grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.hub_case_study_project(p_post uuid) authenticated,postgres,service_role
 grant function public.issue_call_sheet(p_sheet uuid, p_note text) authenticated,postgres,service_role
+grant function public.list_public_portfolios(p_query text, p_limit integer, p_offset integer) anon,authenticated,postgres,service_role
 grant function public.log_password_breach(p_breach_count integer, p_context text, p_email text) PUBLIC,anon,authenticated,postgres,service_role
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.lounge_unread() authenticated,postgres,service_role
