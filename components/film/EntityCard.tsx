@@ -22,7 +22,7 @@ const KIND_NAME: Record<EntityKind, string> = {
 const OPENS = new Set<EntityKind>(['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media']);
 
 export function EntityCardHost() {
-  const { project, scenes, castOf, cardId, closeCard } = useStudio();
+  const { project, scenes, castOf, cardId, closeCard, recordsByScene } = useStudio();
   const open = cardId !== null;
   const scope = open ? project.id : null;
   const entities = useEntities(scope);
@@ -61,8 +61,9 @@ export function EntityCardHost() {
       days: days.rows,
       castOf: (s) => { const row = scenes.rows.find((r) => r.id === s.id); return row ? castOf(row) : []; },
       sceneCharacters: sceneCharacters.rows,
+      recordsByScene,
     });
-  }, [current, entities.rows, links.rows, scenes.rows, characters.rows, places.rows, days.rows, castOf, sceneCharacters.rows]);
+  }, [current, entities.rows, links.rows, scenes.rows, characters.rows, places.rows, days.rows, castOf, sceneCharacters.rows, recordsByScene]);
 
   const candidates = useMemo(
     () => (current && picking ? attachCandidates(current, entities.rows, links.rows, query) : []),
