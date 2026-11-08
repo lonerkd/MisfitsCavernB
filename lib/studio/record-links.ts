@@ -29,3 +29,62 @@ export function characterName(record: { character_id?: string | null; character?
   const linked = record.character_id ? characters.get(record.character_id)?.name : undefined;
   return linked ?? (record.character ?? '').trim();
 }
+
+/** What the role tools that link scenes are called where their records are counted. */
+export const RECORD_KIND_LABEL: Record<string, string> = {
+  cameraReports: 'Camera reports', soundReports: 'Sound reports', scriptNotes: 'Script notes', directorNotes: 'Director notes',
+  vfxShots: 'VFX shots', costumes: 'Costumes', makeup: 'Makeup', rehearsals: 'Rehearsals',
+};
+
+export interface RecordLink { kind: string; scene_ids: string[] }
+export interface KindCount { kind: string; label: string; count: number }
+
+/** For each scene, how many records of each tool are linked to it (a scene with none is absent), tools in a fixed order. */
+export function recordsByScene(links: ReadonlyArray<RecordLink>): Map<string, KindCount[]> {
+  const counts = new Map<string, Map<string, number>>();
+  for (const l of links) {
+    for (const id of l.scene_ids) {
+      const per = counts.get(id) ?? new Map<string, number>();
+      per.set(l.kind, (per.get(l.kind) ?? 0) + 1);
+      counts.set(id, per);
+    }
+  }
+  const order = Object.keys(RECORD_KIND_LABEL);
+  const out = new Map<string, KindCount[]>();
+  for (const [id, per] of counts) {
+    out.set(id, [...per.entries()]
+      .sort((a, b) => (order.indexOf(a[0]) + 1 || 99) - (order.indexOf(b[0]) + 1 || 99))
+      .map(([kind, count]) => ({ kind, label: RECORD_KIND_LABEL[kind] ?? kind, count })));
+  }
+  return out;
+}
+
+/** The total across tools, for a chip. */
+export function recordTotal(counts: ReadonlyArray<KindCount> | undefined): number {
+  return (counts ?? []).reduce((n, c) => n + c.count, 0);
+}
+
+/**
+ * The scenes (numbers) a record is for that its character is NOT in. A report, never a change: a look planned for a scene the
+ * character does not appear in is worth a second look. Only linked scenes and a known character are judged; a scene that
+ * names no cast at all is not judged either (nothing says who is in it yet).
+ */
+export function scenesWithoutCharacter(
+  record: { scene_ids?: string[]; character_id?: string | null; character?: string },
+  scenes: ReadonlyMap<string, LinkableScene>,
+  characters: ReadonlyMap<string, { name: string }>,
+  castOf: (sceneId: string) => string[],
+): number[] {
+  const name = record.character_id ? characters.get(record.character_id)?.name : undefined;
+  if (!name) return [];
+  const key = name.trim().toUpperCase();
+  const out: number[] = [];
+  for (const id of record.scene_ids ?? []) {
+    const scene = scenes.get(id);
+    if (!scene) continue;
+    const cast = castOf(id);
+    if (cast.length === 0) continue;
+    if (!cast.includes(key)) out.push(scene.scene_number);
+  }
+  return out;
+}

@@ -25,7 +25,7 @@ vi.mock('@/lib/studio', () => ({
   useProjectScenes: () => ({ rows: SCENES }),
   useCharacters: () => ({ rows: CHARS }),
 }));
-import { CharacterLinkField, SceneLinkField } from './RecordLinks';
+import { CharacterLinkField, NotInSceneNote, SceneLinkField } from './RecordLinks';
 import { CostumeView } from './CostumeView';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -89,5 +89,21 @@ describe('a view saves its links', () => {
     fireEvent.click(screen.getByRole('button', { name: /add/i }));
     await waitFor(() => expect(upsert).toHaveBeenCalledTimes(1));
     expect(upsert.mock.calls[0][2]).toEqual([expect.objectContaining({ character: 'MAYA', character_id: 'c1', scene: '12', scene_ids: ['s12'] })]);
+  });
+});
+
+describe('NotInSceneNote', () => {
+  const cast: Record<string, string[]> = { s12: ['MAYA'], s14: ['ELI'] };
+  const t = { sceneById, characterById: new Map(CHARS.map((c) => [c.id, c])), castFor: (id: string) => cast[id] ?? [] } as unknown as Parameters<typeof NotInSceneNote>[0]['t'];
+
+  it('says so when a look is for a scene its character is not in', () => {
+    render(<NotInSceneNote record={{ scene_ids: ['s12', 's14'], character_id: 'c1' }} t={t} />);
+    expect(screen.getByRole('note').textContent).toMatch(/MAYA is not in scene 14/);
+  });
+
+  it('says nothing when the character is in every linked scene, or nothing is linked', () => {
+    render(<NotInSceneNote record={{ scene_ids: ['s12'], character_id: 'c1' }} t={t} />);
+    render(<NotInSceneNote record={{ character: 'Lead actress' }} t={t} />);
+    expect(screen.queryByRole('note')).toBeNull();
   });
 });

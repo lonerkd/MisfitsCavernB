@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
-import { CharacterLinkField, SceneLinkField, useRecordTargets } from './RecordLinks';
+import { CharacterLinkField, NotInSceneNote, SceneLinkField, useRecordTargets } from './RecordLinks';
 import { characterName, sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
@@ -74,6 +74,7 @@ export function MakeupView() {
                 <Trash2 size={12} />
               </button>
             </div>
+            <NotInSceneNote record={m} t={t} />
             {m.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{m.notes}</p>}
             {m.photo && (m.photo.startsWith('http://') || m.photo.startsWith('https://')) && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={m.photo} target="_blank" rel="noreferrer">{m.photo}</a></p>}
           </li>
