@@ -452,6 +452,7 @@ column post_notes.project_id uuid not null
 column post_notes.resolved_at timestamp with time zone
 column post_notes.resolved_by uuid
 column post_notes.scene_id uuid
+column production_records.character_id uuid
 column production_records.created_at timestamp with time zone default now() not null
 column production_records.created_by uuid default auth.uid()
 column production_records.data jsonb default '{}'::jsonb not null
@@ -459,6 +460,7 @@ column production_records.id uuid default gen_random_uuid() not null
 column production_records.item_id text not null
 column production_records.kind text not null
 column production_records.project_id uuid not null
+column production_records.scene_ids uuid[] default '{}'::uuid[] not null
 column production_records.updated_at timestamp with time zone default now() not null
 column profiles.avatar_url text
 column profiles.bio text
@@ -1182,12 +1184,14 @@ constraint post_notes.post_notes_pkey PRIMARY KEY (id)
 constraint post_notes.post_notes_resolved_by_fkey FOREIGN KEY (resolved_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint post_notes.post_notes_resolved_check CHECK (((resolved_at IS NULL) = (resolved_by IS NULL)))
 constraint post_notes.post_notes_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE SET NULL (scene_id)
+constraint production_records.production_records_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE SET NULL (character_id)
 constraint production_records.production_records_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint production_records.production_records_data_check CHECK (((jsonb_typeof(data) = 'object'::text) AND (pg_column_size(data) <= 20000)))
 constraint production_records.production_records_item_check CHECK (((char_length(item_id) >= 1) AND (char_length(item_id) <= 80)))
 constraint production_records.production_records_kind_check CHECK ((kind = ANY (ARRAY['safety'::text, 'comms'::text, 'gear'::text, 'wraps'::text, 'rehearsals'::text, 'scouts'::text, 'directorNotes'::text, 'risks'::text, 'cameraReports'::text, 'soundReports'::text, 'vfxShots'::text, 'costumes'::text, 'permits'::text, 'scriptNotes'::text, 'purchaseOrders'::text, 'mediaOffloads'::text, 'makeup'::text])))
 constraint production_records.production_records_pkey PRIMARY KEY (id)
 constraint production_records.production_records_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint production_records.production_records_scene_ids_check CHECK ((cardinality(scene_ids) <= 50))
 constraint production_records.production_records_unique UNIQUE (project_id, kind, item_id)
 constraint profiles.profiles_daily_word_goal_check CHECK (((daily_word_goal >= 50) AND (daily_word_goal <= 20000)))
 constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
@@ -1503,6 +1507,8 @@ function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a0578
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
 function internal.post_notes_guard() body=b1e66dd8d22ccaed960bda9b54dc1dfb
 function internal.production_records_guard() body=9400f898c173a52968123c0fb5bb741c
+function internal.production_records_links_guard() body=1e5a6ac38b8ea9d29952704cfa3cf8d3
+function internal.production_records_unlink_scene() body=266ac80dd59d6dd7555b8d770f832771
 function internal.profiles_guard() body=4b3758794d3032ab108799c4e15f8c2e
 function internal.project_brief_guard() body=446c06f877347d3cb988f20f008791d8
 function internal.project_documents_sync_permit() body=ae611c574302739b9cffdb17726137b5
@@ -1645,6 +1651,8 @@ grant function internal.path_project_id(object_name text) anon,authenticated,pos
 grant function internal.phase_rank(p_status text) postgres
 grant function internal.post_notes_guard() postgres,service_role
 grant function internal.production_records_guard() postgres
+grant function internal.production_records_links_guard() postgres
+grant function internal.production_records_unlink_scene() postgres
 grant function internal.profiles_guard() postgres,service_role
 grant function internal.project_brief_guard() postgres
 grant function internal.project_documents_sync_permit() postgres
@@ -1877,8 +1885,10 @@ index CREATE INDEX post_notes_cut_idx ON public.post_notes USING btree (cut_id, 
 index CREATE INDEX post_notes_project_idx ON public.post_notes USING btree (project_id)
 index CREATE INDEX post_notes_resolved_by_idx ON public.post_notes USING btree (resolved_by)
 index CREATE INDEX post_notes_scene_fkey_idx ON public.post_notes USING btree (scene_id, project_id)
+index CREATE INDEX production_records_character_idx ON public.production_records USING btree (character_id, project_id)
 index CREATE INDEX production_records_created_by_idx ON public.production_records USING btree (created_by)
 index CREATE INDEX production_records_project_idx ON public.production_records USING btree (project_id, kind)
+index CREATE INDEX production_records_scene_ids_idx ON public.production_records USING gin (scene_ids)
 index CREATE INDEX profiles_role_idx ON public.profiles USING btree (role)
 index CREATE INDEX profiles_sample_idx ON public.profiles USING btree (id) WHERE is_sample
 index CREATE INDEX project_audio_references_added_by_fkey_idx ON public.project_audio_references USING btree (added_by)
@@ -2556,6 +2566,8 @@ trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH 
 trigger CREATE TRIGGER post_items_updated_at BEFORE UPDATE ON public.post_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER post_notes_guard BEFORE UPDATE ON public.post_notes FOR EACH ROW EXECUTE FUNCTION internal.post_notes_guard()
 trigger CREATE TRIGGER production_records_guard BEFORE UPDATE ON public.production_records FOR EACH ROW EXECUTE FUNCTION internal.production_records_guard()
+trigger CREATE TRIGGER production_records_links_guard BEFORE INSERT OR UPDATE OF scene_ids, project_id ON public.production_records FOR EACH ROW EXECUTE FUNCTION internal.production_records_links_guard()
+trigger CREATE TRIGGER production_records_unlink_scene AFTER DELETE ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.production_records_unlink_scene()
 trigger CREATE TRIGGER profiles_guard BEFORE INSERT OR UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.profiles_guard()
 trigger CREATE TRIGGER profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER project_brief_guard BEFORE INSERT OR UPDATE ON public.project_brief FOR EACH ROW EXECUTE FUNCTION internal.project_brief_guard()

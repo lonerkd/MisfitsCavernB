@@ -3,12 +3,15 @@
 import React, { useState } from 'react';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
-type RehearsalEntry = { id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string };
+type RehearsalEntry = { id: string; scene_ids?: string[]; character_id?: string | null; date: string; time: string; location: string; participants: string; scenes: string; notes: string };
 
 export function RehearsalView() {
   const { items, save, remove } = useSettingsList('rehearsals');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<RehearsalEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     time: '10:00',
@@ -53,10 +56,7 @@ export function RehearsalView() {
             <span className={s.label}>Participants</span>
             <input className={s.input} value={draft.participants} onChange={(e) => setDraft({ ...draft, participants: e.target.value })} placeholder="Cast names" />
           </label>
-          <label className={s.field} style={{ flex: '1 1 120px' }}>
-            <span className={s.label}>Scenes</span>
-            <input className={s.input} value={draft.scenes} onChange={(e) => setDraft({ ...draft, scenes: e.target.value })} placeholder="1, 4, 7" />
-          </label>
+          <SceneLinkField label="Scenes" scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scenes} onChange={(n) => setDraft({ ...draft, scenes: n.text, scene_ids: n.ids })} placeholder="1, 4, 7" />
           <button className={s.btnPrimary} onClick={add}>
             <Plus size={12} /> Schedule
           </button>
@@ -79,7 +79,7 @@ export function RehearsalView() {
               </button>
             </div>
             {r.participants && <p className={s.hint} style={{ marginTop: 4 }}><b>Cast:</b> {r.participants}</p>}
-            {r.scenes && <p className={s.hint} style={{ marginTop: 2 }}><b>Scenes:</b> {r.scenes}</p>}
+            {sceneChip(r, t.sceneById) && <p className={s.hint} style={{ marginTop: 2 }}><b>Scenes:</b> {sceneChip(r, t.sceneById)}</p>}
             {r.notes && <p className={s.hint} style={{ marginTop: 2, whiteSpace: 'pre-wrap' }}>{r.notes}</p>}
           </li>
         ))}

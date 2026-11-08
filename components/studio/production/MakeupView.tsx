@@ -3,12 +3,15 @@
 import React, { useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { CharacterLinkField, SceneLinkField, useRecordTargets } from './RecordLinks';
+import { characterName, sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
-type MakeupEntry = { id: string; character: string; scene: string; look: string; artist: string; notes: string; photo: string };
+type MakeupEntry = { id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; look: string; artist: string; notes: string; photo: string };
 
 export function MakeupView() {
   const { items, save, remove } = useSettingsList('makeup');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<MakeupEntry, 'id'>>({
     character: '',
     scene: '',
@@ -35,14 +38,8 @@ export function MakeupView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '1 1 160px' }}>
-            <span className={s.label}>Character</span>
-            <input className={s.input} value={draft.character} onChange={(e) => setDraft({ ...draft, character: e.target.value })} placeholder="Lead actress" />
-          </label>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <CharacterLinkField characters={t.characters} id={draft.character_id} text={draft.character} onChange={(n) => setDraft({ ...draft, character: n.text, character_id: n.id })} />
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>Look</span>
             <input className={s.input} value={draft.look} onChange={(e) => setDraft({ ...draft, look: e.target.value })} placeholder="Natural, no lipstick" />
@@ -69,8 +66,8 @@ export function MakeupView() {
         {items.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{m.character}</span>
-              {m.scene && <span className={s.chip}>Sc {m.scene}</span>}
+              <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{characterName(m, t.characterById)}</span>
+              {sceneChip(m, t.sceneById) && <span className={s.chip}>Sc {sceneChip(m, t.sceneById)}</span>}
               {m.look && <span className={s.hint}>{m.look}</span>}
               {m.artist && <span className={s.hint}>{m.artist}</span>}
               <button className={s.btn} onClick={() => remove(m.id)} title="Delete">

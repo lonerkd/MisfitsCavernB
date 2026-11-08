@@ -3,14 +3,17 @@
 import React, { useMemo, useState } from 'react';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
-type VfxEntry = { id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
+type VfxEntry = { id: string; scene_ids?: string[]; character_id?: string | null; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
 
 const STATUSES: VfxEntry['status'][] = ['identified', 'shot', 'delivered', 'approved'];
 
 export function VfxView() {
   const { items, save, remove } = useSettingsList('vfxShots');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<VfxEntry, 'id'>>({
     shot: '',
     scene: '',
@@ -54,10 +57,7 @@ export function VfxView() {
             <span className={s.label}>Shot</span>
             <input className={s.input} value={draft.shot} onChange={(e) => setDraft({ ...draft, shot: e.target.value })} placeholder="VFX-001" />
           </label>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>Vendor</span>
             <input className={s.input} value={draft.vendor} onChange={(e) => setDraft({ ...draft, vendor: e.target.value })} placeholder="Vendor name" />
@@ -77,7 +77,7 @@ export function VfxView() {
           <li key={v.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontWeight: 600 }}>{v.shot}</span>
-              {v.scene && <span className={s.chip}>Sc {v.scene}</span>}
+              {sceneChip(v, t.sceneById) && <span className={s.chip}>Sc {sceneChip(v, t.sceneById)}</span>}
               {v.vendor && <span className={s.hint}>{v.vendor}</span>}
               {v.plateReq && <span className={s.hint} style={{ fontSize: 11 }}>{v.plateReq}</span>}
               <select

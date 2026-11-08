@@ -3,14 +3,17 @@
 import React, { useMemo, useState } from 'react';
 import { Shirt, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { CharacterLinkField, SceneLinkField, useRecordTargets } from './RecordLinks';
+import { characterName, sceneChip } from '@/lib/studio/record-links';
 import s from '../studio.module.css';
 
-type CostumeEntry = { id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' };
+type CostumeEntry = { id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' };
 
 const STATUSES: CostumeEntry['status'][] = ['fitting', 'ready', 'on-set', 'cleaning', 'returned'];
 
 export function CostumeView() {
   const { items, save, remove } = useSettingsList('costumes');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CostumeEntry, 'id'>>({
     character: '',
     scene: '',
@@ -49,14 +52,8 @@ export function CostumeView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '1 1 160px' }}>
-            <span className={s.label}>Character</span>
-            <input className={s.input} value={draft.character} onChange={(e) => setDraft({ ...draft, character: e.target.value })} placeholder="Lead actress" />
-          </label>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <CharacterLinkField characters={t.characters} id={draft.character_id} text={draft.character} onChange={(n) => setDraft({ ...draft, character: n.text, character_id: n.id })} />
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '1 1 200px' }}>
             <span className={s.label}>Costume change</span>
             <input className={s.input} value={draft.change} onChange={(e) => setDraft({ ...draft, change: e.target.value })} placeholder="Blue dress, boots" />
@@ -71,8 +68,8 @@ export function CostumeView() {
         {filtered.map((c) => (
           <li key={c.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{c.character}</span>
-              {c.scene && <span className={s.chip}>Sc {c.scene}</span>}
+              <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{characterName(c, t.characterById)}</span>
+              {sceneChip(c, t.sceneById) && <span className={s.chip}>Sc {sceneChip(c, t.sceneById)}</span>}
               {c.change && <span className={s.hint}>{c.change}</span>}
               <select
                 className={s.input}
