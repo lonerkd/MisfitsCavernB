@@ -1,12 +1,13 @@
 'use client';
 
-// One place for the production views that keep a list in the project's settings (Camera reports, Costumes, Permits, ...).
-// It reads the list by a typed key, saves through the atomic owner-only `patch_project_settings`, TELLS the person when a
-// save fails (a crew member's save is refused by design: only the owner writes settings) and asks before deleting.
-import { useCallback, useRef, useState } from 'react';
+// One place for the production views that keep a list of records (Camera reports, Costumes, Permits, ...). Each record is its
+// own database row (`production_records`), so any crew member can save in their tool and two people never overwrite each other's
+// list; the list refreshes when anyone changes it. A failed save TELLS the person; deleting asks first. Views keep their
+// shape: `save(nextList)` writes only what changed.
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { deleteRecords, listRecords, subscribeToRecords, upsertRecords, type RecordItem } from '@/lib/supabase/productionRecords';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { useStudio } from '../StudioContext';
 
@@ -18,8 +19,6 @@ export type SettingsListKey =
 
 export type SettingsListItem<K extends SettingsListKey> = NonNullable<ProjectSettings[K]> extends Array<infer T> ? T : never;
 
-const EMPTY: never[] = [];
-
 export function useSettingsList<K extends SettingsListKey>(key: K) {
   type Item = SettingsListItem<K> & { id: string };
   const { project } = useStudio();
@@ -27,30 +26,44 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
   const confirm = useConfirm();
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
-  // What we just saved, until the project's own settings catch up with it (they arrive on the Realtime echo). Without this a
-  // second Add before the echo would be built from the OLD list and overwrite the first.
-  const [saved, setSaved] = useState<{ base: unknown; list: Item[] } | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [tick, setTick] = useState(0);
+  const reload = useCallback(() => setTick((n) => n + 1), []);
 
-  const fromProject = ((project.settings as ProjectSettings | null)?.[key] as Item[] | undefined) ?? EMPTY;
-  const items: Item[] = saved && saved.base === project.settings ? saved.list : fromProject;
+  useEffect(() => {
+    let live = true;
+    listRecords(project.id, key).then(
+      (rows) => { if (live) setItems(rows as Item[]); },
+      (e) => { if (live) toast(e instanceof Error && e.message ? e.message : 'Could not load this list.', 'error'); },
+    );
+    return () => { live = false; };
+  }, [project.id, key, tick, toast]);
 
-  /** Saves the whole list. True when it was saved; false (with a message to the person) when it was not. */
+  useEffect(() => subscribeToRecords(project.id, key, () => { if (!busy.current) reload(); }), [project.id, key, reload]);
+
+  /** Saves the list: new and changed records are written, records missing from it are removed. True when saved. */
   const save = useCallback(async (next: Item[]): Promise<boolean> => {
     if (busy.current) { toast('Still saving the last change. Try again in a moment.', 'info'); return false; }
     busy.current = true;
     setSaving(true);
     try {
-      await patchProjectSettings(project.id, { [key]: next } as Partial<ProjectSettings>);
-      setSaved({ base: project.settings, list: next });
+      const before = new Map(items.map((i) => [i.id, JSON.stringify(i)]));
+      const changed = next.filter((i) => before.get(i.id) !== JSON.stringify(i)) as unknown as RecordItem[];
+      const nextIds = new Set(next.map((i) => i.id));
+      const gone = items.filter((i) => !nextIds.has(i.id)).map((i) => i.id);
+      await upsertRecords(project.id, key, changed);
+      await deleteRecords(project.id, key, gone);
+      setItems(next);
       return true;
     } catch (e) {
       toast(e instanceof Error && e.message ? e.message : 'Could not save. Check your connection and try again.', 'error');
+      reload();
       return false;
     } finally {
       busy.current = false;
       setSaving(false);
     }
-  }, [project.id, project.settings, key, toast]);
+  }, [project.id, key, items, toast, reload]);
 
   /** Asks first (this cannot be undone), then removes the record. */
   const remove = useCallback(async (id: string, what = 'this entry'): Promise<boolean> => {
