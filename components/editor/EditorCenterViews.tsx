@@ -81,9 +81,9 @@ function SceneBoardCard({
   count: number;
   onSetNote: (note: string) => void;
   onDragStart: (e: any) => void;
-  onDragOver: (e: any) => void;
-  onDragEnd: () => void;
-  onDrop: (e: any) => void;
+    onDragOver: (e: any) => void;
+    onDragEnd: () => void;
+    onDrop: (e: any) => void;
 }) {
   const estMins = Math.max(1, Math.round(wordCount / 185 * 0.8));
   const startIdx = lines.findIndex(l => l.id === scene.id);
@@ -185,10 +185,8 @@ export function OutlineView({
   sceneColors, sceneNotes, jumpToScene, tagScene,
   // Left bar functions (combined into outline)
   scripts, setScripts, createNewScript, setCurrentScript, setContent, toast,
-  fileInputRef, handleImportFile, showTitleEditor, setShowTitleEditor, templates,
-  sceneWordCounts, currentSceneIdx, sceneTypeColor, getSceneType, sceneCharMap, actStructure,
-  reorderScenes, dragSceneIdx, setDragSceneIdx, dropSceneIdx, setDropSceneIdx,
-}: {
+    fileInputRef, handleImportFile, showTitleEditor, setShowTitleEditor,
+    }: {
   sceneFilter: 'all' | 'int' | 'ext' | 'day' | 'night';
   setSceneFilter: (f: 'all' | 'int' | 'ext' | 'day' | 'night') => void;
   filteredScenes: ScriptLine[];
@@ -199,29 +197,26 @@ export function OutlineView({
   jumpToScene: (sceneIndex: number) => void;
   tagScene: (sceneIndex: number, color: string) => void;
   // Left bar props (combined)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   scripts?: any[];
-  setScripts?: any;
-  createNewScript?: any;
-  setCurrentScript?: any;
-  setContent?: any;
-  toast?: any;
-  fileInputRef?: any;
-  handleImportFile?: any;
-  showTitleEditor?: boolean;
-  setShowTitleEditor?: any;
-  templates?: Record<string, string>;
-  sceneWordCounts?: number[];
-  currentSceneIdx?: number;
-  sceneTypeColor?: (scene: ScriptLine) => string;
-  getSceneType?: (scene: ScriptLine) => { isInt: boolean; isExt: boolean; isDay: boolean; isNight: boolean };
-  sceneCharMap?: string[][];
-  actStructure?: { act2Start: number; act3Start: number; [k: string]: number };
-  reorderScenes?: (from: number, to: number) => void;
-  dragSceneIdx?: number | null;
-  setDragSceneIdx?: (i: number | null) => void;
-  dropSceneIdx?: number | null;
-  setDropSceneIdx?: (i: number | null) => void;
-}) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setScripts?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    createNewScript?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setCurrentScript?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setContent?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    toast?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fileInputRef?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    handleImportFile?: any;
+    showTitleEditor?: boolean;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setShowTitleEditor?: any;
+    }) {
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
       {/* Script management (moved from left bar) */}
@@ -231,7 +226,7 @@ export function OutlineView({
             const s = await createNewScript('Untitled Script');
             if (s) { setScripts?.([...scripts, s]); setCurrentScript?.(s); setContent?.(''); toast?.('New script created', 'success'); }
             else { toast?.('Could not create script — check your connection', 'error'); }
-          }} style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 'var(--caps-track)' }}>
+          }} style={{ padding: '6px 12px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.08)', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 'var(--caps-track)' }}>
             + New Script
           </button>
           <button onClick={() => fileInputRef?.current?.click()} style={{ padding: '6px 12px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.06)', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)', textTransform: 'uppercase', letterSpacing: 'var(--caps-track)' }}>
@@ -276,7 +271,7 @@ export function OutlineView({
                         key={color}
                         title={active ? 'Remove tag' : 'Tag scene'}
                         onClick={() => tagScene(globalIdx, color)}
-                        style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
+                        style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid var(--fg-strong)' : '1px solid rgba(var(--ink-rgb), 0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
                       />
                     ); })}
                   </div>

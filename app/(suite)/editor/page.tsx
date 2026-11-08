@@ -1045,11 +1045,6 @@ export default function EditorPage() {
               setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
               fileInputRef={fileInputRef} handleImportFile={handleImportFile}
               showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
-              templates={TEMPLATES} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
-              sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
-              actStructure={actStructure} reorderScenes={reorderScenes}
-              dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
-              dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
             />
           )}
 
