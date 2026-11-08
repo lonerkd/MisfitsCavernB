@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { Disc, LogOut, Maximize2, Pause, Play, RefreshCw, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
@@ -47,6 +48,7 @@ export function SoundDeck() {
           </button>
           <button type="button" aria-label="Next track" className={btn} onClick={s.nextTrack}><SkipForward size={18} /></button>
           <button type="button" aria-label="Full screen cavern" title="Full screen" className={btn} onClick={() => setCave(true)}><Maximize2 size={16} /></button>
+          <Link href="/cavern" className="mc-text text-xs underline text-[var(--fg-muted)] min-h-[44px] inline-flex items-center" title="The cavern as its own page, to leave open on a second screen">Cavern page</Link>
         </div>
       </div>
       <div className="mt-3 flex items-center gap-3 mc-text text-xs text-[var(--fg-muted)]">

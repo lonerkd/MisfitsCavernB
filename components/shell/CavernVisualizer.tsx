@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Disc, Minimize2, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import { Disc, Ear, EarOff, Minimize2, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
+import { useToast } from '@/components/ui/Toast';
+import { createBeatTracker, SILENT, smoothLevel, type Levels } from '@/lib/cavern/audio';
+import { captureSupported, startCapture, type Capture, CaptureError } from '@/lib/cavern/capture';
 import { blendCaves, makeCave, seedOf, type Cave } from '@/lib/cavern/cave';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
 import { guideInput, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
@@ -117,7 +120,28 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
   }, []);
   const endGuide = useCallback(() => { world.current.guide = null; }, []);
 
+  // Listening to the computer's sound is opt-in: the browser asks which tab or screen to share, and only then does the cave hear the beat.
+  const { toast } = useToast();
+  const capture = useRef<Capture | null>(null);
+  const [listening, setListening] = useState<'off' | 'starting' | 'on'>('off');
+  const canListen = captureSupported();
+  const stopListening = useCallback(() => { capture.current?.stop(); capture.current = null; setListening('off'); }, []);
+  const startListening = useCallback(async () => {
+    setListening('starting');
+    try {
+      const c = await startCapture();
+      c.onEnded(() => { if (capture.current === c) stopListening(); });
+      capture.current = c;
+      setListening('on');
+    } catch (e) {
+      setListening('off');
+      toast(e instanceof CaptureError ? e.message : 'Could not start listening.', e instanceof CaptureError && e.reason === 'denied' ? 'info' : 'error');
+    }
+  }, [stopListening, toast]);
+  useEffect(() => () => { capture.current?.stop(); capture.current = null; }, []);
+
   const distance = useRef<HTMLSpanElement>(null);
+  const hearing = useRef<HTMLSpanElement>(null);
   const mode = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -132,6 +156,8 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
     let t = 0, last = performance.now(), raf = 0, shown = 0;
     W.runner = newRunner(W.cave, 0);
     let spores: Spore[] = makeSpores(70, W.cave, 0, AHEAD, W.seed);
+    const beat = createBeatTracker();
+    let heard: Levels = SILENT;
     const size = () => {
       w = c.clientWidth; h = c.clientHeight;
       // Spend pixels carefully: a big screen at a high pixel ratio is drawn at fewer pixels rather than at a stutter.
@@ -168,10 +194,16 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
         spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
       }
       const r = W.runner!;
-      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores });
+      // What it hears, if the person has shared audio: smoothed, so the light breathes with the music instead of strobing.
+      const cap = capture.current;
+      const raw = cap ? cap.read() : SILENT;
+      heard = { bass: smoothLevel(heard.bass, raw.bass, dt), mid: smoothLevel(heard.mid, raw.mid, dt), treble: smoothLevel(heard.treble, raw.treble, dt), level: smoothLevel(heard.level, raw.level, dt) };
+      const pulse = cap ? beat.update(raw.bass, dt) : 0;
+      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, level: heard.level, bass: heard.bass, pulse });
       if (now - shown > 500) {
         shown = now;
         if (distance.current) distance.current.textContent = `${Math.round(r.x * 3).toLocaleString()} m in`;
+        if (hearing.current) hearing.current.textContent = !capture.current ? 'Following the player (the beat is not heard)' : capture.current.hearing() ? 'Listening: the light follows the music' : 'Listening, but hearing nothing: share a tab or the screen with audio, and play something';
         if (mode.current) mode.current.textContent = isAuto(r) ? 'Exploring on its own: touch an arrow key to steer' : 'You are steering';
       }
       if (!reduce) raf = requestAnimationFrame(frame);
@@ -186,7 +218,7 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
   return createPortal(
     <div ref={root} role="dialog" aria-modal="true" aria-label="Cavern visualizer" onMouseMove={wake} onTouchStart={wake} onClick={wake} className={`${v.root} ${idle ? v.idle : ''}`}>
       <canvas ref={canvas} aria-hidden className={v.canvas} onPointerDown={(e) => { e.currentTarget.setPointerCapture?.(e.pointerId); guideAt(e); }} onPointerMove={(e) => { if (world.current.guide) guideAt(e); }} onPointerUp={endGuide} onPointerCancel={endGuide} />
-      <div className={`${v.depth} ${fade}`} aria-live="off"><span ref={distance}>0 m in</span><span ref={mode}>Exploring on its own: touch an arrow key to steer</span><span>Following the player (the beat is not heard)</span></div>
+      <div className={`${v.depth} ${fade}`} aria-live="off"><span ref={distance}>0 m in</span><span ref={mode}>Exploring on its own: touch an arrow key to steer</span><span ref={hearing}>Following the player (the beat is not heard)</span>{canListen && <button type="button" className={v.listen} onClick={() => (listening === 'on' ? stopListening() : void startListening())} disabled={listening === 'starting'} aria-pressed={listening === 'on'}>{listening === 'on' ? <EarOff size={14} /> : <Ear size={14} />} {listening === 'on' ? 'Stop listening' : 'Listen to the music'}</button>}</div>
       <button type="button" aria-label="Close the visualizer" onClick={onClose} className={`${v.btn} ${v.close} ${fade}`}><Minimize2 size={20} /></button>
       <div className={`${v.bar} ${fade}`}>
         <div className={v.row}>

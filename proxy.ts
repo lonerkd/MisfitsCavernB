@@ -41,6 +41,7 @@ export async function proxy(request: NextRequest) {
     '/profile',
     '/settings',
     '/soundtrack',
+    '/cavern',
     '/split',
     '/welcome',
     '/today',
