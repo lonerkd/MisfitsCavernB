@@ -24,6 +24,10 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   const playing = useRef(isPlaying);
   useEffect(() => { playing.current = isPlaying; }, [isPlaying]);
+  // The player's callbacks change identity whenever playback does (and the parent passes an inline onClose): the fullscreen and key
+  // handlers read the latest through refs, so re-rendering never re-runs them (re-running exited fullscreen, which closed the cave).
+  const latest = useRef({ onClose, togglePlay });
+  useEffect(() => { latest.current = { onClose, togglePlay }; }, [onClose, togglePlay]);
   const [idle, setIdle] = useState(false);
   const wake = useCallback(() => setIdle(false), []);
 
@@ -35,19 +39,24 @@ export function CavernVisualizer({ onClose }: { onClose: () => void }) {
   }, [idle]);
 
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); else if (e.key === ' ') { e.preventDefault(); togglePlay(); } setIdle(false); };
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') latest.current.onClose();
+      // Space plays or pauses, unless a control has focus: then Space is that control's own key (a second action would also run).
+      else if (e.key === ' ' && !(e.target instanceof HTMLElement && e.target.closest('button, input, select, textarea, a'))) { e.preventDefault(); latest.current.togglePlay(); }
+      setIdle(false);
+    };
     window.addEventListener('keydown', esc);
     const el = root.current;
     // Real fullscreen where the browser has it (iOS Safari does not: the overlay already covers the screen).
     void el?.requestFullscreen?.().catch(() => {});
-    const onFs = () => { if (!document.fullscreenElement && el) onClose(); };
+    const onFs = () => { if (!document.fullscreenElement && el) latest.current.onClose(); };
     document.addEventListener('fullscreenchange', onFs);
     return () => {
       window.removeEventListener('keydown', esc);
       document.removeEventListener('fullscreenchange', onFs);
       if (document.fullscreenElement) void document.exitFullscreen().catch(() => {});
     };
-  }, [onClose, togglePlay]);
+  }, []);
 
   useEffect(() => {
     const c = canvas.current;

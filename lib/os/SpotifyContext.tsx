@@ -161,13 +161,21 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     let alive = true;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let waitUntil = 0;
+    let failures = 0;
+    let hadRemote = false;
     const tick = async () => {
       if (!alive) return;
       if (document.visibilityState === 'visible' && Date.now() >= waitUntil) {
         const r = await fetchPlayback();
         if (!alive) return;
-        if (!r.ok) waitUntil = Date.now() + r.retryAfterMs;
-        else if (r.playback && r.playback.device.id !== deviceId) {
+        if (!r.ok) {
+          // Spotify's own wait when it gave one; otherwise back off (4 s, 8 s … at most a minute) so an expired token or a missing
+          // permission does not hammer the API on every page, every four seconds, for as long as the tab is open.
+          failures += 1;
+          waitUntil = Date.now() + Math.max(r.retryAfterMs, Math.min(60_000, 4000 * 2 ** failures));
+        } else if (r.playback && r.playback.device.id !== deviceId) {
+          failures = 0;
+          hadRemote = true;
           const pb = r.playback;
           setElsewhere(pb.device);
           setCurrentTrack(pb.track as unknown as Spotify.Track);
@@ -175,7 +183,12 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
           setProgressMs(pb.progressMs);
           setDurationMs(pb.durationMs);
           if (pb.device.volumePercent != null) setVolume(pb.device.volumePercent / 100);
-        } else setElsewhere(null);
+        } else {
+          failures = 0;
+          setElsewhere(null);
+          // The music that was shown came from another device and has stopped (or moved here): do not keep showing that song.
+          if (hadRemote) { hadRemote = false; setCurrentTrack(null); setIsPlaying(false); setProgressMs(0); setDurationMs(0); }
+        }
       }
       timer = setTimeout(tick, 4000);
     };

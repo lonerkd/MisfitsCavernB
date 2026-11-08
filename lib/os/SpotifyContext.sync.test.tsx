@@ -99,4 +99,34 @@ describe('SpotifyProvider: music playing elsewhere', () => {
     await flush();
     expect(seen.elsewhere).toBeNull();
   });
+
+  it('when the music on the other device stops, its song is not left on screen', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<SpotifyProvider><Probe /></SpotifyProvider>);
+      await flush();
+      expect(seen.currentTrack?.name).toBe('On The Phone');
+      api.fetchPlayback.mockResolvedValue({ ok: true, playback: null });
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(seen.elsewhere).toBeNull();
+      expect(seen.currentTrack).toBeNull();
+      expect(seen.isPlaying).toBe(false);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('a failing poll backs off instead of asking every four seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      api.fetchPlayback.mockResolvedValue({ ok: false, retryAfterMs: 0 });
+      render(<SpotifyProvider><Probe /></SpotifyProvider>);
+      await flush();
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(1);
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(1); // still waiting: the first failure waits 8 s
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(2);
+      await act(async () => { await vi.advanceTimersByTimeAsync(12_000); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(2); // the second failure waits 16 s
+    } finally { vi.useRealTimers(); }
+  });
 });
