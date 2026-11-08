@@ -14,7 +14,7 @@ vi.mock('@/lib/scriptos/storage', () => ({
   syncPendingScripts: syncNow,
 }));
 
-import { SyncStatusChip, describeSync, formatWait } from './SyncStatusChip';
+import { PhoneSyncLine, SyncStatusChip, describeSync, formatWait } from './SyncStatusChip';
 
 const base: SyncStatus = { pending: 0, deletes: 0, syncing: false, nextRetryAt: null, attempts: 0, online: true };
 const NOW = 1_000_000;
@@ -84,5 +84,26 @@ describe('<SyncStatusChip>', () => {
     });
     expect(screen.getByRole('status').textContent).toContain('Syncing 1 script…');
     expect(screen.queryByRole('button', { name: 'Sync now' })).toBeNull();
+  });
+});
+
+describe('PhoneSyncLine (the queue while the phone keyboard hides the status bar)', () => {
+  it('says nothing, and takes no room, when nothing is waiting', () => {
+    state.current = { ...base };
+    render(<PhoneSyncLine bottom={400} />);
+    expect(screen.queryByTestId('phone-sync-line')).toBeNull();
+  });
+  it('shows a stuck save above the tool strip, with its Sync now button', () => {
+    state.current = { ...base, pending: 1, attempts: 2 };
+    render(<PhoneSyncLine bottom={400} />);
+    const line = screen.getByTestId('phone-sync-line');
+    expect(line.style.bottom).toBe('400px');
+    expect(line.textContent).toContain('Can’t reach the server');
+    expect(screen.getByRole('button', { name: 'Sync now' })).toBeTruthy();
+  });
+  it('shows offline even with nothing queued', () => {
+    state.current = { ...base, online: false };
+    render(<PhoneSyncLine bottom={0} />);
+    expect(screen.getByTestId('phone-sync-line').textContent).toContain('Offline');
   });
 });

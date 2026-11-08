@@ -8,6 +8,8 @@ import { act, cleanup, render } from '@testing-library/react';
 vi.mock('../spotify/auth', () => ({ getValidToken: async () => 'tok', logoutSpotify: () => {} }));
 const api = vi.hoisted(() => ({ fetchPlayback: vi.fn(), controlPlayback: vi.fn() }));
 vi.mock('../spotify/playback', () => api);
+const toasts = vi.hoisted(() => ({ toast: vi.fn() }));
+vi.mock('@/components/ui/Toast', () => ({ useToast: () => toasts }));
 
 type Listener = (arg: unknown) => void;
 let players: FakePlayer[] = [];
@@ -98,5 +100,58 @@ describe('SpotifyProvider: music playing elsewhere', () => {
     act(() => players[0].emit('ready', { device_id: 'browser1' }));
     await flush();
     expect(seen.elsewhere).toBeNull();
+  });
+
+  it('when the music on the other device stops, its song is not left on screen', async () => {
+    vi.useFakeTimers();
+    try {
+      render(<SpotifyProvider><Probe /></SpotifyProvider>);
+      await flush();
+      expect(seen.currentTrack?.name).toBe('On The Phone');
+      api.fetchPlayback.mockResolvedValue({ ok: true, playback: null });
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(seen.elsewhere).toBeNull();
+      expect(seen.currentTrack).toBeNull();
+      expect(seen.isPlaying).toBe(false);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('a failing poll backs off instead of asking every four seconds', async () => {
+    vi.useFakeTimers();
+    try {
+      api.fetchPlayback.mockResolvedValue({ ok: false, retryAfterMs: 0 });
+      render(<SpotifyProvider><Probe /></SpotifyProvider>);
+      await flush();
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(1);
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(1); // still waiting: the first failure waits 8 s
+      await act(async () => { await vi.advanceTimersByTimeAsync(4100); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(2);
+      await act(async () => { await vi.advanceTimersByTimeAsync(12_000); });
+      expect(api.fetchPlayback).toHaveBeenCalledTimes(2); // the second failure waits 16 s
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('a refusal from the other device is said out loud, and the button does not pretend it worked', async () => {
+    render(<SpotifyProvider><Probe /></SpotifyProvider>);
+    await flush();
+    api.controlPlayback.mockResolvedValue(false);
+    await act(async () => { seen.togglePlay(); });
+    await flush();
+    expect(toasts.toast).toHaveBeenCalledWith(expect.stringContaining('Pixel 8'), 'error');
+    expect(seen.isPlaying).toBe(true); // the song is still playing: a refused pause changed nothing
+    toasts.toast.mockClear();
+    await act(async () => { seen.nextTrack(); });
+    await flush();
+    expect(toasts.toast).toHaveBeenCalledOnce();
+  });
+
+  it('a device Spotify gives no id cannot be sent a song: say so, do not start a second player here', async () => {
+    api.fetchPlayback.mockResolvedValue(onPhone({ device: { id: null, name: 'Echo Dot', type: 'Speaker', isActive: true, volumePercent: 30 } }));
+    render(<SpotifyProvider><Probe /></SpotifyProvider>);
+    await flush();
+    await act(async () => { await seen.playUri('spotify:track:new'); });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(toasts.toast).toHaveBeenCalledWith(expect.stringContaining('Echo Dot'), 'error');
   });
 });

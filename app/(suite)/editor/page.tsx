@@ -77,7 +77,7 @@ import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
 import { WriteFooter } from '@/components/editor/WriteFooter';
-import { SyncStatusChip } from '@/components/editor/SyncStatusChip';
+import { PhoneSyncLine, SyncStatusChip } from '@/components/editor/SyncStatusChip';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useCanShareScript } from '@/components/editor/ShareScriptButton';
@@ -1296,6 +1296,7 @@ export default function EditorPage() {
         </div>
       </div>
 
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && <PhoneSyncLine bottom={phone.keyboard + (phone.landscape ? 48 : 60)} />}
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
         <PhoneToolStrip
           bottom={phone.keyboard} compact={phone.landscape}
