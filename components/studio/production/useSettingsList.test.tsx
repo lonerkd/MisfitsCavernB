@@ -18,7 +18,7 @@ vi.mock('@/lib/supabase/productionRecords', () => ({
   deleteRecords: (...a: unknown[]) => del(...a),
   subscribeToRecords: (_p: string, _k: string, cb: () => void) => { onChange = cb; return () => {}; },
 }));
-import { useSettingsList } from './useSettingsList';
+import { saveFailureMessage, useSettingsList } from './useSettingsList';
 
 const permit = (id: string) => ({ id, location: `L${id}`, permitType: 'film', issuedBy: 'city', expiry: '', status: 'pending' as const });
 const load = async () => {
@@ -59,7 +59,13 @@ describe('useSettingsList', () => {
     let ok = true;
     await act(async () => { ok = await result.current.save([permit('z')]); });
     expect(ok).toBe(false);
-    expect(toast).toHaveBeenCalledWith('new row violates row-level security policy', 'error');
+    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/only the owner and crew/), 'error');
+  });
+
+  it('a permission refusal from the database says who may save, not "check your connection"', () => {
+    expect(saveFailureMessage({ code: '42501', message: 'new row violates row-level security policy for table "production_records"' })).toMatch(/only the owner and crew/);
+    expect(saveFailureMessage(new Error('Network down'))).toBe('Network down');
+    expect(saveFailureMessage('boom')).toMatch(/could not save/i);
   });
 
   it('a failure with no message still says something', async () => {

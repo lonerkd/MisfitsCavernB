@@ -79,7 +79,7 @@ describe('adding a record', () => {
     const field = screen.getByLabelText('Location') as HTMLInputElement;
     fireEvent.change(field, { target: { value: 'Pier 9' } });
     fireEvent.click(screen.getByRole('button', { name: /add/i }));
-    await waitFor(() => expect(toast).toHaveBeenCalledWith('new row violates row-level security policy', 'error'));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(expect.stringMatching(/only the owner and crew/), 'error'));
     expect(field.value).toBe('Pier 9');
   });
 
