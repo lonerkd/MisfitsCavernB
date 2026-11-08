@@ -8,6 +8,7 @@ import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
 import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { SoundDeck } from '@/components/audio/SoundDeck';
+import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject } from '@/lib/os';
 import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
@@ -206,6 +207,7 @@ export default function SoundtrackPage() {
       </header>
 
       <SoundDeck />
+      <ListenWithoutPremium />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
         {(['search', 'moods', 'sfx', 'project'] as const).map(tab => (

@@ -6,14 +6,16 @@ const spotify = {
   currentTrack: { name: 'Night Drive', artists: [{ name: 'Kavinsky' }], album: { images: [] } } as unknown,
   isPlaying: true, progressMs: 61_000, durationMs: 180_000, volume: 0.5,
   elsewhere: null as null | { id: string | null; name: string },
+  isPremium: true, useIframeFallback: false, setUseIframeFallback: vi.fn(), logout: vi.fn(),
   togglePlay: vi.fn(), nextTrack: vi.fn(), prevTrack: vi.fn(), seek: vi.fn(), setVolumeLevel: vi.fn(), playHere: vi.fn(async () => true),
 };
 vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
 vi.mock('@/components/shell/CavernVisualizer', () => ({ CavernVisualizer: ({ onClose }: { onClose: () => void }) => <button onClick={onClose}>cave is open</button> }));
+vi.mock('./ListenWithoutPremium', () => ({ ListenWithoutPremium: () => <div>embedded players here</div> }));
 import { SoundDeck } from './SoundDeck';
 
-afterEach(() => { cleanup(); vi.clearAllMocks(); spotify.elsewhere = null; spotify.currentTrack = { name: 'Night Drive', artists: [{ name: 'Kavinsky' }], album: { images: [] } }; });
+afterEach(() => { cleanup(); vi.clearAllMocks(); spotify.useIframeFallback = false; spotify.elsewhere = null; spotify.currentTrack = { name: 'Night Drive', artists: [{ name: 'Kavinsky' }], album: { images: [] } }; });
 
 describe('SoundDeck', () => {
   it('shows the song and drives the player', () => {
@@ -49,5 +51,17 @@ describe('SoundDeck', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Full screen cavern' }));
     fireEvent.click(screen.getByText('cave is open'));
     expect(screen.queryByText('cave is open')).toBeNull();
+  });
+  it('switches to listening without Premium (the embedded players show) and disconnects', () => {
+    const { rerender } = render(<SoundDeck />);
+    expect(screen.queryByText('embedded players here')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Switch to free mode/ }));
+    expect(spotify.setUseIframeFallback).toHaveBeenCalledWith(true);
+    spotify.useIframeFallback = true;
+    rerender(<SoundDeck />);
+    expect(screen.getByText('embedded players here')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /Switch to the in-app player/ })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: /Disconnect Spotify/ }));
+    expect(spotify.logout).toHaveBeenCalledOnce();
   });
 });
