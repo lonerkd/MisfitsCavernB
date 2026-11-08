@@ -55,7 +55,7 @@ Full scope for each in `BACKLOG.md`. The whole suite, top to bottom:
    phases 7–8 (`restructure-proposal.md`: thin pages, optional Studio
    routes); admin catalogues + moderation (3.14); email (3.15);
    activity feed (3.5, product call); dev-toolchain advisories
-   (3.1, watch upstream). **Owner decision open:** let crew write the role tools (needs per-record tables with RLS, BACKLOG 3.38). **Found, not fixed:** the editor's "Force type" does not change the line it is set on (BACKLOG 3.38 (5)).
+   (3.1, watch upstream). **Owner decision open:** let crew write the role tools (needs per-record tables with RLS, BACKLOG 3.38).
 4. **Verify** `e2e/onset-offline.spec.ts` on Windows with the older local
    Chromium.
 5. **Wishlist** (owner, 2026-10-07): ranked and scoped in
