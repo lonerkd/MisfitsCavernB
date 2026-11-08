@@ -2576,6 +2576,7 @@ export type Database = {
       };
       production_records: {
         Row: {
+          character_id: string | null;
           created_at: string;
           created_by: string | null;
           data: NonNullable<Json>;
@@ -2583,10 +2584,12 @@ export type Database = {
           item_id: string;
           kind: string;
           project_id: string;
+          scene_ids: string[];
           updated_at: string;
         };
         ComputedFields: never;
         Insert: {
+          character_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           data?: NonNullable<Json>;
@@ -2594,9 +2597,11 @@ export type Database = {
           item_id: string;
           kind: string;
           project_id: string;
+          scene_ids?: string[];
           updated_at?: string;
         };
         Update: {
+          character_id?: string | null;
           created_at?: string;
           created_by?: string | null;
           data?: NonNullable<Json>;
@@ -2604,9 +2609,17 @@ export type Database = {
           item_id?: string;
           kind?: string;
           project_id?: string;
+          scene_ids?: string[];
           updated_at?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "production_records_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "production_records_project_id_fkey";
             columns: ["project_id"];

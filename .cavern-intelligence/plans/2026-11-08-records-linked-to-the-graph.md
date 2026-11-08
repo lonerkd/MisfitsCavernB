@@ -35,3 +35,7 @@ The film graph (`scenes`, `characters`, `scene_characters`, locations, shoot day
 
 1. **Several scenes per record or one?** Rehearsals needs several; Camera and Sound reports are one scene each. Recommendation: the array for all (one picker that allows one or more), so a continuous take across scenes is expressible.
 2. **A scene that is not written yet:** allow a label-only record (recommended: shoot notes often precede the script), or require a real scene? Requiring one is cleaner data but blocks a note on something the script does not have yet.
+
+## Built (2026-11-08)
+
+Owner: "all up 2 u", so the recommendations stood: **several scenes per record, and a scene not written yet may be a label with no link.** Steps 1, 2 and 4 are built (migration, pickers in eight views, browser spec). **Step 3 is left:** the scene and entity cards listing a scene's records, and the Costumes / Makeup "not in this scene" report.

@@ -7,19 +7,23 @@ export type RecordKind =
   | 'cameraReports' | 'soundReports' | 'vfxShots' | 'costumes' | 'permits' | 'scriptNotes' | 'purchaseOrders'
   | 'mediaOffloads' | 'makeup';
 
-export type RecordItem = { id: string } & Record<string, unknown>;
+/** A record as a view sees it: its own fields, plus the links to the film graph that live in real columns. */
+export type RecordItem = { id: string; scene_ids?: string[]; character_id?: string | null } & Record<string, unknown>;
 
 export async function listRecords(projectId: string, kind: RecordKind): Promise<RecordItem[]> {
-  const { data, error } = await supabase.from('production_records').select('item_id, data, created_at')
+  const { data, error } = await supabase.from('production_records').select('item_id, data, scene_ids, character_id, created_at')
     .eq('project_id', projectId).eq('kind', kind).order('created_at', { ascending: true });
   if (error) throw error;
-  return (data ?? []).map((r) => ({ ...(r.data as Record<string, unknown>), id: r.item_id }));
+  return (data ?? []).map((r) => ({ ...(r.data as Record<string, unknown>), id: r.item_id, scene_ids: r.scene_ids ?? [], character_id: r.character_id }));
 }
 
 /** Adds or changes these records (matched by their id). */
 export async function upsertRecords(projectId: string, kind: RecordKind, items: RecordItem[]): Promise<void> {
   if (!items.length) return;
-  const rows = items.map(({ id, ...data }) => ({ project_id: projectId, kind, item_id: id, data: data as never }));
+  // The links are real columns (so the database can check them); everything else is the record's own data.
+  const rows = items.map(({ id, scene_ids, character_id, ...data }) => ({
+    project_id: projectId, kind, item_id: id, data: data as never, scene_ids: scene_ids ?? [], character_id: character_id ?? null,
+  }));
   const { error } = await supabase.from('production_records').upsert(rows, { onConflict: 'project_id,kind,item_id', ignoreDuplicates: false });
   if (error) throw error;
 }

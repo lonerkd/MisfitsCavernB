@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { createCrewedProject, createScript } from './support/project';
 
 // The role tools' records: Sam owns the project, Jordan is crew who shapes it, Riley is an outsider; a viewer reads only.
 let cast: Cast;
@@ -65,5 +65,64 @@ describe('production records', () => {
     await Promise.all([add('sam', 'c-1', 'gear'), add('jordan', 'c-2', 'gear')]);
     const r = await rows('sam');
     expect(r.data?.map((x) => x.item_id)).toEqual(expect.arrayContaining(['c-1', 'c-2']));
+  });
+
+  // ── Links to the film graph (migration 20261108040000) ──────────────────────────────────────────────────────────────
+  describe('links to scenes and characters', () => {
+    let sceneId: string;
+    let otherSceneId: string;
+    let characterId: string;
+    let otherProjectId: string;
+
+    beforeAll(async () => {
+      const other = await createCrewedProject(cast, 'Elsewhere');
+      otherProjectId = other.projectId;
+      const script = await createScript(cast, projectId, 'INT. KITCHEN - DAY\n');
+      const otherScript = await createScript(cast, other.projectId, 'INT. GARDEN - DAY\n');
+      const a = await cast.sam.client.from('scenes').insert({ project_id: projectId, script_id: script, scene_number: 1, title: 'KITCHEN' }).select('id').single();
+      const b = await cast.sam.client.from('scenes').insert({ project_id: other.projectId, script_id: otherScript, scene_number: 1, title: 'GARDEN' }).select('id').single();
+      const c = await cast.sam.client.from('characters').insert({ project_id: projectId, name: 'MAYA' }).select('id').single();
+      if (a.error || b.error || c.error) throw a.error ?? b.error ?? c.error;
+      sceneId = a.data.id; otherSceneId = b.data.id; characterId = c.data.id;
+    });
+
+    const link = (who: Who, item_id: string, extra: Record<string, unknown>) =>
+      cast[who].client.from('production_records').insert({ project_id: projectId, kind: 'costumes', item_id, data: { character: 'Maya' }, ...extra } as never).select('id, scene_ids, character_id');
+
+    it('crew link a record to scenes and a character of this project', async () => {
+      const r = await link('jordan', 'l-1', { scene_ids: [sceneId], character_id: characterId });
+      expect(r.error).toBeNull();
+      expect(r.data?.[0].scene_ids).toEqual([sceneId]);
+      expect(r.data?.[0].character_id).toBe(characterId);
+    });
+
+    it('a record cannot link to a scene of another project, nor to the same scene twice', async () => {
+      expect((await link('sam', 'l-2', { scene_ids: [otherSceneId] })).error?.code).toBe('23514');
+      expect((await link('sam', 'l-3', { scene_ids: [sceneId, sceneId] })).error?.code).toBe('23514');
+    });
+
+    it('a character of another project cannot be linked either (a real foreign key)', async () => {
+      const foreign = await cast.sam.client.from('characters').insert({ project_id: otherProjectId, name: 'ELI' }).select('id').single();
+      expect((await link('sam', 'l-4', { character_id: foreign.data!.id })).error?.code).toBe('23503');
+    });
+
+    it('an outsider cannot read the links', async () => {
+      expect((await cast.riley.client.from('production_records').select('scene_ids').eq('item_id', 'l-1')).data).toEqual([]);
+    });
+
+    it('deleting the character clears the link and keeps the record and its label', async () => {
+      await cast.sam.client.from('characters').delete().eq('id', characterId);
+      const r = await cast.sam.client.from('production_records').select('character_id, project_id, data').eq('item_id', 'l-1').single();
+      expect(r.data?.character_id).toBeNull();
+      expect(r.data?.project_id).toBe(projectId);
+      expect(r.data?.data).toEqual({ character: 'Maya' });
+    });
+
+    it('deleting a scene leaves the record’s links and keeps its label', async () => {
+      await cast.sam.client.from('scenes').delete().eq('id', sceneId);
+      const r = await cast.sam.client.from('production_records').select('scene_ids, data').eq('item_id', 'l-1').single();
+      expect(r.data?.scene_ids).toEqual([]);
+      expect(r.data?.data).toEqual({ character: 'Maya' });
+    });
   });
 });

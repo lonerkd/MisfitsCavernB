@@ -140,6 +140,15 @@ export function useTimesheets(projectId: string | null) {
   });
 }
 
+/** Every active scene of the project, across its scripts (the role tools link to these). */
+export function useProjectScenes(projectId: string | null) {
+  return useLiveRows<SceneRow>({
+    scope: projectId, table: 'scenes', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listProjectScenes(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => a.scene_number - b.scene_number,
+  });
+}
+
 export function useCharacters(projectId: string | null) {
   return useLiveRows<StoryCharacter>({
     scope: projectId, table: 'characters', filter: `project_id=eq.${projectId}`,
