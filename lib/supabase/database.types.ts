@@ -2306,6 +2306,8 @@ export type Database = {
           created_at: string | null;
           description: string | null;
           id: string;
+          pinned: boolean;
+          position: number | null;
           role: string | null;
           share_token: string | null;
           source_project_id: string | null;
@@ -2323,6 +2325,8 @@ export type Database = {
           created_at?: string | null;
           description?: string | null;
           id?: string;
+          pinned?: boolean;
+          position?: number | null;
           role?: string | null;
           share_token?: string | null;
           source_project_id?: string | null;
@@ -2339,6 +2343,8 @@ export type Database = {
           created_at?: string | null;
           description?: string | null;
           id?: string;
+          pinned?: boolean;
+          position?: number | null;
           role?: string | null;
           share_token?: string | null;
           source_project_id?: string | null;

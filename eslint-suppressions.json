@@ -190,7 +190,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 4
+      "count": 3
     }
   },
   "app/(suite)/portfolio/page.tsx": {

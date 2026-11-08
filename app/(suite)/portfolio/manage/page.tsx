@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-react';
+import { Plus, Trash2, Link as LinkIcon, Copy, Film, Pin, ArrowUp, ArrowDown } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia, setPortfolioCover, setPortfolioVisibility } from '@/lib/supabase/portfolio';
+import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia, setPortfolioCover, setPortfolioVisibility, savePortfolioOrder } from '@/lib/supabase/portfolio';
+import { arrange, move, placements, togglePin, MAX_PINNED } from '@/lib/portfolio/curation';
 import { hasLiveLink, VISIBILITIES, VISIBILITY_LABEL, VISIBILITY_NOTE, visibilityOf, type PortfolioVisibility } from '@/lib/portfolio/visibility';
 import { isCoverUrl } from '@/lib/portfolio/header';
 import { PagePublishSetting } from '@/components/portfolio/PagePublishSetting';
@@ -28,6 +29,9 @@ interface PortfolioProject {
   role?: string;
   cover_url?: string | null;
   visibility?: string;
+  pinned?: boolean;
+  position?: number | null;
+  created_at?: string;
   share_token: string;
   portfolio_media: MediaItem[];
 }
@@ -95,6 +99,15 @@ export default function ManagePortfolioPage() {
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Could not save the cover', 'error');
     }
+  };
+
+  // Arranging: the screen shows the new order at once and saves it; if the save fails it goes back and says so.
+  const rearrange = async (next: PortfolioProject[] | null) => {
+    if (!next) { toast(`You can pin up to ${MAX_PINNED} pieces. Unpin one first.`, 'info'); return; }
+    const before = projects;
+    setProjects(next);
+    try { await savePortfolioOrder(placements(next)); }
+    catch (err) { setProjects(before); toast(err instanceof Error ? err.message : 'Could not save the order', 'error'); }
   };
 
   const changeVisibility = async (id: string, visibility: PortfolioVisibility) => {
@@ -215,7 +228,7 @@ export default function ManagePortfolioPage() {
             action={<button type="button" onClick={() => setShowNew(true)} style={{ padding: '8px 18px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer', fontWeight: 600 }}>Add your first piece</button>} />
         ) : (
         <div style={{ display: 'grid', gap: 20 }}>
-          {projects.map(project => {
+          {arrange(projects).map((project, index, shownList) => {
             const form = mediaForm[project.id] || { title: '', url: '', media_type: 'youtube' };
             return (
               <div key={project.id} style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', transition: 'border-color 0.2s, box-shadow 0.2s' }}
@@ -229,8 +242,20 @@ export default function ManagePortfolioPage() {
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => void rearrange(togglePin(projects, project.id))} aria-pressed={!!project.pinned} aria-label={project.pinned ? `Unpin ${project.title}` : `Pin ${project.title} to the top`} title={project.pinned ? 'Unpin' : 'Pin to the top'}
+                      style={{ background: project.pinned ? 'var(--accent)' : 'var(--panel-2)', border: '1px solid var(--border)', color: project.pinned ? 'var(--on-accent)' : 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
+                      <Pin size={12} />
+                    </button>
+                    <button onClick={() => void rearrange(move(projects, project.id, -1))} disabled={index === 0 || !!shownList[index - 1].pinned !== !!project.pinned} aria-label={`Move ${project.title} up`} title="Move up"
+                      style={{ background: 'var(--panel-2)', border: '1px solid var(--border)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
+                      <ArrowUp size={12} />
+                    </button>
+                    <button onClick={() => void rearrange(move(projects, project.id, 1))} disabled={index === shownList.length - 1 || !!shownList[index + 1].pinned !== !!project.pinned} aria-label={`Move ${project.title} down`} title="Move down"
+                      style={{ background: 'var(--panel-2)', border: '1px solid var(--border)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
+                      <ArrowDown size={12} />
+                    </button>
                     <button onClick={() => copyShareLink(project.share_token)} disabled={!hasLiveLink(visibilityOf(project.visibility))} title={hasLiveLink(visibilityOf(project.visibility)) ? 'Copy share link' : 'Private: make it link only or public to get a link'} aria-label="Copy share link"
-                      style={{ background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
+                      style={{ background: 'var(--panel-2)', border: '1px solid var(--border)', color: 'var(--fg)', cursor: 'pointer', padding: 6, display: 'flex' }}>
                       <Copy size={12} />
                     </button>
                     <button onClick={() => removeProject(project.id)} aria-label={`Delete ${project.title}`} title="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg)', cursor: 'pointer', opacity: 0.4, padding: 6 }}>
