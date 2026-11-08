@@ -2,15 +2,21 @@
 // a screenshot and reports: anything wider than the screen, controls under a fixed bar, text too small to read, controls smaller
 // than a thumb, and — with the keyboard up (a shortened screen) — whether the focused field and its action stay reachable.
 // Chromium only imitates an iPhone: real Safari (the toolbar, safe areas, the keyboard) still needs a real device.
+// `--check` fails (exit 1) when any route is worse than scripts/mobile-audit-baseline.json (the CI job); `--update` rewrites the baseline from this run.
+// The baseline only shrinks: fix something, run --update, commit the smaller numbers.
 //   MC_LOCAL_CHROMIUM=/opt/pw-browsers/chromium PLAYWRIGHT_BASE_URL=http://localhost:3000 node scripts/mobile-audit.mjs [outDir]
 import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
 import { createClient } from '@supabase/supabase-js';
+import { compareToBaseline, metrics, normRoute } from './mobile-audit-ratchet.mjs';
 
 const BASE = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
-const OUT = process.argv[2] || 'mobile-audit';
+const ARGS = process.argv.slice(2);
+const CHECK = ARGS.includes('--check'), UPDATE = ARGS.includes('--update');
+const OUT = ARGS.find((a) => !a.startsWith('--')) || 'mobile-audit';
+const BASELINE = new URL('./mobile-audit-baseline.json', import.meta.url);
 mkdirSync(OUT, { recursive: true });
 const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
 const admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
@@ -82,7 +88,10 @@ for (const mode of MODES) {
   await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30000 }).catch(() => {});
   for (const route of ROUTES) {
     const slug = `${mode.name}-${route.replace(/[^a-z0-9]+/gi, '_').slice(0, 60)}`;
-    const entry = { mode: mode.name, route };
+    let entry = { mode: mode.name, route };
+    // A route that fails to load once (a slow build on a loaded runner) is tried a second time before it counts as an error.
+    for (let attempt = 0; attempt < 2; attempt++) {
+    entry = { mode: mode.name, route };
     try {
       await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(2500);
@@ -108,6 +117,8 @@ for (const mode of MODES) {
         await page.evaluate(() => window.__setKb(0));
       }
     } catch (e) { entry.error = String(e).slice(0, 200); }
+    if (!entry.error) break;
+    }
     report.push(entry);
   }
   await ctx.close();
@@ -120,4 +131,16 @@ writeFileSync(`${OUT}/report.json`, JSON.stringify(report, null, 1));
 for (const r of report) {
   const c = r.counts || {};
   console.log(`${r.mode.padEnd(9)} ${r.route.slice(0, 52).padEnd(52)} ${r.error ? 'ERROR ' + r.error : `wide ${c.wide} small ${c.small} tiny ${c.tiny} underBar ${c.hiddenUnderBar}${r.scrollsSideways ? ' SIDEWAYS' : ''}${r.keyboard && r.keyboard.focused && !r.keyboard.inView ? ' KEYBOARD-HIDES-FIELD' : ''}${r.keyboard && r.keyboard.actionInView === false ? ` KEYBOARD-HIDES-ACTION(${r.keyboard.action})` : ''}`}`);
+}
+
+// ── The ratchet (the comparison lives in mobile-audit-ratchet.mjs so a test can prove it fails when something gets worse) ──
+const current = {};
+for (const r of report) current[`${r.mode} ${normRoute(r.route)}`] = metrics(r);
+if (UPDATE) {
+  writeFileSync(BASELINE, JSON.stringify(current, null, 1) + '\n');
+  console.log(`\nBaseline written: ${Object.keys(current).length} route views.`);
+} else if (CHECK) {
+  const { worse, better } = compareToBaseline(current, existsSync(BASELINE) ? JSON.parse(readFileSync(BASELINE, 'utf8')) : {});
+  if (worse.length) { console.error(`\nThe phone audit got worse:\n  ${worse.join('\n  ')}\nFix it, or (if it is deliberate) say why and run: node scripts/mobile-audit.mjs --update`); process.exit(1); }
+  console.log(`\nThe phone audit holds against the baseline${better ? ` (${better} view(s) are better: run --update to lock that in)` : ''}.`);
 }

@@ -1,0 +1,362 @@
+{
+ "portrait /community": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /projects": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /projects/<id>": {
+  "wide": 0,
+  "small": 1,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 1,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>&tab=scenes": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 7,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>&tab=production": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 3,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>&tab=library": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 1,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>&tab=post": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /studio?project=<id>&tab=share": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 1,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /editor?script=<id>": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /lounge": {
+  "wide": 0,
+  "small": 1,
+  "tiny": 1,
+  "underBar": 1,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /crew": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /jobs": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 1,
+  "error": 0
+ },
+ "portrait /profile": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /settings": {
+  "wide": 0,
+  "small": 1,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /soundtrack": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /portfolio": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "portrait /welcome": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /community": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /projects": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /projects/<id>": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>&tab=scenes": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>&tab=production": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>&tab=library": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>&tab=post": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /studio?project=<id>&tab=share": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /editor?script=<id>": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /lounge": {
+  "wide": 0,
+  "small": 1,
+  "tiny": 1,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /crew": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /jobs": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 1,
+  "error": 0
+ },
+ "landscape /profile": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /settings": {
+  "wide": 0,
+  "small": 1,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /soundtrack": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /portfolio": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ },
+ "landscape /welcome": {
+  "wide": 0,
+  "small": 0,
+  "tiny": 0,
+  "underBar": 0,
+  "sideways": 0,
+  "keyboardHidesField": 0,
+  "keyboardHidesAction": 0,
+  "error": 0
+ }
+}
