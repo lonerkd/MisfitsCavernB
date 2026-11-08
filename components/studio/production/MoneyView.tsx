@@ -14,6 +14,8 @@ import {
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { budgetDoc } from '@/lib/studio/budget-print';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -51,7 +53,13 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
       {canShape && (
         <>
           <section aria-labelledby="money-summary" className={s.stack} style={{ gap: 12 }}>
-            <h3 id="money-summary" className={s.panelTitle} style={{ marginBottom: 0 }}><DollarSign size={14} /> Budget vs spend</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <h3 id="money-summary" className={s.panelTitle} style={{ marginBottom: 0 }}><DollarSign size={14} /> Budget vs spend</h3>
+              <PrintButton label="the budget" build={() => budgetDoc({
+                project: project.title, accent: project.accent_color, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
+                generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+              })} />
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
               {([
                 ['Planned', summary.totals.planned, undefined],
