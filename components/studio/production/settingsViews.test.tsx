@@ -38,6 +38,8 @@ import { RiskRegisterView } from './RiskRegisterView';
 import { ScoutView } from './ScoutView';
 import { ScriptSupView } from './ScriptSupView';
 import { SoundReportView } from './SoundReportView';
+import { EditorialView } from './EditorialView';
+import { ClaimsView } from './ClaimsView';
 import { ExtrasView } from './ExtrasView';
 import { StillsView } from './StillsView';
 import { VfxView } from './VfxView';
@@ -48,7 +50,7 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const VIEWS: Array<[string, React.ComponentType]> = [
   ['Camera reports', CameraReportView], ['Comms', CommsView], ['Costumes', CostumeView], ["Director's notebook", DirectorNotebookView],
-  ['Gear', GearView], ['Makeup', MakeupView], ['Media offload', MediaOffloadView], ['Stills log', StillsView], ['Extras', ExtrasView], ['Permits', PermitView], ['Purchase orders', PoView],
+  ['Gear', GearView], ['Makeup', MakeupView], ['Media offload', MediaOffloadView], ['Stills log', StillsView], ['Extras', ExtrasView], ['Editorial handoff', EditorialView], ['Insurance claims', ClaimsView], ['Permits', PermitView], ['Purchase orders', PoView],
   ['Rehearsals', RehearsalView], ['Risk register', RiskRegisterView], ['Scouting', ScoutView], ['Script supervisor', ScriptSupView],
   ['Sound reports', SoundReportView], ['VFX', VfxView], ['Wrap', WrapView],
 ];
