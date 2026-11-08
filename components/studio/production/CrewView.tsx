@@ -11,6 +11,8 @@ import { CrewMemberCard, RecruitModal } from '../CrewBoards';
 import { CastingBoard } from '../CastingBoard';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { crewDoc } from '@/lib/studio/crew-print';
 import s from '../studio.module.css';
 
 export type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; status?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
@@ -34,7 +36,14 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
         <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['roles', 'casting', 'night']} style={{ marginBottom: 16 }} />
         <div className={s.toolbar}>
           <div className={s.panelTitle} style={{ marginBottom: 0 }}><Users size={14} /> Cast & crew · {crew.length}</div>
-          {isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            {crew.length > 0 && <PrintButton label="the cast and crew list" build={() => crewDoc({
+              project: project.title, accent: project.accent_color,
+              crew: crew.map((m) => ({ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status ?? null, away: canShape ? awayText(m.user_id) : null })),
+              generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+            })} />}
+            {isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}
+          </div>
         </div>
         {crew.length ? (
           <div className={s.stack} style={{ gap: 10 }}>
