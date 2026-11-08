@@ -305,6 +305,7 @@ export class ScriptParser {
 
     const titleLines = this.titlePageLines();
     const decoded = this.useDecoder && this.usesScreenplayGrammar() ? this.decode(titleLines) : null;
+    const forcedAt = new Map((this.lineOverrides ?? []).map((o) => [o.line_index, o.forced_type]));
 
     for (let i = 0; i < this.rawLines.length; i++) {
       const raw = this.rawLines[i];
@@ -362,6 +363,19 @@ export class ScriptParser {
           : this.analyzeNonScreenplayLine(trim, context);
         const decided = decoded?.states[i];
         if (decided) this.applyDecision(analysis, decided, decoded!.confidence[i], trim, decoded!.alternatives[i]);
+      }
+
+      // "Force type": the person's word is the line's type. The decoder already let it steer the lines around it; this is
+      // what makes it true on the line itself (the speaker state below then follows the forced type, not the guess).
+      const forcedType = forcedAt.get(i);
+      if (forcedType !== undefined && forcedType !== analysis.type) {
+        const was = analysis.type;
+        analysis.type = forcedType as LineType;
+        analysis.confidence = 100;
+        analysis.reasoning = [...analysis.reasoning, `Forced to ${forcedType} by the writer (was ${was})`];
+        analysis.meta = { ...analysis.meta, characterName: forcedType === 'character' ? (analysis.meta?.characterName || this.clean(trim)) : undefined };
+      } else if (forcedType !== undefined) {
+        analysis.confidence = 100;
       }
 
       if (analysis.type === 'slug') {
