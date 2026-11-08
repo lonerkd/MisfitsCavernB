@@ -98,6 +98,10 @@ export default async function PersonPortfolioPage({ params }: Params) {
           </ul>
         </section>
       )}
+
+      <p style={{ maxWidth: 960, margin: '56px auto 0', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)' }}>
+        <Link href="/portfolios" style={{ color: 'var(--accent)' }}>More portfolios →</Link>
+      </p>
     </main>
   );
 }

@@ -214,3 +214,10 @@ export async function setMyPortfolioPage(userId: string, value: PagePublish): Pr
   const { error } = await supabase.from('profiles').update({ portfolio_page: value }).eq('id', userId);
   if (error) throw new Error(error.message || 'Could not change your page');
 }
+
+/** Whether this person has a published page (link only or public): the page function answers for anyone, and nothing when it is off. */
+export async function hasPortfolioPage(handle: string): Promise<boolean> {
+  if (!handle.trim()) return false;
+  const { data, error } = await supabase.rpc('get_portfolio_page', { p_handle: handle });
+  return !error && !!data;
+}

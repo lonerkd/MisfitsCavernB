@@ -4,7 +4,7 @@ import { useFake } from '@/tests/unit-support/fakeSupabase';
 vi.mock('./client', async () => ({ supabase: (await import('@/tests/unit-support/fakeSupabase')).supabaseProxy }));
 
 import {
-  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioOwner, getPortfolioProjects, getPublicPortfolio, reorderPortfolioBlocks, setPortfolioCover, setPortfolioVisibility,
+  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioOwner, getPortfolioProjects, getPublicPortfolio, hasPortfolioPage, getMyPortfolioPage, setMyPortfolioPage, reorderPortfolioBlocks, setPortfolioCover, setPortfolioVisibility,
 } from './portfolio';
 
 const boom = { message: 'nope' };
@@ -178,5 +178,36 @@ describe('who may see a piece', () => {
     expect(await getPublicPortfolio('nope')).toBeNull();
     useFake({}, { get_shared_portfolio: { error: boom } });
     await expect(getPublicPortfolio('tok')).rejects.toBe(boom);
+  });
+});
+
+describe('a person’s page setting and whether someone has one', () => {
+  it('hasPortfolioPage asks the page function by handle, never the profiles table, and is false for nothing, an error or a blank handle', async () => {
+    const f = useFake({}, { get_portfolio_page: { data: { page: 'public' } } });
+    expect(await hasPortfolioPage('maya')).toBe(true);
+    expect(f.argsOf('rpc:get_portfolio_page', 'rpc')).toEqual([[{ p_handle: 'maya' }]]);
+    expect(f.calls.filter((c) => c.table === 'profiles')).toEqual([]);
+    useFake({}, { get_portfolio_page: { data: null } });
+    expect(await hasPortfolioPage('maya')).toBe(false);
+    useFake({}, { get_portfolio_page: { data: { page: 'public' }, error: boom } });
+    expect(await hasPortfolioPage('maya')).toBe(false);
+    expect(await hasPortfolioPage('   ')).toBe(false);
+  });
+
+  it('getMyPortfolioPage reads the setting through its function, and anything unknown is off', async () => {
+    useFake({}, { get_my_portfolio_page: { data: 'unlisted' } });
+    expect(await getMyPortfolioPage()).toBe('unlisted');
+    useFake({}, { get_my_portfolio_page: { data: 'everyone' } });
+    expect(await getMyPortfolioPage()).toBe('off');
+    useFake({}, { get_my_portfolio_page: { data: null } });
+    expect(await getMyPortfolioPage()).toBe('off');
+  });
+
+  it('setMyPortfolioPage updates the person’s own profile and says so when the database refuses', async () => {
+    const f = useFake({ profiles: { data: null } });
+    await setMyPortfolioPage('u1', 'public');
+    expect(f.argsOf('profiles', 'update')).toEqual([[{ portfolio_page: 'public' }]]);
+    useFake({ profiles: { data: null, error: boom } });
+    await expect(setMyPortfolioPage('u1', 'public')).rejects.toThrow('nope');
   });
 });
