@@ -137,3 +137,38 @@ export async function listProjectSfx(projectId: string): Promise<SfxAsset[]> {
   if (error) throw error;
   return data ?? [];
 }
+
+/** A project's scripts, most recently edited first, for the timeline's script picker. */
+export async function listProjectScripts(projectId: string): Promise<{ id: string; title: string | null; updated_at: string | null }[]> {
+  const { data, error } = await supabase.from('scripts').select('id, title, updated_at').eq('project_id', projectId)
+    .order('updated_at', { ascending: false }).limit(50);
+  if (error) throw error;
+  return data ?? [];
+}
+
+/** One script's scenes (the rows the timeline lays out) and its text (to read each scene's mood and length). */
+export async function loadScriptForTimeline(scriptId: string): Promise<{
+  content: string | null;
+  scenes: { id: string; scene_number: number; heading: string | null; time_of_day: string | null; est_duration: string | null; read_seconds: number | null }[];
+}> {
+  const [script, scenes] = await Promise.all([
+    supabase.from('scripts').select('content').eq('id', scriptId).maybeSingle(),
+    supabase.from('scenes').select('id, scene_number, heading, time_of_day, est_duration, read_seconds').eq('script_id', scriptId)
+      .is('removed_at', null).order('scene_number', { ascending: true }).limit(1000),
+  ]);
+  if (script.error) throw script.error;
+  if (scenes.error) throw scenes.error;
+  return { content: script.data?.content ?? null, scenes: scenes.data ?? [] };
+}
+
+/**
+ * Moves a saved track to another scene (or off any scene) only if it is still where the person saw it: one conditional write, so
+ * a drag never overwrites a newer tag and its undo never undoes someone else's change. Returns false when it was not applied.
+ */
+export async function moveAudioRefScene(id: string, from: string | null, to: string | null): Promise<boolean> {
+  let q = supabase.from('project_audio_references').update({ for_scene: to }).eq('id', id);
+  q = from ? q.eq('for_scene', from) : q.is('for_scene', null);
+  const { data, error } = await q.select('id');
+  if (error) throw error;
+  return !!data?.length;
+}
