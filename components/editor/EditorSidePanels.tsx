@@ -219,7 +219,7 @@ export function EditorRightPanels({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                           <span>Typewriter Mode</span>
-                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                         </label>
                       </div>
                     </div>
@@ -304,11 +304,11 @@ export function EditorRightPanels({
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 4px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                               <span>Scene Numbers</span>
-                              <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                              <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                               <span>DRAFT Watermark</span>
-                              <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                              <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                             </label>
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
@@ -428,7 +428,7 @@ export function EditorRightPanels({
                                           setContent(val.substring(0, start) + item.text + val.substring(end));
                                           toast('Inserted from stash', 'success');
                                         }
-                                      }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
+                                      }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0 }}>Insert</button>
                                       <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}>Delete</button>
                                     </div>
                                   </div>
