@@ -122,3 +122,18 @@ export async function listSpotifyRefs(projectId: string, limit = 20): Promise<{ 
   if (error) throw error;
   return data ?? [];
 }
+
+/** A project's scenes in script order, labelled for a picker ("3 · INT. KITCHEN - DAY"). */
+export async function listSceneChoices(projectId: string): Promise<{ id: string; label: string }[]> {
+  const { data, error } = await supabase.from('scenes').select('id, scene_number, heading, title').eq('project_id', projectId)
+    .order('scene_number', { ascending: true }).limit(500);
+  if (error) throw error;
+  return (data ?? []).map((sc) => ({ id: sc.id, label: `${sc.scene_number ?? '·'} · ${sc.heading || sc.title || 'Untitled scene'}` }));
+}
+
+/** A project's own sound-effect uploads, newest first. */
+export async function listProjectSfx(projectId: string): Promise<SfxAsset[]> {
+  const { data, error } = await supabase.from('sfx_assets').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}

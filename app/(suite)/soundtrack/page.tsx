@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Disc, Search, Music, Folder, Link2, ShieldAlert, UploadCloud, Play, Plus, Trash, Wand2 } from 'lucide-react';
+import { Disc, Search, Music, ShieldAlert, Play, Plus, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
@@ -10,28 +10,33 @@ import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { SoundDeck } from '@/components/audio/SoundDeck';
 import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
-import { useProject } from '@/lib/os';
-import { addAudioRef, audioRefUrl, deleteAudioRef, getLatestScript, listAudioRefs, listSfx, uploadSfx } from '@/lib/supabase/audio';
+import { useProject, useOSGate } from '@/lib/os';
+import { useCanShape } from '@/lib/brief';
+import dynamic from 'next/dynamic';
+import { addAudioRef, getLatestScript } from '@/lib/supabase/audio';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { awaitOSUser } from '@/lib/os';
 
+// The Library is its own tab: loaded when it is opened, so the page's first load stays light.
+const SoundLibrary = dynamic(() => import('@/components/audio/SoundLibrary').then((m) => m.SoundLibrary), {
+  loading: () => <div className="animate-pulse h-16 w-full rounded-xl bg-[var(--sunken)]" />,
+});
+
 export default function SoundtrackPage() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
+  const { user } = useOSGate();
+  const canTag = useCanShape(activeProject?.id, !!user?.id && activeProject?.creator_id === user.id);
   const reportError = useEffectEvent((message: string) => toast(message, 'error'));
 
-  const [activeTab, setActiveTab] = useState<'search'|'moods'|'sfx'|'project'>('search');
+  const [activeTab, setActiveTab] = useState<'search'|'moods'|'library'>('search');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  const [sfxAssets, setSfxAssets] = useState<any[]>([]);
-  const [uploadingSfx, setUploadingSfx] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Moods come from the project's script (lib/spotify/moods), scene by scene.
   const [moodsFor, setMoods] = useState<{ projectId: string; title: string | null; groups: MoodGroup[] } | null>(null);
@@ -52,29 +57,6 @@ export default function SoundtrackPage() {
     );
     return () => { on = false; };
   }, [activeTab, activeProject?.id]);
-
-  const [projectRefs, setProjectRefs] = useState<any[]>([]);
-  const [refsFor, setRefsFor] = useState<string | null>(null);
-
-  const fetchSfxAssets = useCallback(() => listSfx().then(
-    (rows) => setSfxAssets(rows),
-    () => toast('Could not load the sound effects.', 'error'),
-  ), [toast]);
-
-  const refsProjectId = activeProject?.id;
-  const loadingRefs = !!refsProjectId && refsFor !== refsProjectId;
-  const fetchProjectRefs = useCallback(() => {
-    if (!refsProjectId) return Promise.resolve();
-    return listAudioRefs(refsProjectId).then(
-      (rows) => setProjectRefs(rows),
-      () => toast('Could not load the project’s audio references.', 'error'),
-    ).finally(() => setRefsFor(refsProjectId));
-  }, [refsProjectId, toast]);
-
-  useEffect(() => {
-    if (activeTab === 'sfx') fetchSfxAssets();
-    if (activeTab === 'project' && activeProject?.id) fetchProjectRefs();
-  }, [activeTab, activeProject?.id, fetchSfxAssets, fetchProjectRefs]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -127,32 +109,7 @@ export default function SoundtrackPage() {
     void fillFromScript(activeProject.id, true);
   }, [activeTab, isAuthenticated, activeProject?.id, filledFor, fillFromScript]);
 
-  const handleSfxUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingSfx(true);
-    try {
-      const userData = { user: await awaitOSUser() };
-      if (!userData.user) throw new Error('Not authenticated');
-      if (!activeProject?.id) throw new Error('Select an active project first');
-
-      if (!file.type.startsWith('audio/')) throw new Error('SFX must be an audio file');
-      if (file.size > 20 * 1024 * 1024) throw new Error('SFX files are limited to 20 MB');
-      // Uploads go in the uploader's own folder (storage policy).
-      await uploadSfx(file, userData.user.id, activeProject.id);
-
-      toast('SFX Uploaded successfully', 'success');
-      fetchSfxAssets();
-    } catch (err: any) {
-      toast('Upload failed: ' + err.message, 'error');
-    } finally {
-      setUploadingSfx(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
-  const saveToProject = async (item: any, type: 'spotify' | 'custom_upload') => {
+  const saveToProject = async (item: any) => {
     if (!activeProject?.id) {
       toast('No active project selected', 'error');
       return;
@@ -162,26 +119,15 @@ export default function SoundtrackPage() {
       await addAudioRef({
         projectId: activeProject.id,
         userId: userData.user?.id ?? null,
-        type,
-        uri: type === 'spotify' ? item.uri : item.audio_url,
-        title: type === 'spotify' ? item.name : item.title,
-        description: type === 'spotify' ? (item.artists?.[0]?.name || (item.type === 'playlist' ? 'Spotify playlist' : 'Spotify')) : (item.tags?.[0] || 'Custom SFX'),
+        type: 'spotify',
+        uri: item.uri,
+        title: item.name,
+        description: item.artists?.[0]?.name || (item.type === 'playlist' ? 'Spotify playlist' : 'Spotify'),
       });
-      toast('Saved to Project Audio Bible', 'success');
+      toast('Saved to the library', 'success');
     } catch (err: any) {
       toast('Failed to save to project: ' + err.message, 'error');
     }
-  };
-
-  const deleteProjectRef = async (id: string) => {
-    try {
-      await deleteAudioRef(id);
-    } catch (err) {
-      toast('Could not remove the reference: ' + ((err as { message?: string })?.message ?? 'unknown error'), 'error');
-      return;
-    }
-    toast('Reference removed', 'success');
-    fetchProjectRefs();
   };
 
   if (!isAuthenticated) {
@@ -210,7 +156,7 @@ export default function SoundtrackPage() {
       <ListenWithoutPremium />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
-        {(['search', 'moods', 'sfx', 'project'] as const).map(tab => (
+        {(['search', 'moods', 'library'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -273,132 +219,16 @@ export default function SoundtrackPage() {
             </div>
           )}
 
-          {activeTab === 'sfx' && (
-            <div className="space-y-8">
-              <div className="flex justify-between items-center bg-[var(--sunken)] p-6 rounded-2xl border border-[rgba(var(--ink-rgb),0.06)]">
-                <div>
-                  <h3 className="mc-title text-xl mb-1">Custom SFX Library</h3>
-                  <p className="mc-text text-sm text-[var(--fg-dim)]">Upload raw .wav or .mp3 files to your Cavern Created library.</p>
-                </div>
-                <div>
-                  <input
-                    type="file"
-                    accept="audio/*"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleSfxUpload}
-                  />
-                  <Button variant="solid" className="gap-2" onClick={() => fileInputRef.current?.click()} isLoading={uploadingSfx}>
-                    <UploadCloud size={16} /> Upload Audio
-                  </Button>
-                </div>
+          {activeTab === 'library' && (
+            !activeProject?.id ? (
+              <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
+                <ShieldAlert size={32} className="opacity-20 mb-4 mx-auto" />
+                <h3 className="mc-title text-xl mb-2">No active project</h3>
+                <p className="mc-text text-sm text-[var(--fg-dim)]">Pick a project to see its sound library.</p>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sfxAssets.length === 0 ? (
-                  <div className="col-span-full p-12 text-center border border-dashed border-[rgba(var(--ink-rgb),0.1)] rounded-2xl">
-                    <Folder size={32} className="opacity-20 mb-4 mx-auto" />
-                    <h4 className="mc-title text-[var(--fg-dim)]">No custom SFX uploaded yet</h4>
-                  </div>
-                ) : (
-                  sfxAssets.map(asset => {
-
-                    const publicUrl = asset.audio_url;
-                    return (
-                      <div key={asset.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
-                        <div className="flex items-center gap-4 overflow-hidden">
-                          <button aria-label="Play"
-                            className="w-10 h-10 shrink-0 rounded-full bg-[#1ed760]/10 flex items-center justify-center hover:bg-[#1ed760]/20 text-[#1ed760]"
-                            onClick={() => new Audio(publicUrl).play()}
-                          >
-                            <Play size={16} />
-                          </button>
-                          <div className="min-w-0">
-                            <h4 className="mc-title text-sm truncate">{asset.title}</h4>
-                            <p className="mc-text text-xs text-[var(--fg-dim)] truncate">{asset.tags?.[0] || 'Custom SFX'}</p>
-                          </div>
-                        </div>
-                        <button aria-label="Save to Active Project"
-                          className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] transition-all text-[var(--fg-dim)] hover:text-[var(--fg-strong)] shrink-0"
-                          title="Save to Active Project"
-                          onClick={() => saveToProject(asset, 'custom_upload')}
-                        >
-                          <Plus size={16} />
-                        </button>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'project' && (
-            <div className="space-y-8">
-              {!activeProject ? (
-                <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
-                  <ShieldAlert size={32} className="opacity-20 mb-4 mx-auto" />
-                  <h3 className="mc-title text-xl mb-2">No Active Project</h3>
-                  <p className="mc-text text-sm text-[var(--fg-dim)]">Select an active project in the Hub to view its Audio Bible.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-4 mb-6 border-b border-[rgba(var(--ink-rgb),0.1)] pb-6">
-                    <div className="w-12 h-12 rounded bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center" style={{ borderLeft: `2px solid ${activeProject.accent_color || 'white'}` }}>
-                      <Folder size={20} className="opacity-60" />
-                    </div>
-                    <div>
-                      <h2 className="mc-title text-2xl">{activeProject.title} Audio Bible</h2>
-                      <p className="mc-text text-sm text-[var(--fg-dim)]">Global audio references saved to this project</p>
-                    </div>
-                  </div>
-
-                  {loadingRefs ? (
-                    <div className="animate-pulse flex gap-4"><div className="w-full h-16 bg-[rgba(var(--ink-rgb),0.05)] rounded-xl"></div></div>
-                  ) : projectRefs.length === 0 ? (
-                    <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
-                      <Music size={32} className="opacity-20 mb-4 mx-auto" />
-                      <h3 className="mc-title text-lg mb-2">Bible is empty</h3>
-                      <p className="mc-text text-sm text-[var(--fg-dim)]">Search for tracks or upload SFX, then click &quot;+&quot; to save them here.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {projectRefs.map(ref => (
-                        <div key={ref.id} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] flex items-center justify-between group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
-                          <div className="flex items-center gap-4 overflow-hidden">
-                            <button aria-label="Play"
-                              className="w-10 h-10 shrink-0 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center hover:bg-[rgba(var(--ink-rgb),0.1)] transition-colors"
-                              onClick={() => {
-                                if (ref.reference_type === 'spotify') playUri(ref.uri);
-                                else if (ref.reference_type === 'custom_upload') {
-                                  const url = audioRefUrl(ref.uri);
-                                  new Audio(url).play();
-                                }
-                              }}
-                            >
-                              <Play size={16} />
-                            </button>
-                            <div className="min-w-0">
-                              <h4 className="mc-title text-sm truncate">{ref.title}</h4>
-                              <p className="mc-text text-xs text-[var(--fg-dim)] truncate flex items-center gap-1">
-                                {ref.reference_type === 'spotify' ? <Disc size={10} /> : <UploadCloud size={10} />}
-                                {ref.description}
-                              </p>
-                            </div>
-                          </div>
-                          <button aria-label="Delete"
-                            className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-500/20 text-red-400 transition-all shrink-0"
-                            onClick={() => deleteProjectRef(ref.id)}
-                          >
-                            <Trash size={14} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            ) : (
+              <SoundLibrary projectId={activeProject.id} projectTitle={activeProject.title} userId={user?.id ?? null} canTag={canTag} />
+            )
           )}
 
           {activeTab === 'search' && (
@@ -448,10 +278,10 @@ export default function SoundtrackPage() {
                       >
                         <Play size={16} />
                       </button>
-                      <button aria-label="Save to Project Bible"
+                      <button aria-label="Save to the library"
                         className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
-                        title="Save to Project Bible"
-                        onClick={() => saveToProject(item, 'spotify')}
+                        title="Save to the library"
+                        onClick={() => saveToProject(item)}
                       >
                         <Plus size={16} />
                       </button>
