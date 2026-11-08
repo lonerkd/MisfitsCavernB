@@ -1,0 +1,3 @@
+# Session — 2026-11-08: Capture's outbox and the island (a decision, no code)
+
+BACKLOG 4.1 asked what the island should say about Capture's background queue. Reading the code settled it: the island already does. `islandCondition` (`lib/island/condition.ts`, fed by `useOutbox`) shows "Sending N" while online and "Offline · N waiting" without a connection, on desk and phone; and the outbox sends a clip or memo through `studio.uploadFile`, which is tracked by `beginUpload`, so the file being sent appears as "Uploading <name>" with its percentage. A separate held activity for the queue would repeat both. Decision: build nothing; the BACKLOG line now says so. Left on uploads: a cancel button and a retry after a network drop mid-upload (S each).
