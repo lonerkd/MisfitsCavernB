@@ -82,7 +82,16 @@ In order of trust, per scene: `read_seconds` (the table read measured it) → `e
 - It does not suggest music by itself beyond what Find already does for a scene's mood. A "fill the gaps" that auto-tags is a product call and is not in this sketch.
 - It does not change the editor: its Scene music block and Sound section keep working, and gain an "Open on the timeline" link (`/soundtrack?scene=<id>`), step 5 of the home plan.
 
-## Questions for the owner
+## Decisions (owner, 2026-11-08)
+
+1. **Group by song** (option 1): one scene per reference, the same song shares a colour in the timeline. The Library grouping by song is a follow-up.
+2. **Width rule accepted:** the table read's measured time when it exists, else page eighths at a page a minute.
+3. **One script at a time** with a picker (Claude's call, as delegated).
+4. **Drag to move a tag: yes**, desktop, with undo.
+
+**Built 2026-11-08 (steps 1–3):** `lib/audio/timeline.ts` (pure model, 9 tests), `SceneTimeline` (scene blocks, role lanes, drawn gaps, scene detail, Find music for this scene, tag / remove, drag to move with undo, zoom slider, script picker, read-only for people who may not tag; 8 tests), replacing the Moods tab. **Left:** the minimap and the keyboard map (step 4), "Read from here" and the tag target carried into Find (the editor deep link, step 5 of the home plan), the phone sheet for the detail (the detail is inline today), and a browser spec at 393×852 and 852×393.
+
+## Questions for the owner (answered above)
 
 1. **Option 1 or option 2** for a song used in several scenes (recommendation: 1 now).
 2. **Width by length is the point of the picture.** Is "one page a minute from page eighths, the table read's measured time when it exists" an acceptable rule, or should the length come only from the table read (honest, but empty until someone runs it)?
