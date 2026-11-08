@@ -10,6 +10,7 @@ import SectionLabel from '@/components/ui/SectionLabel';
 import AnimatedSection from '@/components/ui/AnimatedSection';
 import { getPortfolioProjects, getPortfolioOwner } from '@/lib/supabase/portfolio';
 import { headerOf, type OwnerProfile } from '@/lib/portfolio/header';
+import { PortfolioLinks } from '@/components/portfolio/PortfolioLinks';
 import { listReleases } from '@/lib/supabase/campaigns';
 import { useEffect } from 'react';
 import { ProtectedPage } from '@/lib/os';
@@ -257,6 +258,7 @@ export default function PortfolioPage() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [videosList, setVideosList] = useState<Video[]>([]);
   const [owner, setOwner] = useState<OwnerProfile | null>(null);
+  const [uid, setUid] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -292,6 +294,7 @@ export default function PortfolioPage() {
       try {
         const user = await awaitOSUser();
         if (!user) { setLoading(false); return; }
+        setUid(user.id);
 
         const [data, profile] = await Promise.all([getPortfolioProjects(user.id), getPortfolioOwner(user.id).catch(() => null)]);
         setOwner(profile);
@@ -359,6 +362,7 @@ export default function PortfolioPage() {
              <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(3rem, 7vw, 5.5rem)', letterSpacing: '-0.02em', lineHeight: 1, marginBottom: 16, textTransform: 'uppercase', overflowWrap: 'anywhere' }}>{header.name}</h1>
              {header.line && <p style={{ fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--accent)', marginBottom: 12 }}>{header.line}</p>}
              {header.bio && <p style={{ fontFamily: 'var(--serif)', fontSize: 16, color: 'var(--fg-muted)', maxWidth: 'var(--w-form)', lineHeight: 1.6 }}>{header.bio}</p>}
+             {uid && <PortfolioLinks userId={uid} />}
              {header.sparse && !loading && (
                <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-dim)', marginTop: 12 }}>
                  Say what you do and where, in your <Link href="/profile" style={{ color: 'var(--accent)' }}>profile</Link>, and it shows here.

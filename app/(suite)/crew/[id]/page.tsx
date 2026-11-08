@@ -5,7 +5,8 @@ import React, { useState, useEffect, useEffectEvent } from 'react';
 import { MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { getPortfolioProjects, hasPortfolioPage } from '@/lib/supabase/portfolio';
+import { pagePath } from '@/lib/portfolio/page-setting';
 import EmptyState from '@/components/ui/EmptyState';
 import { addCreditToPortfolio, getPersonCredits, groupByProject, type ProjectCredits } from '@/lib/credits';
 import { useToast } from '@/components/ui/Toast';
@@ -48,6 +49,7 @@ export default function CrewMemberPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [hasPage, setHasPage] = useState(false);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const onlineIds = useOnlinePresence(viewerId);
   const isOnline = !!profile && onlineIds.has(profile.id);
@@ -71,6 +73,7 @@ export default function CrewMemberPage() {
         }
 
         setProfile(profileData);
+        hasPortfolioPage(profileData.username).then(setHasPage).catch(() => setHasPage(false));
 
         const projectData = await getPortfolioProjects(id).catch(() => {
           reportError('Could not load their portfolio.');
@@ -129,6 +132,7 @@ export default function CrewMemberPage() {
 
       {/* ── Fixed Header ───────────────────────────────────────────────────────── */}
       <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        {hasPage && <Link href={pagePath(profile.username)} style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>PUBLIC PAGE →</Link>}
         <span style={{
           fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 10px',
           border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(var(--ink-rgb), 0.15)'}`,
