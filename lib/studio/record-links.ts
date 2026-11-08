@@ -33,7 +33,7 @@ export function characterName(record: { character_id?: string | null; character?
 /** What the role tools that link scenes are called where their records are counted. */
 export const RECORD_KIND_LABEL: Record<string, string> = {
   cameraReports: 'Camera reports', soundReports: 'Sound reports', scriptNotes: 'Script notes', directorNotes: 'Director notes',
-  vfxShots: 'VFX shots', costumes: 'Costumes', makeup: 'Makeup', rehearsals: 'Rehearsals',
+  vfxShots: 'VFX shots', costumes: 'Costumes', makeup: 'Makeup', stills: 'Stills', rehearsals: 'Rehearsals',
 };
 
 export interface RecordLink { kind: string; scene_ids: string[] }

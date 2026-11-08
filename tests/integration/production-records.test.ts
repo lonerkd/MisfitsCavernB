@@ -55,6 +55,8 @@ describe('production records', () => {
 
   it('only the known kinds, small records, and a record keeps its project, kind and id', async () => {
     expect((await add('sam', 'k-1', 'nonsense')).error?.code).toBe('23514');
+    expect((await add('jordan', 'k-stills', 'stills')).error).toBeNull(); // the stills log is a known kind, written by crew
+    expect((await add('riley', 'k-stills-2', 'stills')).error).not.toBeNull(); // an outsider still cannot
     const big = await cast.sam.client.from('production_records').insert({ project_id: projectId, kind: 'gear', item_id: 'big', data: { x: 'a'.repeat(25000) } });
     expect(big.error?.code).toBe('23514');
     const move = await cast.sam.client.from('production_records').update({ kind: 'gear' }).eq('project_id', projectId).eq('item_id', 'p-1');
