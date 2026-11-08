@@ -121,10 +121,12 @@ export function SoundPanel(p: SoundPanelProps) {
     if (!uri) { toast('This song cannot be tagged (no link)', 'error'); return; }
     try {
       const existing = p.refs.find((r) => r.uri === uri);
+      // A track has one scene: tagging it here moves it off another, and the person is told so.
+      const moved = !!existing && !!existing.for_scene && existing.for_scene !== p.sceneId;
       if (existing) await tagAudioRef(existing.id, { sceneId: p.sceneId, role: (existing.role as AudioRole | null) ?? 'temp', tags: existing.tags ?? [] });
       else await addAudioRef({ projectId: p.projectId, userId: p.userId, type: 'spotify', uri, title: `${cur.name} — ${cur.artists?.[0]?.name ?? ''}`, description: mood.mood, sceneId: p.sceneId, role: 'temp', tags: [] });
       p.onRefsChanged(await listAudioRefs(p.projectId));
-      toast(`Tagged to ${p.sceneLabel ?? 'this scene'}`, 'success');
+      toast(moved ? `Moved to ${p.sceneLabel ?? 'this scene'} (it was tagged to another scene)` : `Tagged to ${p.sceneLabel ?? 'this scene'}`, 'success');
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not tag the song', 'error'); }
   };
 
