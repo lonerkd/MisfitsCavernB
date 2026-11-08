@@ -47,7 +47,7 @@ export function ClaimsView() {
             <span className={s.label}>Amount</span>
             <input className={s.input} value={draft.amount} onChange={(e) => setDraft({ ...draft, amount: e.target.value })} placeholder="2400" />
           </label>
-          <button className={s.btnPrimary} onClick={add} disabled={!draft.incident.trim()}><Plus size={12} /> File</button>
+          <button className={s.btnPrimary} onClick={add} disabled={!draft.incident.trim()}><Plus size={12} /> Log claim</button>
         </div>
         <label className={s.field} style={{ marginTop: 8 }}>
           <span className={s.label}>Notes</span>
