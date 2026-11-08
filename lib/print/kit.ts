@@ -5,6 +5,8 @@
 // the printer. Pure: returns a complete HTML document, so every tool and the tests read the same rules.
 // Saving as a PDF is the browser's print dialog (Save as PDF): the same file, the same layout, nothing to install.
 
+import qrcode from 'qrcode-generator';
+
 export type PrintBlock =
   | { type: 'section'; title: string; blocks: PrintBlock[] }
   | { type: 'text'; text: string; lead?: boolean }
@@ -15,6 +17,8 @@ export type PrintBlock =
   | { type: 'note'; text: string; tone?: 'info' | 'warn' }
   | { type: 'columns'; columns: PrintBlock[][] }
   | { type: 'image'; url: string; alt?: string; caption?: string }
+  /** A QR code for a link (https only), drawn as inline SVG: nothing is fetched, so it prints offline and leaks nothing to a QR service. */
+  | { type: 'qr'; url: string; caption?: string }
   | { type: 'pageBreak' };
 
 export interface PrintColumn { key: string; label: string; align?: 'left' | 'right' | 'center'; width?: string }
@@ -42,6 +46,22 @@ export interface PrintDoc {
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
 /** Text for a CSS string (the page footer): quotes, backslashes and line breaks made harmless. */
 export const cssString = (v: string) => `"${v.replace(/[\\"]/g, (c) => `\\${c}`).replace(/[\r\n]+/g, ' ').replace(/[<>&]/g, '')}"`;
+/** The QR code for an https link as an SVG (dark squares on white, with the quiet zone a scanner needs); null for anything else or a link too long to encode. */
+export function qrSvg(url: string): string | null {
+  if (!/^https:\/\/[^\s"'<>]{1,400}$/.test(url)) return null;
+  try {
+    const q = qrcode(0, 'M');
+    q.addData(url);
+    q.make();
+    const n = q.getModuleCount();
+    const quiet = 4;
+    let path = '';
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) path += `M${c + quiet} ${r + quiet}h1v1h-1z`;
+    const size = n + quiet * 2;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="84" height="84" role="img" aria-label="QR code for ${esc(url)}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${path}" fill="#000"/></svg>`;
+  } catch { return null; }
+}
+
 const HOUSE_ACCENT = '#b8320f';
 
 /** A colour only when it is exactly #rrggbb (it goes into a stylesheet); the house colour otherwise. */
@@ -86,6 +106,10 @@ function block(b: PrintBlock): string {
       const u = safeImage(b.url);
       return u ? `<figure><img src="${esc(u)}" alt="${esc(b.alt ?? '')}">${b.caption ? `<figcaption>${esc(b.caption)}</figcaption>` : ''}</figure>` : '';
     }
+    case 'qr': {
+      const svg = qrSvg(b.url);
+      return svg ? `<figure class="qr">${svg}${b.caption ? `<figcaption>${esc(b.caption)}</figcaption>` : ''}</figure>` : '';
+    }
     case 'pageBreak':
       return '<div class="pb"></div>';
   }
@@ -126,6 +150,7 @@ export function printHtml(doc: PrintDoc): string {
   .empty{color:var(--faint);font-style:italic;margin:0 0 10pt}
   .cols{display:grid;gap:0 22pt;margin:0 0 6pt}.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}
   figure{margin:0 0 10pt;break-inside:avoid}figure img{max-width:100%;display:block;border-radius:2pt}figcaption{font-size:8.5pt;color:var(--faint);margin-top:3pt}
+  figure.qr{display:inline-block;text-align:center;margin:0 0 10pt}figure.qr svg{display:block}
   .pb{break-after:page}
   footer.foot{display:flex;justify-content:space-between;gap:12pt;border-top:.5pt solid var(--rule);padding-top:4pt;margin-top:24pt;font-size:7.5pt;color:var(--faint)}
   @media print{footer.foot{display:none}}

@@ -11,6 +11,8 @@ import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';
 import { storyChanges, storyLabel, type StoryScene } from '@/lib/film/story';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { continuityDoc } from '@/lib/studio/continuity-print';
 import s from '../studio.module.css';
 
 const PARTS = ['dawn', 'morning', 'day', 'afternoon', 'evening', 'dusk', 'night'];
@@ -87,6 +89,18 @@ export function ContinuityView() {
       )}
       <div className={s.toolbar}>
         <div className={s.panelTitle}>Continuity</div>
+        <PrintButton label="the continuity sheet" build={() => continuityDoc({
+          project: project.title, accent: project.accent_color,
+          warnings: warnings.map((w) => lookChangeText(nameOf.get(w.character_id) ?? 'Someone', w)),
+          days: groups.map((g) => ({
+            label: g.day != null ? `Story day ${g.day}` : 'No story day yet',
+            scenes: g.scenes.map((sc) => ({
+              number: sc.scene_number, heading: sc.heading ?? sc.title ?? '', time: sc.story_time ?? '',
+              looks: castOf(sc).map((name) => { const id = idOf.get(name); return { character: name, look: (id ? stateOf.get(`${sc.id}:${id}`)?.look : '') ?? '' }; }),
+            })),
+          })),
+          generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+        })} />
         {guesses.length > 0 && (
           <button type="button" className={s.btnPrimary} disabled={busy} onClick={() => void applyGuesses()}>
             <Wand2 size={12} aria-hidden /> Read story time from the script ({guesses.length})

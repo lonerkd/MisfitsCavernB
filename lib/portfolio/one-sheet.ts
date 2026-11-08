@@ -51,7 +51,7 @@ export function oneSheet(data: PortfolioPageData, pageUrl: string, generated: st
     });
   }
 
-  blocks.push({ type: 'section', title: 'Full portfolio', blocks: [{ type: 'text', text: pageUrl }] });
+  blocks.push({ type: 'section', title: 'Full portfolio', blocks: [{ type: 'columns', columns: [[{ type: 'text', text: pageUrl }], [{ type: 'qr', url: pageUrl, caption: 'Scan for the live page' }]] }] });
 
   return {
     title: head.name,
