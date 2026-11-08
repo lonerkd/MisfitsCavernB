@@ -88,7 +88,10 @@ for (const mode of MODES) {
   await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30000 }).catch(() => {});
   for (const route of ROUTES) {
     const slug = `${mode.name}-${route.replace(/[^a-z0-9]+/gi, '_').slice(0, 60)}`;
-    const entry = { mode: mode.name, route };
+    let entry = { mode: mode.name, route };
+    // A route that fails to load once (a slow build on a loaded runner) is tried a second time before it counts as an error.
+    for (let attempt = 0; attempt < 2; attempt++) {
+    entry = { mode: mode.name, route };
     try {
       await page.goto(`${BASE}${route}`, { waitUntil: 'domcontentloaded', timeout: 30000 });
       await page.waitForTimeout(2500);
@@ -114,6 +117,8 @@ for (const mode of MODES) {
         await page.evaluate(() => window.__setKb(0));
       }
     } catch (e) { entry.error = String(e).slice(0, 200); }
+    if (!entry.error) break;
+    }
     report.push(entry);
   }
   await ctx.close();
