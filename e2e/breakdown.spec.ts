@@ -10,7 +10,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
-const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the LANTERN and checks an old revolver.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nThe lantern gutters out.\n';
+// SAM speaks twice: a cue read once is a doubtful read (confidence 60), and a doubtful scene is offered no capitalised-word suggestions.
+const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the LANTERN and checks an old revolver.\n\nSAM\nWho’s there?\n\nSAM\nAnyone at all?\n\nEXT. RIDGE - DAWN\n\nThe lantern gutters out.\n';
 
 async function axeViolations(page: Page): Promise<string[]> {
   await page.addScriptTag({ content: AXE });

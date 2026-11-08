@@ -33,4 +33,21 @@ describe('CavernVisualizer', () => {
     fireEvent.keyDown(window, { key: ' ' });
     expect(spotify.togglePlay).toHaveBeenCalledOnce();
   });
+  it('re-rendering with new callbacks does not close it (the player re-renders as playback changes)', () => {
+    const first = vi.fn();
+    const { rerender } = render(<CavernVisualizer onClose={first} />);
+    rerender(<CavernVisualizer onClose={vi.fn()} />);
+    rerender(<CavernVisualizer onClose={vi.fn()} />);
+    expect(first).not.toHaveBeenCalled();
+    const second = vi.fn();
+    rerender(<CavernVisualizer onClose={second} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(second).toHaveBeenCalledOnce(); // the latest callback is the one that runs
+  });
+  it('Space on a focused control is that control’s own key: no second action', () => {
+    render(<CavernVisualizer onClose={() => {}} />);
+    screen.getByRole('button', { name: 'Next track' }).focus();
+    fireEvent.keyDown(screen.getByRole('button', { name: 'Next track' }), { key: ' ' });
+    expect(spotify.togglePlay).not.toHaveBeenCalled();
+  });
 });
