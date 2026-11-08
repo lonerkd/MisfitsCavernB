@@ -4,7 +4,7 @@ import { useFake } from '@/tests/unit-support/fakeSupabase';
 vi.mock('./client', async () => ({ supabase: (await import('@/tests/unit-support/fakeSupabase')).supabaseProxy }));
 
 import {
-  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioProjects, getPublicPortfolio, reorderPortfolioBlocks,
+  addPortfolioMedia, findPitchBoard, getPitchMaterial, getPortfolioBlocks, getPortfolioOwner, getPortfolioProjects, getPublicPortfolio, reorderPortfolioBlocks, setPortfolioCover,
 } from './portfolio';
 
 const boom = { message: 'nope' };
@@ -124,5 +124,39 @@ describe('getPublicPortfolio', () => {
   it('is null when the link leads nowhere', async () => {
     useFake({ portfolio_projects: { data: null } });
     expect(await getPublicPortfolio('bad')).toBeNull();
+  });
+});
+
+describe('the person a portfolio belongs to', () => {
+  it('reads their profile, and none when there is none', async () => {
+    const f = useFake({ profiles: { data: { username: 'mara', role: 'DP', location: null, bio: null, avatar_url: null, status: 'OPEN' } } });
+    expect(await getPortfolioOwner('u1')).toMatchObject({ username: 'mara', role: 'DP' });
+    expect(f.argsOf('profiles', 'eq')).toEqual([['id', 'u1']]);
+    useFake({ profiles: { data: null } });
+    expect(await getPortfolioOwner('u2')).toBeNull();
+  });
+  it('throws on an error', async () => {
+    useFake({ profiles: { error: boom } });
+    await expect(getPortfolioOwner('u1')).rejects.toBe(boom);
+  });
+});
+
+describe('setPortfolioCover', () => {
+  it('saves an https image link, trimmed, and clears with null', async () => {
+    const f = useFake({ portfolio_projects: { data: [{ id: 'p1' }] } });
+    await setPortfolioCover('p1', '  https://img.example.com/a.jpg ');
+    await setPortfolioCover('p1', null);
+    expect(f.argsOf('portfolio_projects', 'update')).toEqual([[{ cover_url: 'https://img.example.com/a.jpg' }], [{ cover_url: null }]]);
+  });
+  it('refuses anything else, and saves nothing', async () => {
+    const f = useFake({ portfolio_projects: {} });
+    for (const bad of ['http://img.example.com/a.jpg', 'javascript:alert(1)', 'nope']) await expect(setPortfolioCover('p1', bad)).rejects.toThrow('starts with https://');
+    expect(f.calls).toEqual([]);
+  });
+  it('says so when nothing changed (not the owner), and when the write fails', async () => {
+    useFake({ portfolio_projects: { data: [] } });
+    await expect(setPortfolioCover('p1', 'https://img.example.com/a.jpg')).rejects.toThrow('You cannot change this piece.');
+    useFake({ portfolio_projects: { error: boom } });
+    await expect(setPortfolioCover('p1', 'https://img.example.com/a.jpg')).rejects.toBe(boom);
   });
 });

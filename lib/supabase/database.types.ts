@@ -2302,6 +2302,7 @@ export type Database = {
         Row: {
           accent_color: string | null;
           category: string | null;
+          cover_url: string | null;
           created_at: string | null;
           description: string | null;
           id: string;
@@ -2317,6 +2318,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null;
           category?: string | null;
+          cover_url?: string | null;
           created_at?: string | null;
           description?: string | null;
           id?: string;
@@ -2331,6 +2333,7 @@ export type Database = {
         Update: {
           accent_color?: string | null;
           category?: string | null;
+          cover_url?: string | null;
           created_at?: string | null;
           description?: string | null;
           id?: string;

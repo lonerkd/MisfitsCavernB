@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { isCoverUrl, type OwnerProfile } from '@/lib/portfolio/header';
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -27,6 +28,21 @@ export async function getPortfolioProjects(userId?: string) {
   const { data, error } = await query;
   if (error) throw error;
   return data;
+}
+
+/** The person a portfolio belongs to, from their profile: what the page's header says. */
+export async function getPortfolioOwner(userId: string): Promise<OwnerProfile | null> {
+  const { data, error } = await supabase.from('profiles').select('username, role, location, bio, avatar_url, status').eq('id', userId).maybeSingle();
+  if (error) throw error;
+  return data ?? null;
+}
+
+/** Sets (or clears) a piece's cover image: an https link to an image. */
+export async function setPortfolioCover(id: string, url: string | null): Promise<void> {
+  if (url !== null && !isCoverUrl(url)) throw new Error('A cover is a link to an image that starts with https://');
+  const { data, error } = await supabase.from('portfolio_projects').update({ cover_url: url === null ? null : url.trim() }).eq('id', id).select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('You cannot change this piece.');
 }
 
 export async function createPortfolioProject(project: any) {

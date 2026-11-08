@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Link as LinkIcon, Copy, Film } from 'lucide-react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia } from '@/lib/supabase/portfolio';
+import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia, setPortfolioCover } from '@/lib/supabase/portfolio';
+import { isCoverUrl } from '@/lib/portfolio/header';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import EmptyState from '@/components/ui/EmptyState';
@@ -23,6 +24,7 @@ interface PortfolioProject {
   category?: string;
   year?: number;
   role?: string;
+  cover_url?: string | null;
   share_token: string;
   portfolio_media: MediaItem[];
 }
@@ -41,7 +43,8 @@ export default function ManagePortfolioPage() {
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
   const { formats } = useFormats();
-  const [newProject, setNewProject] = useState({ title: '', category: '', year: '', role: '', description: '' });
+  const [newProject, setNewProject] = useState({ title: '', category: '', year: '', role: '', description: '', cover: '' });
+  const [coverForm, setCoverForm] = useState<Record<string, string>>({});
   const [mediaForm, setMediaForm] = useState<Record<string, { title: string; url: string; media_type: string }>>({});
 
   const load = async (userId: string) => {
@@ -59,6 +62,7 @@ export default function ManagePortfolioPage() {
 
   const createProject = async () => {
     if (!user || !newProject.title.trim()) return;
+    if (newProject.cover.trim() && !isCoverUrl(newProject.cover)) { toast('A cover is a link to an image that starts with https://', 'error'); return; }
     try {
       const created = await createPortfolioProject({
         user_id: user.id,
@@ -67,13 +71,25 @@ export default function ManagePortfolioPage() {
         year: newProject.year ? parseInt(newProject.year, 10) : null,
         role: newProject.role || null,
         description: newProject.description || null,
+        cover_url: newProject.cover.trim() || null,
       });
       setProjects(prev => [{ ...created, portfolio_media: [] } as unknown as PortfolioProject, ...prev]);
-      setNewProject({ title: '', category: '', year: '', role: '', description: '' });
+      setNewProject({ title: '', category: '', year: '', role: '', description: '', cover: '' });
       setShowNew(false);
       toast('Project added', 'success');
     } catch (err: any) {
       toast(err.message || 'Failed to create project', 'error');
+    }
+  };
+
+  const saveCover = async (id: string, url: string | null) => {
+    try {
+      await setPortfolioCover(id, url);
+      setProjects(prev => prev.map(p => p.id === id ? { ...p, cover_url: url === null ? null : url.trim() } : p));
+      setCoverForm(prev => ({ ...prev, [id]: '' }));
+      toast(url === null ? 'Cover removed' : 'Cover set', 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not save the cover', 'error');
     }
   };
 
@@ -155,6 +171,7 @@ export default function ManagePortfolioPage() {
               <Input type="number" label="Year" value={newProject.year} onChange={e => setNewProject({ ...newProject, year: e.target.value })} />
               <Input label="Your role" value={newProject.role} onChange={e => setNewProject({ ...newProject, role: e.target.value })} />
             </div>
+            <Input label="Cover image (a link to an image, https://…)" value={newProject.cover} onChange={e => setNewProject({ ...newProject, cover: e.target.value })} />
             <Textarea label="Description" value={newProject.description} onChange={e => setNewProject({ ...newProject, description: e.target.value })} rows={3} />
             <Button onClick={createProject}>ADD PROJECT</Button>
           </div>
@@ -204,6 +221,18 @@ export default function ManagePortfolioPage() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, fontSize: 'max(9px, var(--mc-min-font, 0px))', fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
                   <LinkIcon size={10} /> /p/{project.share_token}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+                  {project.cover_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- the person's own cover link
+                    <img src={project.cover_url} alt={`Cover of ${project.title}`} width={128} height={72} style={{ width: 128, height: 72, objectFit: 'cover', background: 'var(--media-bg)' }} />
+                  ) : (
+                    <div aria-hidden style={{ width: 128, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--media-bg)', color: 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 11 }}>No cover</div>
+                  )}
+                  <input type="url" aria-label={`Cover image link for ${project.title}`} placeholder="Cover image link (https://…)" value={coverForm[project.id] ?? ''} onChange={e => setCoverForm(prev => ({ ...prev, [project.id]: e.target.value }))} style={{ ...fieldStyle, flex: 1, minWidth: 200 }} />
+                  <Button onClick={() => saveCover(project.id, coverForm[project.id] ?? '')} disabled={!(coverForm[project.id] ?? '').trim()}>SET COVER</Button>
+                  {project.cover_url && <Button variant="outline" onClick={() => saveCover(project.id, null)}>REMOVE</Button>}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>

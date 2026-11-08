@@ -407,6 +407,7 @@ column portfolio_media.title text
 column portfolio_media.url text not null
 column portfolio_projects.accent_color text
 column portfolio_projects.category text
+column portfolio_projects.cover_url text
 column portfolio_projects.created_at timestamp with time zone default now()
 column portfolio_projects.description text
 column portfolio_projects.id uuid default uuid_generate_v4() not null
@@ -1137,6 +1138,7 @@ constraint portfolio_media.portfolio_media_media_type_check CHECK ((media_type =
 constraint portfolio_media.portfolio_media_pkey PRIMARY KEY (id)
 constraint portfolio_media.portfolio_media_project_id_fkey FOREIGN KEY (project_id) REFERENCES portfolio_projects(id) ON DELETE CASCADE
 constraint portfolio_projects.portfolio_projects_category_fkey FOREIGN KEY (category) REFERENCES project_formats(name) ON UPDATE CASCADE ON DELETE SET NULL
+constraint portfolio_projects.portfolio_projects_cover_url_check CHECK (((cover_url IS NULL) OR ((char_length(cover_url) <= 2000) AND (cover_url ~* '^https://[^\s]+$'::text))))
 constraint portfolio_projects.portfolio_projects_pkey PRIMARY KEY (id)
 constraint portfolio_projects.portfolio_projects_share_token_key UNIQUE (share_token)
 constraint portfolio_projects.portfolio_projects_source_project_id_fkey FOREIGN KEY (source_project_id) REFERENCES projects(id) ON DELETE SET NULL
