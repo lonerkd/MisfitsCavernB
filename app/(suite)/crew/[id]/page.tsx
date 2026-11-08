@@ -262,7 +262,7 @@ export default function CrewMemberPage() {
                         try {
                           const pf = await addCreditToPortfolio(profile.id, c);
                           setCredits((prev) => prev.map((x) => (x.project_id === c.project_id ? { ...x, portfolio_project_id: pf.id } : x)));
-                          toast(`“${c.title}” is in your portfolio — add clips and stills there`, 'success');
+                          toast(`“${c.title}” is in your portfolio, private until you publish it. Add clips and stills there.`, 'success');
                         } catch (e) { toast(e instanceof Error ? e.message : 'Could not add it', 'error'); }
                         finally { setAdding(null); }
                       }}

@@ -30,6 +30,10 @@
 8. **Last built (2026-11-05…07):** mood boards; Community; the island's Live (editor sprint), Share and Undo tile and the fix that stops every page's island actions going stale; the merge gate, the lint ratchet and the head-bound Claude review; the `main-2` ruleset with no bypass; the 16 record-keeping production tools made right (one `useSettingsList` hook, every form shows on an empty project, real revisions, the Stripboard's day-out-of-days, Misfit as the default theme at AA); production and staging migrated. Open for the island: recording, the other upload paths, the On set clock as a held activity, a Note slot, the Lounge's Live (BACKLOG 4.1).
 
 
+## Standing permissions (owner, 2026-11-08)
+
+Claude may merge its own pull requests (including ones the risk bot rates high) once the required checks are green, and may apply its own migrations to production and then staging (then the drift check), without asking each time. Still ask first for anything destructive to live data, rotating keys, changing auth settings, or a design decision the owner has not made. (The head-bound `claude-review` approval and the `main-2` ruleset date from the cheaper-model days; `claude-review` is not a required check.)
+
 ## Direction (owner, 2026-10-10)
 
 The suite becomes one connected core — **the film graph**: scenes, characters,

@@ -2312,6 +2312,7 @@ export type Database = {
           title: string;
           updated_at: string | null;
           user_id: string;
+          visibility: string;
           year: number | null;
         };
         ComputedFields: never;
@@ -2328,6 +2329,7 @@ export type Database = {
           title: string;
           updated_at?: string | null;
           user_id: string;
+          visibility?: string;
           year?: number | null;
         };
         Update: {
@@ -2343,6 +2345,7 @@ export type Database = {
           title?: string;
           updated_at?: string | null;
           user_id?: string;
+          visibility?: string;
           year?: number | null;
         };
         Relationships: [
@@ -5073,6 +5076,7 @@ export type Database = {
       };
       get_review: { Args: { p_token: string }; Returns: Json };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };
+      get_shared_portfolio: { Args: { p_token: string }; Returns: Json };
       get_shared_project: {
         Args: { p_token: string };
         Returns: {

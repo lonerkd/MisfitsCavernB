@@ -12,8 +12,10 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { logActivity } from '@/lib/supabase/activity';
 import { awaitOSUser } from '@/lib/os';
 import { textOn } from '@/lib/util/color';
+import { hasLiveLink, visibilityOf, type PortfolioVisibility } from '@/lib/portfolio/visibility';
 import {
   createPortfolioProject,
+  setPortfolioVisibility,
   findPitchBoard,
   getPitchMaterial,
   getPortfolioBlocks,
@@ -59,6 +61,7 @@ export default function PitchBoardPage() {
   const [project, setProject] = useState<{ title: string; description: string | null; accent_color: string | null; project_type: string | null } | null>(null);
   const [portfolioId, setPortfolioId] = useState<string | null>(null);
   const [shareToken, setShareToken] = useState<string | null>(null);
+  const [boardVisibility, setBoardVisibility] = useState<PortfolioVisibility>('private');
   const [blocks, setBlocks] = useState<PortfolioBlock[]>([]);
   const [loading, setLoading] = useState(true);
   const [fatal, setFatal] = useState<string | null>(null);
@@ -101,7 +104,7 @@ export default function PitchBoardPage() {
 
         let pid: string; let token: string;
         if (existing) {
-          pid = existing.id; token = existing.share_token ?? '';
+          pid = existing.id; token = existing.share_token ?? ''; setBoardVisibility(visibilityOf(existing.visibility));
         } else {
           const created = await createPortfolioProject({
             user_id: user.id,
@@ -249,7 +252,19 @@ export default function PitchBoardPage() {
       <h1 className="sr-only">Pitch board</h1>
       <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
         <h1 className="sr-only">Pitch board</h1>
-        {shareToken && (
+        {shareToken && !hasLiveLink(boardVisibility) && portfolioId && (
+          <button
+            onClick={() => {
+              setPortfolioVisibility(portfolioId, 'unlisted')
+                .then(() => { setBoardVisibility('unlisted'); toast('Anyone with the link can now see this board', 'success'); })
+                .catch((e: unknown) => toast(e instanceof Error ? e.message : 'Could not publish the link', 'error'));
+            }}
+            style={btnStyle(accent, true)}
+          >
+            Publish a link
+          </button>
+        )}
+        {shareToken && hasLiveLink(boardVisibility) && (
           <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => {

@@ -417,6 +417,7 @@ column portfolio_projects.source_project_id uuid
 column portfolio_projects.title text not null
 column portfolio_projects.updated_at timestamp with time zone default now()
 column portfolio_projects.user_id uuid not null
+column portfolio_projects.visibility text default 'private'::text not null
 column portfolio_projects.year integer
 column post_cuts.created_at timestamp with time zone default now() not null
 column post_cuts.created_by uuid default auth.uid()
@@ -1143,6 +1144,7 @@ constraint portfolio_projects.portfolio_projects_pkey PRIMARY KEY (id)
 constraint portfolio_projects.portfolio_projects_share_token_key UNIQUE (share_token)
 constraint portfolio_projects.portfolio_projects_source_project_id_fkey FOREIGN KEY (source_project_id) REFERENCES projects(id) ON DELETE SET NULL
 constraint portfolio_projects.portfolio_projects_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint portfolio_projects.portfolio_projects_visibility_check CHECK ((visibility = ANY (ARRAY['public'::text, 'unlisted'::text, 'private'::text])))
 constraint post_cuts.post_cuts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint post_cuts.post_cuts_id_project_key UNIQUE (id, project_id)
 constraint post_cuts.post_cuts_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
@@ -1530,14 +1532,15 @@ function public.edit_message(p_message uuid, p_content text) body=a2e6caca798669
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
-function public.get_person_credits(p_user uuid) body=7d3e49db8bebfc0c98df319661ce088c
+function public.get_person_credits(p_user uuid) body=8aa74b7aff289a3a75a440891a57c43c
 function public.get_platform_stats() body=39a42ba00421b8d21eea0b8685b47ff7
 function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
-function public.get_recent_work(p_limit integer) body=d2c23183a53dc8b9a97c74a9782fe80d
+function public.get_recent_work(p_limit integer) body=c2b64fda478668ca6c5908e5a54ad4ca
 function public.get_review(p_token text) body=911a1941cb14915110ffeec34a9f9513
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
+function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
@@ -1678,6 +1681,7 @@ grant function public.get_published_media(p_media_id uuid) anon,authenticated,po
 grant function public.get_recent_work(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_review(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
+grant function public.get_shared_portfolio(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
@@ -2194,18 +2198,18 @@ policy public.notifications "Users can update their own notifications" PERMISSIV
 policy public.notifications "Users can view their own notifications" PERMISSIVE SELECT to authenticated using (( SELECT auth.uid() AS uid) = user_id) check -
 policy public.notifications "notifications insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND internal.can_notify(user_id))
 policy public.phase_gates "phase gates read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
-policy public.portfolio_blocks "Portfolio blocks readable" PERMISSIVE SELECT to public using true check -
 policy public.portfolio_blocks "portfolio_blocks delete own" PERMISSIVE DELETE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_blocks "portfolio_blocks insert own" PERMISSIVE INSERT to authenticated using - check (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
 policy public.portfolio_blocks "portfolio_blocks update own" PERMISSIVE UPDATE to authenticated using (portfolio_project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
-policy public.portfolio_media "Portfolio media readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_blocks "portfolio_blocks view" PERMISSIVE SELECT to anon,authenticated using (EXISTS ( SELECT 1 FROM portfolio_projects p WHERE (p.id = portfolio_blocks.portfolio_project_id))) check -
 policy public.portfolio_media "portfolio_media delete own" PERMISSIVE DELETE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
 policy public.portfolio_media "portfolio_media insert own" PERMISSIVE INSERT to authenticated using - check (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid))))
 policy public.portfolio_media "portfolio_media update own" PERMISSIVE UPDATE to authenticated using (project_id IN ( SELECT portfolio_projects.id FROM portfolio_projects WHERE (portfolio_projects.user_id = ( SELECT auth.uid() AS uid)))) check -
-policy public.portfolio_projects "Portfolio publicly readable" PERMISSIVE SELECT to public using true check -
+policy public.portfolio_media "portfolio_media view" PERMISSIVE SELECT to anon,authenticated using (EXISTS ( SELECT 1 FROM portfolio_projects p WHERE (p.id = portfolio_media.project_id))) check -
 policy public.portfolio_projects "portfolio_projects delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.portfolio_projects "portfolio_projects insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.portfolio_projects "portfolio_projects update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.portfolio_projects "portfolio_projects view" PERMISSIVE SELECT to anon,authenticated using ((visibility = 'public'::text) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.post_cuts "post_cuts delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.post_cuts "post_cuts insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.post_cuts "post_cuts update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
