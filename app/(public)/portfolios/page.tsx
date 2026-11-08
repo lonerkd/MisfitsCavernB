@@ -5,7 +5,7 @@
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { listPublicPortfolios, publicClient } from '@/lib/supabase/public';
+import { listCraftNames, listPublicPortfolios, publicClient } from '@/lib/supabase/public';
 import { DIRECTORY_PAGE_SIZE, directoryHref, parsePage, parseQuery } from '@/lib/portfolio/directory';
 import { pagePath } from '@/lib/portfolio/page-setting';
 import { headerOf } from '@/lib/portfolio/header';
@@ -29,7 +29,9 @@ export default async function PortfoliosPage({ searchParams }: Props) {
   const q = parseQuery(sp.q);
   const page = parsePage(sp.page);
   // One more than a page, to know whether there is a next one.
-  const rows = await listPublicPortfolios(publicClient(), { q, limit: DIRECTORY_PAGE_SIZE + 1, offset: (page - 1) * DIRECTORY_PAGE_SIZE });
+  const db = publicClient();
+  const crafts = await listCraftNames(db);
+  const rows = await listPublicPortfolios(db, { q, limit: DIRECTORY_PAGE_SIZE + 1, offset: (page - 1) * DIRECTORY_PAGE_SIZE });
   const shown = rows.slice(0, DIRECTORY_PAGE_SIZE);
   const more = rows.length > DIRECTORY_PAGE_SIZE;
 
@@ -45,6 +47,20 @@ export default async function PortfoliosPage({ searchParams }: Props) {
             style={{ flex: '1 1 240px', padding: '10px 12px', background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid var(--border-2)', borderRadius: 4 }} />
           <button type="submit" style={{ padding: '10px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>SEARCH</button>
         </form>
+
+        {crafts.length > 0 && (
+          <nav aria-label="Filter by craft" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '-16px 0 28px' }}>
+            {crafts.map((c) => {
+              const on = c.toLowerCase() === q.toLowerCase();
+              return (
+                <Link key={c} href={on ? '/portfolios' : directoryHref(c, 1)} aria-current={on ? 'true' : undefined}
+                  style={{ padding: '4px 10px', borderRadius: 9999, border: '1px solid var(--border-2)', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none', color: on ? 'var(--on-accent)' : 'var(--fg-dim)', background: on ? 'var(--accent)' : 'transparent' }}>
+                  {c}
+                </Link>
+              );
+            })}
+          </nav>
+        )}
 
         {shown.length === 0 ? (
           <p style={{ color: 'var(--fg-dim)' }}>{q ? `No portfolio matches “${q}”.` : 'No one has published a portfolio yet.'}</p>

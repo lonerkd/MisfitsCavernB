@@ -1,0 +1,3 @@
+# Session — 2026-11-08: the directory's craft filter
+
+`/portfolios` now shows the suite's crafts (reference data anyone may read, in suite order) as chips above the results; a chip searches that craft through the existing search (`?q=<craft>`, the person's craft is matched by the same database function), and the chosen chip clears the search. Nothing new in the database. A craft nobody public has chosen shows the plain "No portfolio matches" line. Test: `listCraftNames` in `lib/supabase/public.test.ts`. Left (BACKLOG 3.44): share image, curation, festivals and verified credits, the PDF one-sheet.

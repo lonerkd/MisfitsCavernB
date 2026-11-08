@@ -80,3 +80,11 @@ export async function listPublicPortfolios(db: PublicClient | null, opts: { q?: 
   if (error || !Array.isArray(data)) return [];
   return data as PublicPortfolioCard[];
 }
+
+/** The crafts people can be found by (reference data anyone may read), in the order the suite shows them; empty on no client or a failed read. */
+export async function listCraftNames(db: PublicClient | null): Promise<string[]> {
+  if (!db) return [];
+  const { data, error } = await db.from('crafts').select('name').order('position');
+  if (error || !Array.isArray(data)) return [];
+  return data.map((c) => c.name);
+}

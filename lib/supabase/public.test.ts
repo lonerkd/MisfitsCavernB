@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createFakeSupabase } from '@/tests/unit-support/fakeSupabase';
-import { getPortfolioPage, getPortfolioPreview, listPublicPortfolios } from './public';
+import { getPortfolioPage, getPortfolioPreview, listCraftNames, listPublicPortfolios } from './public';
 
 type Db = Parameters<typeof getPortfolioPreview>[0];
 const dbWith = (data: unknown, error: { message: string } | null = null) => createFakeSupabase({}, { get_shared_portfolio: { data, error } }).client as unknown as Db;
@@ -93,5 +93,15 @@ describe('listPublicPortfolios', () => {
     const f = createFakeSupabase({}, { list_public_portfolios: { data: [] } });
     await listPublicPortfolios(f.client as unknown as Db, { q: '', limit: 25, offset: 0 });
     expect(f.argsOf('rpc:list_public_portfolios', 'rpc')).toEqual([[{ p_limit: 25, p_offset: 0 }]]);
+  });
+});
+
+describe('listCraftNames', () => {
+  it('is the craft names in suite order, and empty without a client or when the read fails', async () => {
+    expect(await listCraftNames(null)).toEqual([]);
+    const ok = createFakeSupabase({ crafts: { data: [{ name: 'Director' }, { name: 'Editor' }] } }).client as unknown as Db;
+    expect(await listCraftNames(ok)).toEqual(['Director', 'Editor']);
+    const bad = createFakeSupabase({ crafts: { data: null, error: { message: 'x' } } }).client as unknown as Db;
+    expect(await listCraftNames(bad)).toEqual([]);
   });
 });
