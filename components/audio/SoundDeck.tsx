@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Disc, Maximize2, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { Disc, LogOut, Maximize2, Pause, Play, RefreshCw, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { CavernVisualizer } from '@/components/shell/CavernVisualizer';
+import { ListenWithoutPremium } from './ListenWithoutPremium';
 
 const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
 const btn = 'inline-flex items-center justify-center rounded-full border border-[rgba(var(--ink-rgb),0.14)] bg-transparent text-[var(--fg)] cursor-pointer min-w-[44px] min-h-[44px]';
@@ -56,6 +57,18 @@ export function SoundDeck() {
         <Volume2 size={14} aria-hidden className="hidden sm:block" />
         <input type="range" aria-label="Volume" min={0} max={1} step={0.01} value={s.volume} onChange={(e) => s.setVolumeLevel(Number(e.target.value))} className="hidden sm:block w-24" style={{ height: 44 }} />
       </div>
+      {/* What the corner player's panel used to hold: which player Spotify is using, and signing out. */}
+      <details className="mt-3 mc-text text-xs text-[var(--fg-muted)]">
+        <summary className="cursor-pointer min-h-[44px] flex items-center">Player settings</summary>
+        <div className="flex flex-wrap items-center gap-3 pb-1">
+          <span>Mode: {s.useIframeFallback ? 'Free (Spotify’s own player)' : 'Premium (in-app player)'}</span>
+          <button type="button" className="inline-flex items-center gap-1 underline cursor-pointer min-h-[44px]" onClick={() => s.setUseIframeFallback(!s.useIframeFallback)}>
+            <RefreshCw size={12} aria-hidden /> Switch to {s.useIframeFallback ? 'the in-app player' : 'free mode'}
+          </button>
+          <button type="button" className="inline-flex items-center gap-1 underline cursor-pointer min-h-[44px]" onClick={s.logout}><LogOut size={12} aria-hidden /> Disconnect Spotify</button>
+        </div>
+      </details>
+      {s.useIframeFallback && <div className="mt-2"><ListenWithoutPremium /></div>}
       {cave && <CavernVisualizer onClose={() => setCave(false)} />}
     </section>
   );
