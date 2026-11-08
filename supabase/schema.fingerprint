@@ -474,6 +474,7 @@ column profiles.is_admin boolean default false
 column profiles.is_sample boolean default false not null
 column profiles.location text
 column profiles.notification_prefs jsonb default '{}'::jsonb not null
+column profiles.portfolio_page text default 'off'::text not null
 column profiles.role text
 column profiles.sprint_minutes integer default 15 not null
 column profiles.status text default 'OPEN'::text
@@ -1196,6 +1197,7 @@ constraint production_records.production_records_unique UNIQUE (project_id, kind
 constraint profiles.profiles_daily_word_goal_check CHECK (((daily_word_goal >= 50) AND (daily_word_goal <= 20000)))
 constraint profiles.profiles_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint profiles.profiles_pkey PRIMARY KEY (id)
+constraint profiles.profiles_portfolio_page_check CHECK ((portfolio_page = ANY (ARRAY['off'::text, 'unlisted'::text, 'public'::text])))
 constraint profiles.profiles_role_fkey FOREIGN KEY (role) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE SET NULL
 constraint profiles.profiles_sprint_minutes_check CHECK (((sprint_minutes >= 5) AND (sprint_minutes <= 120)))
 constraint profiles.profiles_status_check CHECK ((status = ANY (ARRAY['OPEN'::text, 'BUSY'::text])))
@@ -1552,10 +1554,12 @@ function public.decide_review(p_token text, p_version uuid, p_decision text, p_n
 function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=a2e6caca798669ed8d994d672b1b472f
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
+function public.get_my_portfolio_page() body=11a8dfbdb07374e7d9a54e1ab5abbb1d
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=8aa74b7aff289a3a75a440891a57c43c
 function public.get_platform_stats() body=39a42ba00421b8d21eea0b8685b47ff7
+function public.get_portfolio_page(p_handle text) body=33ed2b8e13b4c0ce0bff08cb53f4c744
 function public.get_press_kit(p_token text) body=0172f33b48db9aafe08f8dd4ce56a253
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
@@ -1696,10 +1700,12 @@ grant function public.decide_review(p_token text, p_version uuid, p_decision tex
 grant function public.delete_my_account(p_confirm text) authenticated,postgres,service_role
 grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
+grant function public.get_my_portfolio_page() authenticated,postgres,service_role
 grant function public.get_my_ui_prefs() authenticated,postgres,service_role
 grant function public.get_my_writing_prefs() authenticated,postgres,service_role
 grant function public.get_person_credits(p_user uuid) anon,authenticated,postgres,service_role
 grant function public.get_platform_stats() anon,authenticated,postgres,service_role
+grant function public.get_portfolio_page(p_handle text) anon,authenticated,postgres,service_role
 grant function public.get_press_kit(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_public_showcase(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role

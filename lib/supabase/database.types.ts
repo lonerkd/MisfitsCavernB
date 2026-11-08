@@ -2643,6 +2643,7 @@ export type Database = {
           is_sample: boolean;
           location: string | null;
           notification_prefs: NonNullable<Json>;
+          portfolio_page: string;
           role: string | null;
           sprint_minutes: number;
           status: string | null;
@@ -2665,6 +2666,7 @@ export type Database = {
           is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
+          portfolio_page?: string;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
@@ -2686,6 +2688,7 @@ export type Database = {
           is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
+          portfolio_page?: string;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
@@ -5065,6 +5068,10 @@ export type Database = {
           notification_prefs: Json;
         }[];
       };
+      get_my_portfolio_page: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
       get_my_ui_prefs: { Args: Record<PropertyKey, never>; Returns: Json };
       get_my_writing_prefs: {
         Args: Record<PropertyKey, never>;
@@ -5098,6 +5105,7 @@ export type Database = {
           scripts: number;
         }[];
       };
+      get_portfolio_page: { Args: { p_handle: string }; Returns: Json };
       get_press_kit: { Args: { p_token: string }; Returns: Json };
       get_public_showcase: {
         Args: { p_limit?: number };

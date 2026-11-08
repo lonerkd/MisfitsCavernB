@@ -1,6 +1,7 @@
 import { supabase } from './client';
 import { isCoverUrl, type OwnerProfile } from '@/lib/portfolio/header';
 import { isVisibility, type PortfolioVisibility } from '@/lib/portfolio/visibility';
+import { pageSettingOf, type PagePublish } from '@/lib/portfolio/page-setting';
 
 function isValidYouTubeUrl(url: string): boolean {
   try {
@@ -200,4 +201,16 @@ export async function getPublicPortfolio(token: string): Promise<SharedPortfolio
   const { data, error } = await supabase.rpc('get_shared_portfolio', { p_token: token });
   if (error) throw error;
   return (data ?? null) as unknown as SharedPortfolio | null;
+}
+
+/** The signed-in person's own page setting (off, link only, public); anything unreadable is off. */
+export async function getMyPortfolioPage(): Promise<PagePublish> {
+  const { data } = await supabase.rpc('get_my_portfolio_page');
+  return pageSettingOf(data);
+}
+
+/** Changes the page setting. Says so when the database refused (nothing changed). */
+export async function setMyPortfolioPage(userId: string, value: PagePublish): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ portfolio_page: value }).eq('id', userId);
+  if (error) throw new Error(error.message || 'Could not change your page');
 }
