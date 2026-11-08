@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -32,6 +32,7 @@ const CateringView = dynamic(() => import('../production/CateringView').then((m)
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.DoodView), { loading: viewLoading });
+const ExtrasView = dynamic(() => import('../production/ExtrasView').then((m) => m.ExtrasView), { loading: viewLoading });
 const StillsView = dynamic(() => import('../production/StillsView').then((m) => m.StillsView), { loading: viewLoading });
 const MakeupView = dynamic(() => import('../production/MakeupView').then((m) => m.MakeupView), { loading: viewLoading });
 const MediaOffloadView = dynamic(() => import('../production/MediaOffloadView').then((m) => m.MediaOffloadView), { loading: viewLoading });
@@ -72,6 +73,7 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot day' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Reports & logs' },
   { id: 'makeup', label: 'Makeup / hair', icon: <Palette size={12} />, group: 'Departments' },
+  { id: 'extras', label: 'Extras', icon: <UsersRound size={12} />, group: 'Departments' },
   { id: 'stills', label: 'Stills log', icon: <Images size={12} />, group: 'Reports & logs' },
   { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Reports & logs' },
   { id: 'po', label: 'Purchase orders', icon: <Receipt size={12} />, group: 'Budget & docs' },
@@ -156,6 +158,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'props' && <PropsView />}
       {!lock && view === 'makeup' && <MakeupView />}
       {!lock && view === 'stills' && <StillsView />}
+      {!lock && view === 'extras' && <ExtrasView />}
       {!lock && view === 'mediaoffload' && <MediaOffloadView />}
       {!lock && view === 'po' && <PoView />}
       {!lock && view === 'scriptsup' && <ScriptSupView />}

@@ -15,7 +15,7 @@ import { useStudio } from '../StudioContext';
 export type SettingsListKey =
   | 'safety' | 'comms' | 'gear' | 'wraps' | 'rehearsals' | 'scouts' | 'directorNotes' | 'risks'
   | 'cameraReports' | 'soundReports' | 'vfxShots' | 'costumes' | 'permits' | 'scriptNotes' | 'purchaseOrders'
-  | 'mediaOffloads' | 'makeup' | 'stills';
+  | 'mediaOffloads' | 'makeup' | 'stills' | 'extras';
 
 export type SettingsListItem<K extends SettingsListKey> = NonNullable<ProjectSettings[K]> extends Array<infer T> ? T : never;
 

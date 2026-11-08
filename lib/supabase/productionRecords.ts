@@ -5,7 +5,7 @@ import { supabase } from './client';
 export type RecordKind =
   | 'safety' | 'comms' | 'gear' | 'wraps' | 'rehearsals' | 'scouts' | 'directorNotes' | 'risks'
   | 'cameraReports' | 'soundReports' | 'vfxShots' | 'costumes' | 'permits' | 'scriptNotes' | 'purchaseOrders'
-  | 'mediaOffloads' | 'makeup' | 'stills';
+  | 'mediaOffloads' | 'makeup' | 'stills' | 'extras';
 
 /** A record as a view sees it: its own fields, plus the links to the film graph that live in real columns. */
 export type RecordItem = { id: string; scene_ids?: string[]; character_id?: string | null } & Record<string, unknown>;
