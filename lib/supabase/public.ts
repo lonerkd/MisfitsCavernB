@@ -22,6 +22,7 @@ export interface PortfolioPreview {
   role: string | null;
   profiles: { username: string | null } | null;
   portfolio_media: { url: string; thumbnail_url: string | null; media_type: string | null }[];
+  cover_url: string | null;
 }
 
 /** What a shared portfolio's link preview needs, by share token; null when there is none (or the read fails). */
@@ -29,7 +30,7 @@ export async function getPortfolioPreview(db: PublicClient | null, token: string
   if (!db || !token) return null;
   const { data, error } = await db.rpc('get_shared_portfolio', { p_token: token });
   if (error || !data) return null;
-  const d = data as { title: string; description: string | null; year: number | null; role: string | null; profiles?: { username: string | null } | null; portfolio_media?: PortfolioPreview['portfolio_media'] };
+  const d = data as { title: string; description: string | null; year: number | null; role: string | null; cover_url?: string | null; profiles?: { username: string | null } | null; portfolio_media?: PortfolioPreview['portfolio_media'] };
   return {
     title: d.title,
     description: d.description,
@@ -37,5 +38,26 @@ export async function getPortfolioPreview(db: PublicClient | null, token: string
     role: d.role,
     profiles: d.profiles ?? null,
     portfolio_media: d.portfolio_media ?? [],
+    cover_url: d.cover_url ?? null,
   };
+}
+
+export interface PortfolioPagePiece {
+  title: string; year: number | null; role: string | null; category: string | null; description: string | null;
+  cover_url: string | null; accent_color: string | null; share_token: string;
+}
+export interface PortfolioPageData {
+  page: 'unlisted' | 'public';
+  profile: { username: string | null; role: string | null; location: string | null; bio: string | null; avatar_url: string | null; status: string | null };
+  pieces: PortfolioPagePiece[];
+}
+
+/** A person's page by handle (their username), for the public /u/<handle> page; null when there is none or it is off. */
+export async function getPortfolioPage(db: PublicClient | null, handle: string): Promise<PortfolioPageData | null> {
+  if (!db || !handle.trim()) return null;
+  const { data, error } = await db.rpc('get_portfolio_page', { p_handle: handle });
+  if (error || !data) return null;
+  const d = data as Partial<PortfolioPageData>;
+  if (!d.profile || (d.page !== 'public' && d.page !== 'unlisted')) return null;
+  return { page: d.page, profile: d.profile, pieces: Array.isArray(d.pieces) ? d.pieces : [] };
 }

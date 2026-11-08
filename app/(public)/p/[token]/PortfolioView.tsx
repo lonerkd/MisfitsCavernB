@@ -24,6 +24,7 @@ interface Project {
   year: number | null;
   role: string | null;
   description: string | null;
+  cover_url?: string | null;
   share_token: string;
   created_at: string;
   portfolio_media: MediaItem[];
@@ -178,6 +179,14 @@ export function PortfolioView({ token }: { token: string }) {
         padding: 'clamp(32px, 5vw, 64px)',
         overflow: 'hidden',
       }}>
+        {project.cover_url && (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element -- the person's own cover link, not a next/image host */}
+            <img src={project.cover_url} alt="" referrerPolicy="no-referrer" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            {/* Fade to the page so the title stays readable over any picture, in any theme. */}
+            <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 30%, transparent) 70%)' }} />
+          </>
+        )}
         <div style={{
           position: 'absolute',
           inset: 0,

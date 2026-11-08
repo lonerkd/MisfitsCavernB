@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase/client';
 import { getPortfolioProjects, createPortfolioProject, addPortfolioMedia, deletePortfolioProject, deletePortfolioMedia, setPortfolioCover, setPortfolioVisibility } from '@/lib/supabase/portfolio';
 import { hasLiveLink, VISIBILITIES, VISIBILITY_LABEL, VISIBILITY_NOTE, visibilityOf, type PortfolioVisibility } from '@/lib/portfolio/visibility';
 import { isCoverUrl } from '@/lib/portfolio/header';
+import { PagePublishSetting } from '@/components/portfolio/PagePublishSetting';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import EmptyState from '@/components/ui/EmptyState';
@@ -173,6 +174,7 @@ export default function ManagePortfolioPage() {
       </header>
 
       <div style={{ maxWidth: 'var(--w-reading)', margin: '8px auto 0', padding: '40px 24px 80px' }}>
+        {user && <PagePublishSetting userId={user.id} />}
         {showNew && (
           <div style={{ padding: 20, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.08)', marginBottom: 24, display: 'grid', gap: 12 }}>
             <Input label="Project title" value={newProject.title} onChange={e => setNewProject({ ...newProject, title: e.target.value })} />

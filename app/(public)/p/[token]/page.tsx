@@ -11,8 +11,9 @@ import { PortfolioView } from './PortfolioView';
 
 export const dynamic = 'force-dynamic';
 
-/** A picture for the preview: a media item's thumbnail, an image, or a video's poster. */
-function previewImage(media: { url: string; thumbnail_url: string | null; media_type: string | null }[]): string | undefined {
+/** A picture for the preview: the piece's cover, else a media item's thumbnail, an image, or a video's poster. */
+function previewImage(cover: string | null | undefined, media: { url: string; thumbnail_url: string | null; media_type: string | null }[]): string | undefined {
+  if (cover) return cover;
   for (const m of media) {
     if (m.thumbnail_url) return m.thumbnail_url;
     if (m.media_type === 'image' || /\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(m.url)) return m.url;
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const description = data.description?.trim().slice(0, 200)
     || [data.role, data.year, by ? `by ${by}` : null].filter(Boolean).join(' · ')
     || 'A portfolio on The Cavern.';
-  const image = previewImage(data.portfolio_media);
+  const image = previewImage(data.cover_url, data.portfolio_media);
   return {
     title: `${data.title} — The Cavern`,
     description,
