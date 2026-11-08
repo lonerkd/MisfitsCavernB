@@ -1,15 +1,14 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useEffectEvent, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Disc, Search, Music, ShieldAlert, Play, Plus, Wand2 } from 'lucide-react';
+import { Disc, Search, ShieldAlert, Play, Plus, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
 import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { SoundDeck } from '@/components/audio/SoundDeck';
 import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
-import { scriptMoods, type MoodGroup } from '@/lib/spotify/moods';
 import { useProject, useOSGate } from '@/lib/os';
 import { useCanShape } from '@/lib/brief';
 import dynamic from 'next/dynamic';
@@ -20,6 +19,9 @@ import { useToast } from '@/components/ui/Toast';
 import { awaitOSUser } from '@/lib/os';
 
 // The Library is its own tab: loaded when it is opened, so the page's first load stays light.
+const SceneTimeline = dynamic(() => import('@/components/audio/SceneTimeline').then((m) => m.SceneTimeline), {
+  loading: () => <div className="animate-pulse h-24 w-full rounded-xl bg-[var(--sunken)]" />,
+});
 const SoundLibrary = dynamic(() => import('@/components/audio/SoundLibrary').then((m) => m.SoundLibrary), {
   loading: () => <div className="animate-pulse h-16 w-full rounded-xl bg-[var(--sunken)]" />,
 });
@@ -30,33 +32,12 @@ export default function SoundtrackPage() {
   const { toast } = useToast();
   const { user } = useOSGate();
   const canTag = useCanShape(activeProject?.id, !!user?.id && activeProject?.creator_id === user.id);
-  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
 
-  const [activeTab, setActiveTab] = useState<'search'|'moods'|'library'>('search');
+  const [activeTab, setActiveTab] = useState<'search'|'scenes'|'library'>('search');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Moods come from the project's script (lib/spotify/moods), scene by scene.
-  const [moodsFor, setMoods] = useState<{ projectId: string; title: string | null; groups: MoodGroup[] } | null>(null);
-  const moods = moodsFor && moodsFor.projectId === activeProject?.id
-    ? { status: 'ready' as const, title: moodsFor.title, groups: moodsFor.groups }
-    : { status: 'loading' as const, title: null, groups: [] as MoodGroup[] };
-  useEffect(() => {
-    if (activeTab !== 'moods' || !activeProject?.id) return;
-    const projectId = activeProject.id;
-    let on = true;
-    getLatestScript(projectId).then(
-      (script) => { if (on) setMoods({ projectId, title: script?.title ?? null, groups: script?.content ? scriptMoods(script.content) : [] }); },
-      () => {
-        if (!on) return;
-        setMoods({ projectId, title: null, groups: [] });
-        reportError('Could not read the script’s moods.');
-      },
-    );
-    return () => { on = false; };
-  }, [activeTab, activeProject?.id]);
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -72,12 +53,13 @@ export default function SoundtrackPage() {
     }
   };
 
-  const searchMood = async (mood: MoodGroup) => {
+  // "Find music for this scene": the scene's mood becomes the search, and Find opens with its tracks.
+  const findForScene = async (query: string) => {
     setActiveTab('search');
-    setSearchQuery(mood.query);
+    setSearchQuery(query);
     setIsSearching(true);
     try {
-      setSearchResults(await searchSpotify(mood.query, 'playlist'));
+      setSearchResults(await searchSpotify(query, 'track'));
     } catch (err: any) {
       toast('Search failed: ' + err.message, 'error');
     } finally {
@@ -156,7 +138,7 @@ export default function SoundtrackPage() {
       <ListenWithoutPremium />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
-        {(['search', 'moods', 'library'] as const).map(tab => (
+        {(['search', 'scenes', 'library'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -177,46 +159,12 @@ export default function SoundtrackPage() {
           exit={{ opacity: 0, y: -10 }}
           transition={{ duration: 0.2 }}
         >
-          {activeTab === 'moods' && (
-            <div className="space-y-6">
-              {!activeProject?.id ? (
-                <p className="mc-text text-[var(--fg-dim)]">Pick a project — its script’s moods appear here, scene by scene.</p>
-              ) : moods.status !== 'ready' ? (
-                <p className="mc-text text-[var(--fg-dim)]">Reading the script…</p>
-              ) : !moods.groups.length ? (
-                <p className="mc-text text-[var(--fg-dim)]">No scenes to read yet. Write a scene heading (INT. / EXT.) in ScriptOS and its mood shows up here — or search Spotify directly.</p>
-              ) : (
-                <>
-                  <p className="mc-text text-sm text-[var(--fg-dim)]">
-                    Read from <strong className="text-[var(--fg-muted)]">{moods.title ?? 'the script'}</strong>: each scene’s strongest mood from what happens in it. Pick one to find music for those scenes.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {moods.groups.map((g) => (
-                      <button
-                        key={g.mood}
-                        type="button"
-                        onClick={() => void searchMood(g)}
-                        title={`Find “${g.query}” playlists`}
-                        className="text-left p-5 rounded-2xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] hover:bg-[rgba(var(--ink-rgb),0.05)] transition-all group relative overflow-hidden"
-                      >
-                        <div className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity" style={{ background: `radial-gradient(circle at 15% 20%, ${g.color}, transparent 70%)` }} aria-hidden />
-                        <div className="relative z-10 flex items-center gap-3 mb-3">
-                          <span className="w-10 h-10 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center" style={{ boxShadow: `0 0 18px ${g.color}55` }} aria-hidden><Music size={16} /></span>
-                          <span className="mc-title text-lg">{g.mood}</span>
-                          <span className="mc-text text-xs text-[var(--fg-dim)] ml-auto">{g.scenes.length} scene{g.scenes.length === 1 ? '' : 's'}</span>
-                        </div>
-                        <ul className="relative z-10 space-y-1">
-                          {g.scenes.slice(0, 4).map((sc) => (
-                            <li key={sc.number} className="mc-text text-xs text-[var(--fg-dim)] truncate">{sc.number}. {sc.heading}</li>
-                          ))}
-                          {g.scenes.length > 4 && <li className="mc-text text-xs text-[var(--fg-dim)]">+{g.scenes.length - 4} more</li>}
-                        </ul>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
+          {activeTab === 'scenes' && (
+            !activeProject?.id ? (
+              <p className="mc-text text-[var(--fg-dim)]">Pick a project — its scenes and their music appear here.</p>
+            ) : (
+              <SceneTimeline projectId={activeProject.id} projectTitle={activeProject.title} canTag={canTag} onFind={(q) => void findForScene(q)} />
+            )
           )}
 
           {activeTab === 'library' && (

@@ -123,9 +123,14 @@ fetch.
 ## `/soundtrack`
 
 `app/(suite)/soundtrack/page.tsx`, `lib/spotify/*`, `GlobalAudioWidget`:
-- **Moods from the script** (`lib/spotify/moods.ts`): each scene scored
-  against what it describes (a chase, grief, a kiss…); scenes that share a
-  mood are grouped ("Dread · scenes 3, 7, 12"), each a Spotify search.
+- **Scenes timeline** (a tab; `components/audio/SceneTimeline.tsx`,
+  `lib/audio/timeline.ts`): the script's scenes left to right (width by
+  length: table read, else page eighths at a page a minute), each coloured by
+  its mood (`lib/spotify/moods.ts`: scored against what the scene describes),
+  a lane per role with each tagged track over its scene, hatched gaps where a
+  scene has no music; "Find music for this scene" opens Find with the mood's
+  search; owners and writers tag, remove and drag a bar to move its tag (with
+  undo).
 - **Spotify**: connect (OAuth → `/auth/spotify-callback`, tokens in
   `spotify_connections`), search, play in the global widget (Web Playback).
   **Redirect addresses** (`lib/spotify/redirect.ts`): Spotify only accepts
