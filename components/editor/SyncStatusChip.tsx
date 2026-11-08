@@ -34,8 +34,8 @@ export function describeSync(s: SyncStatus, now: number): SyncChipView | null {
 
 const TONE_COLOR = { warn: 'var(--warn)', error: 'var(--err, #ef4444)', busy: 'var(--violet)' } as const;
 
-/** The offline queue in the editor's status bar: network, what is waiting, when it retries. */
-export function SyncStatusChip() {
+/** The queue's state as the chip words it (null when there is nothing to say); ticks each second only while a retry countdown shows. */
+function useSyncView(): SyncChipView | null {
   const status = useSyncExternalStore(subscribeSyncStatus, getSyncStatus, getSyncStatus);
   const [now, setNow] = useState(() => Date.now());
   const counting = status.nextRetryAt !== null;
@@ -48,9 +48,10 @@ export function SyncStatusChip() {
     return () => clearInterval(t);
   }, [counting]);
 
-  const view = describeSync(status, now);
-  if (!view) return null;
+  return describeSync(status, now);
+}
 
+function ChipBody({ view }: { view: SyncChipView }) {
   return (
     <span role="status" style={{ display: 'flex', alignItems: 'center', gap: 6, color: TONE_COLOR[view.tone] }}>
       <span aria-hidden style={{ width: 5, height: 5, borderRadius: '50%', background: 'currentColor', display: 'inline-block', animation: view.tone === 'busy' ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
@@ -65,5 +66,25 @@ export function SyncStatusChip() {
         </button>
       )}
     </span>
+  );
+}
+
+/** The offline queue in the editor's status bar: network, what is waiting, when it retries. */
+export function SyncStatusChip() {
+  const view = useSyncView();
+  return view ? <ChipBody view={view} /> : null;
+}
+
+/**
+ * The same queue on a phone while the keyboard is up (the status bar is hidden then, to give the page its room): a one-line strip
+ * on top of the tool strip, only when there is something to say, so a stuck save is not invisible while you type.
+ */
+export function PhoneSyncLine({ bottom }: { bottom: number }) {
+  const view = useSyncView();
+  if (!view) return null;
+  return (
+    <div data-testid="phone-sync-line" style={{ position: 'fixed', left: 0, right: 0, bottom, zIndex: 149, padding: '4px 12px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.08)', fontFamily: 'var(--mono)', fontSize: 12, display: 'flex', justifyContent: 'center' }}>
+      <ChipBody view={view} />
+    </div>
   );
 }
