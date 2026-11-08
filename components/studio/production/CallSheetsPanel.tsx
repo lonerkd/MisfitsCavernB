@@ -16,7 +16,7 @@ import { lightNoteBrief } from '@/lib/film/sky';
 import { buildSides } from '@/lib/film/sides';
 import { sidesHtml } from '@/lib/film/sides-print';
 import { callSheetDoc } from '@/lib/studio/call-sheet-print';
-import { printDocument } from '@/lib/print/print';
+import { printDocument, printHtmlString } from '@/lib/print/print';
 import { buildBoard, stripKind, type StripKind } from '@/lib/studio/stripboard';
 import { Sky } from '@/components/film/Sky';
 import { Stamp } from '@/components/film/Stamp';
@@ -109,10 +109,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       })),
     );
     if (!sides.length) { toast('No one called that day has lines in the script yet.', 'info'); return; }
-    const w = window.open('', '_blank', 'width=820,height=1060');
-    if (!w) { toast('Allow pop-ups to print the sides.', 'error'); return; }
-    w.document.write(sidesHtml(sides, { title: project.title, day, date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toDateString() : null }));
-    w.document.close();
+    const ok = printHtmlString(sidesHtml(sides, { title: project.title, day, date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toDateString() : null, autoprint: false }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   return (

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { pitchDoc } from '@/lib/studio/pitch-print';
+import { printDocument } from '@/lib/print/print';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import SectionLabel from '@/components/ui/SectionLabel';
@@ -32,22 +34,16 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
   }, [scriptId]);
 
   const visual = concepts[0]?.image_url;
-  const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
   const printDeck = () => {
-    const w = window.open('', '_blank', 'width=900,height=1100');
-    if (!w) return;
-    const imgs = concepts.slice(0, 6).map((c) => `<img src="${esc(c.image_url)}" alt="${esc(c.title || 'concept')}" style="width:31%;height:120px;object-fit:cover;border-radius:6px;margin:0 1% 8px 0"/>`).join('');
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Pitch</title>
-      <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:48px;line-height:1.5}
-      .slide{page-break-inside:avoid;margin-bottom:36px}h1{font-size:34px;letter-spacing:2px;margin:0 0 8px}
-      .logline{font-size:16px;color:#444;max-width:640px}h2{font-size:11px;letter-spacing:3px;color:#b45309;border-bottom:1px solid #ddd;padding-bottom:4px;margin:28px 0 12px}
-      .chip{display:inline-block;font-size:12px;padding:4px 10px;background:#eef;border:1px solid #ccd;border-radius:99px;margin:0 6px 6px 0}</style></head><body>
-      <div class="slide"><h1>${esc(project.title).toUpperCase()}</h1><div class="logline">${esc(project.description || '')}</div></div>
-      <div class="slide"><h2>THE VISUAL WORLD</h2>${imgs || '<div style="color:var(--fg-dim)">No concept references yet.</div>'}</div>
-      <div class="slide"><h2>THE CHARACTERS</h2>${characters.length ? characters.map(c => `<span class="chip">${esc(c)}</span>`).join('') : '<div style="color:var(--fg-dim)">No characters yet.</div>'}</div>
-      <div class="slide"><h2>STORY ENGINE</h2>${beats.length ? beats.slice(0, 6).map((b) => `<div>• ${esc(b.title)}</div>`).join('') : '<div style="color:var(--fg-dim)">No story beats yet.</div>'}</div>
-      <script>window.onload=()=>window.print()</script></body></html>`);
-    w.document.close();
+    printDocument(pitchDoc({
+      title: project.title,
+      accent: project.accent_color,
+      logline: project.description || null,
+      concepts: concepts.map((c) => ({ url: c.image_url, title: c.title || null })),
+      characters,
+      beats: beats.map((b) => b.title),
+      generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    }));
   };
   const slides = [
     { label: 'Logline & Title', bg: undefined as string | undefined, render: (big: boolean) => (
