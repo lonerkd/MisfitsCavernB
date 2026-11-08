@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useSyncExternalStore } from 'react';
 import { getValidToken, logoutSpotify } from '../spotify/auth';
 import { controlPlayback, fetchPlayback, type PlaybackDevice } from '../spotify/playback';
+import { useToast } from '@/components/ui/Toast';
 
 interface SpotifyContextValue {
   isAuthenticated: boolean;
@@ -40,6 +41,7 @@ const subscribeSdk = (onChange: () => void) => { sdkListeners.add(onChange); ret
 const announceSdkReady = () => sdkListeners.forEach((l) => l());
 
 export function SpotifyProvider({ children }: { children: React.ReactNode }) {
+  const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const isSDKReady = useSyncExternalStore(subscribeSdk, sdkReady, () => false);
   const [player, setPlayer] = useState<any | null>(null);
@@ -173,7 +175,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
           // permission does not hammer the API on every page, every four seconds, for as long as the tab is open.
           failures += 1;
           waitUntil = Date.now() + Math.max(r.retryAfterMs, Math.min(60_000, 4000 * 2 ** failures));
-        } else if (r.playback && r.playback.device.id !== deviceId) {
+        } else if (r.playback && !(deviceId && r.playback.device.id === deviceId)) {  // this browser's own player only when both ids are real and equal
           failures = 0;
           hadRemote = true;
           const pb = r.playback;
@@ -213,6 +215,8 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Music goes where the music already is: the phone's app if that is playing, otherwise this browser.
+    // A device Spotify reports with no id (a restricted one) cannot be told to play a song: say so rather than start a second player here.
+    if (elsewhere && !elsewhere.id) { toast(`${elsewhere.name} will not take a song from here. Use “Play here” to bring the music to this browser first.`, 'error'); return; }
     const target = elsewhere?.id ?? deviceId;
     if (!target) return;
     const token = await getValidToken();
@@ -233,35 +237,43 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.error('Failed to play URI', err);
     }
-  }, [deviceId, elsewhere, useIframeFallback]);
+  }, [deviceId, elsewhere, useIframeFallback, toast]);
 
   // Controls drive whichever device has the music: the phone's app through the Web API, or this browser's player.
+  // A refusal is said out loud: Spotify answers 403 to an account without Premium or a device with no session, and a silent
+  // button looks broken. Resolves true when the device did it.
+  const driveRemote = useCallback(async (c: Parameters<typeof controlPlayback>[0]): Promise<boolean> => {
+    const ok = await controlPlayback(c, elsewhere?.id);
+    if (!ok) toast(`Spotify would not do that on ${elsewhere?.name ?? 'that device'}. Controlling another device needs Spotify Premium and a device that is awake.`, 'error');
+    return ok;
+  }, [elsewhere, toast]);
+
   const togglePlay = useCallback(() => {
-    if (elsewhere) { void controlPlayback({ kind: isPlaying ? 'pause' : 'play' }, elsewhere.id).then((ok) => { if (ok) setIsPlaying(!isPlaying); }); return; }
+    if (elsewhere) { void driveRemote({ kind: isPlaying ? 'pause' : 'play' }).then((ok) => { if (ok) setIsPlaying(!isPlaying); }); return; }
     if (player) player.togglePlay();
-  }, [player, elsewhere, isPlaying]);
+  }, [player, elsewhere, isPlaying, driveRemote]);
 
   const nextTrack = useCallback(() => {
-    if (elsewhere) { void controlPlayback({ kind: 'next' }, elsewhere.id); return; }
+    if (elsewhere) { void driveRemote({ kind: 'next' }); return; }
     if (player) player.nextTrack();
-  }, [player, elsewhere]);
+  }, [player, elsewhere, driveRemote]);
 
   const prevTrack = useCallback(() => {
-    if (elsewhere) { void controlPlayback({ kind: 'previous' }, elsewhere.id); return; }
+    if (elsewhere) { void driveRemote({ kind: 'previous' }); return; }
     if (player) player.previousTrack();
-  }, [player, elsewhere]);
+  }, [player, elsewhere, driveRemote]);
 
   const setVolumeLevel = useCallback((vol: number) => {
-    if (elsewhere) { void controlPlayback({ kind: 'volume', percent: vol * 100 }, elsewhere.id).then((ok) => { if (ok) setVolume(vol); }); return; }
+    if (elsewhere) { void driveRemote({ kind: 'volume', percent: vol * 100 }).then((ok) => { if (ok) setVolume(vol); }); return; }
     if (player) {
       player.setVolume(vol).then(() => setVolume(vol));
     }
-  }, [player, elsewhere]);
+  }, [player, elsewhere, driveRemote]);
 
   const seek = useCallback((positionMs: number) => {
-    if (elsewhere) { void controlPlayback({ kind: 'seek', positionMs }, elsewhere.id).then((ok) => { if (ok) setProgressMs(positionMs); }); return; }
+    if (elsewhere) { void driveRemote({ kind: 'seek', positionMs }).then((ok) => { if (ok) setProgressMs(positionMs); }); return; }
     if (player) void player.seek(positionMs).then(() => setProgressMs(positionMs));
-  }, [player, elsewhere]);
+  }, [player, elsewhere, driveRemote]);
 
   const playHere = useCallback(async () => {
     if (!deviceId) return false;
