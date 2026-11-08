@@ -5,6 +5,7 @@
 // percentages of the board, so it looks the same on any screen and prints the same.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { printHtmlString } from '@/lib/print/print';
 import { ImagePlus, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
@@ -181,12 +182,7 @@ export function BoardsPanel() {
 
   const print = () => {
     if (!active) return;
-    const w = window.open('', '_blank');
-    if (!w) { toast('Allow pop-ups to print the board.', 'error'); return; }
-    w.document.write(boardPrintHtml(active, boardItems, { titleOf: (i) => (i.media_id ? mediaById.get(i.media_id)?.title : '') || 'Untitled', srcOf, palette: colours }));
-    w.document.close();
-    w.focus();
-    w.print();
+    if (!printHtmlString(boardPrintHtml(active, boardItems, { titleOf: (i) => (i.media_id ? mediaById.get(i.media_id)?.title : '') || 'Untitled', srcOf, palette: colours }))) toast('Could not open the print dialog.', 'error');
   };
 
   const selected = boardItems.find((i) => i.id === selectedId) ?? null;
