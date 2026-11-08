@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cssString, printHtml, safeAccent, type PrintDoc } from './kit';
+import { cssString, printHtml, qrSvg, safeAccent, type PrintDoc } from './kit';
 
 const base: PrintDoc = { title: 'Day 3 — Call sheet', kind: 'Call sheet', blocks: [] };
 
@@ -65,5 +65,22 @@ describe('the print kit', () => {
     expect(html).toContain('counter(page)');
     expect(html).toContain('counter(pages)');
     expect(cssString('a"b\\c\nd<>&')).toBe('"a\\"b\\\\c d"');
+  });
+});
+
+describe('the QR block', () => {
+  it('draws an https link as inline SVG, a real code of the right size with a quiet zone, and nothing for any other link', () => {
+    const html = printHtml({ title: 'T', kind: 'K', blocks: [{ type: 'qr', url: 'https://example.test/u/maya', caption: 'Scan me' }] });
+    expect(html).toContain('<svg');
+    expect(html).toContain('<figcaption>Scan me</figcaption>');
+    expect(html).toMatch(/viewBox="0 0 (\d+) \1"/);
+    expect(html).not.toContain('<img'); // nothing is fetched from a QR service
+    const bad = printHtml({ title: 'T', kind: 'K', blocks: [{ type: 'qr', url: 'javascript:alert(1)' }, { type: 'qr', url: 'http://insecure.test' }, { type: 'qr', url: 'https://x.test/' + 'a'.repeat(500) }] });
+    expect(bad).not.toContain('<svg');
+  });
+  it('is the same code for the same link, and a different one for another link', () => {
+    const a = qrSvg('https://x.test/a'); const b = qrSvg('https://x.test/b');
+    expect(a).toBe(qrSvg('https://x.test/a'));
+    expect(a).not.toBe(b);
   });
 });
