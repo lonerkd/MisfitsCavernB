@@ -50,4 +50,23 @@ describe('CavernVisualizer', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: 'Next track' }), { key: ' ' });
     expect(spotify.togglePlay).not.toHaveBeenCalled();
   });
+  it('steers with the arrow keys and WASD without closing, and says what it is doing', () => {
+    const onClose = vi.fn();
+    render(<CavernVisualizer onClose={onClose} />);
+    for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'd', 'a', 'w', 's']) {
+      fireEvent.keyDown(window, { key });
+      fireEvent.keyUp(window, { key });
+    }
+    expect(onClose).not.toHaveBeenCalled();
+    expect(spotify.togglePlay).not.toHaveBeenCalled(); // arrows steer; only Space plays and pauses
+    expect(screen.getByText(/Following the player/)).toBeTruthy();
+    expect(screen.getByText(/in$/)).toBeTruthy();
+  });
+  it('leaves the seek slider its own arrow keys', () => {
+    render(<CavernVisualizer onClose={() => {}} />);
+    const slider = screen.getByRole('slider', { name: 'Seek' });
+    const ev = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+    slider.dispatchEvent(ev);
+    expect(ev.defaultPrevented).toBe(false);
+  });
 });

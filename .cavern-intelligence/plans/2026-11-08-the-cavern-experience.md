@@ -52,7 +52,16 @@ Spotify does not hand a web page the audio. The Web Playback SDK plays protected
 - It is not a game with enemies, levels or a fail state.
 - It does not read or transmit the captured audio: analysis stays in the browser and nothing is stored.
 
-## Questions for the owner
+## Decisions (owner, 2026-11-08)
+
+1. **The audio-share prompt is acceptable** (level 2, opt-in), still to be built.
+2. **A tally:** left to Claude: a quiet "N m in" reading, shown with the controls, never stored.
+3. **The runner is a stick-figure ninja, like the mobile ninja games, running with a lantern in its right hand through dark caves that vary.**
+4. **Side-on.** The owner's vision was first-person but worried it was too hard and too heavy for the site; a figure seen running is side-on by nature, and the layered depth gives the feel. First-person stays a possible later mode, not planned.
+
+**Built 2026-11-08 (steps 1 and 2, with the figure):** the seeded cave (`lib/cavern/cave.ts`: four kinds of place, tunnel, chamber, crawl and teeth, blended; always room to run), the runner and autopilot (`runner.ts`), drifting specks (`spores.ts`), the cover's colour (`palette.ts`), and the renderer (`components/shell/cavernScene.ts`: three cave layers, the dark that only the lantern lifts, a lit rim, the figure with its scarf). Arrow keys or WASD, or hold the mouse or a finger; right faster, left slower, up leaps, down crouches; idle for 6 s and it runs its own route, input takes it back without a jerk; the cave is seeded by the song and a new song blends in beyond the screen edge. Level 1 sync (state, seed, cover colour, strolling when paused). **Left:** the project's moods and the Scenes timeline as the journey (step 3), real audio reactivity (step 4: opt-in `getDisplayMedia`), `/cavern` as a wallpaper route (step 5), the song's progress shaping the journey, and a look at it on the owner's screen and phone.
+
+## Questions for the owner (answered above)
 
 1. **Is the Level 2 prompt acceptable** (the browser asks to share audio each session), given it is the only way to a real beat? Or is state-synced (levels 1 and 3) enough?
 2. **A quiet "caves explored / distance flown" tally** in a corner: wanted, or nothing counted at all?
