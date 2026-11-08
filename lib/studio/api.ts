@@ -5,11 +5,15 @@
 // client (lib/studio/index.ts), and tests/integration pass a signed-in persona,
 // so the integration suite exercises this exact code against a real database.
 
+import { castFromText } from '@/lib/film/cast';
+import { beginUpload } from '@/lib/island/uploads';
+import { uploadWithProgress } from '@/lib/supabase/uploadProgress';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
 import { logActivity } from '@/lib/supabase/activity';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
+import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -18,10 +22,12 @@ export type SceneRow = Tables<'scenes'>;
 export type SceneMedia = Tables<'scene_media'>;
 export type CharacterMedia = Tables<'character_media'>;
 export type Shot = Tables<'shots'>;
+export type MoodBoard = Tables<'mood_boards'>;
+export type MoodBoardItem = Tables<'mood_board_items'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
-export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; cast_list: string | null; est_duration: string | null }
+export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
 export interface CallSheetPerson { id: string; username: string; craft: string | null }
 export interface CallSheetView {
   sheet: CallSheet;
@@ -30,6 +36,7 @@ export interface CallSheetView {
   scenes: CallSheetScene[];
   people: Map<string, CallSheetPerson>;
   castAs: string[];
+  castIds: string[];
   acked: number | null;
 }
 export type ProjectLocation = Tables<'project_locations'>;
@@ -234,7 +241,10 @@ export function createStudioApi(db: Client) {
     const id = crypto.randomUUID();
     const path = `${projectId}/${id}/${safeFileName(file.name)}`;
 
-    const up = await db.storage.from(MEDIA_BUCKET).upload(path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' });
+    // The island shows the upload and how far along it is.
+    const tracker = beginUpload(file.name, file.size);
+    const up = await uploadWithProgress(db.storage.from(MEDIA_BUCKET), path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' }, tracker.progress)
+      .finally(tracker.end);
     if (up.error) throw new StudioError(`Upload failed: ${up.error.message}`);
 
     const { data, error } = await db
@@ -332,6 +342,23 @@ export function createStudioApi(db: Client) {
     const { data, error } = await db.from('scenes').update(patch).eq('id', id).select('*').maybeSingle();
     if (error) fail(error, 'Could not save the scene');
     if (!data) throw new StudioError('That scene no longer exists, or you can’t edit it.');
+    return data;
+  }
+
+  /**
+   * Writes the patch only if the scene still holds what `expected` says, in one statement, so nothing can slip in between.
+   * The undo of a move or a status change uses it, so it never overwrites a newer change (another device's, or a later one
+   * of your own). Null when the scene has changed since, or is gone, or you can't edit it.
+   */
+  async function updateSceneIf(
+    id: string,
+    expected: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>,
+    patch: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>,
+  ): Promise<SceneRow | null> {
+    let q = db.from('scenes').update(patch).eq('id', id);
+    for (const [col, val] of Object.entries(expected)) q = val === null || val === undefined ? q.is(col, null) : q.eq(col, val);
+    const { data, error } = await q.select('*').maybeSingle();
+    if (error) fail(error, 'Could not save the scene');
     return data;
   }
 
@@ -465,10 +492,10 @@ export function createStudioApi(db: Client) {
     const [p, cl, sc, crew, cast, ack] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration')
+      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
-      db.from('character_castings').select('character_name').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
+      db.from('character_castings').select('character_id, character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
       db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
     ]);
     for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
@@ -483,9 +510,10 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []) as CallSheetScene[],
+      scenes: (sc.data ?? []).map(({ scene_characters, cast_list, ...scene }) => ({ ...scene, cast: sceneCast(cast_list, scene_characters) })),
       people,
-      castAs: (cast.data ?? []).map((r) => r.character_name),
+      castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
+      castIds: (cast.data ?? []).map((r) => r.character_id ?? ''),
       acked: ack.data?.version ?? null,
     };
   }
@@ -504,6 +532,19 @@ export function createStudioApi(db: Client) {
       .upsert({ project_id: projectId, name: name.trim().toUpperCase(), ...patch }, { onConflict: 'project_id,name' })
       .select('*').single();
     if (error) fail(error, 'Could not save the location');
+    return data;
+  }
+
+  /** Renames a place. Every scene linked to it follows; headings in the script keep their own words. */
+  async function renameLocation(id: string, name: string): Promise<ProjectLocation> {
+    const next = name.trim().toUpperCase();
+    if (!next) throw new Error('A location needs a name');
+    const { data, error } = await db.from('project_locations').update({ name: next }).eq('id', id).select('*').single();
+    if (error) {
+      if (error.code === '23505') throw new Error(`There is already a location called ${next}`);
+      if (error.code === 'PGRST116') throw new Error('That location is gone, or you can’t change it');
+      fail(error, 'Could not rename the location');
+    }
     return data;
   }
 
@@ -570,6 +611,118 @@ export function createStudioApi(db: Client) {
   async function removeReadingCorrection(id: string): Promise<void> {
     const { error } = await db.from('reading_corrections').delete().eq('id', id);
     if (error) fail(error, 'Could not take that back');
+  }
+
+
+  // ── Mood boards ──────────────────────────────────────────────────────────
+  async function listMoodBoards(projectId: string): Promise<MoodBoard[]> {
+    const { data, error } = await db.from('mood_boards').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load the mood boards');
+    return data ?? [];
+  }
+
+  async function listMoodBoardItems(projectId: string): Promise<MoodBoardItem[]> {
+    const { data, error } = await db.from('mood_board_items').select('*').eq('project_id', projectId).order('z').order('created_at');
+    if (error) fail(error, 'Could not load the items on the boards');
+    return data ?? [];
+  }
+
+  /** A new board; a template starts it with its note cards. Returns the board and the cards it started with. */
+  async function createMoodBoard(projectId: string, userId: string, name: string, template: BoardTemplate = 'free'): Promise<{ board: MoodBoard; items: MoodBoardItem[] }> {
+    const clean = name.trim();
+    if (!clean) throw new StudioError('Give the board a name.');
+    if (clean.length > 120) throw new StudioError('Keep the name under 120 characters.');
+    if (!isTemplate(template)) throw new StudioError('Pick one of the board types.');
+    const { data: board, error } = await db.from('mood_boards').insert({ project_id: projectId, name: clean, template, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not make the board');
+    const seed = templateSeed(template);
+    if (!seed.length) return { board, items: [] };
+    const { data: items, error: itemError } = await db.from('mood_board_items')
+      .insert(seed.map((c, i) => ({ board_id: board.id, project_id: projectId, note: c.note, x: c.x, y: c.y, w: c.w, z: i, created_by: userId })))
+      .select('*');
+    if (itemError) fail(itemError, 'The board was made, but its starting cards were not');
+    return { board, items: items ?? [] };
+  }
+
+  async function renameMoodBoard(id: string, name: string): Promise<MoodBoard> {
+    const clean = name.trim();
+    if (!clean) throw new StudioError('Give the board a name.');
+    if (clean.length > 120) throw new StudioError('Keep the name under 120 characters.');
+    const { data, error } = await db.from('mood_boards').update({ name: clean }).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not rename the board');
+    return data;
+  }
+
+  async function deleteMoodBoard(id: string): Promise<void> {
+    const { error } = await db.from('mood_boards').delete().eq('id', id);
+    if (error) fail(error, 'Could not delete the board');
+  }
+
+  /** Library items onto a board, each in the next free spot. */
+  async function addBoardMedia(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, mediaIds: string[], existing: readonly MoodBoardItem[]): Promise<MoodBoardItem[]> {
+    if (!mediaIds.length) return [];
+    const placed: Array<{ x: number; y: number; w: number }> = existing.map((i) => ({ x: i.x, y: i.y, w: i.w }));
+    const top = existing.reduce((m, i) => Math.max(m, i.z), -1);
+    const rows = mediaIds.map((media_id, i) => {
+      const spot = nextSpot(placed, SIZES.medium);
+      placed.push({ ...spot, w: SIZES.medium });
+      return { board_id: board.id, project_id: board.project_id, media_id, x: spot.x, y: spot.y, w: SIZES.medium, z: top + 1 + i, created_by: userId };
+    });
+    const { data, error } = await db.from('mood_board_items').insert(rows).select('*');
+    if (error) fail(error, 'Could not add that to the board');
+    return data ?? [];
+  }
+
+  async function addBoardNote(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, text: string, existing: readonly MoodBoardItem[]): Promise<MoodBoardItem> {
+    const note = text.trim();
+    if (!note) throw new StudioError('Write something first.');
+    if (note.length > 1000) throw new StudioError('Keep a note card under 1,000 characters.');
+    const spot = nextSpot(existing.map((i) => ({ x: i.x, y: i.y, w: i.w })), SIZES.medium);
+    const top = existing.reduce((m, i) => Math.max(m, i.z), -1);
+    const { data, error } = await db.from('mood_board_items').insert({ board_id: board.id, project_id: board.project_id, note, ...spot, w: SIZES.medium, z: top + 1, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not add the note');
+    return data;
+  }
+
+  async function updateBoardItem(id: string, patch: Partial<Pick<MoodBoardItem, 'x' | 'y' | 'w' | 'z' | 'note'>>): Promise<MoodBoardItem> {
+    const next = { ...patch };
+    if (next.x !== undefined && next.y !== undefined) {
+      const c = clampPoint(next.x, next.y, next.w ?? SIZES.medium);
+      next.x = c.x;
+      next.y = c.y;
+    }
+    if (next.note !== undefined && (!next.note?.trim() || next.note.length > 1000)) throw new StudioError('A note card needs 1 to 1,000 characters.');
+    const { data, error } = await db.from('mood_board_items').update(next).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not save that change');
+    return data;
+  }
+
+  async function removeBoardItem(id: string): Promise<void> {
+    const { error } = await db.from('mood_board_items').delete().eq('id', id);
+    if (error) fail(error, 'Could not take that off the board');
+  }
+
+  async function listLineOverrides(scriptId: string): Promise<{ line_index: number; forced_type: string }[]> {
+    const { data, error } = await (db as any).from('reading_line_overrides').select('line_index, forced_type').eq('script_id', scriptId).order('line_index');
+    if (error) fail(error, 'Could not load line overrides');
+    return data ?? [];
+  }
+
+  async function setLineOverride(projectId: string, scriptId: string, lineIndex: number, forcedType: string): Promise<void> {
+    const { error } = await (db as any).from('reading_line_overrides')
+      .upsert({ project_id: projectId, script_id: scriptId, line_index: lineIndex, forced_type: forcedType }, { onConflict: 'project_id,script_id,line_index' });
+    if (error) fail(error, 'Could not save the line override');
+  }
+
+  async function removeLineOverride(projectId: string, scriptId: string, lineIndex: number): Promise<void> {
+    const { error } = await (db as any).from('reading_line_overrides').delete().eq('project_id', projectId).eq('script_id', scriptId).eq('line_index', lineIndex);
+    if (error) fail(error, 'Could not remove the line override');
+  }
+
+  async function getReadingMemory(userId: string, format: string = 'screenplay'): Promise<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]> {
+    const { data, error } = await (db as any).rpc('reading_memory_for_user', { p_user_id: userId, p_format: format });
+    if (error) fail(error, 'Could not load reading memory');
+    return data ?? [];
   }
 
   /** One record per character per scene; the first save makes it. */
@@ -823,6 +976,21 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /**
+   * Just what the island needs of a shoot day's clock: the day's call sheet (when it is dated, its planned wrap) and the
+   * crew-call, rolling, lunch, back-in and wrap stamps on it. Narrow on purpose: the island reads it on every page on a
+   * shoot day, so it must not pull the whole project's set log (notes, continuity, media).
+   */
+  async function getDayClock(projectId: string, dayNumber: number): Promise<{ sheet: { id: string; shoot_date: string | null; estimated_wrap: string | null } | null; rows: Array<{ kind: string; at: string }> }> {
+    const sheetRes = await db.from('call_sheets').select('id, shoot_date, estimated_wrap').eq('project_id', projectId).eq('shoot_day', dayNumber).maybeSingle();
+    if (sheetRes.error) fail(sheetRes.error, 'Could not read the day');
+    const sheet = sheetRes.data;
+    if (!sheet) return { sheet: null, rows: [] };
+    const logRes = await db.from('set_log').select('kind, at').eq('call_sheet_id', sheet.id).in('kind', ['call', 'rolling', 'lunch', 'back', 'wrap']);
+    if (logRes.error) fail(logRes.error, 'Could not read the day clock');
+    return { sheet, rows: logRes.data };
+  }
+
   async function addSetLog(entry: SetLogEntry): Promise<SetLogRow> {
     const { data, error } = await db.from('set_log').insert(entry).select('*').single();
     if (error) fail(error, 'Could not log that');
@@ -922,17 +1090,25 @@ export function createStudioApi(db: Client) {
   }
 
   return {
+    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
-    listScenes, listProjectScenes, syncScriptScenes, updateScene,
+    listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
-    listSetLog, addSetLog, updateSetLog, deleteSetLog,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,
     getLookbook,
   };
+}
+
+/** A scene's cast for the call sheet: the linked characters in name order, else the older text (as the Studio reads it: `lib/film/cast.ts`). */
+export function sceneCast(castList: string | null, links: Array<{ characters: { name: string } | null }> | null | undefined): string[] {
+  const linked = (links ?? []).map((l) => l.characters?.name?.trim().toUpperCase()).filter((n): n is string => !!n);
+  // The text keeps its script order (first appearance); each name once either way.
+  return linked.length ? Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b)) : Array.from(new Set(castFromText(castList)));
 }
 
 export type StudioApi = ReturnType<typeof createStudioApi>;

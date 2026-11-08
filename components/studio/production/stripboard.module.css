@@ -28,8 +28,8 @@
 .dayHead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .dayName { font-family: var(--display); font-size: 1.35rem; letter-spacing: -0.02em; color: var(--fg); line-height: 1; margin: 0; font-weight: 400; }
 .dayDate { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
-.dayDateInput { font: 600 var(--text-xs)/1 var(--ui); color: #fff; background: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.28); border-radius: 4px; padding: 3px 4px; color-scheme: dark; max-width: 118px; }
-.dayDateInput:hover, .dayDateInput:focus-visible { border-color: #fff; }
+.dayDateInput { font: 600 var(--text-xs)/1 var(--ui); color: var(--fg); background: var(--sunken, rgba(var(--ink-rgb), 0.06)); border: 1px solid var(--border-2); border-radius: 4px; padding: 3px 4px; max-width: 118px; }
+.dayDateInput:hover, .dayDateInput:focus-visible { border-color: var(--fg-muted); }
 .light { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-muted); display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 .lightLink { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); text-decoration: underline; text-underline-offset: 2px; }
 .lightLink:hover { color: var(--fg); }
@@ -59,7 +59,7 @@
 .meta { font-family: var(--ui); font-size: var(--text-xs); font-weight: 500; color: var(--paper-faint); display: flex; gap: 8px; align-items: center; overflow: hidden; white-space: nowrap; }
 .kind { color: inherit; }
 .pg { font-family: var(--ui); font-size: var(--text-sm); font-weight: 600; color: var(--paper-faint); text-align: right; }
-.statusBtn { grid-column: 3; justify-self: end; width: 18px; height: 18px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
+.statusBtn { grid-column: 3; justify-self: end; width: 24px; height: 24px; border-radius: 50%; border: none; background: transparent; cursor: pointer; display: grid; place-items: center; padding: 0; }
 .statusBtn:focus-visible { outline: 2px solid var(--studio); outline-offset: 1px; }
 .dot { width: 9px; height: 9px; border-radius: 50%; }
 .dot_planned { border: 1.5px solid rgba(20, 22, 27, 0.6); }

@@ -6,7 +6,7 @@
 import { castOf } from './stripboard';
 import { locationKey, locationReadiness } from './locations';
 
-export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs';
+export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs' | 'script';
 export type CheckState = 'done' | 'todo' | 'none';
 
 export interface ReadinessCheck {
@@ -39,6 +39,7 @@ export interface ReadinessScene {
   shoot_day: number | null;
   /** From the heading (INT. HARBOR - NIGHT → HARBOR). */
   location?: string | null;
+  location_id?: string | null;
 }
 
 export interface ReadinessInput {
@@ -50,17 +51,21 @@ export interface ReadinessInput {
   elementsByScene: Map<string, Array<{ name: string; status: 'needed' | 'sourcing' | 'ready' }>>;
   shotsByScene: Map<string, number>;
   refsByScene: Map<string, number>;
-  /** Shoot day → date from its call sheet. */
+  /** Shoot day → its date: the day's own, else its call sheet's (`dateOfDayMap`). */
   dateOfDay: Map<number, string>;
   /** Location records by name (upper case); absent → the check doesn't apply. */
   locations?: Map<string, { status: string; permit: string }>;
+  /** Where a scene shoots (graph first). Defaults to the heading's text. */
+  placeOf?: (scene: ReadinessScene) => string;
+  /** Scene ids whose read was doubtful (deep brain). */
+  doubtfulScenes?: Set<string>;
 }
 
 const list = (names: string[], max = 3) =>
   names.length <= max ? names.join(', ') : `${names.slice(0, max).join(', ')} +${names.length - max}`;
 
 function locationCheck(scene: ReadinessScene, input: ReadinessInput): ReadinessCheck {
-  const name = locationKey(scene.location);
+  const name = input.placeOf ? input.placeOf(scene) : locationKey(scene.location);
   if (!name || !input.locations) return { id: 'location', label: 'Location', state: 'none', detail: '' };
   const r = locationReadiness(name, input.locations.get(name));
   return { id: 'location', label: 'Location', state: r.ready ? 'done' : 'todo', detail: r.detail };
@@ -93,6 +98,7 @@ export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): Sc
       detail: date ? '' : day != null ? `Day ${day} has no date` : 'Not scheduled',
     },
     { id: 'refs', label: 'References', state: refs > 0 ? 'done' : 'todo', detail: refs > 0 ? '' : 'No references', optional: true },
+    { id: 'script', label: 'Script read', state: input.doubtfulScenes?.has(scene.id) ? 'todo' : 'done', detail: input.doubtfulScenes?.has(scene.id) ? 'Doubtful read — review the script' : '', optional: true },
   ];
 
   const required = checks.filter((c) => !c.optional && c.state !== 'none');

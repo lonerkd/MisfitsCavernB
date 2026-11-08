@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { Award, Check, Flame, Minus, Pause, Pencil, Play, Plus, RotateCcw, Target, X } from 'lucide-react';
 import type { WritingLoop } from '@/lib/writing';
+import { mmss } from '@/lib/writing/clock';
 
 type Toast = (msg: string, kind?: 'success' | 'error' | 'info') => void;
 
@@ -49,7 +50,6 @@ export function useSprint(loop: WritingLoop, toast: Toast) {
 }
 export type Sprint = ReturnType<typeof useSprint>;
 
-const mmss = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 const card: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)', padding: 12, borderRadius: 8 };
 const title: React.CSSProperties = { fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', display: 'flex', alignItems: 'center', gap: 6 };
 const iconBtn: React.CSSProperties = { width: 28, height: 28, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'none', color: 'var(--fg)', cursor: 'pointer' };
@@ -128,7 +128,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         <div style={{ ...title, justifyContent: 'space-between', marginBottom: 8 }}>
           <span>Sprint</span>
           <span style={{ display: 'flex', gap: 4 }}>
-            <button type="button" style={{ ...iconBtn, color: sprint.active ? 'var(--accent)' : '#0099ff' }} aria-label={sprint.active ? 'Pause sprint' : 'Start sprint'}
+            <button type="button" style={{ ...iconBtn, color: sprint.active ? 'var(--accent)' : 'var(--info)' }} aria-label={sprint.active ? 'Pause sprint' : 'Start sprint'}
               onClick={sprint.active ? sprint.pause : sprint.start}>{sprint.active ? <Pause size={13} /> : <Play size={13} />}</button>
             <button type="button" style={iconBtn} aria-label="Reset sprint" onClick={sprint.reset} disabled={!sprint.running && !sprint.active}><RotateCcw size={12} /></button>
           </span>
@@ -150,7 +150,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {loop.badges.map((b) => (
             <li key={b.id} title={b.hint}
-              style={{ fontSize: 11, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 9999, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, color: b.earned ? '#5fd99a' : 'var(--fg-muted)' }}>
+              style={{ fontSize: 11, fontFamily: 'var(--mono)', padding: '3px 8px', borderRadius: 9999, border: `1px solid ${b.earned ? 'rgba(52,199,123,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, color: b.earned ? 'var(--ok)' : 'var(--fg-muted)' }}>
               {b.earned ? '✓ ' : ''}{b.label}<span className="sr-only">{b.earned ? ' — earned' : ` — ${b.hint}`}</span>
             </li>
           ))}

@@ -1,5 +1,6 @@
 'use client';
 
+import { requestNoteFocus } from '@/lib/notes/focus';
 // The Studio — the production workspace of the suite. One project at a time:
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
@@ -17,7 +18,7 @@ import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage } from '@/lib/os/PillContext';
 import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
-import { STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
+import { PRODUCTION_VIEWS, STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
 import { cx } from '@/components/studio/ui';
@@ -49,8 +50,6 @@ const ALL_TABS: Array<{ id: TabId; label: string; icon: React.ReactNode }> = [
   { id: 'share', label: 'Share', icon: <Globe size={12} /> },
 ];
 
-const VIEWS: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew', 'continuity'];
-
 /** The open tab (and Production view), mirrored in ?tab=&view= so links and reloads land in the same place. */
 function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?: ProductionView) => void] {
   // The address is the source of truth; choosing a tab rewrites it and re-renders.
@@ -65,7 +64,7 @@ function useTab(valid: TabId[]): [TabId, ProductionView | null, (t: TabId, view?
     window.history.replaceState(null, '', url);
     rerender();
   }, []);
-  return [t && valid.includes(t) ? t : 'overview', v && VIEWS.includes(v) ? v : null, setTab];
+  return [t && valid.includes(t) ? t : 'overview', v && (PRODUCTION_VIEWS as readonly string[]).includes(v) ? v : null, setTab];
 }
 
 export default function StudioPage() {
@@ -126,7 +125,11 @@ export default function StudioPage() {
           title: activeProject.title,
           accent: activeProject.accent_color || '#6366f1',
           fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: 'var(--violet)' }],
-          actions: [{ id: 'next-tab', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) }],
+          actions: [
+            { id: 'note', slot: 'note' as const, label: 'Add a note', onClick: () => { setTab('overview'); requestNoteFocus(); } },
+            { id: 'next-tab', slot: 'view', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) },
+            ...(tab !== 'share' ? [{ id: 'open-share', slot: 'share' as const, label: 'Share tab', onClick: () => setTab('share') }] : []),
+          ],
         }
       : null,
   );

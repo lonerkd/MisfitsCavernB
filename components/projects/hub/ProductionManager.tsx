@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Briefcase, ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import * as hub from '@/lib/supabase/project-hub';
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { getProductionData, type BudgetRow, type CrewRow, type FestivalRow, type PortfolioRow, type TaskRow, type TimelineRow } from '@/lib/supabase/project-hub';
 import { breakdown, costByCategory } from '@/lib/breakdown';
 import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
@@ -108,11 +109,22 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   };
   const toggleTask = async (t: TaskRow) => {
     setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: !t.completed } : x));
-    if (!await attempt(() => hub.updateTask(t.id, { completed: !t.completed }))) setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x));
+    const origin = undoOrigin();
+    if (!await attempt(() => hub.updateTask(t.id, { completed: !t.completed }))) { setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x)); return; }
+    pushUndo(t.completed ? 'Task marked open again' : 'Task marked done', async () => {
+      await hub.updateTask(t.id, { completed: t.completed });
+      setTasks(p => p.map(x => x.id === t.id ? { ...x, completed: t.completed } : x));
+    }, origin);
   };
   const setTaskField = async (t: TaskRow, patch: Partial<Pick<TaskRow, 'assigned_to' | 'due_date'>>) => {
     setTasks(p => p.map(x => x.id === t.id ? { ...x, ...patch } : x));
+    const origin = undoOrigin();
     if (!await attempt(() => hub.updateTask(t.id, patch))) { setTasks(p => p.map(x => x.id === t.id ? t : x)); return; }
+    pushUndo('Task changed', async () => {
+      const back = Object.fromEntries(Object.keys(patch).map((k) => [k, t[k as keyof typeof patch]])) as Partial<Pick<TaskRow, 'assigned_to' | 'due_date'>>;
+      await hub.updateTask(t.id, back);
+      setTasks(p => p.map(x => x.id === t.id ? { ...x, ...back } : x));
+    }, origin);
     if (patch.assigned_to && patch.assigned_to !== t.assigned_to) {
       notify(patch.assigned_to, { type: 'task', title: `You were assigned “${plain(t.title)}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
     }
@@ -470,7 +482,7 @@ function BudgetRowItem({
       { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
       ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? 'var(--danger)' : undefined }] : []),
     ],
-    actions: posted ? [] : [{ id: 'post-job', label: '→ Post as Job', onClick: onPostJob }],
+    actions: posted ? [] : [{ id: 'post-job', slot: 'create', label: '→ Post as Job', onClick: onPostJob }],
   }, 2);
 
   return (

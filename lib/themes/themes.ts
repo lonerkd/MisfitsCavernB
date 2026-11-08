@@ -5,7 +5,7 @@
 // Pure except `applyTheme` / `readLocalTheme` (DOM, localStorage).
 
 export type ThemeId =
-  | 'default' | 'inkrust' | 'terminal' | 'blueprint' | 'mono' | 'paper' | 'editorial'
+  | 'default' | 'misfit' | 'terminal' | 'blueprint' | 'mono' | 'paper' | 'editorial'
   | 'glass' | 'neon' | 'slate' | 'lagoon' | 'forest' | 'vampire';
 
 export interface ThemeDef {
@@ -18,13 +18,13 @@ export interface ThemeDef {
 }
 
 export const THEMES: ThemeDef[] = [
+  { id: 'misfit', label: 'Misfit', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#f34013'] },
   { id: 'default', label: 'Cavern', hint: 'The house look: night, a cool white, sinopia red', mode: 'dark', swatch: ['#040710', '#e9ebef', '#e8431a'] },
   { id: 'paper', label: 'Paper', hint: 'Warm off-white, ink and terracotta', mode: 'light', swatch: ['#f6f1e7', '#1f1a14', '#b3361a'] },
   { id: 'vampire', label: 'Vampire', hint: 'Crimson and violet on black', mode: 'dark', swatch: ['#090101', '#f5eedc', '#f04444'] },
   { id: 'blueprint', label: 'Blueprint', hint: 'Drafting-table blue with a grid', mode: 'dark', swatch: ['#0b2447', '#dbe8ff', '#5cc8ff'] },
   { id: 'terminal', label: 'Terminal', hint: 'Green phosphor, monospace everything', mode: 'dark', swatch: ['#030a05', '#8dfc9b', '#3dff6e'] },
   { id: 'editorial', label: 'Editorial', hint: 'White page, black type, a red rule', mode: 'light', swatch: ['#ffffff', '#111111', '#c8102e'] },
-  { id: 'inkrust', label: 'Ink & Rust', hint: 'Ink-blue night, pale-gold text, muted rust', mode: 'dark', swatch: ['#040710', '#e0ddae', '#d7340b'] },
   { id: 'mono', label: 'Mono', hint: 'Black, white and greys — no colour', mode: 'dark', swatch: ['#000000', '#f2f2f2', '#ffffff'] },
   { id: 'glass', label: 'Glass', hint: 'Deep gradient under frosted panels', mode: 'dark', swatch: ['#0c1024', '#eef0ff', '#8b9cff'] },
   { id: 'neon', label: 'Neon', hint: 'Night city: magenta and electric cyan', mode: 'dark', swatch: ['#0b0114', '#f3e8ff', '#ff2bd6'] },
@@ -35,13 +35,15 @@ export const THEMES: ThemeDef[] = [
 
 const IDS = new Set<string>(THEMES.map((t) => t.id));
 /** Names from before this catalogue. */
-const LEGACY: Record<string, ThemeId> = { cyberpunk: 'neon', obsidian: 'mono' };
+const LEGACY: Record<string, ThemeId> = { cyberpunk: 'neon', obsidian: 'mono', inkrust: 'misfit' };
 
 export type ThemeChoice =
   | { id: ThemeId | 'system' }
   | { id: 'custom'; bg: string; accent: string };
 
-export const DEFAULT_CHOICE: ThemeChoice = { id: 'default' };
+/** What a person who has not chosen sees: Misfit (owner, 2026-11-05). Paper and Cavern stay one tap away, and System gives Paper on a light device and Cavern on a dark one. */
+export const DEFAULT_THEME_ID: ThemeId = 'misfit';
+export const DEFAULT_CHOICE: ThemeChoice = { id: DEFAULT_THEME_ID };
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Tolerant reader for a stored choice (account prefs, this device, or an old plain name). */
@@ -159,7 +161,8 @@ export function applyTheme(choice: ThemeChoice) {
  * page paints (app/layout.tsx), so a light theme never flashes dark.
  */
 export const EARLY_THEME_SCRIPT = `(function(){try{var r=localStorage.getItem('${THEME_KEY}');var c;try{c=JSON.parse(r)}catch(e){c=r}
-if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
+if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono',inkrust:'misfit'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
 if(c.id==='custom'){var v=JSON.parse(localStorage.getItem('${THEME_VARS_KEY}')||'null');if(!v)return;d.dataset.theme='custom';for(var k in v)d.style.setProperty(k,v[k]);return;}
 var id=c.id;if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'default';
+else if(${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='${DEFAULT_THEME_ID}';
 d.dataset.theme=id;}catch(e){}})();`;

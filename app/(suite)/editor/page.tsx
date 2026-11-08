@@ -1,5 +1,7 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
+import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
@@ -12,6 +14,7 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
@@ -41,19 +44,28 @@ import { useBriefAnswer } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/os/PillContext';
-import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
-import { useEditUndo } from '@/components/editor/useEditUndo';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
 import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
+import { SoundPanel } from '@/components/editor/SoundPanel';
+import { SceneMusic } from '@/components/editor/SceneMusic';
+import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
+import { NotesPanel } from '@/components/notes/NotesPanel';
+import { ShareScriptButton } from '@/components/editor/ShareScriptButton';
+import { usePhoneLayout } from '@/lib/os/usePhone';
+import { BottomSheet } from '@/components/phone/BottomSheet';
+import { PhoneEditorBar, VIEW_LABELS } from '@/components/editor/PhoneEditorBar';
+import { PhoneToolStrip } from '@/components/editor/PhoneToolStrip';
+import { requestNoteFocus } from '@/lib/notes/focus';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
@@ -68,18 +80,22 @@ import { WriteFooter } from '@/components/editor/WriteFooter';
 import { SyncStatusChip } from '@/components/editor/SyncStatusChip';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
+import { useCanShareScript } from '@/components/editor/ShareScriptButton';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
+import { LineOverrideButton } from '@/components/editor/LineOverrideButton';
 import { doubtfulReads } from '@/lib/scriptos/review';
 import { cueCard } from '@/lib/film/cue';
 import { cueName } from '@/lib/film/sides';
 import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
-import { useCharacters, useReadingCorrections, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
+import { useActivity } from '@/lib/island/activities';
+import { sprintActivity } from '@/lib/island/sprintActivity';
+import { useCharacters, useReadingCorrections, useProjectLocations, useLineOverrides, useReadingMemory, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { awaitOSUser, osState } from '@/lib/os';
 
@@ -116,25 +132,69 @@ export default function EditorPage() {
   const toastRef = useRef(toast);
   useLayoutEffect(() => { toastRef.current = toast; });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const caretAfterRemote = useRef<[number, number] | null>(null);
+  // Where the caret goes once the text the editor itself reshaped (an opening parenthesis, a Tab, an inserted element) is on screen.
+  const caretAfterEdit = useRef<number | null>(null);
   // Tab is a formatting key in the script. Escape hands it back, once, so a keyboard can leave the page.
   const tabLeavesScript = useRef(false);
   const highlightRef = useRef<HTMLDivElement>(null);
   const [content, setContent] = useState('');
   const [currentScript, setCurrentScript] = useState<StoredScript | null>(null);
-  const { noteEdit: noteHistoryEdit, commit: commitHistory, undo, redo } = useEditUndo(currentScript?.id, content, setContent);
+  const { isSyncing, collaborators, broadcastCursor, undo, redo, stopUndoCapturing } = useScriptSync(
+    currentScript?.id || '',
+    content,
+    (next, mapIndex) => {
+      // Someone else's words land in the text: keep this writer's caret where it was.
+      const ta = textareaRef.current;
+      if (mapIndex && ta && document.activeElement === ta) {
+        caretAfterRemote.current = [mapIndex(ta.selectionStart), mapIndex(ta.selectionEnd)];
+      }
+      // A caret the editor has yet to place moves with the words that came in before it.
+      if (mapIndex && caretAfterEdit.current !== null) caretAfterEdit.current = mapIndex(caretAfterEdit.current);
+      // A collaborator's edit is already in the shared text; put it on screen at
+      // once, so a key pressed a moment later is measured against what the
+      // writer sees and cannot wipe the edit out.
+      if (mapIndex) flushSync(() => setContent(next));
+      else setContent(next);
+    },
+  );
+  useLayoutEffect(() => {
+    const caret = caretAfterRemote.current;
+    const ta = textareaRef.current;
+    caretAfterRemote.current = null;
+    if (caret && ta && document.activeElement === ta) ta.setSelectionRange(caret[0], caret[1]);
+    // The reshaped text has just been put on screen (which moves the caret to the end): put the caret where the edit left it,
+    // now, not on a timer, so a key pressed at once cannot land at the end of the script.
+    const placed = caretAfterEdit.current;
+    if (placed !== null && ta) {
+      caretAfterEdit.current = null;
+      ta.focus();
+      ta.setSelectionRange(placed, placed);
+    }
+  }, [content]);
   const stash = useScriptStash(currentScript?.id ?? null);
   // Everything the text implies — lines, scenes, character stats, lint — worked
   // out from it. Deferred, so typing stays quick on a long script.
   const parseSource = useDeferredValue(content);
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
+  const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
-  const readContext = useMemo(() => contextFromProject(Object.values(castings), corrections.rows), [castings, corrections.rows]);
+  const locations = useProjectLocations(activeProject?.id ?? null);
+  const lineOverrides = useLineOverrides(currentScript?.id ?? null);
+  const { writerMemory } = useReadingMemory(sessionUser?.id ?? null);
+  const readContext = useMemo(() => contextFromProject(
+    Object.values(castings),
+    corrections.rows,
+    writerMemory,
+    lineOverrides.rows.map((r: { line_index: number; forced_type: string }) => ({ line_index: r.line_index, forced_type: r.forced_type })),
+    locations.rows.map((l: { name: string }) => ({ name: l.name })),
+    undefined, // previousDraftCues
+  ), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
-    // Only copy has its own reading here; every other script is read as before (BACKLOG: let podcast and outline scripts use theirs).
-    const result = parseScript(parseSource, scriptFormat === 'copy' ? 'copy' : 'screenplay', undefined, { context: readContext });
+    const result = parseScript(parseSource, readingFormat(scriptFormat), undefined, { context: readContext });
     return {
       lines: result.lines,
       parsedScenes: result.scenes,
@@ -162,15 +222,12 @@ export default function EditorPage() {
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 820px)');
-    const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
-    apply();
-    mq.addEventListener?.('change', apply);
-    return () => mq.removeEventListener?.('change', apply);
-  }, []);
+  // The phone has its own layout (a slim bar, bottom sheets, an element strip over the keyboard), chosen by size and touch, not by a breakpoint alone.
+  const phone = usePhoneLayout();
+  const isMobile = phone.phone;
+  const [sheet, setSheet] = useState<null | 'scripts' | 'views' | 'tools' | 'more'>(null);
+  // Picking a scene or a view on a phone puts the sheet away.
+  const closeSheet = () => setSheet(null);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
   // True while the latest save is only on this device (server unreachable);
@@ -193,7 +250,7 @@ export default function EditorPage() {
   const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, matchCase, setMatchCase, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
     useFindReplace(content, setContent);
 
-  const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
+  const [rightPanel, setRightPanel] = useState<RightPanelTab>('scene');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
@@ -204,7 +261,6 @@ export default function EditorPage() {
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
 
-  const [showShortcuts, setShowShortcuts] = useState(false);
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
@@ -217,13 +273,6 @@ export default function EditorPage() {
   const [diffRevisionId, setDiffRevisionId] = useState<string | null>(null);
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const { isSyncing, lastSyncedAt, collaborators, conflict, broadcastCursor, noteLocalEdit, resolveConflict } = useScriptSync(currentScript?.id || '', content, (newContent) => {
-
-    if (newContent !== content) {
-      setContent(newContent);
-    }
-  });
 
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
@@ -379,6 +428,7 @@ export default function EditorPage() {
   // The writing loop: words typed today, the streak, sprints (lib/writing).
   const writing = useWritingLoop(sessionUser?.id ?? null);
   const sprint = useSprint(writing, toast);
+  useActivity(sprintActivity(sprint)); // a running sprint is held on the island, with pause and reset
 
   const handleSave = useCallback(async () => {
     if (!currentScript) return;
@@ -402,10 +452,10 @@ export default function EditorPage() {
     const normalized = canonicalizeFountain(content);
     if (normalized === content) { toast('Already in canonical Fountain form.', 'info'); return; }
     // Committed history entry so Normalize is a single click away from undo.
-    commitHistory(content);
+    stopUndoCapturing();
     setContent(normalized);
     toast('Formatting normalized to canonical Fountain.', 'success');
-  }, [content, toast, commitHistory]);
+  }, [content, toast, stopUndoCapturing]);
 
   const handleLockRevision = useCallback(async () => {
     if (!currentScript) return;
@@ -432,48 +482,26 @@ export default function EditorPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
         e.preventDefault();
-        handleSave();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        setShowFindReplace(prev => !prev);
+        if (chord === 'undo') undo(); else redo();
       }
       if (e.key === 'Escape') {
         if (focusMode) setFocusMode(false);
         if (showFindReplace) setShowFindReplace(false);
         if (showFormatMenu) setShowFormatMenu(false);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        setFocusMode(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'g') {
-        e.preventDefault();
-        setShowGoToScene(prev => !prev);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === '/') {
-        e.preventDefault();
-        setShowShortcuts(prev => !prev);
-      }
-      if (e.key === 'Escape') {
         if (showGoToScene) setShowGoToScene(false);
-        if (showShortcuts) setShowShortcuts(false);
-      }
-
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        if (e.shiftKey) redo(); else undo();
-      }
-      if (document.activeElement === textareaRef.current && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
-        e.preventDefault();
-        redo();
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, showShortcuts, undo, redo]);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
 
   const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
 
@@ -487,7 +515,15 @@ export default function EditorPage() {
 
   // Where the caret goes after an edit: the textarea is controlled, so set it once React has rendered.
   const placeCaret = (editor: HTMLTextAreaElement, caret: number) => {
-    setTimeout(() => { editor.focus(); editor.setSelectionRange(caret, caret); }, 0);
+    // Applied as soon as the new text is on screen (see the layout effect on `content`). If the text turns out to be
+    // unchanged there is no new text to wait for, so the timer places it instead.
+    caretAfterEdit.current = caret;
+    setTimeout(() => {
+      if (caretAfterEdit.current === null) return;
+      caretAfterEdit.current = null;
+      editor.focus();
+      editor.setSelectionRange(caret, caret);
+    }, 0);
   };
 
   const insertElement = (type: string) => {
@@ -536,26 +572,27 @@ export default function EditorPage() {
       }
     }
 
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (!editor) return;
-      const cursor = editor.selectionStart;
-      const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
-      const edit = cycleLine(content, cursor, lines[lineIdx]?.type, e.shiftKey, TAB_TYPE_CYCLE, transformLineForType);
-      if (edit === 'empty') { insertElement('scene'); return; }
-      setContent(edit.next);
-      placeCaret(editor, edit.caret);
-    }
+    if (e.key === 'Tab') { e.preventDefault(); cycleElement(e.shiftKey); }
+  };
+
+  // Tab on a desk keyboard; a button on the phone's tool strip (a phone keyboard has no Tab).
+  const cycleElement = (reverse: boolean) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
+    const edit = cycleLine(content, cursor, lines[lineIdx]?.type, reverse, TAB_TYPE_CYCLE, transformLineForType);
+    if (edit === 'empty') { insertElement('scene'); return; }
+    setContent(edit.next);
+    placeCaret(editor, edit.caret);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
     const typed = typedWords(content, val);
     if (typed) { writing.add(typed); sprint.onType(typed); }
-    noteHistoryEdit(content);
     setContent(val);
     setCursorLine(val.substring(0, e.target.selectionStart).split('\n').length - 1);
-    noteLocalEdit();
     broadcastCursor(e.target.selectionStart);
 
     const ta = e.target;
@@ -580,9 +617,7 @@ export default function EditorPage() {
   const handleCopyChange = (val: string) => {
     const typed = typedWords(content, val);
     if (typed) { writing.add(typed); sprint.onType(typed); }
-    noteHistoryEdit(content);
-    setContent(val);
-    noteLocalEdit();
+    setContent(val); // the sync layer turns this into a tracked local edit (undo included)
     setShowAutocomplete(false);
   };
 
@@ -605,10 +640,10 @@ export default function EditorPage() {
   });
   const [openElementId, setOpenElementId] = useState<string | null>(null);
   const openBreakdown = useCallback((elementId?: string | null) => {
-    setShowRightSidebar(true);
-    setRightPanel('breakdown');
+    if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
+    setRightPanel('scene');
     if (elementId !== undefined) setOpenElementId(elementId);
-  }, []);
+  }, [isMobile, setSheet, setRightPanel, setShowRightSidebar, setOpenElementId]);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -627,6 +662,36 @@ export default function EditorPage() {
       const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
       textarea.scrollTop = Math.max(0, (linesBefore - 3) * lh);
     }, 60);
+  };
+
+  // Caret one line up/down by the script's own lines (same column where the line is long enough), for a keyboard with no arrows.
+  const moveCaretLine = (dir: -1 | 1) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const text = ta.value;
+    const start = text.lastIndexOf('\n', pos - 1) + 1;
+    const col = pos - start;
+    let target: number;
+    if (dir < 0) {
+      if (start === 0) { target = 0; } else {
+        const prevStart = text.lastIndexOf('\n', start - 2) + 1;
+        target = Math.min(prevStart + col, start - 1);
+      }
+    } else {
+      const end = text.indexOf('\n', pos);
+      if (end === -1) { target = text.length; } else {
+        const nextEnd = text.indexOf('\n', end + 1);
+        const nextStop = nextEnd === -1 ? text.length : nextEnd;
+        target = Math.min(end + 1 + col, nextStop);
+      }
+    }
+    ta.focus();
+    ta.setSelectionRange(target, target);
+    setCursorLine(text.substring(0, target).split('\n').length);
+    const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
+    const lineTop = (text.substring(0, target).split('\n').length - 1) * lh;
+    if (lineTop < ta.scrollTop || lineTop > ta.scrollTop + ta.clientHeight - lh * 2) ta.scrollTop = Math.max(0, lineTop - ta.clientHeight / 2);
   };
 
   const reorderScenes = (from: number, to: number) => {
@@ -742,6 +807,7 @@ export default function EditorPage() {
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
+  const openNotes = () => { setFocusMode(false); setRightPanel('notes'); if (isMobile) setSheet('tools'); else setShowRightSidebar(true); requestNoteFocus(); };
   usePillStage(
     {
       module: 'editor',
@@ -756,7 +822,9 @@ export default function EditorPage() {
         { id: 'focus', label: 'Focus', active: focusMode, onToggle: () => setFocusMode(v => !v) },
       ],
       actions: [
-        { id: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'note', slot: 'note', label: 'Add a note', onClick: openNotes },
+        { id: 'sprint', slot: 'live', label: sprint.active ? 'Pause sprint' : sprint.running ? 'Resume sprint' : 'Start sprint', onClick: sprint.active ? sprint.pause : sprint.start },
       ],
     }
   );
@@ -778,15 +846,131 @@ export default function EditorPage() {
   const scriptProjectId = currentScript?.project_id ?? null;
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
-  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowShortcuts, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+  const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+
+  const leftNavEl = (
+    <EditorLeftNav
+      scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+      setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
+      fileInputRef={fileInputRef} handleImportFile={handleImportFile}
+      showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
+      templates={TEMPLATES}
+      scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
+      sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
+      actStructure={actStructure}
+      jumpToScene={(i: number) => { jumpToScene(i); if (isMobile) closeSheet(); }} reorderScenes={reorderScenes}
+      dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+      dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
+    />
+  );
+
+  const rightPanelsEl = (
+    <EditorErrorBoundary onCrash={() => {
+      try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+    }}>
+      <EditorRightPanels
+        showBreakdown={tools.breakdown}
+        currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
+        rightPanel={rightPanel} setRightPanel={setRightPanel}
+        activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
+        getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
+        sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
+        insertElement={insertElement}
+        writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
+        wordCount={wordCount}
+        pageEst={pageEst} dialogueRatio={dialogueRatio}
+        typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
+        nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
+        chars={chars} charStats={charStats}
+        handleLockRevision={handleLockRevision} revisions={revisions}
+        onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
+        setContent={setContent} toast={toast}
+        showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
+        showWatermark={showWatermark} setShowWatermark={setShowWatermark}
+        lintIssues={lintIssues}
+        stash={stash} textareaRef={textareaRef}
+        currentScript={currentScript}
+        readingPanel={
+          <>
+            <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
+            <LineOverrideButton
+              projectId={currentScript?.project_id ?? null}
+              scriptId={currentScript?.id ?? null}
+              lineIndex={cursorLine}
+              currentType={lines[cursorLine]?.type ?? 'action'}
+              onSaved={() => { lineOverrides.reload(); }}
+            />
+          </>
+        }
+        breakdownPanel={
+          <BreakdownPanel
+            bd={bd}
+            projectId={currentScript?.project_id ?? null}
+            sceneIdx={currentSceneIdx}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
+            crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
+            openElementId={openElementId}
+            setOpenElementId={setOpenElementId}
+            onJumpToScene={jumpToScene}
+          />
+        }
+        soundPanel={
+          <SoundPanel
+            tableRead={{
+              supported: isTableReadSupported(), playing: tableReadPlaying, lineIdx: tableReadLineIdx, totalLines: lines.length,
+              sceneStartLine: currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.startIndex ?? null : null,
+              start: startTableRead, pause: pauseTableRead, resume: resumeTableRead, stop: stopTableRead,
+            }}
+            sceneLabel={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1}` : null}
+            sceneBody={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? lines.slice(parsedScenes[currentSceneIdx].startIndex + 1, parsedScenes[currentSceneIdx].endIndex + 1).map((l) => l.text).join('\n') : ''}
+            timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
+            projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
+          />
+        }
+        sceneMusic={
+          <SceneMusic
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            refs={projectAudioRefs} play={playAudioRef} openSound={() => setRightPanel('audio')}
+          />
+        }
+        notesPanel={
+          <NotesPanel
+            scriptId={currentScript?.id ?? null}
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            isProjectOwner={!!sessionUser?.id && activeProject?.id === currentScript?.project_id && activeProject?.creator_id === sessionUser.id}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            context={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1} · ${parsedScenes[currentSceneIdx].heading}`.slice(0, 200) : null}
+          />
+        }
+        referencesPanel={
+          <SceneReferencesPanel
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
+            note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
+            color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
+            onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
+            onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
+            syncState={sceneIndex.sync.state}
+          />
+        }
+      />
+    </EditorErrorBoundary>
+  );
 
   return (
-    <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingBottom: phone.landscape ? 50 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh' }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
-      {!focusMode && (
-        <EditorHeader ctx={editorCtx} />
-      )}
+      {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
+        ? <PhoneEditorBar ctx={editorCtx} slim={phone.landscape && phone.typing} onScripts={() => setSheet('scripts')} onViews={() => setSheet('views')} onTools={() => { setRightPanel('scene'); setSheet('tools'); }} onMore={() => setSheet('more')} />
+        : <EditorHeader ctx={editorCtx} />)}
 
       <AnimatePresence>
         {showFindReplace && (
@@ -804,12 +988,10 @@ export default function EditorPage() {
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
-          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
-        )}
+        {/* On a phone the panels are bottom sheets (below), so there is no drawer to dim. */}
 
         <AnimatePresence>
-          {showSidebar && !focusMode && (
+          {showSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: -260, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -823,25 +1005,13 @@ export default function EditorPage() {
                 ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
-              <EditorLeftNav
-                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
-                setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
-                fileInputRef={fileInputRef} handleImportFile={handleImportFile}
-                showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
-                templates={TEMPLATES}
-                scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
-                sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
-                actStructure={actStructure}
-                jumpToScene={jumpToScene} reorderScenes={reorderScenes}
-                dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
-                dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
-              />
+              {leftNavEl}
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
-        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: focusMode ? '#000' : '#050505', position: 'relative' }}>
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: 'var(--bg)', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{
@@ -855,7 +1025,7 @@ export default function EditorPage() {
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
                     {/* The beat timeline hugs the screen's left edge — only when the story map isn't open there already. */}
-                    {activeView === 'write' && !focusMode && !showSidebar && <WriteFooter ctx={editorCtx} />}
+                    {activeView === 'write' && !focusMode && !showSidebar && !(isMobile && phone.typing) && <WriteFooter ctx={editorCtx} />}
 
                     {activeView === 'preview' && <PreviewView ctx={editorCtx} />}
 
@@ -892,7 +1062,7 @@ export default function EditorPage() {
         </div>
 
         <AnimatePresence>
-          {showRightSidebar && !focusMode && (
+          {showRightSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: 272, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -900,63 +1070,7 @@ export default function EditorPage() {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'var(--surface)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              <EditorErrorBoundary onCrash={() => {
-                try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
-              }}>
-                <EditorRightPanels
-                  showBreakdown={tools.breakdown}
-                  currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
-                  rightPanel={rightPanel} setRightPanel={setRightPanel}
-                  activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
-                  getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
-                  sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
-                  insertElement={insertElement}
-                  writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
-                  wordCount={wordCount}
-                  pageEst={pageEst} dialogueRatio={dialogueRatio}
-                  typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
-                  nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
-                  chars={chars} charStats={charStats}
-                  handleLockRevision={handleLockRevision} revisions={revisions}
-                  onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
-                  setContent={setContent} toast={toast}
-                  showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
-                  showWatermark={showWatermark} setShowWatermark={setShowWatermark}
-                  lintIssues={lintIssues}
-                  stash={stash} textareaRef={textareaRef}
-                  currentScript={currentScript}
-                  projectAudioRefs={projectAudioRefs}
-                  playAudioRef={playAudioRef}
-                  readingPanel={<DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />}
-                  breakdownPanel={
-                    <BreakdownPanel
-                      bd={bd}
-                      projectId={currentScript?.project_id ?? null}
-                      sceneIdx={currentSceneIdx}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
-                      crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
-                      openElementId={openElementId}
-                      setOpenElementId={setOpenElementId}
-                      onJumpToScene={jumpToScene}
-                    />
-                  }
-                  referencesPanel={
-                    <SceneReferencesPanel
-                      projectId={currentScript?.project_id ?? null}
-                      userId={sessionUser?.id ?? null}
-                      sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
-                      note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
-                      color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
-                      onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
-                      onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
-                      syncState={sceneIndex.sync.state}
-                    />
-                  }
-                />
-              </EditorErrorBoundary>
+              {rightPanelsEl}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1096,7 +1210,6 @@ export default function EditorPage() {
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
       }}>
         <AnimatePresence>
-          {showShortcuts && <ShortcutsModal onClose={() => setShowShortcuts(false)} />}
         </AnimatePresence>
 
         <AnimatePresence>
@@ -1123,8 +1236,9 @@ export default function EditorPage() {
         background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: isMobile && phone.typing ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(12px, 4vw, 20px)',
+        paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box',
         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
@@ -1180,17 +1294,46 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {conflict.detected && (
-        <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 400, background: 'var(--surface)', border: '1px solid rgba(245,158,11,0.5)', borderRadius: 14, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: '0 16px 48px rgba(0,0,0,0.6)', maxWidth: 'var(--w-form)' }}>
-          <div>
-            <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', textTransform: 'var(--caps)', marginBottom: 3 }}>Edit conflict</div>
-            <div style={{ fontSize: 12, color: 'var(--fg)' }}>{conflict.message} ({conflict.remoteLength.toLocaleString()} vs your {conflict.localLength.toLocaleString()} chars)</div>
-          </div>
-          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-            <button onClick={() => resolveConflict('keep-mine')} style={{ padding: '7px 12px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>KEEP MINE</button>
-            <button onClick={() => resolveConflict('accept-remote')} style={{ padding: '7px 12px', background: '#f59e0b', border: 'none', borderRadius: 8, color: '#1a1200', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', fontWeight: 700 }}>TAKE THEIRS</button>
-          </div>
-        </div>
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && (
+        <PhoneToolStrip
+          bottom={phone.keyboard} compact={phone.landscape}
+          insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
+          lineUp={() => moveCaretLine(-1)} lineDown={() => moveCaretLine(1)}
+          prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
+          find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('scene'); setSheet('tools'); }} more={() => setSheet('more')}
+          hideKeyboard={() => (document.activeElement as HTMLElement | null)?.blur?.()}
+        />
+      )}
+      {isMobile && (
+        <>
+          <BottomSheet open={sheet === 'scripts'} onClose={closeSheet} title="Scripts and scenes" keyboard={phone.keyboard} full>{leftNavEl}</BottomSheet>
+          <BottomSheet open={sheet === 'views'} onClose={closeSheet} title="View" keyboard={phone.keyboard}>
+            <div role="group" aria-label="View" style={{ display: 'grid', gap: 8 }}>
+              {(Object.keys(VIEW_LABELS) as Array<keyof typeof VIEW_LABELS>).map((v) => (
+                <button key={v} type="button" aria-pressed={activeView === v} onClick={() => { setActiveView(v); closeSheet(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: activeView === v ? 'var(--accent)' : 'transparent', color: activeView === v ? 'var(--on-accent)' : 'var(--fg)' }}>{VIEW_LABELS[v]}</button>
+              ))}
+            </div>
+          </BottomSheet>
+          <BottomSheet open={sheet === 'tools'} onClose={closeSheet} title="Tools" keyboard={phone.keyboard} full>{rightPanelsEl}</BottomSheet>
+          <BottomSheet open={sheet === 'more'} onClose={closeSheet} title="More" keyboard={phone.keyboard}>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {[
+                { label: saving ? 'Saving…' : 'Save now', run: () => { void handleSave(); } },
+                { label: 'Find and replace', run: () => setShowFindReplace(true) },
+                { label: 'Character bible', run: () => setShowCharBible(true) },
+                { label: 'Focus mode', run: () => setFocusMode(true) },
+                ...['pdf', 'fdx', 'fountain', 'txt'].map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
+              ].map((a) => (
+                <button key={a.label} type="button" onClick={() => { closeSheet(); a.run(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg)' }}>{a.label}</button>
+              ))}
+              <div style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
+                <ShareScriptButton script={currentScript} projectCreatorId={activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null} />
+              </div>
+            </div>
+          </BottomSheet>
+        </>
       )}
 
       <style>{`

@@ -36,7 +36,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
   const printDeck = () => {
     const w = window.open('', '_blank', 'width=900,height=1100');
     if (!w) return;
-    const imgs = concepts.slice(0, 6).map((c) => `<img src="${esc(c.image_url)}" style="width:31%;height:120px;object-fit:cover;border-radius:6px;margin:0 1% 8px 0"/>`).join('');
+    const imgs = concepts.slice(0, 6).map((c) => `<img src="${esc(c.image_url)}" alt="${esc(c.title || 'concept')}" style="width:31%;height:120px;object-fit:cover;border-radius:6px;margin:0 1% 8px 0"/>`).join('');
     w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Pitch</title>
       <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:48px;line-height:1.5}
       .slide{page-break-inside:avoid;margin-bottom:36px}h1{font-size:34px;letter-spacing:2px;margin:0 0 8px}

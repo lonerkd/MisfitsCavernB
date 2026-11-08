@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, DollarSign, PenLine, Plus, Printer, Settings2, Tags, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
@@ -29,7 +29,7 @@ const esc = (x: unknown) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  */
 import { BriefHints } from '@/components/brief/BriefHints';
 
-export function BreakdownView({ crew }: { crew: Array<{ user_id: string; username: string }> }) {
+export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: string; username: string }>; onNavigate?: (view: string) => void }) {
   const { project, scenes, scriptId, isOwner, castOf: castOfScene } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
@@ -229,6 +229,7 @@ export function BreakdownView({ crew }: { crew: Array<{ user_id: string; usernam
                   scenes={(scenesOf.get(open.id) ?? []).map((sc) => ({ key: sc.id, label: String(sc.scene_number) }))}
                   scenesLabel={`In ${(scenesOf.get(open.id) ?? []).length} scene${(scenesOf.get(open.id) ?? []).length === 1 ? '' : 's'}`}
                   onClose={() => setOpenId(null)}
+                  onNavigate={onNavigate}
                 />
               </div>
             )}

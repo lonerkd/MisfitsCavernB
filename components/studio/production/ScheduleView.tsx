@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Calendar, PenLine } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useBreakdown } from '@/lib/breakdown';
+import { sceneCosts } from '@/lib/studio/scene-cost';
 import { StripboardView } from './StripboardView';
 import { CallSheetsPanel } from './CallSheetsPanel';
 import { useStudio } from '../StudioContext';
@@ -23,6 +24,13 @@ export function ScheduleView({ crew }: { crew: Array<{ user_id: string; role: st
     for (const t of bd.tags.rows) m.set(t.scene_id, (m.get(t.scene_id) ?? 0) + 1);
     return m;
   }, [bd.tags.rows]);
+  // What each scene and day costs (the same figures as Money), from the breakdown this view already reads. Not given until
+  // the breakdown has loaded cleanly: a half-read breakdown would put wrong money on the board.
+  const costsOk = bd.status !== 'loading' && bd.status !== 'error';
+  const costs = useMemo(() => (costsOk ? sceneCosts({
+    scenes: scenes.rows.map((r) => ({ id: r.id, shoot_day: r.shoot_day ?? null })),
+    categories: bd.categories.rows, elements: bd.elements.rows, tags: bd.tags.rows,
+  }) : null), [costsOk, scenes.rows, bd.categories.rows, bd.elements.rows, bd.tags.rows]);
 
   if (!scenes.rows.length) {
     return (
@@ -37,7 +45,7 @@ export function ScheduleView({ crew }: { crew: Array<{ user_id: string; role: st
 
   return (
     <div className={s.stack} style={{ gap: 28 }}>
-      <StripboardView elementCounts={elementCounts} />
+      <StripboardView elementCounts={elementCounts} costs={costs} />
       <CallSheetsPanel scenes={scenes.rows} crew={crew} />
     </div>
   );

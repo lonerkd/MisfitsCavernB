@@ -81,10 +81,16 @@ test.describe.serial('Reports (local Supabase)', () => {
     await expect(boss.page.getByRole('heading', { name: 'Reports' })).toBeVisible({ timeout: 30_000 });
     await expect(boss.page.getByText('Asks for money up front')).toBeVisible({ timeout: 20_000 });
     await expect(boss.page.getByText(`reported by member${TAG}`)).toBeVisible();
-    await expect(boss.page.getByRole('link', { name: 'Look at it' })).toHaveAttribute('href', `/jobs/${jobId}`);
+    await expect(boss.page.getByRole('listitem')
+      .filter({ hasText: `reported by member${TAG}` })
+      .getByRole('link', { name: 'Look at it' })
+    ).toHaveAttribute('href', `/jobs/${jobId}`);
 
     // Acting on it: close the job (the poster's tools are not needed), and the report closes with it.
-    await boss.page.getByRole('button', { name: 'Close the job' }).click();
+    await boss.page.getByRole('listitem')
+      .filter({ hasText: `reported by member${TAG}` })
+      .getByRole('button', { name: 'Close the job' })
+      .click();
     await boss.page.getByRole('button', { name: 'Close job', exact: true }).click();
     await expect(boss.page.getByText('Marked resolved')).toBeVisible({ timeout: 20_000 });
     expect((await admin.from('jobs').select('status').eq('id', jobId).single()).data?.status).toBe('closed');

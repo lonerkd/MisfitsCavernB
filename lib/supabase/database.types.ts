@@ -489,6 +489,7 @@ export type Database = {
         Row: {
           call_sheet_id: string;
           call_time: string | null;
+          character_id: string | null;
           character_name: string | null;
           created_at: string | null;
           crew_user_id: string | null;
@@ -501,6 +502,7 @@ export type Database = {
         Insert: {
           call_sheet_id: string;
           call_time?: string | null;
+          character_id?: string | null;
           character_name?: string | null;
           created_at?: string | null;
           crew_user_id?: string | null;
@@ -512,6 +514,7 @@ export type Database = {
         Update: {
           call_sheet_id?: string;
           call_time?: string | null;
+          character_id?: string | null;
           character_name?: string | null;
           created_at?: string | null;
           crew_user_id?: string | null;
@@ -521,6 +524,13 @@ export type Database = {
           role_label?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "call_sheet_calls_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "call_sheet_calls_crew_user_id_fkey";
             columns: ["crew_user_id"];
@@ -1931,6 +1941,182 @@ export type Database = {
           },
         ];
       };
+      mood_board_items: {
+        Row: {
+          board_id: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          media_id: string | null;
+          note: string | null;
+          project_id: string;
+          updated_at: string;
+          w: number;
+          x: number;
+          y: number;
+          z: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          board_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          note?: string | null;
+          project_id: string;
+          updated_at?: string;
+          w?: number;
+          x?: number;
+          y?: number;
+          z?: number;
+        };
+        Update: {
+          board_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          media_id?: string | null;
+          note?: string | null;
+          project_id?: string;
+          updated_at?: string;
+          w?: number;
+          x?: number;
+          y?: number;
+          z?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_board_items_board_fkey";
+            columns: ["board_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "mood_boards";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "mood_board_items_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mood_board_items_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
+      mood_boards: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          project_id: string;
+          template: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          project_id: string;
+          template?: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          project_id?: string;
+          template?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_boards_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mood_boards_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      notes: {
+        Row: {
+          body: string;
+          context: string | null;
+          created_at: string;
+          created_by: string;
+          id: string;
+          project_id: string | null;
+          scene_id: string | null;
+          scope: string;
+          script_id: string | null;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          body?: string;
+          context?: string | null;
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          project_id?: string | null;
+          scene_id?: string | null;
+          scope?: string;
+          script_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "notes_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_scene_id_fkey";
+            columns: ["scene_id"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "notes_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       notifications: {
         Row: {
           body: string | null;
@@ -2462,11 +2648,14 @@ export type Database = {
           added_by: string | null;
           created_at: string | null;
           description: string | null;
+          for_scene: string | null;
           id: string;
           project_id: string | null;
           reference_type: string | null;
+          role: string | null;
           scene_id: string | null;
           script_id: string | null;
+          tags: string[];
           title: string;
           uri: string;
         };
@@ -2475,11 +2664,14 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title: string;
           uri: string;
         };
@@ -2487,15 +2679,25 @@ export type Database = {
           added_by?: string | null;
           created_at?: string | null;
           description?: string | null;
+          for_scene?: string | null;
           id?: string;
           project_id?: string | null;
           reference_type?: string | null;
+          role?: string | null;
           scene_id?: string | null;
           script_id?: string | null;
+          tags?: string[];
           title?: string;
           uri?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "project_audio_references_for_scene_fkey";
+            columns: ["for_scene"];
+            isOneToOne: false;
+            referencedRelation: "scenes";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "project_audio_references_project_id_fkey";
             columns: ["project_id"];
@@ -3094,6 +3296,89 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      reading_line_overrides: {
+        Row: {
+          created_at: string;
+          forced_by: string | null;
+          forced_type: string;
+          id: string;
+          line_index: number;
+          project_id: string;
+          script_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          forced_by?: string | null;
+          forced_type: string;
+          id?: string;
+          line_index: number;
+          project_id: string;
+          script_id: string;
+        };
+        Update: {
+          created_at?: string;
+          forced_by?: string | null;
+          forced_type?: string;
+          id?: string;
+          line_index?: number;
+          project_id?: string;
+          script_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reading_line_overrides_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reading_line_overrides_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reading_memory: {
+        Row: {
+          count: number;
+          created_at: string;
+          id: string;
+          kind: string;
+          metadata: NonNullable<Json>;
+          name: string;
+          script_format: string;
+          updated_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          count?: number;
+          created_at?: string;
+          id?: string;
+          kind: string;
+          metadata?: NonNullable<Json>;
+          name: string;
+          script_format?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          count?: number;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          metadata?: NonNullable<Json>;
+          name?: string;
+          script_format?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
       };
       reports: {
         Row: {
@@ -3811,6 +4096,7 @@ export type Database = {
           title_page: Json | null;
           updated_at: string | null;
           version: number | null;
+          yjs_state: string | null;
         };
         ComputedFields: never;
         Insert: {
@@ -3831,6 +4117,7 @@ export type Database = {
           title_page?: Json | null;
           updated_at?: string | null;
           version?: number | null;
+          yjs_state?: string | null;
         };
         Update: {
           content?: string | null;
@@ -3850,6 +4137,7 @@ export type Database = {
           title_page?: Json | null;
           updated_at?: string | null;
           version?: number | null;
+          yjs_state?: string | null;
         };
         Relationships: [
           {
@@ -4875,6 +5163,10 @@ export type Database = {
         Args: { p_channel?: string; p_partner?: string };
         Returns: undefined;
       };
+      patch_project_settings: {
+        Args: { p_patch: Json; p_project_id: string };
+        Returns: Json;
+      };
       pin_message: {
         Args: { p_message: string; p_pinned: boolean };
         Returns: {
@@ -4911,6 +5203,15 @@ export type Database = {
       project_context: { Args: { p_project: string }; Returns: Json };
       project_progress: { Args: { p_project: string }; Returns: Json };
       projects_progress: { Args: { p_projects: string[] }; Returns: Json };
+      reading_memory_for_user: {
+        Args: { p_format?: string; p_user_id: string };
+        Returns: {
+          count: number;
+          kind: string;
+          metadata: Json;
+          name: string;
+        }[];
+      };
       report_client_error: {
         Args: {
           p_digest: string;

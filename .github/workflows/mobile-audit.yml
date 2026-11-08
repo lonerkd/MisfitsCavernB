@@ -1,0 +1,59 @@
+name: Mobile audit
+
+# The phone audit (scripts/mobile-audit.mjs) as a check: an iPhone 15 Pro, portrait and landscape, over 18 routes of the built app on
+# the local stack. It fails when a route is worse than scripts/mobile-audit-baseline.json (sideways scroll, controls under a thumb,
+# text too small, controls under a fixed bar, a field or its button hidden by the keyboard). The numbers only shrink: fix something,
+# run `node scripts/mobile-audit.mjs --update`, commit the smaller baseline. Chromium imitates an iPhone; real Safari still needs a person.
+# Not a required check yet (as with claude-review: make it required after it has run green on a few real pull requests).
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'lib/os/**'
+      - 'lib/island/**'
+      - 'scripts/mobile-audit*'
+      - '.github/workflows/mobile-audit.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-audit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mobile-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Local stack + browser
+        run: |
+          npx playwright install --with-deps chromium > /tmp/pw-install.log 2>&1 &
+          PW=$!
+          npm run db:start
+          wait $PW || { cat /tmp/pw-install.log; exit 1; }
+      - name: Build against the local stack and start it
+        run: |
+          STATUS=$(npx supabase status -o json)
+          export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+          export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+          export NEXT_PUBLIC_APP_URL=http://localhost:3000
+          npm run build
+          nohup npm run start > /tmp/server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf -o /dev/null http://localhost:3000/auth && break; sleep 2; done
+          curl -sf -o /dev/null http://localhost:3000/auth || { cat /tmp/server.log; exit 1; }
+      - name: The audit, against the baseline
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: node scripts/mobile-audit.mjs mobile-audit --check
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mobile-audit
+          path: mobile-audit/
+          retention-days: 7

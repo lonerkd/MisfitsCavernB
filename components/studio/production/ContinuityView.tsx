@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Eye, PenLine, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import EmptyState from '@/components/ui/EmptyState';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { studio, useCharacters, useSceneCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
 import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';
@@ -22,7 +22,7 @@ const PARTS = ['dawn', 'morning', 'day', 'afternoon', 'evening', 'dusk', 'night'
  * person sets is kept. A look that changes inside one story day is flagged.
  */
 export function ContinuityView() {
-  const { project, scenes, scriptId } = useStudio();
+  const { project, scenes, scriptId, doubtfulSceneOrdinals } = useStudio();
   const characters = useCharacters(project.id);
   const states = useSceneStates(project.id);
   const links = useSceneCharacters(project.id);
@@ -110,7 +110,8 @@ export function ContinuityView() {
             <div key={sc.id} className={s.stack} style={{ borderTop: '1px solid var(--border)', paddingTop: 10, marginTop: 10 }}>
               <div className={s.row}>
                 <strong>{sc.scene_number}. {sc.heading ?? sc.title}</strong>
-                <span className={s.hint}>{storyLabel(sc.story_day, sc.story_time)}{sc.story_confirmed ? '' : sc.story_day != null ? ' (read from the script)' : ''}</span>
+                                <span className={s.hint}>{storyLabel(sc.story_day, sc.story_time)}{sc.story_confirmed ? '' : sc.story_day != null ? ' (read from the script)' : ''}</span>
+                                {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warn)' }}>⚠ review</span>}
               </div>
               <div className={s.row}>
                 <label className={s.stack}>

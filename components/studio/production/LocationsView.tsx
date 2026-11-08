@@ -1,11 +1,12 @@
 'use client';
 
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
+import EmptyState from '@/components/ui/EmptyState';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown, MapPin, PenLine, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import EmptyState from '@/components/ui/EmptyState';
 import {
   LOCATION_STATUS, PERMIT_STATE, locationReadiness, locationRows, mapHref, studio, useProjectLocations, useShootDays,
   type LocationPatch, type LocationRow, type ProjectLocation, type ShootDay,
@@ -67,7 +68,7 @@ export function LocationsView() {
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.map((row) => (
           <LocationItem key={row.name} row={row} days={days.rows} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
-            onSaved={(r) => records.upsertLocal(r)} onRemoved={(id) => records.removeLocal(id)} />
+            onSaved={(r) => records.upsertLocal(r)} onRenamed={(r) => { records.upsertLocal(r); setOpen(r.name); }} onRemoved={(id) => records.removeLocal(id)} />
         ))}
       </ul>
       <form onSubmit={addOther} className={s.row} style={{ gap: 8 }}>
@@ -79,8 +80,8 @@ export function LocationsView() {
   );
 }
 
-function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
-  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
+function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRemoved }: {
+  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRenamed: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -90,12 +91,29 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
   const id = `loc-${row.name.replace(/[^A-Z0-9]+/g, '-')}`;
 
   const save = async (patch: LocationPatch) => {
-    try { onSaved(await studio.saveLocation(project.id, row.name, patch)); }
+    const origin = undoOrigin();
+    const before = rec;
+    try {
+      onSaved(await studio.saveLocation(project.id, row.name, patch));
+      if (before) {
+        const back: LocationPatch = {};
+        for (const k of Object.keys(patch) as Array<keyof LocationPatch>) (back as Record<string, unknown>)[k] = (before as unknown as Record<string, unknown>)[k] ?? null;
+        pushUndo(`Changed ${row.name}`, async () => { onSaved(await studio.saveLocation(project.id, row.name, back)); }, origin);
+      }
+    }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not save the location', 'error'); }
   };
   const text = (key: 'address' | 'contact' | 'notes', value: string) => {
     const next = value.trim() || null;
     if ((rec?.[key] ?? null) !== next) void save({ [key]: next });
+  };
+  const rename = async (input: HTMLInputElement) => {
+    if (!rec || input.value.trim().toUpperCase() === row.name) return;
+    try { onRenamed(await studio.renameLocation(rec.id, input.value)); }
+    catch (e) {
+      input.value = rec.name; // a refused name does not stay in the box
+      toast(e instanceof Error ? e.message : 'Could not rename the location', 'error');
+    }
   };
   const remove = async () => {
     if (!rec || !(await confirm(`Remove the record for ${row.name}? ${row.scenes.length ? 'The scenes stay; the address, contact and permit go.' : ''}`))) return;
@@ -127,7 +145,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
           <span style={{ display: 'block', fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{row.name}</span>
           <span className={s.hint}>{summary}{rec?.address ? ` · ${rec.address}` : ''}</span>
         </span>
-        <span className={s.hint} style={{ color: ready.ready ? '#6ee7b7' : undefined }}>
+        <span className={s.hint} style={{ color: ready.ready ? 'var(--ok)' : undefined }}>
           {ready.ready ? 'Locked down' : rec ? `${status?.label ?? 'Scouting'}${rec.permit === 'needed' ? ' · permit needed' : rec.permit === 'applied' ? ' · permit pending' : ''}` : 'Not scouted'}
         </span>
         <ChevronDown size={14} aria-hidden style={{ transform: expanded ? 'rotate(180deg)' : undefined, transition: 'transform 0.2s' }} />
@@ -144,6 +162,12 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRemoved }: {
             </select>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 10 }}>
+            {rec && (
+              <label className={s.stack} style={{ gap: 4 }}>
+                <span className={s.hint}>Name (every scene at this place follows)</span>
+                <input className={s.input} defaultValue={rec.name} key={`name:${rec.name}`} maxLength={200} onBlur={(e) => void rename(e.target)} />
+              </label>
+            )}
             <label className={s.stack} style={{ gap: 4 }}>
               <span className={s.hint}>Address</span>
               <input className={s.input} defaultValue={rec?.address ?? ''} key={`a:${rec?.address}`} maxLength={500} onBlur={(e) => text('address', e.target.value)} />

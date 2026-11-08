@@ -1,11 +1,14 @@
 'use client';
 
+import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
+import { shortcuts, matchesShortcut, looksLikeKeys } from '@/lib/os/shortcuts';
+import { isMac } from '@/lib/os/chords';
 import { supabase } from '@/lib/supabase/client';
 import { listScriptsBy } from '@/lib/supabase/scripts';
 import { listMediaBy } from '@/lib/supabase/media';
@@ -77,6 +80,7 @@ export default function CommandPalette() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
+      else if (matchChord(e)?.id === 'palette') { e.preventDefault(); setOpen((o) => !o); }
     };
     const onOpen = () => setOpen(true);
     window.addEventListener('keydown', onKey);
@@ -113,7 +117,7 @@ export default function CommandPalette() {
     const nav: Command[] = [
       { id: 'nav-editor', label: 'Open ScriptOS', hint: 'Screenplay editor', icon: <FileText size={15} />, run: go('/editor'), group: 'Navigate', keywords: 'write script screenplay' },
       { id: 'nav-studio', label: 'Open Studio', hint: 'Production suite', icon: <LayoutGrid size={15} />, run: go('/studio'), group: 'Navigate', keywords: 'production board schedule' },
-      { id: 'nav-home', label: 'Go to Hub', hint: "What's new and Learn", icon: <Home size={15} />, run: go('/hub'), group: 'Navigate', keywords: 'home dashboard news updates newsletter learn guides' },
+      { id: 'nav-home', label: 'Go to Community', hint: "Your day, what's new, crew, music", icon: <Home size={15} />, run: go('/community'), group: 'Navigate', keywords: 'home dashboard today hub news updates newsletter learn guides crew lounge music' },
       { id: 'nav-lounge', label: 'Open Lounge', hint: 'Community feed', icon: <MessageSquare size={15} />, run: go('/lounge'), group: 'Navigate', keywords: 'chat community feed' },
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },
@@ -194,7 +198,15 @@ export default function CommandPalette() {
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => c.found || fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));
-    return list.slice(0, 80);
+    // Shortcuts are found by their keys or their name (Ctrl Z, cmd k, caps q, undo): the first few, and Enter opens the panel on them.
+    const keys: Command[] = query.trim()
+      ? shortcuts(isMac()).filter((x) => matchesShortcut(query, x)).slice(0, 6).map((x, i) => ({
+          id: `kb-${i}`, label: x.desc, hint: x.keys, icon: <Keyboard size={15} />, group: 'Shortcuts', found: true,
+          run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new CustomEvent('mc-open-shortcuts', { detail: { query } })), 60); },
+        }))
+      : [];
+    // Typed like a key press (ctrl z, caps q), the shortcuts lead, so Enter opens the one asked for; otherwise they follow the results.
+    return looksLikeKeys(query) ? [...keys, ...list.slice(0, 80)] : [...list.slice(0, 80), ...keys];
   }, [commands, query]);
 
   const groups = useMemo(() => {

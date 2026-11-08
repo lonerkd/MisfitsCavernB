@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { generateScript, INTERNATIONAL, PLAIN, REAL_WORLD, rng, STRESS, type Style } from './generate';
 import { renderPdfPages, renderText } from './render';
 import { pool, scoreBlocks, scoreLines, structureScore, TYPES } from './score';
-import { measurePdf, measureText, type Result } from './run';
+import { documentProfile } from '../decode';
+import { measurePdf, measureText, measureTight, type Result } from './run';
 
 describe('the generator', () => {
   it('is deterministic: the same seed is the same script', () => {
@@ -140,6 +141,34 @@ describe('the reading pipeline on the corpus', () => {
       const m = measured.get(name)!;
       expect(m.text.score.macroF1).toBeGreaterThanOrEqual(floor[0]);
       expect(m.pdf.score.macroF1).toBeGreaterThanOrEqual(floor[1]);
+      // The cast is what the Studio is built from: everyone who speaks is found, and nobody is invented.
+      expect(m.text.castRecall).toBeGreaterThanOrEqual(0.99);
+      expect(m.text.castInvented).toBeLessThanOrEqual(0.01);
     });
   }
+});
+
+// A third surface: the same scripts pasted with no blank lines at all. Measured 2026-11-01 on 30 seeded scripts per
+// style, after the document profile (decode.ts): PLAIN 0.911, REAL_WORLD 0.914, INTERNATIONAL 0.903 (before it:
+// 0.895, 0.884, 0.834). Action and dialogue stay the weak pair here (after a speech, a plain sentence with no blank
+// line above it is genuinely ambiguous); the floors sit a little under what is measured and may only be raised.
+const TIGHT_FLOORS: Record<string, number> = { PLAIN: 0.9, REAL_WORLD: 0.9, INTERNATIONAL: 0.89 };
+
+describe('scripts pasted without blank lines', () => {
+  for (const [name, floor] of Object.entries(TIGHT_FLOORS)) {
+    it(`${name}: does not read worse than the floor, and finds every character`, () => {
+      const r = measureTight(STYLES.find(([n]) => n === name)![1]);
+      expect(r.score.macroF1).toBeGreaterThanOrEqual(floor);
+      expect(r.score.perType.character.f1).toBeGreaterThanOrEqual(0.97);
+      // Measured 2026-11-02, after the cast became "the names read as cues": about one invented name per script
+      // before (1.03 for REAL_WORLD, 1.17 for INTERNATIONAL), now 0.03 and 0.
+      expect(r.castRecall).toBeGreaterThanOrEqual(0.98);
+      expect(r.castInvented).toBeLessThanOrEqual(0.1);
+    });
+  }
+
+  it('the profile only applies to a script that really has no blank lines: one written the usual way reads exactly as before', () => {
+    const conventional = 'INT. A - NIGHT\n\nMAN\nWe should go.\n\nWOMAN\nStay.\n\nMAN\nOk.\n\nINT. B - DAWN\n\nMAN\nIt\'s over.\n\nWOMAN\nNo.\n\nMAN\nYes.\n';
+    expect(documentProfile(conventional.split('\n').map((t) => ({ text: t.trim(), kind: t.trim() ? 'free' : 'empty', prevBlank: false, next: '' })) as never).tight).toBe(false);
+  });
 });

@@ -15,6 +15,7 @@ describe('useOnSet', () => {
     // the type is correct by checking that OnSet has the expected properties.
     const mockOnSet: OnSet = {
       label: 'test',
+      line: null,
       away: () => {},
     };
     expect(mockOnSet.label).toBeDefined();

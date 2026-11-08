@@ -10,7 +10,8 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
-const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the LANTERN and checks an old revolver.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nThe lantern gutters out.\n';
+// SAM speaks twice: a cue read once is a doubtful read (confidence 60), and a doubtful scene is offered no capitalised-word suggestions.
+const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the LANTERN and checks an old revolver.\n\nSAM\nWho’s there?\n\nSAM\nAnyone at all?\n\nEXT. RIDGE - DAWN\n\nThe lantern gutters out.\n';
 
 async function axeViolations(page: Page): Promise<string[]> {
   await page.addScriptTag({ content: AXE });
@@ -65,9 +66,9 @@ test.describe('Breakdown in the script (local Supabase)', () => {
 
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByLabel('Script', { exact: true })).toBeVisible();
-    // Put the caret in scene 1, open the Breakdown tab, turn on tag mode.
+    // Put the caret in scene 1, the Breakdown section is open on the Scene tab, turn on tag mode.
     await page.getByLabel('Script', { exact: true }).evaluate((el) => { const ta = el as HTMLTextAreaElement; ta.focus(); ta.setSelectionRange(25, 25); ta.dispatchEvent(new Event('select', { bubbles: true })); });
-    await page.getByRole('button', { name: 'Breakdown' }).click();
+    await expect(page.getByText('Scene 1 breakdown')).toBeVisible();
     await page.getByRole('switch', { name: 'Tag mode' }).click();
     await expect(page.getByText('Tag mode — select words to tag them')).toBeVisible();
 
@@ -122,6 +123,8 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     expect(await axeViolations(page), 'breakdown view').toEqual([]);
 
     // ── The stripboard: drag a strip to a new day, then Alt+← it back ──
+    // Tall enough that the strip and the drop zone are on screen together, so the drag has both ends in view.
+    await page.setViewportSize({ width: 1280, height: 1100 });
     await page.goto('/studio?tab=production&view=schedule');
     const strip = page.getByRole('listitem', { name: /^Scene 2,/ });
     await strip.dragTo(page.getByRole('region', { name: 'A new shoot day' }));

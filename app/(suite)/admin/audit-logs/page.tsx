@@ -139,7 +139,7 @@ export default function AuditLogsPage() {
                   padding: '8px 16px',
                   background: 'rgba(0,153,255,0.1)',
                   border: '1px solid rgba(0,153,255,0.3)',
-                  color: '#0099ff',
+                  color: 'var(--info)',
                   borderRadius: 4,
                   fontFamily: 'var(--mono)',
                   fontSize: 11,
@@ -322,7 +322,7 @@ export default function AuditLogsPage() {
                             background: 'rgba(0,153,255,0.1)',
                             padding: '2px 8px',
                             borderRadius: 4,
-                            color: '#0099ff',
+                            color: 'var(--info)',
                           }}
                         >
                           {log.username || 'Deleted account'}
@@ -340,8 +340,8 @@ export default function AuditLogsPage() {
                           {describeAction(log.action, log.resource_type)}
                         </span>
                       </td>
-                      <td style={{ padding: 12, opacity: 0.7 }}>
-                        {log.resource_type}
+                      <td style={{ padding: 12 }}>
+                        <span style={{ color: 'var(--fg-muted)' }}>{log.resource_type}</span>
                         {log.resource_id && (resourceHref(log.resource_type, log.resource_id)
                           ? <> · <Link href={resourceHref(log.resource_type, log.resource_id)!} style={{ color: 'var(--accent)' }}>Look at it</Link></>
                           : ` (${log.resource_id})`)}

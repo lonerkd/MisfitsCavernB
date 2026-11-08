@@ -1,0 +1,3 @@
+# Session — 2026-10-28: the `checks` job now honours the change filter
+
+#349 narrowed the `changes` job's `code` / `db` / `app` flags, but only `database` read them: `checks` never used `code`, so a workflow-only PR still ran typecheck, lint, coverage tests, the build and the size budget (about ten minutes). The earlier note and PR text overstated the saving. Corrected: `checks` now `needs: changes`, and its slow steps (typecheck, lint, test:coverage and its report, build, budget) run only when `code` is true. The cheap guards (generated agent files, bible inventory, session notes on main) still always run, so the job stays green and present as a status. Pushes to `main` set `code=true`, so the full suite still runs there.

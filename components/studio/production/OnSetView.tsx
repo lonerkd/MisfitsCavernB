@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
-import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
+import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
 import { changes, draftLogRow, loadSnapshot, saveSnapshot, type DaySnapshot } from '@/lib/studio/onset-offline';
 import { useOnSetSync, type OnSetSync } from '@/lib/studio/useOnSetSync';
-import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, localDateTime, pickDay, type ClockKind } from '@/lib/studio/onset';
+import { CLOCK, dayClock, dayProgress, dayStatus, eighthsOf, formatMinutes, plannedWrapAt, pickDay, type ClockKind } from '@/lib/studio/onset';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -98,7 +98,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
 
   const dayLog = useMemo(() => log.rows.filter((r) => r.call_sheet_id === sheet?.id), [log.rows, sheet?.id]);
   const clock = useMemo(() => dayClock(dayLog), [dayLog]);
-  const status = dayStatus(clock, now, localDateTime(sheet?.shoot_date ?? null, sheet?.estimated_wrap ?? null));
+  const status = dayStatus(clock, now, plannedWrapAt(sheet?.shoot_date ?? null, sheet?.estimated_wrap ?? null, clock.call));
   const myCall = calls.rows.find((c) => c.call_sheet_id === sheet?.id && c.crew_user_id === userId);
 
   const dayScenes = useMemo(
@@ -269,7 +269,7 @@ function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScri
   sync: OnSetSync; scene: SceneRow; shots: Shot[]; continuity: SetLogRow[];
   onLog: (row: SetLogRow) => void; onUnlog: (id: string) => void; onOpenScript: () => void;
 }) {
-  const { project, userId, isOwner, scenes, shots: liveShots, media, castOf } = useStudio();
+  const { project, userId, isOwner, scenes, shots: liveShots, media, castOf, doubtfulSceneOrdinals } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
@@ -310,6 +310,7 @@ function SceneOnSet({ sync, scene, shots, continuity, onLog, onUnlog, onOpenScri
             <span>{pages(eighthsOf(scene.est_duration) || 1)} pg</span>
             {castOf(scene).length > 0 && <span>{castOf(scene).join(', ')}</span>}
             <span>{got}/{shots.filter((sh) => sh.status !== 'omitted').length} shots</span>
+            {doubtfulSceneOrdinals.has(scene.ordinal ?? -1) && <span style={{ color: 'var(--warn)' }}>⚠ review</span>}
           </p>
         </div>
         <div className={o.sceneActions}>

@@ -52,3 +52,10 @@ Adopt a **CRDT for the script text only**, not for the whole app:
   co-write session in `e2e/`.
 - Cost: a `yjs` dependency and a thin provider (~150 lines) — weighed
   against deleting the conflict heuristic and its UI.
+
+## Implementation (2026-10-27)
+
+`lib/scriptos/sync.ts` sends Yjs updates over `script_<id>`. The serialized
+script remains in `scripts.content`; `scripts.yjs_state` stores the companion
+CRDT state so new sessions and offline writers can merge from a shared history.
+The obsolete line-merge heuristic and its prompt are removed.

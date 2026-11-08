@@ -1,5 +1,6 @@
 'use client';
 
+import { pushUndo, undoOrigin, UndoRefused } from '@/lib/os/undo';
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, Calendar, Minus, PanelRightOpen, Plus, Printer, Sun, Wand2 } from 'lucide-react';
@@ -8,18 +9,20 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
-import { studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import { money, studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import type { SceneCosts } from '@/lib/studio/scene-cost';
 import { lightNoteText } from '@/lib/film/days';
 import { deviceZone, filmDays } from '@/lib/film/studio';
 import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/studio/shoot-days';
 import { Sky } from '@/components/film/Sky';
 import { lightNoteBrief } from '@/lib/film/sky';
-import { locationKey } from '@/lib/studio';
+import { placeResolver } from '@/lib/film/places';
 import { buildBoard, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { DoodTable } from './DoodTable';
 import s from '../studio.module.css';
 import b from './stripboard.module.css';
 
@@ -36,8 +39,8 @@ const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&
  * Alt+←/→ on a focused strip), see each day's pages against the crew's day,
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
-export function StripboardView({ elementCounts }: { elementCounts: Map<string, number> }) {
-  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard } = useStudio();
+export function StripboardView({ elementCounts, costs }: { elementCounts: Map<string, number>; costs: SceneCosts | null }) {
+  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard, doubtfulSceneOrdinals } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -53,8 +56,9 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const [announce, setAnnounce] = useState('');
   const stripRefs = useRef(new Map<string, HTMLLIElement>());
 
-  const list = scenes.rows;
-  const board = useMemo(() => buildBoard(list, capacity, castOfScene), [list, capacity, castOfScene]);
+  const list = scenes.rows.map((sc) => ({ ...sc, doubtful: sc.ordinal != null && doubtfulSceneOrdinals.has(sc.ordinal) }));
+  const placeOf = useMemo(() => placeResolver(places.rows), [places.rows]);
+  const board = useMemo(() => buildBoard(list, capacity, castOfScene, placeOf), [list, capacity, castOfScene, placeOf]);
   const dood = useMemo(() => dayOutOfDays(board), [board]);
   // Each day as the film graph sees it: its date, where it shoots, the light there, what fights it.
   const film = useMemo(
@@ -65,14 +69,42 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const wrapped = list.filter((sc) => sc.status === 'wrapped').length;
   const totalEighths = list.reduce((n, sc) => n + eighthsOf(sc.est_duration), 0);
 
+  // An undo puts a scene back only if it still holds what that action left it with (one conditional write), so it never
+  // overwrites a newer move or status from another device or a later action of your own.
+  const putBack = async (id: string, now: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>, was: Partial<Pick<SceneRow, 'shoot_day' | 'status'>>) => {
+    const row = await studio.updateSceneIf(id, now, was);
+    if (!row) throw new UndoRefused('That scene has been changed since (or you can no longer edit it), so nothing was put back.');
+    scenes.upsertLocal(row);
+  };
+
+  // Auto-schedule's undo puts back each scene it moved, one conditional write each. A scene changed since is left alone and
+  // counted; one that failed for another reason (a dropped connection) is kept in a fresh undo, so it can be retried.
+  const pushAutoUndo = (moved: Array<{ id: string; was: number | null; now: number }>, origin: ReturnType<typeof undoOrigin>) => {
+    pushUndo(`Auto-scheduled ${moved.length} scene${moved.length === 1 ? '' : 's'}`, async () => {
+      const retry: typeof moved = [];
+      let changed = 0;
+      for (const m of moved) {
+        try { await putBack(m.id, { shoot_day: m.now }, { shoot_day: m.was }); }
+        catch (e) { if (e instanceof UndoRefused) changed++; else retry.push(m); }
+      }
+      if (retry.length) pushAutoUndo(retry, origin);
+      if (retry.length || changed) {
+        const parts = [changed ? `${changed} scene${changed === 1 ? ' was' : 's were'} changed since and left as they are` : '', retry.length ? `${retry.length} could not be put back — press Ctrl Z again to retry` : ''].filter(Boolean);
+        throw new UndoRefused(`${parts.join('; ')}.`);
+      }
+    }, origin);
+  };
+
   const moveTo = async (sc: SceneRow, day: number, refocus = false) => {
     if (!Number.isInteger(day) || day < 1 || day === (sc.shoot_day ?? 1)) return;
+    const origin = undoOrigin(); // before the first await: where this was done
     const before = sc;
     scenes.upsertLocal({ ...sc, shoot_day: day, updated_at: new Date().toISOString() });
     setAnnounce(`Scene ${sc.scene_number} moved to day ${day}.`);
     if (refocus) requestAnimationFrame(() => stripRefs.current.get(sc.id)?.focus());
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { shoot_day: day }));
+      pushUndo(`Moved scene ${sc.scene_number} to day ${day}`, () => putBack(sc.id, { shoot_day: day }, { shoot_day: before.shoot_day ?? null }), origin);
     } catch (e) {
       scenes.upsertLocal({ ...before, updated_at: new Date().toISOString() });
       toast(e instanceof Error ? e.message : 'Could not move the scene', 'error');
@@ -93,8 +125,10 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   const cycleStatus = async (sc: SceneRow) => {
     const cur = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
     const next = STATUS_ORDER[(STATUS_ORDER.indexOf(cur) + 1) % STATUS_ORDER.length];
+    const origin = undoOrigin();
     try {
       scenes.upsertLocal(await studio.updateScene(sc.id, { status: next }));
+      pushUndo(`Scene ${sc.scene_number} set to ${next}`, () => putBack(sc.id, { status: next }, { status: sc.status ?? 'planned' }), origin);
       setAnnounce(`Scene ${sc.scene_number}: ${next}.`);
       if (next === 'wrapped') logActivity(`wrapped scene ${sc.scene_number} "${sc.heading ?? sc.title}"`, 'scene', sc.id, { project_id: project.id });
     } catch (e) {
@@ -116,7 +150,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
   };
 
   const autoSchedule = async () => {
-    const plan = packShootDays(list, capacity);
+    const plan = packShootDays(list, capacity, placeOf);
     if (!plan.updates.length) { toast(`Already grouped by location — ${plan.days} shoot day${plan.days === 1 ? '' : 's'}.`, 'info'); return; }
     if (!await confirm({
       title: 'Auto-schedule?',
@@ -124,12 +158,19 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
       confirmLabel: 'Reschedule',
       danger: false,
     })) return;
+    const origin = undoOrigin();
     setBusy(true);
     let failed = 0;
+    const moved: Array<{ id: string; was: number | null; now: number }> = [];
     for (const u of plan.updates) {
-      try { scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day })); } catch { failed++; }
+      try {
+        const was = list.find((x) => x.id === u.id)?.shoot_day ?? null;
+        scenes.upsertLocal(await studio.updateScene(u.id, { shoot_day: u.shoot_day }));
+        moved.push({ id: u.id, was, now: u.shoot_day });
+      } catch { failed++; }
     }
     setBusy(false);
+    if (moved.length) pushAutoUndo(moved, origin);
     toast(failed ? `${failed} scene${failed === 1 ? '' : 's'} could not be moved — try again.` : `Scheduled into ${plan.days} days`, failed ? 'error' : 'success');
   };
 
@@ -223,6 +264,14 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                   <div className={b.dayStats}>
                     <span className={d.over ? b.over : undefined}>{pages(d.eighths)} of {pages(capacity)} pp{d.over ? ' — over' : ''}</span>
                     <span>{d.scenes.length} scene{d.scenes.length === 1 ? '' : 's'}</span>
+                    {d.doubtful > 0 && <span style={{ color: 'var(--warn)' }}>⚠ {d.doubtful} review</span>}
+                    {costs && d.scenes.some((x) => (costs.byScene.get(x.id)?.elements ?? 0) > 0) && (() => {
+                      // Sum from byScene so unscheduled scenes (board day 1, costs day null) are included.
+                      const total = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.total ?? 0), 0);
+                      const estimated = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.estimated ?? 0), 0);
+                      const unpriced = d.scenes.reduce((s, x) => s + (costs.byScene.get(x.id)?.unpriced ?? 0), 0);
+                      return total > 0 ? <span title={unpriced > 0 ? `${unpriced} element${unpriced === 1 ? '' : 's'} with no price, so this is low` : estimated > 0 ? `${money(estimated)} of it is a default estimate` : undefined}>{money(total)}</span> : null;
+                    })()}
                   </div>
                   {d.cast.length > 0 && (
                     <div className={b.castRow} aria-label={`Cast called: ${d.cast.join(', ')}`}>
@@ -235,14 +284,16 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                     {d.scenes.map((sc, i) => {
                       const row = sc as SceneRow;
                       // A black strip marks a company move, as on a paper board.
-                      const from = i > 0 ? locationKey(d.scenes[i - 1].location) : '';
-                      const here = locationKey(sc.location);
+                      const from = i > 0 ? placeOf(d.scenes[i - 1]) : '';
+                      const here = placeOf(sc);
                       const moved = !!from && !!here && from !== here;
                       const km = moved ? kmBetween.get(`${from}|${here}`) : undefined;
                       const kind = stripKind(sc);
                       const e = eighthsOf(sc.est_duration);
                       const status = (STATUS_ORDER as readonly string[]).includes(sc.status ?? '') ? (sc.status as Status) : 'planned';
                       const els = elementCounts.get(sc.id) ?? 0;
+                      const sceneCost = costs?.byScene.get(sc.id);
+                      const costed = sceneCost && sceneCost.elements > 0 ? sceneCost : null;
                       const cast = castOfScene(sc);
                       return (
                         <React.Fragment key={sc.id}>
@@ -253,7 +304,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                           style={{ ['--k' as string]: KIND_COLOR[kind], ['--kt' as string]: readable(KIND_COLOR[kind]), minHeight: 44 + Math.min(e, 16) * 2 }}
                           draggable
                           tabIndex={0}
-                          aria-label={`Scene ${sc.scene_number}, ${sc.heading ?? sc.title}, ${pages(e)} pages, ${status}`}
+                          aria-label={`Scene ${sc.scene_number}, ${sc.heading ?? sc.title}, ${pages(e)} pages${costed ? `, costs ${money(costed.total)}` : ''}, ${status}`}
                           aria-describedby="strip-help"
                           onDragStart={(ev) => { ev.dataTransfer.setData('text/plain', sc.id); ev.dataTransfer.effectAllowed = 'move'; setDragId(sc.id); }}
                           onDragEnd={() => { setDragId(null); setDropDay(null); }}
@@ -270,6 +321,7 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
                             <span className={b.kind}>{STRIP_LABEL[kind]}</span>
                             {cast.length > 0 && <span>{cast.length} cast</span>}
                             {els > 0 && <span>{els} element{els === 1 ? '' : 's'}</span>}
+                            {costed && <span title={costed.unpriced > 0 ? `${costed.unpriced} element${costed.unpriced === 1 ? '' : 's'} with no price, so this is low` : costed.estimated > 0 ? `${money(costed.estimated)} of it is a default estimate` : undefined}>{money(costed.total)}</span>}
                           </span>
                           {cardsOn && (
                             <button type="button" aria-label={`Open the card for scene ${sc.scene_number}`} title="Open the card" onClick={() => openCard(sc.id)} draggable={false} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 4, minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
@@ -299,29 +351,8 @@ export function StripboardView({ elementCounts }: { elementCounts: Map<string, n
             ))}
           </div>
         </>
-      ) : dood.length === 0 ? (
-        <p className={b.hint}>No cast yet — speaking parts come from the script’s dialogue; they appear here once scenes are scheduled.</p>
       ) : (
-        <div className={b.dood}>
-          <table className={b.doodTable}>
-            <caption className="sr-only">Day out of days: S start, W work, H hold, F finish, SF start and finish</caption>
-            <thead>
-              <tr><th scope="col">Cast</th>{board.map((d) => <th key={d.day} scope="col">{d.day}</th>)}<th scope="col">Days</th></tr>
-            </thead>
-            <tbody>
-              {dood.map((r) => (
-                <tr key={r.name}>
-                  <th scope="row" style={{ fontWeight: 400 }}>{r.name}</th>
-                  {r.cells.map((c, i) => <td key={i} className={c ? b[`code_${c}`] : undefined}>{c || '·'}</td>)}
-                  <td>{r.worked}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className={b.legend}>
-            <span>S start</span><span>W work</span><span>H hold (paid, not shooting)</span><span>F finish</span><span>SF start & finish</span>
-          </div>
-        </div>
+        <DoodTable board={board} dood={dood} />
       )}
     </div>
   );

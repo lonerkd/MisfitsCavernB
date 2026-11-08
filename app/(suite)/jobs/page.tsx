@@ -128,7 +128,7 @@ export default function JobsPage() {
         ...(user ? [{ label: 'Mine', value: `${myJobs.length}` }] : []),
       ],
       actions: user ? [
-        { id: 'post-job', label: '+ Post Position', onClick: () => setShowPost(true) },
+        { id: 'post-job', slot: 'create', label: '+ Post Position', onClick: () => setShowPost(true) },
       ] : [],
     }
   );

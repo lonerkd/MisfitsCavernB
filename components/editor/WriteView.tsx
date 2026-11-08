@@ -1,4 +1,5 @@
 'use client';
+import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
@@ -18,7 +19,6 @@ import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } fro
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { supabase } from '@/lib/supabase/client';
@@ -29,7 +29,7 @@ import { logAuditAction } from '@/lib/supabase/audit';
 import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management';
 import { getTableReadEngine, isTableReadSupported, type TableReadEngine } from '@/lib/scriptos/tableRead';
 import { usePillStage } from '@/lib/os/PillContext';
-import { FindReplaceBar, ShortcutsModal, GoToSceneModal } from '@/components/editor/EditorModals';
+import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
@@ -132,7 +132,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
 
   /** Breakdown shortcuts; true when handled. */
   const breakdownKeys = (e: React.KeyboardEvent<HTMLTextAreaElement>): boolean => {
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.code === 'KeyB') {
+    if (matchChord(e, 'editor')?.id === 'editor.tagmode') {
       e.preventDefault();
       if (!bd.enabled) { openBreakdown(); return true; }
       bd.setMode(!bd.mode);
@@ -316,8 +316,8 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 </div>
               )}
 
-              {!focusMode && (
-                <div style={{
+              {!focusMode && tableReadLineIdx != null && (
+                <div data-hide-when-typing style={{
                   position: 'absolute', top: 16, right: 16, zIndex: 5,
                   display: 'flex', alignItems: 'center', gap: 6,
                   background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.08)',

@@ -88,6 +88,20 @@ export function localDateTime(date: string | null, time: string | null): Date | 
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * The planned wrap as a moment: the sheet's wrap time on the shoot day, or the morning after when that time is no later
+ * than the crew call (a night shoot: call 18:00, wrap 02:00). `call` is the day's crew-call stamp (ISO), if there is one.
+ */
+export function plannedWrapAt(date: string | null, wrapTime: string | null, call: string | null): Date | null {
+  const wrap = localDateTime(date, wrapTime);
+  if (!wrap || !call) return wrap;
+  const callAt = new Date(call);
+  if (Number.isNaN(callAt.getTime())) return wrap;
+  // Only a wrap time that is earlier in the day than the call is "after midnight"; a wrap long before the call on the same
+  // calendar date cannot be a real plan.
+  return wrap.getTime() <= callAt.getTime() && wrap.getDate() === callAt.getDate() ? new Date(wrap.getTime() + 24 * 3600_000) : wrap;
+}
+
 /** "3/8 pg" → 3. */
 export function eighthsOf(est: string | null | undefined): number {
   const m = /(\d+)\s*\/\s*8/.exec(est ?? '');

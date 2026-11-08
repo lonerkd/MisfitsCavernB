@@ -1,8 +1,9 @@
-// Today (/today): the next days on set, my calls, what's mine to do, and who
+// Your day (a section of /community): the next days on set, my calls, what's mine to do, and who
 // or what is unread in the Lounge — for the person signed in, across their
 // projects. RLS limits every read to what they can see.
 import { supabase } from './client';
 import type { LoungeUnread } from './messages';
+import { withScheduledDays, type DaySheet, type ScheduledDay } from '@/lib/today/owner';
 
 export interface TodaySheet { id: string; project_id: string; shoot_date: string | null; shoot_day: number; general_call: string | null; location_address: string | null; weather: string | null; issued_at: string | null }
 export interface TodayTask { id: string; project_id: string; title: string; completed: boolean | null; due_date: string | null }
@@ -56,15 +57,41 @@ export async function nameUnread(un: LoungeUnread): Promise<{
 /** What the owner needs to see across their productions: unanswered crew, open tasks, shoot days. Throws if any part fails. */
 export async function getOwnerData(projectIds: string[], fromDay: string): Promise<import('@/lib/today/owner').OwnerData> {
   if (!projectIds.length) return { pendingCrew: [], openTasks: [], sheets: [] };
-  const [crew, tasks, sheets] = await Promise.all([
+  const [crew, tasks, sheets, days] = await Promise.all([
     supabase.from('project_crew').select('project_id').in('project_id', projectIds).eq('status', 'pending'),
     supabase.from('project_tasks').select('project_id, due_date').in('project_id', projectIds).eq('completed', false).limit(500),
     supabase.from('call_sheets').select('project_id, shoot_date, shoot_day, issued_at').in('project_id', projectIds).gte('shoot_date', fromDay).order('shoot_date').limit(60),
+    nextScheduledDays(projectIds, fromDay),
   ]);
   for (const r of [crew, tasks, sheets]) if (r.error) throw r.error;
+  const dated = days;
+  // The call sheets of those days, whatever their own date says: a sheet outside the date window above (or past its row
+  // limit) must not make an issued day read as "not issued".
+  const dayNumbers = Array.from(new Set(dated.map((d) => d.day_number)));
+  const own = dated.length
+    ? await supabase.from('call_sheets').select('project_id, shoot_day, issued_at').in('project_id', Array.from(new Set(dated.map((d) => d.project_id)))).in('shoot_day', dayNumbers)
+    : { data: [], error: null };
+  if (own.error) throw own.error;
   return {
     pendingCrew: (crew.data ?? []) as { project_id: string }[],
     openTasks: (tasks.data ?? []) as { project_id: string; due_date: string | null }[],
-    sheets: (sheets.data ?? []) as { project_id: string; shoot_date: string | null; shoot_day: number; issued_at: string | null }[],
+    sheets: withScheduledDays(
+      (sheets.data ?? []) as { project_id: string; shoot_date: string | null; shoot_day: number; issued_at: string | null }[],
+      dated,
+      (own.data ?? []) as DaySheet[],
+    ),
   };
+}
+
+/**
+ * The next few dated shoot days of each project, read one project at a time: a single capped query across every project
+ * would let one production with many days crowd another's next day out of the result.
+ */
+async function nextScheduledDays(projectIds: string[], fromDay: string): Promise<ScheduledDay[]> {
+  const perProject = await Promise.all(projectIds.map((id) =>
+    supabase.from('shoot_days').select('project_id, day_number, shoot_date').eq('project_id', id).gte('shoot_date', fromDay).order('shoot_date').limit(3),
+  ));
+  const failed = perProject.find((r) => r.error);
+  if (failed?.error) throw failed.error;
+  return perProject.flatMap((r) => (r.data ?? []) as ScheduledDay[]);
 }

@@ -48,6 +48,7 @@ class FakePeerConnection {
 }
 
 const trackStops: number[] = [];
+const micAsked: number[] = [];
 
 import { useVoiceRoom } from './voice';
 
@@ -59,7 +60,7 @@ function seed(n: number) {
 }
 
 beforeEach(() => {
-  presence.clear(); removed.length = 0; sent.length = 0; connections.length = 0; trackStops.length = 0;
+  presence.clear(); removed.length = 0; sent.length = 0; connections.length = 0; trackStops.length = 0; micAsked.length = 0;
   onTracked = null;
   for (const k of Object.keys(handlers)) delete handlers[k];
   vi.stubGlobal('RTCPeerConnection', FakePeerConnection);
@@ -67,7 +68,7 @@ beforeEach(() => {
   vi.stubGlobal('RTCIceCandidate', class { constructor(public init: unknown) {} });
   Object.defineProperty(navigator, 'mediaDevices', {
     configurable: true,
-    value: { getUserMedia: async () => ({ getTracks: () => [{ stop: () => trackStops.push(1) }], getAudioTracks: () => [] }) },
+    value: { getUserMedia: async () => { micAsked.push(1); return ({ getTracks: () => [{ stop: () => trackStops.push(1) }], getAudioTracks: () => [] }); } },
   });
 });
 
@@ -96,7 +97,14 @@ describe('useVoiceRoom — full mesh limit', () => {
     expect(sent).toHaveLength(0);
     expect(presence.has('me')).toBe(false);
     expect(removed).toEqual(['voice']);
-    expect(trackStops.length).toBeGreaterThan(0);
+    expect(micAsked).toHaveLength(0); // the 9th person is never asked for the microphone
+  });
+
+  it('asks for the microphone when there is a seat', async () => {
+    seed(MAX_VOICE_PARTICIPANTS - 1);
+    renderHook(() => useVoiceRoom('room', me, true, vi.fn()));
+    await flush();
+    expect(micAsked).toHaveLength(1);
   });
 
   it('tears the session down even when the caller keeps `joined` true', async () => {

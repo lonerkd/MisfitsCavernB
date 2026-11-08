@@ -4,7 +4,7 @@ import { islandCondition } from './condition';
 import { CONTROL_KEYS, islandRoute } from './routes';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, clampIslandScale, islandReserve } from './scale';
 
-const idle: IslandSignals = { caps: false, capsDismissed: false, typing: false, engaged: false, zone: false, live: false };
+const idle: IslandSignals = { caps: false, capsDismissed: false, typing: false, engaged: false, zone: false, live: false, activity: false };
 
 describe('islandMode', () => {
   it('rests when nothing is going on', () => {
@@ -65,7 +65,7 @@ describe('typing', () => {
 
 describe('islandRoute', () => {
   it('names every part of the suite', () => {
-    for (const path of ['/', '/today', '/projects', '/projects/abc', '/projects/abc/pitch', '/editor', '/studio', '/soundtrack', '/lounge', '/call/abc',
+    for (const path of ['/', '/community', '/projects', '/projects/abc', '/projects/abc/pitch', '/editor', '/studio', '/soundtrack', '/lounge', '/call/abc',
       '/portfolio', '/portfolio/manage', '/showcase', '/jobs', '/jobs/abc', '/crew', '/crew/abc', '/profile', '/settings', '/welcome', '/admin', '/admin/errors']) {
       const r = islandRoute(path, true);
       expect(r.title, path).not.toBe('');
@@ -76,12 +76,12 @@ describe('islandRoute', () => {
   });
 
   it('offers a project’s tools only when a project is open', () => {
-    expect(islandRoute('/today', false).links.map((l) => l.href)).toEqual(['/projects']);
-    expect(islandRoute('/today', true).links.map((l) => l.href)).toEqual(['/projects', '/editor', '/studio', '/lounge']);
+    expect(islandRoute('/community', false).links.map((l) => l.href)).toEqual(['/projects']);
+    expect(islandRoute('/community', true).links.map((l) => l.href)).toEqual(['/projects', '/editor', '/studio', '/lounge']);
   });
 
   it('never offers more controls than the Caps layer has keys', () => {
-    for (const path of ['/', '/today', '/projects/abc', '/admin']) expect(islandRoute(path, true).links.length).toBeLessThanOrEqual(CONTROL_KEYS.length);
+    for (const path of ['/', '/community', '/projects/abc', '/admin']) expect(islandRoute(path, true).links.length).toBeLessThanOrEqual(CONTROL_KEYS.length);
   });
 
   it('falls back to the route’s own name', () => {
@@ -112,7 +112,7 @@ describe('island size', () => {
 describe('islandRoute back target', () => {
   it('has no back on the top-level places', () => {
     expect(islandRoute('/projects', false).back).toBeNull();
-    expect(islandRoute('/today', false).back).toBeNull();
+    expect(islandRoute('/community', false).back).toBeNull();
   });
   it('goes up one level from a project and its tools', () => {
     expect(islandRoute('/projects/p1', true).back).toEqual({ label: 'Projects', href: '/projects' });
@@ -137,5 +137,23 @@ describe('islandCondition', () => {
   });
   it('says it is sending when back online with items waiting', () => {
     expect(islandCondition({ online: true, waiting: 2 })).toEqual({ kind: 'syncing', label: 'Sending 2' });
+  });
+});
+
+describe('islandMode — a running activity', () => {
+  it('holds the island when nothing else is going on', () => {
+    expect(islandMode({ ...idle, activity: true })).toBe('activity');
+  });
+
+  it('gives way to everything that is about what the person is doing right now', () => {
+    expect(islandMode({ ...idle, activity: true, engaged: true })).toBe('open');
+    expect(islandMode({ ...idle, activity: true, typing: true })).toBe('dot');
+    expect(islandMode({ ...idle, activity: true, caps: true })).toBe('caps');
+    expect(islandMode({ ...idle, activity: true, live: true })).toBe('live');
+    expect(islandMode({ ...idle, activity: true, zone: true })).toBe('context');
+  });
+
+  it('is not a deck: its buttons are on the island itself', () => {
+    expect(isDeck('activity')).toBe(false);
   });
 });

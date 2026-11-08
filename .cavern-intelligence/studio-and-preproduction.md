@@ -47,6 +47,8 @@ position.
 
 ## 3. Library and references
 
+**Mood boards** (Library > Mood boards, `components/studio/boards/BoardsPanel.tsx`): boards as objects of their own, unlimited per project, with a type (free, character, location, tone, colour; a type starts the board with note cards to fill in). A card is a library item or a note; drag it (or arrow keys, Shift for bigger steps), resize it (small, medium, large), bring it to front, edit a note (double click or Enter), remove it. Moves, resizes and note edits go on the suite's undo (Ctrl/Cmd Z outside a text box). The colours on a board are read from its images in the browser (`dominantColours`); Print / PDF opens a printable page of the board (`lib/studio/boards-print.ts`). The pure parts are in `lib/studio/boards.ts`.
+
 - Uploads: private `project-media` bucket, `<project>/<media id>/<file>`,
   50 MB, images/video/audio/PDF. Upload first, then the row; a failed row
   removes the file. Delete removes the row, then the file.
@@ -107,6 +109,15 @@ pitch boards and portfolios.
   scene footprint.
 
 - **Continuity** (`ContinuityView`, `lib/film/story.ts`, `continuity.ts`): the film in story order. Story day and time are read from the headings (NEXT MORNING, N DAYS LATER, DAY n, a night then a morning; flashbacks and dreams are off the line) and offered with one button — never forced; a person's edit is confirmed and kept. Per scene, each character's look (`scene_states`, saved on blur); a look that changes inside one story day is flagged.
+
+## 5a. The record-keeping tools (settings-backed)
+
+Sixteen Production views keep a simple list per project: Camera reports, Comms, Costumes, Director's notebook, Gear, Makeup, Media offload, Permits, Purchase orders, Rehearsals, Risk register, Scouting, Script supervisor, Sound reports, VFX and Wrap (`components/studio/production/*View.tsx`; Safety, Catering, Weather, the shot list and the production report are built separately).
+
+- **Storage**: each list is an array under its own key in `projects.settings` (typed in `lib/types/settings.ts`; written only through `patch_project_settings`, an atomic merge that **only the project owner** may call). One shared hook, `useSettingsList(key)` (`components/studio/production/useSettingsList.ts`), reads the list, saves it, **tells the person when a save fails** (a crew member's save is refused by design), ignores a second click while one is saving, and asks through `useConfirm()` before a delete. A view resets its form only after a save succeeded.
+- **Who can write**: the owner. A director, mixer or camera operator can read their tool but cannot add to it. Letting crew write needs real per-record tables with RLS (`can_access_project` / `can_shape_project`), not a wider write to project settings. This is an open owner decision (BACKLOG 3.38).
+- **Known limits**: scene and character are free text in these records (the film graph links by id: BACKLOG 3.18 is removing the text columns elsewhere); a list lives in one JSON blob (no per-record history, no Realtime). Tests: `settingsViews.test.tsx` (every view offers its Add form on a project with no records; a refused save says so and keeps the form; a delete asks first) and `useSettingsList.test.tsx`.
+- **Two views are not lists**: **Script revisions** reads the locked revisions the editor wrote (`script_revisions`; lock a draft in the editor), read-only, and shows a failed read as a failure. **Day out of days** is the Stripboard's: the same `dayOutOfDays()` engine and the same `DoodTable` (S / W / H / F / SF).
 
 ## 5b. On set
 

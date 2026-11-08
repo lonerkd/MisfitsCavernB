@@ -6,6 +6,7 @@ import { Check, ExternalLink, Printer, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
+import { placeResolver } from '@/lib/film/places';
 import {
   issueState, locationKey, studio, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
@@ -14,7 +15,7 @@ import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
 import { lightNoteBrief } from '@/lib/film/sky';
 import { buildSides } from '@/lib/film/sides';
 import { sidesHtml } from '@/lib/film/sides-print';
-import { stripKind, type StripKind } from '@/lib/studio/stripboard';
+import { buildBoard, stripKind, type StripKind } from '@/lib/studio/stripboard';
 import { Sky } from '@/components/film/Sky';
 import { Stamp } from '@/components/film/Stamp';
 import { Paper, PaperHead } from '@/components/film/Paper';
@@ -30,12 +31,13 @@ type CrewMember = { user_id: string; role: string; username?: string };
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
 const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
-function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[]) {
+function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[], placeOf: (sc: SceneRow) => string, doubtfulOrdinals?: Set<number>) {
   const dayScenes = scenes.filter((sc) => (sc.shoot_day ?? 1) === day).sort((a, b) => a.scene_number - b.scene_number);
-  const locations = Array.from(new Set(dayScenes.map((sc) => sc.location).filter(Boolean))) as string[];
+  const locations = Array.from(new Set(dayScenes.map(placeOf).filter(Boolean)));
   const cast = Array.from(new Set(dayScenes.flatMap(castOf)));
   const eighths = dayScenes.reduce((t, sc) => { const m = String(sc.est_duration || '').match(/(\d+)\/8/); return t + (m ? Number(m[1]) : 0); }, 0);
-  return { dayScenes, locations, cast, pages: eighths ? (eighths / 8).toFixed(1) : null };
+  const doubtful = doubtfulOrdinals ? dayScenes.filter((sc) => sc.ordinal != null && doubtfulOrdinals.has(sc.ordinal)).length : 0;
+  return { dayScenes, locations, cast, pages: eighths ? (eighths / 8).toFixed(1) : null, doubtful };
 }
 
 /**
@@ -44,7 +46,7 @@ function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => str
  * are saved (call_sheets / call_sheet_calls) and shared live with the crew.
  */
 export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: CrewMember[] }) {
-  const { project, sceneLines, castOf } = useStudio();
+  const { project, sceneLines, castOf, doubtfulSceneOrdinals } = useStudio();
   const { toast } = useToast();
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
@@ -57,6 +59,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     () => new Map(filmDays({ scenes, days: shootDays.rows, places: locations.rows, sheets: sheets.rows, viewerZone: deviceZone() }).map((d) => [d.number, d])),
     [scenes, shootDays.rows, locations.rows, sheets.rows],
   );
+  const placeOf = useMemo(() => placeResolver(locations.rows), [locations.rows]);
   const addressOf = useMemo(() => new Map(locations.rows.filter((l) => l.address).map((l) => [locationKey(l.name), l.address as string])), [locations.rows]);
   const [openDay, setOpenDay] = useState<number | null>(null);
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
@@ -69,7 +72,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const nameOf = (userId: string) => (userId === me ? 'You' : crew.find((m) => m.user_id === userId)?.username || 'The owner');
 
   const print = (day: number) => {
-    const d = dayFacts(scenes, day, castOf);
+    const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
     const callOf = (t: CallTarget) => mine.find((c) => ('crew_user_id' in t ? c.crew_user_id === t.crew_user_id : c.character_name === t.character_name));
@@ -98,7 +101,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
 
   // Each called actor's pages for the day, from the script's saved text.
   const printSides = (day: number) => {
-    const d = dayFacts(scenes, day, castOf);
+    const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
     const sides = buildSides(
@@ -122,7 +125,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: 'var(--danger)' }}>{sheets.error || calls.error}</div>}
       <div className={c.list}>
         {days.map((day) => {
-          const d = dayFacts(scenes, day, castOf);
+          const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
           const sheet = sheetFor(day);
           const open = openDay === day;
           const dayCalls = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
@@ -147,7 +150,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                 <button type="button" className={c.row} onClick={() => setOpenDay(day)} aria-expanded={false}>
                   <span className={c.rowDay}>Day {day}</span>
                   <span className={c.rowWhen}>{sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : 'No date'}</span>
-                  <span className={c.rowMeta}>{d.dayScenes.length} {d.dayScenes.length === 1 ? 'scene' : 'scenes'}{d.pages ? ` · ${d.pages} pg` : ''}</span>
+                  <span className={c.rowMeta}>{d.dayScenes.length} {d.dayScenes.length === 1 ? 'scene' : 'scenes'}{d.pages ? ` · ${d.pages} pg` : ''}{d.doubtful > 0 ? ` · ${d.doubtful} doubtful` : ''}</span>
                   <Stamp tone={state.status === 'issued' ? 'ok' : state.status === 'changed' ? 'limit' : 'quiet'}>
                     {state.status === 'draft' ? 'Draft' : state.status === 'issued' ? `Issued v${state.version}` : 'Changed'}
                   </Stamp>
@@ -253,12 +256,21 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
   onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onPrintSides: () => void; onClose: () => void;
 }) {
-  const { project, cardsOn, openCard } = useStudio();
+  const { project, cardsOn, openCard, doubtfulSceneOrdinals } = useStudio();
   const { toast } = useToast();
 
   const saveSheet = async (patch: CallSheetPatch): Promise<CallSheet | null> => {
     try { const row = await studio.saveCallSheet(project.id, day, patch); onSheet(row); return row; }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not save the call sheet', 'error'); return null; }
+  };
+
+  const autoFill = async () => {
+    if (sheet) return;
+    const patch: CallSheetPatch = {};
+    if (facts.locations.length === 1) patch.location_address = facts.locations[0];
+    if (facts.dayScenes.length) patch.notes = facts.dayScenes.map((sc) => `${sc.scene_number}. ${sc.heading ?? sc.title ?? ''}`).join('\n');
+    const row = await saveSheet(patch);
+    if (row) toast('Call sheet seeded from the schedule', 'success');
   };
 
   const field = (key: keyof CallSheetPatch, value: string) => {
@@ -329,6 +341,12 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
           <button type="button" className={c.ghost} onClick={onClose} aria-expanded>Close</button>
         </div>
 
+        {!sheet && facts.dayScenes.length > 0 && (
+          <button type="button" className={cx(s.btn, s.small)} onClick={() => void autoFill()} style={{ marginBottom: 8 }}>
+            Seed from schedule
+          </button>
+        )}
+
         <TimeBoxes>
           <TimeBox label="Call" name="General call" value={hhmm(sheet?.general_call)} onCommit={commitTime('general_call')} />
           <TimeBox label="Shoot" name="Shooting call" value={hhmm(sheet?.shooting_call)} onCommit={commitTime('shooting_call')} />
@@ -368,6 +386,7 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
               ? <span><button type="button" onClick={() => openCard(sc.id)} title="Open the card" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', textDecoration: 'underline dotted' }}>{sc.heading ?? sc.title}</button></span>
               : <span>{sc.heading ?? sc.title}</span>}
             <em>{String(sc.est_duration || '').match(/\d+\s*\/\s*8/)?.[0]?.replace(/\s/g, '') ?? ''}</em>
+            {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span style={{ color: 'var(--warn)', fontSize: '0.75rem', marginLeft: 4 }}>⚠ review</span>}
           </div>
         ))}
 

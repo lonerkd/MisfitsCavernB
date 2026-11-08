@@ -6,8 +6,10 @@ const CustomCursor = dynamic(() => import('@/components/shell/CustomCursor'), { 
 const EcosystemTaskbar = dynamic(() => import('@/components/shell/EcosystemTaskbar'), { ssr: false });
 const CommandPalette = dynamic(() => import('@/components/shell/CommandPalette'), { ssr: false });
 const ShortcutsOverlay = dynamic(() => import('@/components/shell/ShortcutsOverlay'), { ssr: false });
+const UndoKeys = dynamic(() => import('@/components/shell/UndoKeys'), { ssr: false });
 const ErrorReporter = dynamic(() => import('@/components/shell/ErrorReporter'), { ssr: false });
 const ThemeInitializer = dynamic(() => import('@/components/shell/ThemeInitializer'), { ssr: false });
+const PhoneKeyboard = dynamic(() => import('@/components/phone/PhoneKeyboard').then((x) => x.PhoneKeyboard), { ssr: false });
 const MobileTabBar = dynamic(() => import('@/components/mobile/MobileTabBar'), { ssr: false });
 const PlaceTracker = dynamic(() => import('@/components/mobile/Continue').then((x) => x.PlaceTracker), { ssr: false });
 const OutboxFlusher = dynamic(() => import('@/components/mobile/Capture').then((x) => x.OutboxFlusher), { ssr: false });
@@ -19,11 +21,12 @@ import { useInPane } from '@/lib/split/pane';
 
 export default function ClientShell() {
   // In a split-screen pane the split page is the chrome; the page is just its surface.
-  if (useInPane()) return <PaneReporter />;
+  if (useInPane()) return <><PaneReporter /><UndoKeys /></>;
   return (
     <>
       <ErrorReporter />
       <SplitShortcut />
+      <UndoKeys />
       <ServiceWorkerRegister />
       <CustomCursor />
       <CommandPalette />
@@ -31,6 +34,7 @@ export default function ClientShell() {
       <ThemeInitializer />
       <EcosystemTaskbar />
       <MobileTabBar />
+      <PhoneKeyboard />
       <PlaceTracker />
       <OutboxFlusher />
       <ContinueOffer />

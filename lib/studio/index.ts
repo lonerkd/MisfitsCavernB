@@ -5,12 +5,13 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
 export * from './api';
 export * from './media-kind';
+export * from './boards';
 export * from './call-sheet';
 export * from './call-sheet-load';
 export * from './locations';
@@ -45,6 +46,28 @@ export function useSceneMedia(projectId: string | null) {
     load: () => studio.listSceneMedia(projectId!),
     keyOf: sceneMediaKey,
     sort: (a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function useMoodBoards(projectId: string | null) {
+  return useLiveRows<MoodBoard>({
+    scope: projectId,
+    table: 'mood_boards',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listMoodBoards(projectId!),
+    keyOf: (b) => String(b.id),
+    sort: (a, b) => a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function useMoodBoardItems(projectId: string | null) {
+  return useLiveRows<MoodBoardItem>({
+    scope: projectId,
+    table: 'mood_board_items',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listMoodBoardItems(projectId!),
+    keyOf: (i) => String(i.id),
+    sort: (a, b) => a.z - b.z || a.created_at.localeCompare(b.created_at),
   });
 }
 
@@ -143,6 +166,74 @@ export function useSceneStates(projectId: string | null) {
     scope: projectId, table: 'scene_states', filter: `project_id=eq.${projectId}`,
     load: () => studio.listSceneStates(projectId!), keyOf: (x) => String(x.id),
   });
+}
+
+export function useLineOverrides(scriptId: string | null) {
+  return useLiveRows<{ line_index: number; forced_type: string }>({
+    scope: scriptId,
+    table: 'reading_line_overrides',
+    filter: `script_id=eq.${scriptId}`,
+    load: () => studio.listLineOverrides(scriptId!),
+    keyOf: (x) => String(x.line_index),
+  });
+}
+
+export function useReadingMemory(userId: string | null) {
+  const [memory, setMemory] = useState<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!userId) {
+      queueMicrotask(() => setMemory([]));
+      return;
+    }
+    queueMicrotask(() => setLoading(true));
+    let cancelled = false;
+    studio.getReadingMemory(userId).then((rows) => {
+      if (!cancelled) {
+        setMemory(rows);
+        setLoading(false);
+      }
+    }).catch(() => {
+      if (!cancelled) {
+        setMemory([]);
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [userId]);
+
+  const writerMemory = useMemo(() => {
+    if (!memory.length) return undefined;
+    const confirmedNames: string[] = [];
+    const rejectedNames: string[] = [];
+    const titleCaseCues: string[] = [];
+    const colonCues: string[] = [];
+    const extensions: string[] = [];
+    const transitionPatterns: string[] = [];
+
+    for (const row of memory) {
+      switch (row.kind) {
+        case 'confirmed_name': confirmedNames.push(row.name); break;
+        case 'rejected_name': rejectedNames.push(row.name); break;
+        case 'title_case_cue': titleCaseCues.push(row.name); break;
+        case 'colon_cue': colonCues.push(row.name); break;
+        case 'extension': extensions.push(row.name); break;
+        case 'transition_pattern': transitionPatterns.push(row.name); break;
+      }
+    }
+
+    return {
+      confirmedNames,
+      rejectedNames,
+      titleCaseCues,
+      colonCues,
+      extensions,
+      transitionPatterns,
+    };
+  }, [memory]);
+
+  return { memory, writerMemory, loading };
 }
 
 export function useProjectLocations(projectId: string | null) {
@@ -347,7 +438,7 @@ export function mediaSrc(m: Pick<Media, 'storage_path' | 'external_url'>, signed
 // Not a Realtime table on purpose (a script row carries the whole screenplay);
 // reloaded on focus instead.
 
-export interface ProjectScript { id: string; title: string; updated_at: string | null }
+export interface ProjectScript { id: string; title: string; updated_at: string | null; format: string | null }
 const NO_SCRIPTS: ProjectScript[] = [];
 
 export function useProjectScripts(projectId: string | null) {
@@ -361,7 +452,7 @@ export function useProjectScripts(projectId: string | null) {
     if (!projectId) return;
     await supabase
       .from('scripts')
-      .select('id, title, updated_at')
+      .select('id, title, updated_at, format')
       .eq('project_id', projectId)
       .order('updated_at', { ascending: false })
       .then(({ data, error }) => setGot((g) => (error

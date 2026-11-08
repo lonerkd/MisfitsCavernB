@@ -102,7 +102,6 @@ test.describe('Studio journey (local Supabase)', () => {
     // 3. The editor shows the same reference for the scene under the cursor,
     //    and a note written there lands on the scene row.
     await page.goto(`/editor?script=${scriptId}`);
-    await page.getByRole('button', { name: 'Refs' }).click();
     await expect(page.getByText('INT. CAVE - NIGHT').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Open firelight' })).toBeVisible();
     const note = page.getByPlaceholder('What this scene needs — tone, intent, what the references are for');
@@ -113,6 +112,7 @@ test.describe('Studio journey (local Supabase)', () => {
     // 4. Publish: link-share the project and include the still.
     await openStudio(page, projectId, 'share');
     await page.getByRole('radio', { name: /Anyone with the link/ }).click();
+    await expect.poll(async () => (await admin.from('projects').select('visibility').eq('id', projectId).single()).data?.visibility).toBe('link');
     await page.getByRole('switch', { name: 'Include firelight in the lookbook' }).click();
     await expect(page.getByRole('switch', { name: 'Include firelight in the lookbook' })).toHaveAttribute('aria-checked', 'true');
     const shareUrl = await page.locator('#share-url').inputValue();

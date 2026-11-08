@@ -10,11 +10,14 @@ export interface StripScene {
   heading?: string | null;
   title?: string | null;
   location: string | null;
+  location_id?: string | null;
   time_of_day: string | null;
   est_duration: string | null;
   cast_list: string | null;
   shoot_day: number | null;
   status?: string | null;
+  /** Whether the reader was unsure about this scene's read (deep brain). */
+  doubtful?: boolean;
 }
 
 /** The industry strip colours: white INT day, yellow EXT day, blue INT night, green EXT night. */
@@ -45,21 +48,30 @@ export interface BoardDay {
   locations: string[];
   cast: string[];
   over: boolean;
+  /** How many scenes in this day had a doubtful read. */
+  doubtful: number;
 }
 
 /**
  * Days 1…last, including empty ones (a gap is a real day off the board until
  * something moves into it), each with its strips in scene order.
  */
-export function buildBoard(scenes: StripScene[], capacityEighths: number, castFor: (s: StripScene) => string[] = castOf): BoardDay[] {
+export function buildBoard(
+  scenes: StripScene[],
+  capacityEighths: number,
+  castFor: (s: StripScene) => string[] = castOf,
+  /** Where a scene shoots (graph first); defaults to the heading's text. */
+  placeFor: (s: StripScene) => string = locationKey,
+): BoardDay[] {
   const last = scenes.reduce((m, s) => Math.max(m, s.shoot_day ?? 1), 0);
   return Array.from({ length: last }, (_, i) => {
     const day = i + 1;
     const list = scenes.filter((s) => (s.shoot_day ?? 1) === day).sort((a, b) => a.scene_number - b.scene_number);
     const eighths = list.reduce((n, s) => n + eighthsOf(s.est_duration), 0);
-    const locations = Array.from(new Set(list.map(locationKey).filter(Boolean)));
+    const locations = Array.from(new Set(list.map(placeFor).filter(Boolean)));
     const cast = Array.from(new Set(list.flatMap(castFor))).sort();
-    return { day, scenes: list, eighths, locations, cast, over: eighths > capacityEighths };
+    const doubtful = list.filter((s) => s.doubtful).length;
+    return { day, scenes: list, eighths, locations, cast, over: eighths > capacityEighths, doubtful };
   });
 }
 

@@ -1,8 +1,16 @@
 
 
+import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
+import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
+
+/**
+ * The "… TO BLACK / WHITE" family, which writers qualify in many ways (SMASH CUT TO BLACK, MATCH CUT TO WHITE,
+ * HARD CUT TO BLACK, DISSOLVE TO WHITE, SLOW FADE TO BLACK) and no list will hold. A pattern says it once.
+ */
+export const TRANSITION_TO_COLOUR = /^(?:(?:SLOW|QUICK|SMASH|MATCH|JUMP|HARD|FLASH|CROSS|FINAL)[ -]){0,2}(?:CUT|DISSOLVE|FADE|WIPE|IRIS)(?: TO)? (?:BLACK|WHITE)$/;
 
 export const KNOWLEDGE = {
   SCENE_PREFIXES: new Set([
@@ -115,6 +123,30 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
+  /** Places known to exist (from project_locations): a heading with one of these names is believed. */
+  places?: readonly string[];
+  /** Cues from the previous draft (line indices + names): a line that was a cue last time is likely still one. */
+  previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
+  /** Per-writer private memory (L6): confirmed names, rejected names, learned patterns. */
+  writerMemory?: WriterMemory;
+  /** Per-project line overrides (L6): a person's correction on specific lines. */
+  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
+}
+
+/** Per-writer private memory (L6 of the deep-brain plan). */
+export interface WriterMemory {
+  /** Names this writer has confirmed as characters (across projects). */
+  confirmedNames: readonly string[];
+  /** Names this writer has rejected as non-characters. */
+  rejectedNames: readonly string[];
+  /** Title-case cues this writer uses (e.g., "Maya" not "MAYA"). */
+  titleCaseCues: readonly string[];
+  /** Colon cues this writer uses (e.g., "MARCUS:"). */
+  colonCues: readonly string[];
+  /** Extensions this writer uses. */
+  extensions: readonly string[];
+  /** Transition patterns this writer uses. */
+  transitionPatterns: readonly string[];
 }
 
 export interface ParseOptions {
@@ -135,6 +167,8 @@ export class ScriptParser {
   private format: ScriptFormat;
 
   private learnedNames: Set<string>;
+  /** Names this script writes as plain title-case head lines ("Maya") rather than in capitals, found by preScanTitleCaseCues. */
+  private titleCaseCues: Set<string> = new Set();
 
   /*
    * Per-scene state reset
@@ -172,15 +206,35 @@ export class ScriptParser {
   /** Label the whole script at once (lib/scriptos/decode.ts) instead of line by line. */
   private useDecoder: boolean;
   private rejectedNames: Set<string>;
+  private writerMemory?: WriterMemory;
+  private lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
+  private places?: readonly string[];
+  private previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
+    this.writerMemory = options.context?.writerMemory;
+    this.lineOverrides = options.context?.lineOverrides;
+    this.places = options.context?.places;
+    this.previousDraftCues = options.context?.previousDraftCues;
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
+    // Add writer's rejected names to the rejected set
+    if (this.writerMemory?.rejectedNames) {
+      for (const n of this.writerMemory.rejectedNames) this.rejectedNames.add(this.clean(n).toUpperCase());
+    }
     this.learnedNames = new Set([...learnedNames, ...upper(options.context?.characters)].filter((n) => !this.rejectedNames.has(this.clean(n))));
+    // Add writer's confirmed names to learned names
+    if (this.writerMemory?.confirmedNames) {
+      for (const n of this.writerMemory.confirmedNames) this.learnedNames.add(this.clean(n).toUpperCase());
+    }
+    // Add previous draft cues to learned names
+    if (this.previousDraftCues) {
+      for (const cue of this.previousDraftCues) this.learnedNames.add(this.clean(cue.name).toUpperCase());
+    }
     this.characterStats = new Map();
     this.elements = {
       'PROPS': new Set(),
@@ -217,14 +271,14 @@ export class ScriptParser {
   /** Is this line a transition, with or without its colon or full stop? */
   private isTransitionText(upper: string): boolean {
     const bare = upper.replace(/[:.]+$/, '').trim();
-    return KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, '')) || KNOWLEDGE.TRANSITION_BARE.has(bare);
+    return KNOWLEDGE.TRANSITIONS.has(upper) || KNOWLEDGE.TRANSITIONS.has(upper.replace(/:$/, '')) || KNOWLEDGE.TRANSITION_BARE.has(bare) || TRANSITION_TO_COLOUR.test(bare);
   }
 
   private clean(text: string): string {
     return text
       .replace(/\s*\(.*?\)\s*/g, ' ')
       .replace(/^\^/, '')
-      .replace(/[^\p{L}\p{N}\s'’\-.]/gu, '')
+      .replace(/[^\p{L}\p{N}\s'’\-.#]/gu, '')
       .replace(/\s+/g, ' ')
       .trim()
       .replace(/^\.+|\.+$/g, '')
@@ -244,6 +298,7 @@ export class ScriptParser {
     this.lines = [];
     if (this.usesScreenplayGrammar()) {
       this.preScanCharacters();
+      this.preScanTitleCaseCues();
     } else if (this.format === 'podcast') {
       this.preScanSpeakers();
     }
@@ -402,6 +457,49 @@ export class ScriptParser {
     });
   }
 
+  /**
+   * How THIS script writes its cues (the document profile, L3): some scripts, especially ones pasted from the web
+   * or written in a hurry, write a speaker as plain title case ("Maya") on a line of its own above the speech
+   * instead of in capitals. A person sees at once that they are cues because the same short name heads block
+   * after block. This is that inference: a short, unpunctuated, title-case line that follows a blank line and has
+   * a line of speech under it, and that RECURS. A one-off is not enough (a lone "Silence" is just a word); a name
+   * that is also seen between two recurring ones (a two-person exchange) is.
+   */
+  private preScanTitleCaseCues() {
+    if (!this.usesScreenplayGrammar()) return;
+    const shape = /^\p{Lu}[\p{L}'’\-.]*(?: \p{Lu}[\p{L}'’\-.]*){0,2}(?: \d+)?$/u;
+    type Head = { idx: number; name: string };
+    const heads: Head[] = [];
+    this.rawLines.forEach((line, idx) => {
+      const trim = line.trim();
+      if (!trim || trim.length > THRESHOLDS.titleCaseCueMaxLength.value || !shape.test(trim) || this.isCaps(trim)) return;
+      if (idx > 0 && this.rawLines[idx - 1].trim()) return; // a head line follows a blank line (or the start)
+      const next = (this.rawLines[idx + 1] || '').trim();
+      if (!next || this.isSceneHeading(next)) return;
+      const name = this.clean(trim).toUpperCase();
+      if (!name || /[.!?]$/.test(trim) || this.rejectedNames.has(name)) return;
+      if (KNOWLEDGE.SCENE_PREFIXES.has(name) || this.isTransitionText(name) || KNOWLEDGE.CAMERA_ANGLES.has(name) || KNOWLEDGE.TIME_OF_DAY.has(name)) return;
+      // What is under it reads like speech (a sentence, or a parenthetical), not another bare label.
+      if (!(next.startsWith('(') || /[\p{Ll}]/u.test(next) || /[.!?…,]$/.test(next))) return; // shouted speech ends like a sentence
+      heads.push({ idx, name });
+    });
+
+    const count = new Map<string, number>();
+    for (const h of heads) count.set(h.name, (count.get(h.name) ?? 0) + 1);
+    const accepted = new Set([...count].filter(([, n]) => n >= THRESHOLDS.titleCaseCueMinHeads.value).map(([name]) => name));
+    if (accepted.size === 0) return;
+
+    // A name that appears once, directly between two heads that recur, is the other half of an exchange.
+    for (let i = 1; i < heads.length - 1; i++) {
+      const h = heads[i];
+      if (!accepted.has(h.name) && accepted.has(heads[i - 1].name) && accepted.has(heads[i + 1].name)) accepted.add(h.name);
+    }
+    for (const name of accepted) {
+      this.titleCaseCues.add(name);
+      this.characterStats.set(name, (this.characterStats.get(name) ?? 0) + (count.get(name) ?? 1));
+    }
+  }
+
   private preScanSpeakers() {
     const speakerLine = /^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*\S/;
     this.rawLines.forEach(line => {
@@ -511,19 +609,41 @@ export class ScriptParser {
   private decode(titleLines: Set<number>): Decoded {
     const obs: Observation[] = [];
     let boneyard = false;
+    // One lookup table per read (not a search of the overrides for every line).
+    const overrideAt = new Map((this.lineOverrides ?? []).map((o) => [o.line_index, o.forced_type]));
     for (let i = 0; i < this.rawLines.length; i++) {
       const trim = this.rawLines[i].trim();
       const prevBlank = i === 0 || !this.rawLines[i - 1].trim();
       const next = (this.rawLines[i + 1] ?? '').trim();
-      const base = { text: trim, prevBlank, next };
+      const base = {
+        text: trim,
+        prevBlank,
+        next,
+        _isCaps: this.isCaps(trim),
+        _isCapsNamePart: this.isCaps(trim.replace(/\s*\([^)]*\)\s*$/, '').trim()),
+        _isHeading: this.isSceneHeading(trim),
+        _isTransition: this.isTransitionText(trim.toUpperCase()),
+        _looksUncasedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.looksLikeUncasedName(np, prevBlank, next) || (prevBlank && !!next && this.titleCaseCues.has(this.clean(np).toUpperCase())); })(),
+        _isKnownName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.characterStats.has(this.clean(np)) || this.characterStats.has(this.clean(np).toUpperCase()) || (this.writerMemory?.confirmedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
+        _isRejectedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.rejectedNames.has(this.clean(np)) || (this.writerMemory?.rejectedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
+        _hasExtension: [...KNOWLEDGE.EXTENSIONS].some((e) => trim.toUpperCase().includes(e)),
+        _opensWithKnownName: this.opensWithKnownName(trim),
+        _isHeadingNext: next ? this.isSceneHeading(next) : false,
+        _isTransitionNext: next ? this.isTransitionText(next.toUpperCase()) : false,
+      };
       if (!trim) { obs.push({ ...base, kind: 'empty' }); continue; }
-      if (titleLines.has(i)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
-      if (boneyard || trim.startsWith('/*')) {
+      // A person's override wins over every fixed classification, but the boneyard state must still advance on that line:
+      // forcing the type of a `/*` or `*/` line must not leave every later line inside the comment.
+      const override = overrideAt.get(i);
+      const isTitle = titleLines.has(i);
+      const inBoneyard = !isTitle && (boneyard || trim.startsWith('/*'));
+      if (inBoneyard) {
         const closes = trim.endsWith('*/');
         boneyard = boneyard ? !closes : !trim.includes('*/');
-        obs.push({ ...base, kind: 'fixed', fixed: 'boneyard' });
-        continue;
       }
+      if (override !== undefined) { obs.push({ ...base, kind: 'fixed', fixed: override as any }); continue; }
+      if (isTitle) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      if (inBoneyard) { obs.push({ ...base, kind: 'fixed', fixed: 'boneyard' }); continue; }
       if (trim === '^') { obs.push({ ...base, kind: 'fixed', fixed: 'dual' }); continue; }
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
@@ -534,11 +654,23 @@ export class ScriptParser {
       isCaps: (t) => this.isCaps(t),
       isHeading: (t) => this.isSceneHeading(t),
       isTransition: (u) => this.isTransitionText(u),
-      looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n),
-      isKnownName: (n) => this.characterStats.has(this.clean(n)),
-      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)),
+      looksUncasedName: (t, pb, n) => this.looksLikeUncasedName(t, pb, n) || (pb && !!n && this.titleCaseCues.has(this.clean(t).toUpperCase())),
+      isKnownName: (n) => this.characterStats.has(this.clean(n)) || this.characterStats.has(this.clean(n).toUpperCase()) || (this.writerMemory?.confirmedNames?.includes(this.clean(n).toUpperCase()) ?? false),
+      isRejectedName: (n) => this.rejectedNames.has(this.clean(n)) || (this.writerMemory?.rejectedNames?.includes(this.clean(n).toUpperCase()) ?? false),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
+      opensWithKnownName: (t) => this.opensWithKnownName(t),
     });
+  }
+
+  /** "Maya ducks.": the line opens with a name seen speaking and a lowercase word, not a comma ("Maya, wait."), so it narrates. */
+  private opensWithKnownName(text: string): boolean {
+    const words = text.split(/\s+/);
+    for (let n = Math.min(3, words.length - 1); n >= 1; n--) {
+      const name = words.slice(0, n).join(' ').replace(/[^\p{L}\p{N}'#. -]+$/u, '');
+      const next = words[n];
+      if (this.characterStats.has(name.toUpperCase()) && /^\p{Ll}/u.test(next) && !/[,?]$/.test(words[n - 1])) return true;
+    }
+    return false;
   }
 
   /** The decoder's label replaces the line's own; the rest of what the line was found to be stays. */
@@ -548,8 +680,14 @@ export class ScriptParser {
     analysis.reasoning = [...analysis.reasoning, `Decoded as ${decided}`];
     if (alternative) analysis.meta = { ...analysis.meta, alternative };
     if (decided === 'character') {
-      const name = analysis.meta?.characterName || this.clean(trim);
+      const written = analysis.meta?.characterName || this.clean(trim);
+      const name = this.titleCaseCues.has(written.toUpperCase()) ? written.toUpperCase() : written;
       analysis.meta = { ...analysis.meta, characterName: name };
+      // The cast is who the reading says speaks. The pre-scan skips a cue whose only line is shouted in capitals
+      // (it cannot tell that from caps action), but the decoder, which sees the whole script, may read it as a cue:
+      // a name read as a cue is in the cast, so the lines and the cast never disagree.
+      const key = this.clean(name);
+      if (key && !this.characterStats.has(key) && !this.rejectedNames.has(key)) this.characterStats.set(key, 1);
       // A name seen speaking once is a cue by the rules but a guess by the evidence: a person should look.
       if ((this.characterStats.get(this.clean(name)) ?? 0) <= 1 && !this.learnedNames.has(this.clean(name))) {
         analysis.confidence = Math.min(analysis.confidence, 60);
@@ -788,7 +926,16 @@ export class ScriptParser {
       const name = (l.meta?.characterName as string | undefined) ?? this.clean(l.text);
       if (!first.has(name)) first.set(name, l.index);
     }
-    return Array.from(this.characterStats.entries())
+    // The pre-scan is evidence for the decoder, not the answer: it takes any caps line with a sentence under it,
+    // which includes caps action ("THE DOOR EXPLODES.") in a script with no blank lines to tell them apart. When
+    // the decoder is reading the script, the cast is the names it read as cues, plus the ones the project already
+    // knows. (Other formats, the podcast's `NAME: speech`, have no decoder and keep what their own pre-scan found.)
+    const decoded = this.usesScreenplayGrammar();
+    const stats = new Map(this.characterStats);
+    // A cue the pre-scan never saw (a forced Fountain `@mc`) is still a cue the reader read.
+    if (decoded) for (const name of first.keys()) if (!stats.has(name) && !this.rejectedNames.has(name)) stats.set(name, this.lines.filter(l => l.type === 'character' && ((l.meta?.characterName as string | undefined) ?? this.clean(l.text)) === name).length);
+    return Array.from(stats.entries())
+      .filter(([name]) => !decoded || first.has(name) || this.learnedNames.has(name))
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, lines: count, firstLineIndex: first.get(name) ?? -1 }));
   }
@@ -813,6 +960,7 @@ export class ScriptParser {
           sceneNumber: line.meta?.sceneNumber || '',
           location: this.parseLocation(slugText),
           timeOfDay: this.parseTime(slugText),
+          ...this.headingFacts(slugText),
           characters: []
         };
       } else if (currentScene) {
@@ -855,24 +1003,26 @@ export class ScriptParser {
     return slug.trim().replace(/^\s*(\d+[A-Z]?\.?\s+)?(INTERIOR|EXTERIOR|INT\.?\/EXT\.?|EXT\.?\/INT\.?|INT|EXT|EST|I\/E|E\/I)\b\.?\s*/i, '');
   }
 
-  private isTimePart(part: string): boolean {
-    const up = part.toUpperCase().replace(/[^A-Z\s/]/g, '').trim();
-    if (KNOWLEDGE.TIME_OF_DAY.has(up)) return true;
-    return [...KNOWLEDGE.TIME_OF_DAY].some(t => up === t || up.endsWith(' ' + t) || up.endsWith(t));
+  /** The when of a heading, kept: the years it names, the era words, how it follows the scene before, its layer of the story. */
+  private headingFacts(slug: string): Pick<Scene, 'years' | 'era' | 'marker' | 'frame'> {
+    const h = readHeading(this.stripScenePrefix(slug));
+    return {
+      ...(h.years.length ? { years: h.years } : {}),
+      ...(h.era ? { era: h.era } : {}),
+      ...(h.marker ? { marker: h.marker } : {}),
+      ...(h.frame ? { frame: h.frame } : {}),
+    };
   }
 
   private parseLocation(slug: string): string {
     const body = this.stripScenePrefix(slug);
-
-    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
-    if (parts.length === 0) return body.trim();
-    while (parts.length > 1 && this.isTimePart(parts[parts.length - 1])) parts.pop();
-    return parts.join(' - ');
+    if (!body.trim()) return body.trim();
+    return readHeading(body).location;
   }
 
   private parseTime(slug: string): string {
     const body = this.stripScenePrefix(slug);
-    const parts = body.split(/\s+-{1,2}\s+/).map(p => p.trim()).filter(Boolean);
+    const parts = headingParts(body); // the same separators the heading reader splits on (hyphens, en and em dashes)
     const last = (parts[parts.length - 1] || '').toUpperCase().replace(/[^A-Z\s]/g, ' ').replace(/\s+/g, ' ').trim();
 
     const hits = [...KNOWLEDGE.TIME_OF_DAY].filter(t => new RegExp(`(^|\\s)${t}(\\s|$)`).test(last));

@@ -4,11 +4,13 @@
 // and links, loaded once and kept live, shared by every tab. Replaces the old
 // 90-field untyped context.
 
+import { setUndoContext } from '@/lib/os/undo';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import React, { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import type { Project } from '@/lib/os';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
@@ -26,6 +28,8 @@ import {
   useCharacters,
   useSceneCharacters,
   useReadingCorrections,
+  useProjectLocations,
+  useLineOverrides,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -54,6 +58,8 @@ export interface StudioData {
   cuts: LiveRows<PostCut>;
   postNotes: LiveRows<PostNote>;
   scripts: ProjectScript[];
+  /** The chosen script's format (it decides which reading rules apply), or null. */
+  scriptFormat: string | null;
   scriptsStatus: 'loading' | 'ready' | 'error';
   scriptId: string | null;
   setScriptId: (id: string) => void;
@@ -69,6 +75,8 @@ export interface StudioData {
   openInScript: (scene: Pick<SceneRow, 'id' | 'script_id'>, noteId?: string) => void;
   /** The open script's lines per scene id (index 0 is the heading), from its saved text. */
   sceneLines: Map<string, ScriptLineLite[]>;
+  /** Ordinals (0-based) of scenes whose read was doubtful. */
+  doubtfulSceneOrdinals: Set<number>;
   /** Open another Studio tab or view in place (an empty state's next step). */
   goTo: (tab: StudioTab, view?: ProductionView) => void;
   /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
@@ -80,7 +88,7 @@ export interface StudioData {
   closeCard: () => void;
 }
 
-export interface ScriptLineLite { type: string; text: string }
+export interface ScriptLineLite { type: string; text: string; confidence?: number; reasoning?: string; index?: number }
 
 const Ctx = createContext<StudioData | null>(null);
 
@@ -96,6 +104,11 @@ const noNav = () => {};
 
 export function StudioProvider({ project, userId, onNavigate = noNav, children }: { project: Project; userId: string; onNavigate?: (tab: StudioTab, view?: ProductionView) => void; children: React.ReactNode }) {
   const projectId = project.id;
+  // The undo stack hides another project's actions while this one is open.
+  useEffect(() => {
+    setUndoContext('studio', projectId);
+    return () => setUndoContext('studio', undefined);
+  }, [projectId]);
   const media = useProjectMedia(projectId);
   const links = useSceneMedia(projectId);
   const shots = useProjectShots(projectId);
@@ -129,14 +142,27 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   // The cast people have chosen is what the reader knows; the same one the editor reads with.
   const castings = useCastings(projectId);
   const corrections = useReadingCorrections(projectId);
-  const readContextRef = useRef(contextFromProject(castings.rows, corrections.rows));
-  useLayoutEffect(() => { readContextRef.current = contextFromProject(castings.rows, corrections.rows); });
+  const locations = useProjectLocations(projectId);
+  const lineOverrides = useLineOverrides(scriptId);
+  // The shared scene index is built from PROJECT data only (the cast, the "not a character" list, the places, the forced line
+  // types). A writer's private reading memory shapes what THEY see in the editor; it must never decide rows the whole crew shares,
+  // or two people with different memories would keep overwriting each other's scenes.
+  const readContext = () => contextFromProject(
+    castings.rows, corrections.rows, undefined,
+    lineOverrides.rows?.map((r: { line_index: number; forced_type: string }) => ({ line_index: r.line_index, forced_type: r.forced_type })),
+    locations.rows?.map((l: { name: string }) => ({ name: l.name })),
+  );
+  const readContextRef = useRef(readContext());
+  useLayoutEffect(() => { readContextRef.current = readContext(); });
+  // The script's own reading rules (the same ones the editor uses), kept in a ref so the sync callback stays steady.
+  const formatsRef = useRef<Record<string, string | null>>({});
+  useLayoutEffect(() => { formatsRef.current = Object.fromEntries(scripts.map((sc) => [sc.id, sc.format])); });
   const syncScenes = useCallback((id: string) => fetchScriptContent(id)
     .then(async (text) => {
-      const parsed = parseScript(text, 'screenplay', undefined, { context: readContextRef.current });
+      const parsed = parseScript(text, readingFormat(formatsRef.current[id]), undefined, { context: readContextRef.current });
       setParsedScenes({
         scriptId: id,
-        scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text }))),
+        scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l, i) => ({ type: l.type, text: l.text, confidence: l.confidence, reasoning: l.reasoning, index: l.index ?? i }))),
       });
       await studio.syncScriptScenes(id, parsed.scenes);
       await reloadScenes();
@@ -190,6 +216,15 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   }, [parsedScenes, scriptId, scenes.rows]);
 
   const storyCharacters = useCharacters(projectId);
+  const doubtfulSceneOrdinals = useMemo(() => {
+    if (!parsedScenes || parsedScenes.scriptId !== scriptId) return new Set<number>();
+    const ordinals = new Set<number>();
+    parsedScenes.scenes.forEach((lines, ordinal) => {
+      const hasDoubt = lines.some((l) => (l.confidence ?? 100) < 75 && /Decoded as/.test(l.reasoning ?? ''));
+      if (hasDoubt) ordinals.add(ordinal);
+    });
+    return ordinals;
+  }, [parsedScenes, scriptId]);
   const sceneCharacterLinks = useSceneCharacters(projectId);
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
   const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
@@ -215,6 +250,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     cuts,
     postNotes,
     scripts,
+    scriptFormat: scripts.find((sc) => sc.id === scriptId)?.format ?? null,
     scriptsStatus,
     scriptId,
     setScriptId,
@@ -226,6 +262,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     followScene,
     openInScript,
     sceneLines,
+    doubtfulSceneOrdinals,
     goTo: onNavigate,
     castOf,
     cardsOn,

@@ -28,7 +28,8 @@ import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from './Capture
 import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -37,7 +38,7 @@ const TOOLS = [
   { href: '/crew', label: 'Crew', icon: Users },
   { href: '/portfolio', label: 'Portfolio', icon: Film },
   { href: '/soundtrack', label: 'Soundtrack', icon: Music },
-  { href: '/today#updates', label: 'Updates', icon: Bell },
+  { href: '/community#updates', label: 'Updates', icon: Bell },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
 ] as const;
@@ -45,24 +46,8 @@ const TOOLS = [
 /** Pages that are the whole screen, or for people outside the suite. */
 const hiddenOn = (path: string) => path === '/auth' || path === '/login' || path === '/privacy' || path === '/terms' || path === '/split' || path.startsWith('/editor') || /^\/(shared|p|s|call)\//.test(path);
 
-function useKeyboardOpen() {
-  const [open, setOpen] = useState(false);
-  useEffect(() => {
-    const typing = () => {
-      const el = document.activeElement as HTMLElement | null;
-      const field = !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable || (el.tagName === 'INPUT' && !['checkbox', 'radio', 'button', 'submit', 'range', 'color', 'file'].includes((el as HTMLInputElement).type)));
-      setOpen(field);
-    };
-    const left = () => setTimeout(typing, 0);
-    document.addEventListener('focusin', typing);
-    document.addEventListener('focusout', left);
-    return () => { document.removeEventListener('focusin', typing); document.removeEventListener('focusout', left); };
-  }, []);
-  return open;
-}
-
 const PLACES: { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }[] = [
-  { href: '/today', label: 'Today', icon: Sun, match: (p) => p === '/today' },
+  { href: '/community', label: 'Community', icon: Sun, match: (p) => p.startsWith('/community') || p.startsWith('/hub') },
   { href: '/projects', label: 'Projects', icon: FolderOpen, match: (p) => p.startsWith('/projects') || p.startsWith('/studio') || p.startsWith('/editor') },
   { href: '/lounge', label: 'Lounge', icon: MessageSquare, match: (p) => p.startsWith('/lounge') },
 ];
@@ -168,7 +153,9 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
 export default function MobileTabBar() {
   const pathname = usePathname();
   const { status } = useSession();
-  const keyboard = useKeyboardOpen();
+  // The same word as every other part of the phone layout (PhoneKeyboard measures the real keyboard through visualViewport), not a
+  // second guess from which element has focus.
+  const keyboard = usePhoneLayout().typing;
   const [more, setMore] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [start, setStart] = useState<CaptureStart | null>(null);
@@ -176,7 +163,7 @@ export default function MobileTabBar() {
   const [unread, setUnread] = useState(0);
   const authed = status === 'authed';
   // Only on a phone: on a desk the page would otherwise hold a hidden copy of the project's name.
-  const phone = useMediaQuery('(max-width: 760px)');
+  const phone = useIslandSurface() === 'pill';
   const { activeProject } = useProject();
   const { activeDescriptor } = usePill();
 
@@ -184,7 +171,7 @@ export default function MobileTabBar() {
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
   const search = useLocationSearch();
-  const shared = useMemo(() => (authed && pathname === '/today' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
+  const shared = useMemo(() => (authed && pathname === '/community' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
   const sharedKey = shared ? search : '';
   // Open each share once — including one already in the address when this mounts.
   const [handledShare, setHandledShare] = useState('');
@@ -195,7 +182,7 @@ export default function MobileTabBar() {
   } else if (!sharedKey && handledShare) {
     setHandledShare(''); // the address is tidied: the same share can come again
   }
-  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/today'); }, [sharedKey]);
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/community'); }, [sharedKey]);
   useEffect(() => {
     if (!authed) return;
     let live = true;
@@ -233,7 +220,7 @@ export default function MobileTabBar() {
         </button>
         {onSet && (
           <span className={m.pillOnset}>
-            <Link href={ON_SET_HREF} className={m.pillOnsetLink}>{onSet.label}</Link>
+            <Link href={ON_SET_HREF} className={m.pillOnsetLink} title={`${onSet.label}${onSet.line ? ` · ${onSet.line.full}` : ''}`}>{onSet.label}{onSet.line ? ` · ${onSet.line.short}` : ''}</Link>
             <button type="button" className={m.pillOnsetAway} aria-label="Step out of on set" onClick={onSet.away}>×</button>
           </span>
         )}

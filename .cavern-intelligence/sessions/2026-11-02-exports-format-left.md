@@ -1,0 +1,5 @@
+# Session — 2026-11-02: exports and the script format: tried, withdrawn, written down
+
+After the editor and the Studio began reading podcast and outline scripts as themselves (#374), I tried switching the text, Fountain, FDX and PDF exports to the same rule. Review pointed out what a test of the Fountain output alone could not show: for a podcast the parser emits `HOST: ...` as one `dialogue` line with the speaker only in metadata, and outline markers become `slug` lines, so FDX and PDF would write `Dialogue` paragraphs with no `Character` cue and `Scene Heading` paragraphs for segments. Whether that is better than the old all-`Action` output is a design question that needs checking in Final Draft, which I cannot do here. The gain (Fountain no longer forcing a `!` on a segment header) is small. So the export change is **withdrawn**; the exports keep reading as a screenplay, and BACKLOG 3.22(b) now says why and what has to be decided.
+
+Housekeeping in the same PR: a stale "belongs to 3.35" in BACKLOG 3.21, and a duplicated line in the previous session note.

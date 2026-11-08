@@ -77,7 +77,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     // Today: the day on set with the way there, and the task — ticked off here.
-    await page.goto('/today');
+    await page.goto('/community');
     const tabs = page.locator('[data-mobile-tabbar]');
     await expect(tabs).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('nav.mc-dock')).toBeHidden();
@@ -104,7 +104,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await admin.from('projects').update({ title: longTitle }).eq('id', projectId);
     const scriptId = (await admin.from('scripts').insert({ title: longTitle, content: 'INT. PIER - NIGHT\n\n', project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
     await page.reload();
-    for (const path of ['/today', '/projects', `/projects/${projectId}`, '/studio?tab=overview', '/studio?tab=production&view=schedule', '/lounge', '/jobs', '/crew', '/settings', `/editor?script=${scriptId}`]) {
+    for (const path of ['/community', '/projects', `/projects/${projectId}`, '/studio?tab=overview', '/studio?tab=production&view=schedule', '/lounge', '/jobs', '/crew', '/settings', `/editor?script=${scriptId}`]) {
       await page.goto(path);
       await page.waitForTimeout(1500);
       expect(await overflow(page), path).toEqual([]);
@@ -113,13 +113,14 @@ test.describe('The suite on a phone (local Supabase)', () => {
     const status = page.getByTestId('editor-status');
     await expect(status).toBeVisible();
     expect(await status.evaluate((el) => el.scrollHeight <= el.clientHeight + 1 && [...el.querySelectorAll('span')].every((s) => s.getBoundingClientRect().height <= el.clientHeight))).toBe(true);
-    // Export opens a menu you can use on a phone (it was clipped by the
-    // sideways-scrolling header, under the script).
-    const exportBtn = page.getByRole('button', { name: 'Export', exact: true });
-    await exportBtn.scrollIntoViewIfNeeded();
-    await exportBtn.click();
-    await page.getByRole('menu', { name: 'Export' }).getByRole('button', { name: '.PDF' }).click({ trial: true });
+    // On a phone the editor's actions are one "More" sheet (the desk's Export menu was clipped by a sideways-scrolling header): it opens, it holds every export, and Escape closes it.
+    await page.getByRole('button', { name: /^More/ }).click();
+    const more = page.getByRole('dialog', { name: 'More' });
+    await expect(more).toBeVisible();
+    for (const label of ['Export PDF', 'Export FDX', 'Export FOUNTAIN', 'Export text', 'Save now', 'Find and replace']) await expect(more.getByRole('button', { name: label })).toBeVisible();
+    for (const b of await more.getByRole('button').all()) expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await page.keyboard.press('Escape');
+    await expect(more).toHaveCount(0);
     await admin.from('scripts').delete().eq('id', scriptId);
     await admin.from('projects').update({ title: `Tidewater ${TAG}` }).eq('id', projectId);
     await ctx.close();
@@ -158,7 +159,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     // Today offers the desk's place, and taking it goes there.
-    await page.goto('/today');
+    await page.goto('/community');
     const offer = page.getByRole('complementary', { name: 'Continue from your desktop' }).first();
     await expect(offer).toContainText(`Tidewater ${TAG} — project page`, { timeout: 30_000 });
     await expect(offer).toContainText('20 min ago');
@@ -166,7 +167,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.waitForURL(`**/projects/${projectId}`);
 
     // Capture a note into the project, from the tab bar.
-    await page.goto('/today');
+    await page.goto('/community');
     await page.locator('[data-mobile-tabbar]').getByRole('button', { name: /Capture/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Capture' });
     await sheet.getByLabel('Project to capture into').selectOption(projectId);
@@ -178,7 +179,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
       .toEqual([{ kind: 'note', title: `Ferry at six ${TAG}`, notes: `Ferry at six ${TAG}\nbring coats` }]);
 
     // Shared from another app: a link lands as a link.
-    await page.goto(`/today?text=${encodeURIComponent('look https://example.com/harbour')}`);
+    await page.goto(`/community?text=${encodeURIComponent('look https://example.com/harbour')}`);
     const shared = page.getByRole('dialog', { name: 'Capture' });
     await expect(shared.getByLabel('Web address')).toHaveValue('https://example.com/harbour');
     await shared.getByLabel('Project to capture into').selectOption(projectId);
@@ -205,7 +206,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await page.fill('input[name="password"]', PASSWORD);
     await page.locator('button[type="submit"]').click();
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
-    await page.goto('/today');
+    await page.goto('/community');
     await expect(page.locator('nav.mc-dock')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-mobile-tabbar]')).toBeHidden();
     await ctx.close();

@@ -151,9 +151,15 @@ export function suggestForScene(input: {
   dismissed: Set<string>;
   /** What this team has tagged in other projects. */
   memory?: BreakdownMemory;
+  /** The reader's confidence in this scene's read (0-100). When low, only
+   *  high-certainty suggestions (mentioned, remembered) are offered; the
+   *  speculative "detected" ones (capitalised words) are suppressed. */
+  confidence?: number;
 }): Suggestion[] {
   const { actionText, characters, taggedElementIds, elements, categories, dismissed } = input;
   const memory = input.memory ?? EMPTY_MEMORY;
+  const confidence = input.confidence ?? 100;
+  const lowConfidence = confidence < 70;
   const categoryByKey = new Map(categories.map((c) => [c.key, c]));
   if (!categories.length || !actionText.trim()) return [];
   const out: Suggestion[] = [];
@@ -181,6 +187,9 @@ export function suggestForScene(input: {
   }
 
   // New and capitalised: filed where this team filed it before, else by the parser's hint.
+  // Suppressed when the scene's read is doubtful (low confidence), since capitalised
+  // words in a misread scene are not reliable element hints.
+  if (!lowConfidence) {
   const fallback = categories.find((c) => c.key === 'props') ?? [...categories].sort((a, b) => a.position - b.position)[0];
   // Words already inside something offered ("TRENCH COAT" → "Trench coat") aren't offered again alone.
   const covered = new Set(out.flatMap((x) => x.name.split(/\s+/).map(nameKey)));
@@ -195,6 +204,7 @@ export function suggestForScene(input: {
       const category = (remembered && categoryByKey.get(remembered.category_key)) || hinted;
       out.push({ name: remembered?.name ?? titleCase(raw), categoryId: category.id, reason: remembered ? 'remembered' : 'detected' });
     }
+  }
   }
   return out;
 }

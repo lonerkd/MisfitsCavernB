@@ -5,76 +5,58 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { X, Keyboard } from 'lucide-react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { isMac, matchChord } from '@/lib/os/chords';
+import { shortcuts, matchesShortcut } from '@/lib/os/shortcuts';
 
-const GROUPS: { title: string; items: [string, string][] }[] = [
-  {
-    title: 'Global',
-    items: [
-      ['⌘ \\  /  Ctrl \\', 'Split screen: this page and another side by side'],
-      ['?', 'Show this shortcuts panel'],
-      ['Esc', 'Close any dialog or palette'],
-    ],
-  },
-  {
-    title: 'The island (Caps Lock on)',
-    items: [
-      ['Caps Lock', 'Hold the island open, with a key on every control'],
-      ['1 – 6', 'Go to that app'],
-      ['Q W E R …', 'Run that control of the page you’re on'],
-      ['← →  ·  Enter', 'Move between the page’s controls and run one'],
-      ['/  ·  \  ·  P', 'Search · split screen · switch project'],
-      ['Esc', 'Put the island away until Caps Lock is next turned on'],
-    ],
-  },
-  {
-    title: 'ScriptOS editor',
-    items: [
-      ['Tab', 'Smart element insert (scene / dialogue)'],
-      ['↑ ↓ · Enter', 'Navigate & accept autocomplete'],
-      ['(', 'Auto-close parenthetical'],
-      ['Enter', 'Auto-format a scene heading'],
-    ],
-  },
-  {
-    title: 'Plot board',
-    items: [
-      ['Drag card', 'Reorder the scene in the script'],
-      ['Click card', 'Jump to that scene'],
-    ],
-  },
-];
+// The list is shared with the command palette's shortcut search (lib/os/shortcuts.ts); the chords come from the table the handlers use.
+const grouped = (list: ReturnType<typeof shortcuts>) => {
+  const out: { title: string; items: ReturnType<typeof shortcuts> }[] = [];
+  for (const it of list) {
+    let g = out.find((x) => x.title === it.group);
+    if (!g) { g = { title: it.group, items: [] }; out.push(g); }
+    g.items.push(it);
+  }
+  return out;
+};
 
 export default function ShortcutsOverlay() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [mac] = useState(() => isMac());
+  const [filter, setFilter] = useState('');
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setOpen(false); return; }
+      if (e.key === 'Escape') { setOpen(false); setFilter(''); return; }
+      if (matchChord(e)?.id === 'help') { e.preventDefault(); setFilter(''); setOpen(o => !o); return; }
 
       if (e.key === '?' && !e.metaKey && !e.ctrlKey) {
         const t = e.target as HTMLElement;
         if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
         e.preventDefault();
+        setFilter('');
         setOpen(o => !o);
       }
     };
-    const onOpen = () => setOpen(true);
+    // The palette can open the panel already filtered to what was searched.
+    const onOpen = (e: Event) => { setFilter(String((e as CustomEvent<{ query?: string }>).detail?.query ?? '')); setOpen(true); };
     window.addEventListener('keydown', onKey);
     window.addEventListener('mc-open-shortcuts', onOpen);
     return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mc-open-shortcuts', onOpen); };
   }, []);
 
-  useOnChange(pathname, () => setOpen(false));
+  useOnChange(pathname, () => { setOpen(false); setFilter(''); });
 
   if (pathname === '/auth' || pathname === '/login') return null;
+
+  const shown = grouped(shortcuts(mac).filter((x) => matchesShortcut(filter, x)));
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          onMouseDown={() => setOpen(false)}
+          onMouseDown={() => { setOpen(false); setFilter(''); }}
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 100001, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
         >
           <motion.div
@@ -88,18 +70,28 @@ export default function ShortcutsOverlay() {
                 <Keyboard size={17} />
                 <h2 style={{ fontFamily: 'var(--display)', fontSize: '1.3rem', letterSpacing: '-0.02em', margin: 0, color: 'var(--fg)' }}>KEYBOARD SHORTCUTS</h2>
               </div>
-              <button aria-label="Close" onClick={() => setOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
+              <button aria-label="Close" onClick={() => { setOpen(false); setFilter(''); }} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
             </div>
 
+            <input
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              placeholder="Find a shortcut by its keys or its name…"
+              aria-label="Find a shortcut"
+              autoFocus
+              style={{ width: '100%', boxSizing: 'border-box', marginBottom: 16, padding: '9px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg)', fontSize: 13, fontFamily: 'var(--mono)', outline: 'none' }}
+            />
+
             <div style={{ display: 'grid', gap: 20 }}>
-              {GROUPS.map(g => (
+              {shown.length === 0 && <div role="status" style={{ textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>No shortcut matches “{filter}”</div>}
+              {shown.map(g => (
                 <div key={g.title}>
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 8 }}>{g.title}</div>
                   <div style={{ display: 'grid', gap: 4 }}>
-                    {g.items.map(([keys, desc]) => (
-                      <div key={desc} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>
-                        <span style={{ fontSize: 13, color: 'rgba(var(--ink-rgb), 0.75)' }}>{desc}</span>
-                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', background: 'rgba(var(--ink-rgb), 0.06)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>{keys}</kbd>
+                    {g.items.map((it) => (
+                      <div key={`${it.keys}|${it.desc}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '6px 0' }}>
+                        <span style={{ fontSize: 13, color: 'rgba(var(--ink-rgb), 0.75)' }}>{it.desc}</span>
+                        <kbd style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg)', background: 'rgba(var(--ink-rgb), 0.06)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: '3px 8px', whiteSpace: 'nowrap' }}>{it.keys}</kbd>
                       </div>
                     ))}
                   </div>

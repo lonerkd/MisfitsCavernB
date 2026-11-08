@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { addScriptCharacter, listScriptCharacters, updateScriptCharacter } from '@/lib/supabase/scripts';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
 import type { Tables } from '@/lib/supabase/database.types';
@@ -22,7 +23,7 @@ export interface ScriptCharacter {
  */
 const NO_CHARS: ScriptCharacter[] = [];
 
-export function useScriptCharacters(scriptId: string | null, userId: string) {
+export function useScriptCharacters(scriptId: string | null, userId: string, format: string | null = null) {
   const [loadedChars, setChars] = useState<ScriptCharacter[]>([]);
   // How the last load for a script went; a script without one is loading.
   const [loaded, setLoaded] = useState<{ scriptId: string; ok: boolean } | null>(null);
@@ -36,7 +37,7 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
       listScriptCharacters(scriptId),
     ]).then(([text, saved]) => {
       const byName = new Map(saved.map((r) => [r.name, r]));
-      const parsed = parseScript(text).characters.map((c) => c.name).filter(Boolean);
+      const parsed = parseScript(text, readingFormat(format)).characters.map((c) => c.name).filter(Boolean);
       const names = Array.from(new Set([...parsed, ...saved.map((r) => r.name)]));
       setChars(names.map((name, i) => {
         const row = byName.get(name) ?? null;
@@ -44,7 +45,7 @@ export function useScriptCharacters(scriptId: string | null, userId: string) {
       }));
       setLoaded({ scriptId, ok: true });
     }).catch(() => setLoaded({ scriptId, ok: false }));
-  }, [scriptId]);
+  }, [scriptId, format]);
 
   useEffect(() => { void load(); }, [load]);
 

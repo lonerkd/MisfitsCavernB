@@ -34,6 +34,7 @@ vi.mock('@/lib/supabase/client', () => ({
 import {
   getSyncStatus, refreshSyncStatus, retryDelayMs, scheduleScriptSync, syncPendingScripts, deleteScript, saveScript,
 } from './storage';
+import { scriptTextStateKey } from './cowriting';
 
 const pendingScript = (id: string, updatedAt = 'T1') => ({
   id, title: 'Draft', content: 'text', createdAt: 'T0', updatedAt, user_id: 'user-1', syncPending: true,
@@ -175,11 +176,13 @@ describe('sync status — the offline queue the footer shows', () => {
 describe('offline deletes (tombstones)', () => {
   it('a delete made offline is replayed, then cleared from the queue', async () => {
     idb.set('script_a', pendingScript('a'));
+    idb.set(scriptTextStateKey('a'), { state: [1, 2, 3], baseContent: 'text' });
     Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
     await deleteScript('a');
     Object.defineProperty(navigator, 'onLine', { value: true, configurable: true });
 
     expect(idb.has('script_a')).toBe(false); // the text is gone from the device at once
+    expect(idb.has(scriptTextStateKey('a'))).toBe(false);
     expect(getSyncStatus().deletes).toBe(1);
 
     await syncPendingScripts();
