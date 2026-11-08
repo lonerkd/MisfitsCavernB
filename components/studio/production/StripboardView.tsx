@@ -17,6 +17,8 @@ import { DEFAULT_DAY_CAPACITY_EIGHTHS, eighthsOf, packShootDays } from '@/lib/st
 import { Sky } from '@/components/film/Sky';
 import { lightNoteBrief } from '@/lib/film/sky';
 import { placeResolver } from '@/lib/film/places';
+import { scheduleDoc } from '@/lib/studio/schedule-print';
+import { printDocument } from '@/lib/print/print';
 import { buildBoard, dayOutOfDays, pages, stripKind, STRIP_LABEL, type StripKind } from '@/lib/studio/stripboard';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { readable } from '@/lib/util/color';
@@ -32,7 +34,6 @@ const KIND_COLOR: Record<StripKind, string> = { 'int-day': '#f6f3e6', 'ext-day':
 const STATUS_ORDER = ['planned', 'shot', 'wrapped'] as const;
 type Status = (typeof STATUS_ORDER)[number];
 
-const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
 /**
  * The shooting schedule as a stripboard: drag scenes between days (or
@@ -175,13 +176,21 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
   };
 
   const print = () => {
-    const w = window.open('', '_blank', 'width=860,height=1100');
-    if (!w) { toast('Allow pop-ups to print the schedule.', 'info'); return; }
-    const body = board.filter((d) => d.scenes.length).map((d) => `<h2>DAY ${d.day}${dateOf.get(d.day) ? ` — ${esc(new Date(`${dateOf.get(d.day)}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }))}` : ''} · ${pages(d.eighths)} pp${d.locations.length > 1 ? ` · ${d.locations.length} locations` : ''}</h2><table><tr><th>#</th><th>Scene</th><th>I/E · D/N</th><th>Cast</th><th>Pages</th><th>Status</th></tr>${d.scenes
-      .map((sc) => `<tr><td>${sc.scene_number}</td><td>${esc(sc.heading ?? sc.title)}</td><td>${STRIP_LABEL[stripKind(sc)]}</td><td>${esc(castOfScene(sc).join(', ') || '—')}</td><td>${pages(eighthsOf(sc.est_duration))}</td><td>${esc(sc.status)}</td></tr>`)
-      .join('')}</table>`).join('');
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Shooting Schedule</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px}h1{font-size:22px;letter-spacing:2px;margin:0 0 4px}h2{font-size:11px;letter-spacing:2px;color:#b45309;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12px}th{text-align:left;color:var(--fg-dim);font-size:9px;letter-spacing:1px;border-bottom:1px solid #ccc;padding:4px}td{padding:5px 4px;border-bottom:1px solid #eee}</style></head><body><h1>${esc(project.title).toUpperCase()} — SHOOTING SCHEDULE</h1><div style="color:var(--fg-dim);font-size:11px">${list.length} scenes · ${board.filter((d) => d.scenes.length).length} days · ${pages(totalEighths)} pages</div>${body}<script>window.onload=()=>window.print()</script></body></html>`);
-    w.document.close();
+    const ok = printDocument(scheduleDoc({
+      project: project.title,
+      accent: project.accent_color,
+      days: board.map((d) => ({
+        day: d.day,
+        date: dateOf.get(d.day) ? new Date(`${dateOf.get(d.day)}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : null,
+        pages: pages(d.eighths),
+        locations: d.locations.length,
+        scenes: d.scenes.map((sc) => ({ number: sc.scene_number, heading: sc.heading ?? sc.title ?? '', kind: STRIP_LABEL[stripKind(sc)], cast: castOfScene(sc), pages: pages(eighthsOf(sc.est_duration)), status: sc.status ?? 'planned' })),
+      })),
+      totalScenes: list.length,
+      totalPages: pages(totalEighths),
+      generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   // One set of drop handlers for every day; the day comes from the section's data-day.
