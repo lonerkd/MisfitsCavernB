@@ -17,6 +17,7 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
   let admin: SupabaseClient;
   const owner = { id: '', email: `pp-owner.${TAG}@journey.test`, name: `ppowner${TAG}` };
   let publicToken: string;
+  let filmToken: string;
 
   const signIn = async (browser: Browser) => {
     const page = await (await browser.newContext()).newPage();
@@ -44,9 +45,16 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
       { user_id: owner.id, title: 'Private Film', visibility: 'private' },
     ]);
     if (rest.error) throw rest.error;
+    // Two films the owner made: one public (listed as a credit, linking to its own page), one private (never).
+    const film = await admin.from('projects').insert({ title: `Pier Film ${TAG}`, creator_id: owner.id, status: 'pre-production', visibility: 'public' }).select('share_token').single();
+    if (film.error) throw film.error;
+    filmToken = film.data.share_token;
+    const hidden = await admin.from('projects').insert({ title: `Hidden Film ${TAG}`, creator_id: owner.id, status: 'pre-production', visibility: 'private' });
+    if (hidden.error) throw hidden.error;
   });
   test.afterAll(async () => {
     if (!admin) return;
+    await admin.from('projects').delete().eq('creator_id', owner.id);
     await admin.from('portfolio_projects').delete().eq('user_id', owner.id);
     await admin.auth.admin.deleteUser(owner.id);
   });
@@ -75,6 +83,12 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     await expect(page.getByText('Private Film')).toHaveCount(0);
     expect(await robots(page)).toContain('index');
     expect(await robots(page)).not.toContain('noindex');
+
+    // Credits: the public film is listed and links to the film's own page; the private one is not there at all.
+    const credits = page.getByRole('region', { name: 'Credits' });
+    await expect(credits.getByText(`Pier Film ${TAG}`)).toBeVisible();
+    await expect(credits.getByRole('link', { name: new RegExp(`Pier Film ${TAG}`) })).toHaveAttribute('href', `/shared/${filmToken}`);
+    await expect(page.getByText(`Hidden Film ${TAG}`)).toHaveCount(0);
   });
 
   test('link only is reachable but told not to be indexed; off is a not-found again', async ({ browser }) => {

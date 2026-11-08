@@ -46,10 +46,16 @@ export interface PortfolioPagePiece {
   title: string; year: number | null; role: string | null; category: string | null; description: string | null;
   cover_url: string | null; accent_color: string | null; share_token: string;
 }
+export interface PortfolioPageCredit {
+  title: string; year: number | null; project_type: string | null; accent_color: string | null; share_token: string;
+  kind: string; credit: string; character_name: string | null;
+}
 export interface PortfolioPageData {
   page: 'unlisted' | 'public';
   profile: { username: string | null; role: string | null; location: string | null; bio: string | null; avatar_url: string | null; status: string | null };
   pieces: PortfolioPagePiece[];
+  /** The public films they are credited on (the creator, confirmed crew, cast), one row per credit. */
+  credits: PortfolioPageCredit[];
 }
 
 /** A person's page by handle (their username), for the public /u/<handle> page; null when there is none or it is off. */
@@ -59,5 +65,5 @@ export async function getPortfolioPage(db: PublicClient | null, handle: string):
   if (error || !data) return null;
   const d = data as Partial<PortfolioPageData>;
   if (!d.profile || (d.page !== 'public' && d.page !== 'unlisted')) return null;
-  return { page: d.page, profile: d.profile, pieces: Array.isArray(d.pieces) ? d.pieces : [] };
+  return { page: d.page, profile: d.profile, pieces: Array.isArray(d.pieces) ? d.pieces : [], credits: Array.isArray(d.credits) ? d.credits : [] };
 }
