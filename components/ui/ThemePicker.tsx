@@ -10,7 +10,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Monitor } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { saveUiPrefs } from '@/lib/os/uiPrefs';
-import { DEFAULT_CHOICE, THEMES, THEME_EVENT, applyTheme, readLocalTheme, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
+import { DEFAULT_CHOICE, THEMES, THEME_EVENT, applyTheme, isFrosted, readLocalTheme, withFrosted, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
 import t from './themePicker.module.css';
 
 function Preview({ swatch }: { swatch: [string, string, string] }) {
@@ -41,7 +41,9 @@ export function ThemePicker({ signedIn }: { signedIn: boolean }) {
     return () => window.removeEventListener(THEME_EVENT, sync);
   }, []);
 
-  const choose = (next: ThemeChoice) => {
+  const choose = (picked: ThemeChoice) => {
+    // Picking another theme keeps the frosted mode as it was; the switch below changes only the mode.
+    const next = withFrosted(picked, picked.frosted === true || isFrosted(choice));
     setChoice(next);
     writeLocalTheme(next);
     applyTheme(next);
@@ -49,6 +51,14 @@ export function ThemePicker({ signedIn }: { signedIn: boolean }) {
     if (signedIn) {
       saveUiPrefs({ theme: next }).catch((e) => toast(e instanceof Error ? e.message : 'Could not save the theme to your account', 'error'));
     }
+  };
+  const toggleFrosted = () => {
+    const next = withFrosted(choice, !isFrosted(choice));
+    setChoice(next);
+    writeLocalTheme(next);
+    applyTheme(next);
+    window.dispatchEvent(new Event(THEME_EVENT));
+    if (signedIn) saveUiPrefs({ theme: next }).catch((e) => toast(e instanceof Error ? e.message : 'Could not save the frosted mode to your account', 'error'));
   };
   const custom = (nextBg: string, nextAccent: string) => {
     setBg(nextBg); setAccent(nextAccent);
@@ -68,6 +78,10 @@ export function ThemePicker({ signedIn }: { signedIn: boolean }) {
 
   return (
     <div className={t.wrap}>
+      <button type="button" role="switch" aria-checked={isFrosted(choice)} className={t.frost} onClick={toggleFrosted}>
+        <span className={t.frostTrack} aria-hidden><span className={t.frostThumb} /></span>
+        <span className={t.frostText}><strong>Frosted</strong><span> Translucent surfaces with a blur behind them, over any theme below.</span></span>
+      </button>
       <div className={t.grid} role="radiogroup" aria-label="Theme">
         {card('system', 'System', 'Cavern in the dark, Paper in the light — follows your device',
           <span className={t.preview} aria-hidden style={{ background: 'linear-gradient(135deg, #040710 50%, #f6f1e7 50%)' }}><Monitor size={16} className={t.systemIcon} /></span>,

@@ -18,6 +18,15 @@ describe('ui_prefs.theme', () => {
     expect((await cast.sam.client.rpc('get_my_ui_prefs')).data).toMatchObject({ theme: { id: 'custom', bg: '#F0F0F0', accent: '#0b7a78' } });
   });
 
+  it('keeps the frosted mode with any theme, and only as true or false', async () => {
+    expect((await set({ id: 'slate', frosted: true })).error).toBeNull();
+    expect((await cast.sam.client.rpc('get_my_ui_prefs')).data).toMatchObject({ theme: { id: 'slate', frosted: true } });
+    expect((await set({ id: 'custom', bg: '#101010', accent: '#e8431a', frosted: false })).error).toBeNull();
+    for (const bad of [{ id: 'slate', frosted: 'yes' }, { id: 'slate', frosted: 1 }, { id: 'slate', frosted: null }, { id: 'slate', frosted: true, css: 'body{}' }]) {
+      expect((await set(bad)).error, JSON.stringify(bad)).not.toBeNull();
+    }
+  });
+
   it('refuses anything else', async () => {
     for (const bad of [
       'paper', { id: 'Paper!' }, { id: 'x' }, { id: 1 }, { id: 'paper', bg: '#ffffff' },

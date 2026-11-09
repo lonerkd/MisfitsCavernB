@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULT_CHOICE, DEFAULT_THEME_ID, EARLY_THEME_SCRIPT, THEMES, contrast, customTokens, resolveTheme, themeMode, toThemeChoice } from './themes';
+import { DEFAULT_CHOICE, DEFAULT_THEME_ID, EARLY_THEME_SCRIPT, THEMES, contrast, customTokens, isFrosted, resolveTheme, themeMode, toThemeChoice, withFrosted } from './themes';
 
 const css = readFileSync(join(__dirname, '..', '..', 'app', 'globals.css'), 'utf8');
 const block = (id: string) => {
@@ -118,5 +118,51 @@ describe('choosing', () => {
     expect(dark['--ink-rgb']).toBe('255, 255, 255');
     expect(contrast('#f0f0f0', '#141210')).toBeGreaterThan(7);
     expect(customTokens('#000000', '#ffff00')['--on-accent']).toBe('#000000');
+  });
+});
+
+describe('frosted mode (the glass mode over any theme)', () => {
+  it('is kept with the choice, and only when it is exactly true', () => {
+    expect(isFrosted(toThemeChoice({ id: 'slate', frosted: true }))).toBe(true);
+    expect(toThemeChoice({ id: 'slate', frosted: true })).toEqual({ id: 'slate', frosted: true });
+    expect(toThemeChoice({ id: 'custom', bg: '#101010', accent: '#e8431a', frosted: true })).toEqual({ id: 'custom', bg: '#101010', accent: '#e8431a', frosted: true });
+    for (const junk of ['yes', 1, null, 'true']) expect(isFrosted(toThemeChoice({ id: 'slate', frosted: junk }))).toBe(false);
+    expect(toThemeChoice('slate')).toEqual({ id: 'slate' });
+  });
+  it('switches on and off without touching the theme, and an off choice stays as small as it was', () => {
+    const on = withFrosted({ id: 'paper' }, true);
+    expect(on).toEqual({ id: 'paper', frosted: true });
+    expect(withFrosted(on, false)).toEqual({ id: 'paper' });
+    expect('frosted' in withFrosted(on, false)).toBe(false);
+  });
+  it('is painted before the first frame, with the theme', () => {
+    const run = (stored: unknown) => {
+      const root: { dataset: Record<string, string>; style: { setProperty: () => void } } = { dataset: {}, style: { setProperty: () => {} } };
+      new Function('localStorage', 'document', 'window', EARLY_THEME_SCRIPT)({ getItem: (k: string) => (k === 'mc_theme' ? JSON.stringify(stored) : null) }, { documentElement: root }, { matchMedia: () => ({ matches: false }) });
+      return root.dataset;
+    };
+    expect(run({ id: 'slate', frosted: true })).toEqual({ theme: 'slate', frosted: '' });
+    expect(run({ id: 'slate' })).toEqual({ theme: 'slate' });
+  });
+  // The frosted surfaces are the theme's own backgrounds, translucent: measured against the page behind them, text must still read.
+  const hexOf = (b: string, name: string) => token(b, name)!;
+  const rgb = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const hex = (c: number[]) => '#' + c.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
+  const over = (top: string, a: number, under: string) => hex(rgb(top).map((v, i) => v * a + rgb(under)[i] * (1 - a)));
+  const SURFACES: Array<[string, string, number]> = [['--surface', '--bg-3', 0.64], ['--surface-2', '--bg-2', 0.54], ['--glass', '--bg-2', 0.58], ['--panel', '--bg-3', 0.46]];
+  it.each(THEMES.map((t) => [t.id] as const))('%s: text reads on every frosted surface over the page (fg 7:1, dim text 4.5:1)', (id) => {
+    const b = block(id)!;
+    const m = token(b, '--fg-dim')!.match(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/)!;
+    const dim = [+m[1], +m[2], +m[3]]; const dimA = +m[4];
+    for (const [name, base, alpha] of SURFACES) {
+      const surface = over(hexOf(b, base), alpha, hexOf(b, '--bg'));
+      expect(contrast(hexOf(b, '--fg'), surface), `${id} ${name} fg`).toBeGreaterThanOrEqual(7);
+      expect(contrast(over(hex(dim), dimA, surface), surface), `${id} ${name} dim`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+  it('has its CSS layer, with the fallbacks for no blur and for less transparency', () => {
+    expect(css).toMatch(/\[data-frosted\]\s*\{[^}]*--frost:\s*blur\(/);
+    expect(css).toMatch(/prefers-reduced-transparency: reduce\)\s*\{\s*\[data-frosted\]\s*\{[^}]*--frost:\s*none/);
+    expect(css).toMatch(/@supports not/);
   });
 });

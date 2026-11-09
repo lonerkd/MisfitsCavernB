@@ -1,0 +1,9 @@
+# Session — 2026-11-09: frosted mode, step 1
+
+Owner, after seeing Slate's glass island: "might gotta make a frosted mode for each of them." Built as a **mode over every theme**, not another theme (BACKLOG 3.48).
+
+**Built:** a Frosted switch above the presets in Settings › Appearance. The choice is part of the theme (`ThemeChoice.frosted`; `isFrosted`, `withFrosted`), so it rides the existing account save, the device copy and the early script that paints before the first frame; picking another theme keeps the mode as it was. `data-frosted` on `<html>` turns on a CSS layer at the end of `app/globals.css`: `--surface`, `--surface-2` and `--glass` become translucent `color-mix` of the theme's own `--bg-2` / `--bg-3`, `--frost` is a blur, and a soft wash of the theme's accent sits behind the page so the blur shows. Opted in so far: `.glass*`, the Studio's panels (the page scope sets `--panel` itself, so it is overridden under `:global([data-frosted])`), the phase panel and `ToolHeader`. `prefers-reduced-transparency` and a browser with no backdrop-filter get the opaque surfaces.
+
+**Database:** migration `20261109000000_ui_prefs_frosted.sql` replaces only the validator in `set_my_ui_prefs` (the theme object may carry `frosted`, a boolean; anything else still refused). Snapshot (one line) and types (unchanged) regenerated; persona test extended in `tests/integration/themes.test.ts` (accepts true / false with any theme, refuses 'yes', 1, null and an extra key), run here against a local stack: 4 pass. **Apply to production, then staging, then the drift check, after merge.**
+
+**Verified:** typecheck, lint, the whole unit suite; a unit test measures text (fg 7:1, dim text 4.5:1) on every translucent surface over the page in all 13 themes, all pass. **Not verified:** on screen in any theme (how the blur reads, the accent wash), `npm run theme:scan` with the mode on, the cost of the blur on heavy views.

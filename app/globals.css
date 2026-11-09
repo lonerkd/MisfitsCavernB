@@ -1073,3 +1073,32 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
    field and its button can be scrolled above the keyboard. */
 html[data-typing='true'] body { padding-bottom: var(--kb, 0px); }
 html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb, 0px) + 24px); }
+
+
+/* ═══════════════════════════════
+   FROSTED MODE (BACKLOG 3.48)
+   The glass mode over whichever theme is on: set by `data-frosted` on <html> (Settings › Appearance; lib/themes).
+   Surfaces become translucent mixes of the theme's own backgrounds and get a blur behind them (`--frost`, read by
+   the surface classes with a `none` fallback). Alphas stay high enough that text keeps its contrast on the
+   backdrop; a device that cannot blur, or that asks for less transparency, gets the opaque surfaces.
+   ═══════════════════════════════ */
+[data-frosted] {
+  --frost: blur(18px) saturate(1.45);
+  --surface: color-mix(in srgb, var(--bg-3) 64%, transparent);
+  --surface-2: color-mix(in srgb, var(--bg-2) 54%, transparent);
+  --glass: color-mix(in srgb, var(--bg-2) 58%, transparent);
+}
+/* Something for the blur to show: a soft wash of the theme's own accent, fixed behind the page. */
+[data-frosted] body {
+  background-image:
+    radial-gradient(60% 45% at 12% 0%, var(--accent-glow), transparent 70%),
+    radial-gradient(50% 40% at 92% 28%, rgba(var(--ambient-r, 120), var(--ambient-g, 120), var(--ambient-b, 160), 0.1), transparent 70%);
+  background-attachment: fixed;
+}
+[data-frosted] .glass, [data-frosted] .glass-sm, [data-frosted] .glass-heavy { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
+@media (prefers-reduced-transparency: reduce) {
+  [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
+}

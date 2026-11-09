@@ -37,9 +37,18 @@ const IDS = new Set<string>(THEMES.map((t) => t.id));
 /** Names from before this catalogue. */
 const LEGACY: Record<string, ThemeId> = { cyberpunk: 'neon', obsidian: 'mono', inkrust: 'misfit' };
 
+/** `frosted`: the glass mode over whichever theme this is (translucent surfaces with a blur behind them). */
 export type ThemeChoice =
-  | { id: ThemeId | 'system' }
-  | { id: 'custom'; bg: string; accent: string };
+  | { id: ThemeId | 'system'; frosted?: true }
+  | { id: 'custom'; bg: string; accent: string; frosted?: true };
+
+export const isFrosted = (c: ThemeChoice): boolean => c.frosted === true;
+/** The same theme with the frosted mode on or off (off drops the key, so a stored choice stays as small as it was). */
+export function withFrosted(c: ThemeChoice, on: boolean): ThemeChoice {
+  const { frosted: _drop, ...rest } = c;
+  void _drop;
+  return (on ? { ...rest, frosted: true } : rest) as ThemeChoice;
+}
 
 /** What a person who has not chosen sees: Misfit (owner, 2026-11-05). Paper and Cavern stay one tap away, and System gives Paper on a light device and Cavern on a dark one. */
 export const DEFAULT_THEME_ID: ThemeId = 'misfit';
@@ -54,12 +63,13 @@ export function toThemeChoice(raw: unknown): ThemeChoice {
   }
   if (!raw || typeof raw !== 'object') return DEFAULT_CHOICE;
   const r = raw as Record<string, unknown>;
+  const frosted = r.frosted === true;
   if (r.id === 'custom') {
     return typeof r.bg === 'string' && HEX.test(r.bg) && typeof r.accent === 'string' && HEX.test(r.accent)
-      ? { id: 'custom', bg: r.bg.toLowerCase(), accent: r.accent.toLowerCase() }
+      ? withFrosted({ id: 'custom', bg: r.bg.toLowerCase(), accent: r.accent.toLowerCase() }, frosted)
       : DEFAULT_CHOICE;
   }
-  return typeof r.id === 'string' ? toThemeChoice(r.id) : DEFAULT_CHOICE;
+  return typeof r.id === 'string' ? withFrosted(toThemeChoice(r.id), frosted) : DEFAULT_CHOICE;
 }
 
 // ── Colour maths (WCAG relative luminance and contrast) ───────────
@@ -150,6 +160,7 @@ export function applyTheme(choice: ThemeChoice) {
   for (const p of CUSTOM_PROPS) root.style.removeProperty(p);
   const id = resolveTheme(choice, prefersLight);
   root.dataset.theme = id;
+  if (isFrosted(choice)) root.dataset.frosted = ''; else delete root.dataset.frosted;
   if (choice.id === 'custom') {
     for (const [k, v] of Object.entries(customTokens(choice.bg, choice.accent))) root.style.setProperty(k, v);
   }
@@ -162,6 +173,7 @@ export function applyTheme(choice: ThemeChoice) {
  */
 export const EARLY_THEME_SCRIPT = `(function(){try{var r=localStorage.getItem('${THEME_KEY}');var c;try{c=JSON.parse(r)}catch(e){c=r}
 if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono',inkrust:'misfit'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
+if(c.frosted===true)d.dataset.frosted='';
 if(c.id==='custom'){var v=JSON.parse(localStorage.getItem('${THEME_VARS_KEY}')||'null');if(!v)return;d.dataset.theme='custom';for(var k in v)d.style.setProperty(k,v[k]);return;}
 var id=c.id;if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'default';
 else if(${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='${DEFAULT_THEME_ID}';
