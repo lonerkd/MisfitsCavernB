@@ -8,7 +8,8 @@ import { useToast } from '@/components/ui/Toast';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
 import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNote } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
-import { SectionHeader, StatusPill, ErrorBar, cx } from '../ui';
+import { StatusPill, ErrorBar, cx } from '../ui';
+import { TabHeader } from '../TabHeader';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaDetail } from '../media/MediaDetail';
 import { MediaPicker } from '../media/MediaPicker';
@@ -62,7 +63,7 @@ export function ScenesTab() {
   if (scriptsStatus === 'ready' && scripts.length === 0) {
     return (
       <section>
-        <SectionHeader title="Scene References" tool={{ icon: <Clapperboard size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Every scene in the script, with its references, shots and records.' }} />
+        <TabHeader title="Scene References" tool={{ icon: <Clapperboard size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Every scene in the script, with its references, shots and records.' }} />
         <EmptyState
           icon={<Clapperboard size={28} />}
           title="No screenplay in this project yet"
@@ -75,7 +76,7 @@ export function ScenesTab() {
 
   return (
     <section aria-labelledby="scenes-title">
-      <SectionHeader
+      <TabHeader
         id="scenes-title"
         title="Scene References"
         tool={{ icon: <Clapperboard size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Every scene in the script, with its references, shots and records.' }}

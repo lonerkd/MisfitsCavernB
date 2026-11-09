@@ -16,7 +16,8 @@ import { useStudio } from '../StudioContext';
 import { CutPlayer, type CutPlayerHandle } from '../post/CutPlayer';
 import { CutScript, type LinePick } from '../post/CutScript';
 import { PaperEdit } from '../post/PaperEdit';
-import { SectionHeader, ErrorBar, cx } from '../ui';
+import { ErrorBar, cx } from '../ui';
+import { TabHeader } from '../TabHeader';
 import s from '../studio.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
@@ -56,7 +57,7 @@ export function PostTab() {
   });
   return (
     <section aria-labelledby="post-title">
-      <SectionHeader id="post-title" title="Post" tool={{ icon: <Film size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Review cuts with timecoded notes, then run the post pipeline to delivery.' }} />
+      <TabHeader id="post-title" title="Post" tool={{ icon: <Film size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Review cuts with timecoded notes, then run the post pipeline to delivery.' }} />
       <div className={s.chips} role="tablist" aria-label="Post views" style={{ marginBottom: 24 }}>
         <button type="button" role="tab" aria-selected={view === 'review'} className={cx(s.chip, view === 'review' && s.chipOn)} onClick={() => setView('review')}><Film size={12} /> Cut review</button>
         <button type="button" role="tab" aria-selected={view === 'paper'} className={cx(s.chip, view === 'paper' && s.chipOn)} onClick={() => setView('paper')}><FileText size={12} /> Paper edit</button>

@@ -10,7 +10,7 @@ import { useProgressContext } from '@/components/progress/LockedTool';
 import type { Place } from '@/lib/os/progress';
 import { useStudio } from '../StudioContext';
 import { NotesPanel } from '@/components/notes/NotesPanel';
-import { SectionHeader } from '../ui';
+import { TabHeader } from '../TabHeader';
 import s from '../studio.module.css';
 
 type TabId = 'library' | 'scenes' | 'production' | 'share';
@@ -52,7 +52,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
 
   return (
     <section aria-labelledby="overview-title" className={s.stack} style={{ gap: 28 }}>
-      <SectionHeader
+      <TabHeader
         id="overview-title"
         title={project.title}
         tool={{ icon: <ActivityIcon size={16} />, eyebrow: 'Overview', accent: project.accent_color }}

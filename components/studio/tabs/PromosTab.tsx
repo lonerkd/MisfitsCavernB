@@ -9,7 +9,8 @@ import { useProject } from '@/lib/os';
 import { addCampaign, deleteCampaign, listUsedPlatforms, updateCampaign } from '@/lib/supabase/campaigns';
 import { logActivity } from '@/lib/supabase/activity';
 import { useStudio } from '../StudioContext';
-import { SectionHeader, cx } from '../ui';
+import { cx } from '../ui';
+import { TabHeader } from '../TabHeader';
 import s from '../studio.module.css';
 
 const STAGES = [
@@ -111,7 +112,7 @@ export function PromosTab() {
 
   return (
     <section aria-labelledby="promos-title">
-      <SectionHeader
+      <TabHeader
         id="promos-title"
         title="Promos"
         tool={{ icon: <Megaphone size={16} />, eyebrow: 'Studio', accent: project.accent_color }}

@@ -3,6 +3,7 @@ import { afterEach, describe, it, expect } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
 import { ToolHeader, ToolActionsContext } from './ToolHeader';
 import { SectionHeader } from './ui';
+import { TabHeader } from './TabHeader';
 
 afterEach(cleanup);
 
@@ -26,8 +27,8 @@ describe('ToolHeader', () => {
     expect(screen.getByRole('button', { name: 'Print / PDF' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy();
   });
-  it('opens a Studio tab with the same header as an h2 the section can label itself by, and keeps the plain header for the editor', () => {
-    const { container, rerender } = render(<SectionHeader id="post-title" title="Post" subtitle="Review cuts." tool={{ icon: <i />, eyebrow: 'Studio' }} />);
+  it('opens a Studio tab with the same header as an h2 the section can label itself by, and keeps the plain SectionHeader for the editor', () => {
+    const { container, rerender } = render(<TabHeader id="post-title" title="Post" subtitle="Review cuts." tool={{ icon: <i />, eyebrow: 'Studio' }} />);
     expect(screen.getByRole('heading', { level: 2, name: 'Post' }).id).toBe('post-title');
     expect(screen.getByText('Studio')).toBeTruthy();
     expect(container.querySelector('header')).not.toBeNull();
