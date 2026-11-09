@@ -1100,6 +1100,9 @@ html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb
     radial-gradient(60% 50% at 50% 112%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
   background-attachment: fixed;
 }
+/* Most pages are a full-height wrapper painted with --bg inline, which would hide the wash: under the mode those (and only those: full height, painted with --bg) let it through. */
+[data-frosted] [style*="min-height: 100vh"][style*="background: var(--bg)"],
+[data-frosted] [style*="min-height: 100dvh"][style*="background: var(--bg)"] { background: transparent !important; }
 [data-frosted] .glass, [data-frosted] .glass-sm, [data-frosted] .glass-heavy { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
 @media (prefers-reduced-transparency: reduce) {
   [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
