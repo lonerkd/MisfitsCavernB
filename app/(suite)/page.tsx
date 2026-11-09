@@ -433,11 +433,10 @@ export default function Home() {
         textTransform: 'var(--caps)',
         fontFamily: 'var(--mono)', color: 'var(--fg-dim)' }}>
         The Cavern · by Misfits Cavern · © 2026 Peter Olowude
-        <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
-          <Link href="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
-          <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link>
-          <Link href="/auth?forgot=1" style={{ color: 'inherit' }}>Forgot password?</Link>
-        </div>
+                <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
+                  <Link href="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
+                  <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link>
+                </div>
       </footer>
     </div>
   );

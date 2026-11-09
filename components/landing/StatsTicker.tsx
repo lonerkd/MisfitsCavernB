@@ -11,8 +11,8 @@ export function StatsTicker({ items }: { items: string[] }) {
       padding: '14px 0',
     }}>
       <div className="marquee-track">
-        {repeated.map((item, i) => (
-          <span key={i} style={{
+              {repeated.map((item, i) => (
+                <span key={i} aria-hidden={i >= items.length ? 'true' : undefined} style={{
             fontFamily: 'var(--mono)',
             fontSize: 'max(9px, var(--mc-min-font, 0px))',
             letterSpacing: 'var(--caps-track)',
