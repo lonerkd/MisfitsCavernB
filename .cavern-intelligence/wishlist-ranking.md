@@ -132,7 +132,15 @@ and the money policies already in place); persona tests for each.
 ## 3. Comparing versions (4.12) — M, three slices
 
 **What exists:** locked revisions with colours and changed pages, a diff view
-(`lib/scriptos/revisions.ts`, `DiffModal`).
+(`lib/scriptos/revisions.ts`, `DiffModal`), and — built 2026-10-27, replayed on
+main 2026-10-28 — **Compare versions**: any locked revision against another or
+against the draft, scene by scene (added / cut / changed with line counts, each
+scene opening to its lines) or **side by side** line for line with the changed
+words marked and **next / previous change** (`lib/scriptos/version-diff.ts`,
+`components/editor/CompareVersions.tsx`; scenes are paired by heading through an
+LCS, so a moved scene stays the same scene). **Left of slice 1:** filters
+(dialogue / action / scenes), an imported script as a side, and a renamed
+character reading as renamed rather than one cue out and one in.
 
 **Slices:**
 1. **Side-by-side and inline.** Any two revisions (or the current draft, or an
