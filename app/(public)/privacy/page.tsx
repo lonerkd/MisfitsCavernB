@@ -71,7 +71,7 @@ export default function PrivacyPage() {
           its fingerprint (a hash, never the password) are sent to check whether it has appeared in a data
           breach. You can turn this check off in Settings.</li>
         <li><strong>Reference search and embeds</strong> — searching for reference images sends your search
-          words to Openverse. Links and videos you add from services such as YouTube, Vimeo, Pinterest, Google
+          words to Openverse (images) or Wikidata (films, by title, director or cinematographer). Links and videos you add from services such as YouTube, Vimeo, Pinterest, Google
           Maps or Google Drive load from those services when you view them, under their own privacy policies.</li>
       </ul>
       <p>

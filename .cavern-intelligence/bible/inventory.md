@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**51 pages · 6 API routes · 91 tables · 66 database functions · 98 e2e specs**
+**51 pages · 7 API routes · 91 tables · 66 database functions · 98 e2e specs**
 
 ## Routes
 
@@ -57,13 +57,14 @@
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (257) | 72 files · components: audio, shell, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (236) | 4 files · components: — · lib: hooks, split | global-chords, split |
-| `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 273 files · components: Flag, ad, breakdown, brief, film, formats, notes, progress, projects, studio, ui · lib: ad, auth, availability, breakdown, brief, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, scriptos, split, storage, studio, supabase, themes, types, util, validation, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, community-page, continuity, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, route-smoke, scene-cost, script-formats, search, shot-designer, split, studio-journey, studio-undo, transcripts |
+| `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 274 files · components: Flag, ad, breakdown, brief, film, formats, notes, progress, projects, studio, ui · lib: ad, auth, availability, breakdown, brief, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, scriptos, split, storage, studio, supabase, themes, types, util, validation, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, community-page, continuity, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, route-smoke, scene-cost, script-formats, search, shot-designer, split, studio-journey, studio-undo, transcripts |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (12) | 1 files · components: — · lib: — | community-page, island-onset-clock |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 65 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
 | `/api/discord/test` (api) | public | `app/api/discord/test/route.ts` (65) | 3 files · components: — · lib: util, validation | **none** |
 | `/api/links` (api) | open (page checks) | `app/api/links/route.ts` (53) | 4 files · components: — · lib: integrations, studio, util | **none** |
 | `/api/push/dispatch` (api) | open (page checks) | `app/api/push/dispatch/route.ts` (53) | 5 files · components: — · lib: notifications, push, validation | push |
+| `/api/references/films` (api) | open (page checks) | `app/api/references/films/route.ts` (41) | 4 files · components: — · lib: references, util, validation | **none** |
 | `/api/references/search` (api) | open (page checks) | `app/api/references/search/route.ts` (61) | 3 files · components: — · lib: util, validation | **none** |
 
 ## What each route touches
@@ -379,6 +380,10 @@
 ### `/api/push/dispatch`
 
 - **Tables:** `notifications`, `profiles`, `push_subscriptions`
+
+### `/api/references/films`
+
+- **Tables:** —
 
 ### `/api/references/search`
 
