@@ -10,7 +10,7 @@ import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { recordKindOfView } from '@/lib/studio/records-print';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
-import { ToolHeader } from '../ToolHeader';
+import { ToolHeader, ToolActionsContext } from '../ToolHeader';
 import type { CrewRow } from '../production/CrewView';
 import s from '../studio.module.css';
 
@@ -159,7 +159,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
             </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
-      {!lock && recordKindOfView(view) && <PrintRecordsButton kind={recordKindOfView(view)!} />}
+      <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
       {!lock && TAB_HEADED[view] && (() => {
         const v = VIEWS.find((x) => x.id === view)!;
         return <div style={{ marginBottom: 14 }}><ToolHeader icon={React.cloneElement(v.icon as React.ReactElement<{ size?: number }>, { size: 16 })} eyebrow={v.group} title={v.label} purpose={TAB_HEADED[view]} accent={project.accent_color} /></div>;
@@ -204,6 +204,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
+      </ToolActionsContext.Provider>
     </section>
   );
 }

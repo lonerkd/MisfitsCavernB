@@ -5,7 +5,8 @@ import { Archive, Link2, Search, StickyNote } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import type { Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
-import { SectionHeader, ErrorBar } from '../ui';
+import { ErrorBar } from '../ui';
+import { TabHeader } from '../TabHeader';
 import { MediaFilters, MediaGrid, GridSkeleton, useMediaFilters } from '../media/MediaGrid';
 import { AddLinkForm, AddNoteForm, DropOverlay, UploadButton, UploadQueue, useFileDrop } from '../media/AddMedia';
 import { MediaDetail } from '../media/MediaDetail';
@@ -41,10 +42,10 @@ export function LibraryTab() {
         ))}
       </div>
       {view === 'boards' ? <BoardsPanel /> : (<>
-      <SectionHeader
+      <TabHeader
         id="library-title"
         title="References & Media"
-        subtitle={count ? `${count} item${count === 1 ? '' : 's'}` : undefined}
+        tool={{ icon: <Archive size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: count ? `${count} item${count === 1 ? '' : 's'}: images, clips, audio, links and notes for the look.` : 'Images, clips, audio, links and notes for the look and feel.' }}
         actions={
           <>
             <button type="button" className={s.btn} onClick={() => setFinding(true)}>
