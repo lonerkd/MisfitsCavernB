@@ -174,7 +174,7 @@
   },
   "app/(suite)/page.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "app/(suite)/portfolio/loading.tsx": {
