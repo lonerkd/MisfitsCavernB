@@ -55,6 +55,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
       <SectionHeader
         id="overview-title"
         title={project.title}
+        tool={{ icon: <ActivityIcon size={16} />, eyebrow: 'Overview', accent: project.accent_color }}
         subtitle={project.description || undefined}
       />
       {progressState && (

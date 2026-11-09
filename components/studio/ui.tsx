@@ -3,11 +3,14 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { ToolHeader } from './ToolHeader';
 import s from './studio.module.css';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
 
-export function SectionHeader({ id, title, subtitle, actions }: { id?: string; title: string; subtitle?: React.ReactNode; actions?: React.ReactNode }) {
+export function SectionHeader({ id, title, subtitle, actions, tool }: { id?: string; title: string; subtitle?: React.ReactNode; actions?: React.ReactNode; tool?: { icon: React.ReactNode; eyebrow?: string; accent?: string | null; purpose?: React.ReactNode } }) {
+  // A Studio tab opens with the shared tool header (the project page's phase panel, scaled); the editor's panels keep the plain one.
+  if (tool) return <ToolHeader as="h2" id={id} icon={tool.icon} eyebrow={tool.eyebrow} title={title} purpose={tool.purpose ?? subtitle} accent={tool.accent} actions={actions} />;
   return (
     <div className={s.header}>
       <div>

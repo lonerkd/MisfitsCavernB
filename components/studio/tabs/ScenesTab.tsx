@@ -62,7 +62,7 @@ export function ScenesTab() {
   if (scriptsStatus === 'ready' && scripts.length === 0) {
     return (
       <section>
-        <SectionHeader title="Scene References" />
+        <SectionHeader title="Scene References" tool={{ icon: <Clapperboard size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Every scene in the script, with its references, shots and records.' }} />
         <EmptyState
           icon={<Clapperboard size={28} />}
           title="No screenplay in this project yet"
@@ -78,6 +78,7 @@ export function ScenesTab() {
       <SectionHeader
         id="scenes-title"
         title="Scene References"
+        tool={{ icon: <Clapperboard size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Every scene in the script, with its references, shots and records.' }}
         actions={
           <>
             {scripts.length > 1 && (

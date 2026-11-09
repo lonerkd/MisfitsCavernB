@@ -114,6 +114,7 @@ export function PromosTab() {
       <SectionHeader
         id="promos-title"
         title="Promos"
+        tool={{ icon: <Megaphone size={16} />, eyebrow: 'Studio', accent: project.accent_color }}
         subtitle={campaigns.length ? `${campaigns.length} campaign${campaigns.length === 1 ? '' : 's'}${totalBudget ? ` · $${totalSpend.toLocaleString()} of $${totalBudget.toLocaleString()} spent` : ''}` : undefined}
         actions={<button type="button" className={s.btn} aria-expanded={adding} onClick={() => setAdding((a) => !a)}><Plus size={12} /> New campaign</button>}
       />

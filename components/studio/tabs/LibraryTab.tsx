@@ -44,7 +44,7 @@ export function LibraryTab() {
       <SectionHeader
         id="library-title"
         title="References & Media"
-        subtitle={count ? `${count} item${count === 1 ? '' : 's'}` : undefined}
+        tool={{ icon: <Archive size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: count ? `${count} item${count === 1 ? '' : 's'}: images, clips, audio, links and notes for the look.` : 'Images, clips, audio, links and notes for the look and feel.' }}
         actions={
           <>
             <button type="button" className={s.btn} onClick={() => setFinding(true)}>

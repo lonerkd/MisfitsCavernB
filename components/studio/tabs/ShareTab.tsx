@@ -87,6 +87,7 @@ export function ShareTab() {
       <SectionHeader
         id="share-title"
         title="Share & Pitch"
+        tool={{ icon: <Globe size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Who can see the project, its share link and the pitch.' }}
       />
 
       <div className={s.panel}>
