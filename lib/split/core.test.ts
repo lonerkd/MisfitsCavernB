@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_LAYOUT, SPLIT_KEY, companionOf, phasePartner, projectPairSearch, isSplitMessage, layoutFromSearch, layoutToSearch, safePanePath, SURFACES, surfaceOf } from './core';
+import { DEFAULT_LAYOUT, SPLIT_KEY, companionOf, projectOf, surfacesFor, phasePartner, projectPairSearch, isSplitMessage, layoutFromSearch, layoutToSearch, safePanePath, SURFACES, surfaceOf } from './core';
 
 describe('safePanePath', () => {
   it('keeps this site’s pages', () => {
@@ -50,7 +50,7 @@ describe('surfaces', () => {
     expect(surfaceOf('/studio?tab=production&view=readiness')?.id).toBe('readiness');
     expect(surfaceOf('/studio?tab=production')?.id).toBe('story');
     expect(surfaceOf('/studio?tab=scenes')?.id).toBe('scenes');
-    expect(surfaceOf('/projects/abc')?.id).toBe('projects');
+    expect(surfaceOf('/projects/abc')?.id).toBe('project');
     expect(surfaceOf('/settings')).toBeNull();
   });
   it('opens the natural companion beside a page', () => {
@@ -239,5 +239,22 @@ describe('the project in two panes', () => {
     expect(isSplitMessage(m('/studio?tab=library'))).toBe(true);
     expect(isSplitMessage(m('https://evil.example'))).toBe(false);
     expect(isSplitMessage(m('/split'))).toBe(false);
+  });
+});
+
+describe('the project-aware pane picker', () => {
+  it('finds the project a page belongs to', () => {
+    expect(projectOf('/projects/abc')).toBe('abc');
+    expect(projectOf('/projects/abc/')).toBe('abc');
+    expect(projectOf('/studio?tab=scenes&project=xyz')).toBe('xyz');
+    expect(projectOf('/projects')).toBeNull();
+    expect(projectOf('/editor')).toBeNull();
+  });
+  it('names a project page "This project" and offers it only when a pane is on a project', () => {
+    expect(surfaceOf('/projects/abc')?.label).toBe('This project');
+    expect(surfaceOf('/projects')?.label).toBe('Projects');
+    expect(surfacesFor(null)).toBe(SURFACES);
+    expect(surfacesFor('abc')[0]).toEqual({ id: 'project', label: 'This project', group: 'Project', href: '/projects/abc' });
+    expect(surfacesFor('abc')).toHaveLength(SURFACES.length + 1);
   });
 });

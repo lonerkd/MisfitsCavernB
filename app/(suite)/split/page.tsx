@@ -3,7 +3,7 @@
 import React, { createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, ChevronDown, Columns2, Link2, Link2Off, Maximize2, Rows2, X } from 'lucide-react';
 import {
-  DEFAULT_LAYOUT, SURFACES, clampRatio, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
+  DEFAULT_LAYOUT, clampRatio, projectOf, surfacesFor, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
   type SplitLayout, type Surface,
 } from '@/lib/split/core';
 import { useHydrated } from '@/lib/hooks/useSearchParam';
@@ -169,6 +169,7 @@ function Split() {
               <PaneBar
                 current={here[side].href}
                 title={here[side].title}
+                projectId={projectOf(here.a.href) ?? projectOf(here.b.href)}
                 onPick={(sf) => open(side, sf.href)}
                 onFull={() => full(side)}
                 onClose={() => full(side === 'a' ? 'b' : 'a')}
@@ -187,9 +188,10 @@ function Split() {
   );
 }
 
-function PaneBar({ current, title, onPick, onFull, onClose }: {
+function PaneBar({ current, title, projectId, onPick, onFull, onClose }: {
   current: string;
   title: string;
+  projectId: string | null;
   onPick: (surface: Surface) => void;
   onFull: () => void;
   onClose: () => void;
@@ -198,7 +200,8 @@ function PaneBar({ current, title, onPick, onFull, onClose }: {
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const here = surfaceOf(current);
-  const groups = Array.from(new Set(SURFACES.map((x) => x.group)));
+  const surfaces = surfacesFor(projectId);
+  const groups = Array.from(new Set(surfaces.map((x) => x.group)));
 
   useEffect(() => {
     if (!open) return;
@@ -222,7 +225,7 @@ function PaneBar({ current, title, onPick, onFull, onClose }: {
               <div key={g} className={s.menuGroup}>
                 <div className={s.menuHead}>{g}</div>
                 <div className={s.menuItems}>
-                  {SURFACES.filter((x) => x.group === g).map((x) => (
+                  {surfaces.filter((x) => x.group === g).map((x) => (
                     <button key={x.id} type="button" className={`${s.menuItem} ${here?.id === x.id ? s.menuItemOn : ''}`} aria-pressed={here?.id === x.id}
                       onClick={() => { onPick(x); setOpen(false); }}>
                       {x.label}

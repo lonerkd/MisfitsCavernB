@@ -95,8 +95,22 @@ export const SURFACES: Surface[] = [
   { id: 'jobs', label: 'Jobs', group: 'Suite', href: '/jobs' },
 ];
 
+/** The project a path belongs to: its own page (/projects/<id>), or a ?project=<id> in the query. */
+export function projectOf(href: string): string | null {
+  const [path, query = ''] = href.split(/#/)[0].split('?');
+  const m = /^\/projects\/([^/]+)\/?$/.exec(path);
+  if (m) return decodeURIComponent(m[1]);
+  return new URLSearchParams(query).get('project');
+}
+
+/** The surfaces a pane can show: the suite's, plus this project's own page when either pane is on a project. */
+export function surfacesFor(projectId: string | null): Surface[] {
+  return projectId ? [{ id: 'project', label: 'This project', group: 'Project', href: `/projects/${projectId}` }, ...SURFACES] : SURFACES;
+}
+
 /** The surface a path is on (most specific match), or null. */
 export function surfaceOf(href: string): Surface | null {
+  if (/^\/projects\/[^/?#]+\/?(?:[?#]|$)/.test(href)) return { id: 'project', label: 'This project', group: 'Project', href: href.split(/[?#]/)[0] };
   const [path, query = ''] = href.split('?');
   const q = new URLSearchParams(query);
   let best: Surface | null = null;

@@ -37,14 +37,14 @@ export function DoodView() {
     );
   }
   return (
-    <div className={s.panel}>
+    <div className={s.stack}>
       <ToolHeader icon={<Calendar size={16} />} eyebrow="Shoot day" title="Day out of days" purpose="Which days each cast member works." accent={project.accent_color}
         summary={<>{dood.length} cast · {board.filter((d) => d.scenes.length).length} shoot days</>}
         actions={<PrintButton label="the day out of days" build={() => {
           // The cells line up with the whole board (one per day), so the columns are the board's days, as the screen shows them.
           return doodDoc({ project: project.title, accent: project.accent_color, days: board.map((d) => d.day), rows: dood.map((r) => ({ name: r.name, cells: r.cells, worked: r.worked })), generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
         }} />} />
-      <DoodTable board={board} dood={dood} />
+      <div className={s.panel}><DoodTable board={board} dood={dood} /></div>
     </div>
   );
 }
