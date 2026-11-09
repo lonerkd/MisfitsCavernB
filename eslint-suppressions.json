@@ -412,7 +412,7 @@
   },
   "components/editor/SceneReferencesPanel.tsx": {
     "no-restricted-syntax": {
-      "count": 4
+      "count": 2
     }
   },
   "components/editor/ShareScriptButton.tsx": {
@@ -651,7 +651,7 @@
   },
   "components/studio/PitchDeck.tsx": {
     "no-restricted-syntax": {
-      "count": 6
+      "count": 5
     }
   },
   "components/studio/ScenePassport.tsx": {

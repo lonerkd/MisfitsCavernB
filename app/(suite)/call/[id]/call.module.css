@@ -31,7 +31,7 @@
   background: var(--accent); color: var(--on-accent); font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); font-weight: 600;
 }
 .confirm:disabled { opacity: 0.6; cursor: default; }
-.confirmed { display: inline-flex; align-items: center; gap: 6px; margin: 14px 0 0; font-size: 13px; color: #6ee7b7; }
+.confirmed { display: inline-flex; align-items: center; gap: 6px; margin: 14px 0 0; font-size: 13px; color: var(--ok); }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
 .fact { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 3px; }

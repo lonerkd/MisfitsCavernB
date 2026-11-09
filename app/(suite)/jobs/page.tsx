@@ -402,7 +402,7 @@ export default function JobsPage() {
                       </Link>
                       <span style={{
                         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', padding: '4px 10px', borderRadius: 9999,
-                        color: a.status === 'accepted' ? '#6ee7b7' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
+                        color: a.status === 'accepted' ? 'var(--ok)' : a.status === 'rejected' ? 'var(--danger)' : 'var(--fg-muted)',
                         border: '1px solid rgba(var(--ink-rgb), 0.1)',
                       }}>{a.status === 'accepted' ? 'Accepted' : a.status === 'rejected' ? 'Not selected' : 'Pending'}</span>
                     </li>

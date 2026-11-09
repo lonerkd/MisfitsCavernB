@@ -62,7 +62,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       <>
         <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: '-0.02em', margin: '14px 0' }}>THE CHARACTERS</h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 'var(--w-reading)', margin: '0 auto' }}>
-          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: big ? 14 : 9.5, padding: big ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc', borderRadius: 9999 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Develop the Character Bible to populate the cast.</span>}
+          {characters.length > 0 ? characters.map(c => <span key={c} style={{ fontFamily: 'var(--mono)', fontSize: big ? 14 : 9.5, padding: big ? '6px 14px' : '4px 9px', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: 'var(--violet)', borderRadius: 9999 }}>{c}</span>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Develop the Character Bible to populate the cast.</span>}
         </div>
       </>
     ) },

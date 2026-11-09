@@ -1,0 +1,7 @@
+# Session — 2026-11-09: the theme scan with frosted mode on, and the light-theme bugs it found
+
+`scripts/theme-scan.mjs` takes `FROSTED=1` (the choice becomes `{ id, frosted: true }`) and `SCAN_EMAIL` / `SCAN_PASSWORD` (a local account other than the demo one; the local-host check stays), and skips fully transparent text (the editor's textarea is drawn by an overlay beneath it, so it always read 1:1).
+
+**Run:** a local stack, a production build, a scan account made as an admin, `FROSTED=1 THEME=<id>` for all 13 themes over 28 screens. Every theme had the editor textarea finding (the scanner's quirk, now skipped). The three light themes had nine more kinds; **Paper without the mode has the same nine**, so frosted added none. They were real: text colours written for dark themes and used as they were on pale surfaces: `#a5b4fc` (the editor's references panel Add and link, the pitch chips), `#6ee7b7` and `#f7b955` and `#5fd99a` (Studio status and tags, readiness, catering, the jobs and call pages), `var(--accent-text, #f0764f)` (an undefined token, on the breakdown link), and white text on the landing page's screenplay preview. All now use `--violet`, `--ok`, `--warn`, `--accent` and the text colour; the lint baseline shrinks by two. Paper, Lagoon, Editorial and Misfit re-scanned: only the textarea (now skipped).
+
+**Not verified:** the other nine themes by eye; the blur's cost on heavy views; CSS-class cards with a solid `--bg-2`.
