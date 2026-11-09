@@ -18,6 +18,7 @@
   padding: 22px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: var(--frost, none); -webkit-backdrop-filter: var(--frost, none);
 }
 .panel::before {
   content: '';
