@@ -1,0 +1,7 @@
+# Session — 2026-11-09: every Production view on the shared header (slice 3)
+
+`ToolHeader` (slice 2) is now the opening of **every Production view**. 27 role and record views (Props, Weather, Catering, Safety, Transport, Makeup, Editorial, Claims, Extras, Stills, Media offload, Purchase orders, Script sup, Permits, Costumes, VFX, Sound and Camera reports, Risk register, Director notebook, Script revisions, Scouts, Rehearsals, Wrap, Gear, Comms, Cast) were converted with a scripted transform of their identical title row (icon, title, live count line, their buttons) into the header: the group, a one-line purpose, the live counts as a `summary`, and their own actions. Production reports, Continuity, Paperwork and Day out of days were converted by hand (Paperwork keeps its owner / crew title). Story, Breakdown, Readiness, Schedule and On set have layouts with no title row, so the Production tab draws their header from its view registry. `ToolHeader` gained a `summary` slot.
+
+**Verified:** typecheck, lint, the whole unit suite (309 files, 2650 tests). `RevisionsView`'s test now gives its mocked Studio a project. **Not verified:** on screen, in Paper and Misfit (the plain count line, the header over the denser views).
+
+**Known roughness (BACKLOG 3.47):** the Production tab still draws one lone Print / CSV button above a record tool (it belongs in the header); Day out of days now has a header inside its card.

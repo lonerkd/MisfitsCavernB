@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { Receipt, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type PoEntry = { id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' };
@@ -10,6 +12,7 @@ type PoEntry = { id: string; poNumber: string; vendor: string; department: strin
 const STATUSES: PoEntry['status'][] = ['draft', 'approved', 'paid'];
 
 export function PoView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('purchaseOrders');
   const [draft, setDraft] = useState<Omit<PoEntry, 'id'>>({
     poNumber: '',
@@ -36,19 +39,13 @@ export function PoView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Receipt size={14} /> Purchase orders
-          <span className={s.hint}> · {items.length} POs · ${total.toFixed(2)} total</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<Receipt size={16} />} eyebrow="Budget & docs" title="Purchase orders" purpose="Purchase orders: vendor, amount and whether it is approved or paid." accent={project.accent_color} summary={<>{items.length} POs · ${total.toFixed(2)} total</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

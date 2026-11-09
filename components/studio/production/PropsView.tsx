@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Check, ClipboardList, PenLine } from 'lucide-react';
 import { useBreakdown } from '@/lib/breakdown';
 import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 // 'makeup' is the key the breakdown seeds for "Hair & makeup"; 'hair-makeup' is what a custom category of that name would get.
@@ -67,12 +68,7 @@ export function PropsView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <ClipboardList size={14} /> Props & wardrobe
-          <span className={s.hint}> · {ready} of {total} ready</span>
-        </div>
-      </div>
+      <ToolHeader icon={<ClipboardList size={16} />} eyebrow="Departments" title="Props & wardrobe" purpose="Props and wardrobe by scene, and whether each is ready." accent={project.accent_color} summary={<>{ready} of {total} ready</>} />
 
       <div className={s.progress} aria-hidden><div style={{ width: total ? (ready / total) * 100 + '%' : '0%' }} /></div>
 

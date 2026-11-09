@@ -5,11 +5,14 @@ import { Palette, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { CharacterLinkField, NotInSceneNote, SceneLinkField, useRecordTargets } from './RecordLinks';
 import { characterName, sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type MakeupEntry = { id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; look: string; artist: string; notes: string; photo: string };
 
 export function MakeupView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('makeup');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<MakeupEntry, 'id'>>({
@@ -29,12 +32,7 @@ export function MakeupView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Palette size={14} /> Makeup / hair
-          <span className={s.hint}> · {items.length} looks</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Palette size={16} />} eyebrow="Departments" title="Makeup / hair" purpose="Makeup and hair looks by character and scene." accent={project.accent_color} summary={<>{items.length} looks</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

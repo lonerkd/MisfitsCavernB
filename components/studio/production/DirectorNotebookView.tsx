@@ -5,11 +5,14 @@ import { Clapperboard, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type NoteEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string };
 
 export function DirectorNotebookView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('directorNotes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<NoteEntry, 'id' | 'createdAt'>>({
@@ -35,19 +38,13 @@ export function DirectorNotebookView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Clapperboard size={14} /> Director notebook
-          <span className={s.hint}> · {items.length} notes</span>
-        </div>
-        <input
+      <ToolHeader icon={<Clapperboard size={16} />} eyebrow="Story & planning" title="Director notebook" purpose="The director’s notes, by scene." accent={project.accent_color} summary={<>{items.length} notes</>} actions={<><input
           className={s.input}
           style={{ width: 180, fontSize: 12 }}
           placeholder="Filter by scene/title…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
+        /></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

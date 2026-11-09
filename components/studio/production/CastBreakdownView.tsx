@@ -12,6 +12,7 @@ import { getProjectCrew, type CrewMember } from '@/lib/supabase/crew-management'
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { castDoc } from '@/lib/studio/cast-print';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 export function CastBreakdownView() {
@@ -88,12 +89,7 @@ export function CastBreakdownView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Users size={14} /> Cast breakdown
-          <span className={s.hint}> · {castCount} of {sorted.length} cast · {scenes.rows.length} scenes</span>
-        </div>
-        <PrintButton label="the cast breakdown" build={() => castDoc({
+      <ToolHeader icon={<Users size={16} />} eyebrow="People" title="Cast breakdown" purpose="Cast by character, with scenes and screen time." accent={project.accent_color} summary={<>{castCount} of {sorted.length} cast · {scenes.rows.length} scenes</>} actions={<><PrintButton label="the cast breakdown" build={() => castDoc({
           project: project.title, accent: project.accent_color,
           rows: sorted.map((c) => {
             const crewId = castingByChar.get(c.name.toUpperCase());
@@ -101,8 +97,7 @@ export function CastBreakdownView() {
             return { character: c.name, actor: crewId ? (crewById.get(crewId) ?? 'Unknown') : null, scenes: sceneCountByChar.get(c.name) ?? 0, days: days ? Array.from(days).sort((x, y) => x - y) : [], arc: c.row?.arc ?? null };
           }),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
-        })} />
-      </div>
+        })} /></>} />
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {sorted.map((c) => {

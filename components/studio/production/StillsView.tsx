@@ -5,6 +5,8 @@ import { Images, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type StillEntry = { id: string; scene_ids?: string[]; scene: string; frames: string; photographer: string; subject: string; status: 'shot' | 'selected' | 'delivered'; notes: string };
@@ -13,6 +15,7 @@ const EMPTY: Omit<StillEntry, 'id'> = { scene: '', frames: '', photographer: '',
 
 /** The unit photographer's log: which frames were taken in which scene, what is selected, what has gone to the client. */
 export function StillsView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('stills');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<StillEntry, 'id'>>(EMPTY);
@@ -26,12 +29,7 @@ export function StillsView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Images size={14} /> Stills log
-          <span className={s.hint}> · {items.length} entries · {items.filter((i) => i.status === 'delivered').length} delivered</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Images size={16} />} eyebrow="Reports & logs" title="Stills log" purpose="Stills photography: who shot what, and where the files are." accent={project.accent_color} summary={<>{items.length} entries · {items.filter((i) => i.status === 'delivered').length} delivered</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

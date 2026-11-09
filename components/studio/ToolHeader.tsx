@@ -11,6 +11,8 @@ export interface ToolHeaderProps {
   title: string;
   /** What the tool is for, in one line. */
   purpose?: string;
+  /** Live counts in one line ("3 of 8 ready · 2 pending"). */
+  summary?: React.ReactNode;
   /** The project's colour. */
   accent?: string | null;
   /** How far along the tool's data is. Shown as a bar and "n of m". */
@@ -23,7 +25,7 @@ export interface ToolHeaderProps {
 }
 
 /** The one header every Studio tool opens with: what it is, where it stands, what is next, and its actions. The project page's phase panel, scaled to a tool. */
-export function ToolHeader({ icon, eyebrow, title, purpose, accent, progress, stats, next, actions }: ToolHeaderProps) {
+export function ToolHeader({ icon, eyebrow, title, purpose, summary, accent, progress, stats, next, actions }: ToolHeaderProps) {
   const pa = accent ? readable(accent) : undefined;
   const pct = progress && progress.of > 0 ? Math.min(100, Math.round((progress.value / progress.of) * 100)) : null;
   return (
@@ -34,6 +36,7 @@ export function ToolHeader({ icon, eyebrow, title, purpose, accent, progress, st
           {eyebrow && <div className={h.eyebrow}>{eyebrow}</div>}
           <h3 className={h.title}>{title}</h3>
           {purpose && <p className={h.purpose}>{purpose}</p>}
+          {summary != null && <div className={h.summary}>{summary}</div>}
         </div>
         {actions && <div className={h.actions}>{actions}</div>}
       </div>

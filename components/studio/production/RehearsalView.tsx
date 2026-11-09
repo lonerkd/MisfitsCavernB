@@ -5,11 +5,14 @@ import { CalendarDays, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type RehearsalEntry = { id: string; scene_ids?: string[]; character_id?: string | null; date: string; time: string; location: string; participants: string; scenes: string; notes: string };
 
 export function RehearsalView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('rehearsals');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<RehearsalEntry, 'id'>>({
@@ -31,12 +34,7 @@ export function RehearsalView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <CalendarDays size={14} /> Rehearsals
-          <span className={s.hint}> · {items.length} scheduled</span>
-        </div>
-      </div>
+      <ToolHeader icon={<CalendarDays size={16} />} eyebrow="Story & planning" title="Rehearsals" purpose="Rehearsals: dates, who is called and the notes." accent={project.accent_color} summary={<>{items.length} scheduled</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

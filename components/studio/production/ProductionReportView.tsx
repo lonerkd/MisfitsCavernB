@@ -10,6 +10,7 @@ import { productionReportDoc } from '@/lib/studio/production-report-print';
 import { printDocument } from '@/lib/print/print';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 /**
@@ -55,10 +56,8 @@ export function ProductionReportView() {
 
   return (
     <div className={s.stack}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle}>Production reports</div>
-        <span className={s.hint}>{days.length} day{days.length === 1 ? '' : 's'}</span>
-      </div>
+      <ToolHeader icon={<FileText size={16} />} eyebrow="Reports & logs" title="Production reports" purpose="The end-of-day report: what was shot, the times and the notes." accent={project.accent_color}
+        summary={<>{days.length} day{days.length === 1 ? '' : 's'}</>} />
       <div className={s.stack} style={{ gap: 6 }}>
         {days.map((sheet) => {
           const dayScenes = scenes.rows.filter((sc) => sc.shoot_day === sheet.shoot_day);

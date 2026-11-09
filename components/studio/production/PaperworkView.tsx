@@ -13,6 +13,7 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { paperworkDoc } from '@/lib/studio/paperwork-print';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type CrewRow = { user_id: string; username: string; craft: string | null };
@@ -62,12 +63,9 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 960 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <FileCheck2 size={14} /> {canShape ? 'Paperwork' : 'Your paperwork'}
-          <span className={s.hint}>· {docs.rows.filter((d) => d.status === 'done').length} of {docs.rows.length} done{soon.length ? ` · ${soon.length} expiring or expired` : ''}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+      <ToolHeader icon={<FileCheck2 size={16} />} eyebrow="Budget & docs" title={canShape ? 'Paperwork' : 'Your paperwork'} purpose="Permits, insurance, releases and contracts, and what is still needed." accent={project.accent_color}
+        summary={<>{docs.rows.filter((d) => d.status === 'done').length} of {docs.rows.length} done{soon.length ? ` · ${soon.length} expiring or expired` : ''}</>}
+        actions={<div style={{ display: 'flex', gap: 8 }}>
           {docs.rows.length > 0 && <PrintButton label="the paperwork index" build={() => {
             const locName = new Map(locations.rows.map((l) => [l.id, l.name]));
             const who = new Map(crew.map((c) => [c.user_id, c.username]));
@@ -86,8 +84,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
             });
           }} />}
           {canShape && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding({ kind: 'other', title: '' })}><Plus size={11} /> Add a document</button>}
-        </div>
-      </div>
+        </div>} />
 
       {canShape && gaps.length > 0 && (
         <section aria-labelledby="paper-gaps" className={s.panel} style={{ padding: 14 }}>
