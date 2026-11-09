@@ -15,6 +15,7 @@ import {
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
+import { ToolHeader } from '../ToolHeader';
 import { budgetDoc } from '@/lib/studio/budget-print';
 import s from '../studio.module.css';
 
@@ -52,14 +53,13 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
     <div className={s.stack} style={{ gap: 28, maxWidth: 1000 }}>
       {canShape && (
         <>
-          <section aria-labelledby="money-summary" className={s.stack} style={{ gap: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-              <h3 id="money-summary" className={s.panelTitle} style={{ marginBottom: 0 }}><DollarSign size={14} /> Budget vs spend</h3>
-              <PrintButton label="the budget" build={() => budgetDoc({
+          <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
+            <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
+              next={lines.length === 0 ? { text: 'Set the budget on the project page to see it here.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
+              actions={<PrintButton label="the budget" build={() => budgetDoc({
                 project: project.title, accent: project.accent_color, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
-              })} />
-            </div>
+              })} />} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
               {([
                 ['Planned', summary.totals.planned, undefined],
