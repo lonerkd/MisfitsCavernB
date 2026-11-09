@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
+import { useInPane, projectPairSearch } from '@/lib/split/pane';
+import { Columns2 } from 'lucide-react';
 import { getProjectOverview, getProjectRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
@@ -36,6 +38,7 @@ export default function ProjectHubPage() {
   const confirm = useConfirm();
   const { toast } = useToast();
   const params = useParams();
+  const inPane = useInPane();
   const router = useRouter();
   const id = String(params.id);
   const { activeProject, setActiveProject, refreshProject } = useProject();
@@ -240,7 +243,15 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
-          {project.isOwner && <div style={{ marginBottom: 10 }}><ViewAsSwitch projectId={id} /></div>}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
+            {project.isOwner && <ViewAsSwitch projectId={id} />}
+            {!inPane && (
+              <Link href={`/split${projectPairSearch(id, progressState.progress?.current.id ?? project.phase)}`} title="The project in one pane, the tool this phase works in beside it. Tools you open from the toolkit come up beside the project."
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 12px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-strong)', textDecoration: 'none' }}>
+                <Columns2 size={13} aria-hidden /> Two panes
+              </Link>
+            )}
+          </div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.6rem, 7vw, 4.4rem)', fontWeight: 900, letterSpacing: '-0.045em', lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
           <LoglineEditor
             projectId={id}

@@ -11,7 +11,9 @@ export type SplitMessage =
   /** Take the script to this scene (and to a cut note's line in it). */
   | { type: 'open-scene'; scriptId: string; sceneId: string; noteId?: string }
   /** A global chord pressed inside a pane, where there is no search or shortcuts panel of its own: the split page opens it. */
-  | { type: 'chord'; id: 'palette' | 'help' };
+  | { type: 'chord'; id: 'palette' | 'help' }
+  /** Open this page in the OTHER pane (a tile or link in one pane brings its tool up beside it, whether or not the panes are linked). */
+  | { type: 'open-beside'; href: string };
 
 export function isSplitMessage(data: unknown): data is SplitMessage {
   if (!data || typeof data !== 'object' || !(data as Record<string, unknown>)[SPLIT_KEY]) return false;
@@ -22,6 +24,7 @@ export function isSplitMessage(data: unknown): data is SplitMessage {
     case 'scene': return str(d.scriptId) && (d.sceneId === null || str(d.sceneId));
     case 'open-scene': return str(d.scriptId) && str(d.sceneId) && (d.noteId === undefined || str(d.noteId));
     case 'chord': return d.id === 'palette' || d.id === 'help';
+    case 'open-beside': return str(d.href) && safePanePath(d.href as string, '') !== '';
     default: return false;
   }
 }
@@ -112,9 +115,36 @@ export function surfaceOf(href: string): Surface | null {
   return best;
 }
 
-/** What to open beside a page when splitting from it. */
+/** What to open beside a page when splitting from it: the tool people use next to it. */
 export function companionOf(href: string): string {
+  const path = href.split(/[?#]/)[0];
+  // A project's page: the script, its natural partner.
+  if (/^\/projects\/[^/]+\/?$/.test(path)) return '/editor';
   const s = surfaceOf(href);
   if (!s) return '/editor';
-  return s.id === 'script' ? '/studio?tab=scenes' : '/editor';
+  switch (s.id) {
+    case 'script': return '/studio?tab=scenes';
+    case 'breakdown': return '/studio?tab=production&view=schedule';
+    case 'schedule': return '/studio?tab=production&view=breakdown';
+    case 'readiness': return '/studio?tab=production&view=schedule';
+    case 'onset': return '/studio?tab=production&view=schedule';
+    case 'soundtrack': return '/editor';
+    default: return '/editor';
+  }
+}
+
+/** The tool a project's phase works in most, to open beside the project page ("Two panes"). */
+export function phasePartner(phase: string): string {
+  switch (phase) {
+    case 'pre-production': return '/studio?tab=production&view=breakdown';
+    case 'production': return '/studio?tab=production&view=onset';
+    case 'post-production': return '/studio?tab=post';
+    case 'delivery': return '/studio?tab=post';
+    default: return '/editor';
+  }
+}
+
+/** A project's page in the first pane and the tool its phase works in beside it. */
+export function projectPairSearch(projectId: string, phase: string): string {
+  return layoutToSearch({ ...DEFAULT_LAYOUT, a: `/projects/${projectId}`, b: phasePartner(phase), ratio: 0.5, linked: true });
 }

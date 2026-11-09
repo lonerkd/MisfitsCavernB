@@ -69,6 +69,13 @@ function Split() {
         window.dispatchEvent(new Event(msg.id === 'palette' ? 'mc-open-command-palette' : 'mc-open-shortcuts'));
         return;
       }
+      if (msg.type === 'open-beside') {
+        const other: Side = from === 'a' ? 'b' : 'a';
+        setSrc((v) => ({ ...v, [other]: msg.href }));
+        setHere((h) => ({ ...h, [other]: { href: msg.href, title: '' } }));
+        setPulse(other);
+        return;
+      }
       if (!layout?.linked) return;
       const to: Side = from === 'a' ? 'b' : 'a';
       frames[to].current?.contentWindow?.postMessage(msg, window.location.origin);
