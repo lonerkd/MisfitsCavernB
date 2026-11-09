@@ -240,7 +240,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
       {view === 'board' ? (
         <>
           <p className={b.hint} id="strip-help" style={{ margin: '0 0 12px' }}>Drag a strip to another day, or focus it and press Alt+← / Alt+→. The dot marks planned → shot → wrapped.</p>
-          <div className={b.board}>
+          <div className={b.board} data-frost="off">
             {board.map((d) => {
               const date = dateOf.get(d.day);
               const fill = Math.min(100, Math.round((d.eighths / capacity) * 100));

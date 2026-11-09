@@ -269,6 +269,7 @@
 /* ── Scenes ───────────────────────────────────────────── */
 .sceneList { display: flex; flex-direction: column; gap: 10px; }
 .scene {
+  backdrop-filter: var(--frost, none); -webkit-backdrop-filter: var(--frost, none);
   display: grid;
   grid-template-columns: 4px 56px minmax(0, 1fr);
   gap: 0 14px;

@@ -85,16 +85,18 @@ function SectionHeader({
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        cursor: 'pointer', padding: '10px 12px', borderRadius: 8,
-        background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)',
+        cursor: 'pointer', padding: '8px 10px', borderRadius: 8,
+        // The tool header's language at the rail's scale: a lit surface, a hairline, an accent-tinted icon chip (and the blur when the frosted mode is on).
+        background: 'linear-gradient(180deg, var(--surface), var(--surface-2))', border: '1px solid rgba(var(--fg-rgb), 0.08)',
+        backdropFilter: 'var(--frost, none)', WebkitBackdropFilter: 'var(--frost, none)',
         userSelect: 'none',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.045)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(var(--fg-rgb), 0.08)'}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)' }}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <Icon size={14} />
+        <span aria-hidden style={{ width: 22, height: 22, borderRadius: 8, display: 'grid', placeItems: 'center', flexShrink: 0, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 38%, transparent)' }}><Icon size={12} /></span>
         <span>{label}</span>
         {count != null && (
           <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color, background: `${color}1a`, padding: '1px 7px', borderRadius: 9999 }}>{count}</span>

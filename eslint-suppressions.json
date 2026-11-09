@@ -391,7 +391,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 15
+      "count": 14
     }
   },
   "components/editor/PreviewView.tsx": {

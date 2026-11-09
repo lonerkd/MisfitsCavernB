@@ -1122,12 +1122,16 @@ html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb
 @media (prefers-reduced-transparency: no-preference) {
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     [data-frosted] [style*="background: var(--bg-2)"][style*="border-radius"],
-    [data-frosted] [style*="background: var(--bg-3)"][style*="border-radius"] {
+    [data-frosted] [style*="background: var(--bg-3)"][style*="border-radius"],
+    [data-frosted] .module-tile,
+    [data-frosted] .card {
       background: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-2) 54%, transparent)) !important;
       backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost);
     }
   }
 }
+/* The views that scroll or repaint the most keep the blur off (the stripboard's board, the editor's writing column): a blur over a large moving area costs frames. Mark one with data-frost="off". */
+[data-frosted] [data-frost="off"], [data-frosted] [data-frost="off"] * { --frost: none; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 @media (prefers-reduced-transparency: reduce) {
   [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
 }
