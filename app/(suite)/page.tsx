@@ -130,32 +130,7 @@ export default function Home() {
 
         <motion.div style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
 
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            style={{ display: 'flex', justifyContent: 'center', marginBottom: 36 }}
-          >
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '7px 16px',
-              background: 'rgba(232, 67, 26,0.08)',
-              border: '1px solid rgba(232, 67, 26,0.20)',
-              borderRadius: 9999,
-              fontFamily: 'var(--mono)',
-              fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
-              letterSpacing: 'var(--caps-track)',
-              textTransform: 'var(--caps)',
-              color: 'var(--accent)',
-            }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)', animation: 'pulse 2.5s ease-in-out infinite', display: 'inline-block' }} />
-              The Cavern
-            </div>
-          </motion.div>
-
-          <h1 className="sr-only">The Cavern — the production suite for independent filmmakers, by Misfits Cavern</h1>
+        <h1 className="sr-only">The Cavern — the production suite for independent filmmakers, by Misfits Cavern</h1>
           <motion.div
             initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
