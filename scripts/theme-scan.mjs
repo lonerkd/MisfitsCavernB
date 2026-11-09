@@ -6,7 +6,9 @@
 //
 //   npm run theme:scan                       the default theme, desktop
 //   THEME=slate npm run theme:scan           another theme (an id from lib/themes/themes.ts)
+//   FROSTED=1 THEME=slate npm run theme:scan  the frosted mode over that theme (translucent surfaces: stacked and measured like any other)
 //   PHONE=1 npm run theme:scan               at phone width
+//   SCAN_EMAIL=… SCAN_PASSWORD=… npm run theme:scan   another local account than the demo one
 //   npm run theme:scan -- /jobs /community       only these routes
 //
 // Needs the local stack and the demo account (npm run stack:up -- build, then npm run bible:shots once). Local only.
@@ -17,9 +19,10 @@ const BASE = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 let host = '';
 try { host = new URL(BASE).hostname; } catch { /* not a URL */ }
 if (host !== 'localhost' && host !== '127.0.0.1') { console.error('theme:scan runs against the local stack only.'); process.exit(1); }
-const EMAIL = 'bible@cavern.local';
-const PASSWORD = 'bible-local-only-1';
+const EMAIL = process.env.SCAN_EMAIL || 'bible@cavern.local';
+const PASSWORD = process.env.SCAN_PASSWORD || 'bible-local-only-1';
 const THEME = process.env.THEME;
+const FROSTED = process.env.FROSTED === '1';
 const PHONE = !!process.env.PHONE;
 const MIN = Number(process.env.MIN_CONTRAST || 3);
 const DEFAULT_ROUTES = [
@@ -32,7 +35,7 @@ const routes = process.argv.slice(2).length ? process.argv.slice(2) : DEFAULT_RO
 
 const browser = await chromium.launch(process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : {});
 const ctx = await browser.newContext({ viewport: PHONE ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: PHONE, isMobile: PHONE });
-if (THEME) await ctx.addInitScript((t) => { try { localStorage.setItem('mc_theme', JSON.stringify({ id: t })); } catch { /* private mode */ } }, THEME);
+if (THEME) await ctx.addInitScript(([t, f]) => { try { localStorage.setItem('mc_theme', JSON.stringify(f ? { id: t, frosted: true } : { id: t })); } catch { /* private mode */ } }, [THEME, FROSTED]);
 const page = await ctx.newPage();
 await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' });
 await page.fill('input[name="email"]', EMAIL);
@@ -109,5 +112,5 @@ for (const route of routes) {
 }
 await browser.close();
 const bad = total + failures;
-console.log(`\n${routes.length} screens, theme "${effective || THEME || 'default'}"${PHONE ? ', phone' : ''}: ${bad ? `${total} low-contrast kind${total === 1 ? '' : 's'}${failures ? `, ${failures} screen${failures === 1 ? '' : 's'} not scanned` : ''}` : 'every piece of text reads'}.`);
+console.log(`\n${routes.length} screens, theme "${effective || THEME || 'default'}"${FROSTED ? ', frosted' : ''}${PHONE ? ', phone' : ''}: ${bad ? `${total} low-contrast kind${total === 1 ? '' : 's'}${failures ? `, ${failures} screen${failures === 1 ? '' : 's'} not scanned` : ''}` : 'every piece of text reads'}.`);
 process.exit(bad ? 1 : 0);
