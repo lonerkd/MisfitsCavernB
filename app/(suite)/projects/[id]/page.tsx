@@ -9,6 +9,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { useInPane, projectPairSearch } from '@/lib/split/pane';
 import { Columns2 } from 'lucide-react';
+import { TwoPanesOffer } from '@/components/projects/TwoPanesOffer';
 import { getProjectOverview, getProjectRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
 import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
@@ -243,6 +244,7 @@ export default function ProjectHubPage() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           style={{ marginBottom: 24 }}
         >
+          <TwoPanesOffer projectId={id} phase={progressState.progress?.current.id ?? project.phase} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
             {project.isOwner && <ViewAsSwitch projectId={id} />}
             {!inPane && (

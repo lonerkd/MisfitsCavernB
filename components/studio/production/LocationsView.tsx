@@ -17,6 +17,7 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { locationsDoc } from '@/lib/studio/locations-print';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 /**
@@ -63,9 +64,10 @@ export function LocationsView() {
 
   return (
     <div className={s.stack} style={{ maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}><MapPin size={14} /> Locations <span className={s.hint}>· {locked} of {inScript} locked down</span></div>
-        {rows.length > 0 && <PrintButton label="the locations list" build={() => locationsDoc({
+      <ToolHeader icon={<MapPin size={16} />} eyebrow="Pre-production" title="Locations" purpose="Every place the script uses, with its permit, contact and cost." accent={project.accent_color}
+        progress={inScript > 0 ? { value: locked, of: inScript, label: 'locked down' } : null}
+        next={inScript > locked ? { text: `${inScript - locked} location${inScript - locked === 1 ? '' : 's'} still to lock down. Open one to set its status and permit.` } : null}
+        actions={rows.length > 0 ? <PrintButton label="the locations list" build={() => locationsDoc({
           project: project.title, accent: project.accent_color, format: (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
           rows: rows.map((r) => ({
@@ -74,8 +76,7 @@ export function LocationsView() {
             permit: PERMIT_STATE.find((x) => x.id === r.record?.permit)?.label ?? '', cost: r.record?.cost ?? null,
             scenes: r.scenes.map((sc) => sc.scene_number), days: r.days, notes: r.record?.notes ?? null,
           })),
-        })} />}
-      </div>
+        })} /> : undefined} />
       {records.status === 'error' && <p className={s.hint} style={{ color: 'var(--danger)' }}>{records.error}</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {rows.map((row) => (

@@ -20,6 +20,8 @@ A tool page (a Studio view, a production tool, the editor rails) typically has a
 ## The split screen becomes the project's default working state
 Built 2026-11-09 (slice 1): **Two panes** on the project page opens the project beside the tool its phase works in (development → editor, pre-production → breakdown, production → On set, post → Post); a toolkit tile or "Go" opened from the project pane **comes up in the other pane** (`open-beside`, linked or not); `companionOf` pairs breakdown ↔ schedule, readiness / On set → schedule, Sound → script.
 
+**Built 2026-11-09 (slice 2):** `ToolHeader` on Locations, Cast & crew, Shot list and Money; the Two panes offer (once per project, 1280 px and up, remembered on this device; no automatic redirect because Close would loop).
+
 **Left, in order:**
 1. A shared tool header and next-step component, then the Studio's 36 views and the production tools moved onto it, one group at a time (M each; start with the ones people open most: Scenes, Breakdown, Schedule, Money, Library).
 2. The split opens by itself where it earns it: a project opened on a wide screen (>= 1280 px) offers the pair once and remembers the choice per project (a device preference); narrow screens keep one page.
