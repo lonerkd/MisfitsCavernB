@@ -5,6 +5,8 @@ import { Shirt, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { CharacterLinkField, NotInSceneNote, SceneLinkField, useRecordTargets } from './RecordLinks';
 import { characterName, sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type CostumeEntry = { id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' };
@@ -12,6 +14,7 @@ type CostumeEntry = { id: string; scene_ids?: string[]; character_id?: string | 
 const STATUSES: CostumeEntry['status'][] = ['fitting', 'ready', 'on-set', 'cleaning', 'returned'];
 
 export function CostumeView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('costumes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CostumeEntry, 'id'>>({
@@ -36,19 +39,13 @@ export function CostumeView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Shirt size={14} /> Costumes / wardrobe
-          <span className={s.hint}> · {items.length} items · {items.filter((i) => i.status === 'ready').length} ready</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<Shirt size={16} />} eyebrow="Departments" title="Costumes / wardrobe" purpose="Costumes by character and scene, with their state." accent={project.accent_color} summary={<>{items.length} items · {items.filter((i) => i.status === 'ready').length} ready</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

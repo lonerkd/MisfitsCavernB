@@ -5,11 +5,14 @@ import { Camera, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type CameraEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
 
 export function CameraReportView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('cameraReports');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CameraEntry, 'id'>>({
@@ -31,12 +34,7 @@ export function CameraReportView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Camera size={14} /> Camera report
-          <span className={s.hint}> · {items.length} shots logged</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Camera size={16} />} eyebrow="Reports & logs" title="Camera report" purpose="Camera reports: mags, takes and notes for the lab." accent={project.accent_color} summary={<>{items.length} shots logged</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

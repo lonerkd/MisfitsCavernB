@@ -8,6 +8,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useProjectLocations, useShootDays, studio, type ShootDay } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 interface DayWeather {
@@ -150,17 +151,11 @@ export function WeatherView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Cloud size={14} /> Weather & conditions
-          <span className={s.hint}> · {datedDays.length} dated day{datedDays.length === 1 ? '' : 's'}</span>
-        </div>
-        {located.length > 1 && (
+      <ToolHeader icon={<Cloud size={16} />} eyebrow="Shoot day" title="Weather & conditions" purpose="The forecast for each dated shoot day, and what it means for the plan." accent={project.accent_color} summary={<>{datedDays.length} dated day{datedDays.length === 1 ? '' : 's'}</>} actions={<>{located.length > 1 && (
           <select className={s.select} value={loc?.id ?? ''} onChange={(e) => setSelectedLocation(e.target.value)} aria-label="Location">
             {located.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
           </select>
-        )}
-      </div>
+        )}</>} />
 
       {loading && (
         <div className={s.row} style={{ gap: 8, color: 'var(--fg-dim)' }}>

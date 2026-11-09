@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { HardDrive, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type MediaEntry = { id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' };
@@ -10,6 +12,7 @@ type MediaEntry = { id: string; card: string; camera: string; size: string; chec
 const STATUSES: MediaEntry['status'][] = ['pending', 'verified', 'archived'];
 
 export function MediaOffloadView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('mediaOffloads');
   const [draft, setDraft] = useState<Omit<MediaEntry, 'id'>>({
     card: '',
@@ -35,19 +38,13 @@ export function MediaOffloadView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <HardDrive size={14} /> Media offload log
-          <span className={s.hint}> · {items.length} cards · {items.filter((i) => i.status === 'verified').length} verified</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<HardDrive size={16} />} eyebrow="Reports & logs" title="Media offload log" purpose="Cards offloaded, checksums verified and backups made." accent={project.accent_color} summary={<>{items.length} cards · {items.filter((i) => i.status === 'verified').length} verified</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

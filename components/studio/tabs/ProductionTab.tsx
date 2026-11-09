@@ -10,6 +10,7 @@ import { getProjectCrew } from '@/lib/supabase/crew-management';
 import { recordKindOfView } from '@/lib/studio/records-print';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
+import { ToolHeader } from '../ToolHeader';
 import type { CrewRow } from '../production/CrewView';
 import s from '../studio.module.css';
 
@@ -102,6 +103,15 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
 
+/** The views whose layout has no header of its own: the Production tab gives them one (the rest open with their own ToolHeader). */
+const TAB_HEADED: Partial<Record<View, string>> = {
+  story: 'The story laid out by act, scene and story day.',
+  breakdown: 'Every prop, costume, vehicle and effect the script needs, scene by scene.',
+  readiness: 'What is ready for the next shoot day, and what unblocks the most.',
+  schedule: 'The stripboard: scenes onto shoot days, then the call sheet.',
+  onset: 'The shoot day as it happens: the call, the set log and the wrap.',
+};
+
 export const GROUPS = ['Story & planning', 'Departments', 'Budget & docs', 'Shoot day', 'Reports & logs', 'People'];
 
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
@@ -150,6 +160,10 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       {!lock && recordKindOfView(view) && <PrintRecordsButton kind={recordKindOfView(view)!} />}
+      {!lock && TAB_HEADED[view] && (() => {
+        const v = VIEWS.find((x) => x.id === view)!;
+        return <div style={{ marginBottom: 14 }}><ToolHeader icon={React.cloneElement(v.icon as React.ReactElement<{ size?: number }>, { size: 16 })} eyebrow={v.group} title={v.label} purpose={TAB_HEADED[view]} accent={project.accent_color} /></div>;
+      })()}
       {!lock && view === 'story' && <StoryView />}
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}

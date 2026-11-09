@@ -6,6 +6,8 @@ import { AlertTriangle, Plus, Shield, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useSettingsList } from './useSettingsList';
 import { cx } from '../ui';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type Severity = 'low' | 'medium' | 'high';
@@ -27,6 +29,7 @@ const STATUS_LABEL: Record<ItemStatus, string> = { identified: 'Identified', mit
 const STATUS_COLOR: Record<ItemStatus, string> = { identified: 'var(--danger)', mitigated: 'var(--warn)', resolved: 'var(--ok)' };
 
 export function SafetyView() {
+  const { project } = useStudio();
   const { items, save } = useSettingsList('safety');
   const { toast } = useToast();
   const [adding, setAdding] = useState(false);
@@ -75,13 +78,7 @@ export function SafetyView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Shield size={14} /> Safety & risk
-          <span className={s.hint}> · {counts.resolved} of {counts.total} resolved{counts.high > 0 ? ` · ${counts.high} high-risk open` : ''}</span>
-        </div>
-        {!adding && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding(true)}><Plus size={11} /> Add hazard</button>}
-      </div>
+      <ToolHeader icon={<Shield size={16} />} eyebrow="Shoot day" title="Safety & risk" purpose="Hazards, who is responsible, and whether each is resolved." accent={project.accent_color} summary={<>{counts.resolved} of {counts.total} resolved{counts.high > 0 ? ` · ${counts.high} high-risk open` : ''}</>} actions={<>{!adding && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding(true)}><Plus size={11} /> Add hazard</button>}</>} />
 
       {adding && (
         <form className={s.panel} style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }} onSubmit={addItem}>

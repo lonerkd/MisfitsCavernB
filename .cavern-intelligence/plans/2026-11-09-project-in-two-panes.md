@@ -22,6 +22,8 @@ Built 2026-11-09 (slice 1): **Two panes** on the project page opens the project 
 
 **Built 2026-11-09 (slice 2):** `ToolHeader` on Locations, Cast & crew, Shot list and Money; the Two panes offer (once per project, 1280 px and up, remembered on this device; no automatic redirect because Close would loop).
 
+**Built 2026-11-09 (slice 3):** `ToolHeader` on every Production view (see BACKLOG 3.47).
+
 **Left, in order:**
 1. A shared tool header and next-step component, then the Studio's 36 views and the production tools moved onto it, one group at a time (M each; start with the ones people open most: Scenes, Breakdown, Schedule, Money, Library).
 2. The split opens by itself where it earns it: a project opened on a wide screen (>= 1280 px) offers the pair once and remembers the choice per project (a device preference); narrow screens keep one page.

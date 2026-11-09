@@ -5,6 +5,8 @@ import { Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type VfxEntry = { id: string; scene_ids?: string[]; character_id?: string | null; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
@@ -12,6 +14,7 @@ type VfxEntry = { id: string; scene_ids?: string[]; character_id?: string | null
 const STATUSES: VfxEntry['status'][] = ['identified', 'shot', 'delivered', 'approved'];
 
 export function VfxView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('vfxShots');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<VfxEntry, 'id'>>({
@@ -37,19 +40,13 @@ export function VfxView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Sparkles size={14} /> VFX shots
-          <span className={s.hint}> · {items.length} shots · {items.filter((i) => i.status === 'approved').length} approved</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<Sparkles size={16} />} eyebrow="Departments" title="VFX shots" purpose="Visual-effects shots, their vendors and status." accent={project.accent_color} summary={<>{items.length} shots · {items.filter((i) => i.status === 'approved').length} approved</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

@@ -5,6 +5,8 @@ import { Send, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type Entry = { id: string; scene_ids?: string[]; scene: string; item: string; version: string; recipient: string; due: string; status: 'pending' | 'sent' | 'received'; notes: string };
@@ -13,6 +15,7 @@ const EMPTY: Omit<Entry, 'id'> = { scene: '', item: '', version: '', recipient: 
 
 /** What goes to the editor and when: dailies, audio, notes, the cut. Whether it has been sent and whether it arrived. */
 export function EditorialView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('editorial');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<Entry, 'id'>>(EMPTY);
@@ -26,12 +29,7 @@ export function EditorialView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Send size={14} /> Editorial handoff
-          <span className={s.hint}> · {items.length} items · {items.filter((i) => i.status === 'received').length} received</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Send size={16} />} eyebrow="Reports & logs" title="Editorial handoff" purpose="What goes to editorial and whether it has been delivered." accent={project.accent_color} summary={<>{items.length} items · {items.filter((i) => i.status === 'received').length} received</>} />
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />

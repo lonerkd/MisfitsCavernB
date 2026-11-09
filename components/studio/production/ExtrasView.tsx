@@ -5,6 +5,8 @@ import { UsersRound, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type ExtraEntry = { id: string; scene_ids?: string[]; scene: string; role: string; count: string; wardrobe: string; call: string; status: 'requested' | 'booked' | 'confirmed'; notes: string };
@@ -13,6 +15,7 @@ const EMPTY: Omit<ExtraEntry, 'id'> = { scene: '', role: '', count: '', wardrobe
 
 /** Background actors: who is needed in which scene, how many, in what wardrobe, and whether they are booked. */
 export function ExtrasView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('extras');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<ExtraEntry, 'id'>>(EMPTY);
@@ -26,12 +29,7 @@ export function ExtrasView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <UsersRound size={14} /> Extras
-          <span className={s.hint}> · {items.length} bookings · {items.filter((i) => i.status === 'confirmed').length} confirmed</span>
-        </div>
-      </div>
+      <ToolHeader icon={<UsersRound size={16} />} eyebrow="Departments" title="Extras" purpose="Background performers booked for each scene." accent={project.accent_color} summary={<>{items.length} bookings · {items.filter((i) => i.status === 'confirmed').length} confirmed</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
