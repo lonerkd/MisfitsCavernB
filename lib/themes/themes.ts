@@ -110,6 +110,7 @@ export function customTokens(bg: string, accent: string): Record<string, string>
     '--on-accent': luminance(accent) > 0.45 ? '#000000' : '#ffffff',
     '--ok': light ? '#0b6b40' : '#34d399', '--warn': light ? '#804c00' : '#f5a524', '--info': light ? '#1d5fa8' : '#7cc4ff',
     '--danger': light ? '#b42318' : '#ff6b6b', '--violet': light ? '#4338ca' : '#a5b4fc',
+    '--frost-tint': light ? '#ffffff' : fg, '--frost-lift': light ? '44%' : '8%',
     'color-scheme': light ? 'light' : 'dark',
   };
 }
