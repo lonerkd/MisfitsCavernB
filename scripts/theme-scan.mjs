@@ -95,6 +95,8 @@ for (const route of routes) {
       let base = root;
       for (let i = layers.length - 1; i >= 0; i--) base = over(layers[i], base);
       let fg = parse(cs.color); if (!fg) continue;
+      // Text that is fully transparent is not read (the editor's textarea is drawn by an overlay beneath it): no contrast to measure.
+      if (fg.a === 0) continue;
       if (fg.a < 1) fg = over(fg, base);
       const [l1, l2] = [lum(fg), lum(base)];
       const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
