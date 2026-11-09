@@ -6,7 +6,10 @@
 .grow { flex: 1; min-width: 180px; }
 .hint { color: var(--fg-muted); font-size: 13px; margin: 0 0 8px; }
 .canvas { position: relative; width: 100%; aspect-ratio: 16 / 10; background: var(--bg-3); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; touch-action: none; }
-.card { position: absolute; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; cursor: grab; user-select: none; touch-action: none; }
+.card { position: absolute; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; cursor: grab; user-select: none; touch-action: none;
+  backdrop-filter: var(--frost, none);
+  -webkit-backdrop-filter: var(--frost, none);
+}
 .card:active { cursor: grabbing; }
 .card:focus-visible, .card[aria-selected='true'] { outline: 2px solid var(--accent); outline-offset: 1px; }
 .visual { width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--bg-2); }

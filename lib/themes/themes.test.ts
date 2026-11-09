@@ -162,6 +162,11 @@ describe('frosted mode (the glass mode over any theme)', () => {
       expect(contrast(over(hex(dim), dimA, surface), surface), `${id} ${name} dim`).toBeGreaterThanOrEqual(4.5);
     }
   });
+  it('reaches the surfaces painted inline, not only the ones with a class', () => {
+    expect(css).toContain('[data-frosted] [style*="background: var(--glass)"]');
+    expect(css).toContain('[data-frosted] [style*="background: var(--bg-2)"][style*="border-radius"]');
+    expect(css).toContain('[style*="min-height: 100vh"][style*="background: var(--bg)"]');
+  });
   it('has its CSS layer, with the fallbacks for no blur and for less transparency', () => {
     expect(css).toMatch(/\[data-frosted\]\s*\{[^}]*--frost:\s*blur\(/);
     expect(css).toMatch(/prefers-reduced-transparency: reduce\)\s*\{\s*\[data-frosted\]\s*\{[^}]*--frost:\s*none/);
