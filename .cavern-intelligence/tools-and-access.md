@@ -79,7 +79,7 @@ then copy `.agents/skills/<name>` over `.claude/skills/<name>` and delete
 
 | Skill | Use for |
 |---|---|
-| `run-misfits-cavern` | run, build, test and drive the suite locally (`driver.mjs`) |
+| `run-misfits-cavern` | fast checks, and the real local stack (Supabase, a production build, a real browser) for persona tests, specs and screenshots |
 | `supabase` | database design, auth, realtime, storage, edge functions, RLS |
 | `supabase-postgres-best-practices` | indexing, RLS performance, migration hygiene |
 

@@ -1,149 +1,77 @@
 ---
 name: run-misfits-cavern
-description: Run, build, test, and drive The Cavern production suite locally
+description: Run, build, test, and drive The Cavern production suite locally — fast checks, and the real stack (local Supabase + a production build + a real browser) for specs and screenshots
 ---
 
-The Cavern is a Next.js 16 web app for indie filmmakers with TypeScript, Tailwind, Supabase, and WebRTC. This skill documents how to build, launch, and drive the app locally.
+The Cavern is a Next.js 16 / React 19 app on Supabase (Postgres + RLS, Auth, Realtime, Storage). Two ways to work, depending on what has to be true.
 
-## Prerequisites
-
-- **Node.js** 18+ and npm (usually included)
-- **Environment variables** — Supabase project credentials in `.env.local` (must already exist; the credentials cannot be added from a clean slate in this environment, but the file ships in the repo)
-
-## Build
+## 1. Fast checks (no database, a minute or two)
 
 ```bash
-npm install
-npm run typecheck  # Verify TypeScript
-npm run test       # Run 118 unit tests (verify suite health)
-npm run build      # Production build (used by CI; takes 30s, not required for dev)
+npm ci                 # once
+npm run typecheck
+npm run lint           # the ratchet: `npm run lint:ratchet` rewrites eslint-suppressions.json when a suppression is gone
+npm run test           # ~2,700 unit tests, ~50 s
+npm run bible          # regenerates .cavern-intelligence/bible/inventory.md (CI fails if it is stale)
+npm run sync-intel     # regenerates the agent entry files from RULES.md
+npm run budget         # page-weight budgets (needs a build; CI's numbers are the judge, local ones run higher)
 ```
 
-All three verify the app compiles and the test suite passes.
+`npm run build` needs `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` (take them from section 2, or from `.env.local` if you have one) and takes about 3 minutes. Do not run it in the foreground: the shell gives up at two minutes. Start it in the background and wait for it (a Monitor with an until-loop on `pgrep -f "next build"`).
 
-## Run: Agent Path
+## 2. The real stack (a session in the cloud container)
 
-**Launch the development server in the background and test key routes:**
+Needed for: persona tests (`tests/integration`), browser specs (`e2e/`), and looking at a screen.
 
 ```bash
-# Start dev server (background, no output)
-npm run dev > /tmp/dev.log 2>&1 &
-sleep 5
-
-# Health check: home page loads
-curl -s http://localhost:3000 | grep -q Misfits && echo "✓ Home page loads"
-
-# Smoke test: TypeScript + lint clean (no build needed for dev)
-npm run lint && npm run typecheck && echo "✓ Code quality verified"
-
-# Cleanup when done
-pkill -f "node.*next dev"
+# Docker dies between commands in a cloud container: start the daemon as its own background task.
+dockerd > /tmp/dockerd.log 2>&1 &     # then: docker info
+npx supabase stop                      # if it came up from stale containers
+npm run db:start                       # local Supabase, minus studio/edge/etc.; the first run pulls images
+npm run db:reset                       # rebuilds the database from every migration (about a minute)
+npx supabase status -o json            # API_URL, ANON_KEY, SERVICE_ROLE_KEY (local demo keys, not secrets)
 ```
 
-The dev server listens on `http://localhost:3000`. The following routes are gated by authentication (will redirect to `/auth` if not signed in):
+**Persona tests** (Sam owner, Jordan crew, Riley outsider): `npx vitest run -c vitest.integration.config.ts tests/integration/<name>.test.ts`.
 
-- `/projects` — project hub (entry point for authed users)
-- `/studio/[id]` — scriptwriting & production
-- `/editor/[id]` — screenplay editor (ScriptOS parser + live preview)
-- `/lounge/[id]` — crew chat + WebRTC voice rooms
-- `/soundtrack/[id]` — audio asset library
-- `/portfolio` — public portfolio builder
-- `/crew/[id]` — crew management
-- `/jobs/[id]` — job board (intra-project)
-- `/settings` — account & project settings
-- `/profile` — public profile
+**A migration's whole procedure** (`database-and-security.md` §3): write it, `npm run db:reset`, `npm run db:drift -- --update` (rewrites `supabase/schema.fingerprint`), `npm run db:types`, extend a persona test, PR; after merge apply to production then staging and run the drift check.
 
-**Public routes** (no auth):
-
-- `/` — marketing home
-- `/auth` — sign-in/sign-up (email + password)
-- `/showcase` — featured portfolios
-- `/p/[token]` — shared project link (if project has `visibility: 'link'`)
-- `/shared/[token]` — public project view (if project has `visibility: 'public'`)
-
-## Run: Human Path
+**Build and serve the app against the local stack:**
 
 ```bash
-npm run dev
+STATUS=$(npx supabase status -o json)
+export NEXT_PUBLIC_SUPABASE_URL=$(echo "$STATUS" | jq -r .API_URL)
+export NEXT_PUBLIC_SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r .ANON_KEY)
+export SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r .SERVICE_ROLE_KEY)
+npm run build          # background, ~3 min; the variables are baked in at build time
+npm run start          # background; http://localhost:3000, ready when /auth answers 200
 ```
 
-The server compiles on first request, then runs hot-reload. Ctrl-C to stop. Open `http://localhost:3000` in a browser.
+After a code change, rebuild: `npm run start` serves the last build. Stop the old server first (`pkill -f "next start"; pkill -f next-server`).
 
-## Test
+**Browser specs** (opt-in, they use real accounts on the local stack):
 
 ```bash
-npm run test              # Unit tests (118 tests in ~2s)
-npm run test:e2e          # Playwright e2e (requires headless browser + db; integration tests are opt-in with E2E_LIVE_AUTH=1)
-npm run lint              # ESLint + prettier
-npm run typecheck         # TypeScript type checking
+export E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000
+export MC_LOCAL_CHROMIUM=/opt/pw-browsers/chromium   # the pinned headless shell is not installed here
+npx playwright test e2e/split.spec.ts
 ```
 
-## Gotchas
+This container has Chromium but **no ffmpeg**, and the repo's config records video on failure, which then crashes the run with "Executable doesn't exist ... ffmpeg". Use a throwaway config outside the repo that spreads `playwright.config` and sets `use: { video: 'off', screenshot: 'off', trace: 'off' }` and an `outputDir` under `/tmp`, and pass it with `-c`. Pass `--trace off` otherwise. A spec run takes 10 to 20 seconds once the app is up.
 
-1. **Supabase credentials required** — The app connects to Supabase at runtime. `.env.local` must exist and contain valid `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`. The default `.env.example` has placeholders; the real credentials are in `.env.local` (which cannot be read or modified from this environment due to security rules).
+**Looking at a screen:** a scratch Node script (in the scratchpad, not the repo) that creates a user with the admin client (`createUser` with `email_confirm: true`), inserts a project and a script, signs in through `/auth`, sets a theme with `localStorage.setItem('mc_theme', JSON.stringify({ id: 'slate', frosted: true }))`, visits a page, and saves a screenshot; then delete what it made. Look at the image; do not report a UI change as working from the tests alone.
 
-2. **Authentication is real** — Every authed route requires a real Supabase session. You can sign up via the `/auth` page (if the Supabase project has `disable_signup: false`), or the test suite uses personas (Sam = owner, Jordan = crew, Riley = outsider). To test without signing in, hit the public routes.
+**When you are done:** `pkill -f "next start"; pkill -f next-server; npx supabase stop`.
 
-3. **Dynamic imports cause SSR errors** — Some components use `next/dynamic` for lazy-loaded 3D/WebRTC modules. The error is benign — it falls back to client-side rendering. The page loads correctly in the browser.
+## Gotchas learned the hard way
 
-4. **Database RLS enforced** — Every table has Row-Level Security. The app won't show data you don't have permission to see, even if you inspect the client code. Test personas in `AGENTS.md` have specific access levels.
+- **A split opened by a link used to ignore its `?a=&b=`** because the page read `window.location`, which is stale during a client-side navigation. Read the address from the router (`useSearchParams`) in a page that is reached by `<Link>` / `router.push`. A spec that visits the URL directly (a full load) will not see this bug.
+- **Compound shell commands**: `( cmd & ); sleep` and `nohup bash -c '...'` inside one tool call can trip the safety check (it reads them as a possible removal). Use separate calls.
+- **`git push --force` is blocked by a hook.** If a branch with no PR has been rebased, push it under a new name instead. If a hook blocks a command that begins with `git add` / `git commit`, the whole command is blocked, so the commit did not happen: check `git status`.
+- **Vercel previews fail on the free plan's daily deploy limit** when many PRs run in a day. That check is not required.
+- **The page-weight budget (`performance-budget.json`)** fails `checks` when a route grows; raise it by the measured amount in the same PR, and keep the card-level styles of one area out of another area's bundle (the editor imports `components/studio/ui.tsx`, so anything it pulls in ships to the editor).
+- **The `gate` workflow** fails a PR that adds source and no test ("tests-with-code"), and one with no session note; `check-sessions` on `main` names any merged PR with no note.
+- **Generated files** (`bible/inventory.md`, `schema.fingerprint`, the agent entry files) must be regenerated in the PR; CI diffs them.
+- **Only the local stack's keys are printed** by `supabase status`; never paste a production key anywhere.
 
-5. **Service Worker caches static assets** — If you see stale CSS/JS after rebuilding, clear the browser cache (`DevTools → Application → Clear storage`).
-
-6. **Discord / Spotify integrations are optional** — The app works without them; auth will route around their features if the API keys are missing.
-
-## Troubleshooting
-
-**Problem: Dev server never finishes building**
-- Check `/tmp/dev.log` for errors
-- If it's a timeout, try `npm install` again (stale or corrupt dependency)
-- Verify Node.js 18+: `node --version`
-
-**Problem: "Module not found" on `next/dynamic`**
-- This is expected in SSR and triggers a fallback. The browser renders it fine. Not a blocker.
-
-**Problem: 401 when visiting `/projects` immediately after starting**
-- The app gates authed routes via session cookies. You must sign in at `/auth` first (or be in a session).
-- The `/` home page is public; use it to verify the app is running.
-
-**Problem: Supabase connection errors (503, network timeout)**
-- The Supabase project URL is incorrect or the service is down. Verify `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` points to a running project.
-- If the URL is correct but unreachable, the Supabase project may need to be started manually (for local development, this would use `supabase start` with the CLI).
-
-**Problem: Tests fail with "Cannot find module"**
-- Run `npm install` to ensure all devDependencies are present.
-
-**Problem: Port 3000 already in use**
-- Kill the existing process: `lsof -i :3000 | grep node | awk '{print $2}' | xargs kill -9`
-- Or use `PORT=3001 npm run dev` to use a different port.
-
-## Verification Commands
-
-All verified in this session (as of 2026-09-27):
-
-```bash
-npx tsc --noEmit      # TypeScript: clean ✓
-npm run test          # Unit tests: 118/118 pass ✓
-npm run dev           # Dev server starts, responds to HTTP ✓
-npm run lint          # ESLint: clean (pre-existing warnings only) ✓
-```
-
-## Environment
-
-Paths are relative to the repo root. The dev server runs on Node.js (Windows/Linux/macOS); no Docker required.
-
-**Key directories:**
-- `app/` — Next.js App Router pages & layouts
-- `components/` — React components (UI, modals, forms)
-- `lib/scriptos/` — Screenplay parser, editor engine, exports
-- `lib/supabase/` — Data layer & RLS helpers
-- `lib/context/` — React context providers (Auth, Projects, OS state)
-- `e2e/` — Playwright e2e tests
-
-**Key environment variables (in `.env.local`):**
-- `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Anon-role API key
-- `SUPABASE_SERVICE_ROLE_KEY` — Server-side key (Discord notify route)
-- `NEXT_PUBLIC_APP_URL` — App public URL (for redirects/links)
-- `NEXT_PUBLIC_SPOTIFY_CLIENT_ID` — Spotify integration (optional)
-- `NEXT_PUBLIC_DISCORD_CLIENT_ID` — Discord integration (optional)
+`driver.mjs` in this folder starts and checks a dev server (`node driver.mjs start | health | stop | verify`); it predates the real-stack flow above and is only for a quick look at public pages without a database.
