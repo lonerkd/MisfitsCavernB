@@ -63,6 +63,15 @@ describe('the settings-backed production views', () => {
     expect(screen.getAllByRole('button', { name: /^(add|log|schedule)/i }).length).toBeGreaterThan(0);
   });
 
+  // The shared tool header (slice 3 of the project-in-two-panes plan): every view opens with its group, its name and what it is for.
+  it.each(VIEWS)('%s opens with the shared tool header: a title and a line saying what it is for', (_name, View) => {
+    const { container } = render(<View />);
+    const header = container.querySelector('header');
+    expect(header, 'a header element').not.toBeNull();
+    expect(header!.querySelector('h3')?.textContent?.trim().length ?? 0).toBeGreaterThan(2);
+    expect((header!.querySelectorAll('p')[0]?.textContent ?? '').length).toBeGreaterThan(15);
+  });
+
   it.each(VIEWS)('%s renders for a project with no records (not a crash)', (_name, View) => {
     expect(() => render(<View />)).not.toThrow();
   });
