@@ -149,13 +149,15 @@ describe('frosted mode (the glass mode over any theme)', () => {
   const rgb = (h: string) => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const hex = (c: number[]) => '#' + c.map((x) => Math.round(x).toString(16).padStart(2, '0')).join('');
   const over = (top: string, a: number, under: string) => hex(rgb(top).map((v, i) => v * a + rgb(under)[i] * (1 - a)));
-  const SURFACES: Array<[string, string, number]> = [['--surface', '--bg-3', 0.64], ['--surface-2', '--bg-2', 0.54], ['--glass', '--bg-2', 0.58], ['--panel', '--bg-3', 0.46]];
+  // [token, the background it is mixed from, its alpha, how much of the text colour lights it] — mirrors the CSS.
+  const SURFACES: Array<[string, string, number, number]> = [['--surface', '--bg-3', 0.62, 0.08], ['--surface-2', '--bg-2', 0.54, 0.06], ['--glass', '--bg-2', 0.58, 0.06], ['--panel', '--bg-3', 0.46, 0.06], ['--panel-2', '--bg-4', 0.54, 0.09]];
   it.each(THEMES.map((t) => [t.id] as const))('%s: text reads on every frosted surface over the page (fg 7:1, dim text 4.5:1)', (id) => {
     const b = block(id)!;
     const m = token(b, '--fg-dim')!.match(/rgba\((\d+), (\d+), (\d+), ([\d.]+)\)/)!;
     const dim = [+m[1], +m[2], +m[3]]; const dimA = +m[4];
-    for (const [name, base, alpha] of SURFACES) {
-      const surface = over(hexOf(b, base), alpha, hexOf(b, '--bg'));
+    for (const [name, base, alpha, lit] of SURFACES) {
+      // The page behind, the theme's background over it, then the lift from the text colour (the worst case for light text).
+      const surface = over(hexOf(b, '--fg'), lit, over(hexOf(b, base), alpha, hexOf(b, '--bg')));
       expect(contrast(hexOf(b, '--fg'), surface), `${id} ${name} fg`).toBeGreaterThanOrEqual(7);
       expect(contrast(over(hex(dim), dimA, surface), surface), `${id} ${name} dim`).toBeGreaterThanOrEqual(4.5);
     }

@@ -16,7 +16,7 @@
 }
 
 /* Frosted mode: the Studio's panels are the theme's own background, translucent (the page scope defines --panel itself, so it is set here). */
-:global([data-frosted]) .page { --panel: color-mix(in srgb, var(--bg-3) 46%, transparent); --panel-2: color-mix(in srgb, var(--bg-4) 54%, transparent); }
+:global([data-frosted]) .page { --panel: color-mix(in srgb, var(--fg) 6%, color-mix(in srgb, var(--bg-3) 46%, transparent)); --panel-2: color-mix(in srgb, var(--fg) 9%, color-mix(in srgb, var(--bg-4) 54%, transparent)); }
 
 /* ── Section header ───────────────────────────────────── */
 .header {

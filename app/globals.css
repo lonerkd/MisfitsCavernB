@@ -1084,15 +1084,20 @@ html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb
    ═══════════════════════════════ */
 [data-frosted] {
   --frost: blur(18px) saturate(1.45);
-  --surface: color-mix(in srgb, var(--bg-3) 64%, transparent);
-  --surface-2: color-mix(in srgb, var(--bg-2) 54%, transparent);
-  --glass: color-mix(in srgb, var(--bg-2) 58%, transparent);
+  /* The theme's own background, translucent, lit a little by its own text colour: glass, not a darker box. */
+  --surface: color-mix(in srgb, var(--fg) 8%, color-mix(in srgb, var(--bg-3) 62%, transparent));
+  --surface-2: color-mix(in srgb, var(--fg) 6%, color-mix(in srgb, var(--bg-2) 54%, transparent));
+  --glass: color-mix(in srgb, var(--fg) 6%, color-mix(in srgb, var(--bg-2) 58%, transparent));
+  /* A hairline that catches the light. */
+  --border: rgba(var(--fg-rgb), 0.12);
+  --border-2: rgba(var(--fg-rgb), 0.2);
 }
-/* Something for the blur to show: a soft wash of the theme's own accent, fixed behind the page. */
+/* Something for the blur to show: washes of the theme's own accent and secondary colours, fixed behind the page. */
 [data-frosted] body {
   background-image:
-    radial-gradient(60% 45% at 12% 0%, var(--accent-glow), transparent 70%),
-    radial-gradient(50% 40% at 92% 28%, rgba(var(--ambient-r, 120), var(--ambient-g, 120), var(--ambient-b, 160), 0.1), transparent 70%);
+    radial-gradient(70% 55% at 8% -5%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 96% 22%, color-mix(in srgb, var(--secondary, var(--accent)) 22%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 50% 112%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%);
   background-attachment: fixed;
 }
 [data-frosted] .glass, [data-frosted] .glass-sm, [data-frosted] .glass-heavy { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
