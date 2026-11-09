@@ -135,4 +135,37 @@ test.describe('Split screen (local Supabase)', () => {
 
     expect(await axeViolations(page)).toEqual([]);
   });
+
+  test('the project in two panes: the button, a tile opening beside it, and the picker naming this project', async ({ page }) => {
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    // A wide window, so the one-time offer is made too; declining it must not come back.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/projects/${projectId}`);
+    const offer = page.getByRole('region', { name: 'Work in two panes' });
+    await expect(offer).toBeVisible({ timeout: 20_000 });
+    await offer.getByRole('button', { name: 'Not now' }).click();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Two Panes' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('region', { name: 'Work in two panes' })).toHaveCount(0);
+
+    // The button opens the project beside the tool its phase works in.
+    await page.getByRole('link', { name: 'Two panes' }).click();
+    await page.waitForURL(/\/split\?/);
+    const first = page.frameLocator('iframe[title^="First pane"]');
+    await expect(first.getByRole('heading', { name: 'Two Panes' })).toBeVisible({ timeout: 20_000 });
+    expect(new URL(page.url()).searchParams.get('a')).toBe(`/projects/${projectId}`);
+
+    // A tile in the project pane comes up in the other pane, and the project stays where it is.
+    await first.getByRole('link', { name: /^Script editor/ }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('b'), { timeout: 20_000 }).toContain('/editor');
+    expect(new URL(page.url()).searchParams.get('a')).toBe(`/projects/${projectId}`);
+
+    // The picker offers this project's own page.
+    await page.getByRole('region', { name: /^Second pane/ }).getByRole('button', { name: /Script|Editor/ }).click();
+    await expect(page.getByRole('dialog', { name: 'Show in this pane' }).getByRole('button', { name: 'This project' })).toBeVisible();
+  });
 });
