@@ -26,7 +26,7 @@ interface MealPlan {
 }
 
 const STATUS_LABEL: Record<MealStatus, string> = { planned: 'Planned', ordered: 'Ordered', delivered: 'Delivered' };
-const STATUS_COLOR: Record<MealStatus, string> = { planned: 'var(--fg-dim)', ordered: '#fbbf24', delivered: '#6ee7b7' };
+const STATUS_COLOR: Record<MealStatus, string> = { planned: 'var(--fg-dim)', ordered: 'var(--warn)', delivered: 'var(--ok)' };
 
 export function CateringView() {
   const { project, scriptId } = useStudio();

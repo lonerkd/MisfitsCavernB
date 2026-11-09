@@ -96,7 +96,7 @@ export function SceneReferencesPanel({
             type="button"
             disabled={!row}
             onClick={() => setPicking(true)}
-            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: '#a5b4fc', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}
+            style={{ aspectRatio: '16 / 10', borderRadius: 8, border: '1px dashed rgba(99,102,241,0.45)', background: 'transparent', color: 'var(--violet)', cursor: row ? 'pointer' : 'not-allowed', opacity: row ? 1 : 0.5, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}
           >
             <ImagePlus size={15} /> Add
           </button>
@@ -126,7 +126,7 @@ export function SceneReferencesPanel({
         </div>
       </div>
 
-      <Link href="/studio?tab=scenes" style={{ ...hint, color: '#a5b4fc', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <Link href="/studio?tab=scenes" style={{ ...hint, color: 'var(--violet)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
         <ExternalLink size={11} /> All scenes in the Studio
       </Link>
 

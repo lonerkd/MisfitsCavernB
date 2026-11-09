@@ -108,5 +108,5 @@
 .total { padding: 8px; border-radius: 8px; background: rgba(var(--fg-rgb), 0.03); border: 1px solid rgba(var(--fg-rgb), 0.07); }
 .totalValue { font-family: var(--mono); font-size: 15px; color: var(--fg); }
 .totalLabel { font-family: var(--mono); font-size: max(8.5px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); margin-top: 2px; }
-.link { font-family: var(--mono); font-size: 11px; color: var(--accent-text, #f0764f); text-decoration: none; }
+.link { font-family: var(--mono); font-size: 11px; color: var(--accent); text-decoration: none; }
 .link:hover { text-decoration: underline; }

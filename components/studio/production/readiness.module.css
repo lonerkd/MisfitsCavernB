@@ -59,8 +59,8 @@
 .num { font-family: var(--display); font-size: 1.1rem; color: var(--fg-muted); }
 .heading { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-family: var(--mono); font-size: 12px; color: var(--fg); overflow: hidden; }
 .why { font-size: 11px; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.row_blocked .why { color: #f7b955; }
-.row_ready .why { color: #5fd99a; }
+.row_blocked .why { color: var(--warn); }
+.row_ready .why { color: var(--ok); }
 .pips { display: flex; gap: 4px; }
 .score { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); text-align: right; }
 .chev { color: var(--fg-dim); transition: transform 0.15s; }

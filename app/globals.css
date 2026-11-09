@@ -707,14 +707,14 @@ section { padding: 90px 18px; }
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   line-height: 1.8;
-  color: rgba(233, 235, 239, 0.75);
+  color: rgba(var(--fg-rgb), 0.75);
   letter-spacing: var(--caps-track);
   pointer-events: none;
   user-select: none;
 }
 
 .screenplay-scene-hdr {
-  color: rgba(233, 235, 239, 0.95);
+  color: rgba(var(--fg-rgb), 0.95);
   font-weight: bold;
   letter-spacing: var(--caps-track);
   font-size: 11px;
@@ -722,14 +722,14 @@ section { padding: 90px 18px; }
 
 .screenplay-char {
   padding-left: 40%;
-  color: rgba(233, 235, 239, 0.85);
+  color: rgba(var(--fg-rgb), 0.85);
   font-size: 11px;
   font-weight: bold;
 }
 
 .screenplay-dialog {
   padding: 0 20% 0 28%;
-  color: rgba(233, 235, 239, 0.7);
+  color: rgba(var(--fg-rgb), 0.7);
   font-size: 11px;
 }
 
