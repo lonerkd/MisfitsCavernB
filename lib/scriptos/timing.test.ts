@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { eighthsOf, formatEighths, formatRuntime, printedLines, timeCharacters, timeScript, wrappedLines, type TimedLine } from './timing';
+import { eighthsOf, formatEighths, formatRuntime, lineAtPage, printedLines, timeCharacters, timeScript, wrappedLines, type TimedLine } from './timing';
 
 const L = (type: string, text = ''): TimedLine => ({ type, text });
 
@@ -16,6 +16,20 @@ describe('layout', () => {
     expect(printedLines([L('dialogue', text)])).toBeGreaterThan(printedLines([L('action', text)]));
     expect(printedLines([L('note', text), L('synopsis', text), L('section', '# Act')])).toBe(0);
     expect(printedLines([L('action', 'a'), L('empty'), L('empty'), L('empty'), L('action', 'b')])).toBe(3);
+  });
+
+  it('finds the first line printed on a page, and refuses pages that do not exist', () => {
+    const seven = Array.from({ length: 7 }, (_, i) => L('action', `line ${i}`));
+    expect(lineAtPage(seven, 1, 2)).toBe(0);
+    expect(lineAtPage(seven, 2, 2)).toBe(2);
+    expect(lineAtPage(seven, 3, 2)).toBe(4);
+    expect(lineAtPage(seven, 4, 2)).toBe(6);
+    expect(lineAtPage(seven, 5, 2)).toBeNull();
+    expect(lineAtPage(seven, 0, 2)).toBeNull();
+    expect(lineAtPage([], 1)).toBeNull();
+    // The pages agree with the count `timeScript` reports for the same lines.
+    const lines = Array.from({ length: 120 }, (_, i) => L('action', `line ${i}`));
+    expect(lineAtPage(lines, Math.ceil(timeScript(lines).pages))).not.toBeNull();
   });
 
   it('a scene is at least an eighth; a full page is 8/8', () => {

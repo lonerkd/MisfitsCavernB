@@ -18,7 +18,11 @@ import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
-import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
+import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, stepScene, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
+import { lineOffset, type GoToTarget } from '@/lib/scriptos/goto';
+import { NO_HISTORY, remember as rememberJump, stepHistory, type HistoryState } from '@/lib/scriptos/history';
+import { applySelectionAction } from '@/lib/scriptos/selection';
+import { addToStash, useScriptStash } from '@/lib/scriptos/stash';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
@@ -29,7 +33,6 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -39,7 +42,7 @@ import { useOSGate } from '@/lib/os';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
-import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
+import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
 import { useBriefAnswer, useCanShape } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
@@ -73,6 +76,7 @@ import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
+const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -265,6 +269,8 @@ export default function EditorPage() {
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
+  const [showCompare, setShowCompare] = useState(false);
+  const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
@@ -481,28 +487,9 @@ export default function EditorPage() {
     toast(toggled.added ? 'Marked as dual dialogue (^)' : 'Dual dialogue removed', 'success');
   }, [content, toast]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
-      const chord = matchChord(e, 'editor')?.id;
-      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
-      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
-      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
-      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
-      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
-        e.preventDefault();
-        if (chord === 'undo') undo(); else redo();
-      }
-      if (e.key === 'Escape') {
-        if (focusMode) setFocusMode(false);
-        if (showFindReplace) setShowFindReplace(false);
-        if (showFormatMenu) setShowFormatMenu(false);
-        if (showGoToScene) setShowGoToScene(false);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
+
+
+
 
   const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
 
@@ -561,6 +548,43 @@ export default function EditorPage() {
       setContent(edit.next);
       placeCaret(editor, edit.caret);
       return;
+    }
+
+    // Alt + S stashes the selected words beside the script — the side panel's
+    // "+ Add Selected", from the keyboard.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyS' && editor) {
+      e.preventDefault();
+      const selected = content.slice(editor.selectionStart, editor.selectionEnd);
+      if (!selected.trim()) { toast('Select the words to stash', 'info'); return; }
+      if (!currentScript?.id) { toast('Save the script first, then stash from it.', 'error'); return; }
+      addToStash(currentScript.id, selected)
+        .then((row) => { stash.upsertLocal(row); toast('Added to the stash', 'success'); })
+        .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
+      return;
+    }
+
+    // Quick actions on a selection: Alt + U / L change its case, Alt + D
+    // duplicates the line (or every line the selection covers).
+    if (e.altKey && !e.ctrlKey && !e.metaKey && editor && (e.code === 'KeyU' || e.code === 'KeyL' || e.code === 'KeyD')) {
+      const action = e.code === 'KeyU' ? 'upper' : e.code === 'KeyL' ? 'lower' : 'duplicate-line';
+      const edit = applySelectionAction(content, editor.selectionStart, editor.selectionEnd, action);
+      if (edit) {
+        e.preventDefault();
+        stopUndoCapturing();
+        setContent(edit.next);
+        const { start, end } = edit;
+        setTimeout(() => {
+          const ta = textareaRef.current;
+          if (!ta) return;
+          ta.focus();
+          ta.setSelectionRange(start, end);
+        }, 0);
+        return;
+      }
+      if (action !== 'duplicate-line') {
+        e.preventDefault();
+        toast('Select the text to change its case', 'info');
+      }
     }
 
     if (e.key === 'Enter' && !e.shiftKey && editor && editor.selectionStart === editor.selectionEnd) {
@@ -648,9 +672,16 @@ export default function EditorPage() {
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
+  const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
+
+
   const scenePositions = useMemo(() => positionsOfScenes(scenesList, content), [scenesList, content]);
 
-  const jumpToScene = (sceneIndex: number) => {
+  /** Where the caret was before a jump, for Alt + ← / →. */
+  const rememberPlace = () => setNavHistory((h) => rememberJump(h, cursorLine));
+
+  const jumpToScene = (sceneIndex: number, remember = true) => {
+    if (remember) rememberPlace();
     setActiveView('write');
     setTimeout(() => {
       const textarea = textareaRef.current;
@@ -695,6 +726,38 @@ export default function EditorPage() {
     if (lineTop < ta.scrollTop || lineTop > ta.scrollTop + ta.clientHeight - lh * 2) ta.scrollTop = Math.max(0, lineTop - ta.clientHeight / 2);
   };
 
+  /** Put the caret on a line (a page jump lands on the page's first line). */
+  const jumpToLine = (lineIndex: number, remember = true) => {
+    if (remember) rememberPlace();
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const idx = lineOffset(content, lineIndex);
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      setCursorLine(lineIndex);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (lineIndex - 3) * lh);
+    }, 60);
+  };
+
+
+
+
+  /** Each page's first line and the scene it opens in (1-based; 0 before the first heading). */
+
+  const scriptPages = useMemo(() => {
+    const rows: { page: number; line: number; scene: number }[] = [];
+    const total = Math.max(1, Math.ceil(timing.pages));
+    for (let p = 1; p <= total; p++) {
+      const line = lineAtPage(lines, p);
+      if (line == null) break;
+      rows.push({ page: p, line, scene: sceneAtCaret(lines, scenesList, line) + 1 });
+    }
+    return rows;
+  }, [lines, scenesList, timing.pages]);
+
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -713,7 +776,61 @@ export default function EditorPage() {
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
-  const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
+  // Ctrl/⌘ + ↓ / ↑ walks the script scene by scene from wherever the caret is,
+  // stopping at the first and last (never wrapping); Alt + ← / → walks back and
+  // forward through the places the editor jumped from. Effect events, so the
+  // chord handler is bound once and still reads the current caret and stacks.
+  const stepToScene = useEffectEvent((direction: -1 | 1) => {
+    const next = stepScene(currentSceneIdx, scenesList.length, direction);
+    if (next !== null) jumpToScene(next);
+  });
+  const walkHistory = useEffectEvent((direction: -1 | 1) => {
+    const step = stepHistory(navHistory, cursorLine, direction);
+    if (step.place == null) return;
+    setNavHistory(step.state);
+    jumpToLine(step.place, false);
+  });
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      else if (chord === 'editor.next-scene') { e.preventDefault(); stepToScene(1); }
+      else if (chord === 'editor.prev-scene') { e.preventDefault(); stepToScene(-1); }
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
+        e.preventDefault();
+        if (chord === 'undo') undo(); else redo();
+      }
+      if (e.key === 'Escape') {
+        if (focusMode) setFocusMode(false);
+        if (showFindReplace) setShowFindReplace(false);
+        if (showFormatMenu) setShowFormatMenu(false);
+        if (showGoToScene) setShowGoToScene(false);
+      }
+      // Alt + ← / → walk back and forward through the places the editor jumped
+      // from; Ctrl/⌘ + ↓ / ↑ step scene by scene (see `stepToScene` below).
+      // Our jump history leads; a list (the scene nav, the board) that has the
+      // focus or the pointer keeps its own Alt + ↑/↓ reordering below.
+      if (e.altKey && !e.ctrlKey && !e.metaKey && document.activeElement === textareaRef.current && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        walkHistory(e.key === 'ArrowLeft' ? -1 : 1);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
+
+
+
+
+
+
+
+
 
   // ── Split screen: the other pane follows the caret's scene; the Studio can
   // send the script to a scene (in a split, or by ?scene=<id> on the URL).
@@ -725,6 +842,7 @@ export default function EditorPage() {
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
   useLayoutEffect(() => { jumpRef.current = jumpToScene; });
+
   // A cut note to open once its line is placed (?note=, or from the Studio pane).
   const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
@@ -884,6 +1002,7 @@ export default function EditorPage() {
         nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
         chars={chars} charStats={charStats}
         handleLockRevision={handleLockRevision} revisions={revisions}
+        onCompare={() => setShowCompare(true)}
         onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
         setContent={setContent} toast={toast}
         showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
@@ -1086,6 +1205,15 @@ export default function EditorPage() {
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
       />}
 
+      {showCompare && (
+        <CompareVersions
+          isOpen={showCompare}
+          onClose={() => setShowCompare(false)}
+          revisions={revisions}
+          draft={content}
+        />
+      )}
+
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
           position: 'fixed', top: cursorPos.top, left: cursorPos.left,
@@ -1217,13 +1345,30 @@ export default function EditorPage() {
           {showGoToScene && (
             <GoToSceneModal
               sceneCount={scenesList.length}
+              headings={scenesList.map((s) => s.text)}
+              pages={scriptPages}
+              perScene={sceneCharMap}
+              currentScene={currentSceneIdx}
               value={goToSceneNum}
               onChange={setGoToSceneNum}
-              onJump={(num) => {
-                setActiveView('write');
-                setShowGoToScene(false);
-                setGoToSceneNum('');
-                toast(`Jumped to Scene ${num}`, 'success');
+              onJump={(target: GoToTarget) => {
+                // A scene or a page is a destination: go, and put the box away.
+                if (target.kind === 'scene') {
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  jumpToScene(target.scene - 1);
+                  return;
+                }
+                if (target.kind === 'page') {
+                  const row = scriptPages.find((p) => p.page === target.page);
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  if (row) jumpToLine(row.line);
+                  return;
+                }
+                // A character's scenes come one after another: stay open, so
+                // Enter again (the caret now in that scene) takes the next one.
+                jumpToScene(target.scene);
               }}
               onClose={() => setShowGoToScene(false)}
             />

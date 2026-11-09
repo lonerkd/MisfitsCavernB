@@ -28,7 +28,9 @@ export const CHORDS: readonly Chord[] = [
   { id: 'editor.save', key: 's', scope: 'editor', label: 'Save the script' },
   { id: 'editor.find', key: 'f', scope: 'editor', label: 'Find and replace' },
   { id: 'editor.focus', key: 'e', scope: 'editor', label: 'Focus mode' },
-  { id: 'editor.goto', key: 'g', scope: 'editor', label: 'Go to a scene' },
+  { id: 'editor.goto', key: 'g', scope: 'editor', label: 'Go to a scene, a page or a character' },
+  { id: 'editor.next-scene', key: 'ArrowDown', scope: 'editor', label: 'Next scene' },
+  { id: 'editor.prev-scene', key: 'ArrowUp', scope: 'editor', label: 'Previous scene' },
   { id: 'editor.tagmode', key: 'b', shift: true, scope: 'editor', label: 'Breakdown tag mode' },
 ];
 

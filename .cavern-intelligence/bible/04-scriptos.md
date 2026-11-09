@@ -16,6 +16,19 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 
 - **Header** (`EditorHeader`): script title, sync state, collaborators'
   avatars, view switch **Write · Preview · Board · Outline · Stats**.
+- **Moving through the script**: **Ctrl/⌘ + G** opens **Go to** — a scene number
+  (`12`), a page (`p12`, `page 12`) or a character's name (`maya`, or a unique
+  beginning of it). The box previews what Enter lands on before it does: the
+  scene's heading, the scene a page opens in, or *their* next scene — and a
+  character stays open, so Enter again walks that character's scenes in order
+  (wrapping at the end). Anything outside the script is refused ("No scene 9").
+  **Ctrl/⌘ + ↓ / ↑** steps to the next / previous scene and stops at the ends
+  (no wrap). **Alt + ← / →** walks back and forward through the places the
+  editor jumped from (this session only, 50 deep). The scene list's own
+  Alt + ↑/↓ still reorders rather than moves the caret. **Alt + U / L** changes
+  the selection's case; **Alt + D** duplicates the line (or the lines selected);
+  **Alt + S** stashes the selection. Pure logic: `lib/scriptos/goto.ts`,
+  `history.ts`, `selection.ts`, and `lineAtPage` in `timing.ts`.
 - **Left nav** (`EditorLeftNav`): the project's scripts, new / import (PDF,
   FDX, Fountain, text — `lib/scriptos/import.ts`, `pdfImport.ts`), title
   page, the scene list.
@@ -45,7 +58,7 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 | Breakdown tagging | select text → category; suggestions from your other projects (`breakdown_memory`) | `breakdown_elements`, `scene_elements` |
 | Characters | the character bible (description, backstory, motivation, arc, notes) | `script_metadata.character_bible`, `script_characters` |
 | Margin notes | Shot / Beat / To-do notes create the shot, beat or task (`add_script_annotation`) | `script_annotations` |
-| Revisions | lock a draft; later changes are coloured pages (`REVISION_COLORS`); diff view | `script_revisions` (`lib/scriptos/revisions.ts`) |
+| Revisions | lock a draft; later changes are coloured pages (`REVISION_COLORS`); a revision opens in the diff view; **Compare** (`components/editor/CompareVersions.tsx`, opened from the Revisions panel) puts any two versions — a revision, another revision, or the draft — scene by scene (added / cut / changed with counts, each opening to its lines) or **side by side** with the changed words marked and next / previous change (`lib/scriptos/version-diff.ts`) | `script_revisions` (`lib/scriptos/revisions.ts`) |
 | Table read | the browser reads it aloud, a voice per character; scene times saved | `scenes.read_seconds` |
 | Runtime | eighths of a page per scene (`timing.ts`), table-read time when known | `scenes.est_duration` |
 | Stash | snippets beside the script | `script_stash` |
