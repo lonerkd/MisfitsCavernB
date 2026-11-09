@@ -1,9 +1,10 @@
 'use client';
 
-import React, { createRef, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, createRef, useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeftRight, ChevronDown, Columns2, Link2, Link2Off, Maximize2, Rows2, X } from 'lucide-react';
 import {
-  DEFAULT_LAYOUT, SURFACES, clampRatio, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
+  DEFAULT_LAYOUT, clampRatio, projectOf, surfacesFor, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
   type SplitLayout, type Surface,
 } from '@/lib/split/core';
 import { useHydrated } from '@/lib/hooks/useSearchParam';
@@ -21,20 +22,29 @@ const NARROW = '(max-width: 760px)';
  * Studio to that scene, and "Open in script" in the Studio moves the script).
  */
 export default function SplitPage() {
-  // The layout comes from the address or this device's memory, so the split
-  // itself only renders in the browser.
-  return useHydrated() ? <Split /> : <div className={s.page} aria-busy="true" />;
+  return <Suspense fallback={<div className={s.page} aria-busy="true" />}><SplitFromAddress /></Suspense>;
 }
 
-/** First load: the URL wins; else the last split on this device. */
-function initialLayout(): SplitLayout {
+/**
+ * The query comes from the router, not `window.location`: on a client-side navigation (a Link, Ctrl+\, the island) the new
+ * page first renders while the address bar still shows the old page, so reading `location.search` there silently gave the
+ * default pair and ignored `?a=&b=`.
+ */
+function SplitFromAddress() {
+  const query = useSearchParams().toString();
+  // The layout also comes from this device's memory, so the split itself only renders in the browser.
+  return useHydrated() ? <Split search={query ? `?${query}` : ''} /> : <div className={s.page} aria-busy="true" />;
+}
+
+/** First load: the address wins; else the last split on this device. */
+function initialLayout(search: string): SplitLayout {
   let stored: SplitLayout = DEFAULT_LAYOUT;
   try { const raw = localStorage.getItem(STORE_KEY); if (raw) stored = layoutFromSearch(raw); } catch { /* blocked */ }
-  return window.location.search ? layoutFromSearch(window.location.search, stored) : stored;
+  return search ? layoutFromSearch(search, stored) : stored;
 }
 
-function Split() {
-  const [first] = useState(initialLayout);
+function Split({ search }: { search: string }) {
+  const [first] = useState(() => initialLayout(search));
   const [layout, setLayout] = useState<SplitLayout | null>(first);
   // What each frame was pointed at (changing it navigates the frame) and where it is now.
   const [src, setSrc] = useState<Record<Side, string>>({ a: first.a, b: first.b });
@@ -169,6 +179,7 @@ function Split() {
               <PaneBar
                 current={here[side].href}
                 title={here[side].title}
+                projectId={projectOf(here.a.href) ?? projectOf(here.b.href)}
                 onPick={(sf) => open(side, sf.href)}
                 onFull={() => full(side)}
                 onClose={() => full(side === 'a' ? 'b' : 'a')}
@@ -187,9 +198,10 @@ function Split() {
   );
 }
 
-function PaneBar({ current, title, onPick, onFull, onClose }: {
+function PaneBar({ current, title, projectId, onPick, onFull, onClose }: {
   current: string;
   title: string;
+  projectId: string | null;
   onPick: (surface: Surface) => void;
   onFull: () => void;
   onClose: () => void;
@@ -198,7 +210,8 @@ function PaneBar({ current, title, onPick, onFull, onClose }: {
   const menuRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const here = surfaceOf(current);
-  const groups = Array.from(new Set(SURFACES.map((x) => x.group)));
+  const surfaces = surfacesFor(projectId);
+  const groups = Array.from(new Set(surfaces.map((x) => x.group)));
 
   useEffect(() => {
     if (!open) return;
@@ -222,7 +235,7 @@ function PaneBar({ current, title, onPick, onFull, onClose }: {
               <div key={g} className={s.menuGroup}>
                 <div className={s.menuHead}>{g}</div>
                 <div className={s.menuItems}>
-                  {SURFACES.filter((x) => x.group === g).map((x) => (
+                  {surfaces.filter((x) => x.group === g).map((x) => (
                     <button key={x.id} type="button" className={`${s.menuItem} ${here?.id === x.id ? s.menuItemOn : ''}`} aria-pressed={here?.id === x.id}
                       onClick={() => { onPick(x); setOpen(false); }}>
                       {x.label}
