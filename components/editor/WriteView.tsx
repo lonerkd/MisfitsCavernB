@@ -157,7 +157,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
   }
   return (
 
-            <div style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>
+            <div data-frost="off" style={{ flex: 1, position: 'relative', width: '100%', maxWidth: 900, margin: '0 auto' }}>
               <div
                 ref={highlightRef}
                 aria-hidden
