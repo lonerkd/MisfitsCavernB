@@ -1,12 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Disc, LogOut, Maximize2, Pause, Play, RefreshCw, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
-import { CavernVisualizer } from '@/components/shell/CavernVisualizer';
+import { useCavern } from '@/lib/cavern/CavernContext';
 import { ListenWithoutPremium } from './ListenWithoutPremium';
 
 const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
@@ -20,7 +19,7 @@ const btn = 'inline-flex items-center justify-center rounded-full border border-
 export function SoundDeck() {
   const s = useSpotify();
   const { toast } = useToast();
-  const [cave, setCave] = useState(false);
+  const cavern = useCavern();
   const track = s.currentTrack;
   const art = track?.album?.images?.[0]?.url;
 
@@ -47,7 +46,7 @@ export function SoundDeck() {
             {s.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </button>
           <button type="button" aria-label="Next track" className={btn} onClick={s.nextTrack}><SkipForward size={18} /></button>
-          <button type="button" aria-label="Full screen cavern" title="Full screen" className={btn} onClick={() => setCave(true)}><Maximize2 size={16} /></button>
+          <button type="button" aria-label="Full screen cavern" title="Full screen" className={btn} onClick={cavern.open}><Maximize2 size={16} /></button>
           <Link href="/cavern" className="mc-text text-xs underline text-[var(--fg-muted)] min-h-[44px] inline-flex items-center" title="The cavern as its own page, to leave open on a second screen">Cavern page</Link>
         </div>
       </div>
@@ -71,7 +70,6 @@ export function SoundDeck() {
         </div>
       </details>
       {s.useIframeFallback && <div className="mt-2"><ListenWithoutPremium /></div>}
-      {cave && <CavernVisualizer onClose={() => setCave(false)} />}
     </section>
   );
 }

@@ -3,9 +3,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc } from 'lucide-react';
-import { CavernVisualizer } from './CavernVisualizer';
 import { MiniPlayer } from './MiniPlayer';
 import { useSpotify } from '@/lib/os/SpotifyContext';
+import { useCavern } from '@/lib/cavern/CavernContext';
 import { useToast } from '@/components/ui/Toast';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 
@@ -14,7 +14,7 @@ export default function GlobalAudioWidget() {
   const { toast } = useToast();
 
   const [expanded, setExpanded] = useState(false);
-  const [visualizer, setVisualizer] = useState(false);
+  const cavern = useCavern();
   const [hovered, setHovered] = useState(false);
 
   if (!isAuthenticated) {
@@ -78,8 +78,6 @@ export default function GlobalAudioWidget() {
           <Disc size={11} style={{ color: 'var(--ok)', flexShrink: 0 }} />
         </motion.div>
       </button>
-
-      {visualizer && <CavernVisualizer onClose={() => setVisualizer(false)} />}
       <AnimatePresence>
         {expanded && (
           <motion.div
@@ -96,7 +94,7 @@ export default function GlobalAudioWidget() {
               zIndex: 9000
             }}
           >
-            <MiniPlayer onFull={() => { setVisualizer(true); setExpanded(false); }} onNavigate={() => setExpanded(false)} />
+            <MiniPlayer onFull={() => { cavern.open(); setExpanded(false); }} onNavigate={() => setExpanded(false)} />
           </motion.div>
         )}
       </AnimatePresence>
