@@ -17,6 +17,9 @@ import { useToast } from '@/components/ui/Toast';
 const KIND_NAME: Record<EntityKind, string> = {
   scene: 'Scene', character: 'Character', location: 'Location', shoot_day: 'Shoot day',
   task: 'Task', document: 'Document', media: 'Media',
+  shot: 'Shot', breakdown_element: 'Element', scene_state: 'Continuity', casting: 'Casting',
+  call_sheet: 'Call sheet', note: 'Note', beat: 'Beat', cut: 'Cut', script: 'Script',
+  sfx: 'Sound', vendor: 'Vendor', budget_item: 'Budget line', mood_board: 'Mood board',
 };
 // Only these have a card of their own with connections; the rest show what they're attached to.
 const OPENS = new Set<EntityKind>(['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media']);

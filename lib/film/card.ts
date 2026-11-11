@@ -47,8 +47,19 @@ export interface Card {
 const GROUP_TITLE: Record<EntityKind, string> = {
   scene: 'Scenes', character: 'Characters', location: 'Locations', shoot_day: 'Days',
   task: 'Tasks', document: 'Documents', media: 'Media',
+  shot: 'Shots', breakdown_element: 'Elements', scene_state: 'Continuity', casting: 'Casting',
+  call_sheet: 'Call sheets', note: 'Notes', beat: 'Beats', cut: 'Cuts', script: 'Scripts',
+  sfx: 'Sound', vendor: 'Vendors', budget_item: 'Budget', mood_board: 'Mood boards',
 };
-const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'scene', 'character', 'location', 'shoot_day'];
+const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'note', 'shot', 'breakdown_element', 'scene_state', 'casting', 'call_sheet', 'beat', 'cut', 'script', 'sfx', 'vendor', 'budget_item', 'mood_board', 'scene', 'character', 'location', 'shoot_day'];
+
+/**
+ * The link kinds the graph itself writes from a foreign key (a shot is in its
+ * scene, a note is on its scene, …). They are the thing's place in the film, not
+ * something a person attached by hand, so the card shows them under "connected"
+ * and never under "attached".
+ */
+const GRAPH_LINK_KINDS = new Set(['in', 'on', 'for', 'plays', 'from', 'continuity']);
 
 const key = (s: string | null | undefined) => (s ?? '').trim().toUpperCase();
 const sceneLabel = (s: CardScene) => `${s.scene_number}. ${s.heading?.trim() || s.title}`;
@@ -67,11 +78,20 @@ function dayOf(scene: CardScene, days: CardDay[]): CardDay | undefined {
   return days.find((d) => d.id === scene.shoot_day_id) ?? (scene.shoot_day != null ? days.find((d) => d.day_number === scene.shoot_day) : undefined);
 }
 
+function linksOf(id: string, input: CardInput, kinds: Set<string> | null): Link[] {
+  return input.links.filter((l) => {
+    const other = l.from_entity === id ? l.to_entity : l.to_entity === id ? l.from_entity : null;
+    if (!other) return false;
+    return kinds === null || kinds.has(l.kind);
+  });
+}
+
 function attachedTo(id: string, input: CardInput): CardGroup[] {
   const byId = new Map(input.entities.map((e) => [e.id, e]));
   const seen = new Set<string>();
   const groups = new Map<EntityKind, CardItem[]>();
-  for (const l of input.links) {
+  for (const l of linksOf(id, input, null)) {
+    if (GRAPH_LINK_KINDS.has(l.kind)) continue;
     const other = l.from_entity === id ? l.to_entity : l.to_entity === id ? l.from_entity : null;
     if (!other || seen.has(other)) continue;
     const e = byId.get(other);
@@ -79,6 +99,27 @@ function attachedTo(id: string, input: CardInput): CardGroup[] {
     seen.add(other);
     const list = groups.get(e.kind) ?? [];
     list.push({ id: e.id, label: e.label, kind: e.kind, linkId: l.id });
+    groups.set(e.kind, list);
+  }
+  return KIND_ORDER.filter((k) => groups.has(k)).map((k) => ({
+    title: GROUP_TITLE[k],
+    items: groups.get(k)!.sort((a, b) => a.label.localeCompare(b.label)),
+  }));
+}
+
+/** What the graph itself connects this to by foreign key (the thing's place in the film). */
+function graphConnected(id: string, input: CardInput): CardGroup[] {
+  const byId = new Map(input.entities.map((e) => [e.id, e]));
+  const seen = new Set<string>();
+  const groups = new Map<EntityKind, CardItem[]>();
+  for (const l of linksOf(id, input, GRAPH_LINK_KINDS)) {
+    const other = l.from_entity === id ? l.to_entity : l.to_entity === id ? l.from_entity : null;
+    if (!other || seen.has(other)) continue;
+    const e = byId.get(other);
+    if (!e) continue;
+    seen.add(other);
+    const list = groups.get(e.kind) ?? [];
+    list.push({ id: e.id, label: e.label, kind: e.kind });
     groups.set(e.kind, list);
   }
   return KIND_ORDER.filter((k) => groups.has(k)).map((k) => ({
@@ -148,8 +189,10 @@ export function cardOf(id: string, input: CardInput): Card | null {
     return { ...base, facts, connected: scenes.length ? [{ title: 'Scenes', items: sceneItems(scenes) }] : [] };
   }
 
-  // task, document, media: their own tools draw them; the card shows what they are attached to.
-  return { ...base, facts: [], connected: [] };
+  // task, document, media, and the production kinds (shot, note, beat, …):
+  // their own tools draw them; the card shows the film graph's place for them
+  // and what has been attached by hand.
+  return { ...base, facts: [], connected: graphConnected(id, input) };
 }
 
 const GRAPH_KINDS: EntityKind[] = ['scene', 'character', 'location', 'shoot_day'];

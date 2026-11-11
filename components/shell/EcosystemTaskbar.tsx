@@ -16,6 +16,7 @@ import { useProject } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
+import { capsArrowNav } from '@/lib/island/spatial';
 import { ON_SET_HREF } from '@/lib/island/onset';
 import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
@@ -373,9 +374,14 @@ export default function EcosystemTaskbar() {
     const byKey = controls[deckKeys.indexOf(key)];
     if (byKey) { done(); countKeyUse(key, byKey.id); byKey.run(); return; }
 
-    // Arrow keys are not intercepted: under Caps Lock they navigate and
-    // highlight the page's own content (the script, a list, a table), which is
-    // the point of the layer. The deck's controls are already on letter keys.
+    // Arrow keys move the page's focus (spatial navigation), unless the focus is
+    // in a text field — there the caret (or the script's Caps Lock selection)
+    // keeps them. This is what makes the deck's keys a whole-suite keyboard.
+    if (key === 'arrowleft' || key === 'arrowright' || key === 'arrowup' || key === 'arrowdown') {
+      const moved = capsArrowNav(e.target as HTMLElement, key === 'arrowleft' ? 'ArrowLeft' : key === 'arrowright' ? 'ArrowRight' : key === 'arrowup' ? 'ArrowUp' : 'ArrowDown');
+      if (moved) done();
+      return;
+    }
   });
   useEffect(() => {
     if (noDock || !kbActive || capsDismissed) return;

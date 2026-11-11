@@ -63,6 +63,43 @@ describe('cardOf', () => {
   });
 });
 
+describe('the production kinds (slice B)', () => {
+  const shot = (id: string): Entity => ({ id, project_id: 'p', kind: 'shot', label: 'A1' });
+  const note = (id: string): Entity => ({ id, project_id: 'p', kind: 'note', label: 'Blocking note' });
+  const graphLink = (from: string, to: string, kind = 'in'): Link => ({ id: `${from}-${to}-${kind}`, project_id: 'p', from_entity: from, to_entity: to, kind, created_by: null, created_at: '' });
+
+  it('a shot shows its scene under connected, not attached', () => {
+    const linked = input({
+      entities: [...input().entities, shot('sh1')],
+      links: [graphLink('sh1', 's1')],
+    });
+    const card = cardOf('sh1', linked)!;
+    expect(card.connected.map((g) => [g.title, g.items.map((i) => i.label)])).toEqual([['Scenes', ['1. INT. ROOM 1 - DAY']]]);
+    expect(card.attached).toEqual([]);
+  });
+
+  it('a note shows its scene and its script, and hand-attached things stay separate', () => {
+    const script = { id: 'sc1', project_id: 'p', kind: 'script' as const, label: 'Femme Fatale' };
+    const linked = input({
+      entities: [...input().entities, note('n1'), script],
+      links: [graphLink('n1', 's1', 'on'), graphLink('n1', 'sc1', 'on'), graphLink('n1', 't1', 'about')],
+    });
+    const card = cardOf('n1', linked)!;
+    // The group order follows KIND_ORDER (tasks/documents/media first, then the
+    // production kinds, then the film things), so the script precedes the scene.
+    expect(card.connected.map((g) => g.title)).toEqual(['Scripts', 'Scenes']);
+    expect(card.attached.map((g) => g.title)).toEqual(['Tasks']);
+  });
+
+  it('the graph link kinds are not offered for hand-attaching (the graph already joined them)', () => {
+    const linked = input({
+      entities: [...input().entities, shot('sh1')],
+      links: [graphLink('sh1', 's1')],
+    });
+    expect(attachCandidates('sh1', linked.entities, linked.links, '').map((x) => x.id)).not.toContain('s1');
+  });
+});
+
 describe('attachCandidates', () => {
   const e = (id: string, kind: Entity['kind'], label: string): Entity => ({ id, project_id: 'p', kind, label });
   const all = [e('s1', 'scene', 'Kitchen'), e('s2', 'scene', 'Roof'), e('t1', 'task', 'Book the van'), e('d1', 'document', 'Permit'), e('m1', 'media', 'Moodboard'), e('c1', 'character', 'Mara')];
