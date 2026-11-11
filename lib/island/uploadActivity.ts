@@ -21,7 +21,7 @@ export function formatBytes(n: number): string {
   return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
-export function uploadActivity(s: UploadSnapshot): Activity | null {
+export function uploadActivity(s: UploadSnapshot, onCancel?: () => void): Activity | null {
   if (s.count === 0) return null;
   const fraction = s.total > 0 ? Math.min(1, s.loaded / s.total) : undefined;
   // Everything shown moves in whole percent (the bytes too), so the island is told only when a person could see a change.
@@ -34,5 +34,6 @@ export function uploadActivity(s: UploadSnapshot): Activity | null {
     title: s.count === 1 && s.name ? `Uploading ${s.name}` : `Uploading ${s.count} files`,
     detail: shown !== undefined ? [pct, `${formatBytes(Math.round(shown * s.total))} of ${formatBytes(s.total)}`].join(' · ') : undefined,
     progress: shown,
+    controls: onCancel ? [{ id: 'cancel', label: 'Cancel', run: onCancel }] : undefined,
   };
 }

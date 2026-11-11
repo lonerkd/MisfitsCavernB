@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { usePathname } from 'next/navigation';
 
 const CustomCursor = dynamic(() => import('@/components/shell/CustomCursor'), { ssr: false });
 const EcosystemTaskbar = dynamic(() => import('@/components/shell/EcosystemTaskbar'), { ssr: false });
@@ -19,15 +20,17 @@ import { PaneReporter, SplitShortcut } from '@/components/split/PaneShell';
 import { useInPane } from '@/lib/split/pane';
 
 export default function ClientShell() {
+  const isSplit = usePathname() === '/split';
   // In a split-screen pane the split page is the chrome; the page is just its surface.
-  if (useInPane()) return <><PaneReporter /><UndoKeys /></>;
+  // Each pane gets its own custom cursor (the parent's overlay cannot track inside a frame).
+  if (useInPane()) return <><PaneReporter /><UndoKeys /><CustomCursor /></>;
   return (
     <>
       <ErrorReporter />
       <SplitShortcut />
       <UndoKeys />
       <ServiceWorkerRegister />
-      <CustomCursor />
+      {!isSplit && <CustomCursor />}
       <CommandPalette />
       <ShortcutsOverlay />
       <ThemeInitializer />

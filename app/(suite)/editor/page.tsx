@@ -48,6 +48,12 @@ import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
+import { StoryInterview } from '@/components/story/StoryInterview';
+import { scenesForCharacter } from '@/lib/editor/navigation';
+import { CharacterDepthPanel } from '@/components/characters/CharacterDepthPanel';
+import { exportCharacterBible } from '@/lib/characters/export';
+import { RelationshipMap } from '@/components/characters/RelationshipMap';
+import type { Relationship } from '@/lib/characters/depth';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
@@ -255,7 +261,9 @@ export default function EditorPage() {
   const [showCharBible, setShowCharBible] = useState(false);
 
   const [sessionStartWords, setSessionStartWords] = useState(0);
-  const [showGoToScene, setShowGoToScene] = useState(false);
+  const [showStoryInterview, setShowStoryInterview] = useState(false);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
+const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
@@ -654,6 +662,11 @@ export default function EditorPage() {
     }, 60);
   };
 
+const applySkeleton = (scenes: { title: string }[]) => {
+    const block = scenes.map((s) => `INT. ${s.title.toUpperCase()} - DAY`).join('\n\n');
+    setContent((prev) => (prev ? prev + '\n\n' + block : block));
+    setShowStoryInterview(false);
+  };
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -671,6 +684,11 @@ export default function EditorPage() {
   const sessionWordsWritten = Math.max(0, wordCount - sessionStartWords);
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
+
+  const jumpToCharacter = (name: string) => {
+    const idx = scenesForCharacter(scenesList.map((s, i) => ({ characters: sceneCharMap[i] ?? [] })), name)[0];
+    if (idx != null) { setActiveView('write'); setShowGoToScene(false); setGoToSceneNum(''); jumpToScene(idx); }
+  };
 
   const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
 
@@ -893,11 +911,12 @@ export default function EditorPage() {
             />
           )}
 
-          {activeView === 'outline' && (
+{activeView === 'outline' && (
             <OutlineView
               sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
               scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
               jumpToScene={jumpToScene} tagScene={sceneIndex.tag}
+              onStoryInterview={() => setShowStoryInterview(true)}
             />
           )}
 
@@ -1055,7 +1074,10 @@ export default function EditorPage() {
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
-                <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => exportCharacterBible(currentScript?.title ?? 'Script', charProfiles)} style={{ background: 'rgba(var(--ink-rgb), 0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 12px', fontSize: 12 }}>Export</button>
+                  <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
+                </div>
               </div>
               {chars.length === 0 ? (
                 <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
@@ -1114,6 +1136,9 @@ export default function EditorPage() {
                                 }}
                               />
                             ))}
+                            <div style={{ marginTop: 8 }}>
+                              <CharacterDepthPanel name={name} />
+                            </div>
                             {currentScript?.project_id && <NotCharacterButton projectId={currentScript.project_id} name={name} onSaved={corrections.upsertLocal} />}
                           </div>
                         )}
@@ -1122,6 +1147,10 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)', margin: '0 0 8px' }}>Relationships</h3>
+                <RelationshipMap relationships={relationships} onChange={setRelationships} />
+              </div>
               {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={corrections.removeLocal} />}
             </motion.div>
           </motion.div>
@@ -1135,11 +1164,20 @@ export default function EditorPage() {
         </AnimatePresence>
 
         <AnimatePresence>
+          {showStoryInterview && (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowStoryInterview(false)}>
+              <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+                <StoryInterview projectId={currentScript?.project_id ?? ''} onApply={applySkeleton} />
+              </div>
+            </div>
+          )}
           {showGoToScene && (
             <GoToSceneModal
-              sceneCount={scenesList.length}
-              value={goToSceneNum}
-              onChange={setGoToSceneNum}
+                          sceneCount={scenesList.length}
+                          value={goToSceneNum}
+                          onChange={setGoToSceneNum}
+                          characters={chars}
+                          onJumpCharacter={jumpToCharacter}
               onJump={(num) => {
                 setActiveView('write');
                 setShowGoToScene(false);

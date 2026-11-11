@@ -3,7 +3,9 @@
 import { moveTarget, focusMoved } from '@/lib/util/reorderKeys';
 import { TimingPanel } from './TimingPanel';
 import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
-import React from 'react';
+import React, { useState } from 'react';
+import { StructurePicker } from '@/components/story/StructurePicker';
+import { STRUCTURES, getStructure, checkCoverage } from '@/lib/story/structures';
 import { motion } from 'framer-motion';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -182,7 +184,7 @@ function SceneBoardCard({
 // ── OUTLINE: filterable scene list with tag colors ──────────────────────────
 export function OutlineView({
   sceneFilter, setSceneFilter, filteredScenes, scenesList, lines,
-  sceneColors, sceneNotes, jumpToScene, tagScene,
+  sceneColors, sceneNotes, jumpToScene, tagScene, onStoryInterview,
 }: {
   sceneFilter: 'all' | 'int' | 'ext' | 'day' | 'night';
   setSceneFilter: (f: 'all' | 'int' | 'ext' | 'day' | 'night') => void;
@@ -193,14 +195,31 @@ export function OutlineView({
   sceneNotes: string[];
   jumpToScene: (sceneIndex: number) => void;
   tagScene: (sceneIndex: number, color: string) => void;
+  onStoryInterview?: () => void;
 }) {
+  const [structureId, setStructureId] = useState('none');
+  const structure = getStructure(structureId)!;
+  const positions = scenesList.length > 1 ? scenesList.map((_, i) => i / (scenesList.length - 1)) : scenesList.map(() => 0);
+  const coverage = checkCoverage(structure, positions);
+  const coveredCount = coverage.filter((c) => c.covered).length;
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <StructurePicker value={structureId} onChange={setStructureId} />
+        {structure.id !== 'none' && (
+          <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+            {coveredCount}/{coverage.length} beats covered
+          </span>
+        )}
+      </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
           <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)', color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{f}</button>
         ))}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
+        {onStoryInterview && (
+          <button onClick={onStoryInterview} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: 'rgba(var(--ink-rgb), 0.08)', color: 'var(--fg-strong)', cursor: 'pointer' }}>Interview</button>
+        )}
       </div>
       {filteredScenes.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>

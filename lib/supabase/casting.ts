@@ -65,3 +65,25 @@ export async function removeCasting(projectId: string, characterName: string) {
     .eq('character_name', characterName.toUpperCase());
   if (error) throw error;
 }
+
+export interface CastingNote { id: string; note: string; created_at: string }
+
+export async function listCastingNotes(projectId: string, characterName: string): Promise<CastingNote[]> {
+  const { data, error } = await (supabase as any)
+    .from('casting_notes').select('id, note, created_at')
+    .eq('project_id', projectId).eq('character_name', characterName.toUpperCase())
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function addCastingNote(projectId: string, characterName: string, note: string, userId: string) {
+  const { error } = await (supabase as any)
+    .from('casting_notes').insert({ project_id: projectId, character_name: characterName.toUpperCase(), note, created_by: userId });
+  if (error) throw error;
+}
+
+export async function deleteCastingNote(id: string) {
+  const { error } = await (supabase as any).from('casting_notes').delete().eq('id', id);
+  if (error) throw error;
+}

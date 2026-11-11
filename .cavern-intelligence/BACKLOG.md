@@ -188,6 +188,7 @@ open, caps, dot) and `emit()`s brief events (saved, synced, joined).
 **Built**: the resting pill, notifications (bell + `live` events), search
 (`/` in the caps deck, ⌘K), animated state changes (framer-motion, reduced
 motion respected), the editor's sync events.
+**Built 2026-11-10:** the music activity has a **Previous** track control; SFX library, paperwork scans and Capture outbox uploads report progress to the island; uploads have a **Cancel** control; `uploadWithProgress` retries once on a dropped network and never on cancel.
 **To add** — a *live activity* layer that holds the island while something
 runs, one at a time by priority, each with its controls:
 - ~~call active~~ — **built 2026-11-02**: the call moved from the Lounge page to the suite (`lib/webrtc/VoiceCall.tsx`), so it survives leaving the Lounge, and the island holds it with Mute, **Room** (back to the room: `/lounge?channel=<id>`, offered anywhere but the Lounge) and Leave, and says who is speaking (`lib/island/callActivity.ts`). **Two-browser spec built 2026-11-02** (`e2e/voice-two-people.spec.ts`: two accounts join, each island counts two people and shows the other by name speaking, one leaves and the other is alone again)
@@ -269,6 +270,7 @@ trigger); context-aware commands; command history and repeat.
 notes — `script_characters`, `script_metadata.character_bible`), a
 look-board per character, casting with each character's scene footprint,
 dialogue and scene counts (editor › Stats).
+**Built 2026-11-10 (first slice):** `lib/characters/depth.ts` (goals, fears, flaws, arc, consistency warnings), `CharacterDepthPanel` mounted in the editor's Character Bible, `ArcTimeline` mounted, `RelationshipMap` mounted in the modal, and a printable **character bible PDF** (Export button, `lib/characters/export.ts`). Left: arc timeline/relationships are not persisted; no voice samples.
 **To add**: richer cards (goals, fears, flaws), an arc timeline, a
 relationship map, voice samples taken from their lines, a backstory
 timeline, appearances per scene, comparing two characters, templates
@@ -302,6 +304,7 @@ Magic Scheduling and Gorilla.
 ### 4.11 World building and locations
 **Built**: Locations (status, permit, address, contact, cost, notes; scenes
 link by name); scene references.
+**Built 2026-11-10 (first slice):** `lib/world/world.ts` (locations with optional lat/lng, lore, rules, timeline), `WorldEditor` with an SVG **map view** (plot locations by coordinates) and a printable **world bible PDF**, a "World" view in Studio › Production (`?view=world`) and `/projects/[id]/world`. Left: not persisted (component state only).
 **To add**: location mood boards (4.5), a map view, time period, world rules
 and lore, technology level, magic system, currency/language/culture notes,
 where each location appears, weather and season, day/night cycle, a
@@ -311,6 +314,7 @@ database.
 ### 4.12 Comparing versions
 **Built**: locked revisions with coloured changed pages and a diff view
 (`lib/scriptos/revisions.ts`).
+**Built 2026-11-10:** the diff modal has a **side-by-side** mode (before/current columns, changed lines paired), **next/previous change** navigation, and a printable **change report** (Export), alongside the existing line and word modes. Left: change filters (dialogue/action/scene), accept/reject, three-way merge.
 **To add**: side by side for any two versions or an imported script; inline
 diff colours; change statistics and filters (dialogue / action / scenes);
 next/previous change; scene-reorder and character-rename detection;
@@ -344,6 +348,7 @@ loops, notes during playback, comparing reads, scoring from the Soundtrack.
 **Built**: casting per character with its scene footprint
 (`character_castings`, Studio › Cast & crew); casting calls posted as jobs
 (accepting an applicant casts them); each character's look-board.
+**Built 2026-11-10:** per-character **notes** (`casting_notes`, migration `20261110000100`, RLS `can_access_project`/`can_shape_project`, persona test) shown and editable in the Casting Board. Left: drag crew onto roles, side-by-side candidates, audition scheduling, decision history, a casting sheet PDF.
 **To add**: drag crew onto roles, side-by-side candidates (photos, reels),
 notes per candidate per role, audition scheduling, decision history, a
 casting sheet PDF.
@@ -358,9 +363,11 @@ A voice room is a full mesh and now refuses a 9th person (`lib/webrtc/mesh.ts`: 
 A full redesign of the Lounge plus a platform-wide hub: *What's new*, *Learn*, *Status* (incidents), *Case studies*, *Help* (support cases). Plan, data, personas and slices L0–L6: [plans/2026-10-25-lounge-overhaul.md](plans/2026-10-25-lounge-overhaul.md); five decisions for the owner in its last section. L0 done (2026-10-25: the page split into `useLounge` + seven components). L1 done (2026-10-25: `/hub` with What's new and Learn by audience, `/admin/hub`, push for important posts, the hub is where sign-in lands). L2 done behind flag `hub_status` (2026-10-26: incidents with severity, updates and resolve; a suite-wide banner; production admins-only until the owner graduates the flag). L3 done behind flag `hub_help` (2026-10-26: support cases at `/hub/help`, the admin queue at `/admin/support`, answers notify and push; left: a screenshot attachment, email once 3.15 exists). L4 done behind flag `hub_case_studies` (2026-10-26: owner opt-in in Studio › Share, admin links consenting productions, withdrawing pulls the case study back to draft; left: show the production's media). Next: L5 (the redesign) and L6. Feature flags (`lib/flags.ts`, ADR 0007) are in: unfinished slices ship behind a flag. Done when every slice's done-when holds.
 
 ### 3.25 Story interview — a guided path from idea to skeleton — M/L (owner idea, 2026-10-20)
+**Built 2026-11-10 (first slice):** the interview questions, completion check and skeleton builder (`lib/story/interview.ts`), a `StoryInterview` panel that autosaves per project (migration `20261110000000_story_interviews.sql`, RLS `can_access_project`/`can_shape_project`, persona test), an "Interview" button in the editor's Outline that opens it, and Apply appends the skeleton as scene headings. Left: the interview is not yet resumable across a reload of the editor page (answers persist, the panel re-opens fresh), and the skeleton is not written into the film graph as entities.
 A step-by-step interview that builds the story's skeleton **before** dialogue is written, and teaches a newcomer the workflow as they go. Today `lib/guides` (workflows, steps) teaches *how to use the suite* and `lib/brief` asks the project questions; neither turns answers into structure. Build: a stored, resumable interview (premise, protagonist's want and need, the central conflict, theme, ending, the key turning points) whose answers produce an ordered beat list and a scene skeleton in the editor and the film graph — real rows, editable afterwards, never a mock. Each step explains *why* it is asked. Data: answers per project (RLS through `can_shape_project`), persona-tested (Sam writes, Jordan co-edits, Riley sees nothing). Done when a first-time user can answer the interview and land in the editor with a scene skeleton that persists, and a reload resumes mid-interview.
 
 ### 3.26 Story-structure templates — S/M (owner idea, 2026-10-20)
+**Built 2026-11-10:** seven templates as data (`lib/story/structures.ts`: three-act, five-act, hero's journey, story circle, seven-point, beat sheet, none), a coverage check (which beats have a scene near their position), `StructurePicker`, and the Outline's "N/M beats covered" indicator. Left: applying a template from the Outline is not yet wired to the interview's answers; the chosen structure is saved with the interview.
 Selectable structures to lay a skeleton over: three-act, five-act (Freytag), the hero's journey, the story circle, a seven-point outline, a beat sheet, and a free "none". Each template is data (named beats with a suggested position and a one-line purpose), applied from 3.25 or from the outline, and a script can be **checked against** one (which beats have a scene, which do not — a report, never an automatic change). Also worth scoping: branching / non-linear structure for games and interactive stories as its own template type. Done when a template can be chosen, applied, and reported on, and the beats it creates survive a reload.
 
 ### 3.27 Open core: the license and the free / paid boundary — M (owner decision; lawyer review)

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
 import Avatar from '@/components/ui/Avatar';
-import { getCastingsForProject, setCasting, removeCasting, type Casting } from '@/lib/supabase/casting';
+import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, addCastingNote, deleteCastingNote, type Casting, type CastingNote } from '@/lib/supabase/casting';
 import { logActivity } from '@/lib/supabase/activity';
 import { useCharacterMedia, useCharacters, useSceneCharacters, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { castByScene, castOfScene } from '@/lib/film/cast';
@@ -40,6 +40,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const [castings, setCastings] = useState<Record<string, Casting>>({});
   const [selected, setSelected] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
+  const [notes, setNotes] = useState<CastingNote[]>([]);
+  const [noteDraft, setNoteDraft] = useState('');
   const characterLooks = useCharacterMedia(projectId);
   const storyCharacters = useCharacters(projectId);
   const sceneLinks = useSceneCharacters(projectId);
@@ -56,6 +58,15 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
 
   const loadCastings = useCallback(() => getCastingsForProject(projectId).then(setCastings, () => { /* shown as open roles */ }), [projectId]);
   useEffect(() => { void loadCastings(); }, [loadCastings]);
+  useEffect(() => {
+    if (!selected) return;
+    let active = true;
+    void listCastingNotes(projectId, selected).then(
+      (n) => { if (active) setNotes(n); },
+      () => { if (active) setNotes([]); },
+    );
+    return () => { active = false; };
+  }, [projectId, selected, castings]);
   // The script's characters changed: keep the selection if it's still one of them.
   useOnChange(scriptChars, () => setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null)));
 
@@ -79,6 +90,15 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const clearCasting = async (name: string) => {
     try { await removeCasting(projectId, name); logActivity(`reopened casting for ${name}`, 'project', projectId); await loadCastings(); toast(`${name} reopened`, 'info'); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not update', 'error'); }
+  };
+  const addNote = async () => {
+    if (!selected || !noteDraft.trim()) return;
+    try { await addCastingNote(projectId, selected, noteDraft.trim(), userId); setNoteDraft(''); await loadCastings(); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not add note', 'error'); }
+  };
+  const removeNote = async (id: string) => {
+    try { await deleteCastingNote(id); setNotes((n) => n.filter((x) => x.id !== id)); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not remove note', 'error'); }
   };
 
   const sel = chars.find(c => c.name === selected) || null;
@@ -173,6 +193,21 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                 ) : (
                   <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginBottom: 24 }}>No looks yet — add them to this character in the Character Bible (Story).</div>
                 )}
+
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Notes</div>
+                <div style={{ display: 'grid', gap: 6, marginBottom: 24 }}>
+                  {notes.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No notes yet.</div>}
+                  {notes.map((n) => (
+                    <div key={n.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: 8, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.07)', borderRadius: 8 }}>
+                      <span style={{ flex: 1, fontSize: 12 }}>{n.note}</span>
+                      <button onClick={() => void removeNote(n.id)} aria-label="Remove note" style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>×</button>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <input value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note…" style={{ flex: 1, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg)', fontSize: 12 }} />
+                    <button onClick={() => void addNote()} disabled={!noteDraft.trim()} style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Add</button>
+                  </div>
+                </div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Footprint</div>
                 {fp.sceneNums.length > 0 ? (
