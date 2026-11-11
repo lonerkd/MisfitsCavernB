@@ -6,9 +6,10 @@
 
 @.cavern-intelligence/STATE.md
 
-@.cavern-intelligence/BACKLOG.md
-
 @.cavern-intelligence/INDEX.md
+
+Read it when you pick a task, not whole at the start (it is large):
+- `.cavern-intelligence/BACKLOG.md` — every open task, scoped.
 
 ## Claude-only notes
 
