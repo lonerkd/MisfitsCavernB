@@ -45,7 +45,8 @@ export function shortcuts(mac: boolean): Shortcut[] {
     { group: 'The island (Caps Lock on)', keys: '/', desc: 'Search', aliases: 'slash' },
     { group: 'The island (Caps Lock on)', keys: '\\', desc: 'Split screen', aliases: 'backslash' },
     { group: 'The island (Caps Lock on)', keys: 'P', desc: 'Switch project' },
-    { group: 'The island (Caps Lock on)', keys: '← →  ·  Enter', desc: 'Move between the page’s controls and run one', aliases: 'arrows' },
+    { group: 'The island (Caps Lock on)', keys: '← → ↑ ↓', desc: 'Navigate and highlight the page’s content (in the script: select text)', aliases: 'arrows select selection highlight' },
+    { group: 'The island (Caps Lock on)', keys: 'Tab · Shift Tab', desc: 'Cycle this tool’s views (the editor’s Write/Board/…, the Studio’s tabs and production tools)', aliases: 'tab switch view tool' },
     { group: 'The island (Caps Lock on)', keys: 'Esc', desc: 'Put the island away until Caps Lock is next turned on', aliases: 'escape' },
     // The same key means the same thing on every page that has the action.
     ...(Object.keys(SLOT_KEYS) as PillSlot[]).map((s) => ({
@@ -53,6 +54,7 @@ export function shortcuts(mac: boolean): Shortcut[] {
     })),
     ...editor,
     { group: 'ScriptOS editor', keys: 'Tab', desc: 'Smart element insert (scene / dialogue)' },
+    { group: 'ScriptOS editor', keys: '⌘1–⌘7', desc: 'Insert a scene, action, character, parenthetical, dialogue, transition or note', aliases: 'ctrl number insert element structure quick' },
     { group: 'ScriptOS editor', keys: 'Escape, then Tab', desc: 'Leave the script (move to the next control)' },
     { group: 'ScriptOS editor', keys: 'Alt 1–9', desc: 'Tag the selection (tag mode)', aliases: 'option' },
     { group: 'ScriptOS editor', keys: 'Alt Enter  ·  Alt ⌫', desc: 'Accept / dismiss a suggestion', aliases: 'option backspace' },

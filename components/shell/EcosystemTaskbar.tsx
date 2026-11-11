@@ -343,7 +343,11 @@ export default function EcosystemTaskbar() {
 
   // ── The Caps Lock layer: the deck, on keys ───────────────────────────────
   const onDeckKey = useEffectEvent((e: KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey || e.altKey || isEditable(e.target)) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    // The script's textarea is the one field where the deck's keys are also
+    // letters: Caps Lock is the writer's switch, so the deck claims them here
+    // too. Every other field (search, notes, forms) keeps its own typing.
+    if (isEditable(e.target) && !(e.target as HTMLElement).closest('[aria-label="Script"]')) return;
     const key = (e.key ?? '').toLowerCase();
     const done = () => { e.preventDefault(); };
 
@@ -357,20 +361,29 @@ export default function EcosystemTaskbar() {
     if (key === '\\') { done(); openSplit(); return; }
     if (key === 'o') { done(); window.dispatchEvent(new Event('mc-undo')); return; }
     if (key === 'p') { done(); setProjectsOpen(v => !v); return; }
+    // Tab cycles this tool's own views (the editor's Write/Board/Outline/…, the
+    // Studio's production tools): the page handles it, so the deck stays
+    // tool-agnostic. Shift reverses. The apps are already on the number keys.
+    if (key === 'tab') {
+      done();
+      window.dispatchEvent(new CustomEvent('mc-cycle-tool', { detail: { reverse: e.shiftKey } }));
+      return;
+    }
 
     const byKey = controls[deckKeys.indexOf(key)];
     if (byKey) { done(); countKeyUse(key, byKey.id); byKey.run(); return; }
 
-    if (!controls.length) return;
-    if (key === 'arrowright' || key === ']') { done(); setKbFocusIndex(i => (i + 1) % controls.length); return; }
-    if (key === 'arrowleft' || key === '[') { done(); setKbFocusIndex(i => (i - 1 + controls.length) % controls.length); return; }
-    if (key === 'enter' && kbFocusIndex >= 0 && controls[kbFocusIndex]) { done(); controls[kbFocusIndex].run(); }
+    // Arrow keys are not intercepted: under Caps Lock they navigate and
+    // highlight the page's own content (the script, a list, a table), which is
+    // the point of the layer. The deck's controls are already on letter keys.
   });
   useEffect(() => {
     if (noDock || !kbActive || capsDismissed) return;
+    // Capture: the deck's keys must land before the textarea's own handler, or
+    // the script would take the letter and the shortcut would never fire.
     const handler = (e: KeyboardEvent) => onDeckKey(e);
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener('keydown', handler, true);
+    return () => window.removeEventListener('keydown', handler, true);
   }, [noDock, kbActive, capsDismissed]);
 
   if (noDock) return null;

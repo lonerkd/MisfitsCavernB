@@ -135,7 +135,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                 />
               </div>
 
-              {tools.revisions && <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 11, fontFamily: 'var(--mono)', background: revisionMode ? 'rgba(0,153,255,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: revisionMode ? '#4db8ff' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
+              {tools.revisions && <button type="button" aria-pressed={revisionMode} title="Toggle revision mode" style={{ fontSize: 11, fontFamily: 'var(--mono)', background: revisionMode ? 'color-mix(in srgb, var(--info) 12%, transparent)' : 'rgba(var(--ink-rgb), 0.05)', color: revisionMode ? 'var(--info)' : 'var(--fg-dim)', padding: '4px 8px', borderRadius: 4, border: 'none', cursor: 'pointer' }} onClick={() => setRevisionMode(!revisionMode)}>
                 {revisionMode ? 'Blue Revision' : 'Draft Mode'}
               </button>}
             </div>

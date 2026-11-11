@@ -16,10 +16,11 @@ describe('islandMode', () => {
     expect(islandMode({ ...idle, engaged: true, typing: true, caps: true, live: true, zone: true })).toBe('open');
   });
 
-  it('shrinks to a dot while typing — Caps Lock in a script is for capitals', () => {
+  it('holds the deck open under Caps Lock, even while typing — the writer asked for the keys', () => {
     expect(islandMode({ ...idle, typing: true })).toBe('dot');
-    expect(islandMode({ ...idle, typing: true, caps: true })).toBe('dot');
+    expect(islandMode({ ...idle, typing: true, caps: true })).toBe('caps');
     expect(islandMode({ ...idle, typing: true, zone: true, live: true })).toBe('dot');
+    expect(islandMode({ ...idle, typing: true, caps: true, zone: true, live: true })).toBe('caps');
   });
 
   it('holds the deck open under Caps Lock until it is put away', () => {

@@ -77,6 +77,30 @@ END COLD OPEN
 
 export const PLACEHOLDER = `Start writing — try "FADE IN:" or "INT. LOCATION - DAY"`;
 
+/**
+ * What a brand-new script starts with: a minimal, correctly-formatted skeleton
+ * (a heading, action, a character, dialogue, a transition). A writer who has
+ * never seen Fountain sees the shape of a screenplay and edits from there,
+ * instead of facing an empty box that expects them to know the rules.
+ */
+export const STARTER_TEMPLATE = `FADE IN:
+
+INT. LOCATION - DAY
+
+Action description here.
+
+CHARACTER NAME
+Dialogue goes here.
+
+CUT TO:
+
+EXT. ANOTHER LOCATION - DAY
+
+Protagonist walks with purpose. The world moves around them.
+
+FADE OUT.
+`;
+
 export const TRANSITIONS = ['CUT TO:', 'FADE IN:', 'FADE OUT.', 'FADE TO BLACK.', 'DISSOLVE TO:', 'SMASH CUT TO:', 'MATCH CUT TO:', 'INTERCUT WITH:', 'JUMP CUT TO:', 'TIME CUT:'];
 
 export const ELEMENT_STATUS: Record<string, { label: string; hint: string }> = {

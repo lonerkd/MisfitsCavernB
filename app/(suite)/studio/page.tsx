@@ -111,6 +111,26 @@ export default function StudioPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     return true;
   }, [setTab, tabs]);
+  // Caps Lock + Tab cycles the Studio's tabs. On Production it cycles the
+  // production tools (schedule → breakdown → …) instead, so the keyboard can
+  // walk the whole department list without the mouse.
+  useEffect(() => {
+    const PRODUCTION_ORDER: ProductionView[] = ['story', 'breakdown', 'readiness', 'locations', 'schedule', 'onset', 'shots', 'dood', 'reports', 'wrap'];
+    const handler = (e: Event) => {
+      const { reverse } = (e as CustomEvent<{ reverse?: boolean }>).detail ?? {};
+      if (tab === 'production') {
+        const at = PRODUCTION_ORDER.indexOf(view ?? 'story');
+        const next = reverse ? (at <= 0 ? PRODUCTION_ORDER.length - 1 : at - 1) : (at + 1) % PRODUCTION_ORDER.length;
+        setTab('production', PRODUCTION_ORDER[next]);
+      } else {
+        const at = tabs.findIndex((t) => t.id === tab);
+        const next = reverse ? (at <= 0 ? tabs.length - 1 : at - 1) : (at + 1) % tabs.length;
+        setTab(tabs[next].id);
+      }
+    };
+    window.addEventListener('mc-cycle-tool', handler);
+    return () => window.removeEventListener('mc-cycle-tool', handler);
+  }, [tab, view, tabs, setTab]);
   const lockedTool = (t: TabId) => {
     const id = STUDIO_TAB_TOOL[t];
     const state = id ? toolState(progress, id) : null;
@@ -129,6 +149,11 @@ export default function StudioPage() {
             { id: 'note', slot: 'note' as const, label: 'Add a note', onClick: () => { setTab('overview'); requestNoteFocus(); } },
             { id: 'next-tab', slot: 'view', label: 'Next tab →', onClick: () => setTab(tabs[(tabs.findIndex((t) => t.id === tab) + 1) % tabs.length].id) },
             ...(tab !== 'share' ? [{ id: 'open-share', slot: 'share' as const, label: 'Share tab', onClick: () => setTab('share') }] : []),
+            // The production tools, on the deck: the writer's keyboard path into
+            // the schedule, breakdown and call sheets without touching the mouse.
+            { id: 'go-schedule', label: 'Schedule', onClick: () => setTab('production', 'schedule') },
+            { id: 'go-breakdown', label: 'Breakdown', onClick: () => setTab('production', 'breakdown') },
+            { id: 'go-callsheets', label: 'On set', onClick: () => setTab('production', 'onset') },
           ],
         }
       : null,

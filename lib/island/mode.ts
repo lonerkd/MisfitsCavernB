@@ -36,9 +36,11 @@ export interface IslandSignals {
 
 export function islandMode(s: IslandSignals): IslandMode {
   if (s.engaged) return 'open';
-  // Caps Lock while writing is for capitals, not for the island.
-  if (s.typing) return 'dot';
+  // Caps Lock wins over typing: the deck is the shortcuts layer, and a writer
+  // who turns it on wants the keys, not a dot. (The editor's own keys — Tab,
+  // Enter, `(` — are unaffected; the deck only claims its letter slots.)
   if (s.caps && !s.capsDismissed) return 'caps';
+  if (s.typing) return 'dot';
   if (s.live) return 'live';
   // What the pointer is on beats what is merely running; both beat resting.
   if (s.zone) return 'context';

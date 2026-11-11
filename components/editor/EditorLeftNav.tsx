@@ -6,6 +6,7 @@ import { Plus, FileUp, Book } from 'lucide-react';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import type { StoredScript } from '@/lib/scriptos/storage';
 import { readable } from '@/lib/util/color';
+import { STARTER_TEMPLATE } from '@/components/editor/editorPageParts';
 
 export interface EditorLeftNavProps {
   scripts: StoredScript[];
@@ -47,12 +48,12 @@ export function EditorLeftNav({
     <>
               <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
                 <button onClick={async () => {
-                  const s = await createNewScript('Untitled Script');
+                  const s = await createNewScript('Untitled Script', STARTER_TEMPLATE);
                   if (s) {
                     setScripts([...scripts, s]);
                     setCurrentScript(s);
-                    setContent('');
-                    toast('New script created', 'success');
+                    setContent(STARTER_TEMPLATE);
+                    toast('New script created — a starter skeleton is in place', 'success');
                   } else {
                     toast('Could not create script — check your connection', 'error');
                   }

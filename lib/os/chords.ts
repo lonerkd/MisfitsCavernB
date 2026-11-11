@@ -30,6 +30,14 @@ export const CHORDS: readonly Chord[] = [
   { id: 'editor.focus', key: 'e', scope: 'editor', label: 'Focus mode' },
   { id: 'editor.goto', key: 'g', scope: 'editor', label: 'Go to a scene' },
   { id: 'editor.tagmode', key: 'b', shift: true, scope: 'editor', label: 'Breakdown tag mode' },
+  // The script's elements, one chord each: the structure bar's buttons as keys.
+  { id: 'editor.el-scene', key: '1', scope: 'editor', label: 'Insert a scene heading' },
+  { id: 'editor.el-action', key: '2', scope: 'editor', label: 'Insert action' },
+  { id: 'editor.el-character', key: '3', scope: 'editor', label: 'Insert a character' },
+  { id: 'editor.el-parenthetical', key: '4', scope: 'editor', label: 'Insert a parenthetical' },
+  { id: 'editor.el-dialogue', key: '5', scope: 'editor', label: 'Insert dialogue' },
+  { id: 'editor.el-transition', key: '6', scope: 'editor', label: 'Insert a transition' },
+  { id: 'editor.el-note', key: '7', scope: 'editor', label: 'Insert a note' },
 ];
 
 export interface KeyLike { key?: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean; shiftKey: boolean }

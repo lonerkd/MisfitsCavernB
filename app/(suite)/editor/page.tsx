@@ -70,6 +70,7 @@ import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+import { StructureBar } from '@/components/editor/StructureBar';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
@@ -479,39 +480,6 @@ export default function EditorPage() {
     toast(toggled.added ? 'Marked as dual dialogue (^)' : 'Dual dialogue removed', 'success');
   }, [content, toast]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
-      const chord = matchChord(e, 'editor')?.id;
-      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
-      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
-      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
-      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
-      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
-        e.preventDefault();
-        if (chord === 'undo') undo(); else redo();
-      }
-      if (e.key === 'Escape') {
-        if (focusMode) setFocusMode(false);
-        if (showFindReplace) setShowFindReplace(false);
-        if (showFormatMenu) setShowFormatMenu(false);
-        if (showGoToScene) setShowGoToScene(false);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
-
-  const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
-
-  const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
-    setTitlePage(prev => {
-      const updated = { ...prev, [field]: value };
-      if (currentScript) saveTitlePage(currentScript.id, updated);
-      return updated;
-    });
-  }, [currentScript]);
-
   // Where the caret goes after an edit: the textarea is controlled, so set it once React has rendered.
   const placeCaret = (editor: HTMLTextAreaElement, caret: number) => {
     // Applied as soon as the new text is on screen (see the layout effect on `content`). If the text turns out to be
@@ -525,13 +493,72 @@ export default function EditorPage() {
     }, 0);
   };
 
-  const insertElement = (type: string) => {
+  // Insert an element's template at the caret (the structure bar's buttons and
+  // the ⌘1–⌘7 chords both call this).
+  const insertElement = useCallback((type: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
     const edit = insertSnippet(content, editor.selectionStart, editor.selectionEnd, type);
     setContent(edit.next);
     placeCaret(editor, edit.caret);
-  };
+  }, [content]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      // The structure bar's elements as chords: ⌘1 scene, ⌘2 action, … — the
+      // same insert the buttons do, for a writer who never leaves the keys.
+      else if (chord === 'editor.el-scene') { e.preventDefault(); insertElement('scene'); }
+      else if (chord === 'editor.el-action') { e.preventDefault(); insertElement('action'); }
+      else if (chord === 'editor.el-character') { e.preventDefault(); insertElement('character'); }
+      else if (chord === 'editor.el-parenthetical') { e.preventDefault(); insertElement('parenthetical'); }
+      else if (chord === 'editor.el-dialogue') { e.preventDefault(); insertElement('dialogue'); }
+      else if (chord === 'editor.el-transition') { e.preventDefault(); insertElement('transition'); }
+      else if (chord === 'editor.el-note') { e.preventDefault(); insertElement('note'); }
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
+        e.preventDefault();
+        if (chord === 'undo') undo(); else redo();
+      }
+      if (e.key === 'Escape') {
+        if (focusMode) setFocusMode(false);
+        if (showFindReplace) setShowFindReplace(false);
+        if (showFormatMenu) setShowFormatMenu(false);
+        if (showGoToScene) setShowGoToScene(false);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo, insertElement]);
+
+  // Caps Lock + Tab cycles the editor's own views (Write → Board → Outline →
+  // Preview → Stats). The deck dispatches `mc-cycle-tool`; the page decides
+  // what "the tool's views" are.
+  useEffect(() => {
+    const VIEWS = ['write', 'board', 'outline', 'preview', 'stats'] as const;
+    const handler = (e: Event) => {
+      const { reverse } = (e as CustomEvent<{ reverse?: boolean }>).detail ?? {};
+      const at = VIEWS.indexOf(activeView as typeof VIEWS[number]);
+      const next = reverse ? (at <= 0 ? VIEWS.length - 1 : at - 1) : (at + 1) % VIEWS.length;
+      setActiveView(VIEWS[next]);
+    };
+    window.addEventListener('mc-cycle-tool', handler);
+    return () => window.removeEventListener('mc-cycle-tool', handler);
+  }, [activeView, setActiveView]);
+
+  const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
+
+  const handleTitlePageChange = useCallback((field: keyof TitlePage, value: string) => {
+    setTitlePage(prev => {
+      const updated = { ...prev, [field]: value };
+      if (currentScript) saveTitlePage(currentScript.id, updated);
+      return updated;
+    });
+  }, [currentScript]);
 
   const acceptAutocomplete = (item: string) => {
     const editor = textareaRef.current;
@@ -545,6 +572,29 @@ export default function EditorPage() {
   const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Tab' && tabLeavesScript.current) { tabLeavesScript.current = false; return; }
     tabLeavesScript.current = e.key === 'Escape' && !showAutocomplete;
+    // Caps Lock is the writer's keyboard layer: arrows navigate and highlight
+    // (like Shift+arrows, so the whole script can be worked without a mouse —
+    // select a block, then a deck key acts on it).
+    if (e.getModifierState?.('CapsLock') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const ta = textareaRef.current;
+      if (ta && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        e.preventDefault();
+        const { selectionStart: start, selectionEnd: end } = ta;
+        const len = ta.value.length;
+        if (e.key === 'ArrowRight') ta.setSelectionRange(start, Math.min(len, end + 1));
+        else if (e.key === 'ArrowLeft') ta.setSelectionRange(Math.max(0, start - 1), end);
+        else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          const from = e.key === 'ArrowUp' ? start : end;
+          const nl = e.key === 'ArrowUp' ? ta.value.lastIndexOf('\n', from - 1) : ta.value.indexOf('\n', from);
+          const caret = e.key === 'ArrowUp' ? (nl === -1 ? 0 : nl) : (nl === -1 ? len : nl + 1);
+          // Keep the anchor (the far end) and move the caret a line.
+          const anchor = start === end ? (e.key === 'ArrowUp' ? end : start) : (e.key === 'ArrowUp' ? end : start);
+          ta.setSelectionRange(Math.min(anchor, caret), Math.max(anchor, caret));
+        }
+        setCursorLine(ta.value.substring(0, ta.selectionStart).split('\n').length - 1);
+        return;
+      }
+    }
     if (showAutocomplete && autocompleteItems.length > 0) {
       if (e.key === 'ArrowDown') { e.preventDefault(); setAutocompleteIdx(i => (i + 1) % autocompleteItems.length); return; }
       if (e.key === 'ArrowUp') { e.preventDefault(); setAutocompleteIdx(i => (i - 1 + autocompleteItems.length) % autocompleteItems.length); return; }
@@ -1019,6 +1069,8 @@ export default function EditorPage() {
               <Minimize size={20} />
             </button>
           )}
+
+                    {activeView === 'write' && <StructureBar insert={insertElement} currentType={lines[cursorLine]?.type} />}
 
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
