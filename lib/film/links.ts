@@ -12,6 +12,8 @@ export const ENTITY_KINDS = [
   'scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media',
   'shot', 'breakdown_element', 'scene_state', 'casting', 'call_sheet',
   'note', 'beat', 'cut', 'script', 'sfx', 'vendor', 'budget_item', 'mood_board',
+  'mood_board_item', 'expense', 'timesheet', 'set_log', 'post_item', 'timeline_item',
+  'script_revision', 'stash_item',
 ] as const;
 export type EntityKind = (typeof ENTITY_KINDS)[number];
 

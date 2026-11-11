@@ -15,6 +15,9 @@ const KIND_NAME: Record<EntityKind, string> = {
   shot: 'Shot', breakdown_element: 'Element', scene_state: 'Continuity', casting: 'Casting',
   call_sheet: 'Call sheet', note: 'Note', beat: 'Beat', cut: 'Cut', script: 'Script',
   sfx: 'Sound', vendor: 'Vendor', budget_item: 'Budget line', mood_board: 'Mood board',
+  mood_board_item: 'Board item', expense: 'Expense', timesheet: 'Timesheet',
+  set_log: 'Set log', post_item: 'Post item', timeline_item: 'Timeline',
+  script_revision: 'Revision', stash_item: 'Snippet',
 };
 
 export function MentionText({ text, projectId, entities }: { text: string; projectId: string; entities: Entity[] }) {

@@ -50,8 +50,17 @@ const GROUP_TITLE: Record<EntityKind, string> = {
   shot: 'Shots', breakdown_element: 'Elements', scene_state: 'Continuity', casting: 'Casting',
   call_sheet: 'Call sheets', note: 'Notes', beat: 'Beats', cut: 'Cuts', script: 'Scripts',
   sfx: 'Sound', vendor: 'Vendors', budget_item: 'Budget', mood_board: 'Mood boards',
+  mood_board_item: 'Board items', expense: 'Expenses', timesheet: 'Timesheets',
+  set_log: 'Set log', post_item: 'Post items', timeline_item: 'Timeline',
+  script_revision: 'Revisions', stash_item: 'Stash',
 };
-const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'note', 'shot', 'breakdown_element', 'scene_state', 'casting', 'call_sheet', 'beat', 'cut', 'script', 'sfx', 'vendor', 'budget_item', 'mood_board', 'scene', 'character', 'location', 'shoot_day'];
+const KIND_ORDER: EntityKind[] = [
+  'task', 'document', 'media', 'note', 'shot', 'breakdown_element', 'scene_state', 'casting',
+  'call_sheet', 'beat', 'cut', 'script', 'sfx', 'vendor', 'budget_item', 'mood_board',
+  'mood_board_item', 'expense', 'timesheet', 'set_log', 'post_item', 'timeline_item',
+  'script_revision', 'stash_item',
+  'scene', 'character', 'location', 'shoot_day',
+];
 
 /**
  * The link kinds the graph itself writes from a foreign key (a shot is in its
@@ -59,7 +68,10 @@ const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'note', 'shot', '
  * something a person attached by hand, so the card shows them under "connected"
  * and never under "attached".
  */
-const GRAPH_LINK_KINDS = new Set(['in', 'on', 'for', 'plays', 'from', 'continuity']);
+const GRAPH_LINK_KINDS = new Set([
+  'in', 'on', 'for', 'plays', 'from', 'continuity',
+  'references', 'against', 'to', 'receipt', 'log', 'revision', 'version', 'stash', 'shows',
+]);
 
 const key = (s: string | null | undefined) => (s ?? '').trim().toUpperCase();
 const sceneLabel = (s: CardScene) => `${s.scene_number}. ${s.heading?.trim() || s.title}`;
