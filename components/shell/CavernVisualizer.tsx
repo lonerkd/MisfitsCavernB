@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Disc, Ear, EarOff, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from 'lucide-react';
+import { Disc, Ear, EarOff, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { createBeatTracker, SILENT, smoothLevel, type Levels } from '@/lib/cavern/audio';
 import { captureSupported, startCapture, type Capture, CaptureError } from '@/lib/cavern/capture';
 import { blendCaves, makeCave, seedOf, type Cave } from '@/lib/cavern/cave';
 import { autoSteer, metres, newDive, reseed, stepDive, type Dive, type Steer } from '@/lib/cavern/dive';
+import { createDiveSound, soundSupported, type DiveSound } from '@/lib/cavern/diveSound';
 import { keySteer, pointerSteer } from '@/lib/cavern/diveSteer';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
 import { guideInput, IDLE_TO_AUTO, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
@@ -23,6 +24,8 @@ const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.f
 /** The two ways to be in the cave: running through it side-on (the default), or diving down it in the first person. */
 export type CaveStyle = 'run' | 'dive';
 const STYLE_KEY = 'mc_cavern_style';
+const SOUND_KEY = 'mc_cavern_sound';
+const readSound = (): boolean => { try { return localStorage.getItem(SOUND_KEY) === 'on'; } catch { return false; } };
 const readStyle = (): CaveStyle => { try { return localStorage.getItem(STYLE_KEY) === 'dive' ? 'dive' : 'run'; } catch { return 'run'; } };
 /** A mouse that has stopped moving this long lets go: a pointer left resting over the cave must not steer it for ever (or keep the autopilot off). */
 const HOVER_REST_MS = 2000;
@@ -131,6 +134,21 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
     try { localStorage.setItem(STYLE_KEY, s); } catch { /* a private window: it is simply not remembered */ }
     kick.current(); // a still frame (reduced motion) is drawn again in the new view
   }, []);
+
+  // The dive's sounds: off until the person turns them on (remembered on this device), never made in the corner window, and the audio
+  // device is made only when a sound is first wanted.
+  const [sound, setSoundState] = useState(readSound);
+  const canSound = soundSupported();
+  const soundOn = useRef(sound);
+  const voice = useRef<DiveSound | null>(null);
+  const toggleSound = useCallback(() => {
+    const on = !soundOn.current;
+    soundOn.current = on; setSoundState(on);
+    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* a private window: it is simply not remembered */ }
+    if (on) voice.current ??= createDiveSound(); // made on the click, which the browser counts as the person's go-ahead
+    else { voice.current?.close(); voice.current = null; }
+  }, []);
+  useEffect(() => () => { voice.current?.close(); voice.current = null; }, []);
 
   // The light takes the cover's colour. A cover the browser will not let us read (cross-origin) leaves the warm default.
   useEffect(() => {
@@ -269,7 +287,13 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         W.diveIdle = given ? 0 : Math.min(W.diveIdle + dt, IDLE_TO_AUTO + 1);
         steering = W.diveIdle < IDLE_TO_AUTO;
         const steer = keyed ? keySteer(held.left, held.right, held.up, held.down) : W.aim ?? (steering ? { x: 0, z: 0 } : autoSteer(d));
-        if (!reduce) stepDive(d, dt * (0.25 + energy * 0.75), steer);
+        if (!reduce) {
+          const events = stepDive(d, dt * (0.25 + energy * 0.75), steer);
+          if (events.length && soundOn.current && !latest.current.mini) {
+            const v = (voice.current ??= createDiveSound());
+            if (v) for (const e of events) v.play(e);
+          }
+        }
         drawDive(ctx, d, w, h, { tint: W.tint, level: heard.level, pulse, compact: latest.current.mini });
         tally = `${metres(d).toLocaleString()} m down`;
       } else {
@@ -330,6 +354,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
               <button type="button" className={v.listen} aria-pressed={style === 'run'} onClick={() => chooseStyle('run')} title="Run through the cave, side-on">Run</button>
               <button type="button" className={v.listen} aria-pressed={style === 'dive'} onClick={() => chooseStyle('dive')} title="Dive down the cave, in the first person">Dive</button>
             </div>
+            {style === 'dive' && canSound && <button type="button" className={v.listen} onClick={toggleSound} aria-pressed={sound} title="Soft sounds for landings and springs">{sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound</button>}
             {canListen && <button type="button" className={v.listen} onClick={() => (listening === 'on' ? stopListening() : void startListening())} disabled={listening === 'starting'} aria-pressed={listening === 'on'}>{listening === 'on' ? <EarOff size={14} /> : <Ear size={14} />} {listening === 'on' ? 'Stop listening' : 'Listen to the music'}</button>}
           </div>
           <div className={`${v.corner} ${fade}`}>

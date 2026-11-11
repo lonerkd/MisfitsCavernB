@@ -10,6 +10,8 @@ vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
 const cap = vi.hoisted(() => ({ supported: true, start: vi.fn(), toast: vi.fn() }));
 vi.mock('@/lib/cavern/capture', async (orig) => ({ ...(await orig<typeof import('@/lib/cavern/capture')>()), captureSupported: () => cap.supported, startCapture: cap.start }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: cap.toast }) }));
+const snd = vi.hoisted(() => ({ supported: true, close: vi.fn(), make: vi.fn() }));
+vi.mock('@/lib/cavern/diveSound', () => ({ soundSupported: () => snd.supported, createDiveSound: snd.make }));
 import { CavernVisualizer } from './CavernVisualizer';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -180,6 +182,31 @@ describe('CavernVisualizer', () => {
       unmount();
       render(<CavernVisualizer onClose={() => {}} />);
       expect(screen.getByRole('button', { name: 'Dive' }).getAttribute('aria-pressed')).toBe('true');
+    });
+    describe('sound', () => {
+      afterEach(() => { try { localStorage.removeItem('mc_cavern_sound'); } catch { /* none */ } snd.supported = true; });
+      it('is a dive-only button, off until asked, remembered, and made on the click', () => {
+        snd.make.mockReturnValue({ play: vi.fn(), close: snd.close });
+        render(<CavernVisualizer onClose={() => {}} />);
+        expect(screen.queryByRole('button', { name: /Sound/ })).toBeNull(); // not in the run view
+        fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
+        const btn = screen.getByRole('button', { name: /Sound/ });
+        expect(btn.getAttribute('aria-pressed')).toBe('false');
+        expect(snd.make).not.toHaveBeenCalled();
+        fireEvent.click(btn);
+        expect(btn.getAttribute('aria-pressed')).toBe('true');
+        expect(snd.make).toHaveBeenCalledOnce();
+        expect(localStorage.getItem('mc_cavern_sound')).toBe('on');
+        fireEvent.click(btn);
+        expect(snd.close).toHaveBeenCalled();
+        expect(localStorage.getItem('mc_cavern_sound')).toBe('off');
+      });
+      it('is not offered where the browser has no Web Audio', () => {
+        snd.supported = false;
+        render(<CavernVisualizer onClose={() => {}} />);
+        fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
+        expect(screen.queryByRole('button', { name: /Sound/ })).toBeNull();
+      });
     });
     it('the arrow keys steer in the dive without closing it', () => {
       const onClose = vi.fn();
