@@ -3,14 +3,18 @@
 import React, { useState } from 'react';
 import { Camera, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-type CameraEntry = { id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
+type CameraEntry = { id: string; scene: string; scene_id?: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
 
 export function CameraReportView() {
+  const { scenes } = useStudio();
   const { items, save, remove } = useSettingsList('cameraReports');
   const [draft, setDraft] = useState<Omit<CameraEntry, 'id'>>({
     scene: '',
+    scene_id: undefined,
     shot: '',
     lens: '',
     tStop: '',
@@ -23,7 +27,7 @@ export function CameraReportView() {
   const add = async () => {
     if (!draft.shot.trim()) return;
     if (!(await save([...items, { ...draft, id: `cam-${Date.now()}` }]))) return;
-    setDraft({ scene: '', shot: '', lens: '', tStop: '', filter: '', camera: '', media: '', notes: '' });
+    setDraft({ scene: '', scene_id: undefined, shot: '', lens: '', tStop: '', filter: '', camera: '', media: '', notes: '' });
   };
 
   return (
@@ -37,10 +41,12 @@ export function CameraReportView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Shot</span>
             <input className={s.input} value={draft.shot} onChange={(e) => setDraft({ ...draft, shot: e.target.value })} placeholder="A1" />

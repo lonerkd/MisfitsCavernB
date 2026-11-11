@@ -8,7 +8,8 @@ const confirm = vi.fn();
 const patch = vi.fn();
 let settings: Record<string, unknown> | null = {};
 
-vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings } }) }));
+vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings }, scenes: { rows: [] } }) }));
+vi.mock('@/lib/studio', () => ({ useCharacters: () => ({ rows: [] }) }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/components/ui/Confirm', () => ({ useConfirm: () => confirm }));
 vi.mock('@/lib/supabase/progress', () => ({ patchProjectSettings: (...a: unknown[]) => patch(...a) }));

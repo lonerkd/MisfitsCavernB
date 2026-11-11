@@ -3,14 +3,18 @@
 import React, { useState } from 'react';
 import { Mic, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-type SoundEntry = { id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string };
+type SoundEntry = { id: string; scene: string; scene_id?: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string };
 
 export function SoundReportView() {
+  const { scenes } = useStudio();
   const { items, save, remove } = useSettingsList('soundReports');
   const [draft, setDraft] = useState<Omit<SoundEntry, 'id'>>({
     scene: '',
+    scene_id: undefined,
     take: '',
     mic: '',
     wildTrack: '',
@@ -21,7 +25,7 @@ export function SoundReportView() {
   const add = async () => {
     if (!draft.take.trim()) return;
     if (!(await save([...items, { ...draft, id: `snd-${Date.now()}` }]))) return;
-    setDraft({ scene: '', take: '', mic: '', wildTrack: '', roomTone: '', notes: '' });
+    setDraft({ scene: '', scene_id: undefined, take: '', mic: '', wildTrack: '', roomTone: '', notes: '' });
   };
 
   return (
@@ -35,10 +39,12 @@ export function SoundReportView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Take</span>
             <input className={s.input} value={draft.take} onChange={(e) => setDraft({ ...draft, take: e.target.value })} placeholder="1A" />

@@ -3,14 +3,18 @@
 import React, { useMemo, useState } from 'react';
 import { Clapperboard, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-type NoteEntry = { id: string; scene: string; title: string; notes: string; reference: string; createdAt: string };
+type NoteEntry = { id: string; scene: string; scene_id?: string; title: string; notes: string; reference: string; createdAt: string };
 
 export function DirectorNotebookView() {
+  const { scenes } = useStudio();
   const { items, save, remove } = useSettingsList('directorNotes');
   const [draft, setDraft] = useState<Omit<NoteEntry, 'id' | 'createdAt'>>({
     scene: '',
+    scene_id: undefined,
     title: '',
     notes: '',
     reference: '',
@@ -25,7 +29,7 @@ export function DirectorNotebookView() {
   const add = async () => {
     if (!draft.title.trim()) return;
     if (!(await save([...items, { ...draft, id: `dn-${Date.now()}`, createdAt: new Date().toISOString() }]))) return;
-    setDraft({ scene: '', title: '', notes: '', reference: '' });
+    setDraft({ scene: '', scene_id: undefined, title: '', notes: '', reference: '' });
   };
 
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -48,10 +52,12 @@ export function DirectorNotebookView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 100px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '1 1 200px' }}>
             <span className={s.label}>Title</span>
             <input className={s.input} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Vision note" />

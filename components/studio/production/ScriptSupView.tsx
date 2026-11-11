@@ -3,14 +3,18 @@
 import React, { useState } from 'react';
 import { FileText, Plus, Trash2, Star } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-type ScriptNoteEntry = { id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean };
+type ScriptNoteEntry = { id: string; scene: string; scene_id?: string; take: string; slate: string; lens: string; notes: string; circle: boolean };
 
 export function ScriptSupView() {
+  const { scenes } = useStudio();
   const { items, save, remove } = useSettingsList('scriptNotes');
   const [draft, setDraft] = useState<Omit<ScriptNoteEntry, 'id'>>({
     scene: '',
+    scene_id: undefined,
     take: '',
     slate: '',
     lens: '',
@@ -21,7 +25,7 @@ export function ScriptSupView() {
   const add = async () => {
     if (!draft.take.trim()) return;
     if (!(await save([...items, { ...draft, id: `ss-${Date.now()}` }]))) return;
-    setDraft({ scene: '', take: '', slate: '', lens: '', notes: '', circle: false });
+    setDraft({ scene: '', scene_id: undefined, take: '', slate: '', lens: '', notes: '', circle: false });
   };
 
   const toggleCircle = async (id: string) => {
@@ -39,10 +43,12 @@ export function ScriptSupView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Take</span>
             <input className={s.input} value={draft.take} onChange={(e) => setDraft({ ...draft, take: e.target.value })} placeholder="1A" />

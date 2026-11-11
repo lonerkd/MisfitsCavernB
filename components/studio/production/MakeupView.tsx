@@ -3,15 +3,22 @@
 import React, { useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker, CharacterPicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
+import { useCharacters } from '@/lib/studio';
 import s from '../studio.module.css';
 
-type MakeupEntry = { id: string; character: string; scene: string; look: string; artist: string; notes: string; photo: string };
+type MakeupEntry = { id: string; character: string; character_id?: string; scene: string; scene_id?: string; look: string; artist: string; notes: string; photo: string };
 
 export function MakeupView() {
+  const { project, scenes } = useStudio();
+  const characters = useCharacters(project.id);
   const { items, save, remove } = useSettingsList('makeup');
   const [draft, setDraft] = useState<Omit<MakeupEntry, 'id'>>({
     character: '',
+    character_id: undefined,
     scene: '',
+    scene_id: undefined,
     look: '',
     artist: '',
     notes: '',
@@ -21,7 +28,7 @@ export function MakeupView() {
   const add = async () => {
     if (!draft.character.trim()) return;
     if (!(await save([...items, { ...draft, id: `mk-${Date.now()}` }]))) return;
-    setDraft({ character: '', scene: '', look: '', artist: '', notes: '', photo: '' });
+    setDraft({ character: '', character_id: undefined, scene: '', scene_id: undefined, look: '', artist: '', notes: '', photo: '' });
   };
 
   return (
@@ -35,14 +42,18 @@ export function MakeupView() {
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '1 1 160px' }}>
-            <span className={s.label}>Character</span>
-            <input className={s.input} value={draft.character} onChange={(e) => setDraft({ ...draft, character: e.target.value })} placeholder="Lead actress" />
-          </label>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <CharacterPicker
+            characters={characters.rows}
+            value={draft.character_id ?? null}
+            fallbackText={draft.character}
+            onChange={(id, name) => setDraft({ ...draft, character_id: id ?? undefined, character: name ?? '' })}
+          />
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>Look</span>
             <input className={s.input} value={draft.look} onChange={(e) => setDraft({ ...draft, look: e.target.value })} placeholder="Natural, no lipstick" />

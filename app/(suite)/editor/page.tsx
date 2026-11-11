@@ -20,6 +20,7 @@ import { useScriptImport, useScriptExport } from '@/components/editor/useScriptF
 import { toggleDualCaret } from '@/lib/scriptos/dual';
 import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
+import { extendSelection } from '@/lib/scriptos/selection';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
@@ -579,19 +580,9 @@ export default function EditorPage() {
       const ta = textareaRef.current;
       if (ta && ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
         e.preventDefault();
-        const { selectionStart: start, selectionEnd: end } = ta;
-        const len = ta.value.length;
-        if (e.key === 'ArrowRight') ta.setSelectionRange(start, Math.min(len, end + 1));
-        else if (e.key === 'ArrowLeft') ta.setSelectionRange(Math.max(0, start - 1), end);
-        else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-          const from = e.key === 'ArrowUp' ? start : end;
-          const nl = e.key === 'ArrowUp' ? ta.value.lastIndexOf('\n', from - 1) : ta.value.indexOf('\n', from);
-          const caret = e.key === 'ArrowUp' ? (nl === -1 ? 0 : nl) : (nl === -1 ? len : nl + 1);
-          // Keep the anchor (the far end) and move the caret a line.
-          const anchor = start === end ? (e.key === 'ArrowUp' ? end : start) : (e.key === 'ArrowUp' ? end : start);
-          ta.setSelectionRange(Math.min(anchor, caret), Math.max(anchor, caret));
-        }
-        setCursorLine(ta.value.substring(0, ta.selectionStart).split('\n').length - 1);
+        const { next, caret } = extendSelection({ value: ta.value, selection: { start: ta.selectionStart, end: ta.selectionEnd }, key: e.key as 'ArrowLeft' | 'ArrowRight' | 'ArrowUp' | 'ArrowDown' });
+        ta.setSelectionRange(next.start, next.end);
+        setCursorLine(ta.value.substring(0, caret).split('\n').length - 1);
         return;
       }
     }

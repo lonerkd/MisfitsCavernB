@@ -3,17 +3,21 @@
 import React, { useMemo, useState } from 'react';
 import { Sparkles, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { ScenePicker } from './SceneCharacterPickers';
+import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
-type VfxEntry = { id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
+type VfxEntry = { id: string; shot: string; scene: string; scene_id?: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' };
 
 const STATUSES: VfxEntry['status'][] = ['identified', 'shot', 'delivered', 'approved'];
 
 export function VfxView() {
+  const { scenes } = useStudio();
   const { items, save, remove } = useSettingsList('vfxShots');
   const [draft, setDraft] = useState<Omit<VfxEntry, 'id'>>({
     shot: '',
     scene: '',
+    scene_id: undefined,
     vendor: '',
     plateReq: '',
     status: 'identified',
@@ -25,7 +29,7 @@ export function VfxView() {
   const add = async () => {
     if (!draft.shot.trim()) return;
     if (!(await save([...items, { ...draft, id: `vfx-${Date.now()}` }]))) return;
-    setDraft({ shot: '', scene: '', vendor: '', plateReq: '', status: 'identified' });
+    setDraft({ shot: '', scene: '', scene_id: undefined, vendor: '', plateReq: '', status: 'identified' });
   };
 
   const updateStatus = async (id: string, status: VfxEntry['status']) => {
@@ -54,10 +58,12 @@ export function VfxView() {
             <span className={s.label}>Shot</span>
             <input className={s.input} value={draft.shot} onChange={(e) => setDraft({ ...draft, shot: e.target.value })} placeholder="VFX-001" />
           </label>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <ScenePicker
+            scenes={scenes.rows}
+            value={draft.scene_id ?? null}
+            fallbackText={draft.scene}
+            onChange={(id, num) => setDraft({ ...draft, scene_id: id ?? undefined, scene: num != null ? String(num) : '' })}
+          />
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>Vendor</span>
             <input className={s.input} value={draft.vendor} onChange={(e) => setDraft({ ...draft, vendor: e.target.value })} placeholder="Vendor name" />
