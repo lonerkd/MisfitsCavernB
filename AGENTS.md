@@ -30,7 +30,8 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    "Resume here" if there is one) — then the newest notes in
    [`sessions/`](.cavern-intelligence/sessions/README.md) for what the last PRs did (Claude Code
    prints the latest three at start).
-3. [`BACKLOG.md`](.cavern-intelligence/BACKLOG.md) — every open task, scoped. Pick from it.
+3. [`BACKLOG.md`](.cavern-intelligence/BACKLOG.md) — every open task, scoped. **It is large: read it
+   when you pick a task, not whole at the start.**
 4. [`INDEX.md`](.cavern-intelligence/INDEX.md) — the map: where everything else is, the playbook
    included. Nothing else is a required read to start.
 
