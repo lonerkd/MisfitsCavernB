@@ -17,6 +17,13 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   (Organization › Usage: which line is over — likely egress or Realtime; the
   database, storage and request counts are well inside). Decide: trim it, or
   move to Pro (also brings daily backups).
+- **Vercel usage** — the Hobby free tier caps Deployment Storage at 10 GB and
+  deployments at 100/day; the multi-agent workflow (every branch push is a
+  preview deployment) hit both on 2026-11-09, Vercel paused the project, and
+  production was left 10 commits behind `main` (fixed 2026-11-11 — the session
+  note). Decide: cut deployment volume (fewer pushes per PR; a broader
+  `ignoreCommand` in `vercel.json`, which today inspects only the tip commit),
+  or move to Pro.
 - **GitGuardian**: mark the two open incidents false positives (test fixtures); delete the two throwaway e2e accounts in production (Authentication › Users).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
