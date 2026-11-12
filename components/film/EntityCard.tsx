@@ -10,7 +10,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useStudio } from '@/components/studio/StudioContext';
 import { useCharacters, useSceneCharacters, useProjectLocations, useShootDays } from '@/lib/studio';
-import { attach, detach, useEntities, useLinks, type EntityKind } from '@/lib/film/links';
+import { attach, detach, useEntities, useLinks, ENTITY_KINDS, type EntityKind } from '@/lib/film/links';
 import { attachCandidates, cardOf, type CardScene } from '@/lib/film/card';
 import { useToast } from '@/components/ui/Toast';
 
@@ -24,8 +24,9 @@ const KIND_NAME: Record<EntityKind, string> = {
   set_log: 'Set log', post_item: 'Post item', timeline_item: 'Timeline',
   script_revision: 'Revision', stash_item: 'Snippet',
 };
-// Only these have a card of their own with connections; the rest show what they're attached to.
-const OPENS = new Set<EntityKind>(['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media']);
+// Every kind has a card now (lib/film/card.ts returns one for any entity), so
+// every kind opens.
+const OPENS = new Set<EntityKind>(ENTITY_KINDS);
 
 export function EntityCardHost() {
   const { project, scenes, castOf, cardId, closeCard } = useStudio();

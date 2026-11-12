@@ -81,11 +81,38 @@ For attachments (a task about a scene, a contract for a location, a reference
 image for a character, a cost for a day, a chat message that mentions Day 3),
 every thing gets one identity:
 
-- `entities` (`id`, `project_id`, `kind`, `label`) — one row per scene,
-  character, location, shoot day, element, shot, person-on-the-project, media
-  item, document, task, money line. Kept by triggers; never written by hand.
+- `entities` (`id`, `project_id`, `kind`, `label`) — one row per thing in the
+  film. Kept by triggers; never written by hand. The kinds, in the graph's own
+  order:
+  | kind | comes from | the graph's edge |
+  | --- | --- | --- |
+  | `scene` | `scenes` | → its script, place, day, characters |
+  | `character` | `characters` | → the scenes they are in |
+  | `location` | `project_locations` | → the scenes set there |
+  | `shoot_day` | `shoot_days` | → the scenes scheduled on it |
+  | `task` / `document` / `media` | their tables | attached to anything |
+  | `shot` | `shots` | → its scene |
+  | `breakdown_element` | `breakdown_elements` | → the scenes it is tagged in |
+  | `scene_state` | `scene_states` | → its scene and character (continuity) |
+  | `casting` | `character_castings` | → the character it plays |
+  | `call_sheet` | `call_sheets` | → its shoot day |
+  | `note` | `notes` | → its scene and script |
+  | `beat` | `project_beats` | → its script |
+  | `cut` | `post_cuts` | → its media |
+  | `script` | `scripts` | → its scenes, beats, notes, revisions, stash |
+  | `sfx` | `sfx_assets` | attached to anything |
+  | `vendor` / `budget_item` | their tables | an expense points at both |
+  | `mood_board` / `mood_board_item` | their tables | an item is on its board |
+  | `expense` | `expenses` | → its budget line, vendor and receipt |
+  | `timesheet` | `timesheets` | the person's day on the project |
+  | `set_log` | `set_log` | → its call sheet, scene, shot and media |
+  | `post_item` / `timeline_item` | their tables | the project's post and schedule |
+  | `script_revision` / `stash_item` | their tables | → their script |
 - `links` (`project_id`, `from_entity`, `to_entity`, `kind`, `created_by`) —
   real foreign keys both ways, so a link can't point at something that's gone.
+  The graph's own edges have kinds (`in`, `on`, `for`, `plays`, `from`,
+  `continuity`, `shows`, `log`, `revision`, `stash`, …); a hand-attached link
+  uses a person's kind (`about` by default), so the card can tell the two apart.
 
 Rejected: `(type, id)` pairs on each table (nothing stops them dangling), and
 a nullable `scene_id / location_id / character_id / …` on every table (every
