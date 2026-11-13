@@ -191,6 +191,7 @@ export default function EditorPage() {
   const locations = useProjectLocations(activeProject?.id ?? null);
   const lineOverrides = useLineOverrides(currentScript?.id ?? null);
   const { writerMemory } = useReadingMemory(sessionUser?.id ?? null);
+  const projectCharacters = useCharacters(currentScript?.project_id ?? null);
   const readContext = useMemo(() => contextFromProject(
     Object.values(castings),
     corrections.rows,
@@ -727,6 +728,15 @@ const [showGoToScene, setShowGoToScene] = useState(false);
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
+  // Map character names to ids for casting lookup
+  const nameToId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const char of projectCharacters.rows) {
+      map.set(char.name.toUpperCase(), char.id);
+    }
+    return map;
+  }, [projectCharacters.rows]);
+
   const kindOfDiffLine = useCallback((n: number): DiffKind => {
     const t = lines[n]?.type;
     if (t === 'slug') return 'scene';
@@ -778,8 +788,6 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   // When in the story each scene is, and its shoot day: the left margin.
   const shootDays = useShootDays(currentScript?.project_id ?? null);
   const datedDays = useMemo(() => new Set(shootDays.rows.filter((d) => d.shoot_date).map((d) => d.day_number)), [shootDays.rows]);
-  // The character whose cue the caret is on: who plays them, their look in this scene.
-  const projectCharacters = useCharacters(currentScript?.project_id ?? null);
   const sceneStates = useSceneStates(currentScript?.project_id ?? null);
   const cue = useMemo(() => {
     const l = lines[cursorLine];
@@ -874,6 +882,8 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   const toolOpen = (id: ToolId) => !scriptProjectId || !!(editorProgress.progress && toolState(editorProgress.progress, id)?.unlocked);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
   const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
+
+  // ── Character bible: the character bible modal ─────────────────────────────
 
   const leftNavEl = (
     <EditorLeftNav
@@ -1179,6 +1189,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                     const isSelected = selectedCharProfile === name;
                     const stat = charStats.find(cs => cs.name === name);
                     const cast = castings[name.toUpperCase()];
+                    const characterId = nameToId.get(name.toUpperCase()) || name;
                     return (
                       <div key={name} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${isSelected ? 'rgba(var(--ink-rgb), 0.2)' : 'rgba(var(--ink-rgb), 0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
                         <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-strong)' }}>
@@ -1199,7 +1210,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                               <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
                               <select
                                 value={cast?.crew_user_id || ''}
-                                onChange={e => handleCastCharacter(name, e.target.value)}
+                                onChange={e => handleCastCharacter(characterId, name, e.target.value)}
                                 disabled={projectCrew.length === 0}
                                 style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg-muted)', fontSize: 12, outline: 'none' }}
                               >

@@ -3,6 +3,7 @@ import { supabase } from './client';
 export interface Casting {
   id: string;
   project_id: string;
+  character_id: string;
   character_name: string;
   crew_user_id: string;
   created_at: string | null;
@@ -17,60 +18,69 @@ export interface CastingWithProject extends Casting {
 export async function getCastingsForProject(projectId: string): Promise<Record<string, Casting>> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_name, crew_user_id, created_at, profiles:crew_user_id(username, avatar_url)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), profiles:crew_user_id(username, avatar_url)')
     .eq('project_id', projectId);
   if (error) throw error;
-  const byName: Record<string, Casting> = {};
+  const byId: Record<string, Casting> = {};
   for (const row of data ?? []) {
-    byName[row.character_name.toUpperCase()] = {
+    if (!row.character_id) continue;
+    const r = row as any;
+    byId[row.character_id] = {
       ...row,
-      username: row.profiles?.username ?? undefined,
-      avatar_url: row.profiles?.avatar_url ?? undefined,
+      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
+      character_id: row.character_id!,
+      username: r.profiles?.username ?? undefined,
+      avatar_url: r.profiles?.avatar_url ?? undefined,
     };
   }
-  return byName;
+  return byId;
 }
 
 export async function getCastingsForUser(userId: string): Promise<CastingWithProject[]> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_name, crew_user_id, created_at, projects:project_id(title)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), projects:project_id(title)')
     .eq('crew_user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => ({
-    ...row,
-    project_title: row.projects?.title ?? undefined,
-  }));
+  return (data ?? []).map((row) => {
+    const r = row as any;
+    return {
+      ...row,
+      character_id: row.character_id!,
+      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
+      project_title: r.projects?.title ?? undefined,
+    };
+  });
 }
 
-export async function setCasting(projectId: string, characterName: string, crewUserId: string, createdBy: string) {
+export async function setCasting(projectId: string, characterId: string, characterName: string, crewUserId: string, createdBy: string) {
   const { data, error } = await supabase
     .from('character_castings')
     .upsert(
-      { project_id: projectId, character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
-      { onConflict: 'project_id,character_name' },
+      { project_id: projectId, character_id: characterId, character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
+      { onConflict: 'project_id,character_id' },
     )
     .select()
     .single();
   if (error) throw error;
-  await logCastingHistory(projectId, characterName, 'cast', createdBy);
+  await logCastingHistory(projectId, characterId, characterName, 'cast', createdBy);
   return data;
 }
 
-export async function removeCasting(projectId: string, characterName: string, actorId?: string) {
+export async function removeCasting(projectId: string, characterId: string, characterName: string, actorId?: string) {
   const { error } = await supabase
     .from('character_castings')
     .delete()
     .eq('project_id', projectId)
-    .eq('character_name', characterName.toUpperCase());
+    .eq('character_id', characterId);
   if (error) throw error;
-  await logCastingHistory(projectId, characterName, 'released', actorId);
+  await logCastingHistory(projectId, characterId, characterName, 'released', actorId);
 }
 
 export interface CastingHistoryEntry { id: string; character_name: string; action: string; created_at: string | null }
 
-export async function logCastingHistory(projectId: string, characterName: string, action: string, actorId?: string) {
+export async function logCastingHistory(projectId: string, characterId: string, characterName: string, action: string, actorId?: string) {
   const { error } = await supabase
     .from('casting_history').insert({ project_id: projectId, character_name: characterName.toUpperCase(), action, actor_id: actorId ?? null });
   if (error) throw error;

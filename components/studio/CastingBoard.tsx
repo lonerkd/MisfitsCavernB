@@ -93,7 +93,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const assign = async (crewUserId: string) => {
     if (!selected) return;
     try {
-      await setCasting(projectId, selected, crewUserId, userId);
+      const casting = castings[selected.toUpperCase()];
+      await setCasting(projectId, casting?.character_id || selected, selected, crewUserId, userId!);
       logActivity(`cast a performer as ${selected}`, 'project', projectId);
       await loadCastings();
       setAssigning(false);
@@ -101,7 +102,14 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not cast', 'error'); }
   };
   const clearCasting = async (name: string) => {
-    try { await removeCasting(projectId, name, userId); logActivity(`reopened casting for ${name}`, 'project', projectId); await loadCastings(); toast(`${name} reopened`, 'info'); }
+    try { 
+      const casting = castings[name.toUpperCase()];
+      if (!casting) return;
+      await removeCasting(projectId, casting.character_id, name, userId!);
+      logActivity(`reopened casting for ${name}`, 'project', projectId); 
+      await loadCastings(); 
+      toast(`${name} reopened`, 'info'); 
+    }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not update', 'error'); }
   };
   const addNote = async () => {
