@@ -62,6 +62,13 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: node scripts/nightly-review-input.mjs
 
+      # The model may Write to the workspace, and the posting step below holds the issue-write token: so the posting script and the
+      # library it imports are copied out BEFORE the model runs, and that copy is the one that runs. A prompt-injected run can change
+      # what it writes into nightly-review.md, never the code that posts it.
+      - name: Freeze the posting script
+        if: steps.gate.outputs.enabled == 'true' && steps.gather.outputs.quiet != 'true'
+        run: cp scripts/nightly-review-post.mjs scripts/nightly-review-lib.mjs "$RUNNER_TEMP/"
+
       - uses: anthropics/claude-code-action@v1
         if: steps.gate.outputs.enabled == 'true' && steps.gather.outputs.quiet != 'true'
         with:
@@ -80,7 +87,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node scripts/nightly-review-post.mjs
+          NIGHTLY_REVIEW: ${{ github.workspace }}/nightly-review.md
+        run: node "$RUNNER_TEMP/nightly-review-post.mjs"
 
       - name: A quiet day
         if: steps.gate.outputs.enabled == 'true' && steps.gather.outputs.quiet == 'true'
