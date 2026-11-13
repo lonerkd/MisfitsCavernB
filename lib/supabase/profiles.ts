@@ -131,13 +131,23 @@ export async function collectMyData(userId: string) {
   };
 }
 
-export async function inviteToCrew(projectId: string, userId: string, role: string) {
+/** What a permission tier is called to the person who is invited. */
+const TIER_WORD: Record<'lead' | 'contributor' | 'viewer', string> = { lead: 'lead', contributor: 'crew', viewer: 'viewer' };
+
+/**
+ * Invites someone onto a project. `role` is the permission tier (what the database lets them do:
+ * `lead`, `contributor` or `viewer`); `craft` is what they do on the project (a name from
+ * public.crafts). They are two columns because they are two things: writing a craft into the
+ * tier is refused by the database.
+ */
+export async function inviteToCrew(projectId: string, userId: string, role: 'lead' | 'contributor' | 'viewer', craft?: string | null) {
   const { data, error } = await supabase
     .from('project_crew')
     .insert([{
       project_id: projectId,
       user_id: userId,
       role: role,
+      ...(craft ? { craft } : {}),
       status: 'pending'
     }])
     .select()
@@ -145,14 +155,15 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
 
   if (error) throw error;
 
-  void logActivity(`invited a crew member as ${role}`, 'project', projectId);
+  const as = craft || TIER_WORD[role];
+  void logActivity(`invited a crew member as ${as}`, 'project', projectId);
 
   try {
     const { data: proj } = await supabase.from('projects').select('title').eq('id', projectId).single();
     await supabase.from('notifications').insert({
       user_id: userId,
       type: 'crew',
-      title: `You were added as ${role}`,
+      title: `You were added as ${as}`,
       body: proj?.title ? `On “${proj.title}”.` : 'You were invited to a project crew.',
       link: '/projects',
       read: false,
@@ -160,7 +171,6 @@ export async function inviteToCrew(projectId: string, userId: string, role: stri
   } catch {  }
   return data;
 }
-
 
 /** Real people (no samples) whose username contains the text, for pickers. */
 export async function findPeopleByName(text: string, limit = 8): Promise<{ id: string; username: string }[]> {

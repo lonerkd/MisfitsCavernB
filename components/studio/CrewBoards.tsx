@@ -12,6 +12,8 @@ import Avatar from '@/components/ui/Avatar';
 import { usePillZone } from '@/lib/os/PillContext';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { Trash2, Search } from 'lucide-react';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
+import type { CrewRole } from '@/lib/supabase/crew-management';
 
 export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void; pushing?: boolean }) {
   return (
@@ -70,7 +72,11 @@ export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any
   );
 }
 
-export function CrewMemberCard({ member, index, isOnline, away }: { member: any; index: number; isOnline?: boolean; away?: string | null }) {
+export function CrewMemberCard({ member, index, isOnline, away, craft, onCraftChange }: {
+  member: any; index: number; isOnline?: boolean; away?: string | null;
+  /** Their craft on this project, and (for the owner) a way to change it. */
+  craft?: string | null; onCraftChange?: (craft: string | null) => void;
+}) {
   const router = useRouter();
 
   const zoneHandlers = usePillZone(member.userId ? {
@@ -114,8 +120,14 @@ export function CrewMemberCard({ member, index, isOnline, away }: { member: any;
       </div>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)' }}>{member.name}</div>
-        <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{member.role}</div>
+        {/* The owner's picker already says the craft; the line is for the tier when there is none. */}
+        {!(onCraftChange && craft) && <div style={{ fontSize: 11, color: 'var(--fg-subtle)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{member.role}</div>}
         {away && <div style={{ fontSize: 11, color: 'var(--warn)', marginTop: 3 }}>Away {away}</div>}
+        {onCraftChange && (
+          <div style={{ marginTop: 8, maxWidth: 260 }} onClick={(e) => e.stopPropagation()}>
+            <CraftPicker label={`${member.name}'s craft`} value={craft ?? null} onChange={onCraftChange} placeholder="Set their craft" noneLabel="No craft" />
+          </div>
+        )}
       </div>
       <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'var(--caps)' }}>
         {member.status || 'pending'}
@@ -131,7 +143,9 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [role, setRole] = useState('Production Assistant');
+  // Two choices, because they are two things: what they do (a craft) and what they may do here (access).
+  const [craft, setCraft] = useState<string | null>(null);
+  const [access, setAccess] = useState<CrewRole>('contributor');
 
   const handleSearch = async () => {
     if (!query) return;
@@ -145,8 +159,8 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
     if (!selectedUser || !projectId) return;
     setLoading(true);
     try {
-      await inviteToCrew(projectId, selectedUser.id, role);
-      toast(`Invited ${selectedUser.username || 'member'} as ${role || 'crew'}`, 'success');
+      await inviteToCrew(projectId, selectedUser.id, access, craft);
+      toast(`Invited ${selectedUser.username || 'member'}${craft ? ` as ${craft}` : ' to the crew'}`, 'success');
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -215,23 +229,26 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                     </div>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 700 }}>{selectedUser.username}</div>
-                      <div style={{ fontSize: 12, color: 'var(--accent)' }}>Active Professional</div>
+                      {selectedUser.role && <div style={{ fontSize: 12, color: 'var(--accent)' }}>{selectedUser.role}</div>}
                     </div>
                  </div>
 
                  <div>
-                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>Assigned Role</label>
+                   <label style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>What they do</label>
+                   <CraftPicker label="Their craft" value={craft} onChange={setCraft} placeholder="Choose their craft (optional)" noneLabel="No craft yet" />
+                 </div>
+
+                 <div>
+                   <label htmlFor="recruit-access" style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 6, display: 'block' }}>What they can do here</label>
                    <select
-                     value={role}
-                     onChange={e => setRole(e.target.value)}
+                     id="recruit-access"
+                     value={access}
+                     onChange={e => setAccess(e.target.value as CrewRole)}
                      style={{ width: '100%', background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.2)', color: 'var(--fg-strong)', padding: 12, borderRadius: 8, fontSize: 13 }}
                    >
-                     <option>Director</option>
-                     <option>Director of Photography</option>
-                     <option>Lead Actor</option>
-                     <option>Sound Mixer</option>
-                     <option>Editor</option>
-                     <option>Production Assistant</option>
+                     <option value="contributor">Crew — can add and edit</option>
+                     <option value="lead">Lead — can add and edit</option>
+                     <option value="viewer">View only</option>
                    </select>
                  </div>
 
