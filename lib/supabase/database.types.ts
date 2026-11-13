@@ -716,7 +716,7 @@ export type Database = {
       casting_auditions: {
         Row: {
           character_name: string;
-          created_at: string | null;
+          created_at: string;
           created_by: string | null;
           crew_user_id: string;
           id: string;
@@ -727,7 +727,7 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           character_name: string;
-          created_at?: string | null;
+          created_at?: string;
           created_by?: string | null;
           crew_user_id: string;
           id?: string;
@@ -737,7 +737,7 @@ export type Database = {
         };
         Update: {
           character_name?: string;
-          created_at?: string | null;
+          created_at?: string;
           created_by?: string | null;
           crew_user_id?: string;
           id?: string;
@@ -746,13 +746,6 @@ export type Database = {
           scheduled_at?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "casting_auditions_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "casting_auditions_crew_user_id_fkey";
             columns: ["crew_user_id"];
@@ -774,7 +767,7 @@ export type Database = {
           action: string;
           actor_id: string | null;
           character_name: string;
-          created_at: string | null;
+          created_at: string;
           id: string;
           project_id: string;
         };
@@ -783,7 +776,7 @@ export type Database = {
           action: string;
           actor_id?: string | null;
           character_name: string;
-          created_at?: string | null;
+          created_at?: string;
           id?: string;
           project_id: string;
         };
@@ -791,18 +784,11 @@ export type Database = {
           action?: string;
           actor_id?: string | null;
           character_name?: string;
-          created_at?: string | null;
+          created_at?: string;
           id?: string;
           project_id?: string;
         };
         Relationships: [
-          {
-            foreignKeyName: "casting_history_actor_id_fkey";
-            columns: ["actor_id"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
           {
             foreignKeyName: "casting_history_project_id_fkey";
             columns: ["project_id"];
@@ -815,7 +801,7 @@ export type Database = {
       casting_notes: {
         Row: {
           character_name: string;
-          created_at: string | null;
+          created_at: string;
           created_by: string | null;
           id: string;
           note: string;
@@ -824,7 +810,7 @@ export type Database = {
         ComputedFields: never;
         Insert: {
           character_name: string;
-          created_at?: string | null;
+          created_at?: string;
           created_by?: string | null;
           id?: string;
           note: string;
@@ -832,7 +818,7 @@ export type Database = {
         };
         Update: {
           character_name?: string;
-          created_at?: string | null;
+          created_at?: string;
           created_by?: string | null;
           id?: string;
           note?: string;
@@ -840,17 +826,56 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: "casting_notes_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
             foreignKeyName: "casting_notes_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      change_reviews: {
+        Row: {
+          change_key: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          project_id: string;
+          script_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          change_key: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          project_id: string;
+          script_id: string;
+        };
+        Update: {
+          change_key?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          project_id?: string;
+          script_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "change_reviews_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "change_reviews_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
             referencedColumns: ["id"];
           },
         ];
@@ -989,59 +1014,6 @@ export type Database = {
             columns: ["project_id"];
             isOneToOne: false;
             referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      change_reviews: {
-        Row: {
-          change_key: string;
-          created_at: string | null;
-          created_by: string | null;
-          id: string;
-          kind: string;
-          project_id: string;
-          script_id: string;
-        };
-        ComputedFields: never;
-        Insert: {
-          change_key: string;
-          created_at?: string | null;
-          created_by?: string | null;
-          id?: string;
-          kind: string;
-          project_id: string;
-          script_id: string;
-        };
-        Update: {
-          change_key?: string;
-          created_at?: string | null;
-          created_by?: string | null;
-          id?: string;
-          kind?: string;
-          project_id?: string;
-          script_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "change_reviews_created_by_fkey";
-            columns: ["created_by"];
-            isOneToOne: false;
-            referencedRelation: "profiles";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "change_reviews_project_id_fkey";
-            columns: ["project_id"];
-            isOneToOne: false;
-            referencedRelation: "projects";
-            referencedColumns: ["id"];
-          },
-          {
-            foreignKeyName: "change_reviews_script_id_fkey";
-            columns: ["script_id"];
-            isOneToOne: false;
-            referencedRelation: "scripts";
             referencedColumns: ["id"];
           },
         ];
@@ -4756,9 +4728,9 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          answers: NonNullable<Json>;
+          answers?: NonNullable<Json>;
           project_id: string;
-          structure_id: string;
+          structure_id?: string;
           updated_at?: string;
         };
         Update: {
@@ -5141,11 +5113,11 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          locations: NonNullable<Json>;
-          lore: NonNullable<Json>;
+          locations?: NonNullable<Json>;
+          lore?: NonNullable<Json>;
           project_id: string;
-          rules: NonNullable<Json>;
-          timeline: NonNullable<Json>;
+          rules?: NonNullable<Json>;
+          timeline?: NonNullable<Json>;
           updated_at?: string;
         };
         Update: {
