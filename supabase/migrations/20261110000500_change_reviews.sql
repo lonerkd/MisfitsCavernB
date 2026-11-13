@@ -16,6 +16,12 @@ alter table public.change_reviews enable row level security;
 create policy "change_reviews_select" on public.change_reviews
   for select using (internal.can_access_project(project_id));
 create policy "change_reviews_insert" on public.change_reviews
-  for insert with check (internal.can_shape_project(project_id));
+  for insert with check (internal.is_project_creator(project_id));
+create policy "change_reviews_update" on public.change_reviews
+  for update using (internal.is_project_creator(project_id));
 create policy "change_reviews_delete" on public.change_reviews
-  for delete using (internal.can_shape_project(project_id));
+  for delete using (internal.is_project_creator(project_id));
+
+create index change_reviews_project_id_idx on public.change_reviews (project_id);
+create index change_reviews_script_id_idx on public.change_reviews (script_id);
+create index change_reviews_created_by_idx on public.change_reviews (created_by);

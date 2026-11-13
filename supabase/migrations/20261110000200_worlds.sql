@@ -14,6 +14,6 @@ alter table public.worlds enable row level security;
 create policy "worlds_select" on public.worlds
   for select using (internal.can_access_project(project_id));
 create policy "worlds_insert" on public.worlds
-  for insert with check (internal.can_shape_project(project_id));
+  for insert with check (internal.is_project_creator(project_id));
 create policy "worlds_update" on public.worlds
-  for update using (internal.can_shape_project(project_id));
+  for update using (internal.is_project_creator(project_id));

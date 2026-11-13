@@ -14,6 +14,9 @@ alter table public.casting_notes enable row level security;
 create policy "casting_notes_select" on public.casting_notes
   for select using (internal.can_access_project(project_id));
 create policy "casting_notes_insert" on public.casting_notes
-  for insert with check (internal.can_shape_project(project_id));
+  for insert with check (internal.is_project_creator(project_id));
 create policy "casting_notes_delete" on public.casting_notes
-  for delete using (internal.can_shape_project(project_id));
+  for delete using (internal.is_project_creator(project_id));
+
+create index casting_notes_project_id_idx on public.casting_notes (project_id);
+create index casting_notes_created_by_idx on public.casting_notes (created_by);

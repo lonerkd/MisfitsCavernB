@@ -16,8 +16,12 @@ alter table public.casting_auditions enable row level security;
 create policy "casting_auditions_select" on public.casting_auditions
   for select using (internal.can_access_project(project_id));
 create policy "casting_auditions_insert" on public.casting_auditions
-  for insert with check (internal.can_shape_project(project_id));
+  for insert with check (internal.is_project_creator(project_id));
 create policy "casting_auditions_update" on public.casting_auditions
-  for update using (internal.can_shape_project(project_id));
+  for update using (internal.is_project_creator(project_id));
 create policy "casting_auditions_delete" on public.casting_auditions
-  for delete using (internal.can_shape_project(project_id));
+  for delete using (internal.is_project_creator(project_id));
+
+create index casting_auditions_project_id_idx on public.casting_auditions (project_id);
+create index casting_auditions_crew_user_id_idx on public.casting_auditions (crew_user_id);
+create index casting_auditions_created_by_idx on public.casting_auditions (created_by);

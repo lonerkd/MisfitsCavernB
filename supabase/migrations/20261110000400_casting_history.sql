@@ -14,4 +14,7 @@ alter table public.casting_history enable row level security;
 create policy "casting_history_select" on public.casting_history
   for select using (internal.can_access_project(project_id));
 create policy "casting_history_insert" on public.casting_history
-  for insert with check (internal.can_shape_project(project_id));
+  for insert with check (internal.is_project_creator(project_id));
+
+create index casting_history_project_id_idx on public.casting_history (project_id);
+create index casting_history_actor_id_idx on public.casting_history (actor_id);

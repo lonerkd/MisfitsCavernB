@@ -1846,6 +1846,16 @@ index CREATE INDEX call_sheet_calls_sheet_fkey_idx ON public.call_sheet_calls US
 index CREATE INDEX call_sheets_issued_by_fkey_idx ON public.call_sheets USING btree (issued_by)
 index CREATE INDEX call_sheets_shoot_day_fkey_idx ON public.call_sheets USING btree (shoot_day_id, project_id)
 index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree (updated_by)
+index CREATE INDEX casting_auditions_created_by_idx ON public.casting_auditions USING btree (created_by)
+index CREATE INDEX casting_auditions_crew_user_id_idx ON public.casting_auditions USING btree (crew_user_id)
+index CREATE INDEX casting_auditions_project_id_idx ON public.casting_auditions USING btree (project_id)
+index CREATE INDEX casting_history_actor_id_idx ON public.casting_history USING btree (actor_id)
+index CREATE INDEX casting_history_project_id_idx ON public.casting_history USING btree (project_id)
+index CREATE INDEX casting_notes_created_by_idx ON public.casting_notes USING btree (created_by)
+index CREATE INDEX casting_notes_project_id_idx ON public.casting_notes USING btree (project_id)
+index CREATE INDEX change_reviews_created_by_idx ON public.change_reviews USING btree (created_by)
+index CREATE INDEX change_reviews_project_id_idx ON public.change_reviews USING btree (project_id)
+index CREATE INDEX change_reviews_script_id_idx ON public.change_reviews USING btree (script_id)
 index CREATE INDEX channel_members_channel_idx ON public.channel_members USING btree (channel_id)
 index CREATE INDEX channels_project_idx ON public.channels USING btree (project_id, "position")
 index CREATE INDEX character_castings_character_fkey_idx ON public.character_castings USING btree (character_id, project_id)
@@ -2237,18 +2247,19 @@ policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authen
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.casting_auditions "casting_auditions_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
-policy public.casting_auditions "casting_auditions_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_auditions "casting_auditions_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
+policy public.casting_auditions "casting_auditions_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_auditions "casting_auditions_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.casting_auditions "casting_auditions_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
-policy public.casting_history "casting_history_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_auditions "casting_auditions_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
+policy public.casting_history "casting_history_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_history "casting_history_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.casting_notes "casting_notes_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
-policy public.casting_notes "casting_notes_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_notes "casting_notes_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
+policy public.casting_notes "casting_notes_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_notes "casting_notes_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.change_reviews "change_reviews_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
-policy public.change_reviews "change_reviews_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.change_reviews "change_reviews_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
+policy public.change_reviews "change_reviews_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.change_reviews "change_reviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.change_reviews "change_reviews_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
 policy public.channel_members "channel_members delete" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.channel_members "channel_members insert" PERMISSIVE INSERT to authenticated using - check can_manage_channel(channel_id)
 policy public.channel_members "channel_members update" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check -
@@ -2452,9 +2463,9 @@ policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DE
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
-policy public.story_interviews "story_interviews_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.story_interviews "story_interviews_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.story_interviews "story_interviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.story_interviews "story_interviews_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
+policy public.story_interviews "story_interviews_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
 policy public.support_case_messages "support case messages insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))))
 policy public.support_case_messages "support case messages read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))) check -
 policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenticated using - check ((opened_by = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text))
@@ -2474,9 +2485,9 @@ policy public.unavailability "unavailability own insert" PERMISSIVE INSERT to au
 policy public.unavailability "unavailability own read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.unavailability "unavailability own update" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.vendors "vendors shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
-policy public.worlds "worlds_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.worlds "worlds_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.worlds "worlds_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
+policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
 policy public.writing_days "writing_days own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
