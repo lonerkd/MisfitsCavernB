@@ -133,6 +133,33 @@ column campaigns.target_demographic text
 column campaigns.target_reach text default ''::text
 column campaigns.title text not null
 column campaigns.updated_at timestamp with time zone default now()
+column casting_auditions.character_name text not null
+column casting_auditions.created_at timestamp with time zone default now() not null
+column casting_auditions.created_by uuid
+column casting_auditions.crew_user_id uuid not null
+column casting_auditions.id uuid default gen_random_uuid() not null
+column casting_auditions.notes text
+column casting_auditions.project_id uuid not null
+column casting_auditions.scheduled_at timestamp with time zone not null
+column casting_history.action text not null
+column casting_history.actor_id uuid
+column casting_history.character_name text not null
+column casting_history.created_at timestamp with time zone default now() not null
+column casting_history.id uuid default gen_random_uuid() not null
+column casting_history.project_id uuid not null
+column casting_notes.character_name text not null
+column casting_notes.created_at timestamp with time zone default now() not null
+column casting_notes.created_by uuid
+column casting_notes.id uuid default gen_random_uuid() not null
+column casting_notes.note text not null
+column casting_notes.project_id uuid not null
+column change_reviews.change_key text not null
+column change_reviews.created_at timestamp with time zone default now() not null
+column change_reviews.created_by uuid
+column change_reviews.id uuid default gen_random_uuid() not null
+column change_reviews.kind text not null
+column change_reviews.project_id uuid not null
+column change_reviews.script_id uuid not null
 column channel_members.can_manage boolean default false not null
 column channel_members.can_post boolean default true not null
 column channel_members.channel_id uuid not null
@@ -807,6 +834,10 @@ column spotify_connections.expires_at bigint not null
 column spotify_connections.refresh_token text not null
 column spotify_connections.updated_at timestamp with time zone default now() not null
 column spotify_connections.user_id uuid not null
+column story_interviews.answers jsonb default '{}'::jsonb not null
+column story_interviews.project_id uuid not null
+column story_interviews.structure_id text default 'none'::text not null
+column story_interviews.updated_at timestamp with time zone default now() not null
 column support_case_messages.author_id uuid default auth.uid()
 column support_case_messages.body text not null
 column support_case_messages.case_id uuid not null
@@ -869,6 +900,12 @@ column vendors.id uuid default gen_random_uuid() not null
 column vendors.name text not null
 column vendors.notes text
 column vendors.project_id uuid not null
+column worlds.locations jsonb default '[]'::jsonb not null
+column worlds.lore jsonb default '[]'::jsonb not null
+column worlds.project_id uuid not null
+column worlds.rules jsonb default '[]'::jsonb not null
+column worlds.timeline jsonb default '[]'::jsonb not null
+column worlds.updated_at timestamp with time zone default now() not null
 column writing_days.day date not null
 column writing_days.goal integer not null
 column writing_days.sprints integer default 0 not null
@@ -960,6 +997,21 @@ constraint campaigns.campaigns_platform_len CHECK (((char_length(btrim(platform)
 constraint campaigns.campaigns_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint campaigns.campaigns_status_check CHECK ((status = ANY (ARRAY['drafting'::text, 'live'::text, 'wrapped'::text])))
 constraint campaigns.campaigns_title_len CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
+constraint casting_auditions.casting_auditions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+constraint casting_auditions.casting_auditions_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint casting_auditions.casting_auditions_pkey PRIMARY KEY (id)
+constraint casting_auditions.casting_auditions_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint casting_history.casting_history_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id)
+constraint casting_history.casting_history_pkey PRIMARY KEY (id)
+constraint casting_history.casting_history_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint casting_notes.casting_notes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+constraint casting_notes.casting_notes_pkey PRIMARY KEY (id)
+constraint casting_notes.casting_notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint change_reviews.change_reviews_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
+constraint change_reviews.change_reviews_pkey PRIMARY KEY (id)
+constraint change_reviews.change_reviews_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint change_reviews.change_reviews_project_id_script_id_change_key_key UNIQUE (project_id, script_id, change_key)
+constraint change_reviews.change_reviews_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint channel_members.channel_members_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES channels(id) ON DELETE CASCADE
 constraint channel_members.channel_members_channel_id_user_id_key UNIQUE (channel_id, user_id)
 constraint channel_members.channel_members_pkey PRIMARY KEY (id)
@@ -1420,6 +1472,8 @@ constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES 
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint story_interviews.story_interviews_pkey PRIMARY KEY (project_id)
+constraint story_interviews.story_interviews_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint support_case_messages.support_case_messages_author_id_fkey FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint support_case_messages.support_case_messages_body_check CHECK (((char_length(btrim(body)) >= 1) AND (char_length(btrim(body)) <= 5000)))
 constraint support_case_messages.support_case_messages_case_id_fkey FOREIGN KEY (case_id) REFERENCES support_cases(id) ON DELETE CASCADE
@@ -1463,6 +1517,8 @@ constraint vendors.vendors_name_check CHECK (((char_length(btrim(name)) >= 1) AN
 constraint vendors.vendors_pkey PRIMARY KEY (id)
 constraint vendors.vendors_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint vendors.vendors_text_len CHECK (((char_length(category) <= 60) AND (char_length(contact) <= 300) AND (char_length(notes) <= 2000)))
+constraint worlds.worlds_pkey PRIMARY KEY (project_id)
+constraint worlds.worlds_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint writing_days.writing_days_goal_check CHECK (((goal >= 50) AND (goal <= 20000)))
 constraint writing_days.writing_days_pkey PRIMARY KEY (user_id, day)
 constraint writing_days.writing_days_sprints_check CHECK (((sprints >= 0) AND (sprints <= 500)))
@@ -2027,6 +2083,11 @@ index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id
 index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
 index CREATE UNIQUE INDEX call_sheets_shoot_day_key ON public.call_sheets USING btree (shoot_day_id) WHERE (shoot_day_id IS NOT NULL)
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
+index CREATE UNIQUE INDEX casting_auditions_pkey ON public.casting_auditions USING btree (id)
+index CREATE UNIQUE INDEX casting_history_pkey ON public.casting_history USING btree (id)
+index CREATE UNIQUE INDEX casting_notes_pkey ON public.casting_notes USING btree (id)
+index CREATE UNIQUE INDEX change_reviews_pkey ON public.change_reviews USING btree (id)
+index CREATE UNIQUE INDEX change_reviews_project_id_script_id_change_key_key ON public.change_reviews USING btree (project_id, script_id, change_key)
 index CREATE UNIQUE INDEX channel_members_channel_id_user_id_key ON public.channel_members USING btree (channel_id, user_id)
 index CREATE UNIQUE INDEX channel_members_pkey ON public.channel_members USING btree (id)
 index CREATE UNIQUE INDEX channel_presets_pkey ON public.channel_presets USING btree (key)
@@ -2136,6 +2197,7 @@ index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
 index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
+index CREATE UNIQUE INDEX story_interviews_pkey ON public.story_interviews USING btree (project_id)
 index CREATE UNIQUE INDEX support_case_messages_pkey ON public.support_case_messages USING btree (id)
 index CREATE UNIQUE INDEX support_cases_pkey ON public.support_cases USING btree (id)
 index CREATE UNIQUE INDEX timeline_items_pkey ON public.timeline_items USING btree (id)
@@ -2146,6 +2208,7 @@ index CREATE UNIQUE INDEX unavailability_pkey ON public.unavailability USING btr
 index CREATE UNIQUE INDEX vendors_id_project_key ON public.vendors USING btree (id, project_id)
 index CREATE UNIQUE INDEX vendors_pkey ON public.vendors USING btree (id)
 index CREATE UNIQUE INDEX vendors_project_name_idx ON public.vendors USING btree (project_id, lower(btrim(name)))
+index CREATE UNIQUE INDEX worlds_pkey ON public.worlds USING btree (project_id)
 index CREATE UNIQUE INDEX writing_days_pkey ON public.writing_days USING btree (user_id, day)
 policy public.activity_feed "activity insert" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND ((internal.activity_project_id(metadata) IS NULL) OR internal.can_access_project(internal.activity_project_id(metadata))) AND (((metadata ->> 'audience'::text) IS DISTINCT FROM 'shapers'::text) OR internal.can_shape_project(internal.activity_project_id(metadata))))
 policy public.activity_feed "activity view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR CASE WHEN ((metadata ->> 'audience'::text) = 'shapers'::text) THEN internal.can_shape_project(internal.activity_project_id(metadata)) ELSE internal.can_access_project(internal.activity_project_id(metadata)) END) check -
@@ -2174,6 +2237,18 @@ policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authen
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.casting_auditions "casting_auditions_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
+policy public.casting_auditions "casting_auditions_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_auditions "casting_auditions_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.casting_auditions "casting_auditions_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
+policy public.casting_history "casting_history_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_history "casting_history_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.casting_notes "casting_notes_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
+policy public.casting_notes "casting_notes_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.casting_notes "casting_notes_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.change_reviews "change_reviews_delete" PERMISSIVE DELETE to public using internal.can_shape_project(project_id) check -
+policy public.change_reviews "change_reviews_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.change_reviews "change_reviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
 policy public.channel_members "channel_members delete" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.channel_members "channel_members insert" PERMISSIVE INSERT to authenticated using - check can_manage_channel(channel_id)
 policy public.channel_members "channel_members update" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check -
@@ -2377,6 +2452,9 @@ policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DE
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
+policy public.story_interviews "story_interviews_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.story_interviews "story_interviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.story_interviews "story_interviews_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
 policy public.support_case_messages "support case messages insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))))
 policy public.support_case_messages "support case messages read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))) check -
 policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenticated using - check ((opened_by = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text))
@@ -2396,6 +2474,9 @@ policy public.unavailability "unavailability own insert" PERMISSIVE INSERT to au
 policy public.unavailability "unavailability own read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.unavailability "unavailability own update" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.vendors "vendors shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.worlds "worlds_insert" PERMISSIVE INSERT to public using - check internal.can_shape_project(project_id)
+policy public.worlds "worlds_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.can_shape_project(project_id) check -
 policy public.writing_days "writing_days own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
