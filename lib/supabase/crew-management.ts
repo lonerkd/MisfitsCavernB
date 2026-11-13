@@ -169,6 +169,33 @@ export async function updateCrewMemberRole(
   }
 }
 
+/**
+ * Changes what someone does on this project (their craft, a name from public.crafts); null clears it.
+ * Only the project's owner can (the database says so). It never touches their permission tier.
+ */
+export async function setCrewCraft(projectId: string, userId: string, craft: string | null, currentUserId: string) {
+  const { data, error } = await supabase
+    .from('project_crew')
+    .update({ craft })
+    .eq('project_id', projectId)
+    .eq('user_id', userId)
+    .select('user_id, craft');
+  if (error) throw error;
+  // Row security hides a row you may not change, so "nothing updated" has to be said, not treated as success.
+  if (!data?.length) throw new Error('You cannot change this person’s craft.');
+
+  void logActivity(craft ? `set a crew member's craft to ${craft}` : `cleared a crew member's craft`, 'project', projectId);
+  await logAuditAction(currentUserId, 'crew_role_changed', 'project_crew', `${projectId}:${userId}`, { craft, action: 'craft_updated' });
+  if (userId !== currentUserId) {
+    await notify(
+      userId,
+      { type: 'crew', title: craft ? `Your craft is now ${craft}` : 'Your craft on this project was cleared', body: 'Updated by the project owner.', link: `/projects/${projectId}` },
+      currentUserId,
+    );
+  }
+  return data[0];
+}
+
 export interface TeamMember { id: string; name: string; role: string; avatar: string | null | undefined }
 
 /** A project's people: its owner first, then the crew (each once). */

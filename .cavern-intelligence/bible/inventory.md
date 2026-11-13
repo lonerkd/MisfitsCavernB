@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**52 pages · 7 API routes · 91 tables · 66 database functions · 98 e2e specs**
+**52 pages · 7 API routes · 97 tables · 66 database functions · 99 e2e specs**
 
 ## Routes
 
@@ -29,7 +29,7 @@
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | **none** |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (275) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 30 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (496) | 40 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community-page, community-phone, community, continuity, credits, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, global-chords, guides, hide-message, hiring, home-music, install, island-activity, island-call, island-compact-dock, island-onset-clock, island-projects-keys, island-upload, island, keyboard-audit, layout, legal, location-rename, locations, login-smoke, lounge, mobile, money, mood-boards, notes, on-set, onboarding, onset-offline, onset-phone, password-recovery, phases, phone-editor, phone-keyboard, portfolio-page, project-manager, projects-keyboard-phase, readiness-day-date, readiness, reading-corrections, real-data, records-links, reports, route-smoke, scene-cost, script-formats, script-share, search, shortcut-search, shot-designer, split, spotify-connect, studio-journey, studio-undo, suspend-user, table-read, themes, today-owner, transcripts, view-as, voice-two-people, writing-loop, your-data |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 40 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-channel-presets, admin-crafts, admin-formats, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, community-page, community-phone, community, continuity, credits, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, global-chords, guides, hide-message, hiring, home-music, install, island-activity, island-call, island-compact-dock, island-onset-clock, island-projects-keys, island-upload, island, keyboard-audit, layout, legal, location-rename, locations, login-smoke, lounge, mobile, money, mood-boards, notes, on-set, onboarding, onset-offline, onset-phone, password-recovery, phases, phone-editor, phone-keyboard, portfolio-page, project-manager, projects-keyboard-phase, readiness-day-date, readiness, reading-corrections, real-data, records-links, reports, route-smoke, scene-cost, script-formats, script-share, search, shortcut-search, shot-designer, split, spotify-connect, studio-journey, studio-undo, suspend-user, table-read, themes, today-owner, transcripts, view-as, voice-two-people, writing-loop, your-data |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 34 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (228) | 60 files · components: projects, ui · lib: auth, brief, film, formats, island, os, push, scriptos, studio, supabase, types, validation | call-sheets, push |
@@ -58,7 +58,7 @@
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (257) | 65 files · components: audio, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (256) | 4 files · components: — · lib: hooks, split | global-chords, split |
-| `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 283 files · components: Flag, ad, breakdown, brief, film, formats, notes, progress, projects, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, community-page, continuity, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, route-smoke, scene-cost, script-formats, search, shot-designer, split, studio-journey, studio-undo, transcripts |
+| `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 286 files · components: Flag, ad, breakdown, brief, crafts, film, formats, notes, progress, projects, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, crafts, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, community-page, continuity, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, route-smoke, scene-cost, script-formats, search, shot-designer, split, studio-journey, studio-undo, transcripts |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (12) | 1 files · components: — · lib: — | community-page, island-onset-clock |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 67 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, split, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
@@ -235,7 +235,7 @@
 
 ### `/editor`
 
-- **Tables:** `activity_feed`, `ad_references`, `audit_logs`, `brand_rules`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channel_presets`, `character_castings`, `character_media`, `characters`, `deliverables`, `expenses`, `jobs`, `links`, `media`, `mood_board_items`, `mood_boards`, `notes`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `profiles`, `project_audio_references`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `projects`, `push_subscriptions`, `reading_corrections`, `reading_line_overrides`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `script_metadata`, `script_revisions`, `script_stash`, `scripts`, `set_log`, `sfx_assets`, `shoot_days`, `shots`, `spotify_connections`, `timeline_items`, `timesheets`, `transcript_lines`, `vendors`, `writing_days`
+- **Tables:** `activity_feed`, `ad_references`, `audit_logs`, `brand_rules`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `casting_auditions`, `casting_history`, `casting_notes`, `change_reviews`, `channel_presets`, `character_castings`, `character_media`, `characters`, `deliverables`, `expenses`, `jobs`, `links`, `media`, `mood_board_items`, `mood_boards`, `notes`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `profiles`, `project_audio_references`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `projects`, `push_subscriptions`, `reading_corrections`, `reading_line_overrides`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `script_metadata`, `script_revisions`, `script_stash`, `scripts`, `set_log`, `sfx_assets`, `shoot_days`, `shots`, `spotify_connections`, `story_interviews`, `timeline_items`, `timesheets`, `transcript_lines`, `vendors`, `writing_days`
 - **Functions:** `ack_call_sheet`, `add_script_annotation`, `advance_phase`, `breakdown_memory`, `get_my_account`, `get_my_ui_prefs`, `get_my_writing_prefs`, `get_shared_lookbook`, `issue_call_sheet`, `log_writing`, `patch_project_settings`, `project_context`, `project_progress`, `projects_progress`, `reading_memory_for_user`, `report_client_error`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
 - **Realtime:** `live`, `notes`, `presence:project`, `project`, `projects:list`, `script`
 
@@ -323,7 +323,7 @@
 
 ### `/projects/[id]/world`
 
-- **Tables:** —
+- **Tables:** `worlds`
 
 ### `/projects`
 
@@ -354,7 +354,7 @@
 
 ### `/studio`
 
-- **Tables:** `activity_feed`, `ad_references`, `audit_logs`, `brand_rules`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `character_castings`, `character_media`, `characters`, `deliverables`, `discord_integrations`, `entities`, `expenses`, `item_versions`, `jobs`, `links`, `media`, `mood_board_items`, `mood_boards`, `notes`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `production_records`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `project_tasks`, `projects`, `push_subscriptions`, `reading_corrections`, `reading_line_overrides`, `review_comments`, `review_links`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `script_revisions`, `scripts`, `set_log`, `shoot_days`, `shots`, `timeline_items`, `timesheets`, `transcript_lines`, `unavailability`, `vendors`
+- **Tables:** `activity_feed`, `ad_references`, `audit_logs`, `brand_rules`, `breakdown_categories`, `breakdown_dismissals`, `breakdown_elements`, `brief_questions`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `casting_auditions`, `casting_history`, `casting_notes`, `channel_members`, `channel_presets`, `channels`, `character_castings`, `character_media`, `characters`, `crafts`, `deliverables`, `discord_integrations`, `entities`, `expenses`, `item_versions`, `jobs`, `links`, `media`, `mood_board_items`, `mood_boards`, `notes`, `notifications`, `post_cuts`, `post_items`, `post_notes`, `production_records`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_documents`, `project_formats`, `project_locations`, `project_tasks`, `projects`, `push_subscriptions`, `reading_corrections`, `reading_line_overrides`, `review_comments`, `review_links`, `scene_characters`, `scene_elements`, `scene_media`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `script_revisions`, `scripts`, `set_log`, `shoot_days`, `shots`, `timeline_items`, `timesheets`, `transcript_lines`, `unavailability`, `vendors`, `worlds`
 - **Functions:** `ack_call_sheet`, `add_review_comment`, `admin_case_study_projects`, `advance_phase`, `append_to_script`, `breakdown_memory`, `can_manage_channel`, `can_post_channel`, `decide_review`, `get_my_account`, `get_my_ui_prefs`, `get_shared_lookbook`, `has_discord_webhook`, `hub_case_study_project`, `issue_call_sheet`, `patch_project_settings`, `project_availability`, `project_context`, `project_progress`, `projects_progress`, `reading_memory_for_user`, `set_my_ui_prefs`, `set_paper_edit`, `sync_script_scenes`, `tag_scene_element`
 - **Realtime:** `activity`, `live`, `lounge-presence`, `notes`, `prod-records`, `project`, `projects:list`, `script`
 
@@ -409,6 +409,10 @@
 | `call_sheet_calls` | `/shared/[token]`, `/call/[id]`, `/community`, `/editor`, `/projects/[id]`, `/studio` |
 | `call_sheets` | `/shared/[token]`, `/call/[id]`, `/community`, `/editor`, `/projects/[id]`, `/studio` |
 | `campaigns` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/community`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/welcome` |
+| `casting_auditions` | `/editor`, `/studio` |
+| `casting_history` | `/editor`, `/studio` |
+| `casting_notes` | `/editor`, `/studio` |
+| `change_reviews` | `/editor` |
 | `channel_members` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome` |
 | `channel_presets` | `/admin/brief-questions`, `/admin/channel-presets`, `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/soundtrack`, `/studio`, `/welcome` |
 | `channels` | `/community`, `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome`, `/api/discord/notify` |
@@ -416,7 +420,7 @@
 | `character_media` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `characters` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `client_errors` | **no route** (server-side, triggers or functions only) |
-| `crafts` | `/p/[token]`, `/portfolios`, `/review/[token]`, `/s/[token]`, `/shared/[token]`, `/u/[handle]`, `/admin/crafts`, `/crew`, `/jobs`, `/m/[id]`, `/profile`, `/projects/[id]`, `/welcome` |
+| `crafts` | `/p/[token]`, `/portfolios`, `/review/[token]`, `/s/[token]`, `/shared/[token]`, `/u/[handle]`, `/admin/crafts`, `/crew`, `/jobs`, `/m/[id]`, `/profile`, `/projects/[id]`, `/studio`, `/welcome` |
 | `deliverables` | `/editor`, `/studio` |
 | `discord_integrations` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome`, `/api/discord/notify` |
 | `entities` | `/projects/[id]`, `/studio` |
@@ -479,6 +483,7 @@
 | `shoot_days` | `/shared/[token]`, `/call/[id]`, `/community`, `/editor`, `/projects/[id]`, `/studio` |
 | `shots` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `spotify_connections` | `/auth/spotify-callback`, `/editor`, `/soundtrack` |
+| `story_interviews` | `/editor` |
 | `support_case_messages` | `/admin/support`, `/hub/help/[id]`, `/hub/help` |
 | `support_cases` | `/admin/support`, `/hub/help/[id]`, `/hub/help` |
 | `timeline_items` | `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/community`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/welcome` |
@@ -486,6 +491,7 @@
 | `transcript_lines` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
 | `unavailability` | `/profile`, `/studio` |
 | `vendors` | `/shared/[token]`, `/call/[id]`, `/editor`, `/projects/[id]`, `/studio` |
+| `worlds` | `/projects/[id]/world`, `/studio` |
 | `writing_days` | `/editor` |
 
 ## Database functions
@@ -582,6 +588,7 @@
 | `community.spec.ts` | `/auth`, `/lounge` |
 | `continuity.spec.ts` | `/auth`, `/studio` |
 | `credits.spec.ts` | `/auth`, `/crew/*`, `/shared/*` |
+| `crew-craft.spec.ts` | `/auth`, `/studio` |
 | `crew-records.spec.ts` | `/auth`, `/studio` |
 | `cut-notes.spec.ts` | `/auth`, `/editor`, `/studio` |
 | `daylight.spec.ts` | `/auth`, `/studio` |
