@@ -73,7 +73,12 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
 ## The change cycle
 
 1. **Explore** — the files involved; the owning doc (see *Where to look*);
-   `bible/inventory.md` for what a route touches.
+   `bible/inventory.md` for what a route touches. **Search `origin/main`, not
+   only this checkout, before building** (`git grep -il <word> origin/main`,
+   the newest notes in `sessions/` on main): a checkout that is far behind
+   hides what already exists (a feature was once built twice that way). More
+   than 20 commits behind: start from `origin/main` in a worktree of its own,
+   with its own `npm ci` (never a linked `node_modules`).
 2. **Check state** — `STATE.md`, `BACKLOG.md`.
 3. **Plan** — exact files; RLS implications; who it affects (personas).
 4. **Implement** — following `conventions.md` and `design-tokens.md`.

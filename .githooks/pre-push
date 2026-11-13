@@ -1,4 +1,8 @@
 #!/bin/sh
-# Before anything leaves the machine: types and unit tests (what CI's first job runs).
+# Before anything leaves the machine: what CI's first job runs, so a failure costs seconds here and not a round trip.
+# The generated files first (cheap): the agent entry files and the bible inventory must match what the code generates.
+node scripts/sync-intel.js --check || { echo "pre-push: the agent files are stale: npm run sync-intel, then commit them"; exit 1; }
+npm run bible >/dev/null 2>&1 || { echo "pre-push: npm run bible failed"; exit 1; }
+git diff --quiet -- .cavern-intelligence/bible/inventory.md || { echo "pre-push: the route inventory is stale (a route or table moved): it has just been regenerated: commit .cavern-intelligence/bible/inventory.md and push again"; exit 1; }
 npx --no-install tsc --noEmit -p tsconfig.check.json || { echo "pre-push: type errors"; exit 1; }
 npx --no-install vitest run --reporter=dot || { echo "pre-push: unit tests failed"; exit 1; }

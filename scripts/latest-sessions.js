@@ -51,9 +51,17 @@ const behind = git('rev-list', '--count', 'HEAD..origin/main');
 const dirty = git('status', '--porcelain', '--untracked-files=no').split('\n').filter(Boolean).length;
 const sync = [`on ${branch || 'unknown branch'}`];
 if (behind && behind !== '0') sync.push(`${behind} commit(s) behind origin/main (git fetch/pull before starting)`);
+// Far behind, the checkout hides what already exists: work found missing here may be on main. Say so before anything is built.
+const FAR_BEHIND = 20;
+const far = Number(behind) > FAR_BEHIND;
 if (dirty) sync.push(`${dirty} uncommitted change(s)`);
 
 console.log(`Sync: ${sync.join('; ')}.`);
+if (far) {
+  console.log(`WARNING: this checkout is ${behind} commits behind origin/main. Do not build a feature from it: what you cannot find here may already exist on main.`);
+  console.log('  Search main first:  git grep -il "<a word for the feature>" origin/main   (and read the newest notes in sessions/ on main)');
+  console.log('  Then start from fresh main, in a worktree of its own:  git worktree add ../MisfitsCavernB-<slug> -b claude/<slug> origin/main   (then npm ci there: never link node_modules)\n');
+}
 // The nightly review's open findings are the first task of the day (best effort: no gh, no network, no review: say nothing).
 try {
   const rows = JSON.parse(execFileSync('gh', ['issue', 'list', '--label', 'nightly-review', '--state', 'open', '--limit', '1', '--json', 'number,title,body,url'], { encoding: 'utf8', timeout: 8000, stdio: ['ignore', 'pipe', 'ignore'] }));

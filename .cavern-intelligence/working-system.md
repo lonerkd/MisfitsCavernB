@@ -182,7 +182,7 @@ The existing split is right. Here it is as one table, with the reasoning.
 |---|---|---|---|
 | eslint on changed files | pre-commit hook | every commit | Seconds. Catches the obvious before it leaves the machine. |
 | staged secret scan + gitleaks | pre-commit hook | every commit | Cheapest place to stop a credential. |
-| typecheck + unit tests | pre-push hook | every push | The same two things CI's `checks` job runs first. Failing here saves a CI round trip. |
+| generated files (agent entry files, bible inventory) + typecheck + unit tests | pre-push hook | every push | What CI's `checks` job runs first. A stale generated file used to fail CI after the push; the hook now regenerates the inventory and stops you to commit it. |
 | sync-intel `--check` | CI `checks` | every PR | Drift gate. Cheap, and it is the thing that keeps the adapters honest. |
 | bible inventory diff | CI `checks` | every PR | Same pattern: generated file must match the code. |
 | typecheck, lint, test:coverage, build, budget | CI `checks` | every PR | The gate. Coverage thresholds live in `vitest.config.ts`. |
