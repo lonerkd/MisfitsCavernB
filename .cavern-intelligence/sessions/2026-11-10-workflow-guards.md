@@ -1,0 +1,6 @@
+# Session - 2026-11-10: two workflow guards, from what went wrong in a session
+
+**What went wrong:** a feature was built twice because the checkout was 106 commits behind `main` and the session note at the top said so in one line that was easy to read past (the "game" already existed on main); and a generated file (`bible/inventory.md`) went stale and failed CI after the push.
+**Built:** (1) `scripts/latest-sessions.js` (the SessionStart hook) prints a WARNING when the checkout is more than 20 commits behind `origin/main`: search main first (`git grep -il <word> origin/main`), then start from fresh main in a worktree of its own with its own `npm ci` (never a linked `node_modules`, which once emptied the shared checkout's). (2) `RULES.md` (Explore): search `origin/main`, not only this checkout, before building; the generated agent files follow. (3) `.githooks/pre-push` now runs the agent-files check and regenerates the bible inventory first, and stops you to commit it if it moved (what CI's `checks` job runs first); `working-system.md` documents it.
+**Verified:** the warning printed in a scratch repo 25 commits behind its `origin/main`; `npm run sync-intel` is clean. The pre-push changes run on this push.
+**Left:** a one-command worktree setup and a preview-check script (offered, not chosen).
