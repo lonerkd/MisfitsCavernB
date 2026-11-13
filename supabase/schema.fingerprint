@@ -2548,6 +2548,10 @@ rls call_sheet_acks enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
 rls campaigns enabled=true forced=false
+rls casting_auditions enabled=true forced=false
+rls casting_history enabled=true forced=false
+rls casting_notes enabled=true forced=false
+rls change_reviews enabled=true forced=false
 rls channel_members enabled=true forced=false
 rls channel_presets enabled=true forced=false
 rls channels enabled=true forced=false
@@ -2618,6 +2622,7 @@ rls sfx_assets enabled=true forced=false
 rls shoot_days enabled=true forced=false
 rls shots enabled=true forced=false
 rls spotify_connections enabled=true forced=false
+rls story_interviews enabled=true forced=false
 rls support_case_messages enabled=true forced=false
 rls support_cases enabled=true forced=false
 rls timeline_items enabled=true forced=false
@@ -2625,6 +2630,7 @@ rls timesheets enabled=true forced=false
 rls transcript_lines enabled=true forced=false
 rls unavailability enabled=true forced=false
 rls vendors enabled=true forced=false
+rls worlds enabled=true forced=false
 rls writing_days enabled=true forced=false
 schema internal
 schema public

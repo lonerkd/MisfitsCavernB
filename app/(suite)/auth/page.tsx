@@ -91,7 +91,8 @@ export default function AuthPage() {
         router.replace(isNewAccount.current && isNewSurface ? '/welcome' : redirectTo);
       }
     }
-  }, [status, redirectTo, isNewSurface, router, isNewAccount.current]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, redirectTo, isNewSurface, router]);
 
   // Every change (and the submit) takes all the fields from the form itself, not
   // just the one that changed: an input event can be lost while the page
