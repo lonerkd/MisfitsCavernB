@@ -12,8 +12,8 @@ create table if not exists public.casting_notes (
 alter table public.casting_notes enable row level security;
 
 create policy "casting_notes_select" on public.casting_notes
-  for select using (public.can_access_project(project_id));
+  for select using (internal.can_access_project(project_id));
 create policy "casting_notes_insert" on public.casting_notes
-  for insert with check (public.can_shape_project(project_id));
+  for insert with check (internal.can_shape_project(project_id));
 create policy "casting_notes_delete" on public.casting_notes
-  for delete using (public.can_shape_project(project_id));
+  for delete using (internal.can_shape_project(project_id));

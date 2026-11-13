@@ -14,8 +14,8 @@ create table if not exists public.change_reviews (
 alter table public.change_reviews enable row level security;
 
 create policy "change_reviews_select" on public.change_reviews
-  for select using (public.can_access_project(project_id));
+  for select using (internal.can_access_project(project_id));
 create policy "change_reviews_insert" on public.change_reviews
-  for insert with check (public.can_shape_project(project_id));
+  for insert with check (internal.can_shape_project(project_id));
 create policy "change_reviews_delete" on public.change_reviews
-  for delete using (public.can_shape_project(project_id));
+  for delete using (internal.can_shape_project(project_id));

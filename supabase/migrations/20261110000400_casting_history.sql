@@ -12,6 +12,6 @@ create table if not exists public.casting_history (
 alter table public.casting_history enable row level security;
 
 create policy "casting_history_select" on public.casting_history
-  for select using (public.can_access_project(project_id));
+  for select using (internal.can_access_project(project_id));
 create policy "casting_history_insert" on public.casting_history
-  for insert with check (public.can_shape_project(project_id));
+  for insert with check (internal.can_shape_project(project_id));

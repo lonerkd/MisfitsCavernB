@@ -14,10 +14,10 @@ create table if not exists public.casting_auditions (
 alter table public.casting_auditions enable row level security;
 
 create policy "casting_auditions_select" on public.casting_auditions
-  for select using (public.can_access_project(project_id));
+  for select using (internal.can_access_project(project_id));
 create policy "casting_auditions_insert" on public.casting_auditions
-  for insert with check (public.can_shape_project(project_id));
+  for insert with check (internal.can_shape_project(project_id));
 create policy "casting_auditions_update" on public.casting_auditions
-  for update using (public.can_shape_project(project_id));
+  for update using (internal.can_shape_project(project_id));
 create policy "casting_auditions_delete" on public.casting_auditions
-  for delete using (public.can_shape_project(project_id));
+  for delete using (internal.can_shape_project(project_id));
