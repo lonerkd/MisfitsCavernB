@@ -120,6 +120,7 @@ CREATE TABLE public.project_crew_crafts (
   FOREIGN KEY (project_id, user_id) REFERENCES public.project_crew(project_id, user_id) ON DELETE CASCADE
 );
 CREATE INDEX project_crew_crafts_user_idx ON public.project_crew_crafts USING btree (user_id);
+CREATE INDEX project_crew_crafts_craft_idx ON public.project_crew_crafts USING btree (craft);
 ALTER TABLE public.project_crew_crafts ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "crew crafts view" ON public.project_crew_crafts FOR SELECT TO authenticated
   USING (user_id = (SELECT auth.uid()) OR internal.can_access_project(project_id));
@@ -136,6 +137,7 @@ CREATE TABLE public.crew_capability_overrides (
   PRIMARY KEY (project_id, user_id, capability),
   FOREIGN KEY (project_id, user_id) REFERENCES public.project_crew(project_id, user_id) ON DELETE CASCADE
 );
+CREATE INDEX crew_capability_overrides_capability_idx ON public.crew_capability_overrides USING btree (capability);
 ALTER TABLE public.crew_capability_overrides ENABLE ROW LEVEL SECURITY;
 -- Only the owner and the person themselves read it (a colleague does not see why someone's rights differ).
 CREATE POLICY "capability overrides view" ON public.crew_capability_overrides FOR SELECT TO authenticated
