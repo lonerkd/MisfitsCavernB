@@ -16,4 +16,5 @@ create policy "worlds_select" on public.worlds
 create policy "worlds_insert" on public.worlds
   for insert with check (internal.is_project_creator(project_id));
 create policy "worlds_update" on public.worlds
-  for update using (internal.is_project_creator(project_id));
+  for update using (internal.can_access_project(project_id))
+  with check (internal.is_project_creator(project_id));

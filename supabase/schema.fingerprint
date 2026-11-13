@@ -2259,7 +2259,7 @@ policy public.casting_notes "casting_notes_select" PERMISSIVE SELECT to public u
 policy public.change_reviews "change_reviews_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
 policy public.change_reviews "change_reviews_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.change_reviews "change_reviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.change_reviews "change_reviews_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
+policy public.change_reviews "change_reviews_update" PERMISSIVE UPDATE to public using internal.can_access_project(project_id) check internal.is_project_creator(project_id)
 policy public.channel_members "channel_members delete" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.channel_members "channel_members insert" PERMISSIVE INSERT to authenticated using - check can_manage_channel(channel_id)
 policy public.channel_members "channel_members update" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check -
@@ -2465,7 +2465,7 @@ policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELE
 policy public.spotify_connections "spotify_connections update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.story_interviews "story_interviews_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.story_interviews "story_interviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.story_interviews "story_interviews_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
+policy public.story_interviews "story_interviews_update" PERMISSIVE UPDATE to public using internal.can_access_project(project_id) check internal.is_project_creator(project_id)
 policy public.support_case_messages "support case messages insert" PERMISSIVE INSERT to authenticated using - check ((author_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))))
 policy public.support_case_messages "support case messages read" PERMISSIVE SELECT to authenticated using (EXISTS ( SELECT 1 FROM support_cases c WHERE (c.id = support_case_messages.case_id))) check -
 policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenticated using - check ((opened_by = ( SELECT auth.uid() AS uid)) AND (status = 'open'::text))
@@ -2487,7 +2487,7 @@ policy public.unavailability "unavailability own update" PERMISSIVE UPDATE to au
 policy public.vendors "vendors shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.worlds "worlds_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.worlds "worlds_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
-policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
+policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.can_access_project(project_id) check internal.is_project_creator(project_id)
 policy public.writing_days "writing_days own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy storage.objects "project-media: members read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name))) check -
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))

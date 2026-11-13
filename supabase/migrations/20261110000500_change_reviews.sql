@@ -18,7 +18,8 @@ create policy "change_reviews_select" on public.change_reviews
 create policy "change_reviews_insert" on public.change_reviews
   for insert with check (internal.is_project_creator(project_id));
 create policy "change_reviews_update" on public.change_reviews
-  for update using (internal.is_project_creator(project_id));
+  for update using (internal.can_access_project(project_id))
+  with check (internal.is_project_creator(project_id));
 create policy "change_reviews_delete" on public.change_reviews
   for delete using (internal.is_project_creator(project_id));
 

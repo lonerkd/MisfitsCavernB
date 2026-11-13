@@ -14,4 +14,5 @@ create policy "story_interviews_select" on public.story_interviews
 create policy "story_interviews_insert" on public.story_interviews
   for insert with check (internal.is_project_creator(project_id));
 create policy "story_interviews_update" on public.story_interviews
-  for update using (internal.is_project_creator(project_id));
+  for update using (internal.can_access_project(project_id))
+  with check (internal.is_project_creator(project_id));

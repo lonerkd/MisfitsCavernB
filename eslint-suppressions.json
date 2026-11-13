@@ -6,22 +6,17 @@
   },
   "app/(public)/p/[token]/PortfolioView.tsx": {
     "no-restricted-syntax": {
-      "count": 8
-    }
-  },
-  "app/(public)/review/[token]/ReviewClient.tsx": {
-    "no-restricted-syntax": {
-      "count": 4
+      "count": 6
     }
   },
   "app/(public)/s/[token]/page.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "app/(suite)/admin/analytics/page.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "app/(suite)/admin/audit-logs/page.tsx": {
@@ -32,35 +27,10 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 6
-    }
-  },
-  "app/(suite)/admin/brief-questions/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "app/(suite)/admin/channel-presets/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 4
     }
   },
   "app/(suite)/admin/crafts/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "app/(suite)/admin/errors/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "app/(suite)/admin/formats/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "app/(suite)/admin/hub/page.tsx": {
     "no-restricted-syntax": {
       "count": 1
     }
@@ -70,12 +40,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 3
-    }
-  },
-  "app/(suite)/admin/support/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 2
     }
   },
   "app/(suite)/admin/users/page.tsx": {
@@ -86,11 +51,6 @@
       "count": 4
     }
   },
-  "app/(suite)/auth/callback/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "app/(suite)/auth/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -99,7 +59,7 @@
       "count": 2
     },
     "no-restricted-syntax": {
-      "count": 6
+      "count": 2
     }
   },
   "app/(suite)/auth/reset/page.tsx": {
@@ -109,17 +69,7 @@
   },
   "app/(suite)/crew/[id]/page.tsx": {
     "no-restricted-syntax": {
-      "count": 8
-    }
-  },
-  "app/(suite)/crew/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "app/(suite)/crew/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
+      "count": 3
     }
   },
   "app/(suite)/editor/page.tsx": {
@@ -127,15 +77,10 @@
       "count": 2
     },
     "@typescript-eslint/no-unused-vars": {
-      "count": 46
+      "count": 7
     },
     "no-restricted-syntax": {
-      "count": 6
-    }
-  },
-  "app/(suite)/hub/help/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 4
     }
   },
   "app/(suite)/jobs/[id]/page.tsx": {
@@ -146,12 +91,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 11
-    }
-  },
-  "app/(suite)/jobs/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
+      "count": 7
     }
   },
   "app/(suite)/jobs/page.tsx": {
@@ -159,12 +99,7 @@
       "count": 2
     },
     "no-restricted-syntax": {
-      "count": 8
-    }
-  },
-  "app/(suite)/lounge/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 4
+      "count": 6
     }
   },
   "app/(suite)/opengraph-image.tsx": {
@@ -173,11 +108,6 @@
     }
   },
   "app/(suite)/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 4
-    }
-  },
-  "app/(suite)/portfolio/loading.tsx": {
     "no-restricted-syntax": {
       "count": 2
     }
@@ -190,7 +120,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "app/(suite)/portfolio/page.tsx": {
@@ -201,20 +131,12 @@
       "count": 4
     },
     "no-restricted-syntax": {
-      "count": 6
-    }
-  },
-  "app/(suite)/profile/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 4
+      "count": 3
     }
   },
   "app/(suite)/profile/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 6
-    },
-    "no-restricted-syntax": {
-      "count": 5
     }
   },
   "app/(suite)/projects/[id]/page.tsx": {
@@ -225,7 +147,7 @@
       "count": 4
     },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "app/(suite)/projects/[id]/pitch/page.tsx": {
@@ -236,7 +158,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "app/(suite)/projects/page.tsx": {
@@ -247,12 +169,7 @@
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 4
-    }
-  },
-  "app/(suite)/settings/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "app/(suite)/settings/page.tsx": {
@@ -263,17 +180,12 @@
       "count": 2
     },
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "app/(suite)/showcase/page.tsx": {
     "no-restricted-syntax": {
       "count": 1
-    }
-  },
-  "app/(suite)/soundtrack/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 3
     }
   },
   "app/(suite)/soundtrack/page.tsx": {
@@ -282,11 +194,6 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    }
-  },
-  "app/(suite)/studio/loading.tsx": {
-    "no-restricted-syntax": {
-      "count": 5
     }
   },
   "app/api/references/search/route.ts": {
@@ -312,16 +219,6 @@
       "count": 1
     }
   },
-  "components/ad/BrandKitPanel.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/availability/AwayEditor.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/breakdown/ElementCard.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
@@ -342,22 +239,12 @@
       "count": 2
     }
   },
-  "components/editor/DiffModal.tsx": {
-    "no-restricted-syntax": {
-      "count": 8
-    }
-  },
-  "components/editor/DoubtfulReads.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/editor/EditorCenterViews.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
     },
     "no-restricted-syntax": {
-      "count": 8
+      "count": 1
     }
   },
   "components/editor/EditorErrorBoundary.tsx": {
@@ -370,20 +257,12 @@
       "count": 103
     },
     "no-restricted-syntax": {
-      "count": 6
+      "count": 1
     }
   },
   "components/editor/EditorLeftNav.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 5
-    }
-  },
-  "components/editor/EditorModals.tsx": {
-    "no-restricted-syntax": {
-      "count": 5
     }
   },
   "components/editor/EditorSidePanels.tsx": {
@@ -391,7 +270,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 14
+      "count": 5
     }
   },
   "components/editor/PreviewView.tsx": {
@@ -405,19 +284,9 @@
       "count": 2
     }
   },
-  "components/editor/ReadingCorrections.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/editor/SceneReferencesPanel.tsx": {
     "no-restricted-syntax": {
       "count": 2
-    }
-  },
-  "components/editor/ShareScriptButton.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "components/editor/SyncStatusChip.tsx": {
@@ -427,7 +296,7 @@
   },
   "components/editor/TimingPanel.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/editor/WriteFooter.tsx": {
@@ -438,7 +307,7 @@
       "count": 122
     },
     "no-restricted-syntax": {
-      "count": 4
+      "count": 2
     }
   },
   "components/editor/WriteView.tsx": {
@@ -452,11 +321,6 @@
       "count": 1
     }
   },
-  "components/editor/WritingLoop.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
   "components/editor/editorCtx.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 51
@@ -467,7 +331,7 @@
   },
   "components/editor/editorPageParts.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     },
     "prefer-const": {
       "count": 1
@@ -475,21 +339,6 @@
   },
   "components/editor/useEditUndo.ts": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "components/hub/HubMarkdown.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/hub/IncidentDetail.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
-  "components/hub/SupportThread.tsx": {
-    "no-restricted-syntax": {
       "count": 1
     }
   },
@@ -503,7 +352,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/lounge/ChannelModals.tsx": {
@@ -511,7 +360,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 7
+      "count": 4
     }
   },
   "components/lounge/ChannelRail.tsx": {
@@ -521,12 +370,7 @@
   },
   "components/lounge/ChatHeader.tsx": {
     "no-restricted-syntax": {
-      "count": 6
-    }
-  },
-  "components/lounge/Composer.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 4
     }
   },
   "components/lounge/CrewList.tsx": {
@@ -536,22 +380,17 @@
   },
   "components/lounge/LoungePanels.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 1
     }
   },
   "components/lounge/LoungeTopBar.tsx": {
     "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "components/lounge/MessageParts.tsx": {
     "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "components/lounge/ThreadPanel.tsx": {
-    "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "components/lounge/useLounge.ts": {
@@ -569,11 +408,6 @@
       "count": 1
     }
   },
-  "components/projects/AnnouncementBox.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/projects/ViewAs.tsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -582,9 +416,6 @@
   "components/projects/hub/DeptWindow.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "components/projects/hub/ProductionManager.tsx": {
@@ -592,12 +423,7 @@
       "count": 2
     },
     "no-restricted-syntax": {
-      "count": 8
-    }
-  },
-  "components/settings/DeleteAccount.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
+      "count": 3
     }
   },
   "components/shell/CommandPalette.tsx": {
@@ -613,17 +439,12 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 2
-    }
-  },
-  "components/shell/GlobalAudioWidget.tsx": {
-    "no-restricted-syntax": {
       "count": 1
     }
   },
   "components/shell/Navigation.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 1
     }
   },
   "components/shell/NotificationBell.tsx": {
@@ -633,12 +454,7 @@
   },
   "components/shell/ShortcutsOverlay.tsx": {
     "no-restricted-syntax": {
-      "count": 4
-    }
-  },
-  "components/studio/CastingBoard.tsx": {
-    "no-restricted-syntax": {
-      "count": 7
+      "count": 1
     }
   },
   "components/studio/CrewBoards.tsx": {
@@ -646,7 +462,7 @@
       "count": 6
     },
     "no-restricted-syntax": {
-      "count": 5
+      "count": 1
     }
   },
   "components/studio/PitchDeck.tsx": {
@@ -657,9 +473,6 @@
   "components/studio/ScenePassport.tsx": {
     "@typescript-eslint/no-unused-vars": {
       "count": 1
-    },
-    "no-restricted-syntax": {
-      "count": 2
     }
   },
   "components/studio/media/MediaDetail.tsx": {
@@ -714,7 +527,7 @@
   },
   "components/studio/tabs/PromosTab.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/ui/Avatar.tsx": {
@@ -740,14 +553,9 @@
       "count": 1
     }
   },
-  "components/ui/PhotoGallery.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
-    }
-  },
   "components/ui/ReportButton.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/ui/Textarea.tsx": {
