@@ -57,7 +57,20 @@ describe('inviteToCrew', () => {
     await inviteToCrew('project-1', 'user-2', 'contributor');
 
     expect(calls).toContainEqual(expect.objectContaining({ op: 'insert', table: 'project_crew' }));
-    expect(logActivity).toHaveBeenCalledWith('invited a crew member as contributor', 'project', 'project-1');
+    expect(logActivity).toHaveBeenCalledWith('invited a crew member as crew', 'project', 'project-1');
+  });
+
+  it('files the permission tier and the craft in their own columns (a craft in the tier column is refused by the database)', async () => {
+    await inviteToCrew('project-1', 'user-2', 'viewer', 'Sound designer');
+    const row = (calls.find((c) => c.op === 'insert' && c.table === 'project_crew')!.payload as Array<Record<string, unknown>>)[0];
+    expect(row).toMatchObject({ role: 'viewer', craft: 'Sound designer', status: 'pending' });
+    expect(logActivity).toHaveBeenCalledWith('invited a crew member as Sound designer', 'project', 'project-1');
+  });
+
+  it('writes no craft column when none was chosen', async () => {
+    await inviteToCrew('project-1', 'user-2', 'contributor', null);
+    const row = (calls.find((c) => c.op === 'insert' && c.table === 'project_crew')!.payload as Array<Record<string, unknown>>)[0];
+    expect('craft' in row).toBe(false);
   });
 });
 
