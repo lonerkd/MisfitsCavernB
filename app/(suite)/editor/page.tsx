@@ -3,14 +3,7 @@
 import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
-  Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
-  Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
-  Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
-  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
-} from 'lucide-react';
-import Link from 'next/link';
+import { Users, Minimize, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
@@ -26,12 +19,12 @@ import { addToStash, useScriptStash } from '@/lib/scriptos/stash';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
-import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
+import { getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
+import type { ScriptLine, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
@@ -51,7 +44,6 @@ import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
-import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
@@ -60,9 +52,6 @@ import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
 import { StoryInterview } from '@/components/story/StoryInterview';
-import { scenesForCharacter } from '@/lib/editor/navigation';
-import { CharacterDepthPanel } from '@/components/characters/CharacterDepthPanel';
-import { exportCharacterBible } from '@/lib/characters/export';
 import { RelationshipMap } from '@/components/characters/RelationshipMap';
 import type { Relationship } from '@/lib/characters/depth';
 import { SceneMusic } from '@/components/editor/SceneMusic';
@@ -190,7 +179,7 @@ export default function EditorPage() {
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const canTagMusic = useCanShape(activeProject?.id, !!sessionUser?.id && activeProject?.creator_id === sessionUser.id);
-  const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
+  const _canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const locations = useProjectLocations(activeProject?.id ?? null);
@@ -282,7 +271,7 @@ export default function EditorPage() {
   const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
-  const [showStash, setShowStash] = useState(false);
+
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -894,17 +883,6 @@ export default function EditorPage() {
     }
     return map;
   }, [projectCharacters.rows]);
-  const kindOfDiffLine = useCallback((n: number): DiffKind => {
-    const t = lines[n]?.type;
-    if (t === 'slug') return 'scene';
-    if (t === 'dialogue' || t === 'character') return 'dialogue';
-    if (t === 'action') return 'action';
-    return 'other';
-  }, [lines]);
-  const jumpToCharacter = (name: string) => {
-    const idx = scenesForCharacter(scenesList.map((s, i) => ({ characters: sceneCharMap[i] ?? [] })), name)[0];
-    if (idx != null) { setActiveView('write'); setShowGoToScene(false); setGoToSceneNum(''); jumpToScene(idx); }
-  };
   const sceneStates = useSceneStates(currentScript?.project_id ?? null);
   const cue = useMemo(() => {
     const l = lines[cursorLine];
