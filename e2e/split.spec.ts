@@ -71,19 +71,19 @@ test.describe('Split screen (local Supabase)', () => {
     // Ctrl+\ from the script opens it beside its companion, the Studio's scenes.
     await page.goto(`/editor?script=${scriptId}`);
     // The editor's view transition briefly shows two; wait for it to settle.
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
     await page.keyboard.press('Control+Backslash');
     await page.waitForURL(/\/split\?/);
     const first = page.frameLocator('iframe[title^="First pane"]');
     const second = page.frameLocator('iframe[title^="Second pane"]');
-    await expect(first.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(first.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
     await expect(second.getByRole('article', { name: /^Scene 2:/ })).toBeVisible({ timeout: 20_000 });
     // Panes carry no suite chrome of their own.
     await expect(first.getByRole('navigation', { name: 'Suite' })).toHaveCount(0);
     await expect(page.getByRole('navigation', { name: 'Suite' })).toHaveCount(0);
 
     // Caret into scene 2 → the Studio shows scene 2.
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       const at = ta.value.indexOf('Wind over');
       ta.focus();
@@ -94,13 +94,13 @@ test.describe('Split screen (local Supabase)', () => {
 
     // The Studio sends the script to scene 1.
     await second.getByRole('button', { name: 'In script — open scene 1' }).click();
-    await expect.poll(() => first.getByLabel('Script', { exact: true }).evaluate((el) => (el as HTMLTextAreaElement).selectionStart), { timeout: 10_000 }).toBe(0);
+    await expect.poll(() => first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => (el as HTMLTextAreaElement).selectionStart), { timeout: 10_000 }).toBe(0);
     // …and the script's new scene comes back to the Studio.
     await expect(second.getByRole('article', { name: /^Scene 1:/ })).toHaveAttribute('aria-current', 'location', { timeout: 10_000 });
 
     // Unlinked panes don't follow.
     await page.getByRole('switch', { name: 'Linked' }).click();
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       const at = ta.value.indexOf('Wind over');
       ta.focus();
@@ -117,7 +117,7 @@ test.describe('Split screen (local Supabase)', () => {
     await expect(second.getByRole('region', { name: 'Ready to shoot' })).toBeVisible({ timeout: 20_000 });
     await expect.poll(() => new URL(page.url()).searchParams.get('b')).toContain('view=readiness');
     // Linked: the caret's scene opens in Readiness too.
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       ta.focus();
       ta.setSelectionRange(5, 5);

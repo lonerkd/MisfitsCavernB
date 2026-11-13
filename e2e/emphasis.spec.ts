@@ -39,7 +39,7 @@ test.describe('Emphasis in the editor (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     await page.goto(`/editor?script=${scriptId}`);
-    const ta = page.getByLabel('Script', { exact: true });
+    const ta = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(ta).toHaveValue(/HARBOUR/, { timeout: 20_000 });
     await ta.click();
     await page.keyboard.press('Control+End');

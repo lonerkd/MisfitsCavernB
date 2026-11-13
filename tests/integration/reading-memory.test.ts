@@ -73,6 +73,24 @@ describe('per-writer memory', () => {
     expect(end.find((r) => r.kind === 'confirmed_name' && r.name === 'NIGHT')?.count).toBe(2);
   });
 
+  it('taking a verdict back forgets it, and only in the memory of the person who took it back', async () => {
+    const mem = async (who: 'sam' | 'jordan', name: string) =>
+      ((await cast[who].client.rpc('reading_memory_for_user', { p_user_id: cast[who].id })).data as Array<{ kind: string; name: string; count: number }>).find((r) => r.name === name);
+    // Sam rejects TAKEN in two projects (count 2), and takes one back: counted down, not gone.
+    expect((await cast.sam.client.from('reading_corrections').insert({ project_id: projectId, kind: 'not_character', name: 'TAKEN' })).error).toBeNull();
+    expect((await cast.sam.client.from('reading_corrections').insert({ project_id: otherProjectId, kind: 'not_character', name: 'TAKEN' })).error).toBeNull();
+    expect((await mem('sam', 'TAKEN'))?.count).toBe(2);
+    expect((await cast.sam.client.from('reading_corrections').delete().eq('project_id', projectId).eq('name', 'TAKEN')).error).toBeNull();
+    expect((await mem('sam', 'TAKEN'))?.count).toBe(1);
+    // Taking the last one back removes the entry: the name is read normally again, in this and every script.
+    expect((await cast.sam.client.from('reading_corrections').delete().eq('project_id', otherProjectId).eq('name', 'TAKEN')).error).toBeNull();
+    expect(await mem('sam', 'TAKEN')).toBeUndefined();
+    // Jordan (crew) removing Sam's verdict does not reach into Sam's private memory.
+    expect((await cast.sam.client.from('reading_corrections').insert({ project_id: projectId, kind: 'not_character', name: 'KEPT' })).error).toBeNull();
+    await cast.jordan.client.from('reading_corrections').delete().eq('project_id', projectId).eq('name', 'KEPT');
+    expect((await mem('sam', 'KEPT'))?.count).toBe(1);
+  });
+
   it('nobody writes into another person’s memory', async () => {
     const forged = await cast.jordan.client.from('reading_memory').insert({ user_id: cast.sam.id, kind: 'confirmed_name', name: 'FORGED' });
     expect(forged.error).not.toBeNull();

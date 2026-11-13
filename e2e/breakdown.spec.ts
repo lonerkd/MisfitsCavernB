@@ -22,7 +22,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 async function selectInScript(page: Page, text: string) {
-  await page.getByLabel('Script', { exact: true }).evaluate((el, t) => {
+  await page.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el, t) => {
     const ta = el as HTMLTextAreaElement;
     const at = ta.value.indexOf(t);
     ta.focus();
@@ -65,9 +65,9 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     await page.goto(`/editor?script=${scriptId}`);
-    await expect(page.getByLabel('Script', { exact: true })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible();
     // Put the caret in scene 1, the Breakdown section is open on the Scene tab, turn on tag mode.
-    await page.getByLabel('Script', { exact: true }).evaluate((el) => { const ta = el as HTMLTextAreaElement; ta.focus(); ta.setSelectionRange(25, 25); ta.dispatchEvent(new Event('select', { bubbles: true })); });
+    await page.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => { const ta = el as HTMLTextAreaElement; ta.focus(); ta.setSelectionRange(25, 25); ta.dispatchEvent(new Event('select', { bubbles: true })); });
     await expect(page.getByText('Scene 1 breakdown')).toBeVisible();
     await page.getByRole('switch', { name: 'Tag mode' }).click();
     await expect(page.getByText('Tag mode — select words to tag them')).toBeVisible();

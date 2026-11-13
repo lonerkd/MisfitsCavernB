@@ -28,11 +28,11 @@ export function PrintButton({ build, label, csv = true }: { build: () => PrintDo
   };
   return (
     <span style={{ display: 'inline-flex', gap: 6 }}>
-      <button type="button" className={`${s.btn} ${s.small}`} onClick={print} aria-label={`Print ${label} (or save as PDF)`}>
+      <button type="button" className={`${s.btn} ${s.small}`} onClick={print} aria-label={`Print / PDF: ${label}`}>
         <Printer size={11} aria-hidden /> Print / PDF
       </button>
       {csv && (
-        <button type="button" className={`${s.btn} ${s.small}`} onClick={save} aria-label={`Save ${label} as a spreadsheet (CSV)`}>
+        <button type="button" className={`${s.btn} ${s.small}`} onClick={save} aria-label={`CSV: ${label}`}>
           <Download size={11} aria-hidden /> CSV
         </button>
       )}

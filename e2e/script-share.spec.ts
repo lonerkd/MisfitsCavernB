@@ -41,7 +41,7 @@ test.describe('Script share links (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     await page.goto(`/editor?script=${scriptId}`);
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
 
     const share = page.getByRole('button', { name: 'Share' });
     await share.click();

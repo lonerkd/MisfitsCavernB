@@ -35,7 +35,7 @@ test.describe.serial('Global chords (local Supabase)', () => {
       await page.waitForLoadState('domcontentloaded');
       // Inside the editor, the press happens with the script's text box focused (a failure to find it fails the test).
       if (route === '/editor') {
-        const script = page.getByLabel('Script', { exact: true });
+        const script = page.getByRole('textbox', { name: 'Script', exact: true });
         await script.click({ timeout: 30_000 });
         await expect(script).toBeFocused();
       } else await page.locator('body').click();

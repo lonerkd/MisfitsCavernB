@@ -58,7 +58,7 @@ test.describe('Editor and the project script (local Supabase)', () => {
     // With the connection back, a reload still finds the one script there is.
     await page.unrouteAll();
     await page.reload();
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 30_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 30_000 });
     await page.waitForTimeout(2000);
     expect((await admin.from('scripts').select('id').eq('project_id', projectId)).data).toHaveLength(1);
   });

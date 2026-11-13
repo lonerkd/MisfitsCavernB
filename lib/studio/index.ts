@@ -190,6 +190,9 @@ export function useLineOverrides(scriptId: string | null) {
 export function useReadingMemory(userId: string | null) {
   const [memory, setMemory] = useState<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]>([]);
   const [loading, setLoading] = useState(false);
+  // Bumped to read the memory again (a verdict taken back forgets its memory in the database).
+  const [nonce, setNonce] = useState(0);
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) {
@@ -210,7 +213,7 @@ export function useReadingMemory(userId: string | null) {
       }
     });
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, nonce]);
 
   const writerMemory = useMemo(() => {
     if (!memory.length) return undefined;
@@ -242,7 +245,7 @@ export function useReadingMemory(userId: string | null) {
     };
   }, [memory]);
 
-  return { memory, writerMemory, loading };
+  return { memory, writerMemory, loading, refresh };
 }
 
 export function useProjectLocations(projectId: string | null) {
