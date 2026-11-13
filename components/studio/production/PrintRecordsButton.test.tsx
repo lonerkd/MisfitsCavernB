@@ -21,7 +21,7 @@ describe('PrintRecordsButton', () => {
     list.mockResolvedValue([{ id: '1', scene_ids: ['s1'], scene: 'old', character: 'MAYA', change: 'Coat', status: 'ready' }]);
     print.mockReturnValue(true);
     render(<PrintRecordsButton kind="costumes" />);
-    fireEvent.click(screen.getByRole('button', { name: /print costumes/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Print \/ PDF: costumes/i }));
     await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
     expect(list).toHaveBeenCalledWith('p1', 'costumes');
     const doc = print.mock.calls[0][0] as { title: string; kind: string; blocks: Array<{ rows: Array<Record<string, unknown>> }> };
@@ -31,10 +31,10 @@ describe('PrintRecordsButton', () => {
   it('says so when the list cannot be read or the print dialog cannot open', async () => {
     list.mockRejectedValueOnce(new Error('nope'));
     render(<PrintRecordsButton kind="gear" />);
-    fireEvent.click(screen.getByRole('button', { name: /print gear/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Print \/ PDF: gear/i }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith('nope', 'error'));
     list.mockResolvedValue([]); print.mockReturnValue(false);
-    fireEvent.click(screen.getByRole('button', { name: /print gear/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^Print \/ PDF: gear/i }));
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Could not open the print dialog.', 'error'));
   });
 });
