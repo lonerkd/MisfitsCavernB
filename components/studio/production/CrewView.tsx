@@ -1,12 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Briefcase, UserPlus, Users } from 'lucide-react';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { useToast } from '@/components/ui/Toast';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
+import { loadCrewRights, type CrewRightsRows, type CrewTier } from '@/lib/roles/capabilities';
+import { CrewRights } from '../CrewRights';
 import { useCanShape } from '@/lib/brief';
 import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
@@ -27,6 +29,15 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
   const { project, userId, isOwner } = useStudio();
   const online = useOnlinePresence(userId);
   const { toast } = useToast();
+  // The owner sees each person's other crafts and per-person rights; the database only shows them to the owner and the person.
+  const [rights, setRights] = useState<CrewRightsRows>({ extraCrafts: {}, overrides: {} });
+  const [rightsTick, setRightsTick] = useState(0);
+  useEffect(() => {
+    if (!isOwner) return;
+    let alive = true;
+    loadCrewRights(project.id).then((r) => { if (alive) setRights(r); }).catch(() => {});
+    return () => { alive = false; };
+  }, [isOwner, project.id, rightsTick, crew.length]);
   const [recruiting, setRecruiting] = useState(false);
   // Those who plan the production see when people are away (dates only).
   const canShape = useCanShape(project.id, isOwner);
@@ -69,6 +80,14 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
                 member={{ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status, avatar: m.profiles?.avatar_url, userId: m.user_id }}
                 craft={m.craft ?? null}
                 onCraftChange={isOwner ? (c) => void changeCraft(m, c) : undefined}
+                rights={isOwner ? (
+                  <CrewRights
+                    projectId={project.id} userId={m.user_id} name={m.profiles?.username || 'this person'} currentUserId={userId}
+                    tier={(m.role as CrewTier) ?? 'contributor'} primaryCraft={m.craft ?? null}
+                    extraCrafts={rights.extraCrafts[m.user_id] ?? []} overrides={rights.overrides[m.user_id] ?? {}}
+                    onChanged={() => setRightsTick((n) => n + 1)}
+                  />
+                ) : undefined}
               />
             ))}
           </div>

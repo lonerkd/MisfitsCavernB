@@ -713,6 +713,28 @@ export type Database = {
           },
         ];
       };
+      capabilities: {
+        Row: {
+          area: string;
+          edits: boolean;
+          key: string;
+          label: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          area: string;
+          edits: boolean;
+          key: string;
+          label: string;
+        };
+        Update: {
+          area?: string;
+          edits?: boolean;
+          key?: string;
+          label?: string;
+        };
+        Relationships: [];
+      };
       channel_members: {
         Row: {
           can_manage: boolean;
@@ -1039,6 +1061,37 @@ export type Database = {
           },
         ];
       };
+      craft_capabilities: {
+        Row: {
+          capability: string;
+          craft: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capability: string;
+          craft: string;
+        };
+        Update: {
+          capability?: string;
+          craft?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "craft_capabilities_capability_fkey";
+            columns: ["capability"];
+            isOneToOne: false;
+            referencedRelation: "capabilities";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "craft_capabilities_craft_fkey";
+            columns: ["craft"];
+            isOneToOne: false;
+            referencedRelation: "crafts";
+            referencedColumns: ["name"];
+          },
+        ];
+      };
       crafts: {
         Row: {
           above_the_line: boolean;
@@ -1066,6 +1119,46 @@ export type Database = {
           position?: number;
         };
         Relationships: [];
+      };
+      crew_capability_overrides: {
+        Row: {
+          capability: string;
+          created_at: string;
+          granted: boolean;
+          project_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          capability: string;
+          created_at?: string;
+          granted: boolean;
+          project_id: string;
+          user_id: string;
+        };
+        Update: {
+          capability?: string;
+          created_at?: string;
+          granted?: boolean;
+          project_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "crew_capability_overrides_capability_fkey";
+            columns: ["capability"];
+            isOneToOne: false;
+            referencedRelation: "capabilities";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "crew_capability_overrides_project_id_user_id_fkey";
+            columns: ["project_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "project_crew";
+            referencedColumns: ["project_id", "user_id"];
+          },
+        ];
       };
       deliverables: {
         Row: {
@@ -2995,6 +3088,43 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      project_crew_crafts: {
+        Row: {
+          craft: string;
+          created_at: string;
+          project_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          craft: string;
+          created_at?: string;
+          project_id: string;
+          user_id: string;
+        };
+        Update: {
+          craft?: string;
+          created_at?: string;
+          project_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "project_crew_crafts_craft_fkey";
+            columns: ["craft"];
+            isOneToOne: false;
+            referencedRelation: "crafts";
+            referencedColumns: ["name"];
+          },
+          {
+            foreignKeyName: "project_crew_crafts_project_id_user_id_fkey";
+            columns: ["project_id", "user_id"];
+            isOneToOne: false;
+            referencedRelation: "project_crew";
+            referencedColumns: ["project_id", "user_id"];
           },
         ];
       };
@@ -5291,6 +5421,7 @@ export type Database = {
         Args: { p_channel?: string; p_partner?: string };
         Returns: undefined;
       };
+      my_capabilities: { Args: { pid: string }; Returns: string[] };
       patch_project_settings: {
         Args: { p_patch: Json; p_project_id: string };
         Returns: Json;

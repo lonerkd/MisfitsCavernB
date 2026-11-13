@@ -1,0 +1,15 @@
+# Session - 2026-11-13: the role model, the rest of step 1 and step 2 (what a role lets a person do)
+
+**Owner's answers:** keep the 28 roles; several roles per person ("core for indie"); the defaults for who sees budget and casting are left to Claude.
+
+**The rest of step 1:** nine crafts added to the catalogue (Showrunner, Story producer, Production coordinator, Production accountant, Post supervisor, and four outside roles: Client, Investor, Distributor or festival guest, Press); the project hub's crew panel changes a person's craft in place (`setCrewCraft`).
+
+**Step 2, the capability layer** (migration `20261113000200`): 15 named capabilities; a template per craft (data, admin-tunable); several crafts per person (the primary stays `project_crew.craft`, the rest are `project_crew_crafts` rows, and the rights are the union); the owner's per-person grant or removal (`crew_capability_overrides`); `internal.has_capability` and `public.my_capabilities`. The permission tier stays the ceiling: a view-only member never holds a capability that edits, even when granted. **Nothing reads it yet and no existing policy changed**, so no one gained or lost access; the existing helpers were deliberately not rewired to it (the plan said they would delegate: that is a behaviour change and belongs to step 3, which moves budget, casting and paperwork onto it).
+
+**Found while building:** `authenticated` has no `USAGE` on the `internal` schema, so a plain SQL function that calls an `internal` helper fails with a permission error at run time even though policies calling the same helper work (a policy stores its function by reference; a SQL function looks its names up when it runs). `my_capabilities` is therefore a definer function (it answers only for the caller) and is on the allowlist. The first run of the persona test failed on exactly this, which is why the test calls the public function as each persona and not the helper.
+
+**App:** `lib/roles/` (`core.ts` mirrors the database's answer so the interface can show it for someone else; `capabilities.ts` reads and changes it); the crew card (Studio › Cast & crew, owner only) shows a person's other crafts and a "What they can do" list that says where each capability comes from and lets the owner switch it.
+
+**Tests:** persona `tests/integration/capabilities.test.ts` (16: reference data admin-only; the owner holds all, an outsider none; a department head, first AD, accountant, casting director, writer, producer, post supervisor; a client approves and nothing else; an actor and a person with no craft hold none; pending, declined and private-project members hold none; several crafts and who may change them; overrides and who may write or read them; the tier ceiling); unit `lib/roles/core.test.ts`; browser `e2e/crew-craft.spec.ts` (extended: a second craft, the rights list, the ceiling shown, an override made and cleared).
+
+**Not verified:** the migrations on production and staging (applied after merge, then the drift check); a pending member's row on the crew card shows the template as if they were confirmed (the database gives a pending member none).

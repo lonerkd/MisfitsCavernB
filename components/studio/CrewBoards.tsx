@@ -72,10 +72,12 @@ export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any
   );
 }
 
-export function CrewMemberCard({ member, index, isOnline, away, craft, onCraftChange }: {
+export function CrewMemberCard({ member, index, isOnline, away, craft, onCraftChange, rights }: {
   member: any; index: number; isOnline?: boolean; away?: string | null;
   /** Their craft on this project, and (for the owner) a way to change it. */
   craft?: string | null; onCraftChange?: (craft: string | null) => void;
+  /** The owner's controls for this person's other crafts and rights, shown under the craft. */
+  rights?: React.ReactNode;
 }) {
   const router = useRouter();
 
@@ -128,6 +130,7 @@ export function CrewMemberCard({ member, index, isOnline, away, craft, onCraftCh
             <CraftPicker label={`${member.name}'s craft`} value={craft ?? null} onChange={onCraftChange} placeholder="Set their craft" noneLabel="No craft" />
           </div>
         )}
+        {rights}
       </div>
       <div style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 8px', background: member.status === 'confirmed' ? 'rgba(0,255,100,0.1)' : 'rgba(var(--ink-rgb), 0.05)', color: member.status === 'confirmed' ? 'var(--ok)' : 'var(--fg-dim)', borderRadius: 4, textTransform: 'var(--caps)' }}>
         {member.status || 'pending'}
