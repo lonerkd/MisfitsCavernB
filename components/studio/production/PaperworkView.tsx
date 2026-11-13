@@ -16,7 +16,7 @@ import s from '../studio.module.css';
 
 type CrewRow = { user_id: string; username: string; craft: string | null };
 
-const TONE: Record<string, string | undefined> = { done: '#6ee7b7', open: undefined, warn: '#fbbf24', bad: '#fca5a5' };
+const TONE: Record<string, string | undefined> = { done: 'var(--ok)', open: undefined, warn: 'var(--warn)', bad: 'var(--danger)' };
 
 const localToday = () => {
   const d = new Date();

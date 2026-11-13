@@ -21,7 +21,6 @@ export function emptyDepth(name: string): CharacterDepth {
 
 export function consistencyWarnings(depths: CharacterDepth[]): string[] {
   const out: string[] = [];
-  const names = depths.map((d) => d.name);
   // duplicate names (case-insensitive)
   const seen = new Set<string>();
   for (const d of depths) {

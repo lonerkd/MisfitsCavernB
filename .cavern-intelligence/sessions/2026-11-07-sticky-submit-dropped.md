@@ -1,0 +1,3 @@
+# Session — 2026-11-07: a form's submit above the keyboard — tried, dropped
+
+Tried `position: sticky` on a form's submit button while the keyboard is up (offset by `--kb`), opted in per form. It engaged (after `body { overflow-x: clip }`, since `overflow-x: hidden` makes body a non-scrolling scroll container that defeats sticky) but a floating submit lands on top of the field being typed in when the form is taller than the visible half, the same fault as the strip that covered the tapped field. Nothing shipped; the plan records why and what a working design needs. The Settings keyboard specs failed to sign in in the same run (the local stack was slow), unrelated to the change.

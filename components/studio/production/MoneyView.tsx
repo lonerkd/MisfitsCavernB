@@ -278,7 +278,7 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
                 </span>
               </span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>{money(Number(x.amount))}</span>
-              <span className={s.hint} style={{ color: x.status === 'paid' ? '#6ee7b7' : undefined }}>{x.status === 'paid' ? 'Paid' : 'Committed'}</span>
+              <span className={s.hint} style={{ color: x.status === 'paid' ? 'var(--ok)' : undefined }}>{x.status === 'paid' ? 'Paid' : 'Committed'}</span>
               {x.status !== 'paid' && <button type="button" className={cx(s.btn, s.small)} onClick={() => void markPaid(x)}><Check size={11} /> Mark paid</button>}
               <button type="button" className={cx(s.btnGhost, s.small)} aria-label={`Remove ${x.description}`} onClick={() => void remove(x)}><Trash2 size={11} /></button>
             </li>
@@ -349,7 +349,7 @@ function HoursSection({ rows, canShape, userId, nameOf, onChange, onError }: {
                   <span style={{ fontSize: 13 }}>{who} · {t.work_date} · {Number(t.hours)}h</span>
                   {t.note && <span className={s.hint} style={{ display: 'block' }}>{t.note}</span>}
                 </span>
-                <span className={s.hint} style={{ color: t.status === 'approved' ? '#6ee7b7' : t.status === 'rejected' ? 'var(--danger)' : undefined }}>
+                <span className={s.hint} style={{ color: t.status === 'approved' ? 'var(--ok)' : t.status === 'rejected' ? 'var(--danger)' : undefined }}>
                   {t.status === 'approved' ? `Approved${t.rate != null ? ` · ${money(Number(t.rate))}/h = ${money(Number(t.rate) * Number(t.hours))}` : ' · no rate'}` : t.status === 'rejected' ? 'Rejected' : 'Waiting for approval'}
                 </span>
                 {canShape && t.status === 'submitted' && (

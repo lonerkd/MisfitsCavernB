@@ -21,7 +21,7 @@ export function StoryInterview({ projectId, onApply }: { projectId: string; onAp
     if (loaded) void saveInterview(projectId, structureId, answers).catch(() => {});
   }, [projectId, structureId, answers, loaded]);
 
-  const complete = isComplete(answers as any);
+  const complete = isComplete(answers);
   const skeleton = complete ? buildSkeleton(answers as InterviewAnswers, getStructure(structureId)!.beats) : [];
   return (
     <div style={{ display: 'grid', gap: 8, maxWidth: 600 }}>
@@ -38,7 +38,7 @@ export function StoryInterview({ projectId, onApply }: { projectId: string; onAp
             />
           ) : (
             <input
-              value={(answers as any)[q.id] ?? ''}
+              value={((answers[q.id] as string | undefined) ?? '')}
               onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
               style={{ background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: 8 }}
             />
@@ -48,7 +48,7 @@ export function StoryInterview({ projectId, onApply }: { projectId: string; onAp
       {complete && (
         <>
           <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Preview: {skeleton.length} scenes</div>
-          <button type="button" onClick={() => onApply(skeleton)} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>
+          <button type="button" onClick={() => onApply(skeleton)} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer' }}>
             Apply skeleton
           </button>
         </>

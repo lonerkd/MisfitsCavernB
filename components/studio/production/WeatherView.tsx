@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Cloud, CloudRain, CloudSun, Loader2, MapPin, PenLine, Sun, Wind } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useProjectLocations, useShootDays, studio, type ShootDay } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
@@ -51,7 +51,7 @@ function isBad(code: number | null, precip: number | null, wind: number | null):
 }
 
 export function WeatherView() {
-  const { project, scenes, scriptId } = useStudio();
+  const { project, scriptId } = useStudio();
   const locations = useProjectLocations(project.id);
   const shootDays = useShootDays(project.id);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -68,7 +68,7 @@ export function WeatherView() {
   }, [located, selectedLocation]);
 
   useEffect(() => {
-    if (!loc?.latitude || !loc?.longitude) return;
+    if (loc?.latitude == null || loc?.longitude == null) return;
     const dated = shootDays.rows.filter((d) => d.shoot_date);
     if (dated.length === 0) return;
 
@@ -174,7 +174,7 @@ export function WeatherView() {
           const w = day.shoot_date ? weather[day.shoot_date] : null;
           const bad = w ? isBad(w.weatherCode, w.precipitation, w.windSpeed) : false;
           return (
-            <li key={day.id} className={s.panel} style={{ padding: 12, borderLeft: bad ? '3px solid var(--danger, #fca5a5)' : undefined }}>
+            <li key={day.id} className={s.panel} style={{ padding: 12, borderLeft: bad ? '3px solid var(--danger)' : undefined }}>
               <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 <span style={{ fontFamily: 'var(--display)', fontSize: '1.05rem' }}>Day {day.day_number}</span>
                 <span className={s.hint}>{day.shoot_date ? new Date(day.shoot_date + 'T00:00').toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' }) : ''}</span>
@@ -187,7 +187,7 @@ export function WeatherView() {
                     <span className={s.hint}>{w.tempMin}–{w.tempMax}°C</span>
                     <span className={s.hint}>{w.precipitation}mm rain</span>
                     <span className={s.hint}><Wind size={11} style={{ verticalAlign: -2 }} /> {w.windSpeed} km/h</span>
-                    {bad && <span style={{ color: 'var(--danger, #fca5a5)', fontSize: 12, fontWeight: 600 }}>⚠ Risk</span>}
+                    {bad && <span style={{ color: 'var(--danger)', fontSize: 12, fontWeight: 600 }}>⚠ Risk</span>}
                     <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void copyToCallSheet(day, w)} title="Copy to call sheet">
                       Copy to call sheet
                     </button>
@@ -196,7 +196,7 @@ export function WeatherView() {
                 {!w && !loading && <span className={s.hint}>No forecast data</span>}
               </div>
               {w && bad && (
-                <p className={s.hint} style={{ margin: '6px 0 0', color: 'var(--danger, #fca5a5)' }}>
+                <p className={s.hint} style={{ margin: '6px 0 0', color: 'var(--danger)' }}>
                   Conditions may affect the shoot — consider a backup plan or a different day.
                 </p>
               )}

@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { CalendarDays, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type RehearsalEntry = { id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string };
 
 export function RehearsalView() {
-  const { project } = useStudio();
-  const items: RehearsalEntry[] = useMemo(() => (project.settings as any)?.rehearsals ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('rehearsals');
   const [draft, setDraft] = useState<Omit<RehearsalEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     time: '10:00',
@@ -21,29 +18,11 @@ export function RehearsalView() {
     notes: '',
   });
 
-  const save = async (next: RehearsalEntry[]) => {
-    await patchProjectSettings(project.id, { rehearsals: next } as any);
-  };
-
   const add = async () => {
     if (!draft.date) return;
-    await save([...items, { ...draft, id: `r-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `r-${Date.now()}` }]))) return;
     setDraft({ date: new Date().toISOString().slice(0, 10), time: '10:00', location: '', participants: '', scenes: '', notes: '' });
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<CalendarDays size={26} />}
-        title="No rehearsals scheduled"
-        subtitle="Plan table reads and blocking rehearsals with cast and crew."
-      />
-    );
-  }
 
   const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 

@@ -2,7 +2,7 @@ import { getValidToken } from './auth';
 import { describeSpotifyFailure } from './failure';
 import { parseScript } from '../scriptos/parser';
 
-export async function searchSpotify(query: string, type: 'track' | 'playlist' | 'album' = 'playlist') {
+export async function searchSpotify(query: string, type: 'track' | 'playlist' | 'album' = 'playlist', offset = 0) {
   const token = await getValidToken();
   if (!token) throw new Error('Not authenticated with Spotify');
 
@@ -11,6 +11,7 @@ export async function searchSpotify(query: string, type: 'track' | 'playlist' | 
   url.searchParams.append('type', type);
   // Development Mode apps may ask for at most 10.
   url.searchParams.append('limit', '10');
+  if (offset > 0) url.searchParams.append('offset', String(Math.min(offset, 90)));
 
   const res = await fetch(url.toString(), {
     headers: {
@@ -28,7 +29,8 @@ export async function searchSpotify(query: string, type: 'track' | 'playlist' | 
   return items.filter(Boolean);
 }
 
-export async function generateContextualSearchQuery(sceneText: string): Promise<string> {
+/** The words the scene's content suggests (sound effects it names, and its mood), before any are chosen for a query. */
+export function contextKeywords(sceneText: string): string[] {
   const text = sceneText.toLowerCase();
 
   const keywords: string[] = [];
@@ -69,8 +71,29 @@ export async function generateContextualSearchQuery(sceneText: string): Promise<
     keywords.push('Cinematic Score');
   }
 
-  return keywords.join(' ');
+  return keywords;
 }
+
+export async function generateContextualSearchQuery(sceneText: string): Promise<string> {
+  return contextKeywords(sceneText).join(' ');
+}
+
+/**
+ * A different take on the same scene each time: with a seed, the keywords are shuffled and a share of them is chosen (never fewer
+ * than two), and the results start further down Spotify's list. Seed 0 is the plain query and the first page, so what opens by
+ * itself stays steady; Refresh passes a new seed and so offers a fresh set, mostly (the same song can still turn up).
+ */
+export function freshSearch(keywords: string[], seed: number): { query: string; offset: number } {
+  if (seed === 0 || keywords.length === 0) return { query: keywords.join(' '), offset: 0 };
+  let s = (Math.abs(Math.floor(seed)) % 2147483647) || 1;
+  const next = () => { s = (s * 48271) % 2147483647; return s / 2147483647; };
+  const pool = [...keywords];
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  const take = Math.min(pool.length, Math.max(2, Math.ceil(pool.length * (0.5 + next() * 0.3))));
+  return { query: pool.slice(0, take).join(' '), offset: Math.floor(next() * 8) * 10 };
+}
+
+
 
 export async function contextAwareSearch(sceneText: string) {
   const query = await generateContextualSearchQuery(sceneText);

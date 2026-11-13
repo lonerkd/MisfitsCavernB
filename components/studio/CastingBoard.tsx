@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
 import Avatar from '@/components/ui/Avatar';
-import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, addCastingNote, deleteCastingNote, type Casting, type CastingNote } from '@/lib/supabase/casting';
+import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, listAllCastingNotes, addCastingNote, deleteCastingNote, listAuditions, scheduleAudition, cancelAudition, listCastingHistory, type Casting, type CastingNote, type CastingAudition, type CastingHistoryEntry } from '@/lib/supabase/casting';
+import { exportCastingSheet } from '@/lib/casting/export';
 import { logActivity } from '@/lib/supabase/activity';
 import { useCharacterMedia, useCharacters, useSceneCharacters, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { castByScene, castOfScene } from '@/lib/film/cast';
@@ -42,6 +43,11 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const [assigning, setAssigning] = useState(false);
   const [notes, setNotes] = useState<CastingNote[]>([]);
   const [noteDraft, setNoteDraft] = useState('');
+  const [auditions, setAuditions] = useState<CastingAudition[]>([]);
+  const [auditionUser, setAuditionUser] = useState('');
+  const [auditionAt, setAuditionAt] = useState('');
+  const [history, setHistory] = useState<CastingHistoryEntry[]>([]);
+  const [compare, setCompare] = useState<string[]>([]);
   const characterLooks = useCharacterMedia(projectId);
   const storyCharacters = useCharacters(projectId);
   const sceneLinks = useSceneCharacters(projectId);
@@ -59,11 +65,18 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const loadCastings = useCallback(() => getCastingsForProject(projectId).then(setCastings, () => { /* shown as open roles */ }), [projectId]);
   useEffect(() => { void loadCastings(); }, [loadCastings]);
   useEffect(() => {
+    void listCastingHistory(projectId).then(setHistory, () => setHistory([]));
+  }, [projectId, castings]);
+  useEffect(() => {
     if (!selected) return;
     let active = true;
     void listCastingNotes(projectId, selected).then(
       (n) => { if (active) setNotes(n); },
       () => { if (active) setNotes([]); },
+    );
+    void listAuditions(projectId, selected).then(
+      (a) => { if (active) setAuditions(a); },
+      () => { if (active) setAuditions([]); },
     );
     return () => { active = false; };
   }, [projectId, selected, castings]);
@@ -88,7 +101,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not cast', 'error'); }
   };
   const clearCasting = async (name: string) => {
-    try { await removeCasting(projectId, name); logActivity(`reopened casting for ${name}`, 'project', projectId); await loadCastings(); toast(`${name} reopened`, 'info'); }
+    try { await removeCasting(projectId, name, userId); logActivity(`reopened casting for ${name}`, 'project', projectId); await loadCastings(); toast(`${name} reopened`, 'info'); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not update', 'error'); }
   };
   const addNote = async () => {
@@ -100,6 +113,24 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     try { await deleteCastingNote(id); setNotes((n) => n.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not remove note', 'error'); }
   };
+  const exportSheet = async () => {
+    const all = await listAllCastingNotes(projectId).catch(() => []);
+    const rows = chars.map((c) => ({ character: c.name, cast: castings[c.name.toUpperCase()] ?? null, notes: all.filter((n) => n.character_name === c.name.toUpperCase()) }));
+    exportCastingSheet(project.title, rows);
+  };
+  const schedule = async () => {
+    if (!selected || !auditionUser || !auditionAt) return;
+    try {
+      await scheduleAudition(projectId, selected, auditionUser, new Date(auditionAt).toISOString(), userId);
+      setAuditionAt(''); setAuditionUser('');
+      await loadCastings();
+      toast('Audition scheduled', 'success');
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not schedule', 'error'); }
+  };
+  const cancelAud = async (id: string) => {
+    try { await cancelAudition(id); setAuditions((a) => a.filter((x) => x.id !== id)); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not cancel', 'error'); }
+  };
 
   const sel = chars.find(c => c.name === selected) || null;
   const castCount = chars.filter(c => castings[c.name.toUpperCase()]).length;
@@ -109,6 +140,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
         <Users size={16} /> Casting Board
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
+        <button type="button" onClick={() => void exportSheet()} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)' }}>Export sheet</button>
       </div>
       {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Loading…</div>}
       {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
@@ -141,12 +173,19 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
             const looksFor = sel.id ? (looks[sel.id] || []) : [];
             const fp = footprint(sel.name);
             return (
-              <div style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${sel.color}33`, borderRadius: 14, padding: 24 }}>
+              <div
+                onDragOver={(e) => { if (e.dataTransfer.types.includes('text/cast-crew')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; } }}
+                onDrop={(e) => {
+                  const crewId = e.dataTransfer.getData('text/cast-crew');
+                  if (crewId) { e.preventDefault(); void assign(crewId); }
+                }}
+                style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${sel.color}33`, borderRadius: 14, padding: 24 }}
+              >
                 <div style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', letterSpacing: '-0.02em', color: sel.color, marginBottom: 20 }}>{sel.name}</div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Casting</div>
                 {cast ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)', borderRadius: 8, marginBottom: 24 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'color-mix(in srgb, var(--ok) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--ok) 25%, transparent)', borderRadius: 8, marginBottom: 24 }}>
                     <Avatar src={cast.avatar_url} name={cast.username || 'Crew'} size={38} />
                     <div style={{ flex: 1 }}>
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
@@ -159,7 +198,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px dashed rgba(var(--ink-rgb), 0.14)', borderRadius: 8, marginBottom: assigning ? 12 : 24 }}>
                     <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
                     <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
-                    <Link href={castingCallHref(project.title, sel.name, fp)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>Post a casting call →</Link>
+                    <Link href={castingCallHref(project.title, sel.name, fp)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--jobs-text)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>Post a casting call →</Link>
                   </div>
                 )}
 
@@ -169,17 +208,73 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                       <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No crew recruited yet — recruit talent in the Crew tab or post the role to Jobs.</span>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {crew.map((m) => (
-                          <button key={m.id} onClick={() => assign(m.user_id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.07)', borderRadius: 8, cursor: 'pointer', textAlign: 'left' }}>
-                            <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
-                            <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
-                            <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</span>
-                          </button>
-                        ))}
+                        {crew.map((m) => {
+                          const on = compare.includes(m.user_id);
+                          return (
+                            <div key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <button draggable onDragStart={(e) => { e.dataTransfer.setData('text/cast-crew', m.user_id); e.dataTransfer.effectAllowed = 'copy'; }} onClick={() => assign(m.user_id)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.07)', borderRadius: 8, cursor: 'grab', textAlign: 'left' }}>
+                                <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={28} />
+                                <span style={{ flex: 1, fontSize: 12 }}>{m.profiles?.username || 'Unknown'}</span>
+                                <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</span>
+                              </button>
+                              <button type="button" onClick={() => setCompare((c) => (on ? c.filter((x) => x !== m.user_id) : c.length >= 3 ? c : [...c, m.user_id]))} aria-pressed={on} title="Compare" style={{ padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: on ? 'rgba(var(--ink-rgb), 0.1)' : 'none', color: on ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', fontSize: 11 }}>⇄</button>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
+                    {compare.length >= 2 && (
+                      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${compare.length}, 1fr)`, gap: 8, marginTop: 10 }}>
+                        {compare.map((id) => {
+                          const m = crew.find((x) => x.user_id === id);
+                          if (!m) return null;
+                          return (
+                            <div key={id} style={{ padding: 12, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, display: 'grid', gap: 6, justifyItems: 'center' }}>
+                              <Avatar src={m.profiles?.avatar_url} name={m.profiles?.username || 'Crew'} size={44} />
+                              <div style={{ fontSize: 13, fontWeight: 600 }}>{m.profiles?.username || 'Unknown'}</div>
+                              <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{m.craft || (m.role === 'lead' ? 'Lead' : 'Crew')}</div>
+                              <button type="button" onClick={() => assign(id)} style={{ padding: '5px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer', fontSize: 11 }}>Cast</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginTop: 8 }}>Drag a person onto the role, or click to cast.</div>
                   </div>
                 )}
+
+                {crew.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
+                    <select value={auditionUser} onChange={(e) => setAuditionUser(e.target.value)} aria-label="Candidate" style={{ flex: 1, background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 }}>
+                      <option value="">Candidate…</option>
+                      {crew.map((m) => <option key={m.id} value={m.user_id}>{m.profiles?.username || 'Crew'}</option>)}
+                    </select>
+                    <input type="datetime-local" value={auditionAt} onChange={(e) => setAuditionAt(e.target.value)} aria-label="Audition time" style={{ background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 }} />
+                    <button type="button" onClick={() => void schedule()} disabled={!auditionUser || !auditionAt} style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer', fontSize: 12 }}>Schedule</button>
+                  </div>
+                )}
+
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Auditions</div>
+                <div style={{ display: 'grid', gap: 6, marginBottom: 24 }}>
+                  {auditions.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>None scheduled.</div>}
+                  {auditions.map((a) => (
+                    <div key={a.id} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 8, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.07)', borderRadius: 8 }}>
+                      <span style={{ flex: 1, fontSize: 12 }}>{new Date(a.scheduled_at).toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                      <button type="button" onClick={() => void cancelAud(a.id)} aria-label="Cancel audition" style={{ background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' }}>×</button>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>History</div>
+                <div style={{ display: 'grid', gap: 4, marginBottom: 24 }}>
+                  {history.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>No decisions yet.</div>}
+                  {history.slice(0, 8).map((h) => (
+                    <div key={h.id} style={{ display: 'flex', gap: 8, fontSize: 12 }}>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{h.created_at ? new Date(h.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}</span>
+                      <span><strong>{h.character_name}</strong> {h.action}</span>
+                    </div>
+                  ))}
+                </div>
 
                 <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', marginBottom: 10 }}>Look-board</div>
                 {looksFor.length > 0 ? (
@@ -205,7 +300,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   ))}
                   <div style={{ display: 'flex', gap: 6 }}>
                     <input value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} placeholder="Add a note…" style={{ flex: 1, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg)', fontSize: 12 }} />
-                    <button onClick={() => void addNote()} disabled={!noteDraft.trim()} style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer', fontSize: 12 }}>Add</button>
+                    <button onClick={() => void addNote()} disabled={!noteDraft.trim()} style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer', fontSize: 12 }}>Add</button>
                   </div>
                 </div>
 

@@ -1,17 +1,14 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Palette, Plus, Trash2 } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type MakeupEntry = { id: string; character: string; scene: string; look: string; artist: string; notes: string; photo: string };
 
 export function MakeupView() {
-  const { project } = useStudio();
-  const items: MakeupEntry[] = useMemo(() => (project.settings as any)?.makeup ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('makeup');
   const [draft, setDraft] = useState<Omit<MakeupEntry, 'id'>>({
     character: '',
     scene: '',
@@ -21,29 +18,11 @@ export function MakeupView() {
     photo: '',
   });
 
-  const save = async (next: MakeupEntry[]) => {
-    await patchProjectSettings(project.id, { makeup: next } as any);
-  };
-
   const add = async () => {
     if (!draft.character.trim()) return;
-    await save([...items, { ...draft, id: `mk-${Date.now()}` }]);
+    if (!(await save([...items, { ...draft, id: `mk-${Date.now()}` }]))) return;
     setDraft({ character: '', scene: '', look: '', artist: '', notes: '', photo: '' });
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0) {
-    return (
-      <EmptyState
-        icon={<Palette size={26} />}
-        title="No makeup / hair notes"
-        subtitle="Track looks per character per scene, artist, and continuity photos."
-      />
-    );
-  }
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -99,7 +78,7 @@ export function MakeupView() {
               </button>
             </div>
             {m.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{m.notes}</p>}
-            {m.photo && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={m.photo} target="_blank" rel="noreferrer">{m.photo}</a></p>}
+            {m.photo && (m.photo.startsWith('http://') || m.photo.startsWith('https://')) && <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}><a href={m.photo} target="_blank" rel="noreferrer">{m.photo}</a></p>}
           </li>
         ))}
       </ul>

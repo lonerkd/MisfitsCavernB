@@ -27,7 +27,7 @@ export function RelationshipMap({ relationships, onChange }: { relationships: Re
           {['ally', 'rival', 'family', 'romance', 'mentor', 'other'].map((k) => <option key={k} value={k}>{k}</option>)}
         </select>
         <input value={b} onChange={(e) => setB(e.target.value)} placeholder="Character B" style={{ flex: 1, background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: 4 }} />
-        <button type="button" onClick={add} style={{ padding: '4px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: '#fff', cursor: 'pointer' }}>Add</button>
+        <button type="button" onClick={add} style={{ padding: '4px 10px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer' }}>Add</button>
       </div>
     </div>
   );

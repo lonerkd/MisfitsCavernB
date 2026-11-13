@@ -108,14 +108,13 @@ export async function setProjectLogline(projectId: string, logline: string): Pro
 
 /** Owner only (RLS): merges `patch` into the project's settings. */
 export async function patchProjectSettings(projectId: string, patch: Partial<ProjectSettings>): Promise<ProjectSettings> {
-  const { data: row, error: readError } = await supabase.from('projects').select('settings').eq('id', projectId).single();
-  if (readError) throw new Error(readError.message || 'Could not load project settings');
-  const settings = { ...((row?.settings as unknown as ProjectSettings) ?? {}), ...patch } as ProjectSettings;
-  const { data, error } = await supabase.from('projects').update({ settings: settings as unknown as Json }).eq('id', projectId).select('id');
+  const { data, error } = await supabase.rpc('patch_project_settings', {
+    p_project_id: projectId,
+    p_patch: patch as unknown as Json,
+  });
   if (error) throw new Error(error.message || 'Could not save project settings');
-  if (!data?.length) throw new Error('Only the project owner can change this');
   announceProgressChange(projectId);
-  return settings;
+  return (data as unknown as ProjectSettings) ?? {};
 }
 
 /** Owner only (RLS): open every tool now, or go back to phase by phase. */

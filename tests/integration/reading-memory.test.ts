@@ -59,6 +59,20 @@ describe('per-writer memory', () => {
     expect((await cast.riley.client.from('reading_memory').select('id')).data).toEqual([]);
   });
 
+  it('changing a verdict replaces the old one in the person\'s memory instead of leaving both', async () => {
+    // NIGHT was rejected in two projects (count 2). Changing one verdict counts the rejection down and adds a confirmation.
+    const change = await cast.sam.client.from('reading_corrections').update({ kind: 'character' }).eq('project_id', projectId).eq('name', 'NIGHT');
+    expect(change.error).toBeNull();
+    const after = (await cast.sam.client.rpc('reading_memory_for_user', { p_user_id: cast.sam.id })).data as Array<{ kind: string; name: string; count: number }>;
+    expect(after.find((r) => r.kind === 'rejected_name' && r.name === 'NIGHT')?.count).toBe(1);
+    expect(after.find((r) => r.kind === 'confirmed_name' && r.name === 'NIGHT')?.count).toBe(1);
+    // Changing the other one too removes the rejection entirely: nothing stands behind it any more.
+    expect((await cast.sam.client.from('reading_corrections').update({ kind: 'character' }).eq('project_id', otherProjectId).eq('name', 'NIGHT')).error).toBeNull();
+    const end = (await cast.sam.client.rpc('reading_memory_for_user', { p_user_id: cast.sam.id })).data as Array<{ kind: string; name: string; count: number }>;
+    expect(end.some((r) => r.kind === 'rejected_name' && r.name === 'NIGHT')).toBe(false);
+    expect(end.find((r) => r.kind === 'confirmed_name' && r.name === 'NIGHT')?.count).toBe(2);
+  });
+
   it('nobody writes into another person’s memory', async () => {
     const forged = await cast.jordan.client.from('reading_memory').insert({ user_id: cast.sam.id, kind: 'confirmed_name', name: 'FORGED' });
     expect(forged.error).not.toBeNull();

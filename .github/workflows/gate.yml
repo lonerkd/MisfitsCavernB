@@ -1,0 +1,41 @@
+name: Gate
+
+# The merge gate (scripts/pr-gate.mjs): deterministic checks on what a pull request changes, the same for every author.
+# It has its own workflow so that editing the title or description (adding a `No tests needed:` / `Large change:` waiver
+# line) re-runs only the gate, not the whole of CI. The job is named `gate`: that is the status check to require.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # The merge gate: the same deterministic checks for every author (person, Claude, Copilot, any agent).
+  # The script is read from the BASE branch, so a pull request cannot weaken the gate that judges it.
+  # Title and description reach the script through the environment, never interpolated into the shell.
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Run the gate from the base branch
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if git cat-file -e "$BASE_SHA:scripts/pr-gate.mjs" 2>/dev/null; then
+            git show "$BASE_SHA:scripts/pr-gate.mjs" > "$RUNNER_TEMP/pr-gate.mjs"
+            node "$RUNNER_TEMP/pr-gate.mjs" --base "$BASE_SHA" --head "$HEAD_SHA"
+          else
+            echo "::notice::scripts/pr-gate.mjs is not on the base branch yet (this PR introduces it); running the PR's copy."
+            node scripts/pr-gate.mjs --base "$BASE_SHA" --head "$HEAD_SHA"
+          fi

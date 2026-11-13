@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Eye, PenLine, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import EmptyState from '@/components/ui/EmptyState';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { studio, useCharacters, useSceneCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
 import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';
@@ -111,7 +111,7 @@ export function ContinuityView() {
               <div className={s.row}>
                 <strong>{sc.scene_number}. {sc.heading ?? sc.title}</strong>
                                 <span className={s.hint}>{storyLabel(sc.story_day, sc.story_time)}{sc.story_confirmed ? '' : sc.story_day != null ? ' (read from the script)' : ''}</span>
-                                {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warning, #b45309)' }}>⚠ review</span>}
+                                {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warn)' }}>⚠ review</span>}
               </div>
               <div className={s.row}>
                 <label className={s.stack}>

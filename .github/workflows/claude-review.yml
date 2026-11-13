@@ -1,0 +1,48 @@
+name: Claude review
+
+# A high-risk pull request (scripts/pr-risk.mjs) cannot merge on green CI alone: it needs a review by a Claude
+# session or the Claude worker, bound to the exact head commit. This sets the `claude-review` commit status on the
+# head SHA: success when a trusted review approved THIS commit (or the risk is low/medium), pending when the head
+# changed since the last review, failure when the review asked for changes. How to post the review:
+# `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "..."` (tools-and-access.md §9).
+#
+# Both the workflow file and the script are the base branch's, never the pull request's: `pull_request_target` and
+# `issue_comment` both run the default branch's definition. A pull request cannot weaken the check that judges it.
+on:
+  # pull_request_target runs THIS FILE FROM THE BASE BRANCH, so a pull request cannot rewrite the job that judges it. It never
+  # runs code from the pull request: the checkout below is the base commit, and the script only reads GitHub's API.
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  statuses: write
+
+concurrency:
+  group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    # Only pull requests (an issue comment event also fires for plain issues).
+    if: github.event_name == 'pull_request_target' || github.event.issue.pull_request
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 1
+      - name: Set the claude-review status on the head commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          CLAUDE_REVIEW_LOGINS: ${{ vars.CLAUDE_REVIEW_LOGINS }}
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.issue.number }}
+        run: |
+          if [ ! -f scripts/claude-review.mjs ]; then echo "::notice::scripts/claude-review.mjs is not on the base branch yet (the pull request that adds it)"; exit 0; fi
+          node scripts/claude-review.mjs --pr "$PR_NUMBER" --apply

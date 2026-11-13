@@ -152,6 +152,7 @@ What guards `main`, and the commands behind each guard:
 | Page weight (first-load JS per page, gzipped) | CI `checks` | `npm run budget` (after a build); `-- --update` rewrites `performance-budget.json` (+10%) — raise a number only on purpose |
 | Schema = migrations; types = schema; persona tests | CI `database` | `npm run db:drift`, `npm run db:types:check`, `npm run test:integration` |
 | Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | `e2e-scheduled.yml` (nightly 03:47 UTC + `workflow_dispatch`; not a PR gate) | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |
+| The phone audit: an iPhone 15 Pro, portrait and landscape, over 18 routes of the built app on the local stack; fails when a route is worse than `scripts/mobile-audit-baseline.json` (sideways scroll, controls under a thumb, text too small, controls under a fixed bar, a field or its button hidden by the keyboard). The numbers only shrink | `mobile-audit.yml` (pull requests that touch `app/`, `components/`, `lib/os/`, `lib/island/` or the audit; `workflow_dispatch`; **not yet a required check**: make it required after it has run green on a few real PRs) | `npm run stack:up -- build`, then `node scripts/mobile-audit.mjs <outDir> --check` (`--update` rewrites the baseline from a run: fix something, run it, commit the smaller numbers). The comparison is `scripts/mobile-audit-ratchet.mjs`, tested in `lib/ci/mobile-audit-ratchet.test.ts` |
 | Production = committed schema | `production-drift.yml`: nightly and after schema changes land on main. Needs the `PRODUCTION_DB_URL` secret (a read-only role) and **fails without it** | `DRIFT_TARGET_DB_URL=… npm run db:drift -- --target` |
 
 **The production drift login** (working since 2026-10-06). The workflow logs
@@ -259,3 +260,29 @@ Labels: `backlog`, `size/S|M|L|XL`, `needs-owner` (waiting on a decision), `agen
 **Safety.** The repository is public, so issue and comment text is untrusted: only the owner's label starts a run, the prompt tells the agent to treat issue text as a description, and the allowed commands cannot push anywhere except `claude/*` branches. Agents never merge and never push `main`; the owner's merge and CI are the gate.
 
 **What does not exist any more.** GitHub Models (the free model quota for Actions) was retired on 2026-07-30, and the earlier local daemon was removed, so there is no free AI worker; the pipeline around it is free.
+
+## 9. The merge gate and the lint ratchet (same for every author)
+
+Rules a weaker model or a tired person can skip are not rules, so what can be
+checked by a program is. Both run for **every** pull request whoever wrote it
+(a person, Claude, Copilot, another agent).
+
+- **`gate` job** (`gate.yml` — its own workflow, so editing the description to add a waiver re-runs only the gate; `scripts/pr-gate.mjs`, unit-tested in
+  `lib/ci/pr-gate.test.ts`). Checks: a merged migration is never edited; a new
+  `SECURITY DEFINER` function is on the §2.D allowlist in the same PR; a new
+  table has RLS in its migration; tests move with source; new components bring
+  new tests in proportion; a session note exists; the change is small enough to
+  review; every `var(--token)` used is defined; the lint baseline (`eslint-suppressions.json`) only shrinks (nine checks in all). A `chore(deps)` title exempts only a PR a dependency bot opened. A changed test counts only if it adds an assertion or case. The allowlist lookup reads only the §2.D table. The CI copy of the script is read
+  from the **base** branch, so a PR cannot weaken the gate that judges it.
+  Waivers are visible lines in the PR description: `No tests needed: <20+
+  characters>`, `Large change: <what and why>`. The line may be a bullet, a quote, a heading, a number, a task box or **bold**; the label and its colon are on one line and the reason follows on that line (or alone on the next); a line inside a code fence is quoted text and does not count; the 20 characters are the reason itself, not the Markdown around it. Replay on a merged commit:
+  `node scripts/pr-gate.mjs --replay <sha>`.
+- **Lint ratchet** (`eslint.config.mjs` + `eslint-suppressions.json`). Dead code
+  (`false &&`), `as any`, unused variables, `supabase.from/rpc` in components and
+  hard-coded colours are errors. Existing violations are recorded in the
+  suppressions file; new ones fail, and one you fix must be removed from it with
+  `npm run lint:ratchet`.
+- **Limit, stated plainly:** the `gate` job lives in `ci.yml`, which a PR can edit, and until `gate` is a *required* status check in the ruleset a PR that deletes the job is not stopped by it. The base-branch script closes the script hole, not the workflow hole; only the ruleset closes that. (The bootstrap PR that introduced the gate ran its own copy, as there was no base copy yet.)
+- **Claude review, bound to the commit** (`claude-review.yml`, `scripts/claude-review.mjs`, tests in `lib/ci/claude-review.test.ts`). A **high-risk** PR (`pr-risk`) gets a `claude-review` commit status that is *pending* until a trusted comment carries `<!-- claude-review:v1 sha=<head> verdict=approved -->` for the **current head SHA**. A new push changes the SHA, so an earlier approval goes stale on its own; a later `changes` verdict beats an earlier `approved`. Trusted = the repository owner, a member or collaborator (never a bot such as Copilot, never the PR description) or a login in the repository variable `CLAUDE_REVIEW_LOGINS` (the worker). Post a review with `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "<what was read and found>"` after a real review (the `code-review` skill, plus persona tests where data or access is touched). Low and medium risk need no marker. The marker must open the comment (a quoted or fenced one is not a verdict). Renames count under both the old and the new path. **What it proves, and what it does not:** that someone trusted recorded a review against this commit; it cannot prove the review was independent or good (in a one-owner repository the author and the reviewer are the same account, so excluding the author would make every PR unmergeable), which is why the review itself is the code-review skill plus persona tests, and the summary says what was read. The workflow runs on `pull_request_target`/`issue_comment`, so **both the workflow file and the script are the base branch's**: a PR cannot edit the job that judges it (and nothing from the PR is checked out or run). Edits to a comment count by `updated_at`. The enforcement scripts, the lint config and its baseline, and the workflows are classified high risk, so changing them needs this review itself.
+- **The ruleset (applied by the owner, 2026-11-07):** `main-2` requires `conventional`, `checks`, `database` and `gate` (strict up-to-date), requires a pull request (no approvals needed, squash only) and has **no bypass actors**: the owner's own credentials are bound too. `main-1` blocks deleting `main` and non-fast-forward pushes. A session cannot change rulesets (the cloud proxy refuses the write); the owner does it in Settings › Rules or with `gh api -X PUT repos/lonerkd/MisfitsCavernB/rulesets/<id>`.
+- **Not yet enforced** (BACKLOG 3.40): `claude-review` as a required check (wait for its first green run on a real PR), and a PR-level browser job.

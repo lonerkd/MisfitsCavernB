@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import { MessageCircle, Plus, Trash2, Send, Reply } from 'lucide-react';
-import EmptyState from '@/components/ui/EmptyState';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { cx } from '../ui';
+import { useSettingsList } from './useSettingsList';
 import s from '../studio.module.css';
 
 type CommEntry = { id: string; date: string; to: string; channel: 'call' | 'email' | 'text' | 'in-person'; subject: string; notes: string; status: 'sent' | 'replied' | 'pending' };
@@ -14,8 +12,7 @@ const CHANNELS: CommEntry['channel'][] = ['call', 'email', 'text', 'in-person'];
 const STATUSES: CommEntry['status'][] = ['pending', 'sent', 'replied'];
 
 export function CommsView() {
-  const { project } = useStudio();
-  const items: CommEntry[] = useMemo(() => (project.settings as any)?.comms ?? [], [project.settings]);
+  const { items, save, remove } = useSettingsList('comms');
   const [draft, setDraft] = useState<Omit<CommEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     to: '',
@@ -31,34 +28,16 @@ export function CommsView() {
     [items, filter],
   );
 
-  const save = async (next: CommEntry[]) => {
-    await patchProjectSettings(project.id, { comms: next } as any);
-  };
-
   const add = async () => {
     if (!draft.to.trim() || !draft.subject.trim()) return;
     const entry: CommEntry = { ...draft, id: `c-${Date.now()}` };
-    await save([...items, entry]);
+    if (!(await save([...items, entry]))) return;
     setDraft({ date: new Date().toISOString().slice(0, 10), to: '', channel: 'email', subject: '', notes: '', status: 'pending' });
   };
 
   const updateStatus = async (id: string, status: CommEntry['status']) => {
     await save(items.map((i) => (i.id === id ? { ...i, status } : i)));
   };
-
-  const remove = async (id: string) => {
-    await save(items.filter((i) => i.id !== id));
-  };
-
-  if (items.length === 0 && filter === 'all') {
-    return (
-      <EmptyState
-        icon={<MessageCircle size={26} />}
-        title="No communications logged"
-        subtitle="Track calls, emails, and confirmations with crew and cast."
-      />
-    );
-  }
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>

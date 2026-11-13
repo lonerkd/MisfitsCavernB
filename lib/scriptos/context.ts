@@ -72,5 +72,9 @@ export function contextWithMemory(
 /** A stable key for a context, so a consumer can tell whether it changed. */
 export function contextKey(context: ParseContext | undefined): string {
   if (!context) return '';
-  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${(context.places ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${context.writerMemory ? 'mem' : ''}#${context.lineOverrides?.length ?? 0}`;
+  const memKey = context.writerMemory
+    ? JSON.stringify(context.writerMemory)
+    : '';
+  const overrideKey = (context.lineOverrides ?? []).map((o) => `${o.line_index}:${o.forced_type}`).join(',');
+  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${(context.places ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}`;
 }

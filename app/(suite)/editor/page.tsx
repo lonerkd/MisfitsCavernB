@@ -61,7 +61,17 @@ import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
 import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
+import { SoundPanel } from '@/components/editor/SoundPanel';
+import { SceneMusic } from '@/components/editor/SceneMusic';
+import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
+import { NotesPanel } from '@/components/notes/NotesPanel';
+import { ShareScriptButton } from '@/components/editor/ShareScriptButton';
+import { usePhoneLayout } from '@/lib/os/usePhone';
+import { BottomSheet } from '@/components/phone/BottomSheet';
+import { PhoneEditorBar, VIEW_LABELS } from '@/components/editor/PhoneEditorBar';
+import { PhoneToolStrip } from '@/components/editor/PhoneToolStrip';
+import { requestNoteFocus } from '@/lib/notes/focus';
 import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
@@ -69,6 +79,7 @@ import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
+import type { DiffKind } from '@/components/editor/DiffModal';
 import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -218,15 +229,12 @@ export default function EditorPage() {
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [showRightSidebar, setShowRightSidebar] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 820px)');
-    const apply = () => { setIsMobile(mq.matches); if (mq.matches) { setShowSidebar(false); setShowRightSidebar(false); } };
-    apply();
-    mq.addEventListener?.('change', apply);
-    return () => mq.removeEventListener?.('change', apply);
-  }, []);
+  // The phone has its own layout (a slim bar, bottom sheets, an element strip over the keyboard), chosen by size and touch, not by a breakpoint alone.
+  const phone = usePhoneLayout();
+  const isMobile = phone.phone;
+  const [sheet, setSheet] = useState<null | 'scripts' | 'views' | 'tools' | 'more'>(null);
+  // Picking a scene or a view on a phone puts the sheet away.
+  const closeSheet = () => setSheet(null);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
   const [saving, setSaving] = useState(false);
   // True while the latest save is only on this device (server unreachable);
@@ -249,7 +257,7 @@ export default function EditorPage() {
   const { open: showFindReplace, setOpen: setShowFindReplace, findText, setFindText, replaceText, setReplaceText, matchCase, setMatchCase, findCount, replaceAll: handleFindReplace, replaceOne: handleFindReplaceOne } =
     useFindReplace(content, setContent);
 
-  const [rightPanel, setRightPanel] = useState<RightPanelTab>('write');
+  const [rightPanel, setRightPanel] = useState<RightPanelTab>('scene');
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [showWatermark, setShowWatermark] = useState(false);
 
@@ -573,16 +581,19 @@ const [showGoToScene, setShowGoToScene] = useState(false);
       }
     }
 
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (!editor) return;
-      const cursor = editor.selectionStart;
-      const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
-      const edit = cycleLine(content, cursor, lines[lineIdx]?.type, e.shiftKey, TAB_TYPE_CYCLE, transformLineForType);
-      if (edit === 'empty') { insertElement('scene'); return; }
-      setContent(edit.next);
-      placeCaret(editor, edit.caret);
-    }
+    if (e.key === 'Tab') { e.preventDefault(); cycleElement(e.shiftKey); }
+  };
+
+  // Tab on a desk keyboard; a button on the phone's tool strip (a phone keyboard has no Tab).
+  const cycleElement = (reverse: boolean) => {
+    const editor = textareaRef.current;
+    if (!editor) return;
+    const cursor = editor.selectionStart;
+    const lineIdx = content.substring(0, content.lastIndexOf('\n', cursor - 1) + 1).split('\n').length - 1;
+    const edit = cycleLine(content, cursor, lines[lineIdx]?.type, reverse, TAB_TYPE_CYCLE, transformLineForType);
+    if (edit === 'empty') { insertElement('scene'); return; }
+    setContent(edit.next);
+    placeCaret(editor, edit.caret);
   };
 
   const handleEditorChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -638,10 +649,10 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   });
   const [openElementId, setOpenElementId] = useState<string | null>(null);
   const openBreakdown = useCallback((elementId?: string | null) => {
-    setShowRightSidebar(true);
-    setRightPanel('breakdown');
+    if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
+    setRightPanel('scene');
     if (elementId !== undefined) setOpenElementId(elementId);
-  }, []);
+  }, [isMobile, setSheet, setRightPanel, setShowRightSidebar, setOpenElementId]);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
@@ -662,11 +673,42 @@ const [showGoToScene, setShowGoToScene] = useState(false);
     }, 60);
   };
 
-const applySkeleton = (scenes: { title: string }[]) => {
+  // Caret one line up/down by the script's own lines (same column where the line is long enough), for a keyboard with no arrows.
+  const moveCaretLine = (dir: -1 | 1) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const text = ta.value;
+    const start = text.lastIndexOf('\n', pos - 1) + 1;
+    const col = pos - start;
+    let target: number;
+    if (dir < 0) {
+      if (start === 0) { target = 0; } else {
+        const prevStart = text.lastIndexOf('\n', start - 2) + 1;
+        target = Math.min(prevStart + col, start - 1);
+      }
+    } else {
+      const end = text.indexOf('\n', pos);
+      if (end === -1) { target = text.length; } else {
+        const nextEnd = text.indexOf('\n', end + 1);
+        const nextStop = nextEnd === -1 ? text.length : nextEnd;
+        target = Math.min(end + 1 + col, nextStop);
+      }
+    }
+    ta.focus();
+    ta.setSelectionRange(target, target);
+    setCursorLine(text.substring(0, target).split('\n').length);
+    const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
+    const lineTop = (text.substring(0, target).split('\n').length - 1) * lh;
+    if (lineTop < ta.scrollTop || lineTop > ta.scrollTop + ta.clientHeight - lh * 2) ta.scrollTop = Math.max(0, lineTop - ta.clientHeight / 2);
+  }
+
+  const applySkeleton = (scenes: { title: string }[]) => {
     const block = scenes.map((s) => `INT. ${s.title.toUpperCase()} - DAY`).join('\n\n');
     setContent((prev) => (prev ? prev + '\n\n' + block : block));
     setShowStoryInterview(false);
   };
+
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -685,6 +727,13 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
+  const kindOfDiffLine = useCallback((n: number): DiffKind => {
+    const t = lines[n]?.type;
+    if (t === 'slug') return 'scene';
+    if (t === 'dialogue' || t === 'character') return 'dialogue';
+    if (t === 'action') return 'action';
+    return 'other';
+  }, [lines]);
   const jumpToCharacter = (name: string) => {
     const idx = scenesForCharacter(scenesList.map((s, i) => ({ characters: sceneCharMap[i] ?? [] })), name)[0];
     if (idx != null) { setActiveView('write'); setShowGoToScene(false); setGoToSceneNum(''); jumpToScene(idx); }
@@ -785,6 +834,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
   // ── Publish the editor's live state to the Pill ────────────────────────────
 
+  const openNotes = () => { setFocusMode(false); setRightPanel('notes'); if (isMobile) setSheet('tools'); else setShowRightSidebar(true); requestNoteFocus(); };
   usePillStage(
     {
       module: 'editor',
@@ -800,6 +850,8 @@ const applySkeleton = (scenes: { title: string }[]) => {
       ],
       actions: [
         { id: 'find', slot: 'find', label: 'Find & replace', onClick: () => setShowFindReplace(true) },
+        { id: 'note', slot: 'note', label: 'Add a note', onClick: openNotes },
+        { id: 'sprint', slot: 'live', label: sprint.active ? 'Pause sprint' : sprint.running ? 'Resume sprint' : 'Start sprint', onClick: sprint.active ? sprint.pause : sprint.start },
       ],
     }
   );
@@ -823,13 +875,129 @@ const applySkeleton = (scenes: { title: string }[]) => {
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
   const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
+  const leftNavEl = (
+    <EditorLeftNav
+      scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
+      setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
+      fileInputRef={fileInputRef} handleImportFile={handleImportFile}
+      showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
+      templates={TEMPLATES}
+      scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
+      sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
+      actStructure={actStructure}
+      jumpToScene={(i: number) => { jumpToScene(i); if (isMobile) closeSheet(); }} reorderScenes={reorderScenes}
+      dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
+      dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
+    />
+  );
+
+  const rightPanelsEl = (
+    <EditorErrorBoundary onCrash={() => {
+      try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
+    }}>
+      <EditorRightPanels
+        showBreakdown={tools.breakdown}
+        currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
+        rightPanel={rightPanel} setRightPanel={setRightPanel}
+        activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
+        getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
+        sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
+        insertElement={insertElement}
+        writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
+        wordCount={wordCount}
+        pageEst={pageEst} dialogueRatio={dialogueRatio}
+        typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
+        nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
+        chars={chars} charStats={charStats}
+        handleLockRevision={handleLockRevision} revisions={revisions}
+        onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
+        setContent={setContent} toast={toast}
+        showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
+        showWatermark={showWatermark} setShowWatermark={setShowWatermark}
+        lintIssues={lintIssues}
+        stash={stash} textareaRef={textareaRef}
+        currentScript={currentScript}
+        readingPanel={
+          <>
+            <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
+            <LineOverrideButton
+              projectId={currentScript?.project_id ?? null}
+              scriptId={currentScript?.id ?? null}
+              lineIndex={cursorLine}
+              currentType={lines[cursorLine]?.type ?? 'action'}
+              onSaved={() => { lineOverrides.reload(); }}
+            />
+          </>
+        }
+        breakdownPanel={
+          <BreakdownPanel
+            bd={bd}
+            projectId={currentScript?.project_id ?? null}
+            sceneIdx={currentSceneIdx}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
+            crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
+            openElementId={openElementId}
+            setOpenElementId={setOpenElementId}
+            onJumpToScene={jumpToScene}
+          />
+        }
+        soundPanel={
+          <SoundPanel
+            tableRead={{
+              supported: isTableReadSupported(), playing: tableReadPlaying, lineIdx: tableReadLineIdx, totalLines: lines.length,
+              sceneStartLine: currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.startIndex ?? null : null,
+              start: startTableRead, pause: pauseTableRead, resume: resumeTableRead, stop: stopTableRead,
+            }}
+            sceneLabel={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1}` : null}
+            sceneBody={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? lines.slice(parsedScenes[currentSceneIdx].startIndex + 1, parsedScenes[currentSceneIdx].endIndex + 1).map((l) => l.text).join('\n') : ''}
+            timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
+            projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
+          />
+        }
+        sceneMusic={
+          <SceneMusic
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            refs={projectAudioRefs} play={playAudioRef} openSound={() => setRightPanel('audio')}
+          />
+        }
+        notesPanel={
+          <NotesPanel
+            scriptId={currentScript?.id ?? null}
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            isProjectOwner={!!sessionUser?.id && activeProject?.id === currentScript?.project_id && activeProject?.creator_id === sessionUser.id}
+            sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
+            context={currentSceneIdx >= 0 && parsedScenes[currentSceneIdx] ? `Scene ${currentSceneIdx + 1} · ${parsedScenes[currentSceneIdx].heading}`.slice(0, 200) : null}
+          />
+        }
+        referencesPanel={
+          <SceneReferencesPanel
+            projectId={currentScript?.project_id ?? null}
+            userId={sessionUser?.id ?? null}
+            sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
+            heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
+            row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
+            note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
+            color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
+            onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
+            onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
+            syncState={sceneIndex.sync.state}
+          />
+        }
+      />
+    </EditorErrorBoundary>
+  );
+
   return (
-    <div style={{ height: '100dvh', boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingBottom: phone.landscape ? 50 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh' }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
-      {!focusMode && (
-        <EditorHeader ctx={editorCtx} />
-      )}
+      {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
+        ? <PhoneEditorBar ctx={editorCtx} slim={phone.landscape && phone.typing} onScripts={() => setSheet('scripts')} onViews={() => setSheet('views')} onTools={() => { setRightPanel('scene'); setSheet('tools'); }} onMore={() => setSheet('more')} />
+        : <EditorHeader ctx={editorCtx} />)}
 
       <AnimatePresence>
         {showFindReplace && (
@@ -847,12 +1015,10 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden', position: 'relative' }}>
 
-        {isMobile && (showSidebar || showRightSidebar) && !focusMode && (
-          <div onClick={() => { setShowSidebar(false); setShowRightSidebar(false); }} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 55 }} />
-        )}
+        {/* On a phone the panels are bottom sheets (below), so there is no drawer to dim. */}
 
         <AnimatePresence>
-          {showSidebar && !focusMode && (
+          {showSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: -260, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -866,19 +1032,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
                 ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, left: 0, zIndex: 60, boxShadow: '20px 0 60px rgba(0,0,0,0.6)' } : {}),
               }}
             >
-              <EditorLeftNav
-                scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
-                setCurrentScript={setCurrentScript} setContent={setContent} toast={toast}
-                fileInputRef={fileInputRef} handleImportFile={handleImportFile}
-                showTitleEditor={showTitleEditor} setShowTitleEditor={setShowTitleEditor}
-                templates={TEMPLATES}
-                scenesList={scenesList} sceneWordCounts={sceneWordCounts} currentSceneIdx={currentSceneIdx}
-                sceneTypeColor={sceneTypeColor} getSceneType={getSceneType} sceneCharMap={sceneCharMap}
-                actStructure={actStructure}
-                jumpToScene={jumpToScene} reorderScenes={reorderScenes}
-                dragSceneIdx={dragSceneIdx} setDragSceneIdx={setDragSceneIdx}
-                dropSceneIdx={dropSceneIdx} setDropSceneIdx={setDropSceneIdx}
-              />
+              {leftNavEl}
             </motion.div>
           )}
         </AnimatePresence>
@@ -898,7 +1052,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
                     {activeView === 'write' && <WriteView ctx={editorCtx} />}
 
                     {/* The beat timeline hugs the screen's left edge — only when the story map isn't open there already. */}
-                    {activeView === 'write' && !focusMode && !showSidebar && <WriteFooter ctx={editorCtx} />}
+                    {activeView === 'write' && !focusMode && !showSidebar && !(isMobile && phone.typing) && <WriteFooter ctx={editorCtx} />}
 
                     {activeView === 'preview' && <PreviewView ctx={editorCtx} />}
 
@@ -936,7 +1090,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
         </div>
 
         <AnimatePresence>
-          {showRightSidebar && !focusMode && (
+          {showRightSidebar && !focusMode && !isMobile && (
             <motion.div
               initial={{ x: 272, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -944,74 +1098,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
               transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               style={{ width: 272, maxWidth: '86vw', background: 'var(--surface)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.05)', display: 'flex', flexDirection: 'column', overflowY: 'hidden', ...(isMobile ? { position: 'absolute', top: 0, bottom: 0, right: 0, zIndex: 60, boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' } : {}) }}
             >
-              <EditorErrorBoundary onCrash={() => {
-                try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
-              }}>
-                <EditorRightPanels
-                  showBreakdown={tools.breakdown}
-                  currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
-                  rightPanel={rightPanel} setRightPanel={setRightPanel}
-                  activeView={activeView} currentSceneIdx={currentSceneIdx} scenesList={scenesList}
-                  getSceneType={getSceneType} sceneTypeColor={sceneTypeColor}
-                  sceneWordCounts={sceneWordCounts} sceneCharMap={sceneCharMap}
-                  insertElement={insertElement}
-                  writingPanel={<WritingLoopPanel loop={writing} sprint={sprint} toast={toast} />}
-                  wordCount={wordCount}
-                  pageEst={pageEst} dialogueRatio={dialogueRatio}
-                  typewriterMode={typewriterMode} setTypewriterMode={setTypewriterMode}
-                  nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
-                  chars={chars} charStats={charStats}
-                  handleLockRevision={handleLockRevision} revisions={revisions}
-                  onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
-                  setContent={setContent} toast={toast}
-                  showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
-                  showWatermark={showWatermark} setShowWatermark={setShowWatermark}
-                  lintIssues={lintIssues}
-                  stash={stash} textareaRef={textareaRef}
-                  currentScript={currentScript}
-                  projectAudioRefs={projectAudioRefs}
-                  playAudioRef={playAudioRef}
-                  readingPanel={
-                    <>
-                      <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
-                      <LineOverrideButton
-                        projectId={currentScript?.project_id ?? null}
-                        scriptId={currentScript?.id ?? null}
-                        lineIndex={cursorLine}
-                        currentType={lines[cursorLine]?.type ?? 'action'}
-                        onSaved={() => { lineOverrides.reload(); }}
-                      />
-                    </>
-                  }
-                  breakdownPanel={
-                    <BreakdownPanel
-                      bd={bd}
-                      projectId={currentScript?.project_id ?? null}
-                      sceneIdx={currentSceneIdx}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      speakingCast={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.characters ?? [] : []}
-                      crew={projectCrew.filter((m) => m.status !== 'declined').map((m) => ({ user_id: m.user_id, username: m.username || 'Crew' }))}
-                      openElementId={openElementId}
-                      setOpenElementId={setOpenElementId}
-                      onJumpToScene={jumpToScene}
-                    />
-                  }
-                  referencesPanel={
-                    <SceneReferencesPanel
-                      projectId={currentScript?.project_id ?? null}
-                      userId={sessionUser?.id ?? null}
-                      sceneNumber={currentSceneIdx >= 0 ? currentSceneIdx + 1 : null}
-                      heading={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.heading ?? null : null}
-                      row={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx] ?? null : null}
-                      note={currentSceneIdx >= 0 ? sceneIndex.notes[currentSceneIdx] ?? '' : ''}
-                      color={currentSceneIdx >= 0 ? sceneIndex.colors[currentSceneIdx] ?? null : null}
-                      onNote={(note) => sceneIndex.setNote(currentSceneIdx, note)}
-                      onTag={(color) => sceneIndex.tag(currentSceneIdx, color)}
-                      syncState={sceneIndex.sync.state}
-                    />
-                  }
-                />
-              </EditorErrorBoundary>
+              {rightPanelsEl}
             </motion.div>
           )}
         </AnimatePresence>
@@ -1024,6 +1111,10 @@ const applySkeleton = (scenes: { title: string }[]) => {
         originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
+        kindOf={kindOfDiffLine}
+        projectId={currentScript?.project_id ?? undefined}
+        scriptId={currentScript?.id ?? undefined}
+        userId={sessionUser?.id ?? undefined}
       />}
 
       {showAutocomplete && autocompleteItems.length > 0 && (
@@ -1049,7 +1140,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
       <AnimatePresence>
         {showTitleEditor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Title Page</h2>
@@ -1070,7 +1161,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
       <AnimatePresence>
         {showCharBible && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat-strong)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
@@ -1095,7 +1186,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                             {cast?.username && (
-                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--ok) 30%, transparent)', borderRadius: 4, padding: '1px 6px' }}>
                                 Playing: {cast.username}
                               </span>
                             )}
@@ -1165,7 +1256,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
 
         <AnimatePresence>
           {showStoryInterview && (
-            <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowStoryInterview(false)}>
+            <div style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowStoryInterview(false)}>
               <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
                 <StoryInterview projectId={currentScript?.project_id ?? ''} onApply={applySkeleton} />
               </div>
@@ -1196,8 +1287,9 @@ const applySkeleton = (scenes: { title: string }[]) => {
         background: 'var(--surface)',
         backdropFilter: 'blur(12px)',
         borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        display: isMobile && phone.typing ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 clamp(12px, 4vw, 20px)',
+        paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box',
         fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
         color: 'var(--fg-dim)',
         zIndex: 50, flexShrink: 0,
@@ -1229,7 +1321,7 @@ const applySkeleton = (scenes: { title: string }[]) => {
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
               <span style={{ display: 'flex' }}>
                 {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: 'var(--on-accent)', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
                     {c.username.charAt(0)}
                   </span>
                 ))}
@@ -1252,6 +1344,48 @@ const applySkeleton = (scenes: { title: string }[]) => {
           </span>
         </div>
       </div>
+
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && (
+        <PhoneToolStrip
+          bottom={phone.keyboard} compact={phone.landscape}
+          insert={insertElement} cycle={cycleElement} undo={undo} redo={redo}
+          lineUp={() => moveCaretLine(-1)} lineDown={() => moveCaretLine(1)}
+          prevScene={() => jumpToScene(Math.max(0, currentSceneIdx - 1))} nextScene={() => jumpToScene(Math.min(scenesList.length - 1, Math.max(0, currentSceneIdx + 1)))}
+          find={() => setShowFindReplace(true)} notes={openNotes} tools={() => { setRightPanel('scene'); setSheet('tools'); }} more={() => setSheet('more')}
+          hideKeyboard={() => (document.activeElement as HTMLElement | null)?.blur?.()}
+        />
+      )}
+      {isMobile && (
+        <>
+          <BottomSheet open={sheet === 'scripts'} onClose={closeSheet} title="Scripts and scenes" keyboard={phone.keyboard} full>{leftNavEl}</BottomSheet>
+          <BottomSheet open={sheet === 'views'} onClose={closeSheet} title="View" keyboard={phone.keyboard}>
+            <div role="group" aria-label="View" style={{ display: 'grid', gap: 8 }}>
+              {(Object.keys(VIEW_LABELS) as Array<keyof typeof VIEW_LABELS>).map((v) => (
+                <button key={v} type="button" aria-pressed={activeView === v} onClick={() => { setActiveView(v); closeSheet(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: activeView === v ? 'var(--accent)' : 'transparent', color: activeView === v ? 'var(--on-accent)' : 'var(--fg)' }}>{VIEW_LABELS[v]}</button>
+              ))}
+            </div>
+          </BottomSheet>
+          <BottomSheet open={sheet === 'tools'} onClose={closeSheet} title="Tools" keyboard={phone.keyboard} full>{rightPanelsEl}</BottomSheet>
+          <BottomSheet open={sheet === 'more'} onClose={closeSheet} title="More" keyboard={phone.keyboard}>
+            <div style={{ display: 'grid', gap: 8 }}>
+              {[
+                { label: saving ? 'Saving…' : 'Save now', run: () => { void handleSave(); } },
+                { label: 'Find and replace', run: () => setShowFindReplace(true) },
+                { label: 'Character bible', run: () => setShowCharBible(true) },
+                { label: 'Focus mode', run: () => setFocusMode(true) },
+                ...['pdf', 'fdx', 'fountain', 'txt'].map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
+              ].map((a) => (
+                <button key={a.label} type="button" onClick={() => { closeSheet(); a.run(); }}
+                  style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg)' }}>{a.label}</button>
+              ))}
+              <div style={{ minHeight: 48, display: 'flex', alignItems: 'center' }}>
+                <ShareScriptButton script={currentScript} projectCreatorId={activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null} />
+              </div>
+            </div>
+          </BottomSheet>
+        </>
+      )}
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
