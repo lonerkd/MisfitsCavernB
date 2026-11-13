@@ -9,3 +9,5 @@ Step 1 of [the role model](../plans/2026-11-13-role-model.md) was "catalogue and
 **Tests:** unit (`profiles.test.ts`, `crew-management.test.ts`); persona `tests/integration/crew-craft.test.ts` (the old bug refused, craft must be in the catalogue, the owner sets and clears it, crew and outsider cannot); browser `e2e/crew-craft.spec.ts` (recruit with a craft and view-only access, stored as such, change the craft, axe clean).
 
 **Found, not changed:** `can_access_project` counts any `project_crew` row whatever its status, so a pending or declined invitee reads a non-private project (BACKLOG 3.50, step 3). `updateCrewMemberRole` (changing the tier) has no screen.
+
+**Page budget:** `/lounge` is 364 kB in CI against its 363 budget (the shared `lib/supabase/profiles.ts`, which `inviteToCrew` grew in, is bundled there); raised to 364 on purpose.
