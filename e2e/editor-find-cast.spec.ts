@@ -47,7 +47,7 @@ test.describe.serial('Editor find & replace and casting (local Supabase)', () =>
     await picker.waitFor();
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
     await page.goto(`/editor?script=${scriptId}`);
-    const script = page.getByLabel('Script', { exact: true });
+    const script = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(script).toBeVisible({ timeout: 30_000 });
     return script;
   }

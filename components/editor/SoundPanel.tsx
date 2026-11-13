@@ -8,7 +8,8 @@ import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { sceneMood } from '@/lib/spotify/moods';
 import { searchSpotify } from '@/lib/spotify/search';
-import { AUDIO_ROLES, addAudioRef, listAudioRefs, normalizeTags, tagAudioRef, type AudioRole } from '@/lib/supabase/audio';
+import { TrackTagger } from '@/components/audio/TrackTagger';
+import { AUDIO_ROLES, addAudioRef, listAudioRefs, tagAudioRef, type AudioRole } from '@/lib/supabase/audio';
 
 interface Track { id: string; uri: string; name: string; artist: string }
 
@@ -26,6 +27,8 @@ export interface SoundPanelProps {
   refs: Array<{ id: string; title?: string | null; name?: string; uri?: string; reference_type?: string | null; for_scene?: string | null; role?: string | null; tags?: string[] | null }>;
   onRefsChanged: (refs: Array<Record<string, unknown>>) => void;
   playRef: (ref: SoundPanelProps['refs'][number]) => void;
+  /** Tagging a track to a scene is for the project's owner and writers (the database says the same); others read the tags. Default true. */
+  canTag?: boolean;
 }
 
 const heading = (icon: React.ReactNode, text: string) => (
@@ -35,37 +38,6 @@ const round = { flexShrink: 0, width: 44, height: 44, borderRadius: '50%', borde
 const ghost = { minHeight: 44, padding: '0 14px', borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13, cursor: 'pointer' } as const;
 
 /** The inline editor for one saved track: which role it plays, whether it is for this scene, and its tags. */
-function TrackTagger({ track, sceneId, onSave, onClose }: { track: SoundPanelProps['refs'][number]; sceneId: string | null; onSave: (t: { sceneId: string | null; role: AudioRole | null; tags: string[] }) => Promise<void>; onClose: () => void }) {
-  const [role, setRole] = useState<AudioRole | ''>((track.role as AudioRole | null) ?? '');
-  const [forThis, setForThis] = useState(!!sceneId && track.for_scene === sceneId);
-  const [tags, setTags] = useState((track.tags ?? []).join(', '));
-  const [busy, setBusy] = useState(false);
-  const field = { minHeight: 44, borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'var(--bg)', color: 'var(--fg)', padding: '0 10px', fontSize: 14 } as const;
-  return (
-    <div style={{ display: 'grid', gap: 8, marginTop: 8, padding: 10, borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.1)' }}>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>Role in the scene
-        <select value={role} onChange={(e) => setRole(e.target.value as AudioRole | '')} style={field}>
-          <option value="">No role</option>
-          {(Object.entries(AUDIO_ROLES) as Array<[AudioRole, string]>).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-        </select>
-      </label>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>Tags (comma separated)
-        <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="tense, strings, radio" style={field} />
-      </label>
-      {sceneId && (
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <input type="checkbox" checked={forThis} onChange={(e) => setForThis(e.target.checked)} /> For this scene
-        </label>
-      )}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button type="button" style={ghost} onClick={onClose}>Cancel</button>
-        <button type="button" disabled={busy} style={{ ...ghost, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none' }}
-          onClick={() => { setBusy(true); void onSave({ sceneId: forThis ? sceneId : null, role: role || null, tags: normalizeTags(tags) }).then(onClose, () => { /* the caller already said why */ }).finally(() => setBusy(false)); }}>{busy ? 'Saving…' : 'Save tags'}</button>
-      </div>
-    </div>
-  );
-}
-
 /**
  * The sound desk in ScriptOS: everything about how this script sounds, in one place. The table read (the browser reads the script
  * in a voice per character), the music for the scene in view (its mood, suggestions, save to the project, what is playing now),
@@ -75,6 +47,7 @@ const noSubscribe = () => () => {};
 const isIos = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 export function SoundPanel(p: SoundPanelProps) {
+  const canTag = p.canTag ?? true;
   const { toast } = useToast();
   // iOS plays speech through the ringer channel: the side switch silences the table read. Only said where it applies.
   const ios = useSyncExternalStore(noSubscribe, isIos, () => false);
@@ -171,7 +144,7 @@ export function SoundPanel(p: SoundPanelProps) {
               <input type="range" aria-label="Position in the song" min={0} max={spotify.durationMs} step={1000} value={Math.min(spotify.progressMs, spotify.durationMs)}
                 onChange={(e) => spotify.seek(Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
             )}
-            {p.sceneId && p.projectId && (
+            {canTag && p.sceneId && p.projectId && (
               <button type="button" style={{ ...ghost, marginTop: 6, width: '100%' }} onClick={() => void tagPlaying()}>Tag this song to {p.sceneLabel ?? 'this scene'}</button>
             )}
             {spotify.elsewhere && (
@@ -183,7 +156,7 @@ export function SoundPanel(p: SoundPanelProps) {
           </div>
         )}
         {!isAuthenticated ? (
-          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Connect Spotify to get music for each scene. <Link href="/soundtrack" style={{ color: 'var(--accent)' }}>Connect in Soundtrack</Link></p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Connect Spotify to get music for each scene. <Link href="/soundtrack" style={{ color: 'var(--accent)' }}>Connect in Sound</Link></p>
         ) : tracks === null ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Looking for {mood.mood.toLowerCase()} music…</p>
           : error ? <p role="alert" style={{ margin: 0, fontSize: 12, color: 'var(--danger)' }}>{error}</p>
           : tracks.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Nothing found for this mood.</p>
@@ -211,7 +184,7 @@ export function SoundPanel(p: SoundPanelProps) {
 
       <section aria-label="Saved tracks">
         {heading(<Music size={14} />, 'Saved to this project')}
-        {p.refs.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic' }}>Nothing saved yet. Save a suggestion above, or link tracks from Soundtrack.</p> : (
+        {p.refs.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic' }}>Nothing saved yet. Save a suggestion above, or link tracks from Sound.</p> : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...p.refs].sort((a, b) => Number(!!p.sceneId && b.for_scene === p.sceneId) - Number(!!p.sceneId && a.for_scene === p.sceneId)).map((ref) => {
               const here = !!p.sceneId && ref.for_scene === p.sceneId;
@@ -228,9 +201,9 @@ export function SoundPanel(p: SoundPanelProps) {
                         {(ref.tags ?? []).map((t) => <span key={t} style={{ padding: '0 6px', borderRadius: 4, border: '1px solid rgba(var(--ink-rgb), 0.14)' }}>{t}</span>)}
                       </div>
                     </div>
-                    <button type="button" aria-label={`Tag ${ref.title || ref.name || 'track'}`} style={{ ...ghost, padding: '0 12px' }} onClick={() => setTagging(tagging === ref.id ? null : ref.id)}>Tag</button>
+                    {canTag && <button type="button" aria-label={`Tag ${ref.title || ref.name || 'track'}`} style={{ ...ghost, padding: '0 12px' }} onClick={() => setTagging(tagging === ref.id ? null : ref.id)}>Tag</button>}
                   </div>
-                  {tagging === ref.id && <TrackTagger track={ref} sceneId={p.sceneId} onSave={(t) => retag(ref.id, t)} onClose={() => setTagging(null)} />}
+                  {canTag && tagging === ref.id && <TrackTagger track={ref} sceneId={p.sceneId} onSave={(t) => retag(ref.id, t)} onClose={() => setTagging(null)} />}
                 </li>
               );
             })}

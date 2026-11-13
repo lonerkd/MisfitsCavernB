@@ -6,6 +6,9 @@ import { FileText } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { REVISION_COLORS, loadRevisionsDB, type Revision } from '@/lib/scriptos/revisions';
 import { useStudio } from '../StudioContext';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { revisionsDoc } from '@/lib/studio/revisions-print';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 /**
@@ -13,7 +16,7 @@ import s from '../studio.module.css';
  * diff view). Read-only: a revision is locked in the editor, so this list can never disagree with the script.
  */
 export function RevisionsView() {
-  const { scripts, scriptId, scriptsStatus } = useStudio();
+  const { project, scripts, scriptId, scriptsStatus } = useStudio();
   const script = scripts.find((sc) => sc.id === scriptId) ?? null;
   const [got, setGot] = useState<{ scriptId: string; rows: Revision[] | null; error: string | null } | null>(null);
 
@@ -38,13 +41,14 @@ export function RevisionsView() {
   const editorHref = `/editor?script=${scriptId}`;
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <FileText size={14} /> Script revisions
-          <span className={s.hint}> · {script.title} · {rows.length} locked</span>
-        </div>
-        <Link className={s.btn} href={editorHref}>Open in the editor</Link>
-      </div>
+      <ToolHeader icon={<FileText size={16} />} eyebrow="Story & planning" title="Script revisions" purpose="The script’s locked revisions and what changed." accent={project.accent_color} summary={<>{script.title} · {rows.length} locked</>} actions={<><div style={{ display: 'flex', gap: 8 }}>
+          {rows.length > 0 && <PrintButton label="the revision history" build={() => revisionsDoc({
+            project: project.title, accent: project.accent_color, script: script.title,
+            revisions: rows.map((r) => ({ colour: REVISION_COLORS[r.colorIndex % REVISION_COLORS.length].name, label: r.label, date: r.date ? new Date(r.date).toLocaleDateString() : null })),
+            generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+          })} />}
+          <Link className={s.btn} href={editorHref}>Open in the editor</Link>
+        </div></>} />
       {rows.length === 0 ? (
         <EmptyState
           icon={<FileText size={26} />}

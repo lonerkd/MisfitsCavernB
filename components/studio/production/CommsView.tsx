@@ -4,6 +4,8 @@ import React, { useMemo, useState } from 'react';
 import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { cx } from '../ui';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type CommEntry = { id: string; date: string; to: string; channel: 'call' | 'email' | 'text' | 'in-person'; subject: string; notes: string; status: 'sent' | 'replied' | 'pending' };
@@ -12,6 +14,7 @@ const CHANNELS: CommEntry['channel'][] = ['call', 'email', 'text', 'in-person'];
 const STATUSES: CommEntry['status'][] = ['pending', 'sent', 'replied'];
 
 export function CommsView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('comms');
   const [draft, setDraft] = useState<Omit<CommEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
@@ -41,19 +44,13 @@ export function CommsView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <MessageCircle size={14} /> Communications
-          <span className={s.hint}> · {items.length} logged · {items.filter((i) => i.status === 'pending').length} pending</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<MessageCircle size={16} />} eyebrow="People" title="Communications" purpose="Communications logged with cast, crew and vendors." accent={project.accent_color} summary={<>{items.length} logged · {items.filter((i) => i.status === 'pending').length} pending</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={cx(s.btn, filter === st && s.btnPrimary)} onClick={() => setFilter(st)}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

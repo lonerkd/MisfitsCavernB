@@ -2454,6 +2454,45 @@ export type Database = {
           },
         ];
       };
+      portfolio_laurels: {
+        Row: {
+          created_at: string;
+          id: string;
+          kind: string;
+          name: string;
+          portfolio_project_id: string;
+          user_id: string;
+          year: number | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name: string;
+          portfolio_project_id: string;
+          user_id?: string;
+          year?: number | null;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          name?: string;
+          portfolio_project_id?: string;
+          user_id?: string;
+          year?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portfolio_laurels_portfolio_project_id_fkey";
+            columns: ["portfolio_project_id"];
+            isOneToOne: false;
+            referencedRelation: "portfolio_projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       portfolio_media: {
         Row: {
           created_at: string | null;
@@ -2497,44 +2536,56 @@ export type Database = {
         Row: {
           accent_color: string | null;
           category: string | null;
+          cover_url: string | null;
           created_at: string | null;
           description: string | null;
           id: string;
+          pinned: boolean;
+          position: number | null;
           role: string | null;
           share_token: string | null;
           source_project_id: string | null;
           title: string;
           updated_at: string | null;
           user_id: string;
+          visibility: string;
           year: number | null;
         };
         ComputedFields: never;
         Insert: {
           accent_color?: string | null;
           category?: string | null;
+          cover_url?: string | null;
           created_at?: string | null;
           description?: string | null;
           id?: string;
+          pinned?: boolean;
+          position?: number | null;
           role?: string | null;
           share_token?: string | null;
           source_project_id?: string | null;
           title: string;
           updated_at?: string | null;
           user_id: string;
+          visibility?: string;
           year?: number | null;
         };
         Update: {
           accent_color?: string | null;
           category?: string | null;
+          cover_url?: string | null;
           created_at?: string | null;
           description?: string | null;
           id?: string;
+          pinned?: boolean;
+          position?: number | null;
           role?: string | null;
           share_token?: string | null;
           source_project_id?: string | null;
           title?: string;
           updated_at?: string | null;
           user_id?: string;
+          visibility?: string;
           year?: number | null;
         };
         Relationships: [
@@ -2763,6 +2814,61 @@ export type Database = {
           },
         ];
       };
+      production_records: {
+        Row: {
+          character_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          data: NonNullable<Json>;
+          id: string;
+          item_id: string;
+          kind: string;
+          project_id: string;
+          scene_ids: string[];
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          character_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          data?: NonNullable<Json>;
+          id?: string;
+          item_id: string;
+          kind: string;
+          project_id: string;
+          scene_ids?: string[];
+          updated_at?: string;
+        };
+        Update: {
+          character_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          data?: NonNullable<Json>;
+          id?: string;
+          item_id?: string;
+          kind?: string;
+          project_id?: string;
+          scene_ids?: string[];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "production_records_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "production_records_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;
@@ -2777,6 +2883,7 @@ export type Database = {
           is_sample: boolean;
           location: string | null;
           notification_prefs: NonNullable<Json>;
+          portfolio_page: string;
           role: string | null;
           sprint_minutes: number;
           status: string | null;
@@ -2799,6 +2906,7 @@ export type Database = {
           is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
+          portfolio_page?: string;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
@@ -2820,6 +2928,7 @@ export type Database = {
           is_sample?: boolean;
           location?: string | null;
           notification_prefs?: NonNullable<Json>;
+          portfolio_page?: string;
           role?: string | null;
           sprint_minutes?: number;
           status?: string | null;
@@ -5265,6 +5374,10 @@ export type Database = {
           notification_prefs: Json;
         }[];
       };
+      get_my_portfolio_page: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
       get_my_ui_prefs: { Args: Record<PropertyKey, never>; Returns: Json };
       get_my_writing_prefs: {
         Args: Record<PropertyKey, never>;
@@ -5298,6 +5411,7 @@ export type Database = {
           scripts: number;
         }[];
       };
+      get_portfolio_page: { Args: { p_handle: string }; Returns: Json };
       get_press_kit: { Args: { p_token: string }; Returns: Json };
       get_public_showcase: {
         Args: { p_limit?: number };
@@ -5331,6 +5445,7 @@ export type Database = {
       };
       get_review: { Args: { p_token: string }; Returns: Json };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };
+      get_shared_portfolio: { Args: { p_token: string }; Returns: Json };
       get_shared_project: {
         Args: { p_token: string };
         Returns: {
@@ -5389,6 +5504,19 @@ export type Database = {
           isOneToOne: true;
           isSetofReturn: false;
         };
+      };
+      list_public_portfolios: {
+        Args: { p_limit?: number; p_offset?: number; p_query?: string };
+        Returns: {
+          avatar_url: string;
+          bio: string;
+          cover_url: string;
+          location: string;
+          pieces: number;
+          role: string;
+          status: string;
+          username: string;
+        }[];
       };
       log_password_breach: {
         Args: { p_breach_count: number; p_context: string; p_email: string };

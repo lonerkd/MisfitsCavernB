@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { readable, textOnReadable } from '@/lib/util/color';
 import { placeHref, type Place, type ToolId, type ToolState } from '@/lib/os/progress';
+import { postToSplit } from '@/lib/split/pane';
 import p from './progress.module.css';
 
 export const TOOL_ICON: Record<ToolId, LucideIcon> = {
@@ -52,6 +53,8 @@ export function PlaceLink({ place, projectId, onNavigate, className, children, l
           if (el) { e.preventDefault(); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.querySelector<HTMLElement>('textarea, input, button')?.focus({ preventScroll: true }); }
           return;
         }
+        // In a split screen a tool comes up in the other pane, so the project stays in view beside it.
+        if (place.kind !== 'hub' && !e.metaKey && !e.ctrlKey && !e.shiftKey && postToSplit({ type: 'open-beside', href })) { e.preventDefault(); return; }
         if (onNavigate?.(place)) e.preventDefault();
       }}
     >

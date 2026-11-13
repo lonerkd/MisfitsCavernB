@@ -36,7 +36,16 @@ describe('tagging a track to a scene', () => {
     expect(r.data).toEqual([{ id: refId, for_scene: sceneId, role: 'theme', tags: ['tense', 'strings'] }]);
   });
 
-  it('crew can tag it too (the tag is about the scene, not who found the song)', async () => {
+  it('crew who are not writers cannot tag it, but can still read it', async () => {
+    const down = await cast.sam.client.from('project_crew').update({ role: 'viewer' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    expect(down.error).toBeNull();
+    const r = await tag('jordan', { role: 'temp', tags: ['tense', 'temp score'] });
+    expect(r.data ?? []).toEqual([]);
+    expect((await cast.jordan.client.from('project_audio_references').select('id, role').eq('id', refId)).data?.[0].role).toBe('theme');
+  });
+
+  it('a confirmed contributor (a writer) can tag it', async () => {
+    await cast.sam.client.from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
     const r = await tag('jordan', { role: 'temp', tags: ['tense', 'temp score'] });
     expect(r.error).toBeNull();
     expect(r.data?.[0].role).toBe('temp');
@@ -66,6 +75,14 @@ describe('tagging a track to a scene', () => {
     // Moving it to another project is refused (its scene would not be in that project, and the project itself is fixed).
     expect((await tag('sam', { project_id: otherProjectId })).error).not.toBeNull();
     expect((await tag('sam', { added_by: cast.jordan.id })).error?.code).toBe('42501');
+  });
+
+  it('a viewer can save a track untagged but not already tagged', async () => {
+    await cast.sam.client.from('project_crew').update({ role: 'viewer' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    const row = (uri: string, extra = {}) => ({ project_id: projectId, added_by: cast.jordan.id, reference_type: 'spotify', uri, title: 'V', ...extra });
+    expect((await cast.jordan.client.from('project_audio_references').insert(row('spotify:track:v1'))).error).toBeNull();
+    expect((await cast.jordan.client.from('project_audio_references').insert(row('spotify:track:v2', { role: 'theme' }))).error).not.toBeNull();
+    await cast.sam.client.from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   });
 
   it('a new track can be saved already tagged, and is refused a foreign scene', async () => {

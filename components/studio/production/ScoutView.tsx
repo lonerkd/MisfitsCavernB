@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { MapPin, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type ScoutEntry = { id: string; locationName: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' };
@@ -10,6 +12,7 @@ type ScoutEntry = { id: string; locationName: string; date: string; scout: strin
 const STATUSES: ScoutEntry['status'][] = ['scouted', 'approved', 'rejected'];
 
 export function ScoutView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('scouts');
   const [draft, setDraft] = useState<Omit<ScoutEntry, 'id'>>({
     locationName: '',
@@ -35,19 +38,13 @@ export function ScoutView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <MapPin size={14} /> Location scouts
-          <span className={s.hint}> · {items.length} scouted · {items.filter((i) => i.status === 'approved').length} approved</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<MapPin size={16} />} eyebrow="Story & planning" title="Location scouts" purpose="Location scouts: who saw what and what they found." accent={project.accent_color} summary={<>{items.length} scouted · {items.filter((i) => i.status === 'approved').length} approved</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

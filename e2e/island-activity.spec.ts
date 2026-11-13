@@ -47,7 +47,7 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
     await picker.waitFor();
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
     await page.goto(`/editor?script=${scriptId}`);
-    await expect(page.getByLabel('Script', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
   }
   const island = (page: Page) => page.getByRole('navigation', { name: 'Suite' });
   const shot = async (page: Page, name: string) => {
@@ -101,7 +101,7 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
     const page = await ctx.newPage();
     try {
       await openEditor(page);
-      const script = page.getByLabel('Script', { exact: true });
+      const script = page.getByRole('textbox', { name: 'Script', exact: true });
       await expect(script).toHaveValue(BASE, { timeout: 30_000 });
       await page.waitForTimeout(3000); // the first load's own save settles
       await expect(island(page).getByText(/saved on this device|waiting to sync/)).toHaveCount(0);
@@ -129,7 +129,7 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
     const page = await ctx.newPage();
     try {
       await openEditor(page);
-      const script = page.getByLabel('Script', { exact: true });
+      const script = page.getByRole('textbox', { name: 'Script', exact: true });
       await expect(script).toHaveValue(/Still up\./, { timeout: 30_000 });
       await page.waitForTimeout(3000);
 
@@ -143,7 +143,7 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
 
       // A reload starts the page from nothing but what is on the device: the island must still know.
       await page.reload();
-      await expect(page.getByLabel('Script', { exact: true })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
       await page.mouse.move(5, 5);
       await expect(island(page).getByText(/waiting to sync|saved on this device|Can’t reach the server/)).toBeVisible({ timeout: 30_000 });
       await shot(page, '4-queue-after-reload');

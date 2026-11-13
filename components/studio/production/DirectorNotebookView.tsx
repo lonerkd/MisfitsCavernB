@@ -3,12 +3,18 @@
 import React, { useMemo, useState } from 'react';
 import { Clapperboard, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
-type NoteEntry = { id: string; scene: string; title: string; notes: string; reference: string; createdAt: string };
+type NoteEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string };
 
 export function DirectorNotebookView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('directorNotes');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<NoteEntry, 'id' | 'createdAt'>>({
     scene: '',
     title: '',
@@ -32,26 +38,17 @@ export function DirectorNotebookView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Clapperboard size={14} /> Director notebook
-          <span className={s.hint}> · {items.length} notes</span>
-        </div>
-        <input
+      <ToolHeader icon={<Clapperboard size={16} />} eyebrow="Story & planning" title="Director notebook" purpose="The director’s notes, by scene." accent={project.accent_color} summary={<>{items.length} notes</>} actions={<><input
           className={s.input}
           style={{ width: 180, fontSize: 12 }}
           placeholder="Filter by scene/title…"
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-        />
-      </div>
+        /></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 100px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '1 1 200px' }}>
             <span className={s.label}>Title</span>
             <input className={s.input} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="Vision note" />
@@ -74,7 +71,7 @@ export function DirectorNotebookView() {
         {sorted.map((n) => (
           <li key={n.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              {n.scene && <span className={s.chip}>Sc {n.scene}</span>}
+              {sceneChip(n, t.sceneById) && <span className={s.chip}>Sc {sceneChip(n, t.sceneById)}</span>}
               <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{n.title}</span>
               <span className={s.hint} style={{ fontSize: 11 }}>{new Date(n.createdAt).toLocaleDateString()}</span>
               <button className={s.btn} onClick={() => remove(n.id)} title="Delete">

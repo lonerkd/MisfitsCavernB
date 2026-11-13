@@ -1,0 +1,33 @@
+/* The tool header: the project page's phase panel, scaled to one tool. --pa is the project accent (already contrast-checked by readable()). */
+.head {
+  --pa: var(--accent);
+  --pa-dim: color-mix(in srgb, var(--pa) 14%, transparent);
+  --pa-line: color-mix(in srgb, var(--pa) 38%, transparent);
+  position: relative; overflow: hidden;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
+  border-radius: var(--r-lg, 16px);
+  padding: 16px 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  backdrop-filter: var(--frost, none); -webkit-backdrop-filter: var(--frost, none);
+}
+.head::before {
+  content: ''; position: absolute; inset: -90px -60px auto auto; width: 240px; height: 240px;
+  background: radial-gradient(circle, var(--pa-dim), transparent 65%); pointer-events: none;
+}
+.top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; }
+.icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; color: var(--pa); background: var(--pa-dim); border: 1px solid var(--pa-line); }
+.text { flex: 1; min-width: 160px; }
+.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
+.title { font-family: var(--display); font-size: clamp(1.25rem, 2.4vw, 1.7rem); letter-spacing: -0.02em; line-height: 1.05; color: var(--fg); margin: 2px 0 0; font-weight: 400; }
+.purpose { font-size: 12px; color: var(--fg-muted); margin: 4px 0 0; max-width: 60ch; }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.stats { display: flex; gap: 8px; flex-wrap: wrap; position: relative; }
+.stat { display: inline-flex; align-items: baseline; gap: 6px; padding: 5px 10px; border-radius: var(--r-full); border: 1px solid rgba(var(--fg-rgb), 0.08); background: rgba(var(--fg-rgb), 0.03); }
+.statValue { font-family: var(--mono); font-size: 13px; color: var(--fg); }
+.statLabel { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
+.bar { height: 4px; border-radius: 4px; background: rgba(var(--fg-rgb), 0.08); overflow: hidden; position: relative; }
+.barFill { height: 100%; background: var(--pa); border-radius: 4px; transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+.next { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: relative; padding: 8px 12px; border-radius: 10px; background: var(--pa-dim); border: 1px solid var(--pa-line); font-size: 12px; color: var(--fg); }
+.nextTag { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); }
+.summary { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin-top: 6px; }

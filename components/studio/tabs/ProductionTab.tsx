@@ -2,13 +2,15 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Lock, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
 import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { recordKindOfView } from '@/lib/studio/records-print';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
+import { ToolHeader, ToolActionsContext } from '../ToolHeader';
 import type { CrewRow } from '../production/CrewView';
 import s from '../studio.module.css';
 
@@ -32,6 +34,11 @@ const CateringView = dynamic(() => import('../production/CateringView').then((m)
 const SafetyView = dynamic(() => import('../production/SafetyView').then((m) => m.SafetyView), { loading: viewLoading });
 const PropsView = dynamic(() => import('../production/PropsView').then((m) => m.PropsView), { loading: viewLoading });
 const DoodView = dynamic(() => import('../production/DoodView').then((m) => m.DoodView), { loading: viewLoading });
+const EditorialView = dynamic(() => import('../production/EditorialView').then((m) => m.EditorialView), { loading: viewLoading });
+const ClaimsView = dynamic(() => import('../production/ClaimsView').then((m) => m.ClaimsView), { loading: viewLoading });
+const ExtrasView = dynamic(() => import('../production/ExtrasView').then((m) => m.ExtrasView), { loading: viewLoading });
+const PrintRecordsButton = dynamic(() => import('../production/PrintRecordsButton').then((m) => m.PrintRecordsButton), { loading: () => null });
+const StillsView = dynamic(() => import('../production/StillsView').then((m) => m.StillsView), { loading: viewLoading });
 const MakeupView = dynamic(() => import('../production/MakeupView').then((m) => m.MakeupView), { loading: viewLoading });
 const MediaOffloadView = dynamic(() => import('../production/MediaOffloadView').then((m) => m.MediaOffloadView), { loading: viewLoading });
 const PoView = dynamic(() => import('../production/PoView').then((m) => m.PoView), { loading: viewLoading });
@@ -73,6 +80,10 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot day' },
   { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Reports & logs' },
   { id: 'makeup', label: 'Makeup / hair', icon: <Palette size={12} />, group: 'Departments' },
+  { id: 'editorial', label: 'Editorial handoff', icon: <Send size={12} />, group: 'Reports & logs' },
+  { id: 'claims', label: 'Insurance claims', icon: <ShieldAlert size={12} />, group: 'Budget & docs' },
+  { id: 'extras', label: 'Extras', icon: <UsersRound size={12} />, group: 'Departments' },
+  { id: 'stills', label: 'Stills log', icon: <Images size={12} />, group: 'Reports & logs' },
   { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Reports & logs' },
   { id: 'po', label: 'Purchase orders', icon: <Receipt size={12} />, group: 'Budget & docs' },
   { id: 'scriptsup', label: 'Script sup', icon: <Star size={12} />, group: 'Reports & logs' },
@@ -93,6 +104,15 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'cast', label: 'Cast', icon: <Users size={12} />, group: 'People' },
   { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
 ];
+
+/** The views whose layout has no header of its own: the Production tab gives them one (the rest open with their own ToolHeader). */
+const TAB_HEADED: Partial<Record<View, string>> = {
+  story: 'The story laid out by act, scene and story day.',
+  breakdown: 'Every prop, costume, vehicle and effect the script needs, scene by scene.',
+  readiness: 'What is ready for the next shoot day, and what unblocks the most.',
+  schedule: 'The stripboard: scenes onto shoot days, then the call sheet.',
+  onset: 'The shoot day as it happens: the call, the set log and the wrap.',
+};
 
 export const GROUPS = ['Story & planning', 'Departments', 'Budget & docs', 'Shoot day', 'Reports & logs', 'People'];
 
@@ -141,6 +161,11 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
             </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
+      <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
+      {!lock && TAB_HEADED[view] && (() => {
+        const v = VIEWS.find((x) => x.id === view)!;
+        return <div style={{ marginBottom: 14 }}><ToolHeader icon={React.cloneElement(v.icon as React.ReactElement<{ size?: number }>, { size: 16 })} eyebrow={v.group} title={v.label} purpose={TAB_HEADED[view]} accent={project.accent_color} /></div>;
+      })()}
       {!lock && view === 'story' && <StoryView />}
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
@@ -156,6 +181,10 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'safety' && <SafetyView />}
       {!lock && view === 'props' && <PropsView />}
       {!lock && view === 'makeup' && <MakeupView />}
+      {!lock && view === 'stills' && <StillsView />}
+      {!lock && view === 'extras' && <ExtrasView />}
+      {!lock && view === 'editorial' && <EditorialView />}
+      {!lock && view === 'claims' && <ClaimsView />}
       {!lock && view === 'mediaoffload' && <MediaOffloadView />}
       {!lock && view === 'po' && <PoView />}
       {!lock && view === 'scriptsup' && <ScriptSupView />}
@@ -178,6 +207,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'reports' && <ProductionReportView />}
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
+      </ToolActionsContext.Provider>
     </section>
   );
 }

@@ -5,7 +5,8 @@ import React, { useState, useEffect, useEffectEvent } from 'react';
 import { MapPin, MessageSquare, Film, User } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { getPortfolioProjects } from '@/lib/supabase/portfolio';
+import { getPortfolioProjects, hasPortfolioPage } from '@/lib/supabase/portfolio';
+import { pagePath } from '@/lib/portfolio/page-setting';
 import EmptyState from '@/components/ui/EmptyState';
 import { addCreditToPortfolio, getPersonCredits, groupByProject, type ProjectCredits } from '@/lib/credits';
 import { useToast } from '@/components/ui/Toast';
@@ -13,6 +14,7 @@ import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { getProfile, type Profile } from '@/lib/supabase/profiles';
 import { videoEmbed } from '@/lib/studio/media-kind';
 
+const thumbOf = (p: { cover_url?: string | null; portfolio_media: { thumbnail_url?: string | null; url: string }[] }) => p.cover_url || portfolioThumb(p.portfolio_media[0]);
 const portfolioThumb = (m?: { thumbnail_url?: string | null; url: string } | null) =>
   !m ? null : m.thumbnail_url || videoEmbed(m.url)?.thumbnail || (/\.(png|jpe?g|gif|webp|avif)(\?|$)/i.test(m.url) ? m.url : null);
 import Avatar from '@/components/ui/Avatar';
@@ -27,6 +29,7 @@ interface MediaItem {
 }
 
 interface PortfolioProject {
+  cover_url?: string | null;
   id: string;
   user_id: string;
   title: string;
@@ -46,6 +49,7 @@ export default function CrewMemberPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
+  const [hasPage, setHasPage] = useState(false);
   const [viewerId, setViewerId] = useState<string | null>(null);
   const onlineIds = useOnlinePresence(viewerId);
   const isOnline = !!profile && onlineIds.has(profile.id);
@@ -69,6 +73,7 @@ export default function CrewMemberPage() {
         }
 
         setProfile(profileData);
+        hasPortfolioPage(profileData.username).then(setHasPage).catch(() => setHasPage(false));
 
         const projectData = await getPortfolioProjects(id).catch(() => {
           reportError('Could not load their portfolio.');
@@ -127,6 +132,7 @@ export default function CrewMemberPage() {
 
       {/* ── Fixed Header ───────────────────────────────────────────────────────── */}
       <header style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, padding: '12px 24px 0' }}>
+        {hasPage && <Link href={pagePath(profile.username)} style={{ color: 'var(--accent)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>PUBLIC PAGE →</Link>}
         <span style={{
           fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '4px 10px',
           border: `1px solid ${profile.status === 'OPEN' ? 'rgba(0,200,80,0.6)' : 'rgba(var(--ink-rgb), 0.15)'}`,
@@ -260,7 +266,7 @@ export default function CrewMemberPage() {
                         try {
                           const pf = await addCreditToPortfolio(profile.id, c);
                           setCredits((prev) => prev.map((x) => (x.project_id === c.project_id ? { ...x, portfolio_project_id: pf.id } : x)));
-                          toast(`“${c.title}” is in your portfolio — add clips and stills there`, 'success');
+                          toast(`“${c.title}” is in your portfolio, private until you publish it. Add clips and stills there.`, 'success');
                         } catch (e) { toast(e instanceof Error ? e.message : 'Could not add it', 'error'); }
                         finally { setAdding(null); }
                       }}
@@ -309,14 +315,14 @@ export default function CrewMemberPage() {
                     onMouseEnter={() => setHoveredCard(project.id)}
                     onMouseLeave={() => setHoveredCard(null)}
                   >
-                    {portfolioThumb(project.portfolio_media[0]) && (
+                    {thumbOf(project) && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9', background: '#111',
                         marginBottom: 14, overflow: 'hidden', position: 'relative'
                       }}>
                         {/* eslint-disable-next-line @next/next/no-img-element -- thumbnails come from YouTube, Drive or the owner's links */}
                         <img
-                          src={portfolioThumb(project.portfolio_media[0])!}
+                          src={thumbOf(project)!}
                           alt={project.title}
                           loading="lazy"
                           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block', opacity: 0.75 }}
@@ -334,7 +340,7 @@ export default function CrewMemberPage() {
                       </div>
                     )}
 
-                    {project.portfolio_media.length === 0 && (
+                    {project.portfolio_media.length === 0 && !project.cover_url && (
                       <div style={{
                         width: '100%', aspectRatio: '16/9',
                         background: 'rgba(var(--ink-rgb), 0.02)',

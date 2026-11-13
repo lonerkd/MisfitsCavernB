@@ -29,6 +29,8 @@ export interface CardInput {
   /** scene id → upper-case names of the cast (graph first). */
   castOf: (scene: CardScene) => string[];
   sceneCharacters: Array<{ scene_id: string; character_id: string }>;
+  /** scene id → the role-tool records linked to it, by tool (camera reports, costumes, …); absent when none. */
+  recordsByScene?: ReadonlyMap<string, ReadonlyArray<{ label: string; count: number }>>;
 }
 
 export interface CardItem { id: string; label: string; kind: EntityKind; /** The link that attached it (attached groups only) — what Remove deletes. */ linkId?: string }
@@ -113,6 +115,8 @@ export function cardOf(id: string, input: CardInput): Card | null {
     if (scene.time_of_day) facts.push({ label: 'Time', value: scene.time_of_day });
     if (!place && scene.location) facts.push({ label: 'Location', value: scene.location });
     if (!day) facts.push({ label: 'Schedule', value: 'Not scheduled yet' });
+    const records = input.recordsByScene?.get(id);
+    if (records?.length) facts.push({ label: 'Records', value: records.map((r) => `${r.count} ${r.label.toLowerCase()}`).join(', ') });
     if (!cast.length) {
       const names = input.castOf(scene);
       if (names.length) facts.push({ label: 'Cast', value: names.join(', ') });

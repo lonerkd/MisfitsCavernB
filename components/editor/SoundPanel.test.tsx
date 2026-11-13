@@ -67,7 +67,7 @@ describe('SoundPanel: music for the scene', () => {
   it('without Spotify it says how to connect and searches for nothing', () => {
     spotify.isAuthenticated = false;
     render(<SoundPanel {...base()} />);
-    expect(screen.getByRole('link', { name: 'Connect in Soundtrack' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Connect in Sound' })).toBeTruthy();
     expect(search).not.toHaveBeenCalled();
   });
   it('a failed search says why', async () => {
@@ -178,5 +178,18 @@ describe('SoundPanel: saved tracks', () => {
     render(<SoundPanel {...base()} />);
     expect(screen.getByRole('note').textContent).toMatch(/side switch/);
     spy.mockRestore();
+  });
+});
+
+describe('SoundPanel: who may tag', () => {
+  const refs = [{ id: 'r1', title: 'Chase Theme', uri: 'spotify:track:t1', for_scene: 'sc2', role: 'temp', tags: [] }];
+  it('shows the Tag buttons to an owner or writer', () => {
+    render(<SoundPanel {...base({ refs, canTag: true })} />);
+    expect(screen.getByRole('button', { name: 'Tag Chase Theme' })).toBeTruthy();
+  });
+  it('hides them from everyone else, who still sees the track', () => {
+    render(<SoundPanel {...base({ refs, canTag: false })} />);
+    expect(screen.queryByRole('button', { name: 'Tag Chase Theme' })).toBeNull();
+    expect(screen.getAllByText(/Chase Theme/).length).toBeGreaterThan(0);
   });
 });

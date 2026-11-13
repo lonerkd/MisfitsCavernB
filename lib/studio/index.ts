@@ -140,6 +140,15 @@ export function useTimesheets(projectId: string | null) {
   });
 }
 
+/** Every active scene of the project, across its scripts (the role tools link to these). */
+export function useProjectScenes(projectId: string | null) {
+  return useLiveRows<SceneRow>({
+    scope: projectId, table: 'scenes', filter: `project_id=eq.${projectId}`,
+    load: () => studio.listProjectScenes(projectId!), keyOf: (x) => String(x.id),
+    sort: (a, b) => a.scene_number - b.scene_number,
+  });
+}
+
 export function useCharacters(projectId: string | null) {
   return useLiveRows<StoryCharacter>({
     scope: projectId, table: 'characters', filter: `project_id=eq.${projectId}`,
@@ -181,6 +190,9 @@ export function useLineOverrides(scriptId: string | null) {
 export function useReadingMemory(userId: string | null) {
   const [memory, setMemory] = useState<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]>([]);
   const [loading, setLoading] = useState(false);
+  // Bumped to read the memory again (a verdict taken back forgets its memory in the database).
+  const [nonce, setNonce] = useState(0);
+  const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
     if (!userId) {
@@ -201,7 +213,7 @@ export function useReadingMemory(userId: string | null) {
       }
     });
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [userId, nonce]);
 
   const writerMemory = useMemo(() => {
     if (!memory.length) return undefined;
@@ -233,7 +245,7 @@ export function useReadingMemory(userId: string | null) {
     };
   }, [memory]);
 
-  return { memory, writerMemory, loading };
+  return { memory, writerMemory, loading, refresh };
 }
 
 export function useProjectLocations(projectId: string | null) {

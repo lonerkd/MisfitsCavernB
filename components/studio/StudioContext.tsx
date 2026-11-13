@@ -14,6 +14,8 @@ import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
+import { listRecordLinks, type RecordLinkRow } from '@/lib/supabase/productionRecords';
+import { recordsByScene, type KindCount } from '@/lib/studio/record-links';
 import { useFlag } from '@/components/Flag';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useOnChange } from '@/lib/hooks/useOnChange';
@@ -36,6 +38,7 @@ import {
   usePostCuts,
   usePostNotes,
   useSceneMedia,
+  useLiveRows,
   useScriptScenes,
   type LiveRows,
   type Media,
@@ -81,6 +84,8 @@ export interface StudioData {
   goTo: (tab: StudioTab, view?: ProductionView) => void;
   /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
   castOf: (scene: Pick<SceneRow, 'id' | 'cast_list'>) => string[];
+  /** scene id → how many role-tool records (camera reports, costumes, …) are linked to it, by tool. */
+  recordsByScene: Map<string, KindCount[]>;
   /** The card (flag `entity_cards`): which entity is open, how to open and close it. `cardsOn` is false where the flag is off. */
   cardsOn: boolean;
   cardId: string | null;
@@ -225,6 +230,12 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     });
     return ordinals;
   }, [parsedScenes, scriptId]);
+  const recordLinks = useLiveRows<RecordLinkRow>({
+    scope: projectId, table: 'production_records', filter: `project_id=eq.${projectId}`,
+    load: () => listRecordLinks(projectId!), keyOf: (r) => String(r.id),
+    exclude: (r) => !r.scene_ids || r.scene_ids.length === 0,
+  });
+  const recordsByScn = useMemo(() => recordsByScene(recordLinks.rows), [recordLinks.rows]);
   const sceneCharacterLinks = useSceneCharacters(projectId);
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
   const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
@@ -265,6 +276,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     doubtfulSceneOrdinals,
     goTo: onNavigate,
     castOf,
+    recordsByScene: recordsByScn,
     cardsOn,
     cardId,
     openCard,

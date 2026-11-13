@@ -44,6 +44,8 @@ export interface EditorRightPanelsProps {
   handleLockRevision: () => void;
   revisions: Revision[];
   onViewRevision: (revisionId: string) => void;
+  /** Open the two-version comparison (any revision against another or the draft). */
+  onCompare?: () => void;
   setContent: (v: string) => void;
   toast: (msg: string, kind?: any) => void;
   showSceneNumbers: boolean;
@@ -83,16 +85,18 @@ function SectionHeader({
       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        cursor: 'pointer', padding: '10px 12px', borderRadius: 8,
-        background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.05)',
+        cursor: 'pointer', padding: '8px 10px', borderRadius: 8,
+        // The tool header's language at the rail's scale: a lit surface, a hairline, an accent-tinted icon chip (and the blur when the frosted mode is on).
+        background: 'linear-gradient(180deg, var(--surface), var(--surface-2))', border: '1px solid rgba(var(--fg-rgb), 0.08)',
+        backdropFilter: 'var(--frost, none)', WebkitBackdropFilter: 'var(--frost, none)',
         userSelect: 'none',
       }}
-      onMouseEnter={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.045)'}
-      onMouseLeave={e => e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.02)'}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(var(--fg-rgb), 0.08)'}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)' }}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-        <Icon size={14} />
+        <span aria-hidden style={{ width: 22, height: 22, borderRadius: 8, display: 'grid', placeItems: 'center', flexShrink: 0, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 38%, transparent)' }}><Icon size={12} /></span>
         <span>{label}</span>
         {count != null && (
           <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color, background: `${color}1a`, padding: '1px 7px', borderRadius: 9999 }}>{count}</span>
@@ -108,7 +112,7 @@ export function EditorRightPanels({
   getSceneType, sceneTypeColor, sceneWordCounts, sceneCharMap, insertElement,
   writingPanel, wordCount,
   pageEst, dialogueRatio, typewriterMode, setTypewriterMode, nightModePreview,
-  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision,
+  setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
   referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
@@ -221,11 +225,11 @@ export function EditorRightPanels({
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                           <span>Typewriter Mode</span>
-                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                         </label>
                         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                           <span>Dark Mode (Preview)</span>
-                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                         </label>
                       </div>
                     </div>
@@ -310,11 +314,11 @@ export function EditorRightPanels({
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '0 4px' }}>
                             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                               <span>Scene Numbers</span>
-                              <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                              <input type="checkbox" checked={showSceneNumbers} onChange={e => setShowSceneNumbers(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                             </label>
                             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
                               <span>DRAFT Watermark</span>
-                              <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: '#0099ff' }} />
+                              <input type="checkbox" checked={showWatermark} onChange={e => setShowWatermark(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
                             </label>
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
@@ -354,7 +358,12 @@ export function EditorRightPanels({
                         open={revisionsOpen}
                         onToggle={() => setRevisionsOpen(o => !o)}
                         right={(
-                          <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            {revisions.length > 0 && onCompare && (
+                              <button onClick={(e) => { e.stopPropagation(); onCompare(); }} title="Compare two versions" style={{ fontSize: 11, background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-muted)', cursor: 'pointer' }}>Compare</button>
+                            )}
+                            <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
+                          </div>
                         )}
                       />
                       {revisionsOpen && (
@@ -434,7 +443,7 @@ export function EditorRightPanels({
                                           setContent(val.substring(0, start) + item.text + val.substring(end));
                                           toast('Inserted from stash', 'success');
                                         }
-                                      }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: '#0099ff', cursor: 'pointer', padding: 0 }}>Insert</button>
+                                      }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', padding: 0 }}>Insert</button>
                                       <button onClick={() => { stash.removeLocal(item.id); removeFromStash(item.id).catch((err: Error) => { stash.upsertLocal(item); toast(err.message || 'Could not delete', 'error'); }); }} style={{ fontSize: 11, background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: 0 }}>Delete</button>
                                     </div>
                                   </div>

@@ -1,136 +1,130 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, type Cast } from './support/personas';
 import { createCrewedProject, createScript } from './support/project';
-import { createStudioApi } from '@/lib/studio/api';
-import { parseScript } from '@/lib/scriptos/parser';
 
-// Production records as personas: margin notes that route to real work, the
-// shot list, the editor stash and call sheets.
+// The role tools' records: Sam owns the project, Jordan is crew who shapes it, Riley is an outsider; a viewer reads only.
 let cast: Cast;
 let projectId: string;
-let scriptId: string;
-let sceneIds: string[];
 
-const TEXT = 'INT. CAVE - NIGHT\n\nSam lights a match.\n\nEXT. ROAD - DAY\n\nA truck passes.\n';
+beforeAll(async () => { cast = await createCast(); ({ projectId } = await createCrewedProject(cast, 'Records')); });
+afterAll(async () => { await destroyCast(cast); });
 
-beforeAll(async () => {
-  cast = await createCast();
-  ({ projectId } = await createCrewedProject(cast, 'Annotations'));
-  scriptId = await createScript(cast, projectId, TEXT);
-  sceneIds = (await createStudioApi(cast.sam.client).syncScriptScenes(scriptId, parseScript(TEXT).scenes)).map((s) => s.id);
-});
+type Who = 'sam' | 'jordan' | 'riley';
+const add = (who: Who, item_id: string, kind = 'permits') =>
+  cast[who].client.from('production_records').insert({ project_id: projectId, kind, item_id, data: { location: 'Pier 9' } }).select('id, created_by');
+const rows = (who: Who) => cast[who].client.from('production_records').select('item_id').eq('project_id', projectId);
 
-afterAll(async () => {
-  await destroyCast(cast);
-});
-
-const annotate = (who: Cast['sam'], type: string, text: string, scene?: [number, string]) =>
-  who.client.rpc('add_script_annotation', {
-    p_script: scriptId, p_line: 6, p_type: type, p_text: text,
-    p_scene_ordinal: scene?.[0], p_scene_heading: scene?.[1],
+describe('production records', () => {
+  it('the owner adds a record, and it is theirs', async () => {
+    const r = await add('sam', 'p-1');
+    expect(r.error).toBeNull();
+    expect(r.data?.[0].created_by).toBe(cast.sam.id);
   });
 
-describe('margin notes route to real work', () => {
-  it('a shot note adds a numbered shot to that scene', async () => {
-    const a = await annotate(cast.jordan, 'shot', 'Wide on the truck', [1, 'EXT. ROAD - DAY']);
-    expect(a.error).toBeNull();
-    const b = await annotate(cast.jordan, 'shot', 'Insert: tyre', [1, 'EXT. ROAD - DAY']);
-    expect(a.data).toMatchObject({ routed_table: 'shots', type: 'shot' });
-    const { data: shots } = await cast.sam.client.from('shots').select('id, scene_id, shot_number, description').eq('scene_id', sceneIds[1]).order('order_index');
-    expect(shots).toEqual([
-      { id: a.data!.routed_id, scene_id: sceneIds[1], shot_number: '1', description: 'Wide on the truck' },
-      { id: b.data!.routed_id, scene_id: sceneIds[1], shot_number: '2', description: 'Insert: tyre' },
-    ]);
+  it('crew save their own tool’s record (the case that was refused when it lived in settings), and the owner sees it', async () => {
+    const r = await add('jordan', 'p-2', 'cameraReports');
+    expect(r.error).toBeNull();
+    expect((await rows('sam')).data?.map((x) => x.item_id).sort()).toEqual(['p-1', 'p-2']);
   });
 
-  it('a shot note on a scene the saved script doesn’t have yet is refused, and nothing is written', async () => {
-    const before = (await cast.sam.client.from('script_annotations').select('id').eq('script_id', scriptId)).data!.length;
-    const r = await annotate(cast.jordan, 'shot', 'Crane up', [1, 'EXT. BRIDGE - DAY']);
-    expect(r.error?.message).toMatch(/Save the script first/);
-    expect((await cast.sam.client.from('script_annotations').select('id').eq('script_id', scriptId)).data).toHaveLength(before);
+  it('crew edit and delete records', async () => {
+    const e = await cast.jordan.client.from('production_records').update({ data: { location: 'Dock' } }).eq('project_id', projectId).eq('item_id', 'p-1').select('data');
+    expect(e.data?.[0].data).toEqual({ location: 'Dock' });
+    const d = await cast.jordan.client.from('production_records').delete().eq('project_id', projectId).eq('item_id', 'p-2').select('id');
+    expect(d.data).toHaveLength(1);
   });
 
-  it('beat and to-do notes land on the beat board and the task list', async () => {
-    const beat = await annotate(cast.jordan, 'beat', 'The match goes out', [0, 'INT. CAVE - NIGHT']);
-    const todo = await annotate(cast.jordan, 'todo', 'Rent a truck');
-    expect(beat.error).toBeNull();
-    expect(todo.error).toBeNull();
-    expect((await cast.sam.client.from('project_beats').select('title, scene_number').eq('id', beat.data!.routed_id!).single()).data)
-      .toEqual({ title: 'The match goes out', scene_number: '1' });
-    expect((await cast.sam.client.from('project_tasks').select('title').eq('id', todo.data!.routed_id!).single()).data)
-      .toEqual({ title: 'Rent a truck' });
+  it('an outsider reads nothing, adds nothing, changes nothing, deletes nothing', async () => {
+    expect((await rows('riley')).data).toEqual([]);
+    expect((await add('riley', 'x-1')).error?.code).toBe('42501');
+    const u = await cast.riley.client.from('production_records').update({ data: {} }).eq('project_id', projectId).select('id');
+    expect(u.data ?? []).toEqual([]);
+    const d = await cast.riley.client.from('production_records').delete().eq('project_id', projectId).select('id');
+    expect(d.data ?? []).toEqual([]);
+    expect((await rows('sam')).data).toHaveLength(1);
   });
 
-  it('plain notes stay on the script', async () => {
-    const n = await annotate(cast.jordan, 'note', 'Tighten this');
-    expect(n.data).toMatchObject({ routed_table: null, routed_id: null });
+  it('a viewer reads but cannot add, edit or delete', async () => {
+    await cast.sam.client.from('project_crew').update({ role: 'viewer' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
+    expect((await rows('jordan')).data).toHaveLength(1);
+    expect((await add('jordan', 'v-1')).error?.code).toBe('42501');
+    expect((await cast.jordan.client.from('production_records').update({ data: {} }).eq('project_id', projectId).select('id')).data ?? []).toEqual([]);
+    expect((await cast.jordan.client.from('production_records').delete().eq('project_id', projectId).select('id')).data ?? []).toEqual([]);
+    await cast.sam.client.from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   });
 
-  it('outsiders can neither annotate nor create work through it', async () => {
-    expect((await annotate(cast.riley, 'todo', 'spam')).error).not.toBeNull();
-    expect((await cast.riley.client.from('shots').select('id').eq('project_id', projectId)).data).toEqual([]);
-    expect((await cast.sam.client.from('project_tasks').select('id').eq('project_id', projectId).eq('title', 'spam')).data).toEqual([]);
+  it('only the known kinds, small records, and a record keeps its project, kind and id', async () => {
+    expect((await add('sam', 'k-1', 'nonsense')).error?.code).toBe('23514');
+    expect((await add('jordan', 'k-stills', 'stills')).error).toBeNull(); expect((await add('jordan', 'k-extras', 'extras')).error).toBeNull(); expect((await add('jordan', 'k-ed', 'editorial')).error).toBeNull(); expect((await add('jordan', 'k-cl', 'claims')).error).toBeNull(); // the stills log is a known kind, written by crew
+    expect((await add('riley', 'k-stills-2', 'stills')).error).not.toBeNull(); // an outsider still cannot
+    const big = await cast.sam.client.from('production_records').insert({ project_id: projectId, kind: 'gear', item_id: 'big', data: { x: 'a'.repeat(25000) } });
+    expect(big.error?.code).toBe('23514');
+    const move = await cast.sam.client.from('production_records').update({ kind: 'gear' }).eq('project_id', projectId).eq('item_id', 'p-1');
+    expect(move.error?.code).toBe('42501');
   });
 
-  it('a shot can’t be pointed at another project’s scene', async () => {
-    const { projectId: other } = await createCrewedProject(cast, 'Other');
-    const { error } = await cast.sam.client.from('shots').insert({ project_id: other, scene_id: sceneIds[0], shot_number: '9' });
-    expect(error).not.toBeNull();
-  });
-});
-
-describe('the editor stash', () => {
-  it('is shared with the project team and hidden from everyone else', async () => {
-    const { data, error } = await cast.jordan.client.from('script_stash').insert({ script_id: scriptId, text: 'Alt line: "Who’s there?"' }).select('id, created_by').single();
-    expect(error).toBeNull();
-    expect(data!.created_by).toBe(cast.jordan.id);
-    expect((await cast.sam.client.from('script_stash').select('text').eq('script_id', scriptId)).data).toEqual([{ text: 'Alt line: "Who’s there?"' }]);
-    expect((await cast.riley.client.from('script_stash').select('id').eq('script_id', scriptId)).data).toEqual([]);
-    expect((await cast.riley.client.from('script_stash').insert({ script_id: scriptId, text: 'x' })).error).not.toBeNull();
+  it('two people adding at once both keep their record (the whole-list overwrite is gone)', async () => {
+    await Promise.all([add('sam', 'c-1', 'gear'), add('jordan', 'c-2', 'gear')]);
+    const r = await rows('sam');
+    expect(r.data?.map((x) => x.item_id)).toEqual(expect.arrayContaining(['c-1', 'c-2']));
   });
 
-  it('cannot be written in someone else’s name', async () => {
-    const { error } = await cast.jordan.client.from('script_stash').insert({ script_id: scriptId, text: 'x', created_by: cast.sam.id });
-    expect(error).not.toBeNull();
-  });
+  // ── Links to the film graph (migration 20261108040000) ──────────────────────────────────────────────────────────────
+  describe('links to scenes and characters', () => {
+    let sceneId: string;
+    let otherSceneId: string;
+    let characterId: string;
+    let otherProjectId: string;
 
-  it('on a personal script, belongs to its author alone', async () => {
-    const { data: s } = await cast.sam.client.from('scripts').insert({ title: 'Solo', content: '', created_by: cast.sam.id }).select('id').single();
-    expect((await cast.sam.client.from('script_stash').insert({ script_id: s!.id, text: 'mine' })).error).toBeNull();
-    expect((await cast.jordan.client.from('script_stash').select('id').eq('script_id', s!.id)).data).toEqual([]);
-  });
-});
+    beforeAll(async () => {
+      const other = await createCrewedProject(cast, 'Elsewhere');
+      otherProjectId = other.projectId;
+      const script = await createScript(cast, projectId, 'INT. KITCHEN - DAY\n');
+      const otherScript = await createScript(cast, other.projectId, 'INT. GARDEN - DAY\n');
+      const a = await cast.sam.client.from('scenes').insert({ project_id: projectId, script_id: script, scene_number: 1, title: 'KITCHEN' }).select('id').single();
+      const b = await cast.sam.client.from('scenes').insert({ project_id: other.projectId, script_id: otherScript, scene_number: 1, title: 'GARDEN' }).select('id').single();
+      const c = await cast.sam.client.from('characters').insert({ project_id: projectId, name: 'MAYA' }).select('id').single();
+      if (a.error || b.error || c.error) throw a.error ?? b.error ?? c.error;
+      sceneId = a.data.id; otherSceneId = b.data.id; characterId = c.data.id;
+    });
 
-describe('call sheets', () => {
-  it('save per shoot day and per person, shared with the crew', async () => {
-    const { data: sheet, error } = await cast.jordan.client.from('call_sheets')
-      .upsert({ project_id: projectId, shoot_day: 1, general_call: '06:30', weather: 'Rain' }, { onConflict: 'project_id,shoot_day' }).select('*').single();
-    expect(error).toBeNull();
-    const again = await cast.sam.client.from('call_sheets')
-      .upsert({ project_id: projectId, shoot_day: 1, location_address: '12 Quarry Rd' }, { onConflict: 'project_id,shoot_day' }).select('*').single();
-    expect(again.data).toMatchObject({ id: sheet!.id, general_call: '06:30:00', weather: 'Rain', location_address: '12 Quarry Rd' });
+    const link = (who: Who, item_id: string, extra: Record<string, unknown>) =>
+      cast[who].client.from('production_records').insert({ project_id: projectId, kind: 'costumes', item_id, data: { character: 'Maya' }, ...extra } as never).select('id, scene_ids, character_id');
 
-    expect((await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'SAM', call_time: '07:00' })).error).toBeNull();
-    expect((await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, crew_user_id: cast.jordan.id, call_time: '06:00' })).error).toBeNull();
-    expect((await cast.jordan.client.from('call_sheet_calls').select('call_time').eq('call_sheet_id', sheet!.id)).data).toHaveLength(2);
-  });
+    it('crew link a record to scenes and a character of this project', async () => {
+      const r = await link('jordan', 'l-1', { scene_ids: [sceneId], character_id: characterId });
+      expect(r.error).toBeNull();
+      expect(r.data?.[0].scene_ids).toEqual([sceneId]);
+      expect(r.data?.[0].character_id).toBe(characterId);
+    });
 
-  it('a person is called once per sheet, and a call names exactly one person', async () => {
-    const { data: sheet } = await cast.sam.client.from('call_sheets').select('id').eq('project_id', projectId).eq('shoot_day', 1).single();
-    const dup = await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'SAM', call_time: '08:00' });
-    expect(dup.error).not.toBeNull();
-    const both = await cast.sam.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: projectId, character_name: 'X', crew_user_id: cast.sam.id });
-    expect(both.error).not.toBeNull();
-  });
+    it('a record cannot link to a scene of another project, nor to the same scene twice', async () => {
+      expect((await link('sam', 'l-2', { scene_ids: [otherSceneId] })).error?.code).toBe('23514');
+      expect((await link('sam', 'l-3', { scene_ids: [sceneId, sceneId] })).error?.code).toBe('23514');
+    });
 
-  it('outsiders see nothing and cannot attach calls to another project’s sheet', async () => {
-    expect((await cast.riley.client.from('call_sheets').select('id').eq('project_id', projectId)).data).toEqual([]);
-    const { data: sheet } = await cast.sam.client.from('call_sheets').select('id').eq('project_id', projectId).eq('shoot_day', 1).single();
-    const { projectId: rileys } = await (async () => {
-      const p = await cast.riley.client.from('projects').insert({ title: 'Riley film', creator_id: cast.riley.id }).select('id').single();
-      return { projectId: p.data!.id };
-    })();
-    const sneak = await cast.riley.client.from('call_sheet_calls').insert({ call_sheet_id: sheet!.id, project_id: rileys, character_name: 'SPY' });
-    expect(sneak.error).not.toBeNull();
+    it('a character of another project cannot be linked either (a real foreign key)', async () => {
+      const foreign = await cast.sam.client.from('characters').insert({ project_id: otherProjectId, name: 'ELI' }).select('id').single();
+      expect((await link('sam', 'l-4', { character_id: foreign.data!.id })).error?.code).toBe('23503');
+    });
+
+    it('an outsider cannot read the links', async () => {
+      expect((await cast.riley.client.from('production_records').select('scene_ids').eq('item_id', 'l-1')).data).toEqual([]);
+    });
+
+    it('deleting the character clears the link and keeps the record and its label', async () => {
+      await cast.sam.client.from('characters').delete().eq('id', characterId);
+      const r = await cast.sam.client.from('production_records').select('character_id, project_id, data').eq('item_id', 'l-1').single();
+      expect(r.data?.character_id).toBeNull();
+      expect(r.data?.project_id).toBe(projectId);
+      expect(r.data?.data).toEqual({ character: 'Maya' });
+    });
+
+    it('deleting a scene leaves the record’s links and keeps its label', async () => {
+      await cast.sam.client.from('scenes').delete().eq('id', sceneId);
+      const r = await cast.sam.client.from('production_records').select('scene_ids, data').eq('item_id', 'l-1').single();
+      expect(r.data?.scene_ids).toEqual([]);
+      expect(r.data?.data).toEqual({ character: 'Maya' });
+    });
   });
 });

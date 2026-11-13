@@ -35,31 +35,39 @@ export interface ProjectSettings {
   /** Daily wrap reports. */
   wraps?: Array<{ id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string }>;
   /** Rehearsal schedule. */
-  rehearsals?: Array<{ id: string; date: string; time: string; location: string; participants: string; scenes: string; notes: string }>;
+  rehearsals?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; date: string; time: string; location: string; participants: string; scenes: string; notes: string }>;
   /** Location scout notes. */
   scouts?: Array<{ id: string; locationName: string; date: string; scout: string; photos: string; notes: string; status: 'scouted' | 'approved' | 'rejected' }>;
   /** Director's notebook entries. */
-  directorNotes?: Array<{ id: string; scene: string; title: string; notes: string; reference: string; createdAt: string }>;
+  directorNotes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string }>;
   /** Production risk register. */
   risks?: Array<{ id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' }>;
   /** Camera report entries. */
-  cameraReports?: Array<{ id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string }>;
+  cameraReports?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string }>;
   /** Sound report entries. */
-  soundReports?: Array<{ id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string }>;
+  soundReports?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string }>;
   /** VFX shot tracking. */
-  vfxShots?: Array<{ id: string; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' }>;
+  vfxShots?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; shot: string; scene: string; vendor: string; plateReq: string; status: 'identified' | 'shot' | 'delivered' | 'approved' }>;
   /** Costume / wardrobe tracking. */
-  costumes?: Array<{ id: string; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' }>;
+  costumes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; change: string; status: 'fitting' | 'ready' | 'on-set' | 'cleaning' | 'returned' }>;
   /** Location permits & insurance. */
   permits?: Array<{ id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' }>;
   /** Script supervisor notes (per-take). */
-  scriptNotes?: Array<{ id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean }>;
+  scriptNotes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean }>;
   /** Purchase orders / petty cash. */
   purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
   /** Media offload log (DIT). */
   mediaOffloads?: Array<{ id: string; card: string; camera: string; size: string; checksum: string; destination: string; status: 'pending' | 'verified' | 'archived' }>;
+  /** Extras (background actors) booked per scene. */
+  extras?: Array<{ id: string; scene_ids?: string[]; scene: string; role: string; count: string; wardrobe: string; call: string; status: 'requested' | 'booked' | 'confirmed'; notes: string }>;
+  /** Editorial handoff: what goes to the editor and when. */
+  editorial?: Array<{ id: string; scene_ids?: string[]; scene: string; item: string; version: string; recipient: string; due: string; status: 'pending' | 'sent' | 'received'; notes: string }>;
+  /** Insurance claims. */
+  claims?: Array<{ id: string; incident: string; date: string; policy: string; amount: string; status: 'filed' | 'in review' | 'paid' | 'denied'; notes: string }>;
+  /** Stills log (the unit photographer). */
+  stills?: Array<{ id: string; scene_ids?: string[]; scene: string; frames: string; photographer: string; subject: string; status: 'shot' | 'selected' | 'delivered'; notes: string }>;
   /** Makeup / hair continuity. */
-  makeup?: Array<{ id: string; character: string; scene: string; look: string; artist: string; notes: string; photo: string }>;
+  makeup?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; character: string; scene: string; look: string; artist: string; notes: string; photo: string }>;
 }
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {

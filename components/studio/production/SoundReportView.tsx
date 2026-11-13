@@ -3,12 +3,18 @@
 import React, { useState } from 'react';
 import { Mic, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
-type SoundEntry = { id: string; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string };
+type SoundEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; mic: string; wildTrack: string; roomTone: string; notes: string };
 
 export function SoundReportView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('soundReports');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<SoundEntry, 'id'>>({
     scene: '',
     take: '',
@@ -26,19 +32,11 @@ export function SoundReportView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Mic size={14} /> Sound report
-          <span className={s.hint}> · {items.length} takes logged</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Mic size={16} />} eyebrow="Reports & logs" title="Sound report" purpose="Sound reports: rolls, takes and notes for post." accent={project.accent_color} summary={<>{items.length} takes logged</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Take</span>
             <input className={s.input} value={draft.take} onChange={(e) => setDraft({ ...draft, take: e.target.value })} placeholder="1A" />
@@ -69,7 +67,7 @@ export function SoundReportView() {
         {items.map((s2) => (
           <li key={s2.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {s2.scene && <span className={s.chip}>Sc {s2.scene}</span>}
+              {sceneChip(s2, t.sceneById) && <span className={s.chip}>Sc {sceneChip(s2, t.sceneById)}</span>}
               <span style={{ fontWeight: 600 }}>{s2.take}</span>
               {s2.mic && <span className={s.hint}>{s2.mic}</span>}
               {s2.wildTrack && <span className={s.hint}>Wild: {s2.wildTrack}</span>}

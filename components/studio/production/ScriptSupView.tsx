@@ -3,12 +3,18 @@
 import React, { useState } from 'react';
 import { FileText, Plus, Trash2, Star } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
-type ScriptNoteEntry = { id: string; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean };
+type ScriptNoteEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean };
 
 export function ScriptSupView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('scriptNotes');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<ScriptNoteEntry, 'id'>>({
     scene: '',
     take: '',
@@ -30,19 +36,11 @@ export function ScriptSupView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <FileText size={14} /> Script supervisor
-          <span className={s.hint}> · {items.length} takes · {items.filter((i) => i.circle).length} circled</span>
-        </div>
-      </div>
+      <ToolHeader icon={<FileText size={16} />} eyebrow="Reports & logs" title="Script supervisor" purpose="The script supervisor’s notes by scene and take." accent={project.accent_color} summary={<>{items.length} takes · {items.filter((i) => i.circle).length} circled</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Take</span>
             <input className={s.input} value={draft.take} onChange={(e) => setDraft({ ...draft, take: e.target.value })} placeholder="1A" />
@@ -73,7 +71,7 @@ export function ScriptSupView() {
         {items.map((n) => (
           <li key={n.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {n.scene && <span className={s.chip}>Sc {n.scene}</span>}
+              {sceneChip(n, t.sceneById) && <span className={s.chip}>Sc {sceneChip(n, t.sceneById)}</span>}
               <span style={{ fontWeight: 600 }}>{n.take}</span>
               {n.slate && <span className={s.hint}>{n.slate}</span>}
               {n.lens && <span className={s.hint}>{n.lens}</span>}

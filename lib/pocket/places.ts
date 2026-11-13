@@ -38,7 +38,7 @@ const PRODUCTION_VIEW_LABELS: Record<ProductionView, string> = {
   gear: 'Gear', wrap: 'Wrap reports', rehearsal: 'Rehearsals', scout: 'Location scouts',
   revisions: 'Script revisions', director: 'Director notebook', risk: 'Risk register', camera: 'Camera report',
   sound: 'Sound report', vfx: 'VFX shots', costume: 'Costumes', permit: 'Permits', scriptsup: 'Script sup',
-  po: 'Purchase orders', mediaoffload: 'Media offload', makeup: 'Makeup / hair', world: 'World',
+  po: 'Purchase orders', mediaoffload: 'Media offload', makeup: 'Makeup / hair', stills: 'Stills log', extras: 'Extras', editorial: 'Editorial handoff', claims: 'Insurance claims', world: 'World',
 };
 
 const withProject = (title: string | null | undefined, what: string) => (title ? `${title} — ${what}` : what).slice(0, 120);

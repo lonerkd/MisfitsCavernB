@@ -13,7 +13,8 @@ import { ReviewPanel } from './ReviewPanel';
 import { DeliverablesPanel } from '@/components/ad/DeliverablesPanel';
 import { BrandKitPanel } from '@/components/ad/BrandKitPanel';
 import { useFlag } from '@/components/Flag';
-import { SectionHeader, Toggle, cx } from '../ui';
+import { Toggle, cx } from '../ui';
+import { TabHeader } from '../TabHeader';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import s from '../studio.module.css';
 
@@ -84,9 +85,10 @@ export function ShareTab() {
 
   return (
     <section aria-labelledby="share-title" className={s.stack} style={{ gap: 28 }}>
-      <SectionHeader
+      <TabHeader
         id="share-title"
         title="Share & Pitch"
+        tool={{ icon: <Globe size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Who can see the project, its share link and the pitch.' }}
       />
 
       <div className={s.panel}>

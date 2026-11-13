@@ -100,7 +100,7 @@ export function WritingLoopPanel({ loop, sprint, toast }: { loop: WritingLoop; s
         )}
         <div role="progressbar" aria-label="Progress toward today’s goal" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
           style={{ height: 4, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, overflow: 'hidden', marginTop: 8 }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#34c77b' : '#0099ff', transition: 'width 0.5s' }} />
+          <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'var(--ok)' : 'var(--accent)', transition: 'width 0.5s' }} />
         </div>
       </div>
 

@@ -3,12 +3,18 @@
 import React, { useState } from 'react';
 import { Camera, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
-type CameraEntry = { id: string; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
+type CameraEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string };
 
 export function CameraReportView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('cameraReports');
+  const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CameraEntry, 'id'>>({
     scene: '',
     shot: '',
@@ -28,19 +34,11 @@ export function CameraReportView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Camera size={14} /> Camera report
-          <span className={s.hint}> · {items.length} shots logged</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Camera size={16} />} eyebrow="Reports & logs" title="Camera report" purpose="Camera reports: mags, takes and notes for the lab." accent={project.accent_color} summary={<>{items.length} shots logged</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <label className={s.field} style={{ flex: '0 0 80px' }}>
-            <span className={s.label}>Scene</span>
-            <input className={s.input} value={draft.scene} onChange={(e) => setDraft({ ...draft, scene: e.target.value })} placeholder="12" />
-          </label>
+          <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Shot</span>
             <input className={s.input} value={draft.shot} onChange={(e) => setDraft({ ...draft, shot: e.target.value })} placeholder="A1" />
@@ -79,7 +77,7 @@ export function CameraReportView() {
         {items.map((c) => (
           <li key={c.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-              {c.scene && <span className={s.chip}>Sc {c.scene}</span>}
+              {sceneChip(c, t.sceneById) && <span className={s.chip}>Sc {sceneChip(c, t.sceneById)}</span>}
               <span style={{ fontWeight: 600 }}>{c.shot}</span>
               {c.lens && <span className={s.hint}>{c.lens}</span>}
               {c.tStop && <span className={s.hint}>T{c.tStop}</span>}

@@ -53,13 +53,20 @@ refused ("just filled") and the page reloads what the database holds. One
 answer at a time on the page too: the buttons wait while one is saving.
 
 ### `/portfolio` — your work, presented
-A cinematic page of the person's pieces (featured work, the work, a project
-bible per piece, festival circuit, campaigns): embeds for YouTube / Vimeo /
-Drive, images, links.
+A cinematic page of the person's pieces (the work, a project bible per piece,
+festival circuit, campaigns): embeds for YouTube / Vimeo / Drive, images,
+links. **The header is the person** (name, role and location, bio, avatar and
+"Open to work" from their profile, `lib/portfolio/header.ts`); a bare profile
+says what to add. A piece can carry a **cover image** (`portfolio_projects.cover_url`,
+an https link, checked by the database; shown on the cards here and on the
+crew page). **Who can see a piece** is the owner's choice per piece (`lib/portfolio/visibility.ts`: Private, Link only, Public); a new piece is private, and the database, not the share link, enforces it. **A person's own page** (`/u/<username>`, public, signed out, `get_portfolio_page`): the person at the top and their **public** pieces as a grid of covers, each linking to its own `/p/<token>` page (which now shows the cover as its header and in the link preview), then **Credits**: the public films they are credited on (the creator, confirmed crew, cast: only what the work vouches for, never a pending invite), each linking to the film's own page (`/shared/<token>`, the project's public lookbook with its press-kit credits and laurels). It is **off until the owner publishes it** (`profiles.portfolio_page`: Off, Link only, Public; Link only is reachable by the name but told not to be indexed). Plan for the rest (project portfolio pages, curation, verified credits, the PDF one-sheet): `plans/2026-11-08-portfolio-upgrade.md`.
+
+### `/portfolios` — the public directory
+The people whose own page is **public** (`profiles.portfolio_page`), signed out, searched by name, craft or place (`list_public_portfolios`; 24 a page, `?q=` and `?page=`, `lib/portfolio/directory.ts`): a card each with their cover, name, craft and place, how many public pieces they have and "Open to work", linking to `/u/<username>`. **Link only is the opt-out**: such a page is reachable by name but never listed; an off page does not exist; sample accounts are never listed. The plain directory may be indexed, a search or a later page never is. **Reached from inside the suite** (2026-11-08): the command palette ("Browse Portfolios"), the owner's `/portfolio` (under the header: "Your public page →" once the page is on, else "Publish your page →", and "Browse portfolios →"; `PortfolioLinks`), a person's crew page ("PUBLIC PAGE →" when they have published one) and the foot of every `/u/<username>` page ("More portfolios →").
 
 ### `/portfolio/manage`
-Add / edit / remove pieces (title, format, year, role, description, media
-links), copy each piece's share link (`/p/<token>`). Projects finished in
+**Your page** (Off / Link only / Public, with the link to copy once it is on: `PagePublishSetting`) at the top. Add / remove pieces (title, format, year, role, description, a cover image link
+with a preview, who can see it, media links), copy each piece's share link (`/p/<token>`). Projects finished in
 the suite are added from their Delivery phase (milestone "Add it to your
 portfolio").
 

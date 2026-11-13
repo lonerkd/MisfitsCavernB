@@ -165,7 +165,10 @@ export default function CustomCursor() {
           background: dotColor,
           pointerEvents: 'none',
           zIndex: 99999,
-          mixBlendMode: isText ? 'normal' : 'difference',
+          // A halo in the page's own colour, not a blend mode: `difference` inverts against the page, so on a light theme the
+          // dark dot came out light-on-light and the accent turned blue. The tokens follow the theme; the halo keeps the dot
+          // readable over any surface (an image, a dark card on a light page).
+          boxShadow: isText ? 'none' : '0 0 0 1.5px var(--bg)',
           opacity: visible ? 1 : 0,
           transition: 'width 0.15s cubic-bezier(0.16, 1, 0.3, 1), height 0.15s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-radius 0.15s, opacity 0.3s',
           willChange: 'transform, width, height',
@@ -186,7 +189,6 @@ export default function CustomCursor() {
           WebkitBackdropFilter: ring.backdrop,
           pointerEvents: 'none',
           zIndex: 99998,
-          mixBlendMode: 'difference',
           opacity: visible && ring.size > 0 ? 1 : 0,
           display: 'flex',
           alignItems: 'center',

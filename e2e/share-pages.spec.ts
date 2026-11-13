@@ -38,7 +38,7 @@ test.describe('Share pages, signed out (local Supabase)', () => {
     const media = await admin.from('media').insert({ id: mediaId, project_id: projectId, kind: 'image', title: 'Still', storage_path: storagePath, mime_type: 'image/png', shared: true, created_by: owner.id });
     expect(media.error).toBeNull();
 
-    const pf = (await admin.from('portfolio_projects').insert({ user_id: owner.id, title: `Breakwater ${TAG}`, role: 'Director', year: 2026, description: 'A harbour at night, a ferry that never comes.' }).select('id, share_token').single()).data!;
+    const pf = (await admin.from('portfolio_projects').insert({ user_id: owner.id, title: `Breakwater ${TAG}`, visibility: 'public', role: 'Director', year: 2026, description: 'A harbour at night, a ferry that never comes.' }).select('id, share_token').single()).data!;
     portfolioId = pf.id;
     shareToken = pf.share_token;
     await admin.from('portfolio_media').insert({ project_id: portfolioId, title: 'Still', media_type: 'image', url: `https://example.com/still-${TAG}.png` });

@@ -45,9 +45,9 @@ describe('sound effects', () => {
 });
 
 describe('portfolio (writes split from reads)', () => {
-  it('everyone reads, only the owner writes — one set of owner rules for media', async () => {
+  it('a public piece is read by everyone, only the owner writes — one set of owner rules for media (who may read a piece: portfolio-visibility.test.ts)', async () => {
     const project = await cast.sam.client.from('portfolio_projects')
-      .insert({ user_id: cast.sam.id, title: 'Reel' } as never).select('id').single();
+      .insert({ user_id: cast.sam.id, title: 'Reel', visibility: 'public' } as never).select('id').single();
     expect(project.error).toBeNull();
     const pid = project.data!.id;
     expect(((await anonClient().from('portfolio_projects').select('id').eq('id', pid)).data ?? []).length).toBe(1);

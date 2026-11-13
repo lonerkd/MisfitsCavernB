@@ -712,14 +712,14 @@ section { padding: 90px 18px; }
   font-family: 'Courier New', Courier, monospace;
   font-size: 11px;
   line-height: 1.8;
-  color: rgba(233, 235, 239, 0.75);
+  color: rgba(var(--fg-rgb), 0.75);
   letter-spacing: var(--caps-track);
   pointer-events: none;
   user-select: none;
 }
 
 .screenplay-scene-hdr {
-  color: rgba(233, 235, 239, 0.95);
+  color: rgba(var(--fg-rgb), 0.95);
   font-weight: bold;
   letter-spacing: var(--caps-track);
   font-size: 11px;
@@ -727,14 +727,14 @@ section { padding: 90px 18px; }
 
 .screenplay-char {
   padding-left: 40%;
-  color: rgba(233, 235, 239, 0.85);
+  color: rgba(var(--fg-rgb), 0.85);
   font-size: 11px;
   font-weight: bold;
 }
 
 .screenplay-dialog {
   padding: 0 20% 0 28%;
-  color: rgba(233, 235, 239, 0.7);
+  color: rgba(var(--fg-rgb), 0.7);
   font-size: 11px;
 }
 
@@ -1078,3 +1078,68 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
    field and its button can be scrolled above the keyboard. */
 html[data-typing='true'] body { padding-bottom: var(--kb, 0px); }
 html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb, 0px) + 24px); }
+
+
+/* ═══════════════════════════════
+   FROSTED MODE (BACKLOG 3.48)
+   The glass mode over whichever theme is on: set by `data-frosted` on <html> (Settings › Appearance; lib/themes).
+   Surfaces become translucent mixes of the theme's own backgrounds and get a blur behind them (`--frost`, read by
+   the surface classes with a `none` fallback). Alphas stay high enough that text keeps its contrast on the
+   backdrop; a device that cannot blur, or that asks for less transparency, gets the opaque surfaces.
+   ═══════════════════════════════ */
+[data-frosted] {
+  --frost: blur(18px) saturate(1.45);
+  /* What lifts the glass: the text colour a little on a dark theme (a lit pane), white a lot on a light one (frosted, not dirty). */
+  --frost-tint: var(--fg);
+  --frost-lift: 8%;
+  --surface: color-mix(in srgb, var(--frost-tint) var(--frost-lift), color-mix(in srgb, var(--bg-3) 62%, transparent));
+  --surface-2: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-2) 54%, transparent));
+  --glass: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-2) 58%, transparent));
+  /* A hairline that catches the light. */
+  --border: rgba(var(--fg-rgb), 0.12);
+  --border-2: rgba(var(--fg-rgb), 0.2);
+}
+/* The light themes (a test keeps this list equal to the light ones in lib/themes). */
+[data-frosted][data-theme="paper"], [data-frosted][data-theme="editorial"], [data-frosted][data-theme="lagoon"] {
+  --frost-tint: #ffffff;
+  --frost-lift: 44%;
+}
+/* Something for the blur to show: washes of the theme's own accent and secondary colours, fixed behind the page. */
+[data-frosted] body {
+  background-image:
+    radial-gradient(70% 55% at 8% -5%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
+    radial-gradient(55% 45% at 96% 22%, color-mix(in srgb, var(--secondary, var(--accent)) 22%, transparent), transparent 70%),
+    radial-gradient(60% 50% at 50% 112%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(38% 34% at 22% 52%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 72%),
+    radial-gradient(34% 30% at 80% 70%, color-mix(in srgb, var(--secondary, var(--accent)) 11%, transparent), transparent 72%);
+  background-attachment: fixed;
+}
+/* Most pages are a full-height wrapper painted with --bg inline, which would hide the wash: under the mode those (and only those: full height, painted with --bg) let it through. */
+[data-frosted] [style*="min-height: 100vh"][style*="background: var(--bg)"],
+[data-frosted] [style*="min-height: 100dvh"][style*="background: var(--bg)"] { background: transparent !important; }
+[data-frosted] .glass, [data-frosted] .glass-sm, [data-frosted] .glass-heavy { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
+/* Surfaces painted inline with the glass or surface token (Settings' cards, most panels in the pages) get the blur too. */
+[data-frosted] [style*="background: var(--surface)"],
+[data-frosted] [style*="background: var(--surface-2)"],
+[data-frosted] [style*="background: var(--glass)"] { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
+/* Inline cards: a rounded box filled with the solid --bg-2 / --bg-3 (Settings' sections, most cards on the pages) become the same lit glass. */
+/* (Only where the blur is there to carry it: not under "reduce transparency", not in a browser without backdrop-filter.) */
+@media (prefers-reduced-transparency: no-preference) {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    [data-frosted] [style*="background: var(--bg-2)"][style*="border-radius"],
+    [data-frosted] [style*="background: var(--bg-3)"][style*="border-radius"],
+    [data-frosted] .module-tile,
+    [data-frosted] .card {
+      background: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-2) 54%, transparent)) !important;
+      backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost);
+    }
+  }
+}
+/* The views that scroll or repaint the most keep the blur off (the stripboard's board, the editor's writing column): a blur over a large moving area costs frames. Mark one with data-frost="off". */
+[data-frosted] [data-frost="off"], [data-frosted] [data-frost="off"] * { --frost: none; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+@media (prefers-reduced-transparency: reduce) {
+  [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-frosted] { --frost: none; --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); }
+}

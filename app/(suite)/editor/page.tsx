@@ -18,7 +18,11 @@ import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
-import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
+import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, stepScene, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
+import { lineOffset, type GoToTarget } from '@/lib/scriptos/goto';
+import { NO_HISTORY, remember as rememberJump, stepHistory, type HistoryState } from '@/lib/scriptos/history';
+import { applySelectionAction } from '@/lib/scriptos/selection';
+import { addToStash, useScriptStash } from '@/lib/scriptos/stash';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
@@ -29,7 +33,6 @@ import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
-import { useScriptStash } from '@/lib/scriptos/stash';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -39,8 +42,8 @@ import { useOSGate } from '@/lib/os';
 import { logAuditAction } from '@/lib/supabase/audit';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
-import { timeCharacters, timeScript } from '@/lib/scriptos/timing';
-import { useBriefAnswer } from '@/lib/brief';
+import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
+import { useBriefAnswer, useCanShape } from '@/lib/brief';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/os/PillContext';
@@ -48,12 +51,6 @@ import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
-import { StoryInterview } from '@/components/story/StoryInterview';
-import { scenesForCharacter } from '@/lib/editor/navigation';
-import { CharacterDepthPanel } from '@/components/characters/CharacterDepthPanel';
-import { exportCharacterBible } from '@/lib/characters/export';
-import { RelationshipMap } from '@/components/characters/RelationshipMap';
-import type { Relationship } from '@/lib/characters/depth';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
@@ -62,6 +59,12 @@ import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
+import { StoryInterview } from '@/components/story/StoryInterview';
+import { scenesForCharacter } from '@/lib/editor/navigation';
+import { CharacterDepthPanel } from '@/components/characters/CharacterDepthPanel';
+import { exportCharacterBible } from '@/lib/characters/export';
+import { RelationshipMap } from '@/components/characters/RelationshipMap';
+import type { Relationship } from '@/lib/characters/depth';
 import { SceneMusic } from '@/components/editor/SceneMusic';
 import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
@@ -76,15 +79,16 @@ import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+import type { DiffKind } from '@/components/editor/DiffModal';
+import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
-import type { DiffKind } from '@/components/editor/DiffModal';
-import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
+const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
 import { WriteFooter } from '@/components/editor/WriteFooter';
-import { SyncStatusChip } from '@/components/editor/SyncStatusChip';
+import { PhoneSyncLine, SyncStatusChip } from '@/components/editor/SyncStatusChip';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useCanShareScript } from '@/components/editor/ShareScriptButton';
@@ -185,13 +189,13 @@ export default function EditorPage() {
   const parseSource = useDeferredValue(content);
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
+  const canTagMusic = useCanShape(activeProject?.id, !!sessionUser?.id && activeProject?.creator_id === sessionUser.id);
   const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const locations = useProjectLocations(activeProject?.id ?? null);
   const lineOverrides = useLineOverrides(currentScript?.id ?? null);
-  const { writerMemory } = useReadingMemory(sessionUser?.id ?? null);
-  const projectCharacters = useCharacters(currentScript?.project_id ?? null);
+  const { writerMemory, refresh: refreshWriterMemory } = useReadingMemory(sessionUser?.id ?? null);
   const readContext = useMemo(() => contextFromProject(
     Object.values(castings),
     corrections.rows,
@@ -272,8 +276,10 @@ export default function EditorPage() {
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showStoryInterview, setShowStoryInterview] = useState(false);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
-const [showGoToScene, setShowGoToScene] = useState(false);
+  const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
+  const [showCompare, setShowCompare] = useState(false);
+  const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
   const [showStash, setShowStash] = useState(false);
@@ -490,28 +496,9 @@ const [showGoToScene, setShowGoToScene] = useState(false);
     toast(toggled.added ? 'Marked as dual dialogue (^)' : 'Dual dialogue removed', 'success');
   }, [content, toast]);
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
-      const chord = matchChord(e, 'editor')?.id;
-      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
-      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
-      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
-      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
-      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
-        e.preventDefault();
-        if (chord === 'undo') undo(); else redo();
-      }
-      if (e.key === 'Escape') {
-        if (focusMode) setFocusMode(false);
-        if (showFindReplace) setShowFindReplace(false);
-        if (showFormatMenu) setShowFormatMenu(false);
-        if (showGoToScene) setShowGoToScene(false);
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
+
+
+
 
   const handleImportFile = useScriptImport({ setScripts, setCurrentScript, setContent, toast });
 
@@ -570,6 +557,43 @@ const [showGoToScene, setShowGoToScene] = useState(false);
       setContent(edit.next);
       placeCaret(editor, edit.caret);
       return;
+    }
+
+    // Alt + S stashes the selected words beside the script — the side panel's
+    // "+ Add Selected", from the keyboard.
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.code === 'KeyS' && editor) {
+      e.preventDefault();
+      const selected = content.slice(editor.selectionStart, editor.selectionEnd);
+      if (!selected.trim()) { toast('Select the words to stash', 'info'); return; }
+      if (!currentScript?.id) { toast('Save the script first, then stash from it.', 'error'); return; }
+      addToStash(currentScript.id, selected)
+        .then((row) => { stash.upsertLocal(row); toast('Added to the stash', 'success'); })
+        .catch((err: Error) => toast(err.message || 'Could not stash that', 'error'));
+      return;
+    }
+
+    // Quick actions on a selection: Alt + U / L change its case, Alt + D
+    // duplicates the line (or every line the selection covers).
+    if (e.altKey && !e.ctrlKey && !e.metaKey && editor && (e.code === 'KeyU' || e.code === 'KeyL' || e.code === 'KeyD')) {
+      const action = e.code === 'KeyU' ? 'upper' : e.code === 'KeyL' ? 'lower' : 'duplicate-line';
+      const edit = applySelectionAction(content, editor.selectionStart, editor.selectionEnd, action);
+      if (edit) {
+        e.preventDefault();
+        stopUndoCapturing();
+        setContent(edit.next);
+        const { start, end } = edit;
+        setTimeout(() => {
+          const ta = textareaRef.current;
+          if (!ta) return;
+          ta.focus();
+          ta.setSelectionRange(start, end);
+        }, 0);
+        return;
+      }
+      if (action !== 'duplicate-line') {
+        e.preventDefault();
+        toast('Select the text to change its case', 'info');
+      }
     }
 
     if (e.key === 'Enter' && !e.shiftKey && editor && editor.selectionStart === editor.selectionEnd) {
@@ -657,9 +681,16 @@ const [showGoToScene, setShowGoToScene] = useState(false);
 
   const scenesList = useMemo(() => lines.filter(l => l.type === 'slug'), [lines]);
 
+  const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
+
+
   const scenePositions = useMemo(() => positionsOfScenes(scenesList, content), [scenesList, content]);
 
-  const jumpToScene = (sceneIndex: number) => {
+  /** Where the caret was before a jump, for Alt + ← / →. */
+  const rememberPlace = () => setNavHistory((h) => rememberJump(h, cursorLine));
+
+  const jumpToScene = (sceneIndex: number, remember = true) => {
+    if (remember) rememberPlace();
     setActiveView('write');
     setTimeout(() => {
       const textarea = textareaRef.current;
@@ -702,7 +733,39 @@ const [showGoToScene, setShowGoToScene] = useState(false);
     const lh = parseFloat(window.getComputedStyle(ta).lineHeight || '28') || 28;
     const lineTop = (text.substring(0, target).split('\n').length - 1) * lh;
     if (lineTop < ta.scrollTop || lineTop > ta.scrollTop + ta.clientHeight - lh * 2) ta.scrollTop = Math.max(0, lineTop - ta.clientHeight / 2);
-  }
+  };
+
+  /** Put the caret on a line (a page jump lands on the page's first line). */
+  const jumpToLine = (lineIndex: number, remember = true) => {
+    if (remember) rememberPlace();
+    setActiveView('write');
+    setTimeout(() => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+      const idx = lineOffset(content, lineIndex);
+      textarea.focus();
+      textarea.setSelectionRange(idx, idx);
+      setCursorLine(lineIndex);
+      const lh = parseFloat(window.getComputedStyle(textarea).lineHeight || '28') || 28;
+      textarea.scrollTop = Math.max(0, (lineIndex - 3) * lh);
+    }, 60);
+  };
+
+
+
+
+  /** Each page's first line and the scene it opens in (1-based; 0 before the first heading). */
+
+  const scriptPages = useMemo(() => {
+    const rows: { page: number; line: number; scene: number }[] = [];
+    const total = Math.max(1, Math.ceil(timing.pages));
+    for (let p = 1; p <= total; p++) {
+      const line = lineAtPage(lines, p);
+      if (line == null) break;
+      rows.push({ page: p, line, scene: sceneAtCaret(lines, scenesList, line) + 1 });
+    }
+    return rows;
+  }, [lines, scenesList, timing.pages]);
 
   const applySkeleton = (scenes: { title: string }[]) => {
     const block = scenes.map((s) => `INT. ${s.title.toUpperCase()} - DAY`).join('\n\n');
@@ -728,28 +791,61 @@ const [showGoToScene, setShowGoToScene] = useState(false);
 
   const sceneCharMap = useMemo(() => speakersByScene(lines, scenesList), [lines, scenesList]);
 
-  // Map character names to ids for casting lookup
-  const nameToId = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const char of projectCharacters.rows) {
-      map.set(char.name.toUpperCase(), char.id);
-    }
-    return map;
-  }, [projectCharacters.rows]);
+  // Ctrl/⌘ + ↓ / ↑ walks the script scene by scene from wherever the caret is,
+  // stopping at the first and last (never wrapping); Alt + ← / → walks back and
+  // forward through the places the editor jumped from. Effect events, so the
+  // chord handler is bound once and still reads the current caret and stacks.
+  const stepToScene = useEffectEvent((direction: -1 | 1) => {
+    const next = stepScene(currentSceneIdx, scenesList.length, direction);
+    if (next !== null) jumpToScene(next);
+  });
+  const walkHistory = useEffectEvent((direction: -1 | 1) => {
+    const step = stepHistory(navHistory, cursorLine, direction);
+    if (step.place == null) return;
+    setNavHistory(step.state);
+    jumpToLine(step.place, false);
+  });
 
-  const kindOfDiffLine = useCallback((n: number): DiffKind => {
-    const t = lines[n]?.type;
-    if (t === 'slug') return 'scene';
-    if (t === 'dialogue' || t === 'character') return 'dialogue';
-    if (t === 'action') return 'action';
-    return 'other';
-  }, [lines]);
-  const jumpToCharacter = (name: string) => {
-    const idx = scenesForCharacter(scenesList.map((s, i) => ({ characters: sceneCharMap[i] ?? [] })), name)[0];
-    if (idx != null) { setActiveView('write'); setShowGoToScene(false); setGoToSceneNum(''); jumpToScene(idx); }
-  };
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Ctrl/⌘ chords come from the suite's table (`lib/os/chords.ts`); the global ones (search, split, help) are handled by the shell.
+      const chord = matchChord(e, 'editor')?.id;
+      if (chord === 'editor.save') { e.preventDefault(); handleSave(); }
+      else if (chord === 'editor.find') { e.preventDefault(); setShowFindReplace(prev => !prev); }
+      else if (chord === 'editor.focus') { e.preventDefault(); setFocusMode(prev => !prev); }
+      else if (chord === 'editor.goto') { e.preventDefault(); setShowGoToScene(prev => !prev); }
+      else if (chord === 'editor.next-scene') { e.preventDefault(); stepToScene(1); }
+      else if (chord === 'editor.prev-scene') { e.preventDefault(); stepToScene(-1); }
+      else if (document.activeElement === textareaRef.current && (chord === 'undo' || chord === 'redo' || chord === 'redo-y')) {
+        e.preventDefault();
+        if (chord === 'undo') undo(); else redo();
+      }
+      if (e.key === 'Escape') {
+        if (focusMode) setFocusMode(false);
+        if (showFindReplace) setShowFindReplace(false);
+        if (showFormatMenu) setShowFormatMenu(false);
+        if (showGoToScene) setShowGoToScene(false);
+      }
+      // Alt + ← / → walk back and forward through the places the editor jumped
+      // from; Ctrl/⌘ + ↓ / ↑ step scene by scene (see `stepToScene` below).
+      // Our jump history leads; a list (the scene nav, the board) that has the
+      // focus or the pointer keeps its own Alt + ↑/↓ reordering below.
+      if (e.altKey && !e.ctrlKey && !e.metaKey && document.activeElement === textareaRef.current && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        walkHistory(e.key === 'ArrowLeft' ? -1 : 1);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleSave, focusMode, showFindReplace, setShowFindReplace, showFormatMenu, showGoToScene, undo, redo]);
 
-  const currentSceneIdx = useMemo(() => sceneAtCaret(lines, scenesList, cursorLine), [lines, scenesList, cursorLine]);
+
+
+
+
+
+
+
 
   // ── Split screen: the other pane follows the caret's scene; the Studio can
   // send the script to a scene (in a split, or by ?scene=<id> on the URL).
@@ -761,6 +857,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
   useLayoutEffect(() => { jumpRef.current = jumpToScene; });
+
   // A cut note to open once its line is placed (?note=, or from the Studio pane).
   const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
   useSplitMessages((msg) => {
@@ -788,6 +885,26 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   // When in the story each scene is, and its shoot day: the left margin.
   const shootDays = useShootDays(currentScript?.project_id ?? null);
   const datedDays = useMemo(() => new Set(shootDays.rows.filter((d) => d.shoot_date).map((d) => d.day_number)), [shootDays.rows]);
+  // The character whose cue the caret is on: who plays them, their look in this scene.
+  const projectCharacters = useCharacters(currentScript?.project_id ?? null);
+  const nameToId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const char of projectCharacters.rows) {
+      map.set(char.name.toUpperCase(), char.id);
+    }
+    return map;
+  }, [projectCharacters.rows]);
+  const kindOfDiffLine = useCallback((n: number): DiffKind => {
+    const t = lines[n]?.type;
+    if (t === 'slug') return 'scene';
+    if (t === 'dialogue' || t === 'character') return 'dialogue';
+    if (t === 'action') return 'action';
+    return 'other';
+  }, [lines]);
+  const jumpToCharacter = (name: string) => {
+    const idx = scenesForCharacter(scenesList.map((s, i) => ({ characters: sceneCharMap[i] ?? [] })), name)[0];
+    if (idx != null) { setActiveView('write'); setShowGoToScene(false); setGoToSceneNum(''); jumpToScene(idx); }
+  };
   const sceneStates = useSceneStates(currentScript?.project_id ?? null);
   const cue = useMemo(() => {
     const l = lines[cursorLine];
@@ -883,8 +1000,6 @@ const [showGoToScene, setShowGoToScene] = useState(false);
   const tools = { revisions: toolOpen('revisions'), breakdown: toolOpen('breakdown') };
   const editorCtx: EditorCtx = { tools, cutNotes, gutter, cue, bd, openBreakdown, activeProject, activeView, annotationDraft, annotations, broadcastCursor, content, currentSceneIdx, currentScript, cursorLine, focusMode, handleEditorChange, handleCopyChange, handleEditorKeyDown, handleExport, handleLockRevision, handleNormalize, handleSave, highlightRef, lines, nightModePreview, pauseTableRead, removeAnnotation, resumeTableRead, revisionMode, saving, sceneWordCounts, scenesList, sessionWordsWritten, setActiveView, setAnnotationDraft, setCurrentScript, setCursorLine, setFocusMode, setRevisionMode, setShowCharBible, setShowFormatMenu, setShowRightSidebar, setShowSidebar, showFormatMenu, showRightSidebar, showSceneNumbers, showSidebar, showWatermark, startTableRead, stopTableRead, submitAnnotation, tableReadLineIdx, tableReadPlaying, textareaRef, titlePage, toggleDualDialogue, typewriterMode };
 
-  // ── Character bible: the character bible modal ─────────────────────────────
-
   const leftNavEl = (
     <EditorLeftNav
       scripts={scripts} setScripts={setScripts} createNewScript={createNewScript}
@@ -920,6 +1035,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
         nightModePreview={nightModePreview} setNightModePreview={setNightModePreview}
         chars={chars} charStats={charStats}
         handleLockRevision={handleLockRevision} revisions={revisions}
+        onCompare={() => setShowCompare(true)}
         onViewRevision={(revisionId) => { setDiffRevisionId(revisionId); setShowDiff(true); }}
         setContent={setContent} toast={toast}
         showSceneNumbers={showSceneNumbers} setShowSceneNumbers={setShowSceneNumbers}
@@ -964,7 +1080,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
             timeOfDay={currentSceneIdx >= 0 ? parsedScenes[currentSceneIdx]?.timeOfDay ?? '' : ''}
             projectId={activeProject?.id ?? null} userId={sessionUser?.id ?? null}
             sceneId={currentSceneIdx >= 0 ? sceneIndex.rows[currentSceneIdx]?.id ?? null : null}
-            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef}
+            refs={projectAudioRefs} onRefsChanged={setProjectAudioRefs} playRef={playAudioRef} canTag={canTagMusic}
           />
         }
         sceneMusic={
@@ -1075,12 +1191,11 @@ const [showGoToScene, setShowGoToScene] = useState(false);
             />
           )}
 
-{activeView === 'outline' && (
+          {activeView === 'outline' && (
             <OutlineView
               sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
               scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
               jumpToScene={jumpToScene} tagScene={sceneIndex.tag}
-              onStoryInterview={() => setShowStoryInterview(true)}
             />
           )}
 
@@ -1121,11 +1236,16 @@ const [showGoToScene, setShowGoToScene] = useState(false);
         originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
-        kindOf={kindOfDiffLine}
-        projectId={currentScript?.project_id ?? undefined}
-        scriptId={currentScript?.id ?? undefined}
-        userId={sessionUser?.id ?? undefined}
       />}
+
+      {showCompare && (
+        <CompareVersions
+          isOpen={showCompare}
+          onClose={() => setShowCompare(false)}
+          revisions={revisions}
+          draft={content}
+        />
+      )}
 
       {showAutocomplete && autocompleteItems.length > 0 && (
         <div style={{
@@ -1150,7 +1270,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
 
       <AnimatePresence>
         {showTitleEditor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Title Page</h2>
@@ -1171,14 +1291,11 @@ const [showGoToScene, setShowGoToScene] = useState(false);
 
       <AnimatePresence>
         {showCharBible && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat-strong)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
             <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => exportCharacterBible(currentScript?.title ?? 'Script', charProfiles)} style={{ background: 'rgba(var(--ink-rgb), 0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 12px', fontSize: 12 }}>Export</button>
-                  <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
-                </div>
+                <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
               </div>
               {chars.length === 0 ? (
                 <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
@@ -1189,7 +1306,6 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                     const isSelected = selectedCharProfile === name;
                     const stat = charStats.find(cs => cs.name === name);
                     const cast = castings[name.toUpperCase()];
-                    const characterId = nameToId.get(name.toUpperCase()) || name;
                     return (
                       <div key={name} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${isSelected ? 'rgba(var(--ink-rgb), 0.2)' : 'rgba(var(--ink-rgb), 0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
                         <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-strong)' }}>
@@ -1197,7 +1313,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                             <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
                             <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
                             {cast?.username && (
-                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'color-mix(in srgb, var(--ok) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--ok) 30%, transparent)', borderRadius: 4, padding: '1px 6px' }}>
+                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
                                 Playing: {cast.username}
                               </span>
                             )}
@@ -1210,7 +1326,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                               <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
                               <select
                                 value={cast?.crew_user_id || ''}
-                                onChange={e => handleCastCharacter(characterId, name, e.target.value)}
+                                onChange={e => handleCastCharacter(nameToId.get(name.toUpperCase()) ?? name, name, e.target.value)}
                                 disabled={projectCrew.length === 0}
                                 style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg-muted)', fontSize: 12, outline: 'none' }}
                               >
@@ -1238,9 +1354,6 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                                 }}
                               />
                             ))}
-                            <div style={{ marginTop: 8 }}>
-                              <CharacterDepthPanel name={name} />
-                            </div>
                             {currentScript?.project_id && <NotCharacterButton projectId={currentScript.project_id} name={name} onSaved={corrections.upsertLocal} />}
                           </div>
                         )}
@@ -1253,7 +1366,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)', margin: '0 0 8px' }}>Relationships</h3>
                 <RelationshipMap relationships={relationships} onChange={setRelationships} />
               </div>
-              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={corrections.removeLocal} />}
+              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={(id) => { corrections.removeLocal(id); refreshWriterMemory(); }} />}
             </motion.div>
           </motion.div>
         )}
@@ -1263,9 +1376,6 @@ const [showGoToScene, setShowGoToScene] = useState(false);
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
       }}>
         <AnimatePresence>
-        </AnimatePresence>
-
-        <AnimatePresence>
           {showStoryInterview && (
             <div style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowStoryInterview(false)}>
               <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
@@ -1273,18 +1383,36 @@ const [showGoToScene, setShowGoToScene] = useState(false);
               </div>
             </div>
           )}
+        </AnimatePresence>
+
+        <AnimatePresence>
           {showGoToScene && (
             <GoToSceneModal
-                          sceneCount={scenesList.length}
-                          value={goToSceneNum}
-                          onChange={setGoToSceneNum}
-                          characters={chars}
-                          onJumpCharacter={jumpToCharacter}
-              onJump={(num) => {
-                setActiveView('write');
-                setShowGoToScene(false);
-                setGoToSceneNum('');
-                toast(`Jumped to Scene ${num}`, 'success');
+              sceneCount={scenesList.length}
+              headings={scenesList.map((s) => s.text)}
+              pages={scriptPages}
+              perScene={sceneCharMap}
+              currentScene={currentSceneIdx}
+              value={goToSceneNum}
+              onChange={setGoToSceneNum}
+              onJump={(target: GoToTarget) => {
+                // A scene or a page is a destination: go, and put the box away.
+                if (target.kind === 'scene') {
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  jumpToScene(target.scene - 1);
+                  return;
+                }
+                if (target.kind === 'page') {
+                  const row = scriptPages.find((p) => p.page === target.page);
+                  setShowGoToScene(false);
+                  setGoToSceneNum('');
+                  if (row) jumpToLine(row.line);
+                  return;
+                }
+                // A character's scenes come one after another: stay open, so
+                // Enter again (the caret now in that scene) takes the next one.
+                jumpToScene(target.scene);
               }}
               onClose={() => setShowGoToScene(false)}
             />
@@ -1332,7 +1460,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
             <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
               <span style={{ display: 'flex' }}>
                 {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: 'var(--on-accent)', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
+                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
                     {c.username.charAt(0)}
                   </span>
                 ))}
@@ -1356,6 +1484,7 @@ const [showGoToScene, setShowGoToScene] = useState(false);
         </div>
       </div>
 
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && <PhoneSyncLine bottom={phone.keyboard + (phone.landscape ? 48 : 60)} />}
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
         <PhoneToolStrip
           bottom={phone.keyboard} compact={phone.landscape}

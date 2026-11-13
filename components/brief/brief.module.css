@@ -10,6 +10,8 @@
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 22px;
+  backdrop-filter: var(--frost, none);
+  -webkit-backdrop-filter: var(--frost, none);
 }
 
 .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; justify-content: space-between; }

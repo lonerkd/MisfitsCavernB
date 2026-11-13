@@ -54,7 +54,7 @@ test.describe('Beat → script (local Supabase)', () => {
     // The owner is writing.
     const sam = await signIn(browser, owner);
     await sam.goto(`/editor?script=${scriptId}`);
-    const ta = sam.getByLabel('Script', { exact: true });
+    const ta = sam.getByRole('textbox', { name: 'Script', exact: true });
     await expect(ta).toHaveValue(/LIGHTHOUSE/, { timeout: 20_000 });
     await sam.waitForTimeout(2500); // the live channel is joined
     // Hold the owner's saves, so what they type next is still unsaved when the beat arrives.

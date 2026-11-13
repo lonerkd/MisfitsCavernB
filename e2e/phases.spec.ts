@@ -84,7 +84,7 @@ test.describe('Phases v2 (local Supabase)', () => {
     test.setTimeout(120_000);
     await signIn(page);
     await page.goto(`/editor?script=${scriptId}`);
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
     await expect(page.getByRole('button', { name: 'Character Bible' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Lock Revision' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Toggle revision mode' })).toHaveCount(0);

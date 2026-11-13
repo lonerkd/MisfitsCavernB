@@ -3,11 +3,14 @@
 import React, { useState } from 'react';
 import { ClipboardCheck, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type WrapEntry = { id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string };
 
 export function WrapView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('wraps');
   const [draft, setDraft] = useState<Omit<WrapEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
@@ -27,12 +30,7 @@ export function WrapView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <ClipboardCheck size={14} /> Wrap reports
-          <span className={s.hint}> · {items.length} reports · {items.reduce((a, b) => a + b.shotsGot, 0)} shots got</span>
-        </div>
-      </div>
+      <ToolHeader icon={<ClipboardCheck size={16} />} eyebrow="Reports & logs" title="Wrap reports" purpose="Wrap reports: what was shot and what is left." accent={project.accent_color} summary={<>{items.length} reports · {items.reduce((a, b) => a + b.shotsGot, 0)} shots got</>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

@@ -30,10 +30,20 @@ describe('a forced line type and the /* ... */ comment', () => {
     expect(t[idx('ELI')]).toBe('character');
   });
 
-  // KNOWN GAP (BACKLOG 3.21 B8): a forced type is a 'fixed' observation with no decoder state, so it steers the lines around it
-  // but the emit loop never applies it to the line itself. `it.fails` passes while that is true and fails the day it is fixed.
-  it.fails('an override on an ordinary line changes that line', () => {
+  it('an override on an ordinary line changes that line, and what follows it', () => {
     const t = types([{ line_index: idx('MAYA'), forced_type: 'action' }]);
     expect(t[idx('MAYA')]).toBe('action');
+    // The speech under it is no longer a speaker's, and the rest of the script is unharmed.
+    expect(t[idx('INT. GARDEN')]).toBe('slug');
+    expect(t[idx('ELI')]).toBe('character');
+  });
+
+  it('forcing a plain line to a character makes it a speaker', () => {
+    const script = 'INT. ROOM - DAY\n\nSomeone arrives.\nHello there.\n';
+    const at = script.split('\n').indexOf('Someone arrives.');
+    const out = parseScript(script, 'screenplay', undefined, { context: { lineOverrides: [{ line_index: at, forced_type: 'character' }] } as never }).lines;
+    expect(out[at].type).toBe('character');
+    expect(out[at].meta?.characterName).toBeTruthy();
+    expect(out[at].confidence).toBe(100);
   });
 });

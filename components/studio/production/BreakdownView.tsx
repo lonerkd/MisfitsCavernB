@@ -16,10 +16,11 @@ import { pages, stripKind, STRIP_LABEL } from '@/lib/studio/stripboard';
 import type { SceneRow } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, cx } from '../ui';
+import { breakdownDoc } from '@/lib/studio/breakdown-print';
+import { printDocument } from '@/lib/print/print';
 import s from '../studio.module.css';
 import v from './breakdownView.module.css';
 
-const esc = (x: unknown) => String(x ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
 /**
  * The production's breakdown: every element by category (with its cost and
@@ -81,20 +82,22 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   };
 
   const printSheets = () => {
-    const w = window.open('', '_blank', 'width=860,height=1100');
-    if (!w) { toast('Allow pop-ups to print breakdown sheets.', 'info'); return; }
-    const ordered = [...categories].sort((a, b) => a.position - b.position);
-    const sheet = (sc: SceneRow) => {
-      const ids = new Set(bd.tags.rows.filter((t) => t.scene_id === sc.id).map((t) => t.element_id));
-      const boxes = ordered.map((c) => {
-        const names = elements.filter((e) => ids.has(e.id) && e.category_id === c.id).map((e) => esc(e.name));
-        if (c.key === 'cast') names.unshift(...castOfScene(sc).map(esc));
-        return names.length ? `<div class="box" style="border-color:${c.color}"><div class="lbl" style="color:${c.color}">${esc(c.label)}</div>${names.join('<br>')}</div>` : '';
-      }).join('');
-      return `<section><header><b>${sc.scene_number}</b> ${esc(sc.heading ?? sc.title)}<span>${STRIP_LABEL[stripKind(sc)]} · ${pages(eighthsOf(sc.est_duration))} pp · Day ${sc.shoot_day ?? 1}</span></header><div class="grid">${boxes || '<i>Nothing tagged</i>'}</div>${sc.note ? `<p class="note">${esc(sc.note)}</p>` : ''}</section>`;
-    };
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Breakdown sheets</title><style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:32px}h1{font-size:20px;letter-spacing:2px}section{page-break-inside:avoid;border:1px solid #ccc;border-radius:8px;padding:14px;margin:0 0 16px}header{font-size:13px;margin-bottom:10px;display:flex;gap:10px;align-items:baseline}header span{margin-left:auto;color:var(--fg-dim);font-size:11px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.box{border:2px solid;border-radius:6px;padding:6px 8px;font-size:12px;line-height:1.5}.lbl{font-size:9px;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:3px}.note{font-size:11px;color:var(--fg-dim);margin:10px 0 0}</style></head><body><h1>${esc(project.title).toUpperCase()} — BREAKDOWN</h1>${scenes.rows.map(sheet).join('')}<script>window.onload=()=>window.print()</script></body></html>`);
-    w.document.close();
+    const ordered = [...categories].sort((x, y) => x.position - y.position);
+    const ok = printDocument(breakdownDoc({
+      project: project.title,
+      accent: project.accent_color,
+      scenes: scenes.rows.map((sc) => {
+        const ids = new Set(bd.tags.rows.filter((t) => t.scene_id === sc.id).map((t) => t.element_id));
+        const boxes = ordered.map((c) => {
+          const names = elements.filter((e) => ids.has(e.id) && e.category_id === c.id).map((e) => e.name);
+          if (c.key === 'cast') names.unshift(...castOfScene(sc));
+          return { label: c.label, names };
+        }).filter((bx) => bx.names.length > 0);
+        return { number: sc.scene_number, heading: sc.heading ?? sc.title ?? '', kind: STRIP_LABEL[stripKind(sc)], pages: pages(eighthsOf(sc.est_duration)), day: sc.shoot_day ?? 1, boxes };
+      }),
+      generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   if (bd.status === 'loading' && !categories.length) {

@@ -13,9 +13,10 @@ import {
   type BudgetItem, type Expense, type Timesheet, type Vendor,
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
-import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
-import { NextSteps } from '../NextSteps';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { ToolHeader } from '../ToolHeader';
+import { budgetDoc } from '@/lib/studio/budget-print';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -52,8 +53,13 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
     <div className={s.stack} style={{ gap: 28, maxWidth: 1000 }}>
       {canShape && (
         <>
-          <section aria-labelledby="money-summary" className={s.stack} style={{ gap: 12 }}>
-            <h3 id="money-summary" className={s.panelTitle} style={{ marginBottom: 0 }}><DollarSign size={14} /> Budget vs spend</h3>
+          <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
+            <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
+              next={lines.length === 0 ? { text: 'Set the budget on the project page to see it here.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
+              actions={<PrintButton label="the budget" build={() => budgetDoc({
+                project: project.title, accent: project.accent_color, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
+                generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+              })} />} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
               {([
                 ['Planned', summary.totals.planned, undefined],
@@ -187,7 +193,7 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
   const { project } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
-  const [form, setForm, clearForm] = useDraft('money-spend-form', { description: '', amount: '', line: '', vendor: '', newVendor: '', status: 'committed', po: '', date: today() });
+  const [form, setForm] = useState({ description: '', amount: '', line: '', vendor: '', newVendor: '', status: 'committed', po: '', date: today() });
   const [busy, setBusy] = useState(false);
   const lineName = new Map(lines.map((l) => [l.id, l.description ? `${l.category} — ${l.description}` : l.category]));
   const vendorName = new Map(vendors.map((v) => [v.id, v.name]));
@@ -208,8 +214,7 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
         description: form.description.trim(), amount, budget_item_id: form.line || null, vendor_id: vendorId,
         status: form.status, po_number: form.po.trim() || null, spent_on: form.date,
       }));
-      clearForm();
-      setForm((f) => ({ ...f, vendor: vendorId ?? '' }));
+      setForm((f) => ({ ...f, description: '', amount: '', po: '', newVendor: '', vendor: vendorId ?? '' }));
     } catch (err) {
       toast(err instanceof Error ? err.message : 'Could not add the spend', 'error');
     } finally {
@@ -285,9 +290,6 @@ function SpendSection({ lines, vendors, rows, onChange, onVendor }: {
           ))}
         </ul>
       )}
-      <NextSteps steps={[
-        { label: 'Review budget vs actual', description: 'Compare planned vs spent', onClick: () => {} },
-      ]} />
     </section>
   );
 }

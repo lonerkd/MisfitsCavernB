@@ -3,13 +3,12 @@
 import React, { useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import { AlertTriangle, Plus, Shield, Trash2 } from 'lucide-react';
-import { useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
-import { useStudio } from '../StudioContext';
-import { patchProjectSettings } from '@/lib/supabase/progress';
+import { useSettingsList } from './useSettingsList';
 import { cx } from '../ui';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
-import type { ProjectSettings } from '@/lib/types/settings';
 
 type Severity = 'low' | 'medium' | 'high';
 type ItemStatus = 'identified' | 'mitigated' | 'resolved';
@@ -31,23 +30,14 @@ const STATUS_COLOR: Record<ItemStatus, string> = { identified: 'var(--danger)', 
 
 export function SafetyView() {
   const { project } = useStudio();
-  const { refreshProject } = useProject();
+  const { items, save } = useSettingsList('safety');
   const { toast } = useToast();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Omit<SafetyItem, 'id'>>({ hazard: '', location: '', severity: 'medium', mitigation: '', owner: '', status: 'identified' });
 
-  const settings = (project.settings ?? {}) as ProjectSettings;
-  const items = useMemo(() => settings.safety ?? [], [settings.safety]);
-
   const saveItems = async (next: SafetyItem[]) => {
-    try {
-      await patchProjectSettings(project.id, { safety: next } as Partial<ProjectSettings>);
-      await refreshProject(project.id);
-      toast('Safety plan saved', 'success');
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save', 'error');
-    }
+    if (await save(next)) toast('Safety plan saved', 'success');
   };
 
   const addItem = async (e: React.FormEvent) => {
@@ -88,13 +78,7 @@ export function SafetyView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Shield size={14} /> Safety & risk
-          <span className={s.hint}> · {counts.resolved} of {counts.total} resolved{counts.high > 0 ? ` · ${counts.high} high-risk open` : ''}</span>
-        </div>
-        {!adding && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding(true)}><Plus size={11} /> Add hazard</button>}
-      </div>
+      <ToolHeader icon={<Shield size={16} />} eyebrow="Shoot day" title="Safety & risk" purpose="Hazards, who is responsible, and whether each is resolved." accent={project.accent_color} summary={<>{counts.resolved} of {counts.total} resolved{counts.high > 0 ? ` · ${counts.high} high-risk open` : ''}</>} actions={<>{!adding && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding(true)}><Plus size={11} /> Add hazard</button>}</>} />
 
       {adding && (
         <form className={s.panel} style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }} onSubmit={addItem}>

@@ -15,6 +15,8 @@ import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
 import { lightNoteBrief } from '@/lib/film/sky';
 import { buildSides } from '@/lib/film/sides';
 import { sidesHtml } from '@/lib/film/sides-print';
+import { callSheetDoc } from '@/lib/studio/call-sheet-print';
+import { printDocument, printHtmlString } from '@/lib/print/print';
 import { buildBoard, stripKind, type StripKind } from '@/lib/studio/stripboard';
 import { Sky } from '@/components/film/Sky';
 import { Stamp } from '@/components/film/Stamp';
@@ -29,7 +31,6 @@ import c from './callsheet.module.css';
 type CrewMember = { user_id: string; role: string; username?: string };
 
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
-const esc = (v: unknown) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string));
 
 function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[], placeOf: (sc: SceneRow) => string, doubtfulOrdinals?: Set<number>) {
   const dayScenes = scenes.filter((sc) => (sc.shoot_day ?? 1) === day).sort((a, b) => a.scene_number - b.scene_number);
@@ -76,27 +77,22 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
     const callOf = (t: CallTarget) => mine.find((c) => ('crew_user_id' in t ? c.crew_user_id === t.crew_user_id : c.character_name === t.character_name));
-    const w = window.open('', '_blank', 'width=820,height=1060');
-    if (!w) return;
-    const line = (label: string, v: string | null | undefined) => (v ? `<div><b>${label}</b> ${esc(v)}</div>` : '');
-    w.document.write(`<!doctype html><html><head><title>${esc(project.title)} — Call Sheet Day ${day}</title>
-      <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;color:#111;margin:40px;line-height:1.5}
-      h1{font-size:20px;margin:0 0 2px;letter-spacing:2px}h2{font-size:11px;color:#b45309;letter-spacing:3px;margin:0 0 16px}
-      h3{font-size:10px;letter-spacing:2px;color:var(--fg-dim);border-bottom:1px solid #ddd;padding-bottom:4px;margin:18px 0 8px}
-      .row{display:flex;gap:24px}.col{flex:1}.sc{margin-bottom:4px;font-size:13px}.num{color:var(--fg-dim)}b{font-size:10px;letter-spacing:1px;color:var(--fg-dim);margin-right:6px}
-      table{border-collapse:collapse;width:100%;font-size:12px}td{padding:4px;border-bottom:1px solid #eee}</style></head><body>
-      <h1>${esc(project.title).toUpperCase()}</h1><h2>CALL SHEET · DAY ${day}${sheet?.shoot_date ? ` · ${esc(new Date(sheet.shoot_date + 'T00:00').toDateString())}` : ''}</h2>
-      <div class="row"><div class="col">${line('GENERAL CALL', hhmm(sheet?.general_call))}${line('SHOOTING CALL', hhmm(sheet?.shooting_call))}${line('EST. WRAP', hhmm(sheet?.estimated_wrap))}</div>
-      <div class="col">${line('LOCATION', sheet?.location_address)}${line('WEATHER', sheet?.weather)}${line('LIGHT', lightLine(film.get(day)?.light))}</div></div>
-      ${(film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => `<div>${esc(lightNoteText(n))}</div>`).join('')}
-      ${sheet?.notes ? `<h3>NOTES</h3><div>${esc(sheet.notes).replace(/\n/g, '<br>')}</div>` : ''}
-      <div class="row"><div class="col"><h3>SCENES (${d.dayScenes.length}${d.pages ? ` · ${d.pages} pg` : ''})</h3>
-      ${d.dayScenes.map((sc) => `<div class="sc"><span class="num">${sc.scene_number}.</span> ${esc(sc.heading ?? sc.title)}</div>`).join('')}
-      <h3>LOCATIONS</h3>${d.locations.length ? d.locations.map((l) => `<div>${esc(l)}</div>`).join('') : '—'}</div>
-      <div class="col"><h3>CAST</h3><table>${d.cast.map((name) => { const c = callOf({ character_name: name }); return `<tr><td>${esc(name)}</td><td>${esc(hhmm(c?.call_time)) || '—'}</td><td>${esc(c?.remarks)}</td></tr>`; }).join('') || '<tr><td>—</td></tr>'}</table>
-      <h3>CREW</h3><table>${crew.map((m) => { const c = callOf({ crew_user_id: m.user_id }); return `<tr><td>${esc(m.username || 'Crew')}</td><td>${esc(m.role)}</td><td>${esc(hhmm(c?.call_time)) || '—'}</td><td>${esc(c?.remarks)}</td></tr>`; }).join('') || '<tr><td>No crew yet</td></tr>'}</table></div></div>
-      <script>window.onload=()=>{window.print()}</script></body></html>`);
-    w.document.close();
+    const ok = printDocument(callSheetDoc({
+      project: project.title,
+      accent: project.accent_color,
+      day,
+      date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : null,
+      generalCall: hhmm(sheet?.general_call), shootingCall: hhmm(sheet?.shooting_call), wrap: hhmm(sheet?.estimated_wrap),
+      location: sheet?.location_address ?? null, weather: sheet?.weather ?? null, light: lightLine(film.get(day)?.light) ?? '',
+      planNotes: (film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => lightNoteText(n)),
+      notes: sheet?.notes ?? null,
+      scenes: d.dayScenes.map((sc) => ({ number: sc.scene_number, heading: sc.heading ?? sc.title ?? '' })),
+      pages: d.pages, locations: d.locations,
+      cast: d.cast.map((name) => { const c = callOf({ character_name: name }); return { name, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
+      crew: crew.map((m) => { const c = callOf({ crew_user_id: m.user_id }); return { name: m.username || 'Crew', role: m.role, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
+      generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   // Each called actor's pages for the day, from the script's saved text.
@@ -113,10 +109,8 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       })),
     );
     if (!sides.length) { toast('No one called that day has lines in the script yet.', 'info'); return; }
-    const w = window.open('', '_blank', 'width=820,height=1060');
-    if (!w) { toast('Allow pop-ups to print the sides.', 'error'); return; }
-    w.document.write(sidesHtml(sides, { title: project.title, day, date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toDateString() : null }));
-    w.document.close();
+    const ok = printHtmlString(sidesHtml(sides, { title: project.title, day, date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toDateString() : null, autoprint: false }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   return (

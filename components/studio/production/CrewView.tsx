@@ -11,6 +11,9 @@ import { CrewMemberCard, RecruitModal } from '../CrewBoards';
 import { CastingBoard } from '../CastingBoard';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { crewDoc } from '@/lib/studio/crew-print';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 export type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; status?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
@@ -32,10 +35,15 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
     <div className={s.stack} style={{ gap: 32 }}>
       <div style={{ maxWidth: 760 }}>
         <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['roles', 'casting', 'night']} style={{ marginBottom: 16 }} />
-        <div className={s.toolbar}>
-          <div className={s.panelTitle} style={{ marginBottom: 0 }}><Users size={14} /> Cast & crew · {crew.length}</div>
-          {isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}
-        </div>
+        <ToolHeader icon={<Users size={16} />} eyebrow="Pre-production" title="Cast & crew" purpose="Who is on the project, their craft and when they are away." accent={project.accent_color}
+          stats={[{ label: crew.length === 1 ? 'person' : 'people', value: crew.length }]}
+          next={crew.length === 0 ? { text: isOwner ? 'Recruit your first person, or post a role to Jobs.' : 'The project owner recruits crew.' } : null}
+          actions={<>{crew.length > 0 && <PrintButton label="the cast and crew list" build={() => crewDoc({
+              project: project.title, accent: project.accent_color,
+              crew: crew.map((m) => ({ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status ?? null, away: canShape ? awayText(m.user_id) : null })),
+              generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+            })} />}{isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}</>} />
+        <div style={{ height: 14 }} />
         {crew.length ? (
           <div className={s.stack} style={{ gap: 10 }}>
             {crew.map((m, i) => (

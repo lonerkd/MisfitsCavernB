@@ -10,7 +10,7 @@ vi.mock('@/lib/scriptos/revisions', async (orig) => ({ ...(await orig<typeof imp
 import { RevisionsView } from './RevisionsView';
 
 const script = { id: 's1', title: 'Pilot', updated_at: null, format: null };
-beforeEach(() => { studio = { scripts: [script], scriptId: 's1', scriptsStatus: 'ready' }; });
+beforeEach(() => { studio = { project: { title: 'P', accent_color: null }, scripts: [script], scriptId: 's1', scriptsStatus: 'ready' }; });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 describe('RevisionsView reads the editor\'s locked revisions', () => {
@@ -40,7 +40,7 @@ describe('RevisionsView reads the editor\'s locked revisions', () => {
   });
 
   it('a project with no script says so', () => {
-    studio = { scripts: [], scriptId: null, scriptsStatus: 'ready' };
+    studio = { project: { title: 'P', accent_color: null }, scripts: [], scriptId: null, scriptsStatus: 'ready' };
     render(<RevisionsView />);
     expect(screen.getByText('No script yet')).toBeTruthy();
     expect(load).not.toHaveBeenCalled();

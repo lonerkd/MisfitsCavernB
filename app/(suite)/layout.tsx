@@ -3,7 +3,9 @@ import { PresenceProvider } from '@/lib/os/PresenceContext';
 import { PillProvider } from '@/lib/os/PillContext';
 import { SpotifyProvider } from '@/lib/os/SpotifyContext';
 import { VoiceCallProvider } from '@/lib/webrtc/VoiceCall';
+import { CavernProvider } from '@/lib/cavern/CavernContext';
 import ClientShell from '@/components/shell/ClientShell';
+import CavernHost from '@/components/shell/CavernHost';
 import { IncidentBanner } from '@/components/hub/IncidentBanner';
 
 // Everything signed in (and the landing, auth and showcase pages that know
@@ -15,9 +17,12 @@ export default function SuiteLayout({ children }: { children: React.ReactNode })
         <PillProvider>
           <SpotifyProvider>
             <VoiceCallProvider>
-              <ClientShell />
-              <IncidentBanner />
-              <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
+              <CavernProvider>
+                <ClientShell />
+                <IncidentBanner />
+                <main id="main-content" className="main-content-container" tabIndex={-1}>{children}</main>
+                <CavernHost />
+              </CavernProvider>
             </VoiceCallProvider>
           </SpotifyProvider>
         </PillProvider>

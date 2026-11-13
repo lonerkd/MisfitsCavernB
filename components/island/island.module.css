@@ -167,6 +167,8 @@
   font-family: var(--mono); font-size: var(--island-text); letter-spacing: var(--caps-track); text-transform: var(--caps);
   color: var(--fg); background: var(--surface); border: 1px solid rgba(var(--ink-rgb), 0.12);
   transition: opacity 0.15s, transform 0.15s;
+  backdrop-filter: var(--frost, none);
+  -webkit-backdrop-filter: var(--frost, none);
 }
 .slot[data-tip]:hover::after, .slot[data-tip]:focus-within::after { opacity: 1; transform: translate(-50%, 0); }
 .slot[data-open='true']::after { display: none; }

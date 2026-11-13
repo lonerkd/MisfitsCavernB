@@ -10,6 +10,7 @@ import { useShootDays } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import { cx } from '../ui';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 import type { ProjectSettings } from '@/lib/types/settings';
 
@@ -25,7 +26,7 @@ interface MealPlan {
 }
 
 const STATUS_LABEL: Record<MealStatus, string> = { planned: 'Planned', ordered: 'Ordered', delivered: 'Delivered' };
-const STATUS_COLOR: Record<MealStatus, string> = { planned: 'var(--fg-dim)', ordered: '#fbbf24', delivered: '#6ee7b7' };
+const STATUS_COLOR: Record<MealStatus, string> = { planned: 'var(--fg-dim)', ordered: 'var(--warn)', delivered: 'var(--ok)' };
 
 export function CateringView() {
   const { project, scriptId } = useStudio();
@@ -82,12 +83,7 @@ export function CateringView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <ChefHat size={14} /> Catering & meals
-          <span className={s.hint}> · {Object.keys(catering).length} of {datedDays.length} planned</span>
-        </div>
-      </div>
+      <ToolHeader icon={<ChefHat size={16} />} eyebrow="Shoot day" title="Catering & meals" purpose="Meals and dietary needs for each shoot day." accent={project.accent_color} summary={<>{Object.keys(catering).length} of {datedDays.length} planned</>} />
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {datedDays.map((day) => {

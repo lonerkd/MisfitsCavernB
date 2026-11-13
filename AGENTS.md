@@ -26,6 +26,9 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
 ## Start of every session
 
 1. This file.
+   **If a `nightly-review` issue is open** (Claude Code prints it at start; or
+   `gh issue list --label nightly-review`), its unchecked boxes are the first
+   task of the day: fix them, tick them off, then pick from the backlog.
 2. [`STATE.md`](.cavern-intelligence/STATE.md) — the handoff: open work, known issues (start at its
    "Resume here" if there is one) — then the newest notes in
    [`sessions/`](.cavern-intelligence/sessions/README.md) for what the last PRs did (Claude Code
@@ -55,8 +58,16 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    merged one; snapshot, types and a persona test in the same PR; applied to
    production by hand after merge, then the drift check
    (`database-and-security.md` §3).
-6. **Git.** Feature work on `claude/*` branches → PR → green CI → squash
-   merge. Never push to `main`. Never rewrite history someone else depends on.
+6. **Git: preview first, then main.** A change is tried on a branch and its
+   Vercel preview, never on `main`: work on a branch (agents: `claude/*`), open
+   a PR, and once the checks and the preview are green, squash-merge it. An
+   agent may merge its own green PR (owner, 2026-10-27); nobody waits for a
+   person once the checks are good. The rule is about order, not about who:
+   `main` is where a tried change lands, not where one is tried. Never bypass
+   the checks (`--no-verify`, an admin override, a force-push to `main`) and
+   never rewrite history someone else depends on. (The Claude worker that an
+   issue label starts, `agent-claude.yml`, is the exception that never merges:
+   public issue text starts it.)
 7. **Ask first** before anything destructive to live data, rotating keys,
    changing auth settings, or a design decision the owner hasn't made.
 8. **Docs move with code.** A change to files, architecture or access
@@ -78,7 +89,12 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
 ## The change cycle
 
 1. **Explore** — the files involved; the owning doc (see *Where to look*);
-   `bible/inventory.md` for what a route touches.
+   `bible/inventory.md` for what a route touches. **Search `origin/main`, not
+   only this checkout, before building** (`git grep -il <word> origin/main`,
+   the newest notes in `sessions/` on main): a checkout that is far behind
+   hides what already exists (a feature was once built twice that way). More
+   than 20 commits behind: start from `origin/main` in a worktree of its own,
+   with its own `npm ci` (never a linked `node_modules`).
 2. **Check state** — `STATE.md`, `BACKLOG.md`.
 3. **Plan** — exact files; RLS implications; who it affects (personas).
 4. **Implement** — following `conventions.md` and `design-tokens.md`.

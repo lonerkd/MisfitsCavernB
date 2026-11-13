@@ -7,6 +7,7 @@ import { Car, MapPin, PenLine, Route } from 'lucide-react';
 import { useProjectLocations, useShootDays } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 export function TransportView() {
@@ -42,12 +43,7 @@ export function TransportView() {
 
     return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Car size={14} /> Transport & travel
-          <span className={s.hint}> · {datedDays.length} dated day{datedDays.length === 1 ? '' : 's'}</span>
-        </div>
-      </div>
+      <ToolHeader icon={<Car size={16} />} eyebrow="Shoot day" title="Transport & travel" purpose="Vehicles, drivers and call times for the shoot." accent={project.accent_color} summary={<>{datedDays.length} dated day{datedDays.length === 1 ? '' : 's'}</>} />
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {datedDays.map((day) => {

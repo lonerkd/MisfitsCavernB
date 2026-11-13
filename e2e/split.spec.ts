@@ -71,19 +71,19 @@ test.describe('Split screen (local Supabase)', () => {
     // Ctrl+\ from the script opens it beside its companion, the Studio's scenes.
     await page.goto(`/editor?script=${scriptId}`);
     // The editor's view transition briefly shows two; wait for it to settle.
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
     await page.keyboard.press('Control+Backslash');
     await page.waitForURL(/\/split\?/);
     const first = page.frameLocator('iframe[title^="First pane"]');
     const second = page.frameLocator('iframe[title^="Second pane"]');
-    await expect(first.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(first.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
     await expect(second.getByRole('article', { name: /^Scene 2:/ })).toBeVisible({ timeout: 20_000 });
     // Panes carry no suite chrome of their own.
     await expect(first.getByRole('navigation', { name: 'Suite' })).toHaveCount(0);
     await expect(page.getByRole('navigation', { name: 'Suite' })).toHaveCount(0);
 
     // Caret into scene 2 → the Studio shows scene 2.
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       const at = ta.value.indexOf('Wind over');
       ta.focus();
@@ -94,13 +94,13 @@ test.describe('Split screen (local Supabase)', () => {
 
     // The Studio sends the script to scene 1.
     await second.getByRole('button', { name: 'In script — open scene 1' }).click();
-    await expect.poll(() => first.getByLabel('Script', { exact: true }).evaluate((el) => (el as HTMLTextAreaElement).selectionStart), { timeout: 10_000 }).toBe(0);
+    await expect.poll(() => first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => (el as HTMLTextAreaElement).selectionStart), { timeout: 10_000 }).toBe(0);
     // …and the script's new scene comes back to the Studio.
     await expect(second.getByRole('article', { name: /^Scene 1:/ })).toHaveAttribute('aria-current', 'location', { timeout: 10_000 });
 
     // Unlinked panes don't follow.
     await page.getByRole('switch', { name: 'Linked' }).click();
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       const at = ta.value.indexOf('Wind over');
       ta.focus();
@@ -117,7 +117,7 @@ test.describe('Split screen (local Supabase)', () => {
     await expect(second.getByRole('region', { name: 'Ready to shoot' })).toBeVisible({ timeout: 20_000 });
     await expect.poll(() => new URL(page.url()).searchParams.get('b')).toContain('view=readiness');
     // Linked: the caret's scene opens in Readiness too.
-    await first.getByLabel('Script', { exact: true }).evaluate((el) => {
+    await first.getByRole('textbox', { name: 'Script', exact: true }).evaluate((el) => {
       const ta = el as HTMLTextAreaElement;
       ta.focus();
       ta.setSelectionRange(5, 5);
@@ -134,5 +134,38 @@ test.describe('Split screen (local Supabase)', () => {
     await expect(page.frameLocator('iframe[title^="First pane"]').getByRole('region', { name: 'Ready to shoot' })).toBeVisible({ timeout: 20_000 });
 
     expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test('the project in two panes: the button, a tile opening beside it, and the picker naming this project', async ({ page }) => {
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    // A wide window, so the one-time offer is made too; declining it must not come back.
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/projects/${projectId}`);
+    const offer = page.getByRole('region', { name: 'Work in two panes' });
+    await expect(offer).toBeVisible({ timeout: 20_000 });
+    await offer.getByRole('button', { name: 'Not now' }).click();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Two Panes' })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('region', { name: 'Work in two panes' })).toHaveCount(0);
+
+    // The button opens the project beside the tool its phase works in.
+    await page.getByRole('link', { name: 'Two panes' }).click();
+    await page.waitForURL(/\/split\?/);
+    const first = page.frameLocator('iframe[title^="First pane"]');
+    await expect(first.getByRole('heading', { name: 'Two Panes' })).toBeVisible({ timeout: 20_000 });
+    expect(new URL(page.url()).searchParams.get('a')).toBe(`/projects/${projectId}`);
+
+    // A tile in the project pane comes up in the other pane, and the project stays where it is.
+    await first.getByRole('link', { name: /^Script editor/ }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('b'), { timeout: 20_000 }).toContain('/editor');
+    expect(new URL(page.url()).searchParams.get('a')).toBe(`/projects/${projectId}`);
+
+    // The picker offers this project's own page.
+    await page.getByRole('region', { name: /^Second pane/ }).getByRole('button', { name: /Script|Editor/ }).click();
+    await expect(page.getByRole('dialog', { name: 'Show in this pane' }).getByRole('button', { name: 'This project' })).toBeVisible();
   });
 });

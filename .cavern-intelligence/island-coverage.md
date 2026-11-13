@@ -6,7 +6,7 @@
 
 ## Areas with no stage
 
-`/admin` · `/auth` · `/call` · `/community` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
+`/admin` · `/auth` · `/call` · `/cavern` · `/community` · `/crew` · `/hub` · `/profile` · `/settings` · `/showcase` · `/soundtrack` · `/split` · `/today` · `/welcome`
 
 ## Registrations
 
@@ -14,7 +14,7 @@
 | --- | --- | --- | --- | --- | --- |
 | `app/(suite)/editor/page.tsx` | stage | (computed) | `Scene` · `Words` · `Pages` · `Save` | **Q** `Focus` | **E** `find` Find & replace · **U** `note` Add a note · **I** `sprint` (computed) |
 | `app/(suite)/jobs/page.tsx` | stage | (computed) | `Open` · `Shown (conditional)` · `Mine (conditional)` | — | **Q** `post-job` + Post Position (conditional) |
-| `app/(suite)/portfolio/page.tsx` | stage | The Cavern Collection | `Works` | — | — |
+| `app/(suite)/portfolio/page.tsx` | stage | (computed) | `Works` | — | — |
 | `app/(suite)/projects/page.tsx` | stage | Projects | `Total` | — | **Q** `new-project` + New Project (conditional) |
 | `app/(suite)/studio/page.tsx` | stage | (computed) | `Tab` | — | **U** `note` Add a note · **R** `next-tab` Next tab → · **T** `open-share` Share tab (conditional) |
 | `components/editor/EditorCenterViews.tsx` | zone | (computed) | `Cast` · `Words` | — | **W** `jump-scene` → Jump to Scene |

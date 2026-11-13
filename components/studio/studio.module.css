@@ -15,6 +15,9 @@
   --panel-2: rgba(var(--fg-rgb), 0.045);
 }
 
+/* Frosted mode: the Studio's panels are the theme's own background, translucent (the page scope defines --panel itself, so it is set here). */
+:global([data-frosted]) .page { --panel: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-3) 46%, transparent)); --panel-2: color-mix(in srgb, var(--frost-tint) var(--frost-lift), color-mix(in srgb, var(--bg-4) 54%, transparent)); }
+
 /* ── Section header ───────────────────────────────────── */
 .header {
   display: flex;
@@ -194,7 +197,7 @@
   padding: 2px 7px; border-radius: var(--r-full);
   background: var(--panel-2); color: var(--fg-muted); border: 1px solid var(--border);
 }
-.tagShared { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.1); }
+.tagShared { color: var(--ok); border-color: rgba(16, 185, 129, 0.35); background: rgba(16, 185, 129, 0.1); }
 .tagArchived { color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); background: rgba(245, 158, 11, 0.1); }
 .tagStudio { color: var(--violet); border-color: var(--studio-line); background: var(--studio-dim); }
 .check {
@@ -239,6 +242,7 @@
   border: 1px solid var(--border);
   border-radius: var(--r-md);
   padding: 20px;
+  backdrop-filter: var(--frost, none); -webkit-backdrop-filter: var(--frost, none);
 }
 .panelTitle {
   font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps);
@@ -258,13 +262,14 @@
   border: 1px solid var(--border-2); color: var(--fg-muted);
 }
 .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-.statusOk { color: #6ee7b7; border-color: rgba(16, 185, 129, 0.3); }
+.statusOk { color: var(--ok); border-color: rgba(16, 185, 129, 0.3); }
 .statusBusy { color: var(--violet); border-color: var(--studio-line); }
 .statusError { color: var(--danger); border-color: rgba(239, 68, 68, 0.35); }
 
 /* ── Scenes ───────────────────────────────────────────── */
 .sceneList { display: flex; flex-direction: column; gap: 10px; }
 .scene {
+  backdrop-filter: var(--frost, none); -webkit-backdrop-filter: var(--frost, none);
   display: grid;
   grid-template-columns: 4px 56px minmax(0, 1fr);
   gap: 0 14px;

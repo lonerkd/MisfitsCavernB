@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { FileCheck, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type PermitEntry = { id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' };
@@ -10,6 +12,7 @@ type PermitEntry = { id: string; location: string; permitType: string; issuedBy:
 const STATUSES: PermitEntry['status'][] = ['pending', 'approved', 'expired'];
 
 export function PermitView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('permits');
   const [draft, setDraft] = useState<Omit<PermitEntry, 'id'>>({
     location: '',
@@ -34,19 +37,13 @@ export function PermitView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <FileCheck size={14} /> Permits & insurance
-          <span className={s.hint}> · {items.length} tracked · {items.filter((i) => i.status === 'approved').length} approved</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<FileCheck size={16} />} eyebrow="Departments" title="Permits & insurance" purpose="Permits and clearances: what is needed, granted or expiring." accent={project.accent_color} summary={<>{items.length} tracked · {items.filter((i) => i.status === 'approved').length} approved</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

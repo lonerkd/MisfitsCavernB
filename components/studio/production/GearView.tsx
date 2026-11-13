@@ -3,6 +3,8 @@
 import React, { useMemo, useState } from 'react';
 import { Wrench, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { useStudio } from '../StudioContext';
+import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type GearEntry = { id: string; item: string; category: string; owner: string; status: 'needed' | 'packed' | 'on-set' | 'returned' };
@@ -10,6 +12,7 @@ type GearEntry = { id: string; item: string; category: string; owner: string; st
 const STATUSES: GearEntry['status'][] = ['needed', 'packed', 'on-set', 'returned'];
 
 export function GearView() {
+  const { project } = useStudio();
   const { items, save, remove } = useSettingsList('gear');
   const [draft, setDraft] = useState<Omit<GearEntry, 'id'>>({ item: '', category: 'camera', owner: '', status: 'needed' });
   const [filter, setFilter] = useState<'all' | GearEntry['status']>('all');
@@ -30,19 +33,13 @@ export function GearView() {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <div className={s.toolbar}>
-        <div className={s.panelTitle} style={{ marginBottom: 0 }}>
-          <Wrench size={14} /> Equipment / gear
-          <span className={s.hint}> · {items.length} items · {counts['needed']} needed · {counts['on-set']} on set</span>
-        </div>
-        <div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<Wrench size={16} />} eyebrow="Departments" title="Equipment / gear" purpose="Equipment needed, booked and on set." accent={project.accent_color} summary={<>{items.length} items · {counts['needed']} needed · {counts['on-set']} on set</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
             </button>
           ))}
-        </div>
-      </div>
+        </div></>} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

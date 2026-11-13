@@ -115,7 +115,7 @@ export async function getAccessToken(code: string, state: string | null): Promis
   window.sessionStorage.removeItem('spotify_oauth_state');
 
   if (!verifier || !expected || !redirectUri || state !== expected) {
-    throw new Error('This Spotify sign-in didn’t start here (or already finished). Connect again from Soundtrack.');
+    throw new Error('This Spotify sign-in didn’t start here (or already finished). Connect again from Sound.');
   }
 
   const params = new URLSearchParams();

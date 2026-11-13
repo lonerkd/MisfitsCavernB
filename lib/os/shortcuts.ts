@@ -56,6 +56,8 @@ export function shortcuts(mac: boolean): Shortcut[] {
     { group: 'ScriptOS editor', keys: 'Escape, then Tab', desc: 'Leave the script (move to the next control)' },
     { group: 'ScriptOS editor', keys: 'Alt 1–9', desc: 'Tag the selection (tag mode)', aliases: 'option' },
     { group: 'ScriptOS editor', keys: 'Alt Enter  ·  Alt ⌫', desc: 'Accept / dismiss a suggestion', aliases: 'option backspace' },
+    { group: 'ScriptOS editor', keys: 'Alt ← →', desc: 'Back / forward through your jumps', aliases: 'option arrow history' },
+    { group: 'ScriptOS editor', keys: 'Alt U L D S', desc: 'Case the selection · duplicate the line · stash it', aliases: 'option uppercase lowercase duplicate' },
     { group: 'ScriptOS editor', keys: '↑ ↓ · Enter', desc: 'Navigate & accept autocomplete', aliases: 'arrows' },
     { group: 'ScriptOS editor', keys: '(', desc: 'Auto-close parenthetical' },
     { group: 'ScriptOS editor', keys: 'Enter', desc: 'Auto-format a scene heading' },

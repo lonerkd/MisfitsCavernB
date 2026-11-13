@@ -3,7 +3,7 @@
 // mistake would cost the most:
 //
 //   low     docs, notes, tests            CI is the whole review; merge once it is green
-//   medium  app code                      CI plus one AI review (Copilot)
+//   medium  app code                      CI, then the nightly review (nightly-review.yml)
 //   high    database, access, CI, agent   a Claude session reviews it; never merge on green alone
 //           rules, dependencies
 //
@@ -74,7 +74,7 @@ export function classify(files) {
 
 const SUMMARY = {
   low: 'Docs, notes or tests only. CI is the whole review: merge once it is green.',
-  medium: 'App code. CI plus one AI review (Copilot).',
+  medium: 'App code. CI, then the nightly review reads it with everything else that changed that day.',
   high: 'Touches something where a mistake is costly. Do not merge on a green CI alone: it needs a review in a Claude session (and persona tests where it touches data or access). The `claude-review` status stays pending until a review of this exact commit is posted: `node scripts/claude-review.mjs --pr <n> --post approved|changes --summary "..."`. A new push needs a new review.',
 };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_LAYOUT, SPLIT_KEY, companionOf, isSplitMessage, layoutFromSearch, layoutToSearch, safePanePath, SURFACES, surfaceOf } from './core';
+import { DEFAULT_LAYOUT, SPLIT_KEY, companionOf, projectOf, surfacesFor, phasePartner, projectPairSearch, isSplitMessage, layoutFromSearch, layoutToSearch, safePanePath, SURFACES, surfaceOf } from './core';
 
 describe('safePanePath', () => {
   it('keeps this site’s pages', () => {
@@ -50,7 +50,7 @@ describe('surfaces', () => {
     expect(surfaceOf('/studio?tab=production&view=readiness')?.id).toBe('readiness');
     expect(surfaceOf('/studio?tab=production')?.id).toBe('story');
     expect(surfaceOf('/studio?tab=scenes')?.id).toBe('scenes');
-    expect(surfaceOf('/projects/abc')?.id).toBe('projects');
+    expect(surfaceOf('/projects/abc')?.id).toBe('project');
     expect(surfaceOf('/settings')).toBeNull();
   });
   it('opens the natural companion beside a page', () => {
@@ -216,5 +216,45 @@ describe('layoutFromSearch — edge cases', () => {
   it('round-trips valid paths that carry their own query', () => {
     const l = { a: '/studio?tab=production&view=onset&x=1', b: '/jobs?q=1', orientation: 'row' as const, ratio: 0.8, linked: true };
     expect(layoutFromSearch(layoutToSearch(l), custom)).toEqual(l);
+  });
+});
+
+describe('the project in two panes', () => {
+  it('pairs a project page with the script, and each production tool with its partner', () => {
+    expect(companionOf('/projects/abc')).toBe('/editor');
+    expect(companionOf('/studio?tab=production&view=breakdown')).toBe('/studio?tab=production&view=schedule');
+    expect(companionOf('/studio?tab=production&view=schedule')).toBe('/studio?tab=production&view=breakdown');
+    expect(companionOf('/soundtrack')).toBe('/editor');
+  });
+  it('opens the tool the phase works in beside the project', () => {
+    expect(phasePartner('development')).toBe('/editor');
+    expect(phasePartner('pre-production')).toBe('/studio?tab=production&view=breakdown');
+    expect(phasePartner('production')).toBe('/studio?tab=production&view=onset');
+    const l = layoutFromSearch(projectPairSearch('p1', 'post-production'));
+    expect(l.a).toBe('/projects/p1');
+    expect(l.b).toBe('/studio?tab=post');
+  });
+  it('accepts an open-beside message only for a safe path', () => {
+    const m = (href: string) => ({ [SPLIT_KEY]: true, type: 'open-beside', href });
+    expect(isSplitMessage(m('/studio?tab=library'))).toBe(true);
+    expect(isSplitMessage(m('https://evil.example'))).toBe(false);
+    expect(isSplitMessage(m('/split'))).toBe(false);
+  });
+});
+
+describe('the project-aware pane picker', () => {
+  it('finds the project a page belongs to', () => {
+    expect(projectOf('/projects/abc')).toBe('abc');
+    expect(projectOf('/projects/abc/')).toBe('abc');
+    expect(projectOf('/studio?tab=scenes&project=xyz')).toBe('xyz');
+    expect(projectOf('/projects')).toBeNull();
+    expect(projectOf('/editor')).toBeNull();
+  });
+  it('names a project page "This project" and offers it only when a pane is on a project', () => {
+    expect(surfaceOf('/projects/abc')?.label).toBe('This project');
+    expect(surfaceOf('/projects')?.label).toBe('Projects');
+    expect(surfacesFor(null)).toBe(SURFACES);
+    expect(surfacesFor('abc')[0]).toEqual({ id: 'project', label: 'This project', group: 'Project', href: '/projects/abc' });
+    expect(surfacesFor('abc')).toHaveLength(SURFACES.length + 1);
   });
 });

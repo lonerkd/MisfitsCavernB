@@ -67,7 +67,7 @@ function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back
     case 'studio':
       return { title: 'Studio', app: 'studio', links: [SCRIPT, LOUNGE] };
     case 'soundtrack':
-      return { title: 'Soundtrack', app: 'studio', links: [STUDIO] };
+      return { title: 'Sound', app: 'studio', links: [STUDIO] };
     case 'lounge':
       return { title: 'Lounge', app: 'lounge', links: [SCRIPT, STUDIO] };
     case 'call':

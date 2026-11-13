@@ -30,3 +30,13 @@
 .field { display: inline-flex; align-items: center; gap: 8px; font-size: 11px; color: var(--fg-muted); }
 .field input[type='color'] { width: 28px; height: 28px; padding: 0; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; cursor: pointer; }
 .field code { font-family: var(--mono); font-size: 11px; color: var(--fg); }
+
+.frost { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 14px; border-radius: var(--r-md); border: 1px solid var(--border-2); background: var(--surface); color: var(--fg); cursor: pointer; }
+.frost:hover { border-color: var(--border-accent); }
+.frostTrack { width: 34px; height: 20px; border-radius: 9999px; background: rgba(var(--fg-rgb), 0.18); position: relative; flex-shrink: 0; transition: background 0.2s; }
+.frostThumb { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--fg); transition: transform 0.2s; }
+.frost[aria-checked="true"] .frostTrack { background: var(--accent); }
+.frost[aria-checked="true"] .frostThumb { transform: translateX(14px); background: var(--on-accent); }
+.frostText { font-size: 12px; color: var(--fg-muted); }
+.frostText strong { color: var(--fg); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .frostTrack, .frostThumb { transition: none; } }

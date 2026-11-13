@@ -64,7 +64,9 @@ test.describe('Locations (local Supabase)', () => {
     const cave = page.getByRole('button', { name: /^CAVE/ });
     await expect(cave).toContainText('2 scenes', { timeout: 30_000 });
     await expect(page.getByRole('button', { name: /^RIDGE/ })).toContainText('exterior');
-    await expect(page.getByText('0 of 2 locked down')).toBeVisible();
+    const locked = page.getByRole('progressbar', { name: /progress/ });
+    await expect(locked).toHaveAttribute('aria-valuenow', '0');
+    await expect(locked).toHaveAttribute('aria-valuemax', '2');
 
     await cave.click();
     await page.getByLabel('Address').fill('1 Cave Rd');
@@ -74,7 +76,7 @@ test.describe('Locations (local Supabase)', () => {
     await expect.poll(async () => (await admin.from('project_locations').select('name, address, status, permit').eq('project_id', projectId).order('name')).data)
       // Every place the script names has a record (the film graph); only CAVE has been filled in.
       .toEqual([{ name: 'CAVE', address: '1 Cave Rd', status: 'confirmed', permit: 'not_needed' }, { name: 'RIDGE', address: null, status: 'scouting', permit: 'unknown' }]);
-    await expect(page.getByText('1 of 2 locked down')).toBeVisible();
+    await expect(locked).toHaveAttribute('aria-valuenow', '1');
     expect(await axeViolations(page)).toEqual([]);
     await page.screenshot({ path: 'test-results/locations.png', fullPage: true });
 

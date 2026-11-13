@@ -55,3 +55,9 @@ export function scriptMoods(text: string): MoodGroup[] {
   });
   return [...groups.values()].sort((a, b) => b.scenes.length - a.scenes.length || a.scenes[0].number - b.scenes[0].number);
 }
+
+/** The Spotify search words for a mood by name ("Dread" → "dark ambient horror score"); a plain film-score search for an unknown one. */
+export function moodQuery(mood: string): string {
+  const hit = RULES.find((r) => r.mood === mood) ?? Object.values(BY_TIME).find((t) => t.mood === mood) ?? (mood === QUIET.mood ? QUIET : null);
+  return hit?.query ?? 'cinematic film score';
+}
