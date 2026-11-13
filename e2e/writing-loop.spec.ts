@@ -50,7 +50,7 @@ test.describe('Writing loop (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     await page.goto(`/editor?script=${scriptId}`);
-    const ta = page.getByLabel('Script', { exact: true });
+    const ta = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(ta).toHaveCount(1, { timeout: 20_000 });
     const loop = page.getByRole('region', { name: 'Writing loop' });
     await expect(loop).toContainText('/ 500 words typed today', { timeout: 20_000 });

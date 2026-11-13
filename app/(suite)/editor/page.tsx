@@ -188,7 +188,7 @@ export default function EditorPage() {
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const locations = useProjectLocations(activeProject?.id ?? null);
   const lineOverrides = useLineOverrides(currentScript?.id ?? null);
-  const { writerMemory } = useReadingMemory(sessionUser?.id ?? null);
+  const { writerMemory, refresh: refreshWriterMemory } = useReadingMemory(sessionUser?.id ?? null);
   const readContext = useMemo(() => contextFromProject(
     Object.values(castings),
     corrections.rows,
@@ -1329,7 +1329,7 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
-              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={corrections.removeLocal} />}
+              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={(id) => { corrections.removeLocal(id); refreshWriterMemory(); }} />}
             </motion.div>
           </motion.div>
         )}

@@ -58,14 +58,14 @@ test.describe('Table read & runtime (local Supabase)', () => {
     await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 
     await page.goto(`/editor?script=${scriptId}`);
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
 
     // The editor indexes the scenes; record a table-read time on the first.
     await expect.poll(async () => (await admin.from('scenes').select('id').eq('project_id', projectId).is('removed_at', null)).data?.length, { timeout: 20_000 }).toBe(2);
     const first = (await admin.from('scenes').select('id').eq('project_id', projectId).order('scene_number').limit(1).single()).data!.id;
     await admin.from('scenes').update({ read_seconds: 30, read_at: new Date().toISOString() }).eq('id', first);
     await page.reload();
-    await expect(page.getByLabel('Script', { exact: true })).toHaveCount(1, { timeout: 20_000 });
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
 
     // The project pill arrives a beat after the script and shifts the view
     // switcher right; click once the header has settled.
@@ -83,7 +83,7 @@ test.describe('Table read & runtime (local Supabase)', () => {
 
     // A row jumps to its scene in the script.
     await table.getByRole('button', { name: /^2\. EXT\. RIDGE - DAWN/ }).click();
-    const ta = page.getByLabel('Script', { exact: true });
+    const ta = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(ta).toHaveCount(1, { timeout: 20_000 });
     await expect.poll(() => ta.evaluate((el) => {
       const t = el as HTMLTextAreaElement;

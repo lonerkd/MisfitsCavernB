@@ -48,7 +48,7 @@ test.describe('Editor gutter (local Supabase)', () => {
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
 
     await page.goto(`/editor?script=${scriptId}`);
-    const script = page.getByLabel('Script', { exact: true });
+    const script = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
 
     // Read from the headings: a morning after a night is the next story day.
@@ -96,7 +96,7 @@ test.describe('Editor gutter (local Supabase)', () => {
 
     // The scene index (and so MAYA, from the cast list) exists once the editor has synced it.
     await page.goto(`/editor?script=${scriptId}`);
-    const script = page.getByLabel('Script', { exact: true });
+    const script = page.getByRole('textbox', { name: 'Script', exact: true });
     await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
     await expect.poll(async () => (await admin.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA')).data?.length ?? 0, { timeout: 30_000 }).toBe(1);
     const maya = (await admin.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA').single()).data!;
