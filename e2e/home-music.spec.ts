@@ -33,6 +33,8 @@ test.describe('Music from the Cavern (local Supabase)', () => {
 
     const section = page.getByRole('region', { name: 'Music from the Cavern' });
     await expect(section).toBeVisible({ timeout: 30_000 });
+    // The section loads when it nears the screen (`WhenNear`), so bring it near.
+    await section.scrollIntoViewIfNeeded();
     for (const name of ['The Trophy', 'Misfits Cavern', 'Misfits Too', 'Solitude']) await expect(section.getByRole('button', { name })).toBeVisible();
     // It opens on Solitude, with Spotify's player already in the page.
     const frame = page.locator('iframe[title="Spotify player: Solitude"]');

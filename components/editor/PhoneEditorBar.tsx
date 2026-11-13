@@ -23,7 +23,7 @@ export function PhoneEditorBar({ ctx, slim, onScripts, onViews, onTools, onMore 
       background: 'var(--surface)', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)',
     }}>
       <Link href="/projects" aria-label="Back to projects" style={{ ...tap, color: 'var(--fg-muted)' }}><ArrowLeft size={20} /></Link>
-      <button type="button" onClick={onScripts} aria-label="Scripts and scenes" style={{ ...tap, flex: 1, minWidth: 0, justifyContent: 'flex-start', fontWeight: 600, fontSize: 16 }}>
+      <button type="button" onClick={onScripts} aria-label={`Scripts and scenes: ${currentScript?.title || 'Untitled'}${saving ? ' Saving…' : ''}`} style={{ ...tap, flex: 1, minWidth: 0, justifyContent: 'flex-start', fontWeight: 600, fontSize: 16 }}>
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentScript?.title || 'Untitled'}</span>
         {saving && <span aria-live="polite" style={{ fontSize: 11, color: 'var(--fg-muted)', fontWeight: 400 }}>Saving…</span>}
       </button>

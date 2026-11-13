@@ -39,7 +39,7 @@ test.describe('Real data, not presets (local Supabase)', () => {
     otherProjectId = (await admin.from('projects').insert({ title: `Earlier ${TAG}`, creator_id: userId, status: 'completed' }).select('id').single()).data!.id;
     await admin.from('campaigns').insert({ project_id: otherProjectId, title: 'Old run', platform: `Drive-in ${TAG}`, created_by: userId });
     await admin.from('jobs').insert({ title: `Night Shift ${TAG}`, role: 'Gaffer', created_by: userId, status: 'open', description: 'Two nights' });
-    await admin.from('portfolio_projects').insert({ user_id: userId, title: `Salt ${TAG}`, year: 2026, role: 'Director', category: 'Short Film' });
+    await admin.from('portfolio_projects').insert({ user_id: userId, title: `Salt ${TAG}`, visibility: 'public', year: 2026, role: 'Director', category: 'Short Film' });
   });
 
   test.afterAll(async () => {

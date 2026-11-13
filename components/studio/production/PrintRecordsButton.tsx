@@ -41,10 +41,10 @@ export function PrintRecordsButton({ kind }: { kind: RecordKind }) {
 
   return (
     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, marginBottom: 8 }}>
-      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(printDocument, 'Could not open the print dialog.')} disabled={busy} aria-label={`Print ${RECORD_PRINT[kind].title} (or save as PDF)`}>
+      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(printDocument, 'Could not open the print dialog.')} disabled={busy} aria-label={`Print / PDF: ${RECORD_PRINT[kind].title}`}>
         <Printer size={11} aria-hidden /> Print / PDF
       </button>
-      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(downloadCsv, 'Could not save the file.')} disabled={busy} aria-label={`Save ${RECORD_PRINT[kind].title} as a spreadsheet (CSV)`}>
+      <button type="button" className={cx(s.btn, s.small)} onClick={() => void run(downloadCsv, 'Could not save the file.')} disabled={busy} aria-label={`CSV: ${RECORD_PRINT[kind].title}`}>
         <Download size={11} aria-hidden /> CSV
       </button>
     </div>
