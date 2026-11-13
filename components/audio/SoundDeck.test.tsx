@@ -11,7 +11,8 @@ const spotify = {
 };
 vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }));
-vi.mock('@/components/shell/CavernVisualizer', () => ({ CavernVisualizer: ({ onClose }: { onClose: () => void }) => <button onClick={onClose}>cave is open</button> }));
+const cavern = vi.hoisted(() => ({ open: vi.fn() }));
+vi.mock('@/lib/cavern/CavernContext', () => ({ useCavern: () => ({ mode: 'closed', open: cavern.open, minimise: vi.fn(), close: vi.fn() }) }));
 vi.mock('./ListenWithoutPremium', () => ({ ListenWithoutPremium: () => <div>embedded players here</div> }));
 import { SoundDeck } from './SoundDeck';
 
@@ -46,11 +47,10 @@ describe('SoundDeck', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Play here' }));
     expect(spotify.playHere).toHaveBeenCalledOnce();
   });
-  it('opens the full-screen cavern and closes it', () => {
+  it('asks for the full-screen cavern (the suite’s one cavern, which survives leaving the page)', () => {
     render(<SoundDeck />);
     fireEvent.click(screen.getByRole('button', { name: 'Full screen cavern' }));
-    fireEvent.click(screen.getByText('cave is open'));
-    expect(screen.queryByText('cave is open')).toBeNull();
+    expect(cavern.open).toHaveBeenCalledOnce();
   });
   it('switches to listening without Premium (the embedded players show) and disconnects', () => {
     const { rerender } = render(<SoundDeck />);
