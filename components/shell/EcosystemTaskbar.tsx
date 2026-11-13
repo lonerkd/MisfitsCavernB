@@ -493,6 +493,9 @@ export default function EcosystemTaskbar() {
     </span>
   ) : null;
 
+  // What the handle shows as its name: the crumbs when they are on screen (its accessible name has to contain the visible text).
+  const handleTitle = crumbs && mode !== 'rest' && (mode === 'context' || deck) ? zoneChain.map((z) => z.title).join(' › ') : title;
+
   // On the deck, everything; over a page zone, just what acts on it (the links are a pointer-trip away anyway).
   const shown = deck ? controls : controls.filter(c => c.kind !== 'link');
   const hasControls = (deck || mode === 'context') && (fields.length > 0 || shown.length > 0);
@@ -619,7 +622,7 @@ export default function EcosystemTaskbar() {
               type="button"
               className={s.handle}
               aria-label={pinned ? 'Close the island' : deck ? 'Keep the island open' : `Open the island — ${[
-                title,
+                handleTitle,
                 mode === 'live' && transient ? transient.label : '',
                 mode === 'activity' && activity ? [activity.title, activity.detail].filter(Boolean).join(', ') : '',
                 condition.label && mode !== 'dot' ? condition.label : '',
