@@ -25,7 +25,7 @@ describe('change reviews', () => {
   });
 
   it('one decision per change (upsert)', async () => {
-    await table(cast.sam.client).upsert({ project_id: projectId, script_id: scriptId, change_key: 'abc', kind: 'reject' });
+    await table(cast.sam.client).upsert({ project_id: projectId, script_id: scriptId, change_key: 'abc', kind: 'reject' }, { onConflict: 'project_id,script_id,change_key' });
     const { data } = await table(cast.sam.client).select('kind').eq('project_id', projectId).eq('script_id', scriptId);
     expect(data).toHaveLength(1);
     expect(data![0].kind).toBe('reject');
