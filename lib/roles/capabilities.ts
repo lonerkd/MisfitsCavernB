@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { logActivity } from '@/lib/supabase/activity';
 import { logAuditAction } from '@/lib/supabase/audit';
 
-import { templatesFrom, type CapabilityDef, type Templates } from './core';
+import { describeRole, resolveCapabilities, templatesFrom, type CapabilityDef, type CrewTier, type Templates } from './core';
 
 export * from './core';
 
@@ -50,6 +50,40 @@ export function useMyCapabilities(projectId: string | null | undefined): { can: 
     return () => { alive = false; };
   }, [projectId]);
   return useMemo(() => ({ caps, loading, can: (key: string) => caps.has(key) }), [caps, loading]);
+}
+
+/**
+ * In plain words, what someone in this craft at this access could do on a project: for the owner about to invite them and for
+ * the person invited (who is not on the project yet, so the database cannot answer for them). Null until the catalogue loads.
+ */
+export function useRoleSentence(craft: string | null, tier: CrewTier): string | null {
+  const [catalog, setCatalog] = useState<CapabilityCatalog | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadCapabilityCatalog().then((c) => { if (alive) setCatalog(c); }).catch(() => { if (alive) setCatalog(null); });
+    return () => { alive = false; };
+  }, []);
+  return useMemo(() => {
+    if (!catalog) return null;
+    const held = resolveCapabilities(catalog.defs, { tier, crafts: craft ? [craft] : [], overrides: {} }, catalog.templates);
+    return describeRole({ craft, tier, held, defs: catalog.defs }).text;
+  }, [catalog, craft, tier]);
+}
+
+export interface MyRole { project_id: string; craft: string | null; tier: CrewTier; held: string[] }
+
+/** The signed-in person's confirmed crew roles on the given projects, each with what the database says they can do there. */
+export async function getMyRoles(userId: string, projectIds: string[]): Promise<MyRole[]> {
+  if (!projectIds.length) return [];
+  const { data, error } = await supabase.from('project_crew').select('project_id, role, craft')
+    .eq('user_id', userId).eq('status', 'confirmed').in('project_id', projectIds);
+  if (error) throw new Error(error.message || 'Could not read your roles');
+  return Promise.all((data ?? []).map(async (r) => ({
+    project_id: r.project_id,
+    craft: r.craft,
+    tier: (r.role as CrewTier),
+    held: await getMyCapabilities(r.project_id).catch(() => [] as string[]),
+  })));
 }
 
 export interface CrewRightsRows {

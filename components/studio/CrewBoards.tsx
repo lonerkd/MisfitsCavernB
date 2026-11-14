@@ -13,6 +13,7 @@ import { usePillZone } from '@/lib/os/PillContext';
 import { searchProfiles, inviteToCrew } from '@/lib/supabase/profiles';
 import { Trash2, Search } from 'lucide-react';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { RoleSentence } from '@/components/roles/RoleSentence';
 import type { CrewRole } from '@/lib/supabase/crew-management';
 
 export function BeatCard({ beat, index, onDelete, onPush, pushing }: { beat: any; index: number; onDelete?: (id: string) => void; onPush?: (beat: any) => void; pushing?: boolean }) {
@@ -253,6 +254,7 @@ export function RecruitModal({ isOpen, onClose, projectId, onSuccess }: { isOpen
                      <option value="lead">Lead — can add and edit</option>
                      <option value="viewer">View only</option>
                    </select>
+                   <RoleSentence craft={craft} tier={access} label="What this person will be able to do" />
                  </div>
 
                  <div style={{ display: 'flex', gap: 12 }}>

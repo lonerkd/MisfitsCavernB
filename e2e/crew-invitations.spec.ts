@@ -66,6 +66,9 @@ test.describe('Crew invitations (local Supabase)', () => {
     await expect(card.getByRole('heading', { name: 'Invitations' })).toBeVisible({ timeout: 30_000 });
     const [yes, no] = projects;
     await expect(card.getByRole('article', { name: `Invitation to ${yes.title}` })).toContainText('invited you as Gaffer · crew access');
+    // The invitation says in words what they would be able to do, before they accept.
+    await expect(card.getByRole('article', { name: `Invitation to ${yes.title}` }).getByRole('note')).toContainText("Gaffer: You can add to and edit the project's tools", { timeout: 30_000 });
+    await expect(card.getByRole('article', { name: `Invitation to ${yes.title}` }).getByRole('note')).toContainText('You cannot see');
     expect(await axeViolations(page)).toEqual([]);
 
     await card.getByRole('article', { name: `Invitation to ${yes.title}` }).getByRole('button', { name: 'Accept' }).click();
@@ -73,6 +76,11 @@ test.describe('Crew invitations (local Supabase)', () => {
     await expect(card.getByRole('article', { name: `Invitation to ${yes.title}` })).toHaveCount(0);
     const joined = await admin.from('project_crew').select('status, role, craft').eq('project_id', yes.id).eq('user_id', guest.id).single();
     expect(joined.data).toEqual({ status: 'confirmed', role: 'contributor', craft: 'Gaffer' });
+
+    // Joining puts the role on Your day: which project, the craft, and what it can and cannot do.
+    const role = page.locator('[aria-labelledby="today-roles"]');
+    await expect(role.getByRole('article', { name: `Your role on ${yes.title}` })).toContainText("Gaffer: You can add to and edit the project's tools", { timeout: 30_000 });
+    await expect(role.getByRole('article', { name: `Your role on ${no.title}` })).toHaveCount(0);
 
     await card.getByRole('article', { name: `Invitation to ${no.title}` }).getByRole('button', { name: 'Decline' }).click();
     await expect(page.getByText('Invitation declined')).toBeVisible();

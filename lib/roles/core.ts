@@ -64,3 +64,66 @@ export function groupByArea(defs: ReadonlyArray<CapabilityDef>): Array<{ area: s
   }
   return out;
 }
+
+const lower = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
+const joinWith = (word: string) => (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} ${word} ${xs[xs.length - 1]}`);
+const joinWords = joinWith('and');
+const joinOr = joinWith('or');
+
+/** The three kinds of information a member does not get by default; what a role sees of them is said out loud. */
+const SENSITIVE: ReadonlyArray<{ read: string; write: string; thing: string }> = [
+  { read: 'budget.read', write: 'budget.write', thing: 'the budget' },
+  { read: 'casting.read', write: 'casting.decide', thing: 'casting submissions' },
+  { read: 'paperwork.read', write: 'paperwork.write', thing: 'paperwork' },
+];
+
+export interface RoleDescription {
+  /** What the role can do beyond adding to and editing the project's tools, in plain lower-case phrases. */
+  can: string[];
+  /** What the role cannot see or change among the budget, casting and paperwork. */
+  cannot: string[];
+  /** One sentence pair a person can read: who they are on the project, what they can do, what they cannot. */
+  text: string;
+}
+
+/**
+ * Says in words what a person on a project can and cannot do: the sentence on the invitation, in Recruit and on Your day.
+ * `held` is the set of capabilities they hold (the database's answer, or `resolveCapabilities` for someone not yet on the
+ * project); `tier` is the access they were given (a view-only member can read and never change).
+ */
+export function describeRole(a: { craft: string | null; tier: CrewTier; held: ReadonlySet<string>; defs: ReadonlyArray<CapabilityDef> }): RoleDescription {
+  const sensitiveKeys = new Set(SENSITIVE.flatMap((s) => [s.read, s.write]));
+  const can: string[] = [];
+  for (const d of a.defs) {
+    if (!a.held.has(d.key)) continue;
+    if (sensitiveKeys.has(d.key)) continue; // said once, below, so "run" does not repeat "see"
+    can.push(lower(d.label));
+  }
+  const cannot: string[] = [];
+  for (const s of SENSITIVE) {
+    const reads = a.held.has(s.read);
+    const writes = a.held.has(s.write);
+    if (writes) can.push(`run ${s.thing}`);
+    else if (reads) { can.push(`see ${s.thing}`); cannot.push(`edit ${s.thing}`); }
+    else cannot.push(`see ${s.thing}`);
+  }
+  const who = a.craft ?? (a.tier === 'viewer' ? 'Viewer' : 'Crew member');
+  const head = a.tier === 'viewer' ? 'You can read the project but not change it' : "You can add to and edit the project's tools";
+  let text = `${who}: ${head}${can.length ? `, and ${joinWords(can)}` : ''}.`;
+  // "cannot see the budget, casting submissions or paperwork", then "or edit the budget": one verb per group.
+  const unseen = cannot.filter((c) => c.startsWith('see ')).map((c) => c.slice(4));
+  const uneditable = cannot.filter((c) => c.startsWith('edit ')).map((c) => c.slice(5));
+  const parts = [unseen.length ? `see ${joinOr(unseen)}` : '', uneditable.length ? `edit ${joinOr(uneditable)}` : ''].filter(Boolean);
+  if (parts.length) text += ` You cannot ${parts.join(' or ')}.`;
+  return { can, cannot, text };
+}
+
+/** The Studio tools a role's capabilities open, for the shortcuts on Your day: only what the person holds, never a door that says no. */
+export function toolsFor(held: ReadonlySet<string>): Array<{ label: string; view: string }> {
+  const out: Array<{ label: string; view: string }> = [];
+  if (held.has('schedule.write') || held.has('callsheet.issue')) out.push({ label: 'Schedule', view: 'schedule' });
+  if (held.has('budget.read')) out.push({ label: 'Money', view: 'money' });
+  if (held.has('casting.read') || held.has('casting.decide')) out.push({ label: 'Cast & crew', view: 'crew' });
+  if (held.has('paperwork.read')) out.push({ label: 'Paperwork', view: 'paperwork' });
+  return out;
+}
