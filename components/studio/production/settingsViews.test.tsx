@@ -133,7 +133,7 @@ describe('purchase orders and insurance claims follow the budget', () => {
   it.each([
     ['Purchase orders', PoView, 'purchaseOrders', po, 'Lens House'],
     ['Insurance claims', ClaimsView, 'claims', claim, 'Camera dropped'],
-  ] as const)('%s: no budget says who holds it and shows no form', async (name, View, kind, record) => {
+  ] as const)('%s: no budget says who holds it and shows no form', async (name, View, kind, record, _text) => {
     held = [];
     store = { [kind]: [record] };
     render(<View />);
