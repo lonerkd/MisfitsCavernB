@@ -5655,6 +5655,17 @@ export type Database = {
         Returns: undefined;
       };
       my_capabilities: { Args: { pid: string }; Returns: string[] };
+      my_crew_invitations: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          craft: string;
+          created_at: string;
+          invited_by_name: string;
+          project_id: string;
+          role: string;
+          title: string;
+        }[];
+      };
       patch_project_settings: {
         Args: { p_patch: Json; p_project_id: string };
         Returns: Json;
@@ -5719,6 +5730,10 @@ export type Database = {
       respond_to_application: {
         Args: { p_application: string; p_close?: boolean; p_status: string };
         Returns: Json;
+      };
+      respond_to_crew_invitation: {
+        Args: { p_accept: boolean; p_project: string };
+        Returns: undefined;
       };
       search_lounge: {
         Args: { p_channel?: string; p_limit?: number; p_query: string };

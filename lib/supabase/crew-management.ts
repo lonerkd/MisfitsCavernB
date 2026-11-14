@@ -221,3 +221,28 @@ export async function getMyCraftOn(projectId: string, userId: string): Promise<s
   if (error) throw error;
   return data?.craft ?? null;
 }
+
+/** An open invitation to join a project's crew, as its invitee sees it (they cannot read the project itself yet). */
+export interface CrewInvitation {
+  project_id: string;
+  title: string;
+  /** The access they are offered: lead, crew or view-only. */
+  role: CrewRole;
+  /** What they would do on the project. */
+  craft: string | null;
+  invited_by_name: string | null;
+  created_at: string;
+}
+
+/** The signed-in person's open invitations, newest first. */
+export async function getMyInvitations(): Promise<CrewInvitation[]> {
+  const { data, error } = await supabase.rpc('my_crew_invitations');
+  if (error) throw error;
+  return (data ?? []) as CrewInvitation[];
+}
+
+/** Accept or decline the signed-in person's own open invitation; the person who invited them is told. */
+export async function respondToInvitation(projectId: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc('respond_to_crew_invitation', { p_project: projectId, p_accept: accept });
+  if (error) throw error;
+}
