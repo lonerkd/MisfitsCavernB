@@ -30,6 +30,7 @@ test.describe('The budget follows the role (local Supabase)', () => {
 
   test.afterAll(async () => {
     if (!admin) return;
+    await admin.from('production_records').delete().eq('project_id', projectId);
     await admin.from('budget_items').delete().eq('project_id', projectId);
     await admin.from('project_crew').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
@@ -71,5 +72,38 @@ test.describe('The budget follows the role (local Supabase)', () => {
     await open();
     await expect(page.locator('#money-spend')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText('Spend and vendors are kept by the people who run it')).toHaveCount(0);
+  });
+
+  test('purchase orders are the money too: hidden, then read-only, then run', async ({ page }) => {
+    test.setTimeout(120_000);
+    await admin.from('production_records').insert({ project_id: projectId, kind: 'purchaseOrders', item_id: 'po-e2e', data: { id: 'po-e2e', poNumber: 'PO-77', vendor: `Lens House ${TAG}`, department: 'Camera', amount: '1500', status: 'draft' }, created_by: owner.id });
+    await setCraft('Casting director');
+    await page.goto('/auth');
+    await page.fill('input[name="email"]', crew.email);
+    await page.fill('input[name="password"]', PASSWORD);
+    await page.locator('button[type="submit"]').click();
+    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+
+    const open = async () => {
+      await page.goto('/studio?tab=production&view=po');
+      const picker = page.getByLabel('Active project');
+      await picker.waitFor();
+      if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    };
+
+    await open();
+    await expect(page.getByText('Purchase orders are held by the people who run the money')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(`Lens House ${TAG}`)).toHaveCount(0);
+
+    await setCraft('Production designer');
+    await open();
+    await expect(page.getByText(`Lens House ${TAG}`)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('You can read these. Adding and changing them is for the people who run the money.')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Add/ })).toHaveCount(0);
+
+    await setCraft('Production accountant');
+    await open();
+    await expect(page.getByRole('button', { name: /Add/ })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('You can read these.')).toHaveCount(0);
   });
 });

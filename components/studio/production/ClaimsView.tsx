@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -14,6 +15,9 @@ const EMPTY: Omit<Entry, 'id'> = { incident: '', date: '', policy: '', amount: '
 /** Insurance claims: what happened, when, under which policy, for how much, and where the claim stands. */
 export function ClaimsView() {
   const { project } = useStudio();
+  const caps = useMyCapabilities(project.id);
+  const seesMoney = caps.can('budget.read');
+  const runsMoney = caps.can('budget.write');
   const { items, save, remove } = useSettingsList('claims');
   const [draft, setDraft] = useState<Omit<Entry, 'id'>>(EMPTY);
 
@@ -27,6 +31,13 @@ export function ClaimsView() {
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<ShieldAlert size={16} />} eyebrow="Budget & docs" title="Insurance claims" purpose="Insurance claims: what happened, the amount and where it stands." accent={project.accent_color} summary={<>{items.length} claims · {items.filter((i) => i.status === 'filed' || i.status === 'in review').length} open</>} />
+      {!caps.loading && !seesMoney && (
+        <p className={s.hint} role="note">Insurance claims are held by the people who run the money. Ask the project owner if you need to see them.</p>
+      )}
+      {seesMoney && !runsMoney && (
+        <p className={s.hint} role="note">You can read these. Adding and changing them is for the people who run the money.</p>
+      )}
+      {runsMoney && (
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label className={s.field} style={{ flex: '1 1 200px' }}>
@@ -52,6 +63,7 @@ export function ClaimsView() {
           <textarea className={s.textarea} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} rows={2} />
         </label>
       </div>
+      )}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {items.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
@@ -60,10 +72,10 @@ export function ClaimsView() {
               {m.date && <span className={s.hint}>{m.date}</span>}
               {m.policy && <span className={s.hint}>{m.policy}</span>}
               {m.amount && <span className={s.chip}>{m.amount}</span>}
-              <select className={s.input} style={{ width: 120, fontSize: 12 }} aria-label={`Status of ${m.incident}`} value={m.status} onChange={(e) => void setStatus(m.id, e.target.value as Entry['status'])}>
+              <select className={s.input} style={{ width: 120, fontSize: 12 }} aria-label={`Status of ${m.incident}`} disabled={!runsMoney} value={m.status} onChange={(e) => void setStatus(m.id, e.target.value as Entry['status'])}>
                 {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
               </select>
-              <button className={s.btn} onClick={() => remove(m.id)} title="Delete"><Trash2 size={12} /></button>
+              {runsMoney && <button className={s.btn} onClick={() => remove(m.id)} title="Delete"><Trash2 size={12} /></button>}
             </div>
             {m.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{m.notes}</p>}
           </li>

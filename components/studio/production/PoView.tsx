@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Receipt, Plus, Trash2 } from 'lucide-react';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -13,6 +14,9 @@ const STATUSES: PoEntry['status'][] = ['draft', 'approved', 'paid'];
 
 export function PoView() {
   const { project } = useStudio();
+  const caps = useMyCapabilities(project.id);
+  const seesMoney = caps.can('budget.read');
+  const runsMoney = caps.can('budget.write');
   const { items, save, remove } = useSettingsList('purchaseOrders');
   const [draft, setDraft] = useState<Omit<PoEntry, 'id'>>({
     poNumber: '',
@@ -47,6 +51,13 @@ export function PoView() {
           ))}
         </div></>} />
 
+      {!caps.loading && !seesMoney && (
+        <p className={s.hint} role="note">Purchase orders are held by the people who run the money. Ask the project owner if you need to see them.</p>
+      )}
+      {seesMoney && !runsMoney && (
+        <p className={s.hint} role="note">You can read these. Adding and changing them is for the people who run the money.</p>
+      )}
+      {runsMoney && (
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <label className={s.field} style={{ flex: '0 0 100px' }}>
@@ -70,6 +81,7 @@ export function PoView() {
           </button>
         </div>
       </div>
+      )}
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filtered.map((p) => (
@@ -83,13 +95,17 @@ export function PoView() {
                 className={s.input}
                 style={{ width: 100, fontSize: 12 }}
                 value={p.status}
+                disabled={!runsMoney}
+                aria-label={`Status of ${p.poNumber || p.vendor}`}
                 onChange={(e) => updateStatus(p.id, e.target.value as PoEntry['status'])}
               >
                 {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
               </select>
-              <button className={s.btn} onClick={() => remove(p.id)} title="Delete">
-                <Trash2 size={12} />
-              </button>
+              {runsMoney && (
+                <button className={s.btn} onClick={() => remove(p.id)} title="Delete">
+                  <Trash2 size={12} />
+                </button>
+              )}
             </div>
           </li>
         ))}
