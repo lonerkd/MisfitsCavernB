@@ -1,4 +1,3 @@
-
 bucket assets public=true limit=- mime=-
 bucket project-media public=false limit=52428800 mime={image/*,video/*,audio/*,application/pdf}
 bucket project-papers public=false limit=20971520 mime={application/pdf,image/*}
@@ -1570,7 +1569,7 @@ function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b94618
 function internal.call_sheets_link_day() body=3c1981592353a6cfe1288e3d9addeeac
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc
 function internal.calls_link_character() body=723517674440598f8d5906d778acf13f
-function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
+function internal.can_access_project(pid uuid) body=2aac6f9812f7ccb960f846b5e03181ca
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
 function internal.can_read_paper(object_name text) body=e50aab81750cf0c53c7d4a93c2d00753
@@ -1589,7 +1588,7 @@ function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453e
 function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
-function internal.is_project_member(pid uuid) body=c8759b6b07722e2dd0a108b261469d6e
+function internal.is_project_member(pid uuid) body=3ec152b6e40d467766b845bd2d662376
 function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
 function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
 function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
@@ -1682,6 +1681,7 @@ function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
 function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
 function public.my_capabilities(pid uuid) body=631c2a58e495b45c74ad057fed46f411
+function public.my_crew_invitations() body=c17ace8e101880790eb1b131beb5a1ee
 function public.patch_project_settings(p_project_id uuid, p_patch jsonb) body=8e1b308fa68bea295ecb87c1e84bd5af
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
@@ -1691,6 +1691,7 @@ function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f
 function public.reading_memory_for_user(p_user_id uuid, p_format text) body=2a66ee1818dfad753f1ee9a348cafd3d
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=9ebf4ce019e4068e892c89fa924e25f0
+function public.respond_to_crew_invitation(p_project uuid, p_accept boolean) body=1dda50eb3be81f1d8701dbe9958e8031
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
 function public.search_lounge(p_query text, p_channel uuid, p_limit integer) body=eb06476586cc9c7ecf2d318c02705a9a
 function public.search_suite(p_query text, p_limit integer) body=4d14749d29aca4c8937a6d64ac672b57
@@ -1834,6 +1835,7 @@ grant function public.log_writing(p_day date, p_words integer, p_sprint boolean)
 grant function public.lounge_unread() authenticated,postgres,service_role
 grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
 grant function public.my_capabilities(pid uuid) authenticated,postgres,service_role
+grant function public.my_crew_invitations() authenticated,postgres,service_role
 grant function public.patch_project_settings(p_project_id uuid, p_patch jsonb) authenticated,postgres,service_role
 grant function public.pin_message(p_message uuid, p_pinned boolean) authenticated,postgres,service_role
 grant function public.project_availability(p_project uuid, p_from date, p_to date) authenticated,postgres,service_role
@@ -1843,6 +1845,7 @@ grant function public.projects_progress(p_projects uuid[]) authenticated,postgre
 grant function public.reading_memory_for_user(p_user_id uuid, p_format text) authenticated,postgres,service_role
 grant function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) anon,authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
+grant function public.respond_to_crew_invitation(p_project uuid, p_accept boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
 grant function public.search_lounge(p_query text, p_channel uuid, p_limit integer) authenticated,postgres,service_role
 grant function public.search_suite(p_query text, p_limit integer) authenticated,postgres,service_role

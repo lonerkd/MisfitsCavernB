@@ -11,7 +11,7 @@ vi.mock('./activity', () => ({ logActivity }));
 vi.mock('./audit', () => ({ logAuditAction }));
 vi.mock('./notifications', () => ({ notify }));
 
-import { assignCrewMember, setCrewCraft, updateCrewMemberRole } from './crew-management';
+import { assignCrewMember, getMyInvitations, respondToInvitation, setCrewCraft, updateCrewMemberRole } from './crew-management';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -61,5 +61,33 @@ describe('setCrewCraft', () => {
     await setCrewCraft('project-1', 'user-1', null, 'user-1');
     expect(logActivity).toHaveBeenCalledWith("cleared a crew member's craft", 'project', 'project-1');
     expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+describe('answering an invitation', () => {
+  it('reads the open invitations through the database function', async () => {
+    const inv = { project_id: 'p1', title: 'Night Shift', role: 'contributor', craft: 'Gaffer', invited_by_name: 'sam', created_at: '2026-11-14' };
+    const fake = useFake({}, { my_crew_invitations: { data: [inv], error: null } });
+
+    await expect(getMyInvitations()).resolves.toEqual([inv]);
+    expect(fake.calls.map((c) => c.table)).toContain('rpc:my_crew_invitations');
+  });
+
+  it('says so when the invitations cannot be read, and gives none when there are none', async () => {
+    useFake({}, { my_crew_invitations: { data: null, error: { message: 'boom' } } });
+    await expect(getMyInvitations()).rejects.toMatchObject({ message: 'boom' });
+    useFake({}, { my_crew_invitations: { data: null, error: null } });
+    await expect(getMyInvitations()).resolves.toEqual([]);
+  });
+
+  it('accepts or declines the project it is given, and passes the refusal on', async () => {
+    const fake = useFake({}, { respond_to_crew_invitation: { data: null, error: null } });
+    await respondToInvitation('p1', true);
+    await respondToInvitation('p1', false);
+    const sent = fake.calls.filter((c) => c.table === 'rpc:respond_to_crew_invitation').map((c) => c.args[0]);
+    expect(sent).toEqual([{ p_project: 'p1', p_accept: true }, { p_project: 'p1', p_accept: false }]);
+
+    useFake({}, { respond_to_crew_invitation: { data: null, error: { message: 'There is no open invitation to answer' } } });
+    await expect(respondToInvitation('p1', true)).rejects.toMatchObject({ message: expect.stringMatching(/no open invitation/) });
   });
 });

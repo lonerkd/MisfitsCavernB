@@ -11,11 +11,12 @@ import { plain } from '@/lib/film/mentions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Circle, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
+import { Bell, Circle, UserPlus, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
+import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
 import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
 import { updateTask } from '@/lib/supabase/project-hub';
-import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES } from '@/lib/os';
+import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES, osAdoptSession } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { fetchNotifications, markRead, type Notification } from '@/lib/supabase/notifications';
 import { getLoungeUnread, type LoungeUnread } from '@/lib/supabase/messages';
@@ -60,6 +61,8 @@ export function YourDay() {
   const [unread, setUnread] = useState<Unread[]>([]);
   const [updates, setUpdates] = useState<Notification[]>([]);
   const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
+  const [invites, setInvites] = useState<CrewInvitation[]>([]);
+  const [answering, setAnswering] = useState<string | null>(null);
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
@@ -70,12 +73,14 @@ export function YourDay() {
     if (!userId) return Promise.resolve();
     return (async () => {
       const ownedIds = projects.filter((p) => p.creator_id === userId).map((p) => p.id);
-      const [work, un, notes, owner] = await Promise.all([
+      const [work, un, notes, owner, invs] = await Promise.all([
         getTodayWork(userId, projectIds, today),
         getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
         fetchNotifications(userId, 8).catch(() => [] as Notification[]),
         // A nicety for the owner: if it does not load, the cards simply show no flags.
         getOwnerData(ownedIds, today).catch((): OwnerData | null => null),
+        // An open invitation is the one thing here someone is waiting on: if it does not load, say nothing rather than guess.
+        getMyInvitations().catch((): CrewInvitation[] => []),
       ]);
 
       // Name what's unread: channels by name (and project), people by username.
@@ -88,9 +93,10 @@ export function YourDay() {
         })),
         ...named.people.map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
       ].sort((a, b) => b.count - a.count);
-      return { work, notes, rows, owner };
-    })().then(({ work, notes, rows, owner }) => {
+      return { work, notes, rows, owner, invs };
+    })().then(({ work, notes, rows, owner, invs }) => {
       setOwnerData(owner);
+      setInvites(invs);
       setSheets(work.sheets);
       setMyCalls(work.myCalls);
       setTasks(work.tasks);
@@ -124,6 +130,23 @@ export function YourDay() {
     toast('Done', 'success');
   };
 
+  const answer = async (inv: CrewInvitation, accept: boolean) => {
+    setAnswering(inv.project_id);
+    try {
+      await respondToInvitation(inv.project_id, accept);
+    } catch (e) {
+      console.error('Could not answer the invitation:', e);
+      toast('Could not send your answer. Try again.', 'error');
+      setAnswering(null);
+      return;
+    }
+    setInvites((l) => l.filter((x) => x.project_id !== inv.project_id));
+    setAnswering(null);
+    toast(accept ? `You joined “${inv.title}”` : 'Invitation declined', 'success');
+    // The project is now theirs to open: load the list again so it appears.
+    if (accept && user) osAdoptSession({ id: user.id, email: (profile as { email?: string | null } | null)?.email ?? null });
+  };
+
   const openUpdate = async (n: Notification) => {
     if (!n.read) { setUpdates((l) => l.map((x) => (x.id === n.id ? { ...x, read: true } : x))); void markRead(n.id); }
     if (n.link) router.push(n.link);
@@ -151,6 +174,30 @@ export function YourDay() {
 
       <ContinueOffer inline className={t.wide} />
       <InstallHint className={t.wide} />
+
+      {invites.length > 0 && (
+        <section className={`${t.card} ${t.wide}`} aria-labelledby="today-invites">
+          <div className={t.cardHead}><h2 id="today-invites" className={t.cardTitle}><UserPlus size={14} aria-hidden /> Invitations</h2></div>
+          {invites.map((inv) => (
+            <article key={inv.project_id} className={t.day} aria-label={`Invitation to ${inv.title}`}>
+              <div className={t.dayBody}>
+                <h3 className={t.dayTitle}>{inv.title}</h3>
+                <div className={t.facts}>
+                  <span className={t.fact}>
+                    {inv.invited_by_name ? `${inv.invited_by_name} invited you` : 'You were invited'}
+                    {inv.craft ? ` as ${inv.craft}` : ''}
+                    {` · ${inv.role === 'viewer' ? 'view only' : inv.role === 'lead' ? 'lead access' : 'crew access'}`}
+                  </span>
+                </div>
+                <div className={t.actions}>
+                  <button type="button" className={`${t.btn} ${t.primary}`} disabled={answering === inv.project_id} onClick={() => void answer(inv, true)}>Accept</button>
+                  <button type="button" className={t.btn} disabled={answering === inv.project_id} onClick={() => void answer(inv, false)}>Decline</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
       <section className={`${t.card} ${t.wide}`} aria-labelledby="today-set">
         <div className={t.cardHead}><h2 id="today-set" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> On set</h2></div>
