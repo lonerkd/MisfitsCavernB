@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FileCheck2, FileUp, Lightbulb, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { useCanShape } from '@/lib/brief';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import {
   DOC_KINDS, STATUS_LABEL, docState, paperworkGaps, studio, useCastings, useDocuments, useProjectLocations,
   type DocKind, type DocStatus, type ProjectDocument, type Vendor,
@@ -32,11 +32,16 @@ const localToday = () => {
  * file (kept out of the library, private). "Still needed" reads the
  * production itself: a permit for each location that needs one, a release for
  * everyone cast, a deal memo for the crew, insurance. The crew see only their
- * own paperwork here.
+ * own paperwork here. What a role holds is its craft's `paperwork.read` (all of
+ * it) and `paperwork.write` (add and edit); a document about you is yours
+ * whatever your craft.
  */
 export function PaperworkView({ crew }: { crew: CrewRow[] }) {
-  const { project, isOwner, userId } = useStudio();
-  const canShape = useCanShape(project.id, isOwner);
+  const { project, userId } = useStudio();
+  const caps = useMyCapabilities(project.id);
+  const readsAll = caps.can('paperwork.read');
+  const canShape = caps.can('paperwork.write');
+  const seesVendors = caps.can('budget.read');
   const docs = useDocuments(project.id);
   const locations = useProjectLocations(project.id);
   const castings = useCastings(project.id);
@@ -45,7 +50,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
   const { toast } = useToast();
   const today = localToday();
 
-  useEffect(() => { if (canShape) studio.listVendors(project.id).then(setVendors).catch(() => setVendors([])); }, [project.id, canShape]);
+  useEffect(() => { if (canShape && seesVendors) studio.listVendors(project.id).then(setVendors).catch(() => setVendors([])); }, [project.id, canShape, seesVendors]);
 
   const gaps = useMemo(() => (canShape ? paperworkGaps({
     docs: docs.rows,
@@ -64,7 +69,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 960 }}>
-      <ToolHeader icon={<FileCheck2 size={16} />} eyebrow="Budget & docs" title={canShape ? 'Paperwork' : 'Your paperwork'} purpose="Permits, insurance, releases and contracts, and what is still needed." accent={project.accent_color}
+      <ToolHeader icon={<FileCheck2 size={16} />} eyebrow="Budget & docs" title={readsAll ? 'Paperwork' : 'Your paperwork'} purpose="Permits, insurance, releases and contracts, and what is still needed." accent={project.accent_color}
         summary={<>{docs.rows.filter((d) => d.status === 'done').length} of {docs.rows.length} done{soon.length ? ` · ${soon.length} expiring or expired` : ''}</>}
         actions={<div style={{ display: 'flex', gap: 8 }}>
           {docs.rows.length > 0 && <PrintButton label="the paperwork index" build={() => {
@@ -119,7 +124,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
       )}
 
       {docs.rows.length === 0 ? (
-        <p className={s.hint}>{canShape ? 'No paperwork yet.' : 'Nothing for you yet.'}</p>
+        <p className={s.hint}>{readsAll ? 'No paperwork yet.' : 'Nothing for you yet. The production’s paperwork is held by the people who run it.'}</p>
       ) : byKind.map((g) => (
         <section key={g.id} aria-labelledby={`paper-${g.id}`} className={s.stack} style={{ gap: 6 }}>
           <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{g.plural} · {g.rows.length}</h3>

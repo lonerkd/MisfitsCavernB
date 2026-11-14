@@ -1573,7 +1573,7 @@ function internal.calls_link_character() body=723517674440598f8d5906d778acf13f
 function internal.can_access_project(pid uuid) body=36d389b2dde4ac3eae27a7e257cb8353
 function internal.can_access_script(sid uuid) body=5f7592b3305f9614490b3f2edf46586d
 function internal.can_notify(target uuid) body=80f17856e963402b86a7b92e1a2f9729
-function internal.can_read_paper(object_name text) body=8529ddfa5adc4aa553d5367ca6622a49
+function internal.can_read_paper(object_name text) body=e50aab81750cf0c53c7d4a93c2d00753
 function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851cf7
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
@@ -2281,7 +2281,10 @@ policy public.brief_questions "brief_questions admin delete" PERMISSIVE DELETE t
 policy public.brief_questions "brief_questions admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.brief_questions "brief_questions admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
-policy public.budget_items "budget_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.budget_items "budget items add" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'budget.write'::text)
+policy public.budget_items "budget items change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
+policy public.budget_items "budget items read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
+policy public.budget_items "budget items remove" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check -
 policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -2313,9 +2316,9 @@ policy public.channels "channels delete" PERMISSIVE DELETE to authenticated usin
 policy public.channels "channels update" PERMISSIVE UPDATE to authenticated using can_manage_channel(id) check -
 policy public.channels "channels viewable" PERMISSIVE SELECT to authenticated using internal.can_view_channel(id) check -
 policy public.character_castings "Castings viewable by project creator or crew" PERMISSIVE SELECT to public using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.character_castings "castings delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
-policy public.character_castings "castings insert" PERMISSIVE INSERT to authenticated using - check (internal.is_project_creator(project_id) OR internal.is_project_member(project_id))
-policy public.character_castings "castings update" PERMISSIVE UPDATE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
+policy public.character_castings "castings delete" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'casting.decide'::text) check -
+policy public.character_castings "castings insert" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'casting.decide'::text)
+policy public.character_castings "castings update" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'casting.decide'::text) check internal.has_capability(project_id, 'casting.decide'::text)
 policy public.character_media "character_media delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.character_media "character_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (script_characters c JOIN scripts s ON ((s.id = c.script_id))) WHERE ((c.id = character_media.character_id) AND (s.project_id = character_media.project_id)))))
 policy public.character_media "character_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
@@ -2341,7 +2344,10 @@ policy public.discord_integrations "discord webhook removed by channel managers"
 policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
 policy public.entities "entities read" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND ((kind <> 'brand_rule'::text) OR internal.can_shape_project(project_id))) check -
-policy public.expenses "expenses shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.expenses "expenses add" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'budget.write'::text)
+policy public.expenses "expenses change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
+policy public.expenses "expenses read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
+policy public.expenses "expenses remove" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check -
 policy public.guide_progress "guide_progress delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.guide_progress "guide_progress insert own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
 policy public.guide_progress "guide_progress own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
@@ -2444,10 +2450,10 @@ policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticate
 policy public.project_crew_crafts "crew crafts add" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
 policy public.project_crew_crafts "crew crafts remove" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
 policy public.project_crew_crafts "crew crafts view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
-policy public.project_documents "project_documents delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
-policy public.project_documents "project_documents insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
-policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR (person_id = ( SELECT auth.uid() AS uid))) check -
-policy public.project_documents "project_documents update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check -
+policy public.project_documents "project_documents delete" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'paperwork.write'::text) check -
+policy public.project_documents "project_documents insert" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'paperwork.write'::text)
+policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.has_capability(project_id, 'paperwork.read'::text) OR (person_id = ( SELECT auth.uid() AS uid))) check -
+policy public.project_documents "project_documents update" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'paperwork.write'::text) check internal.has_capability(project_id, 'paperwork.write'::text)
 policy public.project_formats "project formats admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
 policy public.project_formats "project formats admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.project_formats "project formats admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
@@ -2523,10 +2529,10 @@ policy public.support_cases "support cases insert" PERMISSIVE INSERT to authenti
 policy public.support_cases "support cases read" PERMISSIVE SELECT to authenticated using ((opened_by = ( SELECT auth.uid() AS uid)) OR internal.caller_is_admin()) check -
 policy public.support_cases "support cases update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
 policy public.timeline_items "timeline_items access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.can_shape_project(project_id))
+policy public.timesheets "timesheets change" PERMISSIVE UPDATE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.has_capability(project_id, 'budget.write'::text)) check (((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id)) OR internal.has_capability(project_id, 'budget.write'::text))
 policy public.timesheets "timesheets log own" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
-policy public.timesheets "timesheets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
-policy public.timesheets "timesheets remove" PERMISSIVE DELETE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.can_shape_project(project_id)) check -
+policy public.timesheets "timesheets read" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.has_capability(project_id, 'budget.write'::text)) check -
+policy public.timesheets "timesheets remove" PERMISSIVE DELETE to authenticated using (((user_id = ( SELECT auth.uid() AS uid)) AND (status = 'submitted'::text)) OR internal.has_capability(project_id, 'budget.write'::text)) check -
 policy public.transcript_lines "transcript_lines delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((created_by = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id))) check -
 policy public.transcript_lines "transcript_lines insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.transcript_lines "transcript_lines update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -2535,7 +2541,10 @@ policy public.unavailability "unavailability own delete" PERMISSIVE DELETE to au
 policy public.unavailability "unavailability own insert" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.unavailability "unavailability own read" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.unavailability "unavailability own update" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
-policy public.vendors "vendors shapers" PERMISSIVE ALL to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
+policy public.vendors "vendors add" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'budget.write'::text)
+policy public.vendors "vendors change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
+policy public.vendors "vendors read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
+policy public.vendors "vendors remove" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check -
 policy public.worlds "worlds_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.worlds "worlds_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
 policy public.worlds "worlds_update" PERMISSIVE UPDATE to public using internal.can_access_project(project_id) check internal.is_project_creator(project_id)
@@ -2544,9 +2553,9 @@ policy storage.objects "project-media: members read" PERMISSIVE SELECT to authen
 policy storage.objects "project-media: members upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)))
 policy storage.objects "project-media: shared read" PERMISSIVE SELECT to anon,authenticated using ((bucket_id = 'project-media'::text) AND internal.is_shared_media_object(name)) check -
 policy storage.objects "project-media: uploader or owner deletes" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-media'::text) AND internal.can_access_project(internal.path_project_id(name)) AND ((owner_id = (( SELECT auth.uid() AS uid))::text) OR internal.is_project_creator(internal.path_project_id(name)))) check -
-policy storage.objects "project-papers: delete" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-papers'::text) AND internal.can_shape_project(internal.path_project_id(name))) check -
+policy storage.objects "project-papers: delete" PERMISSIVE DELETE to authenticated using ((bucket_id = 'project-papers'::text) AND internal.has_capability(internal.path_project_id(name), 'paperwork.write'::text)) check -
 policy storage.objects "project-papers: read" PERMISSIVE SELECT to authenticated using ((bucket_id = 'project-papers'::text) AND internal.can_read_paper(name)) check -
-policy storage.objects "project-papers: upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-papers'::text) AND internal.can_shape_project(internal.path_project_id(name)))
+policy storage.objects "project-papers: upload" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'project-papers'::text) AND internal.has_capability(internal.path_project_id(name), 'paperwork.write'::text))
 policy storage.objects "sfx_library: delete own" PERMISSIVE DELETE to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: read own" PERMISSIVE SELECT to authenticated using ((bucket_id = 'sfx_library'::text) AND (owner_id = (( SELECT auth.uid() AS uid))::text)) check -
 policy storage.objects "sfx_library: upload to own folder" PERMISSIVE INSERT to authenticated using - check ((bucket_id = 'sfx_library'::text) AND ((storage.foldername(name))[1] = (( SELECT auth.uid() AS uid))::text))

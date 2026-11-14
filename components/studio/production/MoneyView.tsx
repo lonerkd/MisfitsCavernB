@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Check, Clock, DollarSign, Plus, Store, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { useCanShape } from '@/lib/brief';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { useBreakdown } from '@/lib/breakdown';
 import { sceneCosts } from '@/lib/studio/scene-cost';
 import {
@@ -29,12 +29,15 @@ const today = () => {
 /**
  * The money: each budget line's plan against what's committed (a purchase
  * order is out) and paid, the vendors, and the crew's hours. Paid spend keeps
- * the budget line's actual in step on the project page. The owner and leads
- * see and run all of it; everyone logs their own hours here.
+ * the budget line's actual in step on the project page. The owner holds all of
+ * it; a role sees the budget if its craft grants `budget.read` and runs spend
+ * and vendors with `budget.write`; everyone logs their own hours here.
  */
 export function MoneyView({ crew }: { crew: CrewName[] }) {
-  const { project, isOwner, userId } = useStudio();
-  const canShape = useCanShape(project.id, isOwner);
+  const { project, userId } = useStudio();
+  const caps = useMyCapabilities(project.id);
+  const seesBudget = caps.can('budget.read');
+  const runsBudget = caps.can('budget.write');
   const expenses = useExpenses(project.id);
   const timesheets = useTimesheets(project.id);
   const [lines, setLines] = useState<BudgetItem[]>([]);
@@ -43,15 +46,18 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
 
   useEffect(() => {
     studio.listBudgetLines(project.id).then(setLines).catch(() => setLines([]));
-    if (canShape) studio.listVendors(project.id).then(setVendors).catch(() => setVendors([]));
-  }, [project.id, canShape]);
+    if (runsBudget) studio.listVendors(project.id).then(setVendors).catch(() => setVendors([]));
+  }, [project.id, runsBudget, seesBudget]);
 
   const summary = useMemo(() => moneySummary(lines, expenses.rows, timesheets.rows), [lines, expenses.rows, timesheets.rows]);
   const nameOf = useMemo(() => new Map(crew.map((c) => [c.user_id, c.username])), [crew]);
 
   return (
     <div className={s.stack} style={{ gap: 28, maxWidth: 1000 }}>
-      {canShape && (
+      {!caps.loading && !seesBudget && (
+        <p className={s.hint} role="note">The budget is held by the people who run the money. Ask the project owner if you need to see it. Your own hours are below.</p>
+      )}
+      {seesBudget && (
         <>
           <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
             <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
@@ -101,13 +107,17 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
 
           <SceneCostSection />
 
-          <SpendSection lines={lines} vendors={vendors} rows={expenses.rows}
-            onChange={(row, removedId) => { if (row) expenses.upsertLocal(row); else if (removedId) expenses.removeLocal(removedId); }}
-            onVendor={(v) => setVendors((prev) => [...prev, v].sort((a, b) => a.name.localeCompare(b.name)))} />
+          {runsBudget ? (
+            <SpendSection lines={lines} vendors={vendors} rows={expenses.rows}
+              onChange={(row, removedId) => { if (row) expenses.upsertLocal(row); else if (removedId) expenses.removeLocal(removedId); }}
+              onVendor={(v) => setVendors((prev) => [...prev, v].sort((a, b) => a.name.localeCompare(b.name)))} />
+          ) : (
+            <p className={s.hint} role="note">You can see the budget. Spend and vendors are kept by the people who run it.</p>
+          )}
         </>
       )}
 
-      <HoursSection rows={timesheets.rows} canShape={canShape} userId={userId} nameOf={nameOf}
+      <HoursSection rows={timesheets.rows} canShape={runsBudget} userId={userId} nameOf={nameOf}
         onChange={(row, removedId) => { if (row) timesheets.upsertLocal(row); else if (removedId) timesheets.removeLocal(removedId); }}
         onError={(m) => toast(m, 'error')} />
     </div>
