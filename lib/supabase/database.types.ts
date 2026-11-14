@@ -5720,6 +5720,10 @@ export type Database = {
         Args: { p_application: string; p_close?: boolean; p_status: string };
         Returns: Json;
       };
+      respond_to_crew_invite: {
+        Args: { p_project_id: string; p_response: string };
+        Returns: undefined;
+      };
       search_lounge: {
         Args: { p_channel?: string; p_limit?: number; p_query: string };
         Returns: {
