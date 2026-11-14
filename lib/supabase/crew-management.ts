@@ -215,33 +215,35 @@ export async function getProjectTeam(projectId: string, ownerId: string | null |
   ];
 }
 
-/**
- * Accept or decline a pending crew invitation.
- * Only the invited person may call this (the RPC enforces it).
- */
-export async function respondToCrewInvite(projectId: string, response: 'confirmed' | 'declined') {
-  // respond_to_crew_invite is not yet in the generated types (migration applied after type gen).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.rpc as any)('respond_to_crew_invite', {
-    p_project_id: projectId,
-    p_response: response,
-  });
-  if (error) throw error;
-}
-
-/** Pending crew invitations for the signed-in person: project rows they have not yet answered. */
-export async function getMyPendingInvites(): Promise<{ project_id: string; role: CrewRole; craft: string | null; invited_by: string | null; created_at: string }[]> {
-  const { data, error } = await supabase
-    .from('project_crew')
-    .select('project_id, role, craft, invited_by, created_at')
-    .eq('status', 'pending');
-  if (error) throw error;
-  return (data ?? []) as { project_id: string; role: CrewRole; craft: string | null; invited_by: string | null; created_at: string }[];
-}
 
 /** This person's craft on a project they're crew on; null when none (or not crew). */
 export async function getMyCraftOn(projectId: string, userId: string): Promise<string | null> {
   const { data, error } = await supabase.from('project_crew').select('craft').eq('project_id', projectId).eq('user_id', userId).maybeSingle();
   if (error) throw error;
   return data?.craft ?? null;
+}
+
+/** An open invitation to join a project's crew, as its invitee sees it (they cannot read the project itself yet). */
+export interface CrewInvitation {
+  project_id: string;
+  title: string;
+  /** The access they are offered: lead, crew or view-only. */
+  role: CrewRole;
+  /** What they would do on the project. */
+  craft: string | null;
+  invited_by_name: string | null;
+  created_at: string;
+}
+
+/** The signed-in person's open invitations, newest first. */
+export async function getMyInvitations(): Promise<CrewInvitation[]> {
+  const { data, error } = await supabase.rpc('my_crew_invitations');
+  if (error) throw error;
+  return (data ?? []) as CrewInvitation[];
+}
+
+/** Accept or decline the signed-in person's own open invitation; the person who invited them is told. */
+export async function respondToInvitation(projectId: string, accept: boolean): Promise<void> {
+  const { error } = await supabase.rpc('respond_to_crew_invitation', { p_project: projectId, p_accept: accept });
+  if (error) throw error;
 }
