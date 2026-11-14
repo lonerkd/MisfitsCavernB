@@ -70,6 +70,11 @@ test.describe('Crew craft (local Supabase)', () => {
     await page.getByPlaceholder(/Search — e\.g\./).fill('gaffer');
     await page.getByRole('button', { name: 'Gaffer', exact: true }).click();
     await page.getByLabel('What they can do here').selectOption('viewer');
+    // The owner is told in words what the person will be able to do, before sending.
+    await expect(page.getByRole('note', { name: 'What this person will be able to do' })).toContainText('Gaffer: You can read the project but not change it', { timeout: 30_000 });
+    await page.getByLabel('What they can do here').selectOption('contributor');
+    await expect(page.getByRole('note', { name: 'What this person will be able to do' })).toContainText("Gaffer: You can add to and edit the project's tools");
+    await page.getByLabel('What they can do here').selectOption('viewer');
     await page.getByRole('button', { name: 'Send Invitation' }).click();
 
     // Stored as a tier and a craft, in their own columns (the old form wrote the craft into the tier, which the database refuses).

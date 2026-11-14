@@ -11,7 +11,9 @@ import { plain } from '@/lib/film/mentions';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Circle, UserPlus, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
+import { Bell, Circle, UserPlus, BadgeCheck, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
+import { RoleSentence } from '@/components/roles/RoleSentence';
+import { getMyRoles, loadCapabilityCatalog, describeRole, toolsFor } from '@/lib/roles/capabilities';
 import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
 import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
@@ -62,6 +64,7 @@ export function YourDay() {
   const [updates, setUpdates] = useState<Notification[]>([]);
   const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
   const [invites, setInvites] = useState<CrewInvitation[]>([]);
+  const [roles, setRoles] = useState<Array<{ project_id: string; craft: string | null; tier: string; text: string; tools: Array<{ label: string; view: string }> }>>([]);
   const [answering, setAnswering] = useState<string | null>(null);
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
@@ -73,7 +76,7 @@ export function YourDay() {
     if (!userId) return Promise.resolve();
     return (async () => {
       const ownedIds = projects.filter((p) => p.creator_id === userId).map((p) => p.id);
-      const [work, un, notes, owner, invs] = await Promise.all([
+      const [work, un, notes, owner, invs, myRoles] = await Promise.all([
         getTodayWork(userId, projectIds, today),
         getLoungeUnread().catch((): LoungeUnread => ({ channels: {}, people: {} })),
         fetchNotifications(userId, 8).catch(() => [] as Notification[]),
@@ -81,6 +84,15 @@ export function YourDay() {
         getOwnerData(ownedIds, today).catch((): OwnerData | null => null),
         // An open invitation is the one thing here someone is waiting on: if it does not load, say nothing rather than guess.
         getMyInvitations().catch((): CrewInvitation[] => []),
+        // Your role on the projects you are crew on (not the ones you run): a nicety, so a failure shows none.
+        (async () => {
+          const crewOn = projects.filter((p) => p.creator_id !== userId).map((p) => p.id);
+          const [mine, catalog] = await Promise.all([getMyRoles(userId, crewOn), loadCapabilityCatalog()]);
+          return mine.map((r) => {
+            const held = new Set(r.held);
+            return { project_id: r.project_id, craft: r.craft, tier: r.tier, text: describeRole({ craft: r.craft, tier: r.tier, held, defs: catalog.defs }).text, tools: toolsFor(held) };
+          });
+        })().catch(() => []),
       ]);
 
       // Name what's unread: channels by name (and project), people by username.
@@ -93,10 +105,11 @@ export function YourDay() {
         })),
         ...named.people.map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
       ].sort((a, b) => b.count - a.count);
-      return { work, notes, rows, owner, invs };
-    })().then(({ work, notes, rows, owner, invs }) => {
+      return { work, notes, rows, owner, invs, myRoles };
+    })().then(({ work, notes, rows, owner, invs, myRoles }) => {
       setOwnerData(owner);
       setInvites(invs);
+      setRoles(myRoles);
       setSheets(work.sheets);
       setMyCalls(work.myCalls);
       setTasks(work.tasks);
@@ -189,10 +202,32 @@ export function YourDay() {
                     {` · ${inv.role === 'viewer' ? 'view only' : inv.role === 'lead' ? 'lead access' : 'crew access'}`}
                   </span>
                 </div>
+                <RoleSentence craft={inv.craft} tier={inv.role} label={`What you would be able to do on ${inv.title}`} />
                 <div className={t.actions}>
                   <button type="button" className={`${t.btn} ${t.primary}`} disabled={answering === inv.project_id} onClick={() => void answer(inv, true)}>Accept</button>
                   <button type="button" className={t.btn} disabled={answering === inv.project_id} onClick={() => void answer(inv, false)}>Decline</button>
                 </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {roles.length > 0 && (
+        <section className={`${t.card} ${t.wide}`} aria-labelledby="today-roles">
+          <div className={t.cardHead}><h2 id="today-roles" className={t.cardTitle}><BadgeCheck size={14} aria-hidden /> Your role</h2></div>
+          {roles.map((r) => (
+            <article key={r.project_id} className={t.day} aria-label={`Your role on ${projectById.get(r.project_id)?.title ?? 'a project'}`}>
+              <div className={t.dayBody}>
+                <h3 className={t.dayTitle}>{projectById.get(r.project_id)?.title ?? 'A project'}</h3>
+                <p className={t.empty} style={{ margin: '4px 0 0' }}>{r.text}</p>
+                {r.tools.length > 0 && (
+                  <div className={t.actions}>
+                    {r.tools.map((tool) => (
+                      <button key={tool.view} type="button" className={t.btn} onClick={() => void goTo(r.project_id, `/studio?tab=production&view=${tool.view}`)}>{tool.label}</button>
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
           ))}
