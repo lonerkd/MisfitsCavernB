@@ -18,6 +18,7 @@ import { awaitOSUser } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
@@ -42,6 +43,10 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   const mentionsOn = useFlag('entity_cards');
   const entities = useEntities(mentionsOn ? projectId : null);
   const [userId, setUserId] = useState<string | null>(null);
+  // The budget is held by the roles that run the money: seeing it and changing it are separate (the database decides).
+  const caps = useMyCapabilities(projectId);
+  const noBudget = !caps.loading && !caps.can('budget.read');
+  const canWriteBudget = caps.can('budget.write');
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
@@ -308,26 +313,29 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
         </Panel>
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
-          {budget.length === 0 && <Empty>No budget items</Empty>}
-          {budget.length > 0 && (
+          {noBudget && <Empty>The budget is held by the people who run the money. Ask the project owner if you need to see it.</Empty>}
+          {!noBudget && budget.length === 0 && <Empty>No budget items</Empty>}
+          {!noBudget && budget.length > 0 && (
             <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: '0 0 8px' }}>
               Actuals follow what’s paid in <Link href="/studio?tab=production&view=money" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Studio › Money</Link> — spend, vendors and timesheets.
             </p>
           )}
-          {budget.map(b => (
+          {!noBudget && budget.map(b => (
             <BudgetRowItem
               key={b.id} item={b} posted={postedBudgetIds.has(b.id)} posting={postingBudgetId === b.id}
               onSetActual={actual => setActual(b.id, actual)}
               onPostJob={() => postJobFromBudget(b)}
               onDelete={() => delBudget(b.id)}
+              readOnly={!canWriteBudget}
             />
           ))}
-          {hasActuals && (
+          {!noBudget && hasActuals && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 11 }}>
               <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
               <span style={{ color: totalActual > totalBudget ? 'var(--danger)' : 'var(--ok)' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
             </div>
           )}
+          {canWriteBudget && <>
           <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
 
           <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
@@ -337,6 +345,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             {breakdownNote ?? 'Writes one “Breakdown · …” line per category from element costs. '}
             {' '}<Link href="/studio?tab=production&view=breakdown" className="mc-hit" style={{ color: 'var(--violet)', textDecoration: 'underline', textUnderlineOffset: 2 }}>Open the breakdown →</Link>
           </div>
+          </>}
         </Panel>
 
         <Panel title="Timeline" accent={accent}>
@@ -472,7 +481,7 @@ function DelBtn({ onClick }: { onClick: () => void }) {
 }
 
 function BudgetRowItem({
-  item, posted, posting, onSetActual, onPostJob, onDelete,
+  item, posted, posting, onSetActual, onPostJob, onDelete, readOnly,
 }: {
   item: BudgetRow;
   posted: boolean;
@@ -480,6 +489,8 @@ function BudgetRowItem({
   onSetActual: (actual: number | null) => void;
   onPostJob: () => void;
   onDelete: () => void;
+  /** Seeing the budget is not changing it: no actual box, no Post as job, no delete. */
+  readOnly?: boolean;
 }) {
   const over = item.actual_cost != null && Number(item.actual_cost) > Number(item.amount);
   const zoneHandlers = usePillZone({
@@ -490,7 +501,7 @@ function BudgetRowItem({
       { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
       ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? 'var(--danger)' : undefined }] : []),
     ],
-    actions: posted ? [] : [{ id: 'post-job', slot: 'create', label: '→ Post as Job', onClick: onPostJob }],
+    actions: posted || readOnly ? [] : [{ id: 'post-job', slot: 'create', label: '→ Post as Job', onClick: onPostJob }],
   }, 2);
 
   return (
@@ -498,6 +509,9 @@ function BudgetRowItem({
       <Row>
         <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
+        {readOnly ? (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: over ? 'var(--danger)' : 'var(--fg-dim)', minWidth: 64, textAlign: 'right' }} title="actual">{item.actual_cost != null ? `$${Number(item.actual_cost).toLocaleString()}` : '—'}</span>
+        ) : <>
         <input
           type="number"
           defaultValue={item.actual_cost ?? ''}
@@ -522,6 +536,7 @@ function BudgetRowItem({
           <Briefcase size={11} />
         </button>
         <DelBtn onClick={onDelete} />
+        </>}
       </Row>
     </div>
   );

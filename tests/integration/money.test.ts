@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { adminClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject } from './support/project';
 
-// Money as personas: Sam (owner) and Jordan (contributor) run spend and
+// Money as personas: Sam (owner) and Jordan (a production accountant: his craft grants the budget) run spend and
 // vendors; paid spend keeps the budget line's actual in step. Casey (a
 // viewer on the crew) logs their own hours and sees no money; only the owner
 // and leads approve hours and set the rate. Riley sees nothing.
@@ -18,6 +18,8 @@ beforeAll(async () => {
   casey = await createPersona('casey');
   ({ projectId } = await createCrewedProject(cast, 'Money'));
   await adminClient().from('project_crew').insert({ project_id: projectId, user_id: casey.id, role: 'viewer', status: 'confirmed' });
+  // Jordan runs the money here: the budget is what his craft grants (a designer, his default, would only see it).
+  await adminClient().from('project_crew').update({ craft: 'Production accountant' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   lineId = (await cast.sam.client.from('budget_items').insert({ project_id: projectId, category: 'Camera', amount: 1000, actual_cost: 50 }).select('id').single()).data!.id;
 });
 afterAll(async () => { await destroyCast({ ...cast, casey }); });
@@ -46,7 +48,7 @@ describe('vendors and spend', () => {
     expect(Number(await actual())).toBe(400);
   });
 
-  it('is for the people who shape the project', async () => {
+  it('is for the people whose craft holds the budget', async () => {
     for (const who of [casey, cast.riley]) {
       expect((await who.client.from('expenses').select('id').eq('project_id', projectId)).data).toEqual([]);
       expect((await who.client.from('vendors').select('id').eq('project_id', projectId)).data).toEqual([]);
@@ -89,10 +91,10 @@ describe('timesheets', () => {
     expect(corrected).toEqual({ status: 'submitted', decided_by: null });
   });
 
-  it('a lead can approve someone else\'s hours, but not their own — only the owner can', async () => {
+  it('someone who holds the budget can approve others\' hours, but not their own — only the owner can', async () => {
     await adminClient().from('project_crew').update({ role: 'lead' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
 
-    // Jordan (now lead) approves Casey's hours — that's the point of being a lead.
+    // Jordan (a lead, who holds the budget) approves Casey's hours.
     const caseys = (await casey.client.from('timesheets').insert({ project_id: projectId, work_date: '2026-11-04', hours: 3 }).select('id').single()).data!;
     const caseysApproved = (await cast.jordan.client.from('timesheets').update({ status: 'approved', rate: 25 }).eq('id', caseys.id).select('status, decided_by').single()).data!;
     expect(caseysApproved).toMatchObject({ status: 'approved', decided_by: cast.jordan.id });
