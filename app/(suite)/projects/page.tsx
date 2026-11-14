@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { setProjectStatus } from '@/lib/supabase/projects';
 import { getProjectCardFacts, getUserProjects } from '@/lib/supabase/projects';
+
 import { fetchProjectsSignals, setProjectArchived } from '@/lib/supabase/progress';
 import type { ProjectSignals } from '@/lib/os/progress';
 import { SORTS, matchesQuery as matches, percentOf, readinessOf, sortProjects, type Readiness, type SortKey } from '@/lib/os/board';
@@ -373,12 +374,14 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
   );
 }
 
+
 export default function ProjectsPage() {
   useOSGate();
   const [projectsList, setProjectsList] = useState<ProjectCardViewModel[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
   const [loaded, setLoaded] = useState(false);
+
   const { toast } = useToast();
   const { setActiveProject } = useProject();
   const router = useRouter();
@@ -402,7 +405,7 @@ export default function ProjectsPage() {
     awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
-      getUserProjects(user.id).then(async data => {
+      getUserProjects(user.id).then(async (data) => {
         const rows = data || [];
         const [facts, signals] = await Promise.all([
           getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>)),
@@ -513,6 +516,7 @@ export default function ProjectsPage() {
     }
   };
 
+
   const total = active.length;
   const inFlight = active.filter(p => p.phase !== 'delivery').length;
 
@@ -583,7 +587,7 @@ export default function ProjectsPage() {
           </motion.div>
         ) : (
         <>
-        <div role="search" aria-label="Projects" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
+<div role="search" aria-label="Projects" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           <div style={{ position: 'relative', flex: '0 1 280px', minWidth: 180 }}>
             <Search size={12} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
             <input
