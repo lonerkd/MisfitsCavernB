@@ -8,7 +8,10 @@ const confirm = vi.fn();
 const upsert = vi.fn();
 const del = vi.fn();
 let store: Record<string, unknown[]> = {};
+// What the signed-in person's role lets them do on the project; the owner holds all of it.
+let held: string[] | 'all' = 'all';
 
+vi.mock('@/lib/roles/capabilities', () => ({ useMyCapabilities: () => ({ loading: false, can: (c: string) => held === 'all' || held.includes(c) }) }));
 vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings: null } }) }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/components/ui/Confirm', () => ({ useConfirm: () => confirm }));
@@ -45,7 +48,7 @@ import { StillsView } from './StillsView';
 import { VfxView } from './VfxView';
 import { WrapView } from './WrapView';
 
-beforeEach(() => { store = {}; upsert.mockResolvedValue(undefined); del.mockResolvedValue(undefined); confirm.mockResolvedValue(true); });
+beforeEach(() => { store = {}; held = 'all'; upsert.mockResolvedValue(undefined); del.mockResolvedValue(undefined); confirm.mockResolvedValue(true); });
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
 const VIEWS: Array<[string, React.ComponentType]> = [
@@ -120,5 +123,48 @@ describe('links in a record', () => {
     render(<DirectorNotebookView />);
     expect((await screen.findByText('https://example.com/ref')).closest('a')?.getAttribute('href')).toBe('https://example.com/ref');
     expect(screen.getByText('javascript:alert(1)').closest('a')).toBeNull();
+  });
+});
+
+describe('purchase orders and insurance claims follow the budget', () => {
+  const po = { id: 'po-1', poNumber: 'PO-9', vendor: 'Lens House', department: 'Camera', amount: '100', status: 'draft' };
+  const claim = { id: 'cl-1', incident: 'Camera dropped', date: '', policy: '', amount: '2400', status: 'filed', notes: '' };
+
+  it.each([
+    ['Purchase orders', PoView, 'purchaseOrders', po, 'Lens House'],
+    ['Insurance claims', ClaimsView, 'claims', claim, 'Camera dropped'],
+  ] as const)('%s: no budget says who holds it and shows no form', async (name, View, kind, record, _text) => {
+    held = [];
+    store = { [kind]: [record] };
+    render(<View />);
+    expect(await screen.findByText(new RegExp(`${name} are held by the people who run the money`))).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^(add|log)/i })).toBeNull();
+  });
+
+  it.each([
+    ['Purchase orders', PoView, 'purchaseOrders', po, 'Lens House'],
+    ['Insurance claims', ClaimsView, 'claims', claim, 'Camera dropped'],
+  ] as const)('%s: read-only shows the records, with no way to add, change or delete', async (_n, View, kind, record, text) => {
+    held = ['budget.read'];
+    store = { [kind]: [record] };
+    render(<View />);
+    expect(await screen.findByText(text)).toBeTruthy();
+    expect(screen.getByText(/You can read these/)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^(add|log)/i })).toBeNull();
+    expect(screen.queryByTitle('Delete')).toBeNull();
+    expect((screen.getByRole('combobox') as HTMLSelectElement).disabled).toBe(true);
+  });
+
+  it.each([
+    ['Purchase orders', PoView, 'purchaseOrders', po, 'Lens House'],
+    ['Insurance claims', ClaimsView, 'claims', claim, 'Camera dropped'],
+  ] as const)('%s: running the money keeps the form and the delete button', async (_n, View, kind, record, text) => {
+    held = ['budget.read', 'budget.write'];
+    store = { [kind]: [record] };
+    render(<View />);
+    expect(await screen.findByText(text)).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^(add|log)/i })).toBeTruthy();
+    expect(screen.getByTitle('Delete')).toBeTruthy();
+    expect(screen.queryByText(/You can read these/)).toBeNull();
   });
 });
