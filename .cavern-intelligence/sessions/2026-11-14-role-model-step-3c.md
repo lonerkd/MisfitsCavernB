@@ -1,0 +1,9 @@
+# Session - 2026-11-14: the role model, step 3c (purchase orders and insurance claims follow the budget)
+
+**Found by looking first:** `production_records` has one rule for all 21 kinds: read by anyone who can access the project, written by anyone who can shape it. Two kinds are money: purchase orders (vendor, amount) and insurance claims (incident, amount). So a sound mixer could read every purchase order while the budget itself (3a) was closed to them.
+
+**Built** (migration `20261114000300`): those two kinds are read with `budget.read` and added, edited and removed with `budget.write` (on top of the existing can-shape rule); the other 19 kinds are untouched; still one SELECT policy. The owner holds both capabilities, so nothing changes for them. `PoView` and `ClaimsView` say what is going on: no budget access shows a note and nothing else; read-only shows the records with no form, no delete and the status select disabled.
+
+**Tests:** persona `tests/integration/money-records.test.ts` (5: the owner and an accountant read and run them and an outsider sees nothing; a department head reads but cannot add, change or remove; a role with no budget sees neither kind and cannot add one, while every other tool is as before; the owner's grant and its removal; a view-only accountant reads and cannot change); unit tests for the two views in each state; a second browser test in `e2e/role-scoped-money.spec.ts` (hidden, then read-only, then run, by changing the craft). One existing test (`production-records.test.ts`) had a production designer adding a claim: that is the behaviour this step removes, so the owner adds it there now. All 98 integration files pass (710 tests).
+
+**Not verified:** the migration on production and staging (after merge, then the drift check). `gear`, `permits` and `wraps` can carry a cost in a free-text field: they are department tools, not money, and stay open to crew.
