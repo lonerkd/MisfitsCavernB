@@ -69,9 +69,11 @@ export default function AuthPage() {
   const wantsForgot = useSearchParam('forgot') === '1';
   // eslint-disable-next-line react-hooks/set-state-in-effect -- follows the URL, an external system
   useEffect(() => { if (wantsForgot) setMode('forgot'); }, [wantsForgot]);
+  // New accounts land on surfaces that work without projects: /welcome, /community, /hub.
+  // Everything else requires at least one project and will bounce.
+  // Existing accounts honour the redirect param (e.g. /studio after a gated visit).
   const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/community';
-  // The old Today and Hub addresses are Community (a new account still goes to /welcome).
-  const isCommunity = redirectTo === '/community' || redirectTo === '/today' || redirectTo === '/hub';
+  const isNewSurface = redirectTo === '/welcome' || redirectTo === '/community' || redirectTo === '/hub';
 
   // Navigate when the session is actually established in the OS store — not on a
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
@@ -80,8 +82,16 @@ export default function AuthPage() {
   // A new account with nowhere particular to go starts at /welcome.
   const isNewAccount = useRef(false);
   useEffect(() => {
-    if (status === 'authed') router.replace(isNewAccount.current && isCommunity ? '/welcome' : redirectTo);
-  }, [status, redirectTo, isCommunity, router]);
+    if (status === 'authed') {
+      // New accounts only land on surfaces that work without projects.
+      // Existing accounts honour their redirect target (e.g. /studio after gating).
+      if (isNewAccount.current && !isNewSurface) {
+        router.replace('/community');
+      } else {
+        router.replace(isNewAccount.current && isNewSurface ? '/welcome' : redirectTo);
+      }
+    }
+  }, [status, redirectTo, isNewSurface, router]);
 
   // Every change (and the submit) takes all the fields from the form itself, not
   // just the one that changed: an input event can be lost while the page

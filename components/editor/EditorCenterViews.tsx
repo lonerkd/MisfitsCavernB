@@ -3,7 +3,9 @@
 import { moveTarget, focusMoved } from '@/lib/util/reorderKeys';
 import { TimingPanel } from './TimingPanel';
 import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/scriptos/timing';
-import React from 'react';
+import React, { useState } from 'react';
+import { StructurePicker } from '@/components/story/StructurePicker';
+import { getStructure, checkCoverage } from '@/lib/story/structures';
 import { motion } from 'framer-motion';
 import type { ScriptLine } from '@/lib/scriptos/types';
 import type { CharacterStats } from '@/lib/scriptos/characters';
@@ -150,7 +152,7 @@ function SceneBoardCard({
             <div style={{ display: 'flex', marginRight: 4 }}>
               {activeUsers.slice(0, 3).map((u, ui) => (
                 <div key={u.userId} title={`${u.email} is here`} style={{
-                  width: 16, height: 16, borderRadius: '50%', background: u.color, color: '#fff',
+                  width: 16, height: 16, borderRadius: '50%', background: u.color, color: 'var(--on-accent)',
                   border: '2px solid var(--bg-3)', marginLeft: ui > 0 ? -6 : 0,
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, zIndex: 3 - ui,
@@ -182,7 +184,7 @@ function SceneBoardCard({
 // ── OUTLINE: filterable scene list with tag colors ──────────────────────────
 export function OutlineView({
   sceneFilter, setSceneFilter, filteredScenes, scenesList, lines,
-  sceneColors, sceneNotes, jumpToScene, tagScene,
+  sceneColors, sceneNotes, jumpToScene, tagScene, onStoryInterview,
 }: {
   sceneFilter: 'all' | 'int' | 'ext' | 'day' | 'night';
   setSceneFilter: (f: 'all' | 'int' | 'ext' | 'day' | 'night') => void;
@@ -193,14 +195,31 @@ export function OutlineView({
   sceneNotes: string[];
   jumpToScene: (sceneIndex: number) => void;
   tagScene: (sceneIndex: number, color: string) => void;
+  onStoryInterview?: () => void;
 }) {
+  const [structureId, setStructureId] = useState('none');
+  const structure = getStructure(structureId)!;
+  const positions = scenesList.length > 1 ? scenesList.map((_, i) => i / (scenesList.length - 1)) : scenesList.map(() => 0);
+  const coverage = checkCoverage(structure, positions);
+  const coveredCount = coverage.filter((c) => c.covered).length;
   return (
     <div style={{ flex: 1, overflowY: 'auto', padding: '40px', maxWidth: 900, margin: '0 auto', width: '100%' }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+        <StructurePicker value={structureId} onChange={setStructureId} />
+        {structure.id !== 'none' && (
+          <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>
+            {coveredCount}/{coverage.length} beats covered
+          </span>
+        )}
+      </div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
         {(['all', 'int', 'ext', 'day', 'night'] as const).map(f => (
           <button key={f} onClick={() => setSceneFilter(f)} style={{ padding: '6px 14px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: sceneFilter === f ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.03)', color: sceneFilter === f ? 'var(--fg-strong)' : 'var(--fg-muted)', cursor: 'pointer', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{f}</button>
         ))}
         <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--fg-muted)', alignSelf: 'center' }}>{filteredScenes.length} scene{filteredScenes.length !== 1 ? 's' : ''}</span>
+        {onStoryInterview && (
+          <button onClick={onStoryInterview} style={{ padding: '6px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: 'none', background: 'rgba(var(--ink-rgb), 0.08)', color: 'var(--fg-strong)', cursor: 'pointer' }}>Interview</button>
+        )}
       </div>
       {filteredScenes.length === 0 ? (
         <div style={{ textAlign: 'center', color: 'var(--fg-dim)', marginTop: 80, fontStyle: 'italic' }}>No scenes match the filter.</div>
@@ -237,7 +256,7 @@ export function OutlineView({
                 {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}
                 {actionPreview && <div style={{ fontSize: 12, color: 'var(--fg-dim)', marginBottom: 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{actionPreview}</div>}
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {sceneChars.map(c => (<span key={c} style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', background: 'rgba(255,170,0,0.1)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>{c}</span>))}
+                  {sceneChars.map(c => (<span key={c} style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', background: 'color-mix(in srgb, var(--warn) 10%, transparent)', color: TYPE_COLORS.character, padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>{c}</span>))}
                 </div>
               </div>
               <div style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, textAlign: 'right', paddingTop: 2 }}>{wc}w</div>
@@ -312,8 +331,8 @@ export function StatsView({
 
             <div style={{ display: 'flex', gap: 16, marginBottom: 10 }}>
               {[
-                { label: 'INT/Day', color: 'var(--violet)' }, { label: 'INT/Night', color: '#9194f6' },
-                { label: 'EXT/Day', color: '#d97706' }, { label: 'EXT/Night', color: '#92400e' },
+                { label: 'INT/Day', color: 'var(--violet)' }, { label: 'INT/Night', color: 'var(--violet)' },
+                { label: 'EXT/Day', color: 'var(--warn)' }, { label: 'EXT/Night', color: 'color-mix(in srgb, var(--warn) 45%, var(--bg))' },
               ].map(({ label, color }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                   <div style={{ width: 8, height: 8, borderRadius: 4, background: color, flexShrink: 0 }} />
@@ -435,7 +454,7 @@ export function StatsView({
       <div style={{ marginBottom: 40 }}>
         <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Dialogue vs Action</div>
         <div style={{ display: 'flex', gap: 1, borderRadius: 8, overflow: 'hidden', height: 20 }}>
-          <div style={{ width: `${dialogueRatio}%`, background: '#6366f1', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
+          <div style={{ width: `${dialogueRatio}%`, background: 'var(--violet)', transition: 'width 0.5s', minWidth: dialogueRatio > 0 ? 2 : 0 }} />
           <div style={{ flex: 1, background: 'var(--accent)' }} />
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5 }}>
@@ -499,7 +518,7 @@ export function StatsView({
         <div style={{ display: 'flex', gap: 20 }}>
           {[
             { count: lintIssues.filter(i => i.type === 'error').length,   label: 'Errors',   color: 'var(--danger)' },
-            { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: '#eab308' },
+            { count: lintIssues.filter(i => i.type === 'warning').length, label: 'Warnings', color: 'var(--warn)' },
             { count: lintIssues.filter(i => i.type === 'info').length,    label: 'Notes',    color: 'var(--violet)' },
           ].map(({ count, label, color }) => (
             <div key={label} style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>

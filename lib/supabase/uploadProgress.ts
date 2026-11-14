@@ -21,6 +21,7 @@ export async function uploadWithProgress(
   file: Blob,
   options: ProgressUploadOptions,
   onProgress: (loaded: number, total: number) => void,
+  onReady?: (abort: () => void) => void,
 ): Promise<{ error: { message: string } | null }> {
   if (typeof XMLHttpRequest === 'undefined') return store.upload(path, file, options);
   // Overwrite permission is part of the signed token: the x-upsert header on the PUT alone cannot grant it.
@@ -28,20 +29,33 @@ export async function uploadWithProgress(
   if (signed.error || !signed.data) return store.upload(path, file, options);
 
   return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', signed.data!.signedUrl);
-    xhr.setRequestHeader('x-upsert', String(options.upsert ?? false));
-    xhr.setRequestHeader('cache-control', `max-age=${options.cacheControl ?? '3600'}`);
-    if (options.contentType) xhr.setRequestHeader('content-type', options.contentType);
-    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
-    xhr.onerror = () => resolve({ error: { message: 'The network dropped during the upload' } });
-    xhr.onabort = () => resolve({ error: { message: 'The upload was cancelled' } });
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) { onProgress(file.size, file.size); resolve({ error: null }); return; }
-      let message = `The server answered ${xhr.status}`;
-      try { const body = JSON.parse(xhr.responseText); message = body.message || body.error || message; } catch { /* not JSON */ }
-      resolve({ error: { message } });
+    let attempt = 0;
+    let cancelled = false;
+    let current: XMLHttpRequest | null = null;
+    onReady?.(() => { cancelled = true; current?.abort(); });
+
+    const run = () => {
+      const xhr = new XMLHttpRequest();
+      current = xhr;
+      xhr.open('PUT', signed.data!.signedUrl);
+      xhr.setRequestHeader('x-upsert', String(options.upsert ?? false));
+      xhr.setRequestHeader('cache-control', `max-age=${options.cacheControl ?? '3600'}`);
+      if (options.contentType) xhr.setRequestHeader('content-type', options.contentType);
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+      xhr.onerror = () => {
+        if (cancelled) return;
+        if (attempt === 0) { attempt++; setTimeout(run, 1500); return; }
+        resolve({ error: { message: 'The network dropped during the upload' } });
+      };
+      xhr.onabort = () => resolve({ error: { message: 'The upload was cancelled' } });
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) { onProgress(file.size, file.size); resolve({ error: null }); return; }
+        let message = `The server answered ${xhr.status}`;
+        try { const body = JSON.parse(xhr.responseText); message = body.message || body.error || message; } catch { /* not JSON */ }
+        resolve({ error: { message } });
+      };
+      xhr.send(file);
     };
-    xhr.send(file);
+    run();
   });
 }

@@ -5,7 +5,7 @@ const state = (over: Partial<MusicState> = {}): MusicState => ({
   isAuthenticated: true,
   currentTrack: { name: 'Harbor Lights', artists: [{ name: 'Ana Ruiz' }, { name: 'The Tugs' }] },
   isPlaying: true, progressMs: 45_000, durationMs: 180_000,
-  togglePlay: vi.fn(), nextTrack: vi.fn(), ...over,
+  togglePlay: vi.fn(), nextTrack: vi.fn(), prevTrack: vi.fn(), ...over,
 });
 
 describe('musicActivity', () => {
@@ -17,7 +17,7 @@ describe('musicActivity', () => {
   it('holds what is playing: the track, who plays it, how far along, with Pause and Next', () => {
     const a = musicActivity(state(), true)!;
     expect(a).toMatchObject({ id: 'music', kind: 'music', tone: 'info', title: 'Harbor Lights', detail: 'Ana Ruiz, The Tugs', progress: 0.25 });
-    expect(a.controls?.map((c) => [c.id, c.label])).toEqual([['toggle', 'Pause'], ['next', 'Next']]);
+    expect(a.controls?.map((c) => [c.id, c.label])).toEqual([['toggle', 'Pause'], ['prev', 'Previous'], ['next', 'Next']]);
   });
 
   it('a paused track still on the island says so, with Play in place of Pause and a warning tone', () => {
@@ -35,8 +35,10 @@ describe('musicActivity', () => {
     const m = state();
     const a = musicActivity(m, true)!;
     a.controls?.find((c) => c.id === 'toggle')?.run();
+    a.controls?.find((c) => c.id === 'prev')?.run();
     a.controls?.find((c) => c.id === 'next')?.run();
     expect(m.togglePlay).toHaveBeenCalledOnce();
+    expect(m.prevTrack).toHaveBeenCalledOnce();
     expect(m.nextTrack).toHaveBeenCalledOnce();
   });
 

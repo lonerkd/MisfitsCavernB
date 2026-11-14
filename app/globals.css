@@ -11,6 +11,11 @@
      above those. Every dialog uses --z-modal so none hides under the dock. */
   --z-modal: 99990;
 
+  /* Modal scrims: a flat dark veil, theme-independent (a modal darkens the page
+     in every theme). Use instead of a literal rgba(0,0,0,…). */
+  --scrim-flat: rgba(0, 0, 0, 0.8);
+  --scrim-flat-strong: rgba(0, 0, 0, 0.85);
+
   /* Typefaces — backed by next/font CSS variables (self-hosted) */
   /* Titles are the interface face at weight 800–900, tight and in sentence case
      (design-language.md). Bebas Neue stays for the logotype only: --wordmark. */

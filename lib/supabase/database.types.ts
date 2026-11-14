@@ -735,6 +735,173 @@ export type Database = {
         };
         Relationships: [];
       };
+      casting_auditions: {
+        Row: {
+          character_name: string;
+          created_at: string;
+          created_by: string | null;
+          crew_user_id: string;
+          id: string;
+          notes: string | null;
+          project_id: string;
+          scheduled_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          character_name: string;
+          created_at?: string;
+          created_by?: string | null;
+          crew_user_id: string;
+          id?: string;
+          notes?: string | null;
+          project_id: string;
+          scheduled_at: string;
+        };
+        Update: {
+          character_name?: string;
+          created_at?: string;
+          created_by?: string | null;
+          crew_user_id?: string;
+          id?: string;
+          notes?: string | null;
+          project_id?: string;
+          scheduled_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "casting_auditions_crew_user_id_fkey";
+            columns: ["crew_user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "casting_auditions_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      casting_history: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          character_name: string;
+          created_at: string;
+          id: string;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          character_name: string;
+          created_at?: string;
+          id?: string;
+          project_id: string;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          character_name?: string;
+          created_at?: string;
+          id?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "casting_history_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      casting_notes: {
+        Row: {
+          character_name: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          note: string;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          character_name: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          note: string;
+          project_id: string;
+        };
+        Update: {
+          character_name?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          note?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "casting_notes_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      change_reviews: {
+        Row: {
+          change_key: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          kind: string;
+          project_id: string;
+          script_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          change_key: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind: string;
+          project_id: string;
+          script_id: string;
+        };
+        Update: {
+          change_key?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          kind?: string;
+          project_id?: string;
+          script_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "change_reviews_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "change_reviews_script_id_fkey";
+            columns: ["script_id"];
+            isOneToOne: false;
+            referencedRelation: "scripts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       channel_members: {
         Row: {
           can_manage: boolean;
@@ -4682,6 +4849,36 @@ export type Database = {
         };
         Relationships: [];
       };
+      story_interviews: {
+        Row: {
+          answers: NonNullable<Json>;
+          project_id: string;
+          structure_id: string;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          answers?: NonNullable<Json>;
+          project_id: string;
+          structure_id?: string;
+          updated_at?: string;
+        };
+        Update: {
+          answers?: NonNullable<Json>;
+          project_id?: string;
+          structure_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "story_interviews_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: true;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       support_case_messages: {
         Row: {
           author_id: string | null;
@@ -5030,6 +5227,42 @@ export type Database = {
             foreignKeyName: "vendors_project_id_fkey";
             columns: ["project_id"];
             isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      worlds: {
+        Row: {
+          locations: NonNullable<Json>;
+          lore: NonNullable<Json>;
+          project_id: string;
+          rules: NonNullable<Json>;
+          timeline: NonNullable<Json>;
+          updated_at: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          locations?: NonNullable<Json>;
+          lore?: NonNullable<Json>;
+          project_id: string;
+          rules?: NonNullable<Json>;
+          timeline?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Update: {
+          locations?: NonNullable<Json>;
+          lore?: NonNullable<Json>;
+          project_id?: string;
+          rules?: NonNullable<Json>;
+          timeline?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "worlds_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: true;
             referencedRelation: "projects";
             referencedColumns: ["id"];
           },

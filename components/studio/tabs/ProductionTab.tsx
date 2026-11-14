@@ -58,6 +58,7 @@ const GearView = dynamic(() => import('../production/GearView').then((m) => m.Ge
 const CommsView = dynamic(() => import('../production/CommsView').then((m) => m.CommsView), { loading: viewLoading });
 const CastBreakdownView = dynamic(() => import('../production/CastBreakdownView').then((m) => m.CastBreakdownView), { loading: viewLoading });
 const TransportView = dynamic(() => import('../production/TransportView').then((m) => m.TransportView), { loading: viewLoading });
+const WorldView = dynamic(() => import('../production/WorldView').then((m) => m.WorldView), { loading: viewLoading });
 
 type View = ProductionView;
 export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
@@ -65,6 +66,7 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Story & planning' },
   { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Story & planning' },
   { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Story & planning' },
+  { id: 'world', label: 'World', icon: <BookOpen size={12} />, group: 'Story & planning' },
   { id: 'props', label: 'Props', icon: <ClipboardList size={12} />, group: 'Departments' },
   { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Story & planning' },
   { id: 'money', label: 'Money', icon: <DollarSign size={12} />, group: 'Budget & docs' },
@@ -168,6 +170,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
       {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
       {!lock && view === 'locations' && <LocationsView />}
+      {!lock && view === 'world' && <WorldView />}
       {!lock && view === 'continuity' && <ContinuityView />}
       {!lock && view === 'money' && <MoneyView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
       {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}

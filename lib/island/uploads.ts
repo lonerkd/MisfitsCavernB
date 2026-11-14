@@ -4,7 +4,7 @@
 import { activityStore, activitySignature } from './activityStore';
 import { uploadActivity, type UploadSnapshot } from './uploadActivity';
 
-interface Running { name: string; loaded: number; total: number }
+interface Running { name: string; loaded: number; total: number; cancel?: () => void }
 const running = new Map<number, Running>();
 let nextId = 1;
 
@@ -23,7 +23,7 @@ export function uploadSnapshot(): UploadSnapshot {
 let lastShown: string | null = null;
 
 function publish() {
-  const activity = uploadActivity(uploadSnapshot());
+  const activity = uploadActivity(uploadSnapshot(), cancelUploads);
   if (!activity) {
     if (lastShown !== null) { lastShown = null; activityStore.clear('upload'); }
     return;
@@ -37,6 +37,8 @@ function publish() {
 export interface UploadTracker {
   progress: (loaded: number, total?: number) => void;
   end: () => void;
+  /** Register the abort function once the request is actually in flight. */
+  setCancel: (fn?: () => void) => void;
 }
 
 export function beginUpload(name: string, total: number): UploadTracker {
@@ -54,5 +56,14 @@ export function beginUpload(name: string, total: number): UploadTracker {
     end() {
       if (running.delete(id)) publish();
     },
+    setCancel(fn) {
+      const u = running.get(id);
+      if (u) u.cancel = fn;
+    },
   };
+}
+
+/** Stop every upload in flight (the island's Cancel button). */
+export function cancelUploads() {
+  for (const u of running.values()) u.cancel?.();
 }

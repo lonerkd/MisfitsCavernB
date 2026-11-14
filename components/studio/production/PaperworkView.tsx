@@ -10,6 +10,7 @@ import {
   type DocKind, type DocStatus, type ProjectDocument, type Vendor,
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
+import { useDraft } from '@/lib/hooks/useDraft';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { paperworkDoc } from '@/lib/studio/paperwork-print';
@@ -45,7 +46,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
   const locations = useProjectLocations(project.id);
   const castings = useCastings(project.id);
   const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [adding, setAdding] = useState<{ kind: DocKind; title: string } | null>(null);
+  const [adding, setAdding] = useDraft<{ kind: DocKind; title: string } | null>('paperwork-adding', null);
   const { toast } = useToast();
   const today = localToday();
 

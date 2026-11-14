@@ -30,7 +30,7 @@ const DATA_THROUGH_LIB = {
 // that did not exist, so the colour followed no theme). Brand marks, media frames and the theme files themselves are exempt.
 const COLOUR_RULES = [
   {
-    selector: "Property[key.name=/^(color|background|backgroundColor|borderColor|borderTopColor|borderBottomColor|fill|stroke|outlineColor)$/][value.type='Literal'][value.value=/^(#[0-9a-fA-F]{3,8}|rgba?\\()/]",
+    selector: "Property[key.name=/^(color|background|backgroundColor|borderColor|borderTopColor|borderBottomColor|fill|stroke|outlineColor)$/][value.type='Literal'][value.value=/^(#[0-9a-fA-F]{3,8}|rgba?\\(\\s*[#0-9])/]",
     message: 'A literal colour reads on one theme only. Use a token (var(--fg), var(--accent), var(--warn) ...) from app/globals.css; see design-tokens.md.',
   },
   {

@@ -12,6 +12,7 @@ export interface MusicState {
   durationMs: number;
   togglePlay: () => void;
   nextTrack: () => void;
+  prevTrack: () => void;
 }
 
 /** The bar moves in whole percent: a finer one would republish the island several times a second for nothing a person can see. */
@@ -34,6 +35,7 @@ export function musicActivity(m: MusicState, held: boolean): Activity | null {
     progress: m.durationMs > 0 ? quantize(m.progressMs / m.durationMs) : undefined,
     controls: [
       { id: 'toggle', label: m.isPlaying ? 'Pause' : 'Play', run: m.togglePlay },
+      { id: 'prev', label: 'Previous', run: m.prevTrack },
       { id: 'next', label: 'Next', run: m.nextTrack },
     ],
   };

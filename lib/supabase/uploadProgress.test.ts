@@ -7,6 +7,7 @@ class FakeXhr {
   status = 200; responseText = '';
   upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = { onprogress: null };
   onload: (() => void) | null = null; onerror: (() => void) | null = null; onabort: (() => void) | null = null;
+  abort() { this.onabort?.(); }
   constructor() { FakeXhr.last = this; }
   open(m: string, u: string) { this.method = m; this.url = u; }
   setRequestHeader(k: string, v: string) { this.headers[k] = v; }
@@ -59,12 +60,27 @@ describe('uploadWithProgress', () => {
     FakeXhr.last.onload!();
     expect((await done).error?.message).toBe('The object exceeded the maximum allowed size');
   });
-  it('says so when the network drops', async () => {
+  it('retries once when the network drops, then says so', async () => {
+    vi.useFakeTimers();
     vi.stubGlobal('XMLHttpRequest', FakeXhr);
     const done = uploadWithProgress(store(), 'p', file, {}, () => {});
     await Promise.resolve(); await Promise.resolve();
     FakeXhr.last.onerror!();
+    await vi.advanceTimersByTimeAsync(1600);
+    FakeXhr.last.onerror!();
     expect((await done).error?.message).toMatch(/network dropped/);
+    vi.useRealTimers();
+  });
+  it('a cancel is not retried', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('XMLHttpRequest', FakeXhr);
+    let abort: (() => void) | undefined;
+    const done = uploadWithProgress(store(), 'p', file, {}, () => {}, (a) => { abort = a; });
+    await Promise.resolve(); await Promise.resolve();
+    abort!();
+    expect((await done).error?.message).toMatch(/cancelled/);
+    await vi.advanceTimersByTimeAsync(2000);
+    vi.useRealTimers();
   });
   it('falls back to the plain upload when there is no XMLHttpRequest or no signed URL', async () => {
     vi.stubGlobal('XMLHttpRequest', undefined);

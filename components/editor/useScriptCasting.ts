@@ -25,17 +25,17 @@ export function useScriptCasting(projectId: string | undefined) {
   }, [projectId]);
 
   /** An empty `crewUserId` clears the casting. */
-  const castCharacter = useCallback(async (characterName: string, crewUserId: string) => {
+  const castCharacter = useCallback(async (characterId: string, characterName: string, crewUserId: string) => {
     if (!projectId) return;
     try {
       const auth = { user: await awaitOSUser() };
       if (!auth.user) return;
       if (!crewUserId) {
-        await removeCasting(projectId, characterName);
-        setCastings((prev) => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
+        await removeCasting(projectId, characterId, characterName);
+        setCastings((prev) => { const next = { ...prev }; delete next[characterId]; return next; });
         return;
       }
-      await setCasting(projectId, characterName, crewUserId, auth.user.id);
+      await setCasting(projectId, characterId, characterName, crewUserId, auth.user.id);
       setCastings(await getCastingsForProject(projectId));
     } catch (e: unknown) {
       toast((e as { message?: string } | null)?.message || 'Could not update casting', 'error');

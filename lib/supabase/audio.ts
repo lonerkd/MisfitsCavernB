@@ -32,9 +32,20 @@ export async function uploadSfx(file: File, userId: string, projectId: string): 
   const path = `${userId}/${Date.now()}_${file.name.replace(/[^\w.-]+/g, '_')}`;
   // The island shows the upload and how far along it is.
   const tracker = beginUpload(file.name, file.size);
-  const { error: uploadError } = await uploadWithProgress(supabase.storage.from(SFX_BUCKET), path, file, { contentType: file.type || undefined }, tracker.progress)
-    .finally(tracker.end);
-  if (uploadError) throw new Error(uploadError.message);
+  let up: { error: { message: string } | null };
+  try {
+    up = await uploadWithProgress(
+      supabase.storage.from(SFX_BUCKET),
+      path,
+      file,
+      { contentType: file.type },
+      (loaded, total) => tracker.progress(loaded, total),
+      (abort) => tracker.setCancel(abort),
+    );
+  } finally {
+    tracker.end();
+  }
+  if (up!.error) throw new Error(up!.error.message);
   const { data: url } = supabase.storage.from(SFX_BUCKET).getPublicUrl(path);
   const { error } = await supabase.from('sfx_assets').insert({
     title: file.name,

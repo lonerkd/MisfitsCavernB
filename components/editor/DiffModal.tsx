@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlignLeft, Type, ChevronDown, ChevronUp } from 'lucide-react';
 import * as Diff from 'diff';
+import { listChangeReviews, setChangeReview, clearChangeReview } from '@/lib/supabase/changeReviews';
 
 interface DiffModalProps {
   isOpen: boolean;
@@ -11,18 +12,27 @@ interface DiffModalProps {
   originalText: string;
   modifiedText: string;
   label: string;
+  /** The element kind of each line of `modifiedText`, by 0-based line number. */
+  kindOf?: (lineNumber: number) => DiffKind;
+  /** Review mode: accept/reject each change, stored per script. */
+  projectId?: string;
+  scriptId?: string;
+  userId?: string;
 }
 
-type DiffMode = 'lines' | 'words';
+type DiffMode = 'lines' | 'words' | 'side';
+
+export type DiffKind = 'dialogue' | 'action' | 'scene' | 'other';
 
 interface ProcessedHunk {
   header: string;
-  parts: { type: 'added' | 'removed' | 'unchanged'; text: string }[];
+  parts: { type: 'added' | 'removed' | 'unchanged'; text: string; kind: DiffKind }[];
 }
 
 function buildHunks(
   changes: Diff.Change[],
-  contextLines = 3
+  contextLines = 3,
+  kindOf?: (lineNumber: number) => DiffKind,
 ): ProcessedHunk[] {
 
   interface LineInfo {
@@ -83,6 +93,7 @@ function buildHunks(
     const parts = lines.slice(s, e + 1).map(l => ({
       type: l.type,
       text: l.text,
+      kind: kindOf ? kindOf((l.newLine ?? l.oldLine ?? 1) - 1) : 'other',
     }));
     return { header, parts };
   });
@@ -117,22 +128,111 @@ function computeStats(changes: Diff.Change[]) {
   return { added, removed, unchanged };
 }
 
-export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }: DiffModalProps) {
+function exportDiffToPrint(label: string, originalText: string, modifiedText: string) {
+  const w = window.open('', '_blank');
+  if (!w) return;
+  const changes = Diff.diffLines(originalText, modifiedText);
+  const rows = changes.map((c) => {
+    const lines = c.value.split('\n'); if (lines[lines.length - 1] === '') lines.pop();
+    const color = c.added ? '#059669' : c.removed ? '#dc2626' : '#666';
+    const bg = c.added ? 'rgba(16,185,129,0.12)' : c.removed ? 'rgba(239,68,68,0.12)' : 'transparent';
+    return lines.map((t) => `<div style="background:${bg};color:${color};white-space:pre-wrap;">${c.added ? '+' : c.removed ? '−' : ' '}${t}</div>`).join('');
+  }).join('');
+  w.document.write(`<!doctype html><html><head><title>Diff — ${label}</title></head><body style="font-family: monospace; max-width: 800px; margin: 24px auto; line-height: 1.5;"><h1>Diff — ${label}</h1>${rows}<script>window.print()</script></body></html>`);
+  w.document.close();
+}
+
+export function DiffModal({ isOpen, onClose, originalText, modifiedText, label, kindOf, projectId, scriptId, userId }: DiffModalProps) {
   const [mode, setMode] = useState<DiffMode>('lines');
   const [collapsedHunks, setCollapsedHunks] = useState<Set<number>>(new Set());
+  const [context, setContext] = useState(3);
+  const [kindFilter, setKindFilter] = useState<'all' | DiffKind>('all');
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviews, setReviews] = useState<Record<string, 'accept' | 'reject'>>({});
+  const hunkRefs = useRef<Array<HTMLDivElement | null>>([]);
+  const [currentHunk, setCurrentHunk] = useState(0);
+
+  const changeKey = (hunk: ProcessedHunk): string => {
+    const s = hunk.parts.map((p) => `${p.type}:${p.text}`).join('\n');
+    let h = 0;
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return h.toString(36);
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (!isOpen || !projectId || !scriptId) {
+      void Promise.resolve().then(() => { if (active) setReviews({}); });
+      return () => { active = false; };
+    }
+    listChangeReviews(projectId, scriptId).then(
+      (r) => { if (active) setReviews(Object.fromEntries(r.map((x) => [x.change_key, x.kind]))); },
+      () => { if (active) setReviews({}); },
+    );
+    return () => { active = false; };
+  }, [isOpen, projectId, scriptId, originalText, modifiedText]);
+
+  const decide = async (key: string, kind: 'accept' | 'reject') => {
+    if (!projectId || !scriptId || !userId) return;
+    const next = reviews[key] === kind ? undefined : kind;
+    setReviews((r) => {
+      const copy = { ...r };
+      if (next) copy[key] = next; else delete copy[key];
+      return copy;
+    });
+    try {
+      if (next) await setChangeReview(projectId, scriptId, key, next, userId);
+      else await clearChangeReview(projectId, scriptId, key);
+    } catch { /* the next open reloads */ }
+  };
+
+  const jumpToHunk = (i: number) => {
+    if (hunks.length === 0) return;
+    const next = ((i % hunks.length) + hunks.length) % hunks.length;
+    setCurrentHunk(next);
+    setCollapsedHunks(prev => {
+      if (!prev.has(next)) return prev;
+      const copy = new Set(prev); copy.delete(next); return copy;
+    });
+    hunkRefs.current[next]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const { hunks, stats } = useMemo(() => {
     if (!isOpen) return { hunks: [], stats: { added: 0, removed: 0, unchanged: 0 } };
     const changes = Diff.diffLines(originalText, modifiedText, { newlineIsToken: false });
     return {
-      hunks: buildHunks(changes),
+      hunks: buildHunks(changes, context, kindOf),
       stats: computeStats(changes),
     };
-  }, [isOpen, originalText, modifiedText]);
+  }, [isOpen, originalText, modifiedText, context, kindOf]);
 
   const wordChanges = useMemo(() => {
     if (!isOpen || mode !== 'words') return [];
     return Diff.diffWords(originalText, modifiedText);
+  }, [isOpen, mode, originalText, modifiedText]);
+
+  const sideRows = useMemo(() => {
+    if (!isOpen || mode !== 'side') return [] as Array<{ left: string | null; right: string | null; type: 'same' | 'add' | 'remove' | 'changed' }>;
+    const changes = Diff.diffLines(originalText, modifiedText);
+    const rows: Array<{ left: string | null; right: string | null; type: 'same' | 'add' | 'remove' | 'changed' }> = [];
+    let pendingRemoved: string[] = [];
+    const split = (v: string) => { const l = v.split('\n'); if (l[l.length - 1] === '') l.pop(); return l; };
+    for (const part of changes) {
+      if (part.removed) { pendingRemoved.push(...split(part.value)); continue; }
+      if (part.added) {
+        const added = split(part.value);
+        const n = Math.max(pendingRemoved.length, added.length);
+        for (let i = 0; i < n; i++) {
+          const l = pendingRemoved[i] ?? null; const r = added[i] ?? null;
+          rows.push({ left: l, right: r, type: l == null ? 'add' : r == null ? 'remove' : 'changed' });
+        }
+        pendingRemoved = [];
+        continue;
+      }
+      for (const t of split(part.value)) rows.push({ left: t, right: t, type: 'same' });
+    }
+    for (const l of pendingRemoved) rows.push({ left: l, right: null, type: 'remove' });
+    return rows;
   }, [isOpen, mode, originalText, modifiedText]);
 
   const toggleHunk = (i: number) => {
@@ -185,16 +285,16 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
               <h3 style={{ margin: 0, fontSize: 15, fontFamily: 'var(--display)', color: 'var(--fg)', letterSpacing: '-0.02em' }}>
                 Diff — <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{label}</span>
               </h3>
-              <span style={{ fontSize: 11, background: 'rgba(16,185,129,0.15)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'color-mix(in srgb, var(--ok) 15%, transparent)', color: 'var(--ok)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 +{stats.added}
               </span>
-              <span style={{ fontSize: 11, background: 'rgba(239,68,68,0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
+              <span style={{ fontSize: 11, background: 'color-mix(in srgb, var(--danger) 15%, transparent)', color: 'var(--danger)', padding: '2px 8px', borderRadius: 9999, fontFamily: 'var(--mono)' }}>
                 −{stats.removed}
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ display: 'flex', background: 'rgba(var(--ink-rgb), 0.05)', borderRadius: 8, padding: 2 }}>
-                {(['lines', 'words'] as DiffMode[]).map(m => (
+                {(['lines', 'words', 'side'] as DiffMode[]).map(m => (
                   <button
                     key={m}
                     onClick={() => setMode(m)}
@@ -207,11 +307,59 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                       transition: 'all 0.15s',
                     }}
                   >
-                    {m === 'lines' ? <AlignLeft size={12} /> : <Type size={12} />}
+                    {m === 'lines' ? <AlignLeft size={12} /> : m === 'words' ? <Type size={12} /> : <ChevronDown size={12} />}
                     {m}
                   </button>
                 ))}
               </div>
+              {mode === 'lines' && kindOf && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['all', 'dialogue', 'action', 'scene'] as const).map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setKindFilter(k)}
+                      style={{
+                        background: kindFilter === k ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.05)',
+                        border: 'none', borderRadius: 8, padding: '4px 10px',
+                        color: kindFilter === k ? 'var(--fg-strong)' : 'var(--fg-dim)',
+                        cursor: 'pointer', fontSize: 11, textTransform: k === 'all' ? 'none' : 'var(--caps)',
+                      }}
+                    >
+                      {k}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {projectId && scriptId && userId && (
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={reviewMode}
+                  onClick={() => setReviewMode((v) => !v)}
+                  title="Accept or reject each change; stored per script"
+                  style={{
+                    background: reviewMode ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.05)',
+                    border: 'none', borderRadius: 8, padding: '4px 10px',
+                    color: reviewMode ? 'var(--accent)' : 'var(--fg-dim)', cursor: 'pointer', fontSize: 11,
+                  }}
+                >
+                  Review
+                </button>
+              )}
+              {mode === 'lines' && (
+                <button
+                  type="button"
+                  onClick={() => setContext((c) => (c === 0 ? 3 : 0))}
+                  title="Show or hide unchanged context lines"
+                  style={{
+                    background: 'rgba(var(--ink-rgb), 0.05)', border: 'none', borderRadius: 8, padding: '4px 10px',
+                    color: context === 0 ? 'var(--accent)' : 'var(--fg-dim)', cursor: 'pointer', fontSize: 11,
+                  }}
+                >
+                  {context === 0 ? 'Changes only' : 'Context'}
+                </button>
+              )}
               <button aria-label="Close"
                 onClick={onClose}
                 style={{ background: 'rgba(var(--ink-rgb), 0.06)', border: 'none', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center' }}
@@ -248,6 +396,29 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                   </span>
                 ))}
               </div>
+            ) : mode === 'side' ? (
+              /* ── Side by side ────────────────────────────────── */
+              <div style={{ padding: '0 20px', fontFamily: 'var(--mono)', fontSize: 13 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, paddingBottom: 6, color: 'var(--fg-dim)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>
+                  <span>{label} — before</span>
+                  <span>current</span>
+                </div>
+                {sideRows.map((row, i) => (
+                  <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    {(['left', 'right'] as const).map((side) => {
+                      const text = row[side];
+                      const changed = row.type !== 'same';
+                      const bg = text == null ? 'transparent' : changed ? (side === 'left' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'transparent';
+                      const fg = text == null ? 'transparent' : changed ? (side === 'left' ? '#f87171' : '#34d399') : 'rgba(var(--ink-rgb), 0.55)';
+                      return (
+                        <div key={side} style={{ background: bg, borderLeft: changed ? `3px solid ${side === 'left' ? '#f87171' : '#34d399'}` : '3px solid transparent', padding: '2px 8px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: fg, lineHeight: 1.6 }}>
+                          {text ?? ''}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             ) : (
               /* ── Line diff with hunks ────────────────────────── */
               <div style={{ fontFamily: 'var(--mono)', fontSize: 13 }}>
@@ -257,6 +428,7 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                   interface EnrichedPart {
                     type: 'added' | 'removed' | 'unchanged';
                     text: string;
+                    kind: DiffKind;
                     removedParts?: { text: string; highlight: boolean }[];
                     addedParts?: { text: string; highlight: boolean }[];
                     skipRender?: boolean;
@@ -269,23 +441,24 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
 
                     if (cur.type === 'removed' && i + 1 < parts.length && parts[i + 1].type === 'added') {
                       const { removedParts, addedParts } = inlineWordDiff(cur.text, parts[i + 1].text);
-                      enriched.push({ type: 'removed', text: cur.text, removedParts });
-                      enriched.push({ type: 'added', text: parts[i + 1].text, addedParts });
+                      enriched.push({ type: 'removed', text: cur.text, kind: cur.kind, removedParts });
+                      enriched.push({ type: 'added', text: parts[i + 1].text, kind: parts[i + 1].kind, addedParts });
                       i += 2;
                     } else {
-                      enriched.push({ type: cur.type, text: cur.text });
+                      enriched.push({ type: cur.type, text: cur.text, kind: cur.kind });
                       i++;
                     }
                   }
+                  const visible = kindFilter === 'all' ? enriched : enriched.filter((p) => p.kind === kindFilter);
 
                   return (
-                    <div key={hi} style={{ marginBottom: 2 }}>
+                    <div key={hi} ref={el => { hunkRefs.current[hi] = el; }} style={{ marginBottom: 2 }}>
                       <div
                         onClick={() => toggleHunk(hi)}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           padding: '4px 20px', cursor: 'pointer',
-                          background: 'rgba(139,92,246,0.08)',
+                          background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
                           borderTop: hi > 0 ? '1px solid rgba(var(--ink-rgb), 0.04)' : 'none',
                           color: 'var(--jobs-text)', fontSize: 12, userSelect: 'none',
                         }}
@@ -294,7 +467,22 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
                         <span style={{ opacity: 0.7, fontStyle: 'italic' }}>{hunk.header}</span>
                       </div>
 
-                      {!collapsed && enriched.map((part, pi) => {
+                      {reviewMode && projectId && scriptId && userId && (() => {
+                        const key = changeKey(hunk);
+                        const state = reviews[key];
+                        return (
+                          <div style={{ display: 'flex', gap: 6, padding: '2px 20px 4px', alignItems: 'center' }}>
+                            <button type="button" onClick={() => void decide(key, 'accept')} style={{ padding: '3px 10px', borderRadius: 8, border: 'none', background: state === 'accept' ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.06)', color: state === 'accept' ? 'var(--on-accent)' : 'var(--fg-muted)', cursor: 'pointer', fontSize: 11 }}>Accept</button>
+                            <button type="button" onClick={() => void decide(key, 'reject')} style={{ padding: '3px 10px', borderRadius: 8, border: 'none', background: state === 'reject' ? 'var(--danger)' : 'rgba(var(--ink-rgb), 0.06)', color: state === 'reject' ? 'var(--on-accent)' : 'var(--fg-muted)', cursor: 'pointer', fontSize: 11 }}>Reject</button>
+                            {state && <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', textTransform: 'var(--caps)' }}>{state}</span>}
+                          </div>
+                        );
+                      })()}
+
+                      {!collapsed && visible.length === 0 && (
+                        <div style={{ padding: '4px 20px', fontSize: 12, color: 'var(--fg-dim)' }}>No {kindFilter} lines in this change.</div>
+                      )}
+                      {!collapsed && visible.map((part, pi) => {
                         const bg =
                           part.type === 'added' ? 'rgba(16,185,129,0.1)' :
                           part.type === 'removed' ? 'rgba(239,68,68,0.1)' :
@@ -366,17 +554,36 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label }
           }}>
             <span style={{ fontSize: 11, color: 'var(--fg-dim)', fontFamily: 'var(--mono)' }}>
               {stats.unchanged} unchanged · {hunks.length} hunk{hunks.length !== 1 ? 's' : ''}
+              {hunks.length > 0 && ` · change ${currentHunk + 1}/${hunks.length}`}
             </span>
-            <button
-              onClick={onClose}
-              style={{
-                fontSize: 12, padding: '6px 16px', borderRadius: 8,
-                background: 'rgba(var(--ink-rgb), 0.07)', border: 'none',
-                color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer',
-              }}
-            >
-              Close
-            </button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {hunks.length > 0 && (
+                <>
+                  <button onClick={() => jumpToHunk(currentHunk - 1)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.07)', border: 'none', color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer' }}>‹ Prev</button>
+                  <button onClick={() => jumpToHunk(currentHunk + 1)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.07)', border: 'none', color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer' }}>Next ›</button>
+                </>
+              )}
+              <button
+                onClick={() => exportDiffToPrint(label, originalText, modifiedText)}
+                style={{
+                  fontSize: 12, padding: '6px 16px', borderRadius: 8,
+                  background: 'rgba(var(--ink-rgb), 0.07)', border: 'none',
+                  color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer',
+                }}
+              >
+                Export
+              </button>
+              <button
+                onClick={onClose}
+                style={{
+                  fontSize: 12, padding: '6px 16px', borderRadius: 8,
+                  background: 'rgba(var(--ink-rgb), 0.07)', border: 'none',
+                  color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </motion.div>
       </motion.div>

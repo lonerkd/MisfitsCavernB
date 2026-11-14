@@ -3,14 +3,7 @@
 import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowLeft, Save, Download, FileText, Plus, ChevronDown, Loader, Wand2,
-  Book, Clock, Users, AlertCircle, FileUp, Settings, HelpCircle, History,
-  Maximize, Minimize, LayoutDashboard, Type, List, Target, Play, Pause,
-  Tags, Bookmark, MessageSquare, SplitSquareHorizontal, Edit3,
-  Search, Replace, X, BarChart3, Lock, ClipboardList, Archive
-} from 'lucide-react';
-import Link from 'next/link';
+import { Users, Minimize, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
@@ -26,12 +19,12 @@ import { addToStash, useScriptStash } from '@/lib/scriptos/stash';
 import { insertSnippet, acceptCompletion, wrapInParens, enterInHeading, cycleLine, suggestionsAt } from '@/lib/scriptos/typing';
 import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
-import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
+import { getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
-import type { ScriptLine, LineType, Scene as ParsedScene } from '@/lib/scriptos/types';
+import type { ScriptLine, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
@@ -51,7 +44,6 @@ import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
-import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
@@ -59,6 +51,9 @@ import { useScriptCasting } from '@/components/editor/useScriptCasting';
 import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
+import { StoryInterview } from '@/components/story/StoryInterview';
+import { RelationshipMap } from '@/components/characters/RelationshipMap';
+import type { Relationship } from '@/lib/characters/depth';
 import { SceneMusic } from '@/components/editor/SceneMusic';
 import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
@@ -73,11 +68,12 @@ import { useEditorScenes } from '@/components/editor/useEditorScenes';
 import { useEditorBreakdown } from '@/components/editor/breakdown/useEditorBreakdown';
 import { BreakdownPanel } from '@/components/editor/breakdown/BreakdownPanel';
 import { EditorLeftNav } from '@/components/editor/EditorLeftNav';
+import type { DiffKind } from '@/components/editor/DiffModal';
+import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
 const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
-import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
 import { WriteFooter } from '@/components/editor/WriteFooter';
@@ -183,7 +179,7 @@ export default function EditorPage() {
   const scriptFormat = currentScript?.format;
   // The cast people have chosen is what the reader knows about this project (read before the parse).
   const canTagMusic = useCanShape(activeProject?.id, !!sessionUser?.id && activeProject?.creator_id === sessionUser.id);
-  const canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
+  const _canShareScript = useCanShareScript(currentScript, activeProject?.id === currentScript?.project_id ? activeProject?.creator_id : null);
   const { castings, projectCrew, castCharacter: handleCastCharacter } = useScriptCasting(activeProject?.id);
   const corrections = useReadingCorrections(currentScript?.project_id ?? null);
   const locations = useProjectLocations(activeProject?.id ?? null);
@@ -267,13 +263,15 @@ export default function EditorPage() {
   const [showCharBible, setShowCharBible] = useState(false);
 
   const [sessionStartWords, setSessionStartWords] = useState(0);
+  const [showStoryInterview, setShowStoryInterview] = useState(false);
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
   const [showCompare, setShowCompare] = useState(false);
   const [navHistory, setNavHistory] = useState<HistoryState>(NO_HISTORY);
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [nightModePreview, setNightModePreview] = useState(false);
-  const [showStash, setShowStash] = useState(false);
+
   const [dragSceneIdx, setDragSceneIdx] = useState<number | null>(null);
   const [dropSceneIdx, setDropSceneIdx] = useState<number | null>(null);
   const [showDiff, setShowDiff] = useState(false);
@@ -758,6 +756,12 @@ export default function EditorPage() {
     return rows;
   }, [lines, scenesList, timing.pages]);
 
+  const applySkeleton = (scenes: { title: string }[]) => {
+    const block = scenes.map((s) => `INT. ${s.title.toUpperCase()} - DAY`).join('\n\n');
+    setContent((prev) => (prev ? prev + '\n\n' + block : block));
+    setShowStoryInterview(false);
+  };
+
   const reorderScenes = (from: number, to: number) => {
     const next = moveScene(content, scenePositions, from, to);
     if (next !== null) setContent(next);
@@ -872,6 +876,13 @@ export default function EditorPage() {
   const datedDays = useMemo(() => new Set(shootDays.rows.filter((d) => d.shoot_date).map((d) => d.day_number)), [shootDays.rows]);
   // The character whose cue the caret is on: who plays them, their look in this scene.
   const projectCharacters = useCharacters(currentScript?.project_id ?? null);
+  const nameToId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const char of projectCharacters.rows) {
+      map.set(char.name.toUpperCase(), char.id);
+    }
+    return map;
+  }, [projectCharacters.rows]);
   const sceneStates = useSceneStates(currentScript?.project_id ?? null);
   const cue = useMemo(() => {
     const l = lines[cursorLine];
@@ -1293,7 +1304,7 @@ export default function EditorPage() {
                               <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
                               <select
                                 value={cast?.crew_user_id || ''}
-                                onChange={e => handleCastCharacter(name, e.target.value)}
+                                onChange={e => handleCastCharacter(nameToId.get(name.toUpperCase()) ?? name, name, e.target.value)}
                                 disabled={projectCrew.length === 0}
                                 style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg-muted)', fontSize: 12, outline: 'none' }}
                               >
@@ -1329,6 +1340,10 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
+              <div style={{ marginTop: 16 }}>
+                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)', margin: '0 0 8px' }}>Relationships</h3>
+                <RelationshipMap relationships={relationships} onChange={setRelationships} />
+              </div>
               {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={(id) => { corrections.removeLocal(id); refreshWriterMemory(); }} />}
             </motion.div>
           </motion.div>
@@ -1339,6 +1354,13 @@ export default function EditorPage() {
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
       }}>
         <AnimatePresence>
+          {showStoryInterview && (
+            <div style={{ position: 'fixed', inset: 0, background: 'var(--scrim-flat)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowStoryInterview(false)}>
+              <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface)', borderRadius: 20, padding: 32, width: 640, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+                <StoryInterview projectId={currentScript?.project_id ?? ''} onApply={applySkeleton} />
+              </div>
+            </div>
+          )}
         </AnimatePresence>
 
         <AnimatePresence>

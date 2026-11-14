@@ -69,6 +69,17 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    updates the doc that owns it in the same PR, then `npm run sync-intel`,
    then a session note and `BACKLOG.md` (`STATE.md` only when the handoff
    changes).
+9. **The free tiers are the budget.** Vercel Hobby (10 GB deployment storage,
+   100 deployments a day), Supabase free (2 projects), GitHub Actions minutes.
+   Every push is a preview deployment and every PR is CI, so keep both small:
+   batch commits instead of pushing each one, never push a change that cannot
+   affect the app, and do not add a workflow, job, shard or dependency without
+   removing one. When a limit is hit, the fix is fewer deployments or fewer
+   runs — not a bigger plan.
+10. **The governance is part of the system.** The rules, the CI checks, the
+    hooks and the agent workflows are not furniture: when one is wasteful,
+    wrong for the owner's setup, or behind the tools, improve it in the same PR
+    and say why in the session note. The budget above is the ruler.
 
 ## The change cycle
 
