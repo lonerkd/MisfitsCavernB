@@ -215,6 +215,30 @@ export async function getProjectTeam(projectId: string, ownerId: string | null |
   ];
 }
 
+/**
+ * Accept or decline a pending crew invitation.
+ * Only the invited person may call this (the RPC enforces it).
+ */
+export async function respondToCrewInvite(projectId: string, response: 'confirmed' | 'declined') {
+  // respond_to_crew_invite is not yet in the generated types (migration applied after type gen).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.rpc as any)('respond_to_crew_invite', {
+    p_project_id: projectId,
+    p_response: response,
+  });
+  if (error) throw error;
+}
+
+/** Pending crew invitations for the signed-in person: project rows they have not yet answered. */
+export async function getMyPendingInvites(): Promise<{ project_id: string; role: CrewRole; craft: string | null; invited_by: string | null; created_at: string }[]> {
+  const { data, error } = await supabase
+    .from('project_crew')
+    .select('project_id, role, craft, invited_by, created_at')
+    .eq('status', 'pending');
+  if (error) throw error;
+  return (data ?? []) as { project_id: string; role: CrewRole; craft: string | null; invited_by: string | null; created_at: string }[];
+}
+
 /** This person's craft on a project they're crew on; null when none (or not crew). */
 export async function getMyCraftOn(projectId: string, userId: string): Promise<string | null> {
   const { data, error } = await supabase.from('project_crew').select('craft').eq('project_id', projectId).eq('user_id', userId).maybeSingle();

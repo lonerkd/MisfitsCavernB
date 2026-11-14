@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { setProjectStatus } from '@/lib/supabase/projects';
 import { getProjectCardFacts, getUserProjects } from '@/lib/supabase/projects';
+import { getMyPendingInvites, respondToCrewInvite } from '@/lib/supabase/crew-management';
 import { fetchProjectsSignals, setProjectArchived } from '@/lib/supabase/progress';
 import type { ProjectSignals } from '@/lib/os/progress';
 import { SORTS, matchesQuery as matches, percentOf, readinessOf, sortProjects, type Readiness, type SortKey } from '@/lib/os/board';
@@ -373,12 +374,36 @@ function PhaseColumn({ phase, projects, onDropProject, canArchive, onArchive }: 
   );
 }
 
+interface PendingInvite { project_id: string; role: string; craft: string | null; invited_by: string | null; created_at: string; project_title?: string }
+
+function PendingInviteBanner({ invites, onRespond }: { invites: PendingInvite[]; onRespond: (projectId: string, response: 'confirmed' | 'declined') => void }) {
+  if (!invites.length) return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+      {invites.map((inv) => (
+        <div key={inv.project_id} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', background: 'color-mix(in srgb, var(--accent) 7%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 18%, transparent)', borderRadius: 8, padding: '10px 14px' }}>
+          <div style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 'max(10px, var(--mc-min-font, 0px))', color: 'var(--fg)' }}>
+            <span style={{ color: 'var(--fg-muted)' }}>Invited to crew — </span>
+            <strong>{inv.project_title ?? 'a project'}</strong>
+            {inv.craft && <span style={{ color: 'var(--fg-muted)' }}> as {inv.craft}</span>}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <Button size="sm" variant="solid" onClick={() => onRespond(inv.project_id, 'confirmed')}>Accept</Button>
+            <Button size="sm" variant="ghost" onClick={() => onRespond(inv.project_id, 'declined')}>Decline</Button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ProjectsPage() {
   useOSGate();
   const [projectsList, setProjectsList] = useState<ProjectCardViewModel[]>([]);
   const [user, setUser] = useState<any>(null);
   const [showNew, setShowNew] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const { toast } = useToast();
   const { setActiveProject } = useProject();
   const router = useRouter();
@@ -402,7 +427,10 @@ export default function ProjectsPage() {
     awaitOSUser().then((user) => {
       if (!user) { setLoaded(true); return; }
       setUser(user);
-      getUserProjects(user.id).then(async data => {
+      Promise.all([
+        getUserProjects(user.id),
+        getMyPendingInvites().catch(() => []),
+      ]).then(async ([data, invites]) => {
         const rows = data || [];
         const [facts, signals] = await Promise.all([
           getProjectCardFacts(rows).catch(() => ({} as Awaited<ReturnType<typeof getProjectCardFacts>>)),
@@ -426,6 +454,9 @@ export default function ProjectsPage() {
           color: readable(p.accent_color || 'var(--accent)'),
         }));
         setProjectsList(fetched);
+        // Enrich pending invites with project titles where the project is already loaded.
+        const titleById = new Map(rows.map((r) => [r.id, r.title]));
+        setPendingInvites(invites.map((inv) => ({ ...inv, project_title: titleById.get(inv.project_id) })));
         setLoaded(true);
       }).catch(() => setLoaded(true));
     }).catch(err => {
@@ -513,6 +544,42 @@ export default function ProjectsPage() {
     }
   };
 
+  const handleInviteResponse = async (projectId: string, response: 'confirmed' | 'declined') => {
+    try {
+      await respondToCrewInvite(projectId, response);
+      setPendingInvites((prev) => prev.filter((inv) => inv.project_id !== projectId));
+      toast(response === 'confirmed' ? 'Joined the crew' : 'Invitation declined', 'success');
+      if (response === 'confirmed') {
+        // Reload so the new project appears on the board.
+        const uid = user?.id;
+        if (uid) {
+          getUserProjects(uid).then((data) => {
+            const rows = data || [];
+            setProjectsList((prev) => {
+              const existing = new Set(prev.map((p) => p.id));
+              type ProjectRow = NonNullable<typeof rows>[number];
+              const added: ProjectCardViewModel[] = rows
+                .filter((r: ProjectRow) => !existing.has(r.id))
+                .map((p: ProjectRow) => ({
+                  id: p.id, title: p.title, type: p.project_type || 'Project',
+                  phase: mapStatusToPhase(p.status ?? undefined),
+                  creatorId: p.creator_id, archived: !!p.archived_at,
+                  createdAt: p.created_at ?? '', updatedAt: p.updated_at ?? p.created_at ?? '',
+                  readiness: readinessOf(null), signals: null, progress: null,
+                  deadline: p.end_date || null, team: [],
+                  description: p.description || 'No description.',
+                  color: readable(p.accent_color || 'var(--accent)'),
+                }));
+              return [...prev, ...added];
+            });
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not respond to invitation', 'error');
+    }
+  };
+
   const total = active.length;
   const inFlight = active.filter(p => p.phase !== 'delivery').length;
 
@@ -583,6 +650,7 @@ export default function ProjectsPage() {
           </motion.div>
         ) : (
         <>
+        <PendingInviteBanner invites={pendingInvites} onRespond={handleInviteResponse} />
         <div role="search" aria-label="Projects" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 18 }}>
           <div style={{ position: 'relative', flex: '0 1 280px', minWidth: 180 }}>
             <Search size={12} aria-hidden style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--fg-muted)' }} />
