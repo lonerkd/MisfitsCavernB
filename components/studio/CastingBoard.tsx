@@ -10,6 +10,7 @@ import { useCharacterMedia, useCharacters, useSceneCharacters, useSignedUrls, me
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { List as Users } from 'lucide-react';
 import { useStudio } from './StudioContext';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/util/color';
@@ -33,6 +34,9 @@ function castingCallHref(projectTitle: string, character: string, fp: { sceneNum
 export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const { project, userId, scriptId, scriptFormat, scenes, mediaById } = useStudio();
   const projectId = project.id;
+  // Everyone on the crew sees who is cast; deciding it is `casting.decide` (the database says so).
+  const caps = useMyCapabilities(projectId);
+  const decides = caps.can('casting.decide');
   const { toast } = useToast();
   const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId, scriptFormat);
   const chars = scriptChars.map((c) => ({ id: c.row?.id, name: c.name, color: c.color }));
@@ -132,13 +136,13 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                       <div style={{ fontSize: 13, fontWeight: 600 }}>{cast.username || 'Crew member'}</div>
                       <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ok)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>Cast</div>
                     </div>
-                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>
-                    <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--danger)', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>
+                    {decides && <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)', background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Recast</button>}
+                    {decides && <button onClick={() => clearCasting(sel.name)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--danger)', background: 'transparent', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '5px 10px', cursor: 'pointer' }}>Remove</button>}
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px dashed rgba(var(--ink-rgb), 0.14)', borderRadius: 8, marginBottom: assigning ? 12 : 24 }}>
-                    <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast</span>
-                    <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>
+                    <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast{!caps.loading && !decides ? ' · the people who decide casting assign it' : ''}</span>
+                    {decides && <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>}
                     <Link href={castingCallHref(project.title, sel.name, fp)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--jobs-text)', background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>Post a casting call →</Link>
                   </div>
                 )}

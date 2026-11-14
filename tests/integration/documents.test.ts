@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { adminClient, createCast, createPersona, destroyCast, type Cast, type Persona } from './support/personas';
 import { createCrewedProject, tinyPng } from './support/project';
 
-// Paperwork as personas: Sam (owner) and Jordan (contributor) keep the
+// Paperwork as personas: Sam (owner) and Jordan (a production coordinator: his craft grants paperwork) keep the
 // production's documents; Casey (a viewer on the crew) sees only the paper
 // that's theirs — record and file. Riley sees nothing. A permit on file moves
 // its location's permit along.
@@ -17,6 +17,8 @@ beforeAll(async () => {
   casey = await createPersona('casey');
   ({ projectId } = await createCrewedProject(cast, 'Paperwork'));
   await adminClient().from('project_crew').insert({ project_id: projectId, user_id: casey.id, role: 'viewer', status: 'confirmed' });
+  // Jordan keeps the paperwork here: it is what a coordinator's craft grants (a designer, his default, does not hold it).
+  await adminClient().from('project_crew').update({ craft: 'Production coordinator' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
 });
 afterAll(async () => {
   if (uploaded.length) await adminClient().storage.from(BUCKET).remove(uploaded);
@@ -24,7 +26,7 @@ afterAll(async () => {
 });
 
 describe('project_documents', () => {
-  it('the people who shape the project keep them; each person sees their own', async () => {
+  it('the people whose craft holds the paperwork keep it; each person sees their own', async () => {
     const release = (await cast.jordan.client.from('project_documents')
       .insert({ project_id: projectId, kind: 'release', title: 'Appearance release — casey', person_id: casey.id })
       .select('id').single()).data!;
@@ -67,7 +69,7 @@ describe('project_documents', () => {
 });
 
 describe('the papers bucket', () => {
-  it('the file is for the shapers and the person it’s about', async () => {
+  it('the file is for those who hold the paperwork and the person it’s about', async () => {
     const doc = (await cast.sam.client.from('project_documents')
       .insert({ project_id: projectId, kind: 'contract', title: 'Deal memo — casey', person_id: casey.id })
       .select('id').single()).data!;
