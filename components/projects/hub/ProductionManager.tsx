@@ -17,6 +17,7 @@ import { SCRIPT_FORMATS, type ScriptFormat } from '@/lib/formats/script-formats'
 import { awaitOSUser } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { setCrewCraft } from '@/lib/supabase/crew-management';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
@@ -206,6 +207,11 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
     setErr(null);
     load();
   };
+  // The owner changes what someone does on the project right from this panel.
+  const changeCrewCraft = async (c: CrewRow, craft: string | null) => {
+    if (!userId) return;
+    if (await attempt(async () => { await setCrewCraft(projectId, c.user_id, craft, userId); })) load();
+  };
   const delCrew = async (id: string) => {
     if (!await confirm('Remove this crew member from the project?')) return;
     const prev = crew;
@@ -350,7 +356,9 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           {crew.map(c => (
             <Row key={c.id}>
               <span style={{ flex: 1, fontSize: 11 }}>{c.profiles?.username || 'Unknown'}</span>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{c.craft || (c.role === 'lead' ? 'Lead' : 'Crew')}</span>
+              {isOwner
+                ? <div style={{ width: 170 }}><CraftPicker label={`${c.profiles?.username || 'Their'} craft`} value={c.craft} onChange={(craft) => void changeCrewCraft(c, craft)} placeholder={c.role === 'lead' ? 'Lead' : 'Set craft'} noneLabel="No craft" /></div>
+                : <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{c.craft || (c.role === 'lead' ? 'Lead' : 'Crew')}</span>}
               {isOwner && <DelBtn onClick={() => delCrew(c.id)} />}
             </Row>
           ))}

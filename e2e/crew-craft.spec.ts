@@ -84,6 +84,27 @@ test.describe('Crew craft (local Supabase)', () => {
     await expect.poll(async () => (await admin.from('project_crew').select('role, craft').eq('project_id', projectId).eq('user_id', guest.id).single()).data, { timeout: 30_000 })
       .toEqual({ role: 'viewer', craft: 'Key grip' });
 
+    // A second craft: a person can hold several (a writer-director). The rights follow, and the tier is the ceiling.
+    await page.getByRole('button', { name: /^Add another craft for/ }).click();
+    await page.getByPlaceholder(/Search — e\.g\./).fill('accountant');
+    await page.getByRole('button', { name: 'Production accountant', exact: true }).click();
+    await expect.poll(async () => (await admin.from('project_crew_crafts').select('craft').eq('project_id', projectId).eq('user_id', guest.id)).data, { timeout: 30_000 })
+      .toEqual([{ craft: 'Production accountant' }]);
+    await page.getByText(`What ${guest.name} can do`).click();
+    // Key grip and the accountant both let them see the budget; editing it is the accountant's, but they are view-only.
+    await expect(page.getByLabel('See the budget')).toBeChecked();
+    await expect(page.getByLabel('Edit the budget')).toBeDisabled();
+    await expect(page.getByLabel('Edit the budget')).not.toBeChecked();
+    await expect(page.getByText('view-only access cannot edit').first()).toBeVisible();
+
+    // The owner takes one away, and giving it back clears the override (it is what the crafts give again).
+    await page.getByLabel('See the budget').click(); // it flips when the change is saved, so click and then wait
+    await expect.poll(async () => (await admin.from('crew_capability_overrides').select('capability, granted').eq('project_id', projectId).eq('user_id', guest.id)).data, { timeout: 30_000 })
+      .toEqual([{ capability: 'budget.read', granted: false }]);
+    await expect(page.getByLabel('See the budget')).not.toBeChecked();
+    await page.getByLabel('See the budget').click();
+    await expect(page.getByLabel('See the budget')).toBeChecked();
+    await expect.poll(async () => (await admin.from('crew_capability_overrides').select('capability').eq('project_id', projectId).eq('user_id', guest.id)).data, { timeout: 30_000 }).toEqual([]);
     expect(await axeViolations(page)).toEqual([]);
   });
 });

@@ -1,3 +1,4 @@
+
 bucket assets public=true limit=- mime=-
 bucket project-media public=false limit=52428800 mime={image/*,video/*,audio/*,application/pdf}
 bucket project-papers public=false limit=20971520 mime={application/pdf,image/*}
@@ -133,6 +134,10 @@ column campaigns.target_demographic text
 column campaigns.target_reach text default ''::text
 column campaigns.title text not null
 column campaigns.updated_at timestamp with time zone default now()
+column capabilities.area text not null
+column capabilities.edits boolean not null
+column capabilities.key text not null
+column capabilities.label text not null
 column casting_auditions.character_name text not null
 column casting_auditions.created_at timestamp with time zone default now() not null
 column casting_auditions.created_by uuid
@@ -213,12 +218,19 @@ column client_errors.release text
 column client_errors.stack text
 column client_errors.user_agent text
 column client_errors.user_id uuid
+column craft_capabilities.capability text not null
+column craft_capabilities.craft text not null
 column crafts.above_the_line boolean default false not null
 column crafts.color text not null
 column crafts.created_at timestamp with time zone default now() not null
 column crafts.department text not null
 column crafts.name text not null
 column crafts.position integer default 0 not null
+column crew_capability_overrides.capability text not null
+column crew_capability_overrides.created_at timestamp with time zone default now() not null
+column crew_capability_overrides.granted boolean not null
+column crew_capability_overrides.project_id uuid not null
+column crew_capability_overrides.user_id uuid not null
 column deliverables.created_at timestamp with time zone default now() not null
 column deliverables.kind text default 'other'::text not null
 column deliverables.max_chars integer
@@ -555,6 +567,10 @@ column project_crew.project_id uuid not null
 column project_crew.role text default 'contributor'::text not null
 column project_crew.status text default 'confirmed'::text
 column project_crew.user_id uuid not null
+column project_crew_crafts.craft text not null
+column project_crew_crafts.created_at timestamp with time zone default now() not null
+column project_crew_crafts.project_id uuid not null
+column project_crew_crafts.user_id uuid not null
 column project_documents.created_at timestamp with time zone default now() not null
 column project_documents.created_by uuid default auth.uid()
 column project_documents.expires_on date
@@ -997,6 +1013,8 @@ constraint campaigns.campaigns_platform_len CHECK (((char_length(btrim(platform)
 constraint campaigns.campaigns_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint campaigns.campaigns_status_check CHECK ((status = ANY (ARRAY['drafting'::text, 'live'::text, 'wrapped'::text])))
 constraint campaigns.campaigns_title_len CHECK (((char_length(btrim(title)) >= 1) AND (char_length(btrim(title)) <= 200)))
+constraint capabilities.capabilities_key_check CHECK ((key ~ '^[a-z]+\.[a-z]+$'::text))
+constraint capabilities.capabilities_pkey PRIMARY KEY (key)
 constraint casting_auditions.casting_auditions_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 constraint casting_auditions.casting_auditions_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint casting_auditions.casting_auditions_pkey PRIMARY KEY (id)
@@ -1053,10 +1071,16 @@ constraint client_errors.client_errors_release_check CHECK ((char_length(release
 constraint client_errors.client_errors_stack_check CHECK ((char_length(stack) <= 8000))
 constraint client_errors.client_errors_ua_check CHECK ((char_length(user_agent) <= 300))
 constraint client_errors.client_errors_user_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint craft_capabilities.craft_capabilities_capability_fkey FOREIGN KEY (capability) REFERENCES capabilities(key) ON UPDATE CASCADE ON DELETE CASCADE
+constraint craft_capabilities.craft_capabilities_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE CASCADE
+constraint craft_capabilities.craft_capabilities_pkey PRIMARY KEY (craft, capability)
 constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
 constraint crafts.crafts_pkey PRIMARY KEY (name)
+constraint crew_capability_overrides.crew_capability_overrides_capability_fkey FOREIGN KEY (capability) REFERENCES capabilities(key) ON UPDATE CASCADE ON DELETE CASCADE
+constraint crew_capability_overrides.crew_capability_overrides_pkey PRIMARY KEY (project_id, user_id, capability)
+constraint crew_capability_overrides.crew_capability_overrides_project_id_user_id_fkey FOREIGN KEY (project_id, user_id) REFERENCES project_crew(project_id, user_id) ON DELETE CASCADE
 constraint deliverables.deliverables_kind_check CHECK ((kind = ANY (ARRAY['spot_30'::text, 'spot_15'::text, 'spot_6'::text, 'radio'::text, 'poster'::text, 'banner'::text, 'headline'::text, 'social'::text, 'other'::text])))
 constraint deliverables.deliverables_max_chars_check CHECK (((max_chars IS NULL) OR ((max_chars >= 1) AND (max_chars <= 100000))))
 constraint deliverables.deliverables_max_seconds_check CHECK (((max_seconds IS NULL) OR ((max_seconds >= 1) AND (max_seconds <= 3600))))
@@ -1295,6 +1319,9 @@ constraint project_crew.project_crew_project_id_user_id_key UNIQUE (project_id, 
 constraint project_crew.project_crew_role_check CHECK ((role = ANY (ARRAY['lead'::text, 'contributor'::text, 'viewer'::text])))
 constraint project_crew.project_crew_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'confirmed'::text, 'declined'::text])))
 constraint project_crew.project_crew_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint project_crew_crafts.project_crew_crafts_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE CASCADE
+constraint project_crew_crafts.project_crew_crafts_pkey PRIMARY KEY (project_id, user_id, craft)
+constraint project_crew_crafts.project_crew_crafts_project_id_user_id_fkey FOREIGN KEY (project_id, user_id) REFERENCES project_crew(project_id, user_id) ON DELETE CASCADE
 constraint project_documents.project_documents_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint project_documents.project_documents_file_shape CHECK (((storage_path IS NULL) = (file_name IS NULL)))
 constraint project_documents.project_documents_kind_check CHECK ((kind = ANY (ARRAY['permit'::text, 'insurance'::text, 'release'::text, 'contract'::text, 'other'::text])))
@@ -1555,6 +1582,7 @@ function internal.characters_rename() body=318754cf015e76713452d914dafbc551
 function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
+function internal.has_capability(pid uuid, cap text) body=bf3d934ac7d4f15fd5023ef8e6dfeedb
 function internal.hub_posts_announce() body=7d0397cd28d479e3406649839a993fe2
 function internal.hub_posts_announce_scheduled() body=aa8aeef07e7fce52094f4238f5a78d51
 function internal.hub_posts_check_consent() body=627e8ed75a5d3f2bf1eadc5d338453ee
@@ -1653,6 +1681,7 @@ function public.log_password_breach(p_breach_count integer, p_context text, p_em
 function public.log_writing(p_day date, p_words integer, p_sprint boolean) body=f443b82da62a986f0ddd5f1d8fa31e0d
 function public.lounge_unread() body=899c63983f2e7e2d42741fa50e07e9f1
 function public.mark_lounge_read(p_channel uuid, p_partner uuid) body=57f11db548b93389ff29027e6e7dba3d
+function public.my_capabilities(pid uuid) body=631c2a58e495b45c74ad057fed46f411
 function public.patch_project_settings(p_project_id uuid, p_patch jsonb) body=8e1b308fa68bea295ecb87c1e84bd5af
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
@@ -1705,6 +1734,7 @@ grant function internal.characters_rename() postgres
 grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
+grant function internal.has_capability(pid uuid, cap text) authenticated,postgres,service_role
 grant function internal.hub_posts_announce() postgres
 grant function internal.hub_posts_announce_scheduled() postgres
 grant function internal.hub_posts_check_consent() postgres
@@ -1803,6 +1833,7 @@ grant function public.log_password_breach(p_breach_count integer, p_context text
 grant function public.log_writing(p_day date, p_words integer, p_sprint boolean) authenticated,postgres,service_role
 grant function public.lounge_unread() authenticated,postgres,service_role
 grant function public.mark_lounge_read(p_channel uuid, p_partner uuid) authenticated,postgres,service_role
+grant function public.my_capabilities(pid uuid) authenticated,postgres,service_role
 grant function public.patch_project_settings(p_project_id uuid, p_patch jsonb) authenticated,postgres,service_role
 grant function public.pin_message(p_message uuid, p_pinned boolean) authenticated,postgres,service_role
 grant function public.project_availability(p_project uuid, p_from date, p_to date) authenticated,postgres,service_role
@@ -1865,7 +1896,9 @@ index CREATE INDEX character_media_media_fkey_idx ON public.character_media USIN
 index CREATE INDEX character_media_project_idx ON public.character_media USING btree (project_id)
 index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree (created_at DESC)
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
+index CREATE INDEX craft_capabilities_capability_idx ON public.craft_capabilities USING btree (capability)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
+index CREATE INDEX crew_capability_overrides_capability_idx ON public.crew_capability_overrides USING btree (capability)
 index CREATE INDEX deliverables_project_idx ON public.deliverables USING btree (project_id)
 index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
 index CREATE INDEX entities_project_idx ON public.entities USING btree (project_id, kind)
@@ -1996,6 +2029,8 @@ index CREATE INDEX project_audio_references_script_id_fkey_idx ON public.project
 index CREATE INDEX project_brief_answered_by_fkey_idx ON public.project_brief USING btree (answered_by)
 index CREATE INDEX project_brief_question_idx ON public.project_brief USING btree (question)
 index CREATE INDEX project_crew_craft_idx ON public.project_crew USING btree (craft)
+index CREATE INDEX project_crew_crafts_craft_idx ON public.project_crew_crafts USING btree (craft)
+index CREATE INDEX project_crew_crafts_user_idx ON public.project_crew_crafts USING btree (user_id)
 index CREATE INDEX project_documents_created_by_fkey_idx ON public.project_documents USING btree (created_by)
 index CREATE INDEX project_documents_location_fkey_idx ON public.project_documents USING btree (location_id, project_id)
 index CREATE INDEX project_documents_person_idx ON public.project_documents USING btree (person_id)
@@ -2093,6 +2128,7 @@ index CREATE UNIQUE INDEX call_sheets_pkey ON public.call_sheets USING btree (id
 index CREATE UNIQUE INDEX call_sheets_project_id_shoot_day_key ON public.call_sheets USING btree (project_id, shoot_day)
 index CREATE UNIQUE INDEX call_sheets_shoot_day_key ON public.call_sheets USING btree (shoot_day_id) WHERE (shoot_day_id IS NOT NULL)
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
+index CREATE UNIQUE INDEX capabilities_pkey ON public.capabilities USING btree (key)
 index CREATE UNIQUE INDEX casting_auditions_pkey ON public.casting_auditions USING btree (id)
 index CREATE UNIQUE INDEX casting_history_pkey ON public.casting_history USING btree (id)
 index CREATE UNIQUE INDEX casting_notes_pkey ON public.casting_notes USING btree (id)
@@ -2109,7 +2145,9 @@ index CREATE UNIQUE INDEX characters_id_project_key ON public.characters USING b
 index CREATE UNIQUE INDEX characters_name_key ON public.characters USING btree (project_id, name)
 index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
+index CREATE UNIQUE INDEX craft_capabilities_pkey ON public.craft_capabilities USING btree (craft, capability)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
+index CREATE UNIQUE INDEX crew_capability_overrides_pkey ON public.crew_capability_overrides USING btree (project_id, user_id, capability)
 index CREATE UNIQUE INDEX deliverables_pkey ON public.deliverables USING btree (script_id)
 index CREATE UNIQUE INDEX deliverables_script_id_project_id_key ON public.deliverables USING btree (script_id, project_id)
 index CREATE UNIQUE INDEX discord_integrations_pkey ON public.discord_integrations USING btree (channel_id)
@@ -2159,6 +2197,7 @@ index CREATE UNIQUE INDEX profiles_username_key ON public.profiles USING btree (
 index CREATE UNIQUE INDEX project_audio_references_pkey ON public.project_audio_references USING btree (id)
 index CREATE UNIQUE INDEX project_beats_pkey ON public.project_beats USING btree (id)
 index CREATE UNIQUE INDEX project_brief_pkey ON public.project_brief USING btree (project_id, question)
+index CREATE UNIQUE INDEX project_crew_crafts_pkey ON public.project_crew_crafts USING btree (project_id, user_id, craft)
 index CREATE UNIQUE INDEX project_crew_pkey ON public.project_crew USING btree (id)
 index CREATE UNIQUE INDEX project_crew_project_id_user_id_key ON public.project_crew USING btree (project_id, user_id)
 index CREATE UNIQUE INDEX project_documents_pkey ON public.project_documents USING btree (id)
@@ -2247,6 +2286,7 @@ policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authen
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.campaigns "campaigns access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.capabilities "capabilities view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.casting_auditions "casting_auditions_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
 policy public.casting_auditions "casting_auditions_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_auditions "casting_auditions_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
@@ -2282,10 +2322,18 @@ policy public.character_media "character_media view" PERMISSIVE SELECT to authen
 policy public.characters "characters access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.client_errors "client_errors: admins clear" PERMISSIVE DELETE to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
 policy public.client_errors "client_errors: admins read" PERMISSIVE SELECT to authenticated using ( SELECT internal.caller_is_admin() AS caller_is_admin) check -
+policy public.craft_capabilities "craft capabilities admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.craft_capabilities "craft capabilities admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.craft_capabilities "craft capabilities admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.craft_capabilities "craft capabilities view" PERMISSIVE SELECT to anon,authenticated using true check -
 policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.crafts "crafts admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
+policy public.crew_capability_overrides "capability overrides add" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
+policy public.crew_capability_overrides "capability overrides change" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check internal.is_project_creator(project_id)
+policy public.crew_capability_overrides "capability overrides remove" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
+policy public.crew_capability_overrides "capability overrides view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id)) check -
 policy public.deliverables "deliverables insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
 policy public.deliverables "deliverables read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.deliverables "deliverables update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
@@ -2393,6 +2441,9 @@ policy public.project_crew "Project creators can manage crew" PERMISSIVE INSERT 
 policy public.project_crew "Project creators can remove crew" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR (user_id = ( SELECT auth.uid() AS uid))) check -
 policy public.project_crew "Project creators can update crew" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check -
 policy public.project_crew "project_crew view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
+policy public.project_crew_crafts "crew crafts add" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
+policy public.project_crew_crafts "crew crafts remove" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
+policy public.project_crew_crafts "crew crafts view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_access_project(project_id)) check -
 policy public.project_documents "project_documents delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
 policy public.project_documents "project_documents insert" PERMISSIVE INSERT to authenticated using - check internal.can_shape_project(project_id)
 policy public.project_documents "project_documents read" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR (person_id = ( SELECT auth.uid() AS uid))) check -
@@ -2559,6 +2610,7 @@ rls call_sheet_acks enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
 rls campaigns enabled=true forced=false
+rls capabilities enabled=true forced=false
 rls casting_auditions enabled=true forced=false
 rls casting_history enabled=true forced=false
 rls casting_notes enabled=true forced=false
@@ -2570,7 +2622,9 @@ rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
 rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
+rls craft_capabilities enabled=true forced=false
 rls crafts enabled=true forced=false
+rls crew_capability_overrides enabled=true forced=false
 rls deliverables enabled=true forced=false
 rls discord_integrations enabled=true forced=false
 rls entities enabled=true forced=false
@@ -2605,6 +2659,7 @@ rls project_audio_references enabled=true forced=false
 rls project_beats enabled=true forced=false
 rls project_brief enabled=true forced=false
 rls project_crew enabled=true forced=false
+rls project_crew_crafts enabled=true forced=false
 rls project_documents enabled=true forced=false
 rls project_formats enabled=true forced=false
 rls project_locations enabled=true forced=false
