@@ -170,6 +170,7 @@ Callable by **signed-in users**:
 | `ack_call_sheet(sheet)`, `issue_call_sheet(sheet, note)` | `internal.can_access_project`; issuing also `can_shape_project` |
 | `project_availability(project, from, to)` | `internal.can_shape_project`; dates only, never notes |
 | `project_context(project)` | `internal.can_access_project`, else null |
+| `respond_to_crew_invite(project, response)` | the caller must have a `pending` row on that project (enforces `user_id = auth.uid()` and `status = 'pending'` before updating); `response` is `confirmed` or `declined`; the owner is notified and an audit log entry is written; any other caller gets "no pending invitation found" (`20261114161316`) |
 | `respond_to_application(app, status, close)` | the job's poster |
 | `has_discord_webhook(channel)` | `can_manage_channel` — false for anyone else (gated in `20261004010000`; before, it answered any signed-in user) |
 
