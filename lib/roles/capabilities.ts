@@ -70,6 +70,23 @@ export function useRoleSentence(craft: string | null, tier: CrewTier): string | 
   }, [catalog, craft, tier]);
 }
 
+/** Ask the project's owner for a permission your role does not hold. Grants nothing: only the owner changes a person's rights. */
+export async function requestCapability(projectId: string, capability: string): Promise<void> {
+  const { error } = await supabase.rpc('request_capability', { p_project: projectId, p_capability: capability });
+  if (error) throw new Error(error.message || 'Could not ask the owner');
+}
+
+/** The catalogue's name for a permission ("See the budget"), or null until it has loaded. */
+export function useCapabilityLabel(key: string): string | null {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    loadCapabilityCatalog().then((c) => { if (alive) setLabel(c.defs.find((d) => d.key === key)?.label ?? null); }).catch(() => { if (alive) setLabel(null); });
+    return () => { alive = false; };
+  }, [key]);
+  return label;
+}
+
 export interface MyRole { project_id: string; craft: string | null; tier: CrewTier; held: string[] }
 
 /** The signed-in person's confirmed crew roles on the given projects, each with what the database says they can do there. */

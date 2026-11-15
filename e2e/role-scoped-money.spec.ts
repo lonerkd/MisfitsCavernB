@@ -30,6 +30,7 @@ test.describe('The budget follows the role (local Supabase)', () => {
 
   test.afterAll(async () => {
     if (!admin) return;
+    await admin.from('notifications').delete().eq('user_id', owner.id);
     await admin.from('production_records').delete().eq('project_id', projectId);
     await admin.from('budget_items').delete().eq('project_id', projectId);
     await admin.from('project_crew').delete().eq('project_id', projectId);
@@ -58,6 +59,12 @@ test.describe('The budget follows the role (local Supabase)', () => {
     await open();
     await expect(page.getByText('The budget is held by the people who run the money')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(`Camera ${TAG}`)).toHaveCount(0);
+    // The screen says which permission it needs and lets them ask the owner, who is told who asked and for what.
+    await expect(page.getByText('It needs “See the budget”.').first()).toBeVisible();
+    await page.getByRole('button', { name: 'Ask the owner' }).first().click();
+    await expect(page.getByRole('button', { name: 'Asked' }).first()).toBeVisible();
+    await expect.poll(async () => (await admin.from('notifications').select('title, link').eq('user_id', owner.id).eq('type', 'crew')).data?.map((n) => n.title), { timeout: 30_000 })
+      .toEqual([`rolemc${TAG} asks for access: see the budget`]);
 
     // A production designer sees the budget (their own spend) but does not run it.
     await setCraft('Production designer');

@@ -5727,6 +5727,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      request_capability: {
+        Args: { p_capability: string; p_project: string };
+        Returns: undefined;
+      };
       respond_to_application: {
         Args: { p_application: string; p_close?: boolean; p_status: string };
         Returns: Json;

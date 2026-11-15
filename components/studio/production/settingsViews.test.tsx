@@ -11,7 +11,11 @@ let store: Record<string, unknown[]> = {};
 // What the signed-in person's role lets them do on the project; the owner holds all of it.
 let held: string[] | 'all' = 'all';
 
-vi.mock('@/lib/roles/capabilities', () => ({ useMyCapabilities: () => ({ loading: false, can: (c: string) => held === 'all' || held.includes(c) }) }));
+vi.mock('@/lib/roles/capabilities', () => ({
+  useMyCapabilities: () => ({ loading: false, can: (c: string) => held === 'all' || held.includes(c) }),
+  useCapabilityLabel: (k: string) => ({ 'budget.read': 'See the budget', 'budget.write': 'Edit the budget' } as Record<string, string>)[k] ?? null,
+  requestCapability: vi.fn(),
+}));
 vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings: null } }) }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/components/ui/Confirm', () => ({ useConfirm: () => confirm }));
@@ -137,7 +141,8 @@ describe('purchase orders and insurance claims follow the budget', () => {
     held = [];
     store = { [kind]: [record] };
     render(<View />);
-    expect(await screen.findByText(new RegExp(`${name} are held by the people who run the money`))).toBeTruthy();
+    expect(await screen.findByText(new RegExp(`${name} are held by the people who run the money. It needs “See the budget”`))).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ask the owner' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^(add|log)/i })).toBeNull();
   });
 
@@ -149,7 +154,8 @@ describe('purchase orders and insurance claims follow the budget', () => {
     store = { [kind]: [record] };
     render(<View />);
     expect(await screen.findByText(text)).toBeTruthy();
-    expect(screen.getByText(/You can read these/)).toBeTruthy();
+    expect(screen.getByText(/You can read these.*It needs “Edit the budget”/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ask the owner' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /^(add|log)/i })).toBeNull();
     expect(screen.queryByTitle('Delete')).toBeNull();
     expect((screen.getByRole('combobox') as HTMLSelectElement).disabled).toBe(true);

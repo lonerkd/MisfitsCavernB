@@ -12,6 +12,7 @@ import { castByScene, castOfScene } from '@/lib/film/cast';
 import { List as Users } from 'lucide-react';
 import { useStudio } from './StudioContext';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useScriptCharacters } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/util/color';
@@ -209,6 +210,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(var(--ink-rgb), 0.02)', border: '1px dashed rgba(var(--ink-rgb), 0.14)', borderRadius: 8, marginBottom: assigning ? 12 : 24 }}>
                     <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>Open — not yet cast{!caps.loading && !decides ? ' · the people who decide casting assign it' : ''}</span>
+                    {!caps.loading && !decides && <NeedsCapability projectId={project.id} capability="casting.decide" lead="" />}
                     {decides && <button onClick={() => setAssigning(a => !a)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(sel.color), background: `${sel.color}14`, border: `1px solid ${sel.color}44`, borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>Assign crew</button>}
                     <Link href={castingCallHref(project.title, sel.name, fp)} style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--jobs-text)', background: 'color-mix(in srgb, var(--accent) 12%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderRadius: 8, padding: '6px 12px', textDecoration: 'none' }}>Post a casting call →</Link>
                   </div>

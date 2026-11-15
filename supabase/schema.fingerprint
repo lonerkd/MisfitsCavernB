@@ -1690,6 +1690,7 @@ function public.project_progress(p_project uuid) body=f34f13cb27aaac125d1dd007a0
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.reading_memory_for_user(p_user_id uuid, p_format text) body=2a66ee1818dfad753f1ee9a348cafd3d
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=34e87ff37f99ce2f1cf4b6a3e71071d4
+function public.request_capability(p_project uuid, p_capability text) body=93230c75c43e479dd0bece7febfd7253
 function public.respond_to_application(p_application uuid, p_status text, p_close boolean) body=9ebf4ce019e4068e892c89fa924e25f0
 function public.respond_to_crew_invitation(p_project uuid, p_accept boolean) body=1dda50eb3be81f1d8701dbe9958e8031
 function public.rls_auto_enable() body=6998ea6b4c2480f5d2e34b5dcf3f8d36
@@ -1844,6 +1845,7 @@ grant function public.project_progress(p_project uuid) authenticated,postgres,se
 grant function public.projects_progress(p_projects uuid[]) authenticated,postgres,service_role
 grant function public.reading_memory_for_user(p_user_id uuid, p_format text) authenticated,postgres,service_role
 grant function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) anon,authenticated,postgres,service_role
+grant function public.request_capability(p_project uuid, p_capability text) authenticated,postgres,service_role
 grant function public.respond_to_application(p_application uuid, p_status text, p_close boolean) authenticated,postgres,service_role
 grant function public.respond_to_crew_invitation(p_project uuid, p_accept boolean) authenticated,postgres,service_role
 grant function public.rls_auto_enable() postgres,service_role
