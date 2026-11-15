@@ -5,6 +5,7 @@ import { FileCheck2, FileUp, Lightbulb, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import {
   DOC_KINDS, STATUS_LABEL, docState, paperworkGaps, studio, useCastings, useDocuments, useProjectLocations,
   type DocKind, type DocStatus, type ProjectDocument, type Vendor,
@@ -124,7 +125,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
       )}
 
       {docs.rows.length === 0 ? (
-        <p className={s.hint}>{readsAll ? 'No paperwork yet.' : 'Nothing for you yet. The production’s paperwork is held by the people who run it.'}</p>
+        readsAll ? <p className={s.hint}>No paperwork yet.</p> : <NeedsCapability className={s.hint} projectId={project.id} capability="paperwork.read" lead="Nothing for you yet. The production’s paperwork is held by the people who run it." />
       ) : byKind.map((g) => (
         <section key={g.id} aria-labelledby={`paper-${g.id}`} className={s.stack} style={{ gap: 6 }}>
           <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{g.plural} · {g.rows.length}</h3>

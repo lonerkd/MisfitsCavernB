@@ -19,6 +19,7 @@ import { announceProgressChange } from '@/lib/supabase/progress';
 import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
@@ -313,7 +314,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
         </Panel>
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
-          {noBudget && <Empty>The budget is held by the people who run the money. Ask the project owner if you need to see it.</Empty>}
+          {noBudget && <NeedsCapability projectId={projectId} capability="budget.read" lead="The budget is held by the people who run the money." />}
           {!noBudget && budget.length === 0 && <Empty>No budget items</Empty>}
           {!noBudget && budget.length > 0 && (
             <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: '0 0 8px' }}>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ShieldAlert, Plus, Trash2 } from 'lucide-react';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -32,10 +33,10 @@ export function ClaimsView() {
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<ShieldAlert size={16} />} eyebrow="Budget & docs" title="Insurance claims" purpose="Insurance claims: what happened, the amount and where it stands." accent={project.accent_color} summary={<>{items.length} claims · {items.filter((i) => i.status === 'filed' || i.status === 'in review').length} open</>} />
       {!caps.loading && !seesMoney && (
-        <p className={s.hint} role="note">Insurance claims are held by the people who run the money. Ask the project owner if you need to see them.</p>
+        <NeedsCapability className={s.hint} projectId={project.id} capability="budget.read" lead="Insurance claims are held by the people who run the money." />
       )}
       {seesMoney && !runsMoney && (
-        <p className={s.hint} role="note">You can read these. Adding and changing them is for the people who run the money.</p>
+        <NeedsCapability className={s.hint} projectId={project.id} capability="budget.write" lead="You can read these. Adding and changing them is for the people who run the money." />
       )}
       {runsMoney && (
       <div className={s.panel} style={{ padding: 12 }}>

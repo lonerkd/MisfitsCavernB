@@ -6,6 +6,7 @@ import { Check, Clock, DollarSign, Plus, Store, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useBreakdown } from '@/lib/breakdown';
 import { sceneCosts } from '@/lib/studio/scene-cost';
 import {
@@ -55,7 +56,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
   return (
     <div className={s.stack} style={{ gap: 28, maxWidth: 1000 }}>
       {!caps.loading && !seesBudget && (
-        <p className={s.hint} role="note">The budget is held by the people who run the money. Ask the project owner if you need to see it. Your own hours are below.</p>
+        <NeedsCapability className={s.hint} projectId={project.id} capability="budget.read" lead="The budget is held by the people who run the money. Your own hours are below." />
       )}
       {seesBudget && (
         <>
@@ -112,7 +113,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               onChange={(row, removedId) => { if (row) expenses.upsertLocal(row); else if (removedId) expenses.removeLocal(removedId); }}
               onVendor={(v) => setVendors((prev) => [...prev, v].sort((a, b) => a.name.localeCompare(b.name)))} />
           ) : (
-            <p className={s.hint} role="note">You can see the budget. Spend and vendors are kept by the people who run it.</p>
+            <NeedsCapability className={s.hint} projectId={project.id} capability="budget.write" lead="You can see the budget. Spend and vendors are kept by the people who run it." />
           )}
         </>
       )}
