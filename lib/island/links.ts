@@ -22,12 +22,16 @@ export const PORTFOLIO_MANAGE = link('go-portfolio-manage', 'Manage', '/portfoli
 export const PROFILE = link('go-profile', 'Profile', '/profile');
 export const SETTINGS = link('go-settings', 'Settings', '/settings');
 
+// The island's deck has eight keys, so these are the eight most used; the admin home page links to every screen (a test keeps it so).
 export const ADMIN_LINKS: readonly IslandLink[] = [
   link('go-admin-users', 'Users', '/admin/users'),
+  link('go-admin-reports', 'Reports', '/admin/reports'),
+  link('go-admin-support', 'Support', '/admin/support'),
   link('go-admin-errors', 'Errors', '/admin/errors'),
   link('go-admin-hub', 'Hub posts', '/admin/hub'),
   link('go-admin-analytics', 'Analytics', '/admin/analytics'),
   link('go-admin-audit', 'Audit log', '/admin/audit-logs'),
+  link('go-admin-crafts', 'Crafts', '/admin/crafts'),
 ];
 
 /** The link to one project's page. */

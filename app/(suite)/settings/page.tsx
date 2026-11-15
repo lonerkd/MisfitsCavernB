@@ -10,6 +10,7 @@ import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS
 import { checkHibpBreach, checkPasswordComplexity, checkPasswordWeakness, PASSWORD_RULES_HINT } from '@/lib/account/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/ui/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
+import { useCurrentUser } from '@/lib/os';
 import { ThemePicker } from '@/components/ui/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
@@ -93,6 +94,7 @@ const ghostBtn: React.CSSProperties = {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { isAdmin } = useCurrentUser();
   const [user, setUser] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -318,6 +320,14 @@ export default function SettingsPage() {
             </button>
           } />
         </Section>
+
+        {isAdmin && (
+          <Section icon={<ShieldCheck size={15} />} title="Admin">
+            <Row label="Admin area" hint="People, reports, support, errors and the catalogues. Only admins see this." control={
+              <Link href="/admin" style={{ ...ghostBtn, textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>OPEN ADMIN</Link>
+            } />
+          </Section>
+        )}
 
         <Section icon={<AlertTriangle size={15} />} title="Delete account">
           <DeleteAccount userId={user.id} />

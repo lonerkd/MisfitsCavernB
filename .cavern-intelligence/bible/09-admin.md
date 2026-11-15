@@ -1,6 +1,6 @@
 # 9 · Admin
 
-`/admin/*` — running the platform. Gated twice: `proxy.ts` checks a real
+`/admin/*` — running the platform. **How to get in** (2026-11-15): sign in as an admin and use **Settings › Admin › Open admin**, the search (Ctrl/⌘ K › "Open Admin"), or go to `/admin`; none of these is shown to anyone else, and the server turns a non-admin away from every `/admin/*` page. An admin makes another admin from `/admin/users` (never themselves; the Remove button on your own row is disabled, because the database refuses it). The admin home page links to every screen; the island offers the eight most used. Gated twice: `proxy.ts` checks a real
 session and `profiles.is_admin` on the server (non-admins go to `/`), and
 every admin read goes through a function or policy that checks
 `internal.caller_is_admin()`.
@@ -43,8 +43,7 @@ every admin read goes through a function or policy that checks
 - Every catalogue has an admin screen (`/admin/crafts`, `/admin/channel-presets`,
   `/admin/formats`, `/admin/brief-questions`). Brief questions can't be edited
   in place, and what an option implies is still a migration (3.14).
-- Moderation is a queue only: reports are filed and settled, but acting on
-  one (hide, remove, suspend) is by hand (3.14).
+- Moderation: reports are filed and settled in `/admin/reports`; an admin can close a reported job, read and hide a reported message, and suspend an account from `/admin/users` (each recorded in the audit log). Left: notifying the reporter, and reporting from more places (3.14).
 - The audit log's on-screen search narrows only the page loaded (50 rows);
   "Export all matches" searches the whole log in the database. Moving the
   on-screen search into the query (`lib/audit/export.ts` has the filters) is
