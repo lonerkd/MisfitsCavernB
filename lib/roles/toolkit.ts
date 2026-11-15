@@ -34,7 +34,7 @@ const POST = T(['editorial', 'mediaoffload', 'reports', 'revisions'], ['Review c
 /** By craft name (public.crafts). A craft not listed falls back to its department, then to the generic suite. */
 export const TOOLKITS: Record<string, Toolkit> = {
   // Direction
-  'Director': T(['director', 'story', 'shots', 'breakdown', 'schedule', 'continuity', 'rehearsal', 'scout', 'revisions', 'crew'], ['No director\'s day at a glance: Your day shows the next shoot day and tasks, the rest is the tools themselves (R11)']),
+  'Director': T(['director', 'story', 'shots', 'breakdown', 'schedule', 'continuity', 'rehearsal', 'scout', 'revisions', 'crew'], ['Your day shows the next shoot day at a glance (its scenes, the shots planned, what needs the director); a live on-the-day view for the director is the On set tools themselves (R11)']),
   'First assistant director': T(['schedule', 'breakdown', 'dood', 'readiness', 'onset', 'wrap', 'reports', 'crew'], ['Scene identity across a script change is not proven end to end; outputs can disagree until the film graph cutover (R10)']),
   'Second assistant director': T(['schedule', 'onset', 'dood', 'crew', 'comms', 'wrap']),
   'Script supervisor': T(['scriptsup', 'continuity', 'revisions', 'onset', 'reports', 'shots'], ['Lined-script marks and the selected take are not in the suite; notes the editor needs are not tied to takes (R12)']),
