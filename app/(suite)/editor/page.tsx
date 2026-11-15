@@ -1,5 +1,6 @@
 'use client';
 
+import { exportChoicesFor } from '@/lib/scriptos/export';
 import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -1492,7 +1493,7 @@ export default function EditorPage() {
                 { label: 'Find and replace', run: () => setShowFindReplace(true) },
                 { label: 'Character bible', run: () => setShowCharBible(true) },
                 { label: 'Focus mode', run: () => setFocusMode(true) },
-                ...['pdf', 'fdx', 'fountain', 'txt'].map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
+                ...exportChoicesFor(currentScript?.format).map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
               ].map((a) => (
                 <button key={a.label} type="button" onClick={() => { closeSheet(); a.run(); }}
                   style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg)' }}>{a.label}</button>

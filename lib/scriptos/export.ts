@@ -3,6 +3,11 @@ import { parseScript } from './parser';
 import { serializeFountain } from './fountain-export';
 import { readingFormat } from './reading-format';
 
+/** The export choices a script's format offers: Final Draft (.fdx) has no elements for podcast, copy, video, prose, game or outline scripts. */
+export function exportChoicesFor(format: string | null | undefined): string[] {
+  return reemitsAsFountain(format) ? ['fountain', 'fdx', 'pdf', 'txt'] : ['pdf', 'txt', 'fountain'];
+}
+
 /** Fountain is a screenplay notation: only a screenplay-read script is re-emitted through it. */
 export function reemitsAsFountain(format: string | null | undefined): boolean {
   return readingFormat(format) === 'screenplay';
