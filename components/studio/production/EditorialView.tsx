@@ -7,6 +7,7 @@ import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
+import { EditorPackagePanel } from './EditorPackagePanel';
 import s from '../studio.module.css';
 
 type Entry = { id: string; scene_ids?: string[]; scene: string; item: string; version: string; recipient: string; due: string; status: 'pending' | 'sent' | 'received'; notes: string };
@@ -30,6 +31,7 @@ export function EditorialView() {
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<Send size={16} />} eyebrow="Reports & logs" title="Editorial handoff" purpose="What goes to editorial and whether it has been delivered." accent={project.accent_color} summary={<>{items.length} items · {items.filter((i) => i.status === 'received').length} received</>} />
+      <EditorPackagePanel />
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
