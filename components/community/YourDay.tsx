@@ -13,7 +13,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Circle, UserPlus, BadgeCheck, Clapperboard, Clock, FileText, LayoutGrid, MapPin, MessageSquare, CalendarDays, CheckSquare, CloudSun, Search } from 'lucide-react';
 import { RoleSentence } from '@/components/roles/RoleSentence';
-import { getMyRoles, loadCapabilityCatalog, describeRole, toolsFor } from '@/lib/roles/capabilities';
+import { getMyRoles, loadCapabilityCatalog, describeRole } from '@/lib/roles/capabilities';
+import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
+import { loadCrafts } from '@/lib/crafts/crafts';
+import { PRODUCTION_VIEW_LABELS } from '@/lib/os/progress';
 import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
 import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
@@ -87,10 +90,13 @@ export function YourDay() {
         // Your role on the projects you are crew on (not the ones you run): a nicety, so a failure shows none.
         (async () => {
           const crewOn = projects.filter((p) => p.creator_id !== userId).map((p) => p.id);
-          const [mine, catalog] = await Promise.all([getMyRoles(userId, crewOn), loadCapabilityCatalog()]);
+          const [mine, catalog, crafts] = await Promise.all([getMyRoles(userId, crewOn), loadCapabilityCatalog(), loadCrafts()]);
+          const dept = new Map(crafts.map((c) => [c.name, c.department]));
           return mine.map((r) => {
             const held = new Set(r.held);
-            return { project_id: r.project_id, craft: r.craft, tier: r.tier, text: describeRole({ craft: r.craft, tier: r.tier, held, defs: catalog.defs }).text, tools: toolsFor(held) };
+            // Their craft's own working suite (only the tools they may open), not a fixed list: a gaffer and an accountant differ.
+            const tools = openableViews(toolkitFor(r.craft, r.craft ? dept.get(r.craft) : null), held).slice(0, 6).map((v) => ({ label: PRODUCTION_VIEW_LABELS[v], view: v }));
+            return { project_id: r.project_id, craft: r.craft, tier: r.tier, text: describeRole({ craft: r.craft, tier: r.tier, held, defs: catalog.defs }).text, tools };
           });
         })().catch(() => []),
       ]);

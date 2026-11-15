@@ -46,4 +46,43 @@ export function effectiveOwner(realOwner: boolean, mode: ViewAsMode): boolean {
   return realOwner && mode === 'owner';
 }
 
+// ── A role to preview ───────────────────────────────────────────────────────────
+// "Crew" is not one person: a gaffer and an accountant see different screens. While previewing as crew the owner can choose the
+// craft and the access level to preview as, and every screen that follows a person's capabilities shows what that role sees.
+// As honest as the rest of "view as": it changes only what the interface shows, never what the database allows.
+
+export type PreviewTier = 'lead' | 'contributor' | 'viewer';
+export interface PreviewRole { craft: string | null; tier: PreviewTier }
+
+const ROLE_KEY = 'mc_view_as_role';
+const DEFAULT_ROLE: PreviewRole = { craft: null, tier: 'contributor' };
+let roleMemory: Record<string, PreviewRole> | null = null;
+
+const isTier = (v: unknown): v is PreviewTier => v === 'lead' || v === 'contributor' || v === 'viewer';
+
+function readRoles(): Record<string, PreviewRole> {
+  if (roleMemory) return roleMemory;
+  roleMemory = {};
+  try {
+    const raw = JSON.parse(sessionStorage.getItem(ROLE_KEY) || '{}');
+    for (const [id, r] of Object.entries(raw as Record<string, { craft?: unknown; tier?: unknown }>)) {
+      if (r && isTier(r.tier)) roleMemory[id] = { craft: typeof r.craft === 'string' ? r.craft : null, tier: r.tier };
+    }
+  } catch { /* no storage: the choice lasts until the page reloads */ }
+  return roleMemory;
+}
+
+export function setViewAsRole(projectId: string, role: PreviewRole): void {
+  const next = { ...readRoles(), [projectId]: role };
+  roleMemory = next;
+  try { sessionStorage.setItem(ROLE_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  listeners.forEach((l) => l());
+}
+
+/** The role chosen to preview as on this project (an unnamed crew member with ordinary access until one is chosen). */
+export function useViewAsRole(projectId: string | null | undefined): PreviewRole {
+  const get = useCallback(() => (projectId ? readRoles()[projectId] ?? DEFAULT_ROLE : DEFAULT_ROLE), [projectId]);
+  return useSyncExternalStore(subscribe, get, () => DEFAULT_ROLE);
+}
+
 export const VIEW_AS_LABEL: Record<ViewAsMode, string> = { owner: 'Me', crew: 'Crew', outsider: 'Outsider' };

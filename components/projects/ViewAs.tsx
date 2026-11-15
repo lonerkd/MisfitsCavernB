@@ -2,13 +2,15 @@
 
 import React from 'react';
 import { Eye } from 'lucide-react';
-import { setViewAs, useViewAs, VIEW_AS_LABEL, type ViewAsMode } from '@/lib/os/viewAs';
+import { setViewAs, setViewAsRole, useViewAs, useViewAsRole, VIEW_AS_LABEL, type PreviewTier, type ViewAsMode } from '@/lib/os/viewAs';
+import { CraftPicker } from '@/components/crafts/CraftPicker';
+import { useRoleSentence } from '@/lib/roles/capabilities';
 
 const MODES: ViewAsMode[] = ['owner', 'crew', 'outsider'];
 
 const NOTE: Record<ViewAsMode, string> = {
   owner: '',
-  crew: 'Previewing as crew: the controls a crew member sees. Your real access has not changed.',
+  crew: '',
   outsider: 'Previewing as an outsider: someone with no link and no invite sees nothing of this project.',
 };
 
@@ -30,17 +32,42 @@ export function ViewAsSwitch({ projectId }: { projectId: string }) {
           >{VIEW_AS_LABEL[m]}</button>
         ))}
       </span>
+      {mode === 'crew' && <RolePicker projectId={projectId} />}
     </div>
+  );
+}
+
+/** While previewing as crew: which craft and access to preview as. */
+function RolePicker({ projectId }: { projectId: string }) {
+  const role = useViewAsRole(projectId);
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <CraftPicker label="Preview as craft" value={role.craft} onChange={(craft) => setViewAsRole(projectId, { ...role, craft })} placeholder="Any crew member" noneLabel="No craft" />
+      <select
+        aria-label="Preview with access"
+        value={role.tier}
+        onChange={(e) => setViewAsRole(projectId, { ...role, tier: e.target.value as PreviewTier })}
+        style={{ fontSize: 12, padding: '4px 6px', borderRadius: 8, background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid rgba(var(--ink-rgb), 0.14)' }}
+      >
+        <option value="contributor">Crew access</option>
+        <option value="lead">Lead access</option>
+        <option value="viewer">View only</option>
+      </select>
+    </span>
   );
 }
 
 /** A bar across the page while previewing, with the way back. Renders nothing in the real view. */
 export function ViewAsBanner({ projectId }: { projectId: string }) {
   const mode = useViewAs(projectId);
+  const role = useViewAsRole(projectId);
+  const sentence = useRoleSentence(role.craft, role.tier);
   if (mode === 'owner') return null;
   return (
     <div role="status" style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 16px', background: 'var(--warn)', color: '#1a1200', fontSize: 13 }}>
-      <span>{NOTE[mode]}</span>
+      <span>{mode === 'crew'
+        ? `Previewing as ${role.craft ?? 'a crew member'}: ${sentence ? `${sentence} ` : ''}The screens show what this role sees; your real access has not changed.`
+        : NOTE[mode]}</span>
       <button type="button" onClick={() => setViewAs(projectId, 'owner')} style={{ padding: '3px 10px', borderRadius: 8, border: '1px solid rgba(26,18,0,0.4)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>Back to me</button>
     </div>
   );

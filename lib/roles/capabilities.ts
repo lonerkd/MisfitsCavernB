@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { useViewAs, useViewAsRole } from '@/lib/os/viewAs';
 import { logActivity } from '@/lib/supabase/activity';
 import { logAuditAction } from '@/lib/supabase/audit';
 
@@ -38,10 +39,23 @@ export async function getMyCapabilities(projectId: string): Promise<string[]> {
   return data ?? [];
 }
 
-/** `can('budget.write')` for the signed-in person on a project; false until it has loaded. */
+/**
+ * `can('budget.write')` for the signed-in person on a project; false until it has loaded. While the owner previews the project
+ * as a role (View as › Crew), it answers for that role instead, so every screen that follows a person's capabilities shows
+ * what that role would see. The database still treats the owner as the owner: only the interface is previewed.
+ */
 export function useMyCapabilities(projectId: string | null | undefined): { can: (key: string) => boolean; caps: ReadonlySet<string>; loading: boolean } {
   const [caps, setCaps] = useState<ReadonlySet<string>>(new Set());
   const [loading, setLoading] = useState(!!projectId);
+  const previewing = useViewAs(projectId) === 'crew';
+  const role = useViewAsRole(projectId);
+  const [catalog, setCatalog] = useState<CapabilityCatalog | null>(null);
+  useEffect(() => {
+    if (!previewing) return;
+    let alive = true;
+    loadCapabilityCatalog().then((c) => { if (alive) setCatalog(c); }).catch(() => { if (alive) setCatalog(null); });
+    return () => { alive = false; };
+  }, [previewing]);
   useEffect(() => {
     if (!projectId) { queueMicrotask(() => { setCaps(new Set()); setLoading(false); }); return; }
     let alive = true;
@@ -49,7 +63,35 @@ export function useMyCapabilities(projectId: string | null | undefined): { can: 
     getMyCapabilities(projectId).then((c) => { if (alive) setCaps(new Set(c)); }).catch(() => { if (alive) setCaps(new Set()); }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [projectId]);
-  return useMemo(() => ({ caps, loading, can: (key: string) => caps.has(key) }), [caps, loading]);
+  return useMemo(() => {
+    if (previewing) {
+      const held = catalog ? resolveCapabilities(catalog.defs, { tier: role.tier, crafts: role.craft ? [role.craft] : [], overrides: {} }, catalog.templates) : new Set<string>();
+      return { caps: held, loading: !catalog, can: (key: string) => held.has(key) };
+    }
+    return { caps, loading, can: (key: string) => caps.has(key) };
+  }, [previewing, role, catalog, caps, loading]);
+}
+
+/**
+ * The signed-in person's craft and access on a project (null for the project's owner, who has no crew row), or the role the
+ * owner is previewing as. Used to put a role's own tools first.
+ */
+export function useMyRole(projectId: string | null | undefined, userId: string | null | undefined): { craft: string | null; tier: CrewTier | null; previewing: boolean; loading: boolean } {
+  const [row, setRow] = useState<{ craft: string | null; tier: CrewTier } | null>(null);
+  const [loading, setLoading] = useState(!!projectId && !!userId);
+  const previewing = useViewAs(projectId) === 'crew';
+  const role = useViewAsRole(projectId);
+  useEffect(() => {
+    if (!projectId || !userId) { queueMicrotask(() => { setRow(null); setLoading(false); }); return; }
+    let alive = true;
+    queueMicrotask(() => setLoading(true));
+    supabase.from('project_crew').select('role, craft').eq('project_id', projectId).eq('user_id', userId).eq('status', 'confirmed').maybeSingle()
+      .then(({ data }) => { if (alive) setRow(data ? { craft: data.craft, tier: data.role as CrewTier } : null); }, () => { if (alive) setRow(null); })
+      .then(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [projectId, userId]);
+  if (previewing) return { craft: role.craft, tier: role.tier, previewing: true, loading: false };
+  return { craft: row?.craft ?? null, tier: row?.tier ?? null, previewing: false, loading };
 }
 
 /**
