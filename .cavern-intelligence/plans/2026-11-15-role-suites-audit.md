@@ -63,7 +63,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 | X1 writer → producer / AD | the script's scenes are synced to rows (`sync_script_scenes`); the breakdown and the stripboard read them | Built; **not proven across a script change** (film graph cutover is BACKLOG 3.18) |
 | X2 director → departments | the Director notebook is a record tool; nothing carries a director's change to a department | Partial |
 | X3 production → crew | a call sheet issues per-person calls, crew acknowledge, push is live, and the issue bar shows who has not acknowledged | Built; the coordinator's whole flow unrun (R9) |
-| X4 shoot → editor | the set log, camera and sound reports, the media offload log and an Editorial handoff record | Partial: records, not one package the editor receives |
+| X4 shoot → editor | the set log, camera and sound reports, the media offload log, the script supervisor's selected takes, and (2026-11-15) a **Package for the editor** in the Editorial handoff that combines them scene by scene, says what the editor cannot use yet and prints or saves as a PDF or CSV | Built for what the crew logs; not yet: the package landing in the editor's timeline, or sent to a named editor with a version |
 | X5 team → client | review links by audience; versions are script versions; approval is not tied to a picture cut | Partial |
 | X6 project → portfolio | credits and laurels appear on a person's page from the work itself | Built |
 | X7 creator lane → production lane | formats are separate (screenplay, podcast, copy, advertising, and since 2026-11-15 YouTube, article and game scripts); a video script's sections are scenes the Studio can plan, but nothing carries an ad or an article into a production plan | Partial |
