@@ -1,12 +1,19 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
 import { serializeFountain } from './fountain-export';
+import { readingFormat } from './reading-format';
+
+/** Fountain is a screenplay notation: only a screenplay-read script is re-emitted through it. */
+export function reemitsAsFountain(format: string | null | undefined): boolean {
+  return readingFormat(format) === 'screenplay';
+}
 
 export function exportScriptAsText(script: StoredScript, format: 'txt' | 'fountain' = 'txt'): void {
   // '.fountain' downloads a canonically-formatted Fountain document — parse and
   // re-emit — rather than a raw dump, so the file is clean and round-trips.
-  // '.txt' is the author's source verbatim.
-  const text = format === 'fountain' ? serializeFountain(parseScript(script.content).lines) : script.content;
+  // '.txt' is the author's source verbatim, and so is any non-screenplay format (podcast, ad copy, video, prose,
+  // game, outline): re-emitting those through screenplay rules would turn their sections into scene headings.
+  const text = format === 'fountain' && reemitsAsFountain(script.format) ? serializeFountain(parseScript(script.content).lines) : script.content;
   const blob = new Blob([text], { type: 'text/plain' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
