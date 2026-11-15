@@ -18,8 +18,9 @@ import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
 import { loadCrafts } from '@/lib/crafts/crafts';
 import { PRODUCTION_VIEW_LABELS } from '@/lib/os/progress';
 import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
-import { getTodayWork, getOwnerData, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
+import { getTodayWork, getOwnerData, getDirectorDay, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
+import { dayGlance, isDirectionCraft, type DayGlance } from '@/lib/today/director';
 import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES, osAdoptSession } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
@@ -68,7 +69,9 @@ export function YourDay() {
   const [ownerData, setOwnerData] = useState<OwnerData | null>(null);
   const [invites, setInvites] = useState<CrewInvitation[]>([]);
   const [roles, setRoles] = useState<Array<{ project_id: string; craft: string | null; tier: string; text: string; tools: Array<{ label: string; view: string }> }>>([]);
+  const [glances, setGlances] = useState<Array<{ project_id: string; glance: DayGlance }>>([]);
   const [answering, setAnswering] = useState<string | null>(null);
+  const profileCraft = (profile as { role?: string | null } | null)?.role ?? null;
 
   const projectById = useMemo(() => new Map(projects.map((p) => [p.id, p])), [projects]);
   const projectIds = useMemo(() => projects.map((p) => p.id), [projects]);
@@ -111,8 +114,19 @@ export function YourDay() {
         })),
         ...named.people.map((p) => ({ key: p.id, count: un.people[p.id], href: `/lounge?dm=${p.id}`, label: `@${p.username}` })),
       ].sort((a, b) => b.count - a.count);
-      return { work, notes, rows, owner, invs, myRoles };
-    })().then(({ work, notes, rows, owner, invs, myRoles }) => {
+      // The director's day at a glance: the productions this person directs (a Direction craft on the crew, or their own profile's
+      // craft on a production they run). A nicety: a project that does not load shows no card.
+      const directing = Array.from(new Set([
+        ...myRoles.filter((r) => isDirectionCraft(r.craft)).map((r) => r.project_id),
+        ...(isDirectionCraft(profileCraft) ? ownedIds : []),
+      ]));
+      const glances = (await Promise.all(directing.map(async (id) => {
+        const input = await getDirectorDay(id, today).catch(() => null);
+        return input ? { project_id: id, glance: dayGlance(input) } : null;
+      }))).filter((g): g is { project_id: string; glance: DayGlance } => !!g).sort((a, b) => (a.glance.date ?? '9') < (b.glance.date ?? '9') ? -1 : 1);
+      return { work, notes, rows, owner, invs, myRoles, glances };
+    })().then(({ work, notes, rows, owner, invs, myRoles, glances }) => {
+      setGlances(glances);
       setOwnerData(owner);
       setInvites(invs);
       setRoles(myRoles);
@@ -127,7 +141,7 @@ export function YourDay() {
       toast('Could not load your days and tasks. Reload to try again.', 'error');
       setLoaded(true);
     });
-  }, [userId, projects, projectIds, today, projectById, toast]);
+  }, [userId, projects, projectIds, today, projectById, toast, profileCraft]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -234,6 +248,41 @@ export function YourDay() {
                     ))}
                   </div>
                 )}
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {glances.length > 0 && (
+        <section className={`${t.card} ${t.wide}`} aria-labelledby="today-director">
+          <div className={t.cardHead}><h2 id="today-director" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> The day at a glance</h2></div>
+          {glances.map(({ project_id, glance: g }) => (
+            <article key={project_id} className={t.day} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${g.day} at a glance`}>
+              <div className={t.dayBody}>
+                <h3 className={t.dayTitle}>{projectById.get(project_id)?.title ?? 'A project'} · Day {g.day}{g.date ? ` · ${dayLabel(g.date, today)}` : ''}</h3>
+                <div className={t.facts}>
+                  <span className={t.fact}>{g.scenes.length} scene{g.scenes.length === 1 ? '' : 's'}</span>
+                  <span className={t.fact}>{g.shots} shot{g.shots === 1 ? '' : 's'} planned</span>
+                  {g.sheet?.general_call && <span className={t.fact}><Clock size={13} aria-hidden /> Crew call {clock(g.sheet.general_call)}</span>}
+                  {g.sheet?.weather && <span className={t.fact}><CloudSun size={13} aria-hidden /> {g.sheet.weather}</span>}
+                </div>
+                {g.attention.length > 0
+                  ? <ul aria-label="Needs you before the day">{g.attention.map((a) => <li key={a} className={t.draft}>{a}</li>)}</ul>
+                  : <p className={t.empty}>Nothing needs you before this day.</p>}
+                <ol aria-label="Scenes on this day">
+                  {g.scenes.map((sc) => (
+                    <li key={sc.id}>
+                      <strong>{sc.scene_number}. {sc.title}</strong>
+                      <span className={t.fact}> {[sc.location, sc.cast.join(', '), `${sc.shots} shot${sc.shots === 1 ? '' : 's'}`].filter(Boolean).join(' · ')}</span>
+                      {sc.flags.length > 0 && <span className={t.draft}> {sc.flags.join(' · ')}</span>}
+                    </li>
+                  ))}
+                </ol>
+                <div className={t.actions}>
+                  <button type="button" className={t.btn} onClick={() => void goTo(project_id, '/studio?tab=production&view=shots')}>Shot list</button>
+                  <button type="button" className={t.btn} onClick={() => void goTo(project_id, '/studio?tab=production&view=schedule')}>Schedule</button>
+                </div>
               </div>
             </article>
           ))}

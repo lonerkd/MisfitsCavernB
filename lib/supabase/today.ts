@@ -95,3 +95,38 @@ async function nextScheduledDays(projectIds: string[], fromDay: string): Promise
   if (failed?.error) throw failed.error;
   return perProject.flatMap((r) => (r.data ?? []) as ScheduledDay[]);
 }
+
+/**
+ * The director's day at a glance for one production: its next dated shoot day (today or later), the scenes on it, the shots
+ * planned for each, its call sheet and who has acknowledged it (the same count the Studio's issue bar uses: an
+ * acknowledgement of the current version). Reads through the person's own access; throws if any part fails.
+ */
+export async function getDirectorDay(projectId: string, today: string): Promise<import('@/lib/today/director').GlanceInput | null> {
+  const days = await supabase.from('shoot_days').select('day_number, shoot_date').eq('project_id', projectId).gte('shoot_date', today).order('shoot_date').limit(1);
+  if (days.error) throw days.error;
+  const day = (days.data ?? [])[0] as { day_number: number; shoot_date: string | null } | undefined;
+  if (!day) return null;
+  const [scenes, sheet, crew] = await Promise.all([
+    supabase.from('scenes').select('id, scene_number, title, time_of_day, location, cast_list, status').eq('project_id', projectId).eq('shoot_day', day.day_number).order('scene_number'),
+    supabase.from('call_sheets').select('id, issued_at, version, general_call, location_address, weather').eq('project_id', projectId).eq('shoot_day', day.day_number).maybeSingle(),
+    supabase.from('project_crew').select('user_id').eq('project_id', projectId).eq('status', 'confirmed'),
+  ]);
+  for (const r of [scenes, sheet, crew]) if (r.error) throw r.error;
+  const sceneRows = (scenes.data ?? []) as import('@/lib/today/director').GlanceScene[];
+  const sheetRow = sheet.data as { id: string; issued_at: string | null; version: number; general_call: string | null; location_address: string | null; weather: string | null } | null;
+  const [shots, acks] = await Promise.all([
+    sceneRows.length ? supabase.from('shots').select('scene_id').eq('project_id', projectId).in('scene_id', sceneRows.map((r) => r.id)) : Promise.resolve({ data: [], error: null }),
+    sheetRow?.issued_at ? supabase.from('call_sheet_acks').select('user_id, version').eq('call_sheet_id', sheetRow.id) : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (shots.error) throw shots.error;
+  if (acks.error) throw acks.error;
+  const shotsByScene: Record<string, number> = {};
+  for (const r of (shots.data ?? []) as { scene_id: string }[]) shotsByScene[r.scene_id] = (shotsByScene[r.scene_id] ?? 0) + 1;
+  const confirmed = new Set(((crew.data ?? []) as { user_id: string }[]).map((c) => c.user_id));
+  const acked = ((acks.data ?? []) as { user_id: string; version: number }[]).filter((a) => confirmed.has(a.user_id) && a.version === sheetRow?.version).length;
+  return {
+    today, day, scenes: sceneRows, shotsByScene,
+    sheet: sheetRow ? { issued_at: sheetRow.issued_at, general_call: sheetRow.general_call, location_address: sheetRow.location_address, weather: sheetRow.weather } : null,
+    crew: confirmed.size, acked,
+  };
+}
