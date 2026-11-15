@@ -8,5 +8,5 @@
 
 **Tests:** unit (`reading-format.test.ts`: each format reads its own sections, cues, speakers and cast, and reads as nothing when treated as a screenplay), registry tests; persona-style `tests/integration/creator-formats.test.ts` (5: each type opens its format, a script can be stored in it, an unknown format is still refused). No new function or policy.
 
-**Not done:** exports (PDF, text, Fountain, FDX) are still screenplay-shaped for every non-screenplay format (BACKLOG 3.22); a guide workflow for the new project types; nothing publishes to a channel or a CMS. **To do after merge:** apply `20261115000300` to production then staging, then the drift check.
+**Not done:** exports (PDF, text, Fountain, FDX) are still screenplay-shaped for every non-screenplay format (BACKLOG 3.22); a guide workflow for the new project types; nothing publishes to a channel or a CMS. **Applied after merge (#565):** `20261115000300` to production, then staging; both hold the same two constraints and the three new rows, matching the snapshot (checked on those two constraints and the rows, not a full 14-kind run).
 Budget: `/call/[id]` 361 → 362 kB (0.3 kB over after the three new format entries; the page parses scripts, so the rules ride along).

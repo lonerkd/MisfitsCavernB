@@ -7,6 +7,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Check, Copy, Link2, Send, Trash2 } from 'lucide-react';
+import { audienceOf, REVIEW_AUDIENCES, REVIEW_LAYERS, type ReviewLayer } from '@/lib/review/audiences';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useFlag } from '@/components/Flag';
@@ -33,6 +34,7 @@ export function ReviewPanel() {
   const [scriptId, setScriptId] = useState('');
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [linkLabel, setLinkLabel] = useState('');
+  const [audience, setAudience] = useState<ReviewLayer>('guest');
   const [reply, setReply] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -68,7 +70,7 @@ export function ReviewPanel() {
     const ids = Array.from(picked);
     if (!ids.length) { toast('Pick at least one sent version for the link', 'error'); return; }
     setBusy(true);
-    const res = await createLink(project.id, ids, linkLabel);
+    const res = await createLink(project.id, ids, linkLabel, audience);
     setBusy(false);
     if ('error' in res) { toast(`Could not make the link: ${res.error}`, 'error'); return; }
     setPicked(new Set()); setLinkLabel('');
@@ -96,7 +98,7 @@ export function ReviewPanel() {
   return (
     <div className={s.panel}>
       <div className={s.panelTitle}>Review with a client</div>
-      <p className={s.hint}>Save a script as a numbered version, send it, and give a client a link to read it, comment, and approve or ask for changes — no account needed. A sent version never changes.</p>
+      <p className={s.hint}>Save a script as a numbered version, send it, and give a client, investor, distributor or the press a link to read it — a client can also approve or ask for changes; the others read, and comment where their role allows. No account needed. A sent version never changes.</p>
 
       <div className={s.linkBox} style={{ margin: '12px 0' }}>
         <label className={s.srOnly} htmlFor="rv-script">Script</label>
@@ -152,7 +154,11 @@ export function ReviewPanel() {
       {canShape && sentList.length > 0 && (
         <div className={s.linkBox} style={{ marginTop: 14 }}>
           <label className={s.srOnly} htmlFor="rv-link-label">Link label</label>
-          <input id="rv-link-label" className={s.input} placeholder="Link title the client sees, e.g. Spring campaign" value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} maxLength={120} />
+          <input id="rv-link-label" className={s.input} placeholder="Link title they see, e.g. Spring campaign" value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} maxLength={120} />
+          <label className={s.srOnly} htmlFor="rv-link-audience">Who the link is for</label>
+          <select id="rv-link-audience" className={s.input} value={audience} onChange={(e) => setAudience(e.target.value as ReviewLayer)}>
+            {REVIEW_LAYERS.map((l) => <option key={l} value={l}>For a {REVIEW_AUDIENCES[l].label.toLowerCase()}: {REVIEW_AUDIENCES[l].blurb}</option>)}
+          </select>
           <button type="button" className={s.btnPrimary} onClick={() => void makeLink()} disabled={busy || picked.size === 0}><Link2 size={12} aria-hidden /> Make a link for {picked.size || 'the picked'} version{picked.size === 1 ? '' : 's'}</button>
         </div>
       )}
@@ -163,7 +169,7 @@ export function ReviewPanel() {
           {(links.data ?? []).map((l) => (
             <div key={l.id} className={s.publishRow}>
               <div style={{ minWidth: 0 }}>
-                <div className={s.cardTitle}>{l.label || 'Review link'} · {l.version_ids.length} version{l.version_ids.length === 1 ? '' : 's'}</div>
+                <div className={s.cardTitle}>{l.label || 'Review link'} · {audienceOf(l.layer).label} · {l.version_ids.length} version{l.version_ids.length === 1 ? '' : 's'}</div>
                 <div className={s.hint}>{linkLive(l) ? 'Open' : l.revoked_at ? 'Revoked' : 'Expired'}</div>
               </div>
               <div style={{ display: 'flex', gap: 6 }}>

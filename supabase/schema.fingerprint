@@ -1403,7 +1403,7 @@ constraint review_comments.review_comments_version_id_fkey FOREIGN KEY (version_
 constraint review_links.review_links_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint review_links.review_links_id_project_id_key UNIQUE (id, project_id)
 constraint review_links.review_links_label_check CHECK ((char_length(label) <= 120))
-constraint review_links.review_links_layer_check CHECK ((layer = ANY (ARRAY['guest'::text, 'investor'::text])))
+constraint review_links.review_links_layer_check CHECK ((layer = ANY (ARRAY['guest'::text, 'investor'::text, 'distributor'::text, 'press'::text])))
 constraint review_links.review_links_pkey PRIMARY KEY (id)
 constraint review_links.review_links_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint review_links.review_links_token_check CHECK ((char_length(token) >= 32))
@@ -1638,7 +1638,7 @@ function internal.timesheets_guard() body=120e37b024775f62f4ba26fc34af9a54
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
 function public.ack_call_sheet(p_sheet uuid) body=4a34709dbe6fa1cdd52443a08a0e3cc8
-function public.add_review_comment(p_token text, p_version uuid, p_name text, p_body text) body=3a6a11d7a2d079ffaaf42e4fc6fdd43d
+function public.add_review_comment(p_token text, p_version uuid, p_name text, p_body text) body=79af4ef9c5d2faf421655554e7a166b9
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
@@ -1652,7 +1652,7 @@ function public.append_to_script(p_script uuid, p_text text) body=2f0ee0349c99fd
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
-function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) body=d1d2ebb963760eda860a803bc767ebd7
+function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) body=f56bc6bce319c5103fd9ec40f4e68179
 function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=a2e6caca798669ed8d994d672b1b472f
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001

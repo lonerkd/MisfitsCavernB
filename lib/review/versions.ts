@@ -5,6 +5,7 @@
 // shape it) and reads the link tokens (the same people).
 
 import { supabase } from '@/lib/supabase/client';
+import type { ReviewLayer } from './audiences';
 
 export type VersionRow = {
   id: string;
@@ -21,7 +22,7 @@ export type VersionRow = {
   created_at: string;
 };
 export type ReviewLinkRow = {
-  id: string; project_id: string; token: string; label: string; version_ids: string[];
+  id: string; project_id: string; token: string; label: string; version_ids: string[]; layer: ReviewLayer;
   expires_at: string | null; revoked_at: string | null; created_at: string;
 };
 export type ReviewCommentRow = { id: string; version_id: string; author_id: string | null; guest_name: string | null; body: string; created_at: string };
@@ -77,7 +78,7 @@ export async function listVersions(projectId: string): Promise<VersionRow[]> {
   return (data ?? []) as VersionRow[];
 }
 export async function listLinks(projectId: string): Promise<ReviewLinkRow[]> {
-  const { data, error } = await supabase.from('review_links').select('id, project_id, token, label, version_ids, expires_at, revoked_at, created_at').eq('project_id', projectId).order('created_at', { ascending: false });
+  const { data, error } = await supabase.from('review_links').select('id, project_id, token, label, version_ids, layer, expires_at, revoked_at, created_at').eq('project_id', projectId).order('created_at', { ascending: false });
   if (error) throw new Error(error.message);
   return (data ?? []) as ReviewLinkRow[];
 }
@@ -131,10 +132,10 @@ export async function addTeamComment(versionId: string, body: string): Promise<s
 }
 
 /** A link a client can open, for these sent versions. Returns the link, or an error message. */
-export async function createLink(projectId: string, versionIds: string[], label: string): Promise<{ link: ReviewLinkRow } | { error: string }> {
+export async function createLink(projectId: string, versionIds: string[], label: string, layer: ReviewLayer = 'guest'): Promise<{ link: ReviewLinkRow } | { error: string }> {
   const { data, error } = await supabase.from('review_links')
-    .insert({ project_id: projectId, version_ids: versionIds, label: label.trim().slice(0, 120) })
-    .select('id, project_id, token, label, version_ids, expires_at, revoked_at, created_at').single();
+    .insert({ project_id: projectId, version_ids: versionIds, label: label.trim().slice(0, 120), layer })
+    .select('id, project_id, token, label, version_ids, layer, expires_at, revoked_at, created_at').single();
   if (error) return { error: error.message };
   return { link: data as ReviewLinkRow };
 }
@@ -151,7 +152,7 @@ export type GuestVersion = {
   id: string; number: number; label: string; script_title: string; script_format: string; snapshot: string; sent_at: string | null;
   decision: 'approved' | 'changes_requested' | null; decided_at: string | null; decided_by: string | null; comments: GuestComment[];
 };
-export type GuestReview = { layer: 'guest' | 'investor'; label: string; versions: GuestVersion[] };
+export type GuestReview = { layer: ReviewLayer; label: string; versions: GuestVersion[] };
 
 export async function guestComment(token: string, versionId: string, name: string, body: string): Promise<boolean> {
   const { data, error } = await supabase.rpc('add_review_comment', { p_token: token, p_version: versionId, p_name: name, p_body: body });

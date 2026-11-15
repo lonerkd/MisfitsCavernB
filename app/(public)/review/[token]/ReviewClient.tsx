@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { guestComment, guestDecide, type GuestReview, type GuestVersion } from '@/lib/review/versions';
 import { parseCopy } from '@/lib/ad/copy';
+import { audienceOf } from '@/lib/review/audiences';
 
 const field: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.14)', borderRadius: 8, padding: '8px 12px', color: 'var(--fg-strong)', fontSize: 15, width: '100%' };
 const btn = (primary: boolean): React.CSSProperties => ({
@@ -16,7 +17,7 @@ const btn = (primary: boolean): React.CSSProperties => ({
 });
 const stamp = (at: string) => new Date(at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-function VersionCard({ token, v, name }: { token: string; v: GuestVersion; name: string }) {
+function VersionCard({ token, v, name, canComment, canDecide }: { token: string; v: GuestVersion; name: string; canComment: boolean; canDecide: boolean }) {
   const [decision, setDecision] = useState(v.decision);
   const [comments, setComments] = useState(v.comments);
   const [text, setText] = useState('');
@@ -92,34 +93,43 @@ function VersionCard({ token, v, name }: { token: string; v: GuestVersion; name:
         </ol>
       )}
 
-      <div style={{ display: 'grid', gap: 8 }}>
-        <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>Your comment (optional with a decision)
-          <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3} style={field} />
-        </label>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <button type="button" style={btn(true)} disabled={busy} onClick={() => void decide('approved')}>Approve this version</button>
-          <button type="button" style={btn(false)} disabled={busy} onClick={() => void decide('changes_requested')}>Ask for changes</button>
-          <button type="button" style={btn(false)} disabled={busy || !text.trim()} onClick={() => void comment()}>Send comment</button>
+      {(canComment || canDecide) && (
+        <div style={{ display: 'grid', gap: 8 }}>
+          <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)' }}>{canDecide ? 'Your comment (optional with a decision)' : 'Your comment'}
+            <textarea value={text} onChange={(e) => setText(e.target.value)} maxLength={2000} rows={3} style={field} />
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {canDecide && <button type="button" style={btn(true)} disabled={busy} onClick={() => void decide('approved')}>Approve this version</button>}
+            {canDecide && <button type="button" style={btn(false)} disabled={busy} onClick={() => void decide('changes_requested')}>Ask for changes</button>}
+            {canComment && <button type="button" style={btn(false)} disabled={busy || !text.trim()} onClick={() => void comment()}>Send comment</button>}
+          </div>
+          {note && <p role="alert" style={{ margin: 0, color: 'var(--danger)' }}>{note}</p>}
         </div>
-        {note && <p role="alert" style={{ margin: 0, color: 'var(--danger)' }}>{note}</p>}
-      </div>
+      )}
     </article>
   );
 }
 
 export function ReviewClient({ token, review }: { token: string; review: GuestReview }) {
   const [name, setName] = useState('');
+  const audience = audienceOf(review.layer);
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '32px 16px 96px', color: 'var(--fg)' }}>
       <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', margin: '0 0 4px' }}>{review.label || 'For your review'}</h1>
       <p style={{ color: 'var(--fg-muted)', margin: '0 0 20px', maxWidth: '60ch' }}>
-        Read each version, then approve it, ask for changes, or leave a comment. You don’t need an account — we only ask for your name, which the team sees next to what you write. Anyone with this link can do the same.
+        {audience.canDecide
+          ? 'Read each version, then approve it, ask for changes, or leave a comment. You don’t need an account — we only ask for your name, which the team sees next to what you write. Anyone with this link can do the same.'
+          : audience.canComment
+            ? 'Read each version and leave a comment if you have one. You don’t need an account — we only ask for your name, which the team sees next to what you write. This link is for reading and comments: approval is the client’s.'
+            : 'Read each version. This link is for reading only. You don’t need an account.'}
       </p>
-      <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)', maxWidth: 320, marginBottom: 24 }}>Your name
-        <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" style={field} />
-      </label>
+      {audience.canComment && (
+        <label style={{ display: 'grid', gap: 4, fontSize: 12, color: 'var(--fg-muted)', maxWidth: 320, marginBottom: 24 }}>Your name
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={80} autoComplete="name" style={field} />
+        </label>
+      )}
       {review.versions.length === 0 && <p style={{ color: 'var(--fg-muted)' }}>Nothing has been sent on this link yet.</p>}
-      {review.versions.map((v) => <VersionCard key={v.id} token={token} v={v} name={name} />)}
+      {review.versions.map((v) => <VersionCard key={v.id} token={token} v={v} name={name} canComment={audience.canComment} canDecide={audience.canDecide} />)}
     </div>
   );
 }
