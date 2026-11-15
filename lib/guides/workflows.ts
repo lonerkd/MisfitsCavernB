@@ -122,6 +122,34 @@ export const WORKFLOWS: Workflow[] = [
     },
   },
   {
+    id: 'youtube', label: 'YouTube video', blurb: 'The idea, the script, a small shoot, the edit and the upload.',
+    steps: ['logline', 'brief', 'references', 'beats', 'script', 'draft', 'rewrite', 'shots', 'schedule', 'learn-set', 'wrap-first', 'wrap-all', 'backup',
+      'cut', 'notes', 'notes-resolved', 'music', 'pipeline', 'artwork', 'share', 'release-plan', 'portfolio'],
+    overrides: {
+      logline: { title: 'Say what the video is', text: { do: 'One sentence: who it is for and what they get from watching.' } },
+      script: { title: 'Write the video script', text: { do: 'Write the hook, the sections and the call to action in the video-script format.' } },
+      artwork: { title: 'Make the thumbnail', text: { do: 'Make the thumbnail and title that will carry the video.' } },
+      share: { title: 'Upload and publish', text: { do: 'Publish the video and share its page.' } },
+    },
+  },
+  {
+    id: 'blog', label: 'Article or newsletter', blurb: 'The pitch, an outline, a draft, an edit and publishing.',
+    steps: ['logline', 'brief', 'references', 'beats', 'script', 'draft', 'rewrite', 'notes', 'notes-resolved', 'artwork', 'share', 'release-plan', 'portfolio'],
+    overrides: {
+      logline: { title: 'Say what the piece argues', text: { do: 'One sentence: the point and who needs to read it.' } },
+      beats: { title: 'Outline the piece', text: { do: 'Lay out the sections in order before you write them.' } },
+      script: { title: 'Start the article', text: { do: 'Write in the prose format: headings for sections, plain paragraphs for the text.' } },
+      share: { title: 'Publish', text: { do: 'Publish the piece and share its page.' } },
+    },
+  },
+  {
+    id: 'game', label: 'Video game', blurb: 'Story and dialogue for a game: concept, design, build, polish, release.',
+    steps: ['logline', 'brief', 'references', 'characters', 'beats', 'script', 'draft', 'table-read', 'rewrite', 'notes', 'notes-resolved', 'music', 'artwork', 'share', 'release-plan', 'portfolio'],
+    overrides: {
+      script: { title: 'Write the game script', text: { do: 'Write scenes, lines and player choices in the game-script format.' } },
+    },
+  },
+  {
     id: 'on-the-crew', label: 'On the crew', blurb: 'What your part of someone else’s production needs from you.', crew: true,
     steps: ['crew-hello', 'crew-read', 'crew-references', 'crew-scenes', 'crew-lines', 'crew-breakdown', 'crew-shots', 'crew-paperwork',
       'learn-set', 'crew-call', 'crew-hours', 'crew-cut', 'crew-portfolio'],
@@ -141,6 +169,9 @@ export function pickWorkflow(format: string | null | undefined, experience: Expe
       : f === 'documentary' ? 'documentary'
       : f === 'podcast' ? 'podcast'
       : f === 'commercial' ? 'commercial'
+      : f === 'youtube' ? 'youtube'
+      : f.includes('blog') || f.includes('newsletter') || f === 'article' ? 'blog'
+      : f === 'video game' || f === 'game' ? 'game'
       : experience === 'first' ? 'short-first' : 'short';
   return WORKFLOW_BY_ID[id];
 }
