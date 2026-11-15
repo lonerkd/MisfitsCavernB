@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
 import { useMyCapabilities, useMyRole } from '@/lib/roles/capabilities';
+import { YourWorkflow } from '../production/YourWorkflow';
 import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
 import { useCrafts } from '@/lib/crafts/crafts';
 import { PRODUCTION_VIEW_LABELS, PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
@@ -166,6 +167,9 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                   {kit.home === 'call' && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>Your working surface is your calls and pages, not the Studio: <Link href="/call" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>open My calls</Link>.</span>}
                   {kit.home === 'review' && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>You work through the review link, not the Studio.</span>}
                 </div>
+              )}
+              {kit && !q && (
+                <YourWorkflow craft={me.craft} department={me.craft ? craftsByName.get(me.craft)?.department : null} openable={myViews} onView={onView} />
               )}
               {kit && me.previewing && !q && kit.gaps.length > 0 && (
                 <div role="note" aria-label={`What ${me.craft ?? 'this role'} still lacks`} style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.5 }}>
