@@ -14,6 +14,7 @@ protocol (map, "Private evidence protocol"). That is still the only proof that c
 - The catalogue: `public.crafts` (58 crafts in 13 departments) and `craft_capabilities` (the permissions each craft holds).
 - The tools: the Studio's 41 Production views (`PRODUCTION_VIEWS`), plus the surfaces outside the tab (the editor, Library, Sound, Pitch,
   Share, the crew call page, the client review link).
+- A **written workflow per craft** (`lib/roles/workflows.ts`, 2026-11-15): the steps of the job in four stages (Prep, The day before, On the day, After the shoot), each in the tool it happens in, with what the role receives and hands on. About 20 crafts have their own; every other craft uses its department's. A test checks every tool named exists and, against the real catalogue, that every craft has a step in a tool its own suite holds. The person sees it as **Your workflow** on the Production tab. The workflows are written from the role completeness map and the tools as they are; they have not been run by practitioners.
 - A **toolkit per craft** (`lib/roles/toolkit.ts`): the ordered tools that craft works in, a department fallback for crafts an admin adds,
   and the gaps (canonical steps with no tool). It is data, with tests, so the audit cannot drift from the code.
 - **An interconnection check** (`tests/integration/role-toolkits.test.ts`): reads the real catalogue and templates from the database and
@@ -73,6 +74,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 - Whether any tool is *good enough* for its specialist: only practitioners can say. Tier 1 roles need three each (map, evidence protocol).
 - Each tool's internal quality: the tools were built and reviewed over many sessions; this audit checks reachability and permissions, not usability.
 - The phone, offline and print behaviour of each role's suite (F4 in the map).
+- Whether each written workflow matches how a practitioner really works: they are the engineering's reading of the job, to be corrected in the practitioner runs.
 - Surfaces outside the Production tab were listed, not audited: the editor, Library, Sound, Pitch and Share each need their own pass against their role.
 
 ## Next, ranked (BACKLOG 3.51)
