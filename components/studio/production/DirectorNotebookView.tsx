@@ -6,10 +6,11 @@ import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
 import { useStudio } from '../StudioContext';
+import { ChangeImpactPanel } from './ChangeImpactPanel';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
-type NoteEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string };
+type NoteEntry = { id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string; change?: boolean; notified_at?: string | null; notified_count?: number | null };
 
 export function DirectorNotebookView() {
   const { project } = useStudio();
@@ -20,6 +21,7 @@ export function DirectorNotebookView() {
     title: '',
     notes: '',
     reference: '',
+    change: false,
   });
   const [filter, setFilter] = useState('');
 
@@ -31,7 +33,7 @@ export function DirectorNotebookView() {
   const add = async () => {
     if (!draft.title.trim()) return;
     if (!(await save([...items, { ...draft, id: `dn-${Date.now()}`, createdAt: new Date().toISOString() }]))) return;
-    setDraft({ scene: '', title: '', notes: '', reference: '' });
+    setDraft({ scene: '', title: '', notes: '', reference: '', change: false });
   };
 
   const sorted = [...filtered].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -57,6 +59,10 @@ export function DirectorNotebookView() {
             <span className={s.label}>Reference (URL)</span>
             <input className={s.input} value={draft.reference} onChange={(e) => setDraft({ ...draft, reference: e.target.value })} placeholder="image/link" />
           </label>
+          <label className={s.row} style={{ gap: 4, alignItems: 'center', paddingBottom: 6 }} title="Mark a note that changes the plan, so you can tell the departments it touches">
+            <input type="checkbox" checked={!!draft.change} onChange={(e) => setDraft({ ...draft, change: e.target.checked })} />
+            <span className={s.label}>Changes the plan</span>
+          </label>
           <button className={s.btnPrimary} onClick={add} disabled={!draft.title.trim()}>
             <Plus size={12} /> Add
           </button>
@@ -79,6 +85,13 @@ export function DirectorNotebookView() {
               </button>
             </div>
             {n.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{n.notes}</p>}
+            {n.change && (n.scene_ids?.length ?? 0) > 0 && (
+              <ChangeImpactPanel
+                note={n}
+                onSent={async (count) => { await save(items.map((i) => (i.id === n.id ? { ...i, notified_at: new Date().toISOString(), notified_count: count } : i))); }}
+              />
+            )}
+            {n.change && (n.scene_ids?.length ?? 0) === 0 && <p className={s.hint} style={{ marginTop: 4 }}>This note changes the plan. Link it to a scene to see who it touches.</p>}
             {n.reference && (
               <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}>
                 {/^https?:\/\//i.test(n.reference) ? <a href={n.reference} target="_blank" rel="noreferrer">{n.reference}</a> : n.reference}
