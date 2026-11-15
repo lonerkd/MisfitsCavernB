@@ -31,7 +31,7 @@ protocol (map, "Private evidence protocol"). That is still the only proof that c
    *Your role* card on Your day uses the same suites.
 3. **Six crafts hold no permission at all** (Actor, Stunt performer, Voice actor, Investor, Distributor or festival guest, Press). By
    design for the budget, casting and paperwork. But they have **almost no working surface**: performers have the crew call page, and the
-   outside roles have only the client review link (behind a flag). See the gaps below.
+   outside roles have only the client review link. See the gaps below. (Update 2026-11-15: a link per audience, enforced in the database.)
 4. **The owner could not see any of this.** "View as" previewed one generic crew member. It now previews a **specific craft at an access
    level**, and every screen that follows a person's capabilities shows what that role sees; while previewing, the Production tab also says
    what the role's job still lacks.
@@ -54,7 +54,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 | Editorial & post (Editor, AE, Colorist, VFX, Motion, Post supervisor) | Editorial handoff, Media offload, Reports, Revisions, VFX shots | Studio › Post, cut review | review comments are not pinned to a picture version; approval of a cut happens outside (R18) | Partial |
 | Music (Composer, Music supervisor) | Sound report, Editorial, Revisions, Paperwork | Sound (the page, Spotify) | no cue sheet or licensing tracker; Spotify verified with fakes only (R17) | Partial |
 | Performance (Actor, Stunt, Voice) | Rehearsals (and Safety for stunts) | **My calls** (`/call`) and the call sheet with **Your pages** (built 2026-11-15) | no lines-learning or self-tape tool; nothing after the shoot day (R19) | Partial |
-| Outside (Client, Investor, Distributor, Press) | none | the review link (behind `guest_review`) | no investor, press or distributor view; approval not tied to a cut version (R20) | **Thin** |
+| Outside (Client, Investor, Distributor, Press) | none | a review link per audience (client: read, comment, decide; investor and distributor: read and comment; press: read only; enforced in the database, 2026-11-15) | approval is of script versions only, not a picture cut; no investor deck or budget summary, no screening link, press kit not in the link (R20) | Partial |
 
 ## Handoffs (X1-X7): what the code shows
 
@@ -64,7 +64,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 | X2 director → departments | the Director notebook is a record tool; nothing carries a director's change to a department | Partial |
 | X3 production → crew | a call sheet issues per-person calls, crew acknowledge, push is live, and the issue bar shows who has not acknowledged | Built; the coordinator's whole flow unrun (R9) |
 | X4 shoot → editor | the set log, camera and sound reports, the media offload log and an Editorial handoff record | Partial: records, not one package the editor receives |
-| X5 team → client | review links and versions exist behind `guest_review`; approval is not tied to a cut | Partial |
+| X5 team → client | review links by audience; versions are script versions; approval is not tied to a picture cut | Partial |
 | X6 project → portfolio | credits and laurels appear on a person's page from the work itself | Built |
 | X7 creator lane → production lane | formats are separate (screenplay, podcast, copy, advertising, and since 2026-11-15 YouTube, article and game scripts); a video script's sections are scenes the Studio can plan, but nothing carries an ad or an article into a production plan | Partial |
 
@@ -77,7 +77,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 
 ## Next, ranked (BACKLOG 3.51)
 
-1. **Thin roles first** (a role that cannot work at all fails the Reveal Gate): ~~a performer's own surface~~ (built 2026-11-15: My calls and Your pages) and the client / outside view (a review that is tied to a cut version, plus read-only views for an investor and press: M).
+1. **Thin roles first** (a role that cannot work at all fails the Reveal Gate): ~~a performer's own surface~~ (built 2026-11-15: My calls and Your pages) ~~and the client / outside view~~ (**built 2026-11-15**: a review link per audience, enforced by the database; left: approval tied to a picture cut, an investor deck or budget summary, a screening link, the press kit inside the link, M).
 2. **X7 and the missing formats** (YouTube and prose): the owner decides which lanes are in the first claim; each format is M.
 3. **X2 and X4:** carry a director's change to the departments it touches; package the shoot for the editor as one handoff (M each).
 4. **The director's day at a glance** and **the script supervisor's lined script and takes** (R11, R12: the two Tier 2 roles with the least evidence).

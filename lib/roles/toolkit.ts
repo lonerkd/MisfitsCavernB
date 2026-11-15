@@ -93,11 +93,11 @@ export const TOOLKITS: Record<string, Toolkit> = {
   'Actor': T(['rehearsal'], ['Calls, the call sheet and their own pages are on the call pages (My calls); there is no lines-learning or self-tape tool, and nothing after the shoot day (R19)'], 'call'),
   'Stunt performer': T(['rehearsal', 'safety'], ['Calls and pages only; no stunt-specific plan or safety sign-off (R19)'], 'call'),
   'Voice actor': T([], ['Calls and pages only; no recording-session view (R19)'], 'call'),
-  // Outside the crew: the client review, not the Studio
-  'Client': T([], ['Reviews arrive by link behind a flag (`guest_review`); approval is not yet tied to a cut version (R20)'], 'review'),
-  'Investor': T([], ['No investor view: nothing is shared with them (R20)'], 'review'),
-  'Distributor or festival guest': T([], ['No screening or deliverables view (R20)'], 'review'),
-  'Press': T([], ['No press kit view for someone who is not crew (R20)'], 'review'),
+  // Outside the crew: a review link for their audience (lib/review/audiences.ts), not the Studio
+  'Client': T([], ['Reads, comments and approves script versions through a link; approval of a picture cut, and a client page for several deliverables over time, do not exist yet (R20)'], 'review'),
+  'Investor': T([], ['Reads and comments on script versions through a link; no deck, budget summary or cut view built for an investor (R20)'], 'review'),
+  'Distributor or festival guest': T([], ['Reads and comments through a link; no screening link or deliverables checklist (R20)'], 'review'),
+  'Press': T([], ['Reads through a link, no comments; the press kit exists on a public project but is not part of the link (R20)'], 'review'),
   // Other
   'Multi-hyphenate': T(['story', 'schedule', 'onset', 'crew']),
   'Other': T(['story', 'schedule', 'onset', 'crew']),
