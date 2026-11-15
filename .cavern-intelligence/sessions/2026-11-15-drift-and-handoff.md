@@ -1,0 +1,3 @@
+# Session - 2026-11-15: full drift check re-run, handoff refreshed
+
+Ran the full 14-kind fingerprint (`supabase/fingerprint.sql`, grouped by kind with a count and an md5 of each kind's sorted lines) on production and staging through the database tool, and computed the same per-kind counts and hashes from `supabase/schema.fingerprint`. All 14 kinds match on both (bucket 6, column 923, constraint 623, event-trigger 1, function 155, grant 155, index 403, policy 300, realtime 47, rls 101, schema 2, trigger 92, view 1, view-options 1). `STATE.md`'s handoff date and drift line updated. No code or migration.
