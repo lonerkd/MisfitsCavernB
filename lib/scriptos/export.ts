@@ -122,6 +122,10 @@ ${paragraphs}
 
 /** jsPDF is large and only needed here, so it loads when a PDF is asked for. */
 export async function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): Promise<void> {
+  if (!reemitsAsFountain(script.format)) {
+    const { exportDocumentPdf } = await import('./export-document-pdf');
+    return exportDocumentPdf(script, titlePage);
+  }
   const { jsPDF } = await import('jspdf');
   const result = parseScript(script.content);
 
