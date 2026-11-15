@@ -13,7 +13,7 @@ import { ShareScriptButton } from './ShareScriptButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
-import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
+import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf, exportChoicesFor } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
@@ -239,7 +239,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                   borderRadius: 14, padding: 6, minWidth: 164, zIndex: 1000,
                   boxShadow: '0 16px 48px rgba(0,0,0,0.6)'
                 }}>
-                  {['fountain', 'fdx', 'pdf', 'txt'].map(fmt => (
+                  {exportChoicesFor(currentScript?.format).map(fmt => (
                     <button key={fmt} onClick={() => handleExport(fmt)} style={{
                       display: 'flex', alignItems: 'center', gap: 8,
                       width: '100%', textAlign: 'left', padding: '9px 14px',
