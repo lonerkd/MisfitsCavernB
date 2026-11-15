@@ -1339,7 +1339,7 @@ constraint project_formats.project_formats_icon_check CHECK ((icon ~ '^[a-z-]{1,
 constraint project_formats.project_formats_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
 constraint project_formats.project_formats_phase_labels_check CHECK (((jsonb_typeof(phase_labels) = 'object'::text) AND ((phase_labels - ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text]) = '{}'::jsonb)))
 constraint project_formats.project_formats_pkey PRIMARY KEY (name)
-constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text])))
+constraint project_formats.project_formats_script_format_check CHECK ((script_format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text, 'video-script'::text, 'prose'::text, 'game-script'::text])))
 constraint project_formats.project_formats_skip_phases_check CHECK ((skip_phases <@ ARRAY['pre-production'::text, 'production'::text, 'post-production'::text]))
 constraint project_locations.project_locations_coordinates_check CHECK ((((latitude IS NULL) = (longitude IS NULL)) AND ((latitude IS NULL) OR (((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)) AND ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))))
 constraint project_locations.project_locations_cost_check CHECK (((cost IS NULL) OR (cost >= (0)::numeric)))
@@ -1462,7 +1462,7 @@ constraint script_stash.script_stash_pkey PRIMARY KEY (id)
 constraint script_stash.script_stash_script_id_fkey FOREIGN KEY (script_id) REFERENCES scripts(id) ON DELETE CASCADE
 constraint script_stash.script_stash_text_len CHECK (((char_length(text) >= 1) AND (char_length(text) <= 20000)))
 constraint scripts.scripts_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
-constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text])))
+constraint scripts.scripts_format_check CHECK ((format = ANY (ARRAY['screenplay'::text, 'teleplay'::text, 'stage-play'::text, 'treatment'::text, 'podcast'::text, 'doc-outline'::text, 'copy'::text, 'video-script'::text, 'prose'::text, 'game-script'::text])))
 constraint scripts.scripts_id_project_key UNIQUE (id, project_id)
 constraint scripts.scripts_last_edited_by_fkey FOREIGN KEY (last_edited_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint scripts.scripts_pkey PRIMARY KEY (id)

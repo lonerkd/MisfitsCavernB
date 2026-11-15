@@ -43,7 +43,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 
 | Family (crafts) | Working suite (Production tab) | Other surfaces | Gaps (evidence in `toolkit.ts`) | Verdict |
 |---|---|---|---|---|
-| Writing (Writer, Story editor, Showrunner, Story producer) | Story, Script revisions, World, Continuity (+ Breakdown, Schedule, Money for the Showrunner) | the editor (the real writing surface), Pitch | no prose or YouTube format; only screenplay, podcast, outline, copy, advertising (R3, R5) | Partial |
+| Writing (Writer, Story editor, Showrunner, Story producer) | Story, Script revisions, World, Continuity (+ Breakdown, Schedule, Money for the Showrunner) | the editor (the real writing surface), Pitch | YouTube, article and game formats exist (2026-11-15); their exports are still screenplay-shaped and nothing publishes to a channel or CMS (R3, R5) | Partial |
 | Direction (Director, 1st AD, 2nd AD, Script supervisor) | Director notebook, Shots, Breakdown, Schedule, Day out of days, Readiness, On set, Script sup, Continuity | editor, Pitch | no live "day at a glance" for the director (R11); lined script marks and selected takes absent (R12); scene identity across a script change unproven (R10) | Partial |
 | Production (Producer, Line producer, PM, Coordinator, Accountant, PA, Location manager, Casting director) | Money, POs, Paperwork, Schedule, Readiness, Crew, Permits, Locations, Comms, Transport, Catering | Community, Hub | no invoices, cash-flow or Excel / Movie Magic export (4.6); location packet not one shareable page (R16); no Backstage-style casting intake (R15); coordinator flow unrun (R9) | Partial |
 | Camera (DP, operators, ACs, Steadicam, drone, DIT, stills) | Shots, Camera report, Gear, Media offload, Stills, Schedule | Library | no overhead / blocking diagram (R13) | Partial |
@@ -66,7 +66,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 | X4 shoot → editor | the set log, camera and sound reports, the media offload log and an Editorial handoff record | Partial: records, not one package the editor receives |
 | X5 team → client | review links and versions exist behind `guest_review`; approval is not tied to a cut | Partial |
 | X6 project → portfolio | credits and laurels appear on a person's page from the work itself | Built |
-| X7 creator lane → production lane | formats are separate (screenplay, podcast, copy, advertising); nothing carries a YouTube script or an ad into a production plan | **Missing** |
+| X7 creator lane → production lane | formats are separate (screenplay, podcast, copy, advertising, and since 2026-11-15 YouTube, article and game scripts); a video script's sections are scenes the Studio can plan, but nothing carries an ad or an article into a production plan | Partial |
 
 ## What this audit could not check
 
