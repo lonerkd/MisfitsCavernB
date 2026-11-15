@@ -8,7 +8,7 @@ import {
 
 describe('SCRIPT_FORMAT_REGISTRY', () => {
   it('should have exactly the expected keys', () => {
-    const expectedKeys = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy'];
+    const expectedKeys = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy', 'video-script', 'prose', 'game-script'];
     expect(Object.keys(SCRIPT_FORMAT_REGISTRY)).toEqual(expectedKeys);
   });
 
@@ -49,7 +49,7 @@ describe('DEFAULT_SCRIPT_FORMAT', () => {
 
 describe('SCRIPT_FORMATS', () => {
   it('should contain all format keys from registry', () => {
-    const expectedKeys = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy'];
+    const expectedKeys = ['screenplay', 'teleplay', 'stage-play', 'treatment', 'podcast', 'doc-outline', 'copy', 'video-script', 'prose', 'game-script'];
     expect(SCRIPT_FORMATS).toEqual(expectedKeys);
   });
 

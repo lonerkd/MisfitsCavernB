@@ -11,6 +11,9 @@ export const SCRIPT_FORMAT_REGISTRY = {
   podcast: { label: 'Podcast Script' },
   'doc-outline': { label: 'Documentary Outline' },
   copy: { label: 'Copy' },
+  'video-script': { label: 'YouTube / Video Script' },
+  prose: { label: 'Article / Blog / Newsletter' },
+  'game-script': { label: 'Game / Interactive Script' },
 } as const satisfies Record<string, { label: string }>;
 
 export type ScriptFormat = keyof typeof SCRIPT_FORMAT_REGISTRY;

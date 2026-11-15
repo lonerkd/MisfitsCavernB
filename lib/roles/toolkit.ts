@@ -25,7 +25,7 @@ export const VIEW_NEEDS: Partial<Record<ProductionView, string>> = {
   paperwork: 'paperwork.read',
 };
 
-const WRITING = T(['story', 'revisions', 'world', 'continuity'], ['Prose and video-script formats (blog, YouTube) do not exist yet: only screenplay, podcast, outline, copy and advertising (R3, R5)']);
+const WRITING = T(['story', 'revisions', 'world', 'continuity'], ['YouTube, article and game scripts are read as their own formats, but their PDF / text exports are still screenplay-shaped, and there is no publishing step to a channel or a CMS (R3, R5; BACKLOG 3.22)']);
 const CAMERA = T(['shots', 'camera', 'gear', 'schedule'], ['No overhead / blocking diagram beside the shot list (R13)']);
 const LIGHT = T(['gear', 'schedule', 'safety', 'shots', 'scout']);
 const WARDROBE = T(['costume', 'makeup', 'continuity', 'breakdown']);

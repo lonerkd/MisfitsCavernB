@@ -15,6 +15,9 @@
 
 ---
 
+### Script formats (`lib/formats/script-formats.ts`, `lib/scriptos/reading-format.ts`)
+The format list is one registry; a script's format picks the reading rules (`readingFormat`). Screenplay, teleplay, stage play and treatment read as screenplay grammar. The others have rules of their own in `analyzeNonScreenplayLine`, and in each a section is a "scene" so the scene index, outline and Studio work: **podcast** (`NAME: line`, segment headers), **doc-outline** (timecodes, labelled segments, soundbites), **copy** (advertising, per-piece limits), **video-script** (YouTube and kin: HOOK / CHAPTER / OUTRO sections, `[B-ROLL: …]` cues as shots, spoken lines as dialogue), **prose** (articles, blogs, newsletters: `#` and short CAPS headings are sections, paragraphs are text; Fountain's `>`, `@`, `!`, `~` and leading-dot markers are ordinary text), **game-script** (parts such as ACT / LEVEL / QUEST / NODE, choices as the player's lines, `[IF …]` / `[SET …]` logic, `-> node` jumps, other `[cues]`). A project type (`project_formats`) says which format a new script opens in; the database checks the format in `scripts` and `project_formats` (the CHECK lists must match the registry: migration `20261115000300`).
+
 ### Known gaps in the classifier and the importer
 
 Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The current parser keeps what was right about the old one (a rule-based, explainable, offline classifier) and adds a Fountain layer that is never second-guessed, lossless round-trip, other formats, and the breakdown/timing/analysis that read its output. It is *less* complete than the old one in the vocabulary of transitions and numbered headings, and shares its weakest idea: structure is guessed from capitals and neighbours. The PDF importer is the old one's algorithm, ported. Every confirmed gap is pinned as an expected-failure test (, ) and scoped in BACKLOG 3.20.

@@ -159,6 +159,12 @@ export const DECODER_DEFAULT = true;
 export type { ScriptFormat } from '@/lib/formats/script-formats';
 import type { ScriptFormat } from '@/lib/formats/script-formats';
 
+/** The words that open a section of a video script. */
+/** The words that open a part of a game script. */
+const GAME_SECTION = /^(ACT|LEVEL|MISSION|QUEST|CHAPTER|SCENE|AREA|HUB|CUTSCENE|ENCOUNTER|NODE)\b/i;
+
+const VIDEO_SECTION = /^(HOOK|COLD OPEN|TEASER|INTRO|INTRODUCTION|SPONSOR|AD READ|CHAPTER|SECTION|PART|RECAP|OUTRO|CTA|CALL TO ACTION|END SCREEN)\b/i;
+
 export class ScriptParser {
   private rawLines: string[];
   private characterStats: Map<string, number>;
@@ -299,7 +305,7 @@ export class ScriptParser {
     if (this.usesScreenplayGrammar()) {
       this.preScanCharacters();
       this.preScanTitleCaseCues();
-    } else if (this.format === 'podcast') {
+    } else if (this.format === 'podcast' || this.format === 'video-script' || this.format === 'game-script') {
       this.preScanSpeakers();
     }
 
@@ -517,7 +523,15 @@ export class ScriptParser {
   private preScanSpeakers() {
     const speakerLine = /^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*\S/;
     this.rawLines.forEach(line => {
-      const match = line.trim().match(speakerLine);
+      const trimmed = line.trim();
+      // "CHAPTER 1: THE FRAME" in a video script is a section, not a speaker.
+      if (this.format === 'video-script' && VIDEO_SECTION.test(trimmed)) return;
+      if (this.format === 'game-script' && GAME_SECTION.test(trimmed)) return;
+      if (this.format === 'game-script' && (/^(?:CHOICE|OPTION|PLAYER CHOICE)\s*\d*\s*[:.\-]\s*\S/i.test(trimmed) || /^[*+]\s+\S/.test(trimmed))) {
+        this.characterStats.set('PLAYER', (this.characterStats.get('PLAYER') || 0) + 1);
+        return;
+      }
+      const match = trimmed.match(speakerLine);
       if (match) {
         const name = match[1].trim().toUpperCase();
         this.characterStats.set(name, (this.characterStats.get(name) || 0) + 1);
@@ -553,6 +567,89 @@ export class ScriptParser {
       }
       reasoning.push('Show-note / aside');
       return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
+    }
+
+    if (this.format === 'video-script') {
+      // A video script (YouTube and its kin): sections are the "scenes", [bracketed] lines are what the viewer sees, and the
+      // spoken words are the dialogue, with or without a speaker.
+      if (/^\[[^\]]+\]$/.test(text)) {
+        reasoning.push('On-screen cue (B-roll, graphic, caption)');
+        return { type: 'shot', confidence: 90, scores, reasoning, meta: {} };
+      }
+      if (/^\([^)]+\)$/.test(text)) {
+        reasoning.push('Delivery note');
+        return { type: 'parenthetical', confidence: 85, scores, reasoning, meta: {} };
+      }
+      if (/^\d{1,2}:\d{2}(:\d{2})?\s*[-–—]/.test(text) || VIDEO_SECTION.test(text)) {
+        reasoning.push('Section marker');
+        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      const speaker = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
+      if (speaker) {
+        reasoning.push('Speaker-tagged line');
+        return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
+      }
+      if (this.isCaps(text) && text.length < 60) {
+        reasoning.push('Section header');
+        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      reasoning.push('Spoken line');
+      return { type: 'dialogue', confidence: 70, scores, reasoning, meta: {} };
+    }
+
+    if (this.format === 'game-script') {
+      // An interactive / game script: parts (acts, levels, quests, nodes) are the "scenes"; a player's choice is a line the
+      // player speaks; `-> label` sends the story somewhere; [IF flag] / [SET flag] are logic; other [bracketed] lines are cues.
+      if (/^->\s*\S/.test(text)) {
+        reasoning.push('Jump to another node');
+        return { type: 'transition', confidence: 90, scores, reasoning, meta: { text } };
+      }
+      if (/^\[(IF|ELSE|SET|ADD|REMOVE|CHECK|REQUIRE|GIVE|TAKE)\b[^\]]*\]$/i.test(text)) {
+        reasoning.push('Logic: a condition or a state change');
+        return { type: 'parenthetical', confidence: 90, scores, reasoning, meta: {} };
+      }
+      if (/^\[[^\]]+\]$/.test(text)) {
+        reasoning.push('Cue (camera, sound, animation)');
+        return { type: 'shot', confidence: 85, scores, reasoning, meta: {} };
+      }
+      const choice = text.match(/^(?:CHOICE|OPTION|PLAYER CHOICE)\s*\d*\s*[:.\-]\s*(.+)$/i) || text.match(/^[*+]\s+(.+)$/);
+      if (choice) {
+        reasoning.push('A choice the player can make');
+        return { type: 'dialogue', confidence: 90, scores, reasoning, meta: { characterName: 'PLAYER' } };
+      }
+      if (/^\d{1,3}[.)]\s+\S/.test(text) === false && GAME_SECTION.test(text)) {
+        reasoning.push('Part of the game');
+        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      const speaker = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
+      if (speaker) {
+        reasoning.push('Speaker-tagged line');
+        return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
+      }
+      if (this.isCaps(text) && text.length < 60) {
+        reasoning.push('Part header');
+        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      reasoning.push('Narration or description');
+      return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
+    }
+
+    if (this.format === 'prose') {
+      // Prose (a blog post, an essay, a newsletter): headings are the sections, everything else is the text.
+      if (/^\d{1,2}[.)]\s+\S.{0,80}$/.test(text) && this.isCaps(text.replace(/^\d{1,2}[.)]\s+/, ''))) {
+        reasoning.push('Numbered section heading');
+        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      if (this.isCaps(text) && text.length < 60) {
+        reasoning.push('Section heading');
+        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      }
+      if (/^["“].+["”]$/.test(text)) {
+        reasoning.push('Pull quote');
+        return { type: 'dialogue', confidence: 65, scores, reasoning, meta: {} };
+      }
+      reasoning.push('Paragraph');
+      return { type: 'action', confidence: 70, scores, reasoning, meta: {} };
     }
 
     if (this.format === 'doc-outline') {
@@ -606,6 +703,13 @@ export class ScriptParser {
   // preserved for lossless round-trip, and `meta` carries the clean value where
   // the suite needs it (scene heading, character name).
   private preClassify(trim: string): { type: LineType; confidence: number; scores: Record<LineType, number>; reasoning: string[]; meta?: any } | null {
+    if (this.format === 'prose') {
+      // An article is not Fountain: `#` is a heading, and `>`, `@`, `!`, `~` or a leading dot are ordinary text (a quote, a handle, a file name).
+      if (/^#{1,6}\s/.test(trim)) return { type: 'slug', confidence: 100, scores: this.emptyScores(), reasoning: ['Heading'], meta: { heading: trim.replace(/^#+\s*/, ''), sceneNumber: this.extractSceneNumber(trim) } };
+      if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: 100, scores: this.emptyScores(), reasoning: ['Page break'] };
+      if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: 100, scores: this.emptyScores(), reasoning: ['Note'] };
+      return null;
+    }
     if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: 100, scores: this.emptyScores(), reasoning: ['Page break'] };
     if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: 100, scores: this.emptyScores(), reasoning: ['Note'] };
     if (/^#{1,6}\s/.test(trim)) return { type: 'section', confidence: 100, scores: this.emptyScores(), reasoning: ['Section'], meta: { level: (trim.match(/^#+/) || ['#'])[0].length } };
