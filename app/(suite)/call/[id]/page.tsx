@@ -14,9 +14,11 @@ import { Check, MapPin, Printer } from 'lucide-react';
 import { useOSGate, useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
+import type { Sides } from '@/lib/film/sides';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import {
-  callFor, hhmm, issueState, snapshotOf, studio, toSnapshot,
+  callFor, fetchScriptForReading, hhmm, issueState, snapshotOf, studio, toSnapshot,
   type CallSheet, type CallSheetCall, type CallSheetPerson, type CallSheetScene, type CallSheetSnapshot,
 } from '@/lib/studio';
 import c from './call.module.css';
@@ -42,6 +44,7 @@ export default function CallSheetPage() {
   const [acked, setAcked] = useState<number | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading');
   const [confirming, setConfirming] = useState(false);
+  const [sides, setSides] = useState<{ status: 'idle' | 'loading' | 'ready' | 'error'; rows: Sides[] }>({ status: 'idle', rows: [] });
 
   useEffect(() => {
     const uid = user?.id;
@@ -89,6 +92,42 @@ export default function CallSheetPage() {
     } finally {
       setConfirming(false);
     }
+  };
+
+  // A performer's own pages for the day: the scenes of the day they are in, in shooting order, their speeches marked.
+  const loadSides = async () => {
+    if (!sheet || !castAs.length) return;
+    setSides({ status: 'loading', rows: [] });
+    try {
+      // The parser is large and only a performer who asks for their pages needs it: loaded then, not with the page.
+      const [{ parseScript }, { mySides }] = await Promise.all([import('@/lib/scriptos/parser'), import('@/lib/film/my-sides')]);
+      const parsed: { heading: string | null; lines: { type: string; text: string }[] }[] = [];
+      const seen = new Set<string>();
+      for (const scriptId of scenes.map((sc) => sc.script_id).filter((x): x is string => !!x)) {
+        if (seen.has(scriptId)) continue;
+        seen.add(scriptId);
+        const { content, format } = await fetchScriptForReading(scriptId);
+        const p = parseScript(content, readingFormat(format));
+        for (const sc of p.scenes) parsed.push({ heading: sc.heading, lines: p.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text })) });
+      }
+      const rows = mySides({
+        castAs,
+        rows: scenes.map((sc) => ({ id: sc.id, heading: sc.heading, title: sc.title, scene_number: sc.scene_number, ordinal: sc.ordinal })),
+        parsed,
+        actor: people.get(user?.id ?? '')?.username ?? null,
+        call: hhmm(mine?.call_time) || null,
+      });
+      setSides({ status: 'ready', rows });
+    } catch (e) {
+      console.error('Failed to load the sides:', e);
+      setSides({ status: 'error', rows: [] });
+    }
+  };
+  const printSides = async () => {
+    if (!sheet || !sides.rows.length) return;
+    const [{ sidesHtml }, { printHtmlString }] = await Promise.all([import('@/lib/film/sides-print'), import('@/lib/print/print')]);
+    const ok = printHtmlString(sidesHtml(sides.rows, { title: project?.title ?? 'Sides', day: sheet.shoot_day, date: snap?.shoot_date ? new Date(`${snap.shoot_date}T00:00`).toDateString() : null, autoprint: false }));
+    if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
   const openInStudio = () => {
@@ -196,6 +235,36 @@ export default function CallSheetPage() {
             </ol>
           ) : <p className={c.dim}>No scenes scheduled on this day yet.</p>}
         </section>
+
+        {castAs.length > 0 && scenes.length > 0 && (
+          <section aria-labelledby="sides">
+            <h2 id="sides" className={c.h2}>Your pages</h2>
+            {sides.status === 'idle' && (
+              <div className={c.confirmRow} style={{ marginTop: 0 }}>
+                <button type="button" className={c.secondary} onClick={() => void loadSides()}>Show my pages for Day {sheet.shoot_day}</button>
+                <span className={c.dim}>Your scenes, with your lines marked.</span>
+              </div>
+            )}
+            {sides.status === 'loading' && <p className={c.dim} role="status">Reading the script…</p>}
+            {sides.status === 'error' && <p className={c.dim} role="alert">Couldn’t read the script. <button type="button" className={c.secondary} onClick={() => void loadSides()}>Try again</button></p>}
+            {sides.status === 'ready' && sides.rows.length === 0 && <p className={c.dim}>You have no lines in the scenes scheduled for this day.</p>}
+            {sides.status === 'ready' && sides.rows.map((side) => (
+              <div key={side.character} className={c.sides}>
+                <p className={c.mineHint}><strong>{side.character}</strong> · {side.lineCount} {side.lineCount === 1 ? 'speech' : 'speeches'}</p>
+                {side.scenes.map((sc) => (
+                  <div key={`${side.character}:${sc.sceneNumber}:${sc.heading}`} className={c.sideScene}>
+                    {sc.lines.map((l, i) => (
+                      <p key={i} className={`${c.sideLine} ${l.type === 'slug' || l.type === 'scene' ? c.sideHeading : ''} ${l.mine ? c.sideMine : ''}`}>{l.text}</p>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ))}
+            {sides.status === 'ready' && sides.rows.length > 0 && (
+              <div className={c.actions}><button type="button" className={c.secondary} onClick={() => void printSides()}><Printer size={13} aria-hidden /> Print my pages</button></div>
+            )}
+          </section>
+        )}
 
         <section aria-labelledby="calls">
           <h2 id="calls" className={c.h2}>Calls</h2>

@@ -90,9 +90,9 @@ export const TOOLKITS: Record<string, Toolkit> = {
   'Composer': T(['sound', 'editorial', 'revisions'], ['No cue sheet; Spotify playback is verified with fakes only (R17)']),
   'Music supervisor': T(['sound', 'editorial', 'revisions', 'paperwork'], ['No cue sheet or licensing tracker; Spotify playback is verified with fakes only (R17)']),
   // Performance: their surface is the call page, not the Studio
-  'Actor': T(['rehearsal'], ['An actor sees their calls on the crew page; sides are built and printed from the call sheet panel, but an actor does not get their own sides, lines and schedule as a surface (R19)'], 'call'),
-  'Stunt performer': T(['rehearsal', 'safety'], ['Their calls only; no stunt-specific plan or safety sign-off (R19)'], 'call'),
-  'Voice actor': T([], ['Their calls only; no session or script-part view (R19)'], 'call'),
+  'Actor': T(['rehearsal'], ['Calls, the call sheet and their own pages are on the call pages (My calls); there is no lines-learning or self-tape tool, and nothing after the shoot day (R19)'], 'call'),
+  'Stunt performer': T(['rehearsal', 'safety'], ['Calls and pages only; no stunt-specific plan or safety sign-off (R19)'], 'call'),
+  'Voice actor': T([], ['Calls and pages only; no recording-session view (R19)'], 'call'),
   // Outside the crew: the client review, not the Studio
   'Client': T([], ['Reviews arrive by link behind a flag (`guest_review`); approval is not yet tied to a cut version (R20)'], 'review'),
   'Investor': T([], ['No investor view: nothing is shared with them (R20)'], 'review'),

@@ -63,3 +63,21 @@
   .mine { border-color: #999; background: none; }
   .eyebrow, .mineLabel, .mineHint, .factLabel, .h2, .dim, .num, .lead, .table th { color: var(--fg-dim); }
 }
+
+/* /call — My calls: one row per issued call sheet, the person's own call first. */
+.callRow { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 14px; align-items: center; padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line); color: inherit; text-decoration: none; }
+.callRow:hover, .callRow:focus-visible { border-color: var(--pa-line); background: var(--pa-dim); }
+.callDay { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); }
+.callWhen { font-family: var(--display); font-size: 1.7rem; line-height: 1; letter-spacing: -0.02em; }
+.callMeta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.callTitle { margin: 0; font-size: 15px; }
+.callBadge { font-size: 12px; padding: 3px 9px; border-radius: 9999px; border: 1px solid var(--line); color: var(--fg-muted); white-space: nowrap; }
+.callBadgeOk { color: var(--ok); border-color: currentColor; }
+.callBadgeAsk { color: var(--warn); border-color: currentColor; }
+
+/* Your pages: the performer's own sides, their speeches marked. */
+.sides { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.sideScene { padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-family: var(--mono); font-size: 13px; line-height: 1.5; }
+.sideLine { margin: 0; color: var(--fg-muted); white-space: pre-wrap; }
+.sideHeading { color: var(--fg); font-weight: 600; text-transform: uppercase; }
+.sideMine { color: var(--fg); background: var(--pa-dim); border-radius: 4px; padding: 0 4px; }

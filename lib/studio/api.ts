@@ -11,6 +11,7 @@ import { uploadWithProgress } from '@/lib/supabase/uploadProgress';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
 import { logActivity } from '@/lib/supabase/activity';
+import { callFor, toSnapshot } from './call-sheet';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
@@ -27,8 +28,17 @@ export type MoodBoardItem = Tables<'mood_board_items'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
-export interface CallSheetScene { id: string; scene_number: number; heading: string | null; title: string; location: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
+export interface CallSheetScene { id: string; scene_number: number; ordinal: number | null; script_id: string | null; heading: string | null; title: string; location: string | null; est_duration: string | null; /** Who is in it: the linked characters (upper case, by name), else the older cast text. */ cast: string[] }
 export interface CallSheetPerson { id: string; username: string; craft: string | null }
+/** One issued call sheet as one person sees it: where, when, and the call they have on it. */
+export interface MyCall {
+  sheet: CallSheet;
+  project: { id: string; title: string };
+  /** Their own call, else the call of a role they play; null when the sheet gives them none (they are on the general call). */
+  mine: { call_time: string | null; remarks: string | null; as?: string } | null;
+  /** The version they confirmed, or null. */
+  acked: number | null;
+}
 export interface CallSheetView {
   sheet: CallSheet;
   calls: CallSheetCall[];
@@ -485,6 +495,43 @@ export function createStudioApi(db: Client) {
    * the roles they're cast in and the version they last confirmed. Null when
    * the sheet doesn't exist or they aren't on the production (RLS).
    */
+  /**
+   * Every call sheet that has been issued on the projects the person is on, with their own call on each: what a performer or
+   * a crew member opens to see "where do I need to be, and when". Read through RLS, so only productions they belong to.
+   */
+  async function listMyCalls(userId: string): Promise<MyCall[]> {
+    const { data: sheets, error } = await db.from('call_sheets').select('*').gt('version', 0)
+      .order('shoot_date', { ascending: true, nullsFirst: false }).order('shoot_day', { ascending: true }).limit(120);
+    if (error) fail(error, 'Could not load your calls');
+    if (!sheets?.length) return [];
+    const projectIds = Array.from(new Set(sheets.map((x) => x.project_id)));
+    const [p, cast, ack] = await Promise.all([
+      db.from('projects').select('id, title').in('id', projectIds),
+      db.from('character_castings').select('project_id, character_id, character_name, characters(name)').in('project_id', projectIds).eq('crew_user_id', userId),
+      db.from('call_sheet_acks').select('call_sheet_id, version').in('call_sheet_id', sheets.map((x) => x.id)).eq('user_id', userId),
+    ]);
+    for (const r of [p, cast, ack]) if (r.error) fail(r.error, 'Could not load your calls');
+    const title = new Map((p.data ?? []).map((x) => [x.id, x.title]));
+    const acked = new Map((ack.data ?? []).map((x) => [x.call_sheet_id, x.version]));
+    const roles = new Map<string, { as: string[]; ids: string[] }>();
+    for (const c of cast.data ?? []) {
+      const r = roles.get(c.project_id) ?? { as: [], ids: [] };
+      r.as.push((c.characters?.name ?? c.character_name).trim().toUpperCase());
+      r.ids.push(c.character_id ?? '');
+      roles.set(c.project_id, r);
+    }
+    return sheets.map((sheet) => {
+      const snap = toSnapshot(sheet.issued);
+      const r = roles.get(sheet.project_id);
+      return {
+        sheet,
+        project: { id: sheet.project_id, title: title.get(sheet.project_id) ?? 'A project' },
+        mine: snap ? callFor(snap, userId, r?.as ?? [], r?.ids ?? []) : null,
+        acked: acked.get(sheet.id) ?? null,
+      };
+    });
+  }
+
   async function getCallSheetView(sheetId: string, userId: string): Promise<CallSheetView | null> {
     const { data: sheet, error } = await db.from('call_sheets').select('*').eq('id', sheetId).maybeSingle();
     if (error) fail(error, 'Could not load the call sheet');
@@ -492,7 +539,7 @@ export function createStudioApi(db: Client) {
     const [p, cl, sc, crew, cast, ack] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
+      db.from('scenes').select('id, scene_number, ordinal, script_id, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
       db.from('character_castings').select('character_id, character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
@@ -1100,7 +1147,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
