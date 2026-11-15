@@ -37,7 +37,7 @@ export const TOOLKITS: Record<string, Toolkit> = {
   'Director': T(['director', 'story', 'shots', 'breakdown', 'schedule', 'continuity', 'rehearsal', 'scout', 'revisions', 'crew'], ['Your day shows the next shoot day at a glance (its scenes, the shots planned, what needs the director); a live on-the-day view for the director is the On set tools themselves (R11)']),
   'First assistant director': T(['schedule', 'breakdown', 'dood', 'readiness', 'onset', 'wrap', 'reports', 'crew'], ['Scene identity across a script change is not proven end to end; outputs can disagree until the film graph cutover (R10)']),
   'Second assistant director': T(['schedule', 'onset', 'dood', 'crew', 'comms', 'wrap']),
-  'Script supervisor': T(['scriptsup', 'continuity', 'revisions', 'onset', 'reports', 'shots'], ['Lined-script marks and the selected take are not in the suite; notes the editor needs are not tied to takes (R12)']),
+  'Script supervisor': T(['scriptsup', 'continuity', 'revisions', 'onset', 'reports', 'shots'], ['Takes are logged by scene, shot and line run, lined on the scene\'s script, with one selected take per shot for the editor (2026-11-15); not built: a lined script on paper-style pages with continuity photos, take-by-take timings, and the selected takes arriving in the editor\'s timeline (R12)']),
   // Production
   'Producer': T(['money', 'schedule', 'readiness', 'paperwork', 'risk', 'crew', 'po', 'permit', 'breakdown', 'locations'], ['The live schedule and budget have not been proven against a real production (R8)']),
   'Line producer': T(['money', 'po', 'schedule', 'readiness', 'paperwork', 'risk', 'dood', 'breakdown', 'locations']),

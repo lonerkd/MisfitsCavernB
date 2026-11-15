@@ -36,3 +36,16 @@ describe('printing the role tools', () => {
     expect(recordsDoc({ kind: 'cameraReports', project: 'P', generated: 'd', rows: [] }).orientation).toBe('landscape');
   });
 });
+
+describe('script supervisor notes print the lined run of each take', () => {
+  it('writes the lines a take covers, with off camera, and nothing for an unlined take', () => {
+    const html = printHtml(recordsDoc({ kind: 'scriptNotes', project: 'P', generated: 'd', rows: [
+      { id: '1', scene: '3', take: '2A', from_line: 3, to_line: 5, circle: true },
+      { id: '2', scene: '3', take: '2B', from_line: 7, off_camera: true },
+      { id: '3', scene: '3', take: '2C' },
+    ] }));
+    expect(html).toContain('3–5');
+    expect(html).toContain('7 off camera');
+    expect(html).toContain('Lines');
+  });
+});
