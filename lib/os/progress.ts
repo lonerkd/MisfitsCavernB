@@ -69,6 +69,50 @@ export type StudioTab = 'overview' | 'library' | 'scenes' | 'production' | 'post
 /** Every Production view, in the order of the tab. The type is derived from this list, so a page that validates `?view=` can never disagree with it. */
 export const PRODUCTION_VIEWS = ['story', 'breakdown', 'readiness', 'locations', 'money', 'paperwork', 'schedule', 'onset', 'crew', 'continuity', 'shots', 'reports', 'weather', 'transport', 'catering', 'safety', 'props', 'cast', 'comms', 'dood', 'gear', 'wrap', 'rehearsal', 'scout', 'revisions', 'director', 'risk', 'camera', 'sound', 'vfx', 'costume', 'permit', 'scriptsup', 'po', 'mediaoffload', 'makeup', 'stills', 'extras', 'editorial', 'claims', 'world'] as const;
 export type ProductionView = (typeof PRODUCTION_VIEWS)[number];
+/** What each Production view is called, in one place: the tab, a role's suite and Your day all use it. */
+export const PRODUCTION_VIEW_LABELS: Record<ProductionView, string> = {
+  story: 'Story',
+  breakdown: 'Breakdown',
+  readiness: 'Readiness',
+  locations: 'Locations',
+  world: 'World',
+  props: 'Props',
+  continuity: 'Continuity',
+  money: 'Money',
+  paperwork: 'Paperwork',
+  schedule: 'Schedule',
+  onset: 'On set',
+  shots: 'Shot list',
+  weather: 'Weather',
+  catering: 'Catering',
+  safety: 'Safety',
+  transport: 'Transport',
+  reports: 'Reports',
+  makeup: 'Makeup / hair',
+  editorial: 'Editorial handoff',
+  claims: 'Insurance claims',
+  extras: 'Extras',
+  stills: 'Stills log',
+  mediaoffload: 'Media offload',
+  po: 'Purchase orders',
+  scriptsup: 'Script sup',
+  permit: 'Permits',
+  costume: 'Costumes',
+  vfx: 'VFX shots',
+  sound: 'Sound report',
+  camera: 'Camera report',
+  risk: 'Risk register',
+  director: 'Director notebook',
+  revisions: 'Script revisions',
+  scout: 'Location scouts',
+  rehearsal: 'Rehearsals',
+  wrap: 'Wrap reports',
+  gear: 'Gear',
+  dood: 'Day out of days',
+  comms: 'Comms',
+  cast: 'Cast',
+  crew: 'Cast & crew',
+};
 
 export function placeHref(place: Place, projectId: string): string {
   if (place.kind === 'hub') return `/projects/${projectId}${place.anchor ? `#${place.anchor}` : ''}`;

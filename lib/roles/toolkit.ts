@@ -1,0 +1,135 @@
+// A role's working suite: which of the Studio's Production tools a craft lives in, in the order it reaches for them.
+// Pure data, no Supabase import. Everything stays reachable (the tools are one shared graph); a toolkit is the lens that puts a
+// person's own tools first and says honestly what their job still lacks. The gaps are from the role completeness map
+// (`plans/2026-11-13-role-completeness-map.md`) and the 2026-11-15 audit (`plans/2026-11-15-role-suites-audit.md`): a gap is
+// a canonical step with no tool, not a bug in one.
+
+import type { ProductionView } from '@/lib/os/progress';
+
+export interface Toolkit {
+  /** The Production views this craft works in, most-used first. */
+  views: ProductionView[];
+  /** A role whose working surface is not in the Studio: the crew call page, or the client review. */
+  home?: 'call' | 'review';
+  /** What this role's canonical job needs that the suite does not have yet. */
+  gaps: string[];
+}
+
+const T = (views: ProductionView[], gaps: string[] = [], home?: Toolkit['home']): Toolkit => ({ views, gaps, ...(home ? { home } : {}) });
+
+/** Tools that hold a permission-gated kind of information: not offered to a role that could not open them. */
+export const VIEW_NEEDS: Partial<Record<ProductionView, string>> = {
+  money: 'budget.read',
+  po: 'budget.read',
+  claims: 'budget.read',
+  paperwork: 'paperwork.read',
+};
+
+const WRITING = T(['story', 'revisions', 'world', 'continuity'], ['Prose and video-script formats (blog, YouTube) do not exist yet: only screenplay, podcast, outline, copy and advertising (R3, R5)']);
+const CAMERA = T(['shots', 'camera', 'gear', 'schedule'], ['No overhead / blocking diagram beside the shot list (R13)']);
+const LIGHT = T(['gear', 'schedule', 'safety', 'shots', 'scout']);
+const WARDROBE = T(['costume', 'makeup', 'continuity', 'breakdown']);
+const POST = T(['editorial', 'mediaoffload', 'reports', 'revisions'], ['Review comments are not pinned to a picture version, and approval of a cut happens outside the suite (R18)']);
+
+/** By craft name (public.crafts). A craft not listed falls back to its department, then to the generic suite. */
+export const TOOLKITS: Record<string, Toolkit> = {
+  // Direction
+  'Director': T(['director', 'story', 'shots', 'breakdown', 'schedule', 'continuity', 'rehearsal', 'scout', 'revisions', 'crew'], ['No director\'s day at a glance: Your day shows the next shoot day and tasks, the rest is the tools themselves (R11)']),
+  'First assistant director': T(['schedule', 'breakdown', 'dood', 'readiness', 'onset', 'wrap', 'reports', 'crew'], ['Scene identity across a script change is not proven end to end; outputs can disagree until the film graph cutover (R10)']),
+  'Second assistant director': T(['schedule', 'onset', 'dood', 'crew', 'comms', 'wrap']),
+  'Script supervisor': T(['scriptsup', 'continuity', 'revisions', 'onset', 'reports', 'shots'], ['Lined-script marks and the selected take are not in the suite; notes the editor needs are not tied to takes (R12)']),
+  // Production
+  'Producer': T(['money', 'schedule', 'readiness', 'paperwork', 'risk', 'crew', 'po', 'permit', 'breakdown', 'locations'], ['The live schedule and budget have not been proven against a real production (R8)']),
+  'Line producer': T(['money', 'po', 'schedule', 'readiness', 'paperwork', 'risk', 'dood', 'breakdown', 'locations']),
+  'Production manager': T(['schedule', 'readiness', 'money', 'po', 'paperwork', 'permit', 'transport', 'crew', 'breakdown', 'locations']),
+  'Production coordinator': T(['schedule', 'paperwork', 'crew', 'comms', 'transport', 'catering', 'permit', 'locations'], ['Call-sheet acknowledgements are recorded and shown, but the coordinator flow has not been run on a real production (R9)']),
+  'Production accountant': T(['money', 'po', 'paperwork', 'claims'], ['No invoices, cash-flow or Excel / Movie Magic Budgeting export (wishlist 4.6)']),
+  'Production assistant': T(['onset', 'schedule', 'transport', 'catering', 'comms']),
+  'Location manager': T(['locations', 'scout', 'permit', 'paperwork', 'weather', 'transport', 'safety'], ['A location packet (photos, contact, permit, parking) is not one shareable page, and an address is not hidden from roles that should not see it (R16)']),
+  'Casting director': T(['crew', 'cast', 'rehearsal', 'extras', 'paperwork'], ['No intake for submissions the way Backstage / Casting Networks work: a casting call posts as a job (R15)']),
+  // Writing
+  'Writer': WRITING,
+  'Story editor': WRITING,
+  'Showrunner': T(['story', 'revisions', 'breakdown', 'schedule', 'money', 'crew'], WRITING.gaps),
+  'Story producer': WRITING,
+  // Camera
+  'Director of photography': T(['shots', 'camera', 'gear', 'schedule', 'scout'], CAMERA.gaps),
+  'Camera operator': CAMERA,
+  'First assistant camera': CAMERA,
+  'Second assistant camera': CAMERA,
+  'Steadicam operator': CAMERA,
+  'Drone operator': CAMERA,
+  'DIT': T(['mediaoffload', 'camera', 'reports']),
+  'Stills photographer': T(['stills', 'schedule']),
+  // Lighting & grip
+  'Gaffer': LIGHT, 'Key grip': LIGHT, 'Electrician': LIGHT, 'Grip': LIGHT,
+  // Sound
+  'Production sound mixer': T(['sound', 'gear', 'mediaoffload', 'schedule']),
+  'Boom operator': T(['sound', 'gear', 'schedule']),
+  'Sound designer': T(['sound', 'editorial', 'revisions'], ['No sound spotting or effects list tied to scenes (R17)']),
+  'Re-recording mixer': T(['sound', 'editorial', 'revisions']),
+  // Art
+  'Production designer': T(['props', 'world', 'locations', 'breakdown', 'continuity', 'scout'], ['References cannot become tracked assets: no Pinterest import (R14)']),
+  'Art director': T(['props', 'breakdown', 'locations', 'continuity', 'gear']),
+  'Set decorator': T(['props', 'breakdown', 'locations', 'continuity']),
+  'Prop master': T(['props', 'breakdown', 'continuity', 'gear']),
+  // Wardrobe, hair & makeup
+  'Costume designer': WARDROBE,
+  'Wardrobe assistant': T(['costume', 'continuity']),
+  'Makeup artist': T(['makeup', 'continuity', 'breakdown']),
+  'Hair stylist': T(['makeup', 'continuity', 'breakdown']),
+  'SFX makeup artist': T(['makeup', 'continuity', 'breakdown']),
+  // Editorial & post
+  'Editor': POST,
+  'Assistant editor': POST,
+  'Colorist': T(['editorial', 'reports'], POST.gaps),
+  'VFX artist': T(['vfx', 'editorial', 'breakdown']),
+  'Motion designer': T(['vfx', 'editorial']),
+  'Post supervisor': T(['editorial', 'mediaoffload', 'schedule', 'claims', 'reports'], POST.gaps),
+  // Music
+  'Composer': T(['sound', 'editorial', 'revisions'], ['No cue sheet; Spotify playback is verified with fakes only (R17)']),
+  'Music supervisor': T(['sound', 'editorial', 'revisions', 'paperwork'], ['No cue sheet or licensing tracker; Spotify playback is verified with fakes only (R17)']),
+  // Performance: their surface is the call page, not the Studio
+  'Actor': T(['rehearsal'], ['An actor sees their calls on the crew page; sides are built and printed from the call sheet panel, but an actor does not get their own sides, lines and schedule as a surface (R19)'], 'call'),
+  'Stunt performer': T(['rehearsal', 'safety'], ['Their calls only; no stunt-specific plan or safety sign-off (R19)'], 'call'),
+  'Voice actor': T([], ['Their calls only; no session or script-part view (R19)'], 'call'),
+  // Outside the crew: the client review, not the Studio
+  'Client': T([], ['Reviews arrive by link behind a flag (`guest_review`); approval is not yet tied to a cut version (R20)'], 'review'),
+  'Investor': T([], ['No investor view: nothing is shared with them (R20)'], 'review'),
+  'Distributor or festival guest': T([], ['No screening or deliverables view (R20)'], 'review'),
+  'Press': T([], ['No press kit view for someone who is not crew (R20)'], 'review'),
+  // Other
+  'Multi-hyphenate': T(['story', 'schedule', 'onset', 'crew']),
+  'Other': T(['story', 'schedule', 'onset', 'crew']),
+};
+
+/** The department a craft belongs to when it has no entry of its own (crafts an admin adds later). */
+export const DEPARTMENT_DEFAULTS: Record<string, Toolkit> = {
+  'Direction': T(['schedule', 'breakdown', 'shots', 'onset', 'continuity']),
+  'Production': T(['schedule', 'readiness', 'paperwork', 'crew', 'comms']),
+  'Writing': WRITING,
+  'Camera': CAMERA,
+  'Lighting & grip': LIGHT,
+  'Sound': T(['sound', 'gear', 'schedule']),
+  'Art': T(['props', 'breakdown', 'locations', 'continuity']),
+  'Wardrobe, hair & makeup': WARDROBE,
+  'Editorial & post': POST,
+  'Music': T(['sound', 'editorial']),
+  'Performance': T([], [], 'call'),
+  'Outside': T([], [], 'review'),
+  'Other': T(['story', 'schedule', 'onset', 'crew']),
+};
+
+/** What a person with no craft, or one this list does not know, works in. */
+export const GENERIC_TOOLKIT: Toolkit = T(['schedule', 'onset', 'crew']);
+
+export function toolkitFor(craft: string | null | undefined, department?: string | null): Toolkit {
+  if (craft && TOOLKITS[craft]) return TOOLKITS[craft];
+  if (department && DEPARTMENT_DEFAULTS[department]) return DEPARTMENT_DEFAULTS[department];
+  return GENERIC_TOOLKIT;
+}
+
+/** A toolkit's views a person may open: the ones that need a permission are left out when they do not hold it. */
+export function openableViews(kit: Toolkit, held: ReadonlySet<string>): ProductionView[] {
+  return kit.views.filter((v) => { const need = VIEW_NEEDS[v]; return !need || held.has(need); });
+}

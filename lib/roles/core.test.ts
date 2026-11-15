@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { capabilitySource, describeRole, toolsFor, groupByArea, resolveCapabilities, templatesFrom, type CapabilityDef, type MemberRights } from './core';
+import { capabilitySource, describeRole, groupByArea, resolveCapabilities, templatesFrom, type CapabilityDef, type MemberRights } from './core';
 
 const DEFS: CapabilityDef[] = [
   { key: 'budget.read', label: 'See the budget', area: 'Budget', edits: false },
@@ -108,15 +108,5 @@ describe('describeRole', () => {
     // the same craft at view-only access cannot edit, so it is only "see the budget"
     const viewOnly = resolveCapabilities(defs, { tier: 'viewer', crafts: ['Production accountant'], overrides: {} }, templates);
     expect(describeRole({ craft: 'Production accountant', tier: 'viewer', held: viewOnly, defs }).can).toEqual(['see the budget']);
-  });
-});
-
-describe('toolsFor', () => {
-  it('opens only the tools the role holds', () => {
-    expect(toolsFor(new Set())).toEqual([]);
-    expect(toolsFor(new Set(['callsheet.issue', 'budget.read', 'paperwork.read']))).toEqual([
-      { label: 'Schedule', view: 'schedule' }, { label: 'Money', view: 'money' }, { label: 'Paperwork', view: 'paperwork' },
-    ]);
-    expect(toolsFor(new Set(['casting.decide']))).toEqual([{ label: 'Cast & crew', view: 'crew' }]);
   });
 });

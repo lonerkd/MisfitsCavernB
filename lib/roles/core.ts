@@ -117,13 +117,3 @@ export function describeRole(a: { craft: string | null; tier: CrewTier; held: Re
   if (parts.length) text += ` You cannot ${parts.join(' or ')}.`;
   return { can, cannot, text };
 }
-
-/** The Studio tools a role's capabilities open, for the shortcuts on Your day: only what the person holds, never a door that says no. */
-export function toolsFor(held: ReadonlySet<string>): Array<{ label: string; view: string }> {
-  const out: Array<{ label: string; view: string }> = [];
-  if (held.has('schedule.write') || held.has('callsheet.issue')) out.push({ label: 'Schedule', view: 'schedule' });
-  if (held.has('budget.read')) out.push({ label: 'Money', view: 'money' });
-  if (held.has('casting.read') || held.has('casting.decide')) out.push({ label: 'Cast & crew', view: 'crew' });
-  if (held.has('paperwork.read')) out.push({ label: 'Paperwork', view: 'paperwork' });
-  return out;
-}

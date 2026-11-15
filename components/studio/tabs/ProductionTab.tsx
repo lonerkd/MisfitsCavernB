@@ -3,7 +3,10 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
-import { PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
+import { useMyCapabilities, useMyRole } from '@/lib/roles/capabilities';
+import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
+import { useCrafts } from '@/lib/crafts/crafts';
+import { PRODUCTION_VIEW_LABELS, PRODUCTION_VIEW_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, useProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
 import { getProjectCrew } from '@/lib/supabase/crew-management';
@@ -62,47 +65,47 @@ const WorldView = dynamic(() => import('../production/WorldView').then((m) => m.
 
 type View = ProductionView;
 export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; group: string }> = [
-  { id: 'story', label: 'Story', icon: <BookOpen size={12} />, group: 'Story & planning' },
-  { id: 'breakdown', label: 'Breakdown', icon: <Tags size={12} />, group: 'Story & planning' },
-  { id: 'readiness', label: 'Readiness', icon: <ClipboardCheck size={12} />, group: 'Story & planning' },
-  { id: 'locations', label: 'Locations', icon: <MapPin size={12} />, group: 'Story & planning' },
-  { id: 'world', label: 'World', icon: <BookOpen size={12} />, group: 'Story & planning' },
-  { id: 'props', label: 'Props', icon: <ClipboardList size={12} />, group: 'Departments' },
-  { id: 'continuity', label: 'Continuity', icon: <Eye size={12} />, group: 'Story & planning' },
-  { id: 'money', label: 'Money', icon: <DollarSign size={12} />, group: 'Budget & docs' },
-  { id: 'paperwork', label: 'Paperwork', icon: <FileCheck2 size={12} />, group: 'Budget & docs' },
-  { id: 'schedule', label: 'Schedule', icon: <Calendar size={12} />, group: 'Shoot day' },
-  { id: 'onset', label: 'On set', icon: <Clapperboard size={12} />, group: 'Shoot day' },
-  { id: 'shots', label: 'Shot list', icon: <Camera size={12} />, group: 'Shoot day' },
-  { id: 'weather', label: 'Weather', icon: <Cloud size={12} />, group: 'Shoot day' },
-  { id: 'catering', label: 'Catering', icon: <ChefHat size={12} />, group: 'Shoot day' },
-  { id: 'safety', label: 'Safety', icon: <Shield size={12} />, group: 'Shoot day' },
-  { id: 'transport', label: 'Transport', icon: <Car size={12} />, group: 'Shoot day' },
-  { id: 'reports', label: 'Reports', icon: <FileText size={12} />, group: 'Reports & logs' },
-  { id: 'makeup', label: 'Makeup / hair', icon: <Palette size={12} />, group: 'Departments' },
-  { id: 'editorial', label: 'Editorial handoff', icon: <Send size={12} />, group: 'Reports & logs' },
-  { id: 'claims', label: 'Insurance claims', icon: <ShieldAlert size={12} />, group: 'Budget & docs' },
-  { id: 'extras', label: 'Extras', icon: <UsersRound size={12} />, group: 'Departments' },
-  { id: 'stills', label: 'Stills log', icon: <Images size={12} />, group: 'Reports & logs' },
-  { id: 'mediaoffload', label: 'Media offload', icon: <HardDrive size={12} />, group: 'Reports & logs' },
-  { id: 'po', label: 'Purchase orders', icon: <Receipt size={12} />, group: 'Budget & docs' },
-  { id: 'scriptsup', label: 'Script sup', icon: <Star size={12} />, group: 'Reports & logs' },
-  { id: 'permit', label: 'Permits', icon: <FileCheck size={12} />, group: 'Departments' },
-  { id: 'costume', label: 'Costumes', icon: <Shirt size={12} />, group: 'Departments' },
-  { id: 'vfx', label: 'VFX shots', icon: <Sparkles size={12} />, group: 'Departments' },
-  { id: 'sound', label: 'Sound report', icon: <Mic size={12} />, group: 'Reports & logs' },
-  { id: 'camera', label: 'Camera report', icon: <Camera size={12} />, group: 'Reports & logs' },
-  { id: 'risk', label: 'Risk register', icon: <AlertTriangle size={12} />, group: 'Budget & docs' },
-  { id: 'director', label: 'Director notebook', icon: <Clapperboard size={12} />, group: 'Story & planning' },
-  { id: 'revisions', label: 'Script revisions', icon: <FileText size={12} />, group: 'Story & planning' },
-  { id: 'scout', label: 'Location scouts', icon: <MapPin size={12} />, group: 'Story & planning' },
-  { id: 'rehearsal', label: 'Rehearsals', icon: <CalendarDays size={12} />, group: 'Story & planning' },
-  { id: 'wrap', label: 'Wrap reports', icon: <ClipboardCheck size={12} />, group: 'Reports & logs' },
-  { id: 'gear', label: 'Gear', icon: <Wrench size={12} />, group: 'Departments' },
-  { id: 'dood', label: 'Day out of days', icon: <Calendar size={12} />, group: 'Shoot day' },
-  { id: 'comms', label: 'Comms', icon: <MessageCircle size={12} />, group: 'People' },
-  { id: 'cast', label: 'Cast', icon: <Users size={12} />, group: 'People' },
-  { id: 'crew', label: 'Cast & crew', icon: <Users size={12} />, group: 'People' },
+  { id: 'story', label: PRODUCTION_VIEW_LABELS.story, icon: <BookOpen size={12} />, group: 'Story & planning' },
+  { id: 'breakdown', label: PRODUCTION_VIEW_LABELS.breakdown, icon: <Tags size={12} />, group: 'Story & planning' },
+  { id: 'readiness', label: PRODUCTION_VIEW_LABELS.readiness, icon: <ClipboardCheck size={12} />, group: 'Story & planning' },
+  { id: 'locations', label: PRODUCTION_VIEW_LABELS.locations, icon: <MapPin size={12} />, group: 'Story & planning' },
+  { id: 'world', label: PRODUCTION_VIEW_LABELS.world, icon: <BookOpen size={12} />, group: 'Story & planning' },
+  { id: 'props', label: PRODUCTION_VIEW_LABELS.props, icon: <ClipboardList size={12} />, group: 'Departments' },
+  { id: 'continuity', label: PRODUCTION_VIEW_LABELS.continuity, icon: <Eye size={12} />, group: 'Story & planning' },
+  { id: 'money', label: PRODUCTION_VIEW_LABELS.money, icon: <DollarSign size={12} />, group: 'Budget & docs' },
+  { id: 'paperwork', label: PRODUCTION_VIEW_LABELS.paperwork, icon: <FileCheck2 size={12} />, group: 'Budget & docs' },
+  { id: 'schedule', label: PRODUCTION_VIEW_LABELS.schedule, icon: <Calendar size={12} />, group: 'Shoot day' },
+  { id: 'onset', label: PRODUCTION_VIEW_LABELS.onset, icon: <Clapperboard size={12} />, group: 'Shoot day' },
+  { id: 'shots', label: PRODUCTION_VIEW_LABELS.shots, icon: <Camera size={12} />, group: 'Shoot day' },
+  { id: 'weather', label: PRODUCTION_VIEW_LABELS.weather, icon: <Cloud size={12} />, group: 'Shoot day' },
+  { id: 'catering', label: PRODUCTION_VIEW_LABELS.catering, icon: <ChefHat size={12} />, group: 'Shoot day' },
+  { id: 'safety', label: PRODUCTION_VIEW_LABELS.safety, icon: <Shield size={12} />, group: 'Shoot day' },
+  { id: 'transport', label: PRODUCTION_VIEW_LABELS.transport, icon: <Car size={12} />, group: 'Shoot day' },
+  { id: 'reports', label: PRODUCTION_VIEW_LABELS.reports, icon: <FileText size={12} />, group: 'Reports & logs' },
+  { id: 'makeup', label: PRODUCTION_VIEW_LABELS.makeup, icon: <Palette size={12} />, group: 'Departments' },
+  { id: 'editorial', label: PRODUCTION_VIEW_LABELS.editorial, icon: <Send size={12} />, group: 'Reports & logs' },
+  { id: 'claims', label: PRODUCTION_VIEW_LABELS.claims, icon: <ShieldAlert size={12} />, group: 'Budget & docs' },
+  { id: 'extras', label: PRODUCTION_VIEW_LABELS.extras, icon: <UsersRound size={12} />, group: 'Departments' },
+  { id: 'stills', label: PRODUCTION_VIEW_LABELS.stills, icon: <Images size={12} />, group: 'Reports & logs' },
+  { id: 'mediaoffload', label: PRODUCTION_VIEW_LABELS.mediaoffload, icon: <HardDrive size={12} />, group: 'Reports & logs' },
+  { id: 'po', label: PRODUCTION_VIEW_LABELS.po, icon: <Receipt size={12} />, group: 'Budget & docs' },
+  { id: 'scriptsup', label: PRODUCTION_VIEW_LABELS.scriptsup, icon: <Star size={12} />, group: 'Reports & logs' },
+  { id: 'permit', label: PRODUCTION_VIEW_LABELS.permit, icon: <FileCheck size={12} />, group: 'Departments' },
+  { id: 'costume', label: PRODUCTION_VIEW_LABELS.costume, icon: <Shirt size={12} />, group: 'Departments' },
+  { id: 'vfx', label: PRODUCTION_VIEW_LABELS.vfx, icon: <Sparkles size={12} />, group: 'Departments' },
+  { id: 'sound', label: PRODUCTION_VIEW_LABELS.sound, icon: <Mic size={12} />, group: 'Reports & logs' },
+  { id: 'camera', label: PRODUCTION_VIEW_LABELS.camera, icon: <Camera size={12} />, group: 'Reports & logs' },
+  { id: 'risk', label: PRODUCTION_VIEW_LABELS.risk, icon: <AlertTriangle size={12} />, group: 'Budget & docs' },
+  { id: 'director', label: PRODUCTION_VIEW_LABELS.director, icon: <Clapperboard size={12} />, group: 'Story & planning' },
+  { id: 'revisions', label: PRODUCTION_VIEW_LABELS.revisions, icon: <FileText size={12} />, group: 'Story & planning' },
+  { id: 'scout', label: PRODUCTION_VIEW_LABELS.scout, icon: <MapPin size={12} />, group: 'Story & planning' },
+  { id: 'rehearsal', label: PRODUCTION_VIEW_LABELS.rehearsal, icon: <CalendarDays size={12} />, group: 'Story & planning' },
+  { id: 'wrap', label: PRODUCTION_VIEW_LABELS.wrap, icon: <ClipboardCheck size={12} />, group: 'Reports & logs' },
+  { id: 'gear', label: PRODUCTION_VIEW_LABELS.gear, icon: <Wrench size={12} />, group: 'Departments' },
+  { id: 'dood', label: PRODUCTION_VIEW_LABELS.dood, icon: <Calendar size={12} />, group: 'Shoot day' },
+  { id: 'comms', label: PRODUCTION_VIEW_LABELS.comms, icon: <MessageCircle size={12} />, group: 'People' },
+  { id: 'cast', label: PRODUCTION_VIEW_LABELS.cast, icon: <Users size={12} />, group: 'People' },
+  { id: 'crew', label: PRODUCTION_VIEW_LABELS.crew, icon: <Users size={12} />, group: 'People' },
 ];
 
 /** The views whose layout has no header of its own: the Production tab gives them one (the rest open with their own ToolHeader). */
@@ -118,8 +121,14 @@ export const GROUPS = ['Story & planning', 'Departments', 'Budget & docs', 'Shoo
 
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
 export function ProductionTab({ view, onView, onNavigate }: { view: View; onView: (view: View) => void; onNavigate?: (place: Place) => boolean }) {
-  const { project } = useStudio();
+  const { project, userId } = useStudio();
   const progress = useProgressContext()?.progress ?? null;
+  // A person's own tools come first (their craft's working suite), without hiding anyone else's: the groups below stay whole.
+  const me = useMyRole(project.id, userId);
+  const myCaps = useMyCapabilities(project.id);
+  const { byName: craftsByName } = useCrafts();
+  const kit = me.craft || me.previewing ? toolkitFor(me.craft, me.craft ? craftsByName.get(me.craft)?.department : null) : null;
+  const myViews = kit ? openableViews(kit, myCaps.caps) : [];
   const [peeked, setPeeked] = useState<Set<View>>(new Set());
   const lockOf = (v: View) => {
     const id = PRODUCTION_VIEW_TOOL[v];
@@ -145,6 +154,22 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
               <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
                 style={{ alignSelf: 'flex-start', width: 'min(100%, 280px)', minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
               {q && !VIEWS.some((v) => v.id !== view && v.label.toLowerCase().includes(q)) && <p role="status" style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)' }}>No tool matches “{find}”.</p>}
+              {kit && !q && (myViews.length > 0 || kit.home) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--accent)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>Your tools{me.craft ? ` · ${me.craft}` : ''}</span>
+                  <div className={s.chips} role="group" aria-label="Your tools" style={{ marginBottom: 0 }}>
+                    {myViews.map((v) => (
+                      <button key={v} type="button" aria-pressed={view === v} className={cx(s.chip, view === v && s.chipOn)} onClick={() => onView(v)}>{PRODUCTION_VIEW_LABELS[v]}</button>
+                    ))}
+                  </div>
+                  {kit.home && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>{kit.home === 'call' ? 'Your working surface is your call page, not the Studio.' : 'You work through the review link, not the Studio.'}</span>}
+                </div>
+              )}
+              {kit && me.previewing && !q && kit.gaps.length > 0 && (
+                <div role="note" aria-label={`What ${me.craft ?? 'this role'} still lacks`} style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.5 }}>
+                  <strong style={{ color: 'var(--fg-muted)' }}>Still missing for this role:</strong> {kit.gaps.join(' · ')}
+                </div>
+              )}
               {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => (
                 <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>{group}</span>
