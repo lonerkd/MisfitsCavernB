@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import React, { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
@@ -162,7 +163,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                       <button key={v} type="button" aria-pressed={view === v} className={cx(s.chip, view === v && s.chipOn)} onClick={() => onView(v)}>{PRODUCTION_VIEW_LABELS[v]}</button>
                     ))}
                   </div>
-                  {kit.home && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>{kit.home === 'call' ? 'Your working surface is your call page, not the Studio.' : 'You work through the review link, not the Studio.'}</span>}
+                  {kit.home === 'call' && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>Your working surface is your calls and pages, not the Studio: <Link href="/call" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>open My calls</Link>.</span>}
+                  {kit.home === 'review' && <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>You work through the review link, not the Studio.</span>}
                 </div>
               )}
               {kit && me.previewing && !q && kit.gaps.length > 0 && (

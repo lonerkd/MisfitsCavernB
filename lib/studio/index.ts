@@ -489,6 +489,13 @@ export async function fetchScriptContent(scriptId: string): Promise<string> {
   return data.content ?? '';
 }
 
+/** A script's text and its format, for reading it outside the editor (a performer's sides on the call page). */
+export async function fetchScriptForReading(scriptId: string): Promise<{ content: string; format: string | null }> {
+  const { data, error } = await supabase.from('scripts').select('content, format').eq('id', scriptId).single();
+  if (error) throw new Error(error.message);
+  return { content: data.content ?? '', format: data.format ?? null };
+}
+
 // ── Transcripts ────────────────────────────────────────────────────────────
 
 export function useTranscriptLines(projectId: string | null) {

@@ -241,7 +241,7 @@ export function YourDay() {
       )}
 
       <section className={`${t.card} ${t.wide}`} aria-labelledby="today-set">
-        <div className={t.cardHead}><h2 id="today-set" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> On set</h2></div>
+        <div className={t.cardHead}><h2 id="today-set" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> On set</h2><Link className={t.btn} href="/call">All my calls</Link></div>
         {!loaded ? <div className={t.skeleton} /> : days.length === 0 ? (
           <p className={t.empty}>No shoot days coming up. When a call sheet has a date, it shows here — with your call and the way there.</p>
         ) : days.map((d) => {
@@ -269,7 +269,9 @@ export function YourDay() {
                     <a className={t.btn} href={mapsHref(d.location_address)} target="_blank" rel="noopener noreferrer"><MapPin size={15} aria-hidden /> {d.location_address.length > 26 ? 'Directions' : d.location_address}</a>
                   )}
                   {isToday && <button type="button" className={`${t.btn} ${t.primary}`} onClick={() => void goTo(d.project_id, '/studio?tab=production&view=onset')}>Open On Set</button>}
-                  <button type="button" className={t.btn} onClick={() => void goTo(d.project_id, schedule)}>Call sheet</button>
+                  {p?.creator_id === user.id
+                    ? <button type="button" className={t.btn} onClick={() => void goTo(d.project_id, schedule)}>Call sheet</button>
+                    : <Link className={t.btn} href={`/call/${d.id}`}>{mine ? 'My call' : 'Call sheet'}</Link>}
                 </div>
               </div>
             </article>

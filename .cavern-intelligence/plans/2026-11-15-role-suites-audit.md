@@ -53,7 +53,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 | Wardrobe, hair & makeup | Costumes, Makeup / hair, Continuity, Breakdown | Library | none recorded | Built |
 | Editorial & post (Editor, AE, Colorist, VFX, Motion, Post supervisor) | Editorial handoff, Media offload, Reports, Revisions, VFX shots | Studio › Post, cut review | review comments are not pinned to a picture version; approval of a cut happens outside (R18) | Partial |
 | Music (Composer, Music supervisor) | Sound report, Editorial, Revisions, Paperwork | Sound (the page, Spotify) | no cue sheet or licensing tracker; Spotify verified with fakes only (R17) | Partial |
-| Performance (Actor, Stunt, Voice) | Rehearsals (and Safety for stunts) | the crew call page | no own sides, lines or schedule surface (R19) | **Thin** |
+| Performance (Actor, Stunt, Voice) | Rehearsals (and Safety for stunts) | **My calls** (`/call`) and the call sheet with **Your pages** (built 2026-11-15) | no lines-learning or self-tape tool; nothing after the shoot day (R19) | Partial |
 | Outside (Client, Investor, Distributor, Press) | none | the review link (behind `guest_review`) | no investor, press or distributor view; approval not tied to a cut version (R20) | **Thin** |
 
 ## Handoffs (X1-X7): what the code shows
@@ -77,7 +77,7 @@ job), **Thin** (the role has almost no working surface). All are *unproven by a 
 
 ## Next, ranked (BACKLOG 3.51)
 
-1. **Thin roles first** (a role that cannot work at all fails the Reveal Gate): a performer's own surface (their calls, sides, schedule, lines: S–M) and the client / outside view (a review that is tied to a cut version, plus read-only views for an investor and press: M).
+1. **Thin roles first** (a role that cannot work at all fails the Reveal Gate): ~~a performer's own surface~~ (built 2026-11-15: My calls and Your pages) and the client / outside view (a review that is tied to a cut version, plus read-only views for an investor and press: M).
 2. **X7 and the missing formats** (YouTube and prose): the owner decides which lanes are in the first claim; each format is M.
 3. **X2 and X4:** carry a director's change to the departments it touches; package the shoot for the editor as one handoff (M each).
 4. **The director's day at a glance** and **the script supervisor's lined script and takes** (R11, R12: the two Tier 2 roles with the least evidence).
