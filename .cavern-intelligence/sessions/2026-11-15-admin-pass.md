@@ -8,4 +8,4 @@
 
 **Built:** **Settings › Admin › Open admin** and **Open Admin** in the search (Ctrl/⌘ K), both shown to admins only (the server still decides); the island's admin links now cover the eight most used screens (its deck has eight keys); a unit test keeps the admin home page linking every admin screen so a new screen cannot be hidden again. No migration.
 
-**Not covered by a browser:** support cases and the analytics numbers (database tests exist for support). **How to make an admin:** only an existing admin, from `/admin/users`.
+**Added after:** `e2e/admin-support-analytics.spec.ts` covers support cases (a member opens one and is taken to it; the admin answers; the case reads "Answered" to the member, who is notified and reads the answer; the admin resolves it) and the totals on the admin home and Analytics (equal to `get_platform_stats`, and a sample project is not counted). **How to make an admin:** only an existing admin, from `/admin/users`.
