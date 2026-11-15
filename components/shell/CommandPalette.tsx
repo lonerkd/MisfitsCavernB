@@ -4,9 +4,9 @@ import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users, ShieldCheck } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
-import { useProject } from '@/lib/os';
+import { useProject, useCurrentUser } from '@/lib/os';
 import { shortcuts, matchesShortcut, looksLikeKeys } from '@/lib/os/shortcuts';
 import { isMac } from '@/lib/os/chords';
 import { supabase } from '@/lib/supabase/client';
@@ -51,6 +51,7 @@ export default function CommandPalette() {
   const router = useRouter();
   const pathname = usePathname();
   const { projects, setActiveProject } = useProject();
+  const { isAdmin } = useCurrentUser();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [sel, setSel] = useState(0);
@@ -126,6 +127,8 @@ export default function CommandPalette() {
       { id: 'act-split', label: 'Split screen', hint: 'This page and another, side by side (Ctrl \\)', icon: <Columns2 size={15} />, group: 'Navigate', keywords: 'side by side multitask two panes editor studio', run: () => { setOpen(false); router.push(splitHref(window.location.pathname + window.location.search)); } },
       { id: 'nav-profile', label: 'Edit Profile', icon: <User size={15} />, run: go('/profile'), group: 'Account' },
       { id: 'nav-settings', label: 'Open Settings', icon: <Settings size={15} />, run: go('/settings'), group: 'Account', keywords: 'preferences password email' },
+      // Only an admin is offered the admin area (the server turns anyone else away from it either way).
+      ...(isAdmin ? [{ id: 'nav-admin', label: 'Open Admin', hint: 'Run the platform: people, reports, catalogues', icon: <ShieldCheck size={15} />, run: go('/admin'), group: 'Account', keywords: 'admin moderation users reports support errors' } as Command] : []),
       { id: 'act-shortcuts', label: 'Keyboard shortcuts', icon: <Keyboard size={15} />, group: 'Account', keywords: 'help keys hotkeys', run: () => { setOpen(false); setTimeout(() => window.dispatchEvent(new Event('mc-open-shortcuts')), 60); } },
       { id: 'act-signout', label: 'Sign out', icon: <LogOut size={15} />, group: 'Account', keywords: 'log out logout', run: async () => { setOpen(false); const { forgetThisDevicePush } = await import('@/lib/push/client'); await forgetThisDevicePush(); await supabase.auth.signOut(); router.replace('/auth'); } },
     ];
@@ -195,7 +198,7 @@ export default function CommandPalette() {
     const foundIds = new Set(hits.map((h) => h.id));
     const quick = [...scriptCmds, ...assetCmds].filter((c) => !foundIds.has(c.id.replace(/^(script|asset)-/, '')));
     return [...nav, ...hitCmds, ...proj.filter((c) => !foundIds.has(c.id.replace(/^proj-/, ''))), ...quick];
-  }, [projects, router, scripts, assets, hits, setActiveProject]);
+  }, [projects, router, scripts, assets, hits, setActiveProject, isAdmin]);
 
   const filtered = useMemo(() => {
     const list = commands.filter(c => c.found || fuzzy(query, `${c.label} ${c.keywords || ''} ${c.group}`));

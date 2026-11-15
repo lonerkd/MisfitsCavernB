@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase/client';
-import { ProtectedPage } from '@/lib/os';
+import { ProtectedPage, useOSGate } from '@/lib/os';
 import { ArrowLeft, Shield, Edit2, Trash2, Ban, UserCheck } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -20,6 +20,7 @@ interface UserRow {
 }
 
 export default function AdminUsersPage() {
+  const meId = useOSGate().user?.id ?? null;
   const { toast } = useToast();
   const confirm = useConfirm();
   const [users, setUsers] = useState<UserRow[]>([]);
@@ -223,6 +224,8 @@ export default function AdminUsersPage() {
                           <button
                             type="button"
                             aria-label={user.is_admin ? 'Remove admin' : 'Make admin'}
+                            // The database refuses anyone removing their own admin rights (so there is always an admin): say so here instead of offering a button that always fails.
+                            disabled={user.id === meId && !!user.is_admin}
                             onClick={() => toggleAdminRole(user.id, user.is_admin || false)}
                             style={{
                               display: 'flex',
@@ -235,8 +238,10 @@ export default function AdminUsersPage() {
                               borderRadius: 4,
                               fontSize: 11,
                               fontFamily: 'var(--mono)',
+                              opacity: user.id === meId && user.is_admin ? 0.4 : 1,
+                              cursor: user.id === meId && user.is_admin ? 'not-allowed' : 'pointer',
                             }}
-                            title={user.is_admin ? 'Remove admin' : 'Make admin'}
+                            title={user.id === meId && user.is_admin ? 'You cannot remove your own admin rights' : user.is_admin ? 'Remove admin' : 'Make admin'}
                           >
                             <Shield size={10} />
                           </button>
