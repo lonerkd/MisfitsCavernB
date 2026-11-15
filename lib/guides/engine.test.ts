@@ -29,6 +29,9 @@ describe('picking a guide', () => {
     expect(pickWorkflow('Documentary', 'some', true).id).toBe('documentary');
     expect(pickWorkflow('Podcast', 'some', true).id).toBe('podcast');
     expect(pickWorkflow('Commercial', 'some', true).id).toBe('commercial');
+    expect(pickWorkflow('YouTube', 'some', true).id).toBe('youtube');
+    expect(pickWorkflow('Blog / Newsletter', 'some', true).id).toBe('blog');
+    expect(pickWorkflow('Video Game', 'some', true).id).toBe('game');
     expect(pickWorkflow(null, 'first', true).id).toBe('short-first');
     expect(pickWorkflow('Feature', 'seasoned', false).id).toBe('on-the-crew');
   });
