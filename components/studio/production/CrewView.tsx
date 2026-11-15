@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/Toast';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
 import { loadCrewRights, type CrewRightsRows, type CrewTier } from '@/lib/roles/capabilities';
 import { CrewRights } from '../CrewRights';
+import { GrantRequestBar } from './GrantRequestBar';
 import { useCanShape } from '@/lib/brief';
 import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
@@ -69,6 +70,7 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
               generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
             })} />}{isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}</>} />
         <div style={{ height: 14 }} />
+        {isOwner && <GrantRequestBar projectId={project.id} ownerId={userId} crew={crew} overrides={rights.overrides} onGranted={() => setRightsTick((t) => t + 1)} />}
         {crew.length ? (
           <div className={s.stack} style={{ gap: 10 }}>
             {crew.map((m, i) => (

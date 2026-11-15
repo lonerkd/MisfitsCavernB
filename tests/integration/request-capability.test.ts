@@ -30,7 +30,7 @@ describe('request_capability', () => {
     expect(n).toHaveLength(1);
     expect(n[0].title).toMatch(/asks for access: see the budget$/);
     expect(n[0].body).toContain('as Casting director');
-    expect(n[0].link).toBe(`/studio?project=${projectId}&tab=production&view=crew`);
+    expect(n[0].link).toBe(`/studio?project=${projectId}&tab=production&view=crew&grant=${cast.jordan.id}.budget.read`);
     expect(n[0].created_by).toBe(cast.jordan.id);
   });
 
