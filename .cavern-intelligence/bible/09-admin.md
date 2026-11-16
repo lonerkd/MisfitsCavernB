@@ -43,7 +43,7 @@ every admin read goes through a function or policy that checks
 - Every catalogue has an admin screen (`/admin/crafts`, `/admin/channel-presets`,
   `/admin/formats`, `/admin/brief-questions`). Brief questions can't be edited
   in place, and what an option implies is still a migration (3.14).
-- Moderation: reports are filed and settled in `/admin/reports`; an admin can close a reported job, read and hide a reported message, and suspend an account from `/admin/users` (each recorded in the audit log). Left: notifying the reporter, and reporting from more places (3.14).
+- Moderation: reports are filed and settled in `/admin/reports`; an admin can close a reported job, read and hide a reported message, and suspend an account from `/admin/users` (each recorded in the audit log). Settling one (resolved or dismissed) tells the reporter in-app, naming only the kind of thing (`internal.reports_notify_outcome`, `20261115000700`). Left: reporting from more places (3.14).
 - The audit log's on-screen search narrows only the page loaded (50 rows);
   "Export all matches" searches the whole log in the database. Moving the
   on-screen search into the query (`lib/audit/export.ts` has the filters) is
