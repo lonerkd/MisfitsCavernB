@@ -14,7 +14,7 @@ import { ArrowLeft, Plus } from 'lucide-react';
 import { ProtectedPage } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
 import { loadQuestions, resetQuestions } from '@/lib/brief';
-import { addQuestion, countAnswers, loadRuleVocab, moveQuestion, removeQuestion, updateQuestion } from '@/lib/supabase/admin-brief';
+import { addQuestion, countAnswers, loadRuleVocab, moveQuestion, removeOption, removeQuestion, updateQuestion } from '@/lib/supabase/admin-brief';
 import { BriefQuestionRow, type QuestionPatch } from '@/components/admin/BriefQuestionRow';
 import type { RuleVocab } from '@/lib/brief/rules';
 import { BRIEF_KINDS, BRIEF_PHASES, checkQuestion, type QuestionInput } from '@/lib/brief/check';
@@ -71,8 +71,26 @@ export default function AdminBriefQuestionsPage() {
     loaded.reload();
   };
 
+  const removeChoice = async (key: string, optionId: string, optionLabel: string) => {
+    const answers = await countAnswers(key, optionId);
+    const warn = answers == null
+      ? 'We could not count the answers. Projects that chose it lose that choice.'
+      : answers === 0 ? 'No project has chosen it.'
+      : `This clears ${answers} project ${answers === 1 ? 'answer' : 'answers'} that chose it (a project that picked several keeps its other choices). It cannot be undone.`;
+    if (!(await confirm({ title: `Remove the option “${optionLabel}”?`, message: warn, confirmLabel: 'Remove option' }))) return;
+    const { error, cleared } = await removeOption(key, optionId);
+    if (error) { toast(`Could not remove it: ${error}`, 'error'); return; }
+    toast(cleared ? `Option removed; ${cleared} ${cleared === 1 ? 'answer' : 'answers'} cleared` : 'Option removed', 'success');
+    loaded.reload();
+  };
+
   const save = async (key: string, patch: QuestionPatch) => {
-    const error = await updateQuestion(key, patch);
+    const current = questions.find((q) => q.key === key);
+    // A question moved to another phase goes to the end of it.
+    const position = current && current.phase !== patch.phase
+      ? Math.max(0, ...questions.filter((q) => q.phase === patch.phase).map((q) => q.position)) + 10
+      : undefined;
+    const error = await updateQuestion(key, position == null ? patch : { ...patch, position });
     if (!error) loaded.reload();
     return error;
   };
@@ -129,7 +147,7 @@ export default function AdminBriefQuestionsPage() {
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {inPhase.map((q, i) => (
                     <BriefQuestionRow key={q.key} q={q} all={questions} vocab={vocab} first={i === 0} last={i === inPhase.length - 1} moving={moving}
-                      onMove={(d) => void move(q.key, d)} onRemove={() => void remove(q.key, q.label)} onSave={(patch) => save(q.key, patch)} />
+                      onMove={(d) => void move(q.key, d)} onRemove={() => void remove(q.key, q.label)} onRemoveOption={(id, text) => removeChoice(q.key, id, text)} onSave={(patch) => save(q.key, patch)} />
                   ))}
                 </ul>
               </section>

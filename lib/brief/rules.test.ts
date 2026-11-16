@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { BriefOption, BriefQuestion } from './core';
-import { checkAskWhen, checkOptionRules, checkWords, draftFromAskWhen, draftFromOption, splitList } from './rules';
+import { checkAskWhen, checkOptionRules, checkOptionLabel, checkWords, draftFromAskWhen, draftFromOption, newOptionId, splitList } from './rules';
 
 const opt: BriefOption = { id: 'stunts', label: 'Stunts', hint: 'h', implies: { crafts: ['Stunt performer'], pages_per_day: 2 }, detect: { words: ['fight'], ages_under: 13 } };
 const q = (key: string, ids: string[]): BriefQuestion => ({ key, phase: 'development', label: key, hint: '', kind: 'many', options: ids.map((id) => ({ id, label: id })), unit: null, min_value: null, max_value: null, ask_when: {}, position: 0 });
@@ -78,5 +78,21 @@ describe('checkWords', () => {
     expect(checkWords(' ', '').ok).toBe(false);
     expect(checkWords('x'.repeat(121), '').ok).toBe(false);
     expect(checkWords('x', 'y'.repeat(301)).ok).toBe(false);
+  });
+});
+
+describe('option labels and ids', () => {
+  it('checks the label', () => {
+    expect(checkOptionLabel('  Festival   circuit ')).toEqual({ ok: true, value: 'Festival circuit' });
+    expect(checkOptionLabel(' ').ok).toBe(false);
+    expect(checkOptionLabel('x'.repeat(81)).ok).toBe(false);
+  });
+
+  it('makes an id from the label that no other option has', () => {
+    expect(newOptionId('Festival circuit!', [])).toBe('festival_circuit');
+    expect(newOptionId('Web', ['web'])).toBe('web_2');
+    expect(newOptionId('Web', ['web', 'web_2'])).toBe('web_3');
+    expect(newOptionId('???', [])).toBe('option');
+    expect(newOptionId('x'.repeat(60), []).length).toBeLessThanOrEqual(40);
   });
 });

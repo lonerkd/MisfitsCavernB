@@ -1563,6 +1563,7 @@ function internal.ad_touch_updated_at() body=120910df096ee3401de6a8d5b6799429
 function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
 function internal.approval_pending(p_project uuid) body=e710b529b87414a1e3c455cc490486ee
 function internal.audio_refs_guard() body=ef569694d0c3833691dde513cf4baecd
+function internal.brief_question_guard() body=b1fe0fda5aa5f679ae8c969ec4f29a72
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=0a058f62bac52de09f6420f02f8e54a2
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -1645,10 +1646,12 @@ function public.add_review_comment(p_token text, p_version uuid, p_name text, p_
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
+function public.admin_count_brief_answers(p_key text, p_option text) body=d1ef2d6d0909ff95dc6ab8308a769a93
 function public.admin_hide_message(p_message uuid, p_hidden boolean) body=d02bc5d58f5a432253fa7db071935f8e
 function public.admin_list_users() body=d851a2d7fa39ad8824280d014c77d28d
 function public.admin_move_brief_question(p_key text, p_direction integer) body=e4cf1eaaae999a872df5bb3261c0e241
 function public.admin_platform_analytics(p_since timestamp with time zone) body=cf9f28ab50036aba557ef0862222e8be
+function public.admin_remove_brief_option(p_key text, p_option text) body=43b8b6d8b255ddbbe12dd8f9c3b87023
 function public.admin_remove_brief_question(p_key text) body=a5d30e8ca2e6aed0efa1144822c36654
 function public.admin_reported_message(p_report uuid) body=0a1074376d43971880f63e936fa00ece
 function public.admin_set_suspended(p_user uuid, p_suspended boolean) body=8de2d5ac2e011a78ab23a69ca1da8628
@@ -1721,6 +1724,7 @@ grant function internal.ad_touch_updated_at() postgres
 grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
 grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.audio_refs_guard() postgres
+grant function internal.brief_question_guard() postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -1803,10 +1807,12 @@ grant function public.add_review_comment(p_token text, p_version uuid, p_name te
 grant function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) authenticated,postgres,service_role
 grant function public.admin_case_study_projects() authenticated,postgres,service_role
 grant function public.admin_close_job(p_job uuid) authenticated,postgres,service_role
+grant function public.admin_count_brief_answers(p_key text, p_option text) authenticated,postgres,service_role
 grant function public.admin_hide_message(p_message uuid, p_hidden boolean) authenticated,postgres,service_role
 grant function public.admin_list_users() authenticated,postgres,service_role
 grant function public.admin_move_brief_question(p_key text, p_direction integer) authenticated,postgres,service_role
 grant function public.admin_platform_analytics(p_since timestamp with time zone) authenticated,postgres,service_role
+grant function public.admin_remove_brief_option(p_key text, p_option text) authenticated,postgres,service_role
 grant function public.admin_remove_brief_question(p_key text) authenticated,postgres,service_role
 grant function public.admin_reported_message(p_report uuid) authenticated,postgres,service_role
 grant function public.admin_set_suspended(p_user uuid, p_suspended boolean) authenticated,postgres,service_role
@@ -2735,6 +2741,7 @@ trigger CREATE TRIGGER brand_rule_entity_delete AFTER DELETE ON public.brand_rul
 trigger CREATE TRIGGER brand_rule_entity_sync AFTER INSERT OR UPDATE OF project_id, kind ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_entity_sync()
 trigger CREATE TRIGGER brand_rules_touch_updated_at BEFORE UPDATE ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER brief_question_guard BEFORE UPDATE OF kind, options ON public.brief_questions FOR EACH ROW EXECUTE FUNCTION internal.brief_question_guard()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
