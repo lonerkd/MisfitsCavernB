@@ -1,19 +1,33 @@
 'use client';
 
-import { Send, Smile } from 'lucide-react';
+import { Lock, Send, Smile } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Lounge } from '@/components/lounge/useLounge';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 export function Composer({ l }: { l: Lounge }) {
   const { activeChannel, dmTarget, input, setInput, showEmoji, setShowEmoji, typingUsers, canPost, isGuide, broadcastTyping, handleSend } = l;
+  const { phone, landscape } = usePhoneLayout();
+  // A phone held sideways has about 390 px of height: the composer is one slim row there.
+  const compact = phone && landscape;
+  // A channel the person can read but not post in gets a one-line notice, not a dead text box and a Send button.
+  if (!dmTarget && !canPost) {
+    return (
+      <div className="mc-lounge-composer" role="status" style={{ padding: compact ? '8px 16px' : '16px 28px', borderTop: '1px solid rgba(var(--ink-rgb), 0.04)', background: 'var(--bg-2)', flexShrink: 0 }}>
+        <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--fg-muted)', fontSize: 13 }}>
+          <Lock size={13} aria-hidden /> You can read #{activeChannel?.name || 'this channel'}, but only some people can post in it.
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mc-lounge-composer" style={{
-      padding: '16px 28px',
+      padding: compact ? '6px 16px' : '16px 28px',
       borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
       background: 'var(--bg-2)',
       flexShrink: 0,
     }}>
-      <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', height: 14, marginBottom: 4 }}>
+      <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', height: compact && typingUsers.length === 0 ? 0 : 14, marginBottom: compact ? 2 : 4 }}>
         {typingUsers.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)' }}>
             <span style={{ display: 'inline-flex', gap: 2 }}>
@@ -49,7 +63,7 @@ export function Composer({ l }: { l: Lounge }) {
           rows={1}
           style={{
             flex: 1,
-            padding: '12px 16px',
+            padding: compact ? '7px 12px' : '12px 16px',
             background: 'rgba(var(--ink-rgb), 0.03)',
             border: '1px solid rgba(var(--ink-rgb), 0.08)',
             borderRadius: 'var(--radius-sm)',
@@ -70,7 +84,7 @@ export function Composer({ l }: { l: Lounge }) {
           whileHover={input.trim() ? { scale: 1.05 } : {}}
           whileTap={input.trim() ? { scale: 0.95 } : {}}
           style={{
-            padding: '11px 18px',
+            padding: compact ? '8px 14px' : '11px 18px',
             background: input.trim() ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.05)',
             border: 'none',
             color: input.trim() ? 'var(--bg)' : 'var(--fg-muted)',
