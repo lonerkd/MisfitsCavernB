@@ -43,20 +43,37 @@ describe('admin-brief', () => {
     expect(typeof result).toBe('number');
   });
 
-  it('removeQuestion returns null on success', async () => {
-    const mockDelete = vi.fn().mockImplementation(() => ({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    }));
+  it('removeQuestion calls the audited function', async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
     const originalSupabase = await import('./client');
-    (originalSupabase.supabase as any).from = vi.fn().mockImplementation((table) => {
-      if (table === 'brief_questions') {
-        return { delete: mockDelete };
-      }
-      return { select: vi.fn().mockResolvedValue({ count: 0, error: null }) };
-    });
-
+    (originalSupabase.supabase as any).rpc = rpc;
     removeQuestion = await import('./admin-brief').then(m => m.removeQuestion);
-    const result = await removeQuestion('test');
-    expect(result).toBeNull();
+    expect(await removeQuestion('test')).toBeNull();
+    expect(rpc).toHaveBeenCalledWith('admin_remove_brief_question', { p_key: 'test' });
+    rpc.mockResolvedValue({ error: { message: 'Only an admin can do this' } });
+    expect(await removeQuestion('test')).toBe('Only an admin can do this');
+  });
+
+  it('moveQuestion sends the direction and reports a refusal', async () => {
+    const rpc = vi.fn().mockResolvedValue({ error: null });
+    const originalSupabase = await import('./client');
+    (originalSupabase.supabase as any).rpc = rpc;
+    const { moveQuestion } = await import('./admin-brief');
+    expect(await moveQuestion('goal', -1)).toBeNull();
+    expect(rpc).toHaveBeenCalledWith('admin_move_brief_question', { p_key: 'goal', p_direction: -1 });
+    rpc.mockResolvedValue({ error: { message: 'nope' } });
+    expect(await moveQuestion('goal', 1)).toBe('nope');
+  });
+
+  it('updateQuestion reports an error and a write that touched nothing', async () => {
+    const originalSupabase = await import('./client');
+    const chain = (result: unknown) => ({ update: () => ({ eq: () => ({ select: () => Promise.resolve(result) }) }) });
+    const { updateQuestion } = await import('./admin-brief');
+    (originalSupabase.supabase as any).from = () => chain({ data: [{ key: 'goal' }], error: null });
+    expect(await updateQuestion('goal', { label: 'x' })).toBeNull();
+    (originalSupabase.supabase as any).from = () => chain({ data: [], error: null });
+    expect(await updateQuestion('goal', { label: 'x' })).toMatch(/Nothing was saved/);
+    (originalSupabase.supabase as any).from = () => chain({ data: null, error: { message: 'boom' } });
+    expect(await updateQuestion('goal', { label: 'x' })).toBe('boom');
   });
 });

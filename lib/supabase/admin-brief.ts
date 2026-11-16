@@ -19,8 +19,32 @@ export async function countAnswers(key: string): Promise<number | null> {
   return error ? null : count ?? 0;
 }
 
-/** Remove a question and, with it, every project's answer. Returns an error message, or null. */
+/** Remove a question and, with it, every project's answer; the database writes an audit-log entry. Returns an error message, or null. */
 export async function removeQuestion(key: string): Promise<string | null> {
-  const { error } = await supabase.from('brief_questions').delete().eq('key', key);
+  const { error } = await supabase.rpc('admin_remove_brief_question', { p_key: key });
   return error ? error.message : null;
+}
+
+/** Save the words, the options (with their implies / detect) and ask_when of a question. Returns an error message, or null. */
+export async function updateQuestion(key: string, patch: { label?: string; hint?: string; options?: unknown[]; ask_when?: Record<string, unknown> }): Promise<string | null> {
+  const { error, data } = await supabase.from('brief_questions').update(patch as never).eq('key', key).select('key');
+  if (error) return error.message;
+  return data && data.length ? null : 'Nothing was saved (only an admin can edit a question).';
+}
+
+/** Move a question one place up (-1) or down (1) within its phase. Returns an error message, or null. */
+export async function moveQuestion(key: string, direction: -1 | 1): Promise<string | null> {
+  const { error } = await supabase.rpc('admin_move_brief_question', { p_key: key, p_direction: direction });
+  return error ? error.message : null;
+}
+
+/** The names an option's `implies` may use: roles, channel presets and project formats. Null if they could not be read. */
+export async function loadRuleVocab(): Promise<{ crafts: string[]; channels: string[]; formats: string[] } | null> {
+  const [c, p, f] = await Promise.all([
+    supabase.from('crafts').select('name'),
+    supabase.from('channel_presets').select('key'),
+    supabase.from('project_formats').select('name'),
+  ]);
+  if (c.error || p.error || f.error) return null;
+  return { crafts: (c.data ?? []).map((r) => r.name), channels: (p.data ?? []).map((r) => r.key), formats: (f.data ?? []).map((r) => r.name) };
 }

@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**53 pages · 8 API routes · 101 tables · 70 database functions · 114 e2e specs**
+**53 pages · 8 API routes · 101 tables · 72 database functions · 114 e2e specs**
 
 ## Routes
 
@@ -18,7 +18,7 @@
 | `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (132) | 13 files · components: portfolio, ui · lib: credits, portfolio, print, supabase | portfolio-page |
 | `/admin/analytics` | admin | `app/(suite)/admin/analytics/page.tsx` (243) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/audit-logs` | admin | `app/(suite)/admin/audit-logs/page.tsx` (434) | 33 files · components: ui · lib: audit, auth, formats, hooks, os, push, supabase, types, util, validation | accessibility, admin-actions, admin-sweep, suspend-user |
-| `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (127) | 43 files · components: ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | admin-actions, admin-sweep |
+| `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (143) | 45 files · components: admin, ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | admin-actions, admin-sweep |
 | `/admin/channel-presets` | admin | `app/(suite)/admin/channel-presets/page.tsx` (110) | 33 files · components: ui · lib: auth, formats, hooks, lounge, os, push, supabase, types, validation | accessibility, admin-actions, admin-channel-presets, admin-sweep |
 | `/admin/crafts` | admin | `app/(suite)/admin/crafts/page.tsx` (103) | 35 files · components: ui · lib: auth, crafts, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-crafts, admin-sweep |
 | `/admin/errors` | admin | `app/(suite)/admin/errors/page.tsx` (133) | 32 files · components: ui · lib: auth, errors, formats, hooks, os, push, supabase, types, validation | admin-actions, admin-sweep, errors |
@@ -126,8 +126,8 @@
 
 ### `/admin/brief-questions`
 
-- **Tables:** `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_presets`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `project_context`
+- **Tables:** `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_presets`, `crafts`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
+- **Functions:** `admin_move_brief_question`, `admin_remove_brief_question`, `get_my_account`, `project_context`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin/channel-presets`
@@ -434,7 +434,7 @@
 | `characters` | `/shared/[token]`, `/call/[id]`, `/call`, `/editor`, `/projects/[id]`, `/studio` |
 | `client_errors` | **no route** (server-side, triggers or functions only) |
 | `craft_capabilities` | `/call/[id]`, `/community`, `/lounge`, `/projects/[id]`, `/studio` |
-| `crafts` | `/p/[token]`, `/portfolios`, `/review/[token]`, `/s/[token]`, `/shared/[token]`, `/u/[handle]`, `/admin/crafts`, `/call/[id]`, `/community`, `/crew`, `/jobs`, `/lounge`, `/m/[id]`, `/profile`, `/projects/[id]`, `/studio`, `/welcome` |
+| `crafts` | `/p/[token]`, `/portfolios`, `/review/[token]`, `/s/[token]`, `/shared/[token]`, `/u/[handle]`, `/admin/brief-questions`, `/admin/crafts`, `/call/[id]`, `/community`, `/crew`, `/jobs`, `/lounge`, `/m/[id]`, `/profile`, `/projects/[id]`, `/studio`, `/welcome` |
 | `crew_capability_overrides` | `/call/[id]`, `/community`, `/lounge`, `/projects/[id]`, `/studio` |
 | `deliverables` | `/editor`, `/studio` |
 | `discord_integrations` | `/lounge`, `/projects/[id]`, `/projects`, `/studio`, `/welcome`, `/api/discord/notify` |
@@ -522,7 +522,9 @@
 | `admin_close_job` | called from a route |
 | `admin_hide_message` | called from a route |
 | `admin_list_users` | called from a route |
+| `admin_move_brief_question` | called from a route |
 | `admin_platform_analytics` | called from a route |
+| `admin_remove_brief_question` | called from a route |
 | `admin_reported_message` | called from a route |
 | `admin_set_suspended` | called from a route |
 | `advance_phase` | called from a route |
