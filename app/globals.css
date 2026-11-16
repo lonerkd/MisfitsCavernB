@@ -655,7 +655,8 @@ p {
   padding: 0 18px;
 }
 
-section { padding: 90px 18px; }
+/* (There used to be a global `section { padding: 90px 18px }` here, left from the marketing page. It put 90 px above and below every
+   <section> in the app that did not set its own padding: the blank gaps between Settings' sections and on the project page.) */
 
 /* ═══════════════════════════════
    STATUS / BADGES
