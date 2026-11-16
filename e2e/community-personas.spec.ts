@@ -58,7 +58,7 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     await expect(lounge.getByLabel('1 unread')).toHaveCount(1);
     // Not a member of the private channel: no row, no count, no name anywhere.
     await expect(lounge).not.toContainText(secretName);
-    await expect(page.locator('main')).not.toContainText(secretName);
+    await expect(page.locator('#main-content')).not.toContainText(secretName);
 
     await expect(page.locator('[aria-labelledby="today-tasks"]')).toContainText(taskTitle);
     await expect(page.locator('[aria-labelledby="today-updates"]')).toContainText(`Announcement · ${title}`);
@@ -91,7 +91,7 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     await expect(page.locator('[aria-labelledby="today-projects"]')).toContainText('No projects yet');
     await expect(page.locator('[aria-labelledby="today-roles"]')).toHaveCount(0);
     await expect(page.locator('[aria-labelledby="today-invites"]')).toHaveCount(0);
-    const text = await page.locator('main').innerText();
+    const text = await page.locator('#main-content').innerText();
     for (const secret of [title, taskTitle, secretName, 'Announcement ·', announcement, 'Budget talk']) expect(text).not.toContain(secret);
     expect(text).not.toContain(sam.username);
   });
