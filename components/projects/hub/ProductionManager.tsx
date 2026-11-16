@@ -133,7 +133,8 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
       setTasks(p => p.map(x => x.id === t.id ? { ...x, ...back } : x));
     }, origin);
     if (patch.assigned_to && patch.assigned_to !== t.assigned_to) {
-      notify(patch.assigned_to, { type: 'task', title: `You were assigned “${plain(t.title)}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
+      const notifyError = await notify(patch.assigned_to, { type: 'task', title: `You were assigned “${plain(t.title)}”`, body: projectTitle, link: `/projects/${projectId}` }, userId);
+      if (notifyError) toast(`Saved, but the person assigned wasn’t notified: ${notifyError}`, 'error');
     }
   };
   const delTask = async (id: string) => {
@@ -216,7 +217,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   // The owner changes what someone does on the project right from this panel.
   const changeCrewCraft = async (c: CrewRow, craft: string | null) => {
     if (!userId) return;
-    if (await attempt(async () => { await setCrewCraft(projectId, c.user_id, craft, userId); })) load();
+    if (await attempt(async () => { await setCrewCraft(projectId, c.user_id, craft, userId, (reason) => toast(`Saved, but they weren’t notified: ${reason}`, 'error')); })) load();
   };
   const delCrew = async (id: string) => {
     if (!await confirm('Remove this crew member from the project?')) return;

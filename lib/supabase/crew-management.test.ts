@@ -64,6 +64,32 @@ describe('setCrewCraft', () => {
   });
 });
 
+describe('a notice that fails after the change was saved', () => {
+  it('hands the reason to the caller from setCrewCraft, and the change still counts', async () => {
+    useFake({ project_crew: { data: [{ user_id: 'user-2', craft: 'Gaffer' }], error: null } });
+    notify.mockResolvedValue('rls violation');
+    const onNotifyError = vi.fn();
+
+    const row = await setCrewCraft('project-1', 'user-2', 'Gaffer', 'user-1', onNotifyError);
+
+    expect(row).toEqual({ user_id: 'user-2', craft: 'Gaffer' });
+    expect(onNotifyError).toHaveBeenCalledWith('rls violation');
+  });
+
+  it('hands the reason to the caller from updateCrewMemberRole, and stays quiet when the notice worked', async () => {
+    useFake({ project_crew: { data: { id: 'crew-row' }, error: null } });
+    const onNotifyError = vi.fn();
+
+    notify.mockResolvedValue(null);
+    await updateCrewMemberRole('project-1', 'user-2', 'viewer', 'user-1', onNotifyError);
+    expect(onNotifyError).not.toHaveBeenCalled();
+
+    notify.mockResolvedValue('rls violation');
+    await updateCrewMemberRole('project-1', 'user-2', 'viewer', 'user-1', onNotifyError);
+    expect(onNotifyError).toHaveBeenCalledWith('rls violation');
+  });
+});
+
 describe('answering an invitation', () => {
   it('reads the open invitations through the database function', async () => {
     const inv = { project_id: 'p1', title: 'Night Shift', role: 'contributor', craft: 'Gaffer', invited_by_name: 'sam', created_at: '2026-11-14' };

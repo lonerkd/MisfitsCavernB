@@ -131,6 +131,7 @@ export async function updateCrewMemberRole(
   userId: string,
   newRole: CrewRole,
   currentUserId: string,
+  onNotifyError?: (message: string) => void,
 ) {
   try {
     const { data, error } = await supabase
@@ -156,11 +157,13 @@ export async function updateCrewMemberRole(
     );
 
     // Tell the member — a role change otherwise only reaches the admin audit log.
-    await notify(
+    // The change is saved either way; a failed notice is handed to the caller to say so.
+    const notifyError = await notify(
       userId,
       { type: 'crew', title: `Your role is now ${newRole}`, body: 'Your access on this project was updated.', link: `/projects/${projectId}` },
       currentUserId,
     );
+    if (notifyError) onNotifyError?.(notifyError);
 
     return data;
   } catch (error) {
@@ -173,7 +176,14 @@ export async function updateCrewMemberRole(
  * Changes what someone does on this project (their craft, a name from public.crafts); null clears it.
  * Only the project's owner can (the database says so). It never touches their permission tier.
  */
-export async function setCrewCraft(projectId: string, userId: string, craft: string | null, currentUserId: string) {
+export async function setCrewCraft(
+  projectId: string,
+  userId: string,
+  craft: string | null,
+  currentUserId: string,
+  /** Called with the reason when the change was saved but the person could not be told. */
+  onNotifyError?: (message: string) => void,
+) {
   const { data, error } = await supabase
     .from('project_crew')
     .update({ craft })
@@ -187,11 +197,12 @@ export async function setCrewCraft(projectId: string, userId: string, craft: str
   void logActivity(craft ? `set a crew member's craft to ${craft}` : `cleared a crew member's craft`, 'project', projectId);
   await logAuditAction(currentUserId, 'crew_role_changed', 'project_crew', `${projectId}:${userId}`, { craft, action: 'craft_updated' });
   if (userId !== currentUserId) {
-    await notify(
+    const notifyError = await notify(
       userId,
       { type: 'crew', title: craft ? `Your craft is now ${craft}` : 'Your craft on this project was cleared', body: 'Updated by the project owner.', link: `/projects/${projectId}` },
       currentUserId,
     );
+    if (notifyError) onNotifyError?.(notifyError);
   }
   return data[0];
 }
