@@ -1070,9 +1070,6 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
 @media (pointer: coarse) {
   button, select, summary, [role='button'], [role='tab'], [role='menuitem'], input[type='button'], input[type='submit'], input[type='reset'] { min-height: 44px !important; }
   button, [role='button'], [role='tab'] { min-width: 44px !important; }
-  /* A switch is drawn at its own size (42 x 24, over the 24 px WCAG 2.2 minimum); the 44 pt rule would stretch it into a disc.
-     A switch that wraps its track in its own 44 pt button says so with data-touch-target (Settings). */
-  button[role='switch']:not([data-touch-target]) { min-height: 0 !important; min-width: 0 !important; }
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em) !important; }
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select { min-height: 44px; }
   input[type='checkbox'], input[type='radio'] { min-width: 24px; min-height: 24px; }

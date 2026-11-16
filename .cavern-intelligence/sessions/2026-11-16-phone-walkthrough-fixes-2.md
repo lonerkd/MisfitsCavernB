@@ -4,7 +4,7 @@ Source: the full 4 min 35 s screen recording (recorded 2026-11-07), sampled ever
 
 **Fixed (no migration):**
 - **Preview's title page said "UNTITLED SCREENPLAY" over a titled script.** A title page nobody filled in now uses the script's own title (`withScriptTitle`; unit test). A title someone wrote is kept.
-- **Every other switch** (the channel modal, the diff modal, production manager, the Studio's, the phase panel's, breakdown tag mode, frosted mode) had the same stretch into a disc as Settings: one global rule now lets a switch keep its drawn size (42 x 24, over WCAG 2.2's 24 px minimum); Settings keeps a 44 pt button around its track (`data-touch-target`).
+- **Switches:** only Settings' were stretched into discs (the Studio's "Open all" switch renders fine in the same recording). A global exemption was tried and dropped: it made seven switches count as under-44 pt targets in the phone audit. Settings keeps its 44 pt button around the drawn track.
 - **The Everything sheet** lists each project's phase beside its name, so two projects with the same name can be told apart.
 
 **Checked and not a bug:** the Lounge composer's "greyed" look in landscape (an empty box with its placeholder, and a Send button that is dim until there is text); the Portfolio "The Cavern Collection" headline and the "Soundtrack" label (already changed on `main`); the Stats overflow (a grid since #606).

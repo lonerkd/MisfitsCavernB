@@ -38,7 +38,6 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
     <button
       type="button"
       role="switch"
-      data-touch-target
       aria-checked={on}
       aria-label={label}
       onClick={() => onChange(!on)}
