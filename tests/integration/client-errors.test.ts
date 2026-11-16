@@ -45,7 +45,7 @@ describe('reporting', () => {
   });
 
   it('stores the stack redacted: no origin, path, query string, token or email', async () => {
-    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+    const jwt = ['eyJ' + 'hbGciOiJIUzI1NiJ9', 'eyJ' + 'zdWIiOiIxMjM0NTY3ODkwIn0', 'x'.repeat(43)].join('.') // a fake token, built so secret scanners do not flag a literal;
     const stack = [
       'Error: boom',
       '    at render (https://app.example.com/_next/static/chunks/page-1a2b.js?access_token=SECRETQ&v=1:10:5)',
