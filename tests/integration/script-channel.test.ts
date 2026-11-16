@@ -62,7 +62,7 @@ beforeAll(async () => {
   const project = await cast.sam.client.from('projects').insert({ title: 'Private Channel', creator_id: cast.sam.id }).select('id').single();
   if (project.error) throw project.error;
   const crew = await cast.sam.client.from('project_crew').insert([
-    { project_id: project.data.id, user_id: cast.jordan.id, craft: 'Writer', status: 'confirmed' },
+    { project_id: project.data.id, user_id: cast.jordan.id, craft: 'Writer', role: 'contributor', status: 'confirmed' },
     { project_id: project.data.id, user_id: viewer.id, craft: 'Script supervisor', role: 'viewer', status: 'confirmed' },
   ]);
   if (crew.error) throw crew.error;
