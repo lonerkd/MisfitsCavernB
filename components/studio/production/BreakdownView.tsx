@@ -85,7 +85,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
     const ordered = [...categories].sort((x, y) => x.position - y.position);
     const ok = printDocument(breakdownDoc({
       project: project.title,
-      accent: project.accent_color,
+      accent: project.accent_color, logo: project.logo_url,
       scenes: scenes.rows.map((sc) => {
         const ids = new Set(bd.tags.rows.filter((t) => t.scene_id === sc.id).map((t) => t.element_id));
         const boxes = ordered.map((c) => {

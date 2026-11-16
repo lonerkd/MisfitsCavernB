@@ -8,6 +8,7 @@ export interface RevisionsPrintInput {
   project: string;
   script: string;
   accent?: string | null;
+  logo?: string | null;
   /** In the order they were locked (oldest first); printed newest first. */
   revisions: RevisionPrintRow[];
   generated: string;
@@ -19,7 +20,7 @@ export function revisionsDoc(i: RevisionsPrintInput): PrintDoc {
     title: 'Script revisions',
     kind: i.project,
     subtitle: i.script,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Locked drafts', i.revisions.length], ['Latest', newest[0] ? `${newest[0].colour}${newest[0].date ? ` · ${newest[0].date}` : ''}` : null]],
     blocks: [{
       type: 'table',

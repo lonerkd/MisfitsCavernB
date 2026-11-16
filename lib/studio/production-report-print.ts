@@ -5,6 +5,7 @@ import type { PrintDoc } from '@/lib/print/kit';
 export interface ProductionReportInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   day: number;
   date: string | null;
   /** Clock times from the set log ("06:42"), or empty when none was logged. */
@@ -28,7 +29,7 @@ export function productionReportDoc(i: ProductionReportInput): PrintDoc {
     title: `Day ${i.day}${i.date ? ` · ${i.date}` : ''}`,
     kind: 'Production report',
     subtitle: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [
       ['General call', i.call], ['Wrap', i.wrap],
       ['Scenes shot', `${i.scenesDone} of ${i.scenes.length}`],

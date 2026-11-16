@@ -29,6 +29,7 @@ import { ViewAsSwitch, ViewAsBanner, OutsiderPreview } from '@/components/projec
 import { AnnouncementBox } from '@/components/projects/AnnouncementBox';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
+import { LogoEditor } from '@/components/progress/LogoEditor';
 import type { ProjectHubViewModel } from '@/components/projects/hub/types';
 import { DeptWindow, ScriptPreview, AssetPreview, CrewPreview, TimelinePreview, PortfolioPreview } from '@/components/projects/hub/DeptWindow';
 import { ProductionManager } from '@/components/projects/hub/ProductionManager';
@@ -69,6 +70,7 @@ export default function ProjectHubPage() {
           description: row.description || '',
           color: readable(row.accent_color || 'var(--accent)'),
           accent: row.accent_color,
+          logoUrl: row.logo_url,
           team: [],
           settings: row.settings as unknown as ProjectSettings,
           visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
@@ -261,6 +263,13 @@ export default function ProjectHubPage() {
             isOwner={ownerView}
             onSaved={(logline) => setRealProject(p => p ? { ...p, description: logline } : p)}
           />
+          {ownerView && (
+            <LogoEditor
+              projectId={id}
+              value={project.logoUrl ?? null}
+              onSaved={(logoUrl) => { setRealProject(p => p ? { ...p, logoUrl } : p); refreshProject(id); }}
+            />
+          )}
         </motion.div>
 
         {ownerView && me?.id && <AnnouncementBox projectId={id} projectTitle={project.title} userId={me.id} />}

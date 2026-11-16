@@ -37,7 +37,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
   const printDeck = () => {
     printDocument(pitchDoc({
       title: project.title,
-      accent: project.accent_color,
+      accent: project.accent_color, logo: project.logo_url,
       logline: project.description || null,
       concepts: concepts.map((c) => ({ url: c.image_url, title: c.title || null })),
       characters,

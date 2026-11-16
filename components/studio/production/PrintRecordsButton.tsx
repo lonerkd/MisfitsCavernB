@@ -27,7 +27,7 @@ export function PrintRecordsButton({ kind }: { kind: RecordKind }) {
     try {
       const rows = await listRecords(project.id, kind);
       const doc = recordsDoc({
-        kind, project: project.title, accent: project.accent_color,
+        kind, project: project.title, accent: project.accent_color, logo: project.logo_url,
         rows,
         sceneOf: (r) => sceneChip(r as never, t.sceneById),
         characterOf: (r) => characterName(r as never, t.characterById),

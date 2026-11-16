@@ -13,6 +13,7 @@ export interface PaperworkPrintGroup {
 export interface PaperworkPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   groups: PaperworkPrintGroup[];
   /** What is still needed, already worded ("Permit for CAIS DO SODRÉ: scenes shoot there"). Empty for crew, who see only their own papers. */
   needed: string[];
@@ -37,7 +38,7 @@ export function paperworkDoc(i: PaperworkPrintInput): PrintDoc {
   return {
     title: 'Paperwork',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Documents', all.length || null], ['With a file', all.length ? `${all.filter((r) => r.hasFile).length} of ${all.length}` : null], ['Still needed', i.needed.length || null]],
     blocks,
     footer: i.project,

@@ -16,6 +16,7 @@ export interface ShotPrintRow {
 export interface ShotListPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   shots: ShotPrintRow[];
   /** What the view's filters were, so a partial list says so ("Status: planned"). */
   filter: string | null;
@@ -27,7 +28,7 @@ export function shotListDoc(i: ShotListPrintInput): PrintDoc {
   return {
     title: 'Shot list',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Shots', i.shots.length], ['Shot', i.shots.length ? `${got} of ${i.shots.length}` : null], ['Showing', i.filter]],
     blocks: [{
       type: 'table',

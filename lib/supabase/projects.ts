@@ -19,6 +19,7 @@ export interface DBProject {
   creator_id: string;
   status: 'concept' | 'pre-production' | 'in-production' | 'post-production' | 'completed';
   accent_color?: string;
+  logo_url?: string | null;
   budget?: number;
   start_date?: string;
   end_date?: string;

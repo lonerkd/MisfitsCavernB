@@ -64,7 +64,7 @@ export function ShotListView() {
         progress={shots.rows.length > 0 ? { value: counts.shot, of: shots.rows.length - counts.omitted, label: 'shot' } : null}
         stats={[{ label: 'planned', value: counts.planned }, { label: 'omitted', value: counts.omitted }]}
         actions={filtered.length > 0 ? <PrintButton label="the shot list" build={() => shotListDoc({
-          project: project.title, accent: project.accent_color,
+          project: project.title, accent: project.accent_color, logo: project.logo_url,
           filter: [statusFilter !== 'all' ? `Status: ${statusFilter}` : null, sceneFilter !== 'all' ? `Scene ${sceneById.get(sceneFilter)?.scene_number ?? ''}` : null].filter(Boolean).join(' · ') || null,
           shots: filtered.map((sh) => ({ scene: sceneById.get(sh.scene_id)?.scene_number ?? '?', number: sh.shot_number, size: sh.shot_size, angle: sh.angle, movement: sh.movement, lens: sh.lens, description: sh.description, status: sh.status ?? 'planned' })),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),

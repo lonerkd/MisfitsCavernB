@@ -76,6 +76,14 @@ describe('/s/[token] — a shared script', () => {
     expect(calls[0].body).toEqual({ p_token: 'abc-123' });
   });
 
+  it('reads the script with its own format: a podcast’s NAME: speech is a spoken line (indented as dialogue), not action', async () => {
+    const content = 'HOST: Welcome back to the show.\n';
+    serveRows([row({ content, format: 'podcast' })]);
+    expect(lineWith(await render(), 'Welcome back').style.marginLeft).toBe('10ch');
+    serveRows([row({ content, format: 'screenplay' })]);
+    expect(lineWith(await render(), 'Welcome back').style.marginLeft).toBe('');
+  });
+
   it('shows the title, the author and a way to sign up', async () => {
     serveRows([row()]);
     const root = await render();

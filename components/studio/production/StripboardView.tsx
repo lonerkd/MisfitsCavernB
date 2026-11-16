@@ -178,7 +178,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
   const print = () => {
     const ok = printDocument(scheduleDoc({
       project: project.title,
-      accent: project.accent_color,
+      accent: project.accent_color, logo: project.logo_url,
       days: board.map((d) => ({
         day: d.day,
         date: dateOf.get(d.day) ? new Date(`${dateOf.get(d.day)}T00:00`).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' }) : null,

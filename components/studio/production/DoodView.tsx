@@ -42,7 +42,7 @@ export function DoodView() {
         summary={<>{dood.length} cast · {board.filter((d) => d.scenes.length).length} shoot days</>}
         actions={<PrintButton label="the day out of days" build={() => {
           // The cells line up with the whole board (one per day), so the columns are the board's days, as the screen shows them.
-          return doodDoc({ project: project.title, accent: project.accent_color, days: board.map((d) => d.day), rows: dood.map((r) => ({ name: r.name, cells: r.cells, worked: r.worked })), generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
+          return doodDoc({ project: project.title, accent: project.accent_color, logo: project.logo_url, days: board.map((d) => d.day), rows: dood.map((r) => ({ name: r.name, cells: r.cells, worked: r.worked })), generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
         }} />} />
       <div className={s.panel}><DoodTable board={board} dood={dood} /></div>
     </div>

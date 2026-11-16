@@ -34,7 +34,7 @@ export function ProductionReportView() {
     const done = dayScenes.filter((sc) => sc.status === 'wrapped' || sc.status === 'shot');
     const ok = printDocument(productionReportDoc({
       project: project.title,
-      accent: project.accent_color,
+      accent: project.accent_color, logo: project.logo_url,
       day: sheet.shoot_day,
       date: sheet.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : null,
       call: clock.call ? clock.call.slice(0, 5) : '',

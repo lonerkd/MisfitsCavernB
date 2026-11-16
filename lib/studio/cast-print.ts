@@ -7,6 +7,7 @@ export interface CastPrintRow { character: string; actor: string | null; scenes:
 export interface CastPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   rows: CastPrintRow[];
   generated: string;
 }
@@ -17,7 +18,7 @@ export function castDoc(i: CastPrintInput): PrintDoc {
   return {
     title: 'Cast breakdown',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Characters', i.rows.length], ['Cast', i.rows.length ? `${cast} of ${i.rows.length}` : null]],
     blocks: [
       ...(uncast > 0 ? [{ type: 'note' as const, tone: 'warn' as const, text: `${uncast} character${uncast === 1 ? ' is' : 's are'} still uncast.` }] : []),

@@ -57,6 +57,7 @@ export interface RecordsPrintInput {
   kind: RecordKind;
   project: string;
   accent?: string | null;
+  logo?: string | null;
   rows: PrintableRecord[];
   /** Resolves a record's scene and character from its links; falls back to the record's own text. */
   sceneOf?: (r: PrintableRecord) => string;
@@ -82,7 +83,7 @@ export function recordsDoc(i: RecordsPrintInput): PrintDoc {
   return {
     title: spec.title,
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Entries', rows.length]],
     blocks: [{ type: 'table', columns: spec.columns, rows, empty: 'Nothing has been logged yet.' }],
     footer: i.project,

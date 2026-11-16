@@ -16,6 +16,7 @@ export interface ContinuityDay { label: string; scenes: ContinuityScene[] }
 export interface ContinuityPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   days: ContinuityDay[];
   /** Look changes inside one story day, already worded. */
   warnings: string[];
@@ -41,7 +42,7 @@ export function continuityDoc(i: ContinuityPrintInput): PrintDoc {
   return {
     title: 'Continuity',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Scenes', scenes], ['Story days', i.days.filter((d) => !/^No story day/i.test(d.label)).length || null], ['To check', i.warnings.length || null]],
     blocks,
     footer: i.project,

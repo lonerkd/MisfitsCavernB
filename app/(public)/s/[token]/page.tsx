@@ -10,6 +10,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { publicClient } from '@/lib/supabase/public';
 import { parseScript } from '@/lib/scriptos/parser';
+import { readingFormat } from '@/lib/scriptos/reading-format';
 import { logShareLookup } from '@/lib/scriptos/shareLog';
 import type { ScriptLine } from '@/lib/scriptos/types';
 
@@ -18,6 +19,7 @@ export const dynamic = 'force-dynamic';
 interface SharedScript {
   title: string;
   content: string;
+  format: string | null;
   author_username: string | null;
   author_avatar_url: string | null;
   author_role: string | null;
@@ -95,7 +97,7 @@ function ScriptLineView({ line, index }: { line: ScriptLine; index: number }) {
 export default async function PublicScriptPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const script = await load(token);
-  const lines: ScriptLine[] = script ? parseScript(script.content).lines : [];
+  const lines: ScriptLine[] = script ? parseScript(script.content, readingFormat(script.format)).lines : [];
 
   if (!script) {
     return (

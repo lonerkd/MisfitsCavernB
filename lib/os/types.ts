@@ -62,6 +62,7 @@ export interface Project {
   share_token?: string;
   status: string;
   accent_color?: string;
+  logo_url?: string | null;
   type?: string;
   project_type?: string;
   beats?: Beat[];

@@ -106,6 +106,22 @@ export async function setProjectLogline(projectId: string, logline: string): Pro
   announceProgressChange(projectId);
 }
 
+/** An https image link, 500 characters at most, no spaces: what `projects_logo_url_https` accepts. */
+export function isLogoUrl(v: string): boolean {
+  return v.length <= 500 && /^https:\/\/\S+$/.test(v);
+}
+
+/** Owner only (RLS): the logo the print kit shows on every printed document. An empty link clears it. */
+export async function setProjectLogo(projectId: string, logoUrl: string): Promise<string | null> {
+  const next = logoUrl.trim();
+  if (next && !isLogoUrl(next)) throw new Error('The logo must be an https link to an image.');
+  const { data, error } = await supabase.from('projects').update({ logo_url: next || null }).eq('id', projectId).select('logo_url');
+  if (error) throw new Error(error.message || 'Could not save the logo');
+  if (!data?.length) throw new Error('Only the project owner can change the logo');
+  announceProgressChange(projectId);
+  return data[0].logo_url;
+}
+
 /** Owner only (RLS): merges `patch` into the project's settings. */
 export async function patchProjectSettings(projectId: string, patch: Partial<ProjectSettings>): Promise<ProjectSettings> {
   const { data, error } = await supabase.rpc('patch_project_settings', {

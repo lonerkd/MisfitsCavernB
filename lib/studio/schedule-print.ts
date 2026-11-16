@@ -14,6 +14,7 @@ export interface ScheduleDay {
 export interface SchedulePrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   days: ScheduleDay[];
   totalScenes: number;
   totalPages: string;
@@ -36,7 +37,7 @@ export function scheduleDoc(i: SchedulePrintInput): PrintDoc {
     title: 'Shooting schedule',
     kind: 'Schedule',
     subtitle: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Scenes', i.totalScenes], ['Days', days.length], ['Pages', i.totalPages]],
     blocks,
     footer: i.project,

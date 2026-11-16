@@ -9,7 +9,7 @@ const lines = (t: { from_line?: number | null; to_line?: number | null; off_came
   return `${span.from === span.to ? span.from : `${span.from}–${span.to}`}${t.off_camera ? ' off camera' : ''}`;
 };
 
-export function editorPackageDoc(pkg: EditorPackage, a: { project: string; accent?: string | null; generated: string }): PrintDoc {
+export function editorPackageDoc(pkg: EditorPackage, a: { project: string; accent?: string | null; logo?: string | null; generated: string }): PrintDoc {
   const blocks: PrintBlock[] = [];
   blocks.push(pkg.ready
     ? { type: 'note', tone: 'info', text: 'Everything logged is ready for editorial: every shot with takes has a selected take, every shot scene has a sound report, and every card is verified.' }
@@ -41,7 +41,7 @@ export function editorPackageDoc(pkg: EditorPackage, a: { project: string; accen
   });
 
   return {
-    title: 'Package for the editor', kind: 'Editorial', accent: a.accent,
+    title: 'Package for the editor', kind: 'Editorial', accent: a.accent, logo: a.logo,
     meta: [['Scenes', pkg.scenes.length], ['Ready', pkg.ready ? 'Yes' : 'No']],
     blocks, footer: a.project, generated: a.generated, orientation: 'portrait',
   };

@@ -12,6 +12,8 @@ export interface ProjectHubViewModel {
   color: string;
   /** The accent as the owner chose it (null: the theme's), for panels that derive their own shades from it. */
   accent?: string | null;
+  /** The project logo (https link) the print kit shows on printed documents. */
+  logoUrl?: string | null;
   scriptPages?: number;
   scriptDraft?: number;
   assetCount?: number;

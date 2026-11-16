@@ -17,6 +17,7 @@ export interface LocationPrintRow {
 export interface LocationsPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   rows: LocationPrintRow[];
   format: (n: number) => string;
   generated: string;
@@ -30,7 +31,7 @@ export function locationsDoc(i: LocationsPrintInput): PrintDoc {
   return {
     title: 'Locations',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Locations', i.rows.length], ['Confirmed', i.rows.length ? `${confirmed} of ${i.rows.length}` : null], ['Cost', total ? i.format(total) : null]],
     blocks: [{
       type: 'table',
