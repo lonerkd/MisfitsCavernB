@@ -106,7 +106,7 @@ export function SoundLibrary({ projectId, projectTitle, userId, canTag }: { proj
         <input
           type="search" value={filter.text} placeholder="Search the library" aria-label="Search the library"
           onChange={(e) => setFilter({ ...filter, text: e.target.value })}
-          className={`${select} min-w-[200px]`}
+          className={`${select} min-w-0 flex-1 basis-[200px]`}
         />
         <select aria-label="Kind" value={filter.kind} onChange={(e) => setFilter({ ...filter, kind: e.target.value as LibraryFilter['kind'] })} className={select}>
           <option value="all">All kinds</option><option value="song">Songs</option><option value="sound">Sound files</option>
@@ -136,7 +136,7 @@ export function SoundLibrary({ projectId, projectTitle, userId, canTag }: { proj
       {!ready ? (
         <div className="animate-pulse h-16 w-full rounded-xl bg-[var(--sunken)]" />
       ) : items.length === 0 ? (
-        <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
+        <div className="p-6 md:p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
           <Music size={32} className="opacity-20 mb-4 mx-auto" />
           <h3 className="mc-title text-lg mb-2">The library is empty</h3>
           <p className="mc-text text-sm text-[var(--fg-dim)]">Find a song and save it, or upload a sound file, and it lives here.</p>

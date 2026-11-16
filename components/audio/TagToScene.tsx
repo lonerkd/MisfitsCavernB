@@ -48,7 +48,7 @@ export function TagToScene(p: {
         aria-label={`Scene for ${p.track.name}`}
         value={sceneId}
         onChange={(e) => setSceneId(e.target.value)}
-        className="mc-text text-xs flex-1 min-w-0 rounded-lg px-2 py-1.5 bg-[var(--bg-2)] text-[var(--fg)] border border-[rgba(var(--ink-rgb),0.1)]"
+        className="mc-text text-xs flex-1 min-w-0 rounded-lg px-2 py-1.5 min-h-[44px] bg-[var(--bg-2)] text-[var(--fg)] border border-[rgba(var(--ink-rgb),0.1)]"
       >
         <option value="">Tag to a scene…</option>
         {p.scenes.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
@@ -57,7 +57,7 @@ export function TagToScene(p: {
         type="button"
         disabled={!sceneId || busy}
         onClick={() => void place()}
-        className="mc-text text-xs inline-flex items-center gap-1 rounded-lg px-3 py-1.5 border border-[rgba(var(--ink-rgb),0.12)] text-[var(--fg-strong)] hover:bg-[rgba(var(--ink-rgb),0.08)] disabled:opacity-40"
+        className="mc-text text-xs inline-flex items-center gap-1 rounded-lg px-3 py-1.5 min-h-[44px] border border-[rgba(var(--ink-rgb),0.12)] text-[var(--fg-strong)] hover:bg-[rgba(var(--ink-rgb),0.08)] disabled:opacity-40"
       >
         <Tag size={12} /> {busy ? 'Tagging…' : 'Tag'}
       </button>

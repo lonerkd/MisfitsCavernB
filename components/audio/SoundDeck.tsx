@@ -6,6 +6,7 @@ import { Disc, LogOut, Maximize2, Pause, Play, RefreshCw, SkipBack, SkipForward,
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { useCavern } from '@/lib/cavern/CavernContext';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 import { ListenWithoutPremium } from './ListenWithoutPremium';
 
 const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
@@ -20,14 +21,15 @@ export function SoundDeck() {
   const s = useSpotify();
   const { toast } = useToast();
   const cavern = useCavern();
+  const { phone, landscape } = usePhoneLayout();
   const track = s.currentTrack;
   const art = track?.album?.images?.[0]?.url;
 
   return (
-    <section aria-label="Now playing" className="mb-8 rounded-2xl border border-[rgba(var(--ink-rgb),0.08)] bg-[var(--sunken)] p-4 md:p-5">
-      <div className="flex flex-wrap items-center gap-4">
-        {art ? <Image src={art} alt="" width={64} height={64} className="rounded-lg object-cover shrink-0" />
-          : <div className="w-16 h-16 rounded-lg bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center shrink-0"><Disc size={22} className="opacity-40" /></div>}
+    <section aria-label="Now playing" className={`${phone ? 'mb-4 p-3' : 'mb-8 p-4 md:p-5'} rounded-2xl border border-[rgba(var(--ink-rgb),0.08)] bg-[var(--sunken)]`} data-compact={phone ? (landscape ? 'landscape' : 'portrait') : undefined}>
+      <div className={`flex flex-wrap items-center ${phone ? 'gap-3' : 'gap-4'}`}>
+        {art ? <Image src={art} alt="" width={64} height={64} className={`${phone ? 'w-12 h-12' : 'w-16 h-16'} rounded-lg object-cover shrink-0`} />
+          : <div className={`${phone ? 'w-12 h-12' : 'w-16 h-16'} rounded-lg bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center shrink-0`}><Disc size={22} className="opacity-40" /></div>}
         <div className="min-w-0 flex-1 basis-48">
           <div className="mc-title text-lg truncate">{track?.name ?? 'Nothing playing'}</div>
           <div className="mc-text text-xs text-[var(--fg-dim)] truncate">
@@ -40,23 +42,23 @@ export function SoundDeck() {
             </div>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className={`flex items-center gap-2 ${phone ? 'w-full justify-between' : ''}`}>
           <button type="button" aria-label="Previous track" className={btn} onClick={s.prevTrack}><SkipBack size={18} /></button>
           <button type="button" aria-label={s.isPlaying ? 'Pause' : 'Play'} className={`${btn} bg-[var(--fg)] text-[var(--bg)] border-transparent min-w-[52px] min-h-[52px]`} onClick={s.togglePlay}>
             {s.isPlaying ? <Pause size={20} fill="currentColor" /> : <Play size={20} fill="currentColor" />}
           </button>
           <button type="button" aria-label="Next track" className={btn} onClick={s.nextTrack}><SkipForward size={18} /></button>
           <button type="button" aria-label="Full screen cavern" title="Full screen" className={btn} onClick={cavern.open}><Maximize2 size={16} /></button>
-          <Link href="/cavern" className="mc-text text-xs underline text-[var(--fg-muted)] min-h-[44px] inline-flex items-center" title="The cavern as its own page, to leave open on a second screen">Cavern page</Link>
+          {!phone && <Link href="/cavern" className="mc-text text-xs underline text-[var(--fg-muted)] min-h-[44px] inline-flex items-center" title="The cavern as its own page, to leave open on a second screen">Cavern page</Link>}
         </div>
       </div>
       <div className="mt-3 flex items-center gap-3 mc-text text-xs text-[var(--fg-muted)]">
-        <span className="tabular-nums w-10 text-right">{mmss(s.progressMs)}</span>
+        <span className="tabular-nums w-9 shrink-0 text-right">{mmss(s.progressMs)}</span>
         <input type="range" aria-label="Position in the song" min={0} max={Math.max(1, s.durationMs)} step={1000} disabled={!s.durationMs}
-          value={Math.min(s.progressMs, s.durationMs || 0)} onChange={(e) => s.seek(Number(e.target.value))} className="flex-1" style={{ height: 44 }} />
-        <span className="tabular-nums w-10">{mmss(s.durationMs)}</span>
-        <Volume2 size={14} aria-hidden className="hidden sm:block" />
-        <input type="range" aria-label="Volume" min={0} max={1} step={0.01} value={s.volume} onChange={(e) => s.setVolumeLevel(Number(e.target.value))} className="hidden sm:block w-24" style={{ height: 44 }} />
+          value={Math.min(s.progressMs, s.durationMs || 0)} onChange={(e) => s.seek(Number(e.target.value))} className="flex-1 min-w-0" style={{ height: 44 }} />
+        <span className="tabular-nums w-9 shrink-0">{mmss(s.durationMs)}</span>
+        {!phone && <Volume2 size={14} aria-hidden className="hidden sm:block" />}
+        {!phone && <input type="range" aria-label="Volume" min={0} max={1} step={0.01} value={s.volume} onChange={(e) => s.setVolumeLevel(Number(e.target.value))} className="hidden sm:block w-24" style={{ height: 44 }} />}
       </div>
       {/* What the corner player's panel used to hold: which player Spotify is using, and signing out. */}
       <details className="mt-3 mc-text text-xs text-[var(--fg-muted)]">
