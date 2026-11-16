@@ -18,6 +18,9 @@ import {
   SCRIPT_TEXT_FIELD,
   scriptTextStateKey,
   seedScriptText,
+  YJS_SYNC_EVENT,
+  YJS_SYNC_REQUEST_EVENT,
+  YJS_UPDATE_EVENT,
   type PersistedScriptText,
 } from './cowriting';
 
@@ -30,9 +33,6 @@ export interface Collaborator {
 
 const CURSOR_COLORS = ['#ff6b00', '#00cc66', '#0099ff', '#a855f7', '#ec4899', '#eab308'];
 const colorForUser = (userId: string) => CURSOR_COLORS[Math.abs(userId.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % CURSOR_COLORS.length];
-const YJS_UPDATE_EVENT = 'yjs_update';
-const YJS_SYNC_REQUEST_EVENT = 'yjs_sync_request';
-const YJS_SYNC_EVENT = 'yjs_sync';
 
 export function useScriptSync(scriptId: string, localContent: string, onRemoteChange: (content: string, mapIndex?: (index: number) => number) => void) {
   const [isSyncing, setIsSyncing] = useState(false);
