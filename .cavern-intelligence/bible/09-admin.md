@@ -16,7 +16,7 @@ every admin read goes through a function or policy that checks
 | `/admin/reports` | what people flagged (messages, jobs, profiles), newest first, open / resolved / dismissed, who reported and why, a link to the job or profile; close each as resolved or dismissed; a reported job can be closed from the queue (`admin_close_job`), and a reported message read and hidden or brought back (`admin_reported_message`, `admin_hide_message`) — both recorded in the audit log. An admin reads only messages that were reported. Anyone signed in can file a report (the flag on a message, a job, a profile); only an admin reads them all | `reports` |
 | `/admin/channel-presets` | the channels the Lounge suggests to a production by phase: add one (name, type, who sees it, who posts, phase, topic, why), remove one (confirmed); channels already made from it stay. Everyone reads; only an admin writes (RLS) | `channel_presets` |
 | `/admin/formats` | the kinds of project people can start: add one (name, one line, icon, the script format it opens, which phases it skips), remove one (confirmed); projects already made keep their format. Phase labels and skipped milestones stay as migrations for now. Everyone reads; only an admin writes (RLS) | `project_formats` |
-| `/admin/brief-questions` | the questions every project's brief asks: add one (words, hint, phase, choices or a number range), remove one (confirmed, and the confirm says how many projects' answers go with it). What a choice implies stays a migration. Everyone reads; only an admin writes (RLS) | `brief_questions`, `project_brief` |
+| `/admin/brief-questions` | the questions every project's brief asks: add one (words, hint, phase, choices or a number range), remove one (confirmed, the confirm says how many projects' answers go with it, and an audit-log entry records it); edit a question's words and hint; move it up or down inside its phase (buttons, so the keyboard works); set what each choice implies (roles, breakdown categories, channels, pages per day), how a script shows it (words, a young character, night exteriors) and when the question is asked (formats, an earlier answer), all checked in words before saving. Everyone reads; only an admin writes (RLS) | `brief_questions`, `project_brief` |
 | `/admin/errors` | <img src="screens/admin-errors--desktop.webp" width="420"> | <img src="screens/admin-errors--phone.webp" width="140"> |
 | `/admin/audit-logs` | <img src="screens/admin-audit-logs--desktop.webp" width="420"> | <img src="screens/admin-audit-logs--phone.webp" width="140"> |
 
@@ -41,8 +41,8 @@ every admin read goes through a function or policy that checks
 ## Known gaps
 
 - Every catalogue has an admin screen (`/admin/crafts`, `/admin/channel-presets`,
-  `/admin/formats`, `/admin/brief-questions`). Brief questions can't be edited
-  in place, and what an option implies is still a migration (3.14).
+  `/admin/formats`, `/admin/brief-questions`). Brief questions are edited in place
+  (words, order, implies, detect, ask_when; `20261116000400`). Left: editing an option's label or adding and removing options of an existing question, and changing a question's phase or kind (3.14).
 - Moderation: reports are filed and settled in `/admin/reports`; an admin can close a reported job, read and hide a reported message, and suspend an account from `/admin/users` (each recorded in the audit log). Settling one (resolved or dismissed) tells the reporter in-app, naming only the kind of thing (`internal.reports_notify_outcome`, `20261115000700`). Left: reporting from more places (3.14).
 - The audit log's on-screen search narrows only the page loaded (50 rows);
   "Export all matches" searches the whole log in the database. Moving the

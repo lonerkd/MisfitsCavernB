@@ -1,0 +1,9 @@
+# Session — 2026-11-16: edit, reorder and audit brief questions (BACKLOG 3.14)
+
+**Built:** `/admin/brief-questions` now lets an admin edit a question's words and hint, move it up or down inside its phase (real buttons, so the keyboard works), and set `ask_when` and each option's `implies` / `detect` with checked inputs (`lib/brief/rules.ts`: roles, channels and formats against their catalogues when they loaded; an earlier question and its option ids must exist; a question cannot depend on itself; numbers in range). Removing a question writes an audit-log entry (`admin_remove_brief_question`, with the label, phase and how many answers went). Each save and move checks its error and toasts.
+
+**Database:** migration `20261116000400_brief_question_admin_rpcs.sql` adds two admin-only definer functions, `admin_move_brief_question(key, direction)` (renumbers the phase 10, 20, 30… then swaps, atomic) and `admin_remove_brief_question(key)` (delete plus audit row). Editing is a plain `UPDATE` under the existing admin policy. Both functions are on the allowlist (`database-and-security.md` §2.D), the fingerprint and `database.types.ts` were updated by hand (no Docker here: the function body hashes were computed from the migration text and checked against a known function first), and persona tests were added to `tests/integration/brief-questions-admin.test.ts` (admin ✅; crew, outsider and anon ❌; move among equal positions; edit; removal logged).
+
+**After merge:** apply `20261116000400` to production, then staging, then run the drift check. If CI's `database` job reports a fingerprint diff, run `npm run db:drift -- --update` and commit the result.
+
+**Not verified:** the migration and the persona tests have not run (no Docker locally; CI's `database` job runs them); the page was not looked at in a browser. **Left (S):** editing an option's label or adding and removing options of an existing question, changing a question's phase or kind.
