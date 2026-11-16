@@ -204,7 +204,10 @@ export default function MobileTabBar() {
 
   return (
     <>
-      <nav className={`${m.pill} ${keyboard ? m.hidden : ''}`} aria-label="Suite" data-mobile-tabbar>
+      {/* While the keyboard is up the pill steps aside (the island does the same): slid off and made inert, so it is neither
+          tappable nor reachable by Tab / a screen reader, and it comes back when the keyboard closes. */}
+      <nav className={`${m.pill} ${keyboard ? m.hidden : ''}`} aria-label="Suite" data-mobile-tabbar data-keyboard={keyboard ? 'up' : 'down'}
+        aria-hidden={keyboard || undefined} inert={keyboard}>
         {route.back && (
           <Link href={route.back.href} className={m.pillBack} aria-label={`Back to ${route.back.label}`}><ChevronLeft size={20} aria-hidden /></Link>
         )}
