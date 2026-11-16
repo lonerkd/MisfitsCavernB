@@ -1,0 +1,3 @@
+# Session - 2026-11-16: the private-corpus measuring script lands
+
+`scripts/private-corpus.mjs` measures screenplay import quality over a local library of PDFs in `.private-corpus/` (git-ignored; nothing from it is ever written into the repository). It classifies each file first (scanned, sparse, encoding, read), then counts pages, elements, scenes, cast, glued words and the three failure signatures (text with no dialogue, no cast, no scenes). It had sat on a local commit since 2026-11-02 and was the only thing from a long-unpushed local `main` that was not already on `origin/main`; it is the measuring tool behind BACKLOG 3.20 "Real PDFs" and 3.21's private corpus. No app code, no migration.
