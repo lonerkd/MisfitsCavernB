@@ -15,7 +15,7 @@ import { pathToFileURL } from 'node:url';
 
 // Source: the app, the engine, the auth gate, edge functions and the scripts CI itself runs.
 const SRC = /^((app|components|lib|scripts|supabase\/functions)\/.+\.(ts|tsx|js|mjs|jsx)|proxy\.ts)$/;
-const TEST = /(.test.(ts|tsx|mjs|js)$|^tests/|^e2e/)/;
+const TEST = /(\.test\.(ts|tsx|mjs|js)$|^tests\/|^e2e\/)/;
 const GENERATED = /^(lib\/supabase\/database\.types\.ts|supabase\/schema\.fingerprint|\.cavern-intelligence\/|package-lock\.json|eslint-suppressions\.json|performance-budget\.json)/;
 const SESSIONS = /^\.cavern-intelligence\/sessions\/[^/]+\.md$/;
 const MIGRATION = /^supabase\/migrations\/[^/]+\.sql$/;
