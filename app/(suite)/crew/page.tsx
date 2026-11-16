@@ -150,7 +150,7 @@ export default function CrewPage() {
               <div role="group" aria-label="Availability" style={{ display: 'flex', gap: 6 }}>
                 {(['all', 'OPEN', 'BUSY'] as const).map(a => (
                   <button key={a} type="button" aria-pressed={availFilter === a} onClick={() => setAvailFilter(a)}
-                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'rgba(0,255,0,0.12)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? '#00ff00' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    style={{ minHeight: 40, borderRadius: 8, padding: '8px 14px', background: availFilter === a ? (a === 'OPEN' ? 'color-mix(in srgb, var(--ok) 12%, transparent)' : a === 'BUSY' ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.08)') : 'transparent', border: `1px solid ${availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.3)') : 'rgba(var(--ink-rgb), 0.1)'}`, color: availFilter === a ? (a === 'OPEN' ? 'var(--ok)' : a === 'BUSY' ? 'var(--accent)' : 'var(--fg)') : 'var(--fg-dim)', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                     {a === 'all' ? 'ALL' : a}
                   </button>
                 ))}
@@ -244,7 +244,7 @@ function CrewCard({ member, online }: { member: DisplayMember; online: boolean }
             <div style={{ marginLeft: 'auto' }}>
               <span style={{
                 fontSize: 'max(9px, var(--mc-min-font, 0px))', padding: '3px 8px',
-                border: `1px solid ${member.statusOpen ? '#00ff00' : '#666'}`,
+                border: `1px solid ${member.statusOpen ? 'var(--ok)' : '#666'}`,
                 color: member.statusOpen ? 'var(--ok)' : 'var(--fg-dim)',
                 fontFamily: 'var(--mono)'
               }}>

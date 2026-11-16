@@ -122,7 +122,8 @@ export default function StudioPage() {
     activeProject
       ? {
           module: 'studio',
-          title: activeProject.title,
+          // The pill and the Everything sheet already name the project; the page is the Studio (it used to say the project twice).
+          title: 'Studio',
           accent: activeProject.accent_color || '#6366f1',
           fields: [{ label: 'Tab', value: tabs.find((t) => t.id === tab)?.label ?? '', color: 'var(--violet)' }],
           actions: [
