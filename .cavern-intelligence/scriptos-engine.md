@@ -29,6 +29,11 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
 - **One channel per script** (`script_<id>`): Supabase Realtime broadcasts
   incremental Yjs `Y.Text` updates; presence still carries each writer's line
   and username, and carets use `broadcastCursor`.
+- **The offline queue tells open editors** (`lib/scriptos/broadcast.ts`): after its
+  compare-and-set write of a merged document it broadcasts the merged state as a
+  `yjs_sync` message on the same channel, so an editor open elsewhere applies it
+  at once. Above 200,000 characters (Realtime's payload limit) it skips this and
+  the editor merges at its next save.
 - **Durable state**: the editor persists the serialized text in
   `scripts.content` and the companion Yjs state in `scripts.yjs_state`. New
   sessions load the row's state, while IndexedDB keeps each device's Yjs state
