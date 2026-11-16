@@ -33,6 +33,8 @@ export interface PrintDoc {
   meta?: Array<[label: string, value: string | number | null | undefined]>;
   /** The project's accent colour, #rrggbb; anything else falls back to the house colour. */
   accent?: string | null;
+  /** The project's logo (an https image link): shown small, top-left, beside the title. Anything else shows nothing. */
+  logo?: string | null;
   blocks: PrintBlock[];
   /** Left side of the footer, e.g. the project name or a link. */
   footer?: string;
@@ -119,8 +121,12 @@ export function printHtml(doc: PrintDoc): string {
   const accent = safeAccent(doc.accent);
   const page = `${doc.paper === 'a4' ? 'A4' : 'Letter'} ${doc.orientation === 'landscape' ? 'landscape' : 'portrait'}`;
   const meta = (doc.meta ?? []).filter(([, v]) => hasValue(v));
+  // Branding is added only when the project has it: with neither an accent nor a logo the document is exactly the house look.
+  const branded = accent !== HOUSE_ACCENT;
+  const rule = branded ? 'rulehead' : 'ink';
+  const logo = typeof doc.logo === 'string' ? safeImage(doc.logo) : null;
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>${esc(doc.title)}</title><style>
-  :root{--ink:#16130f;--soft:#5d574d;--faint:#8b8478;--rule:#d9d3c6;--wash:#f6f2e9;--accent:${accent}}
+  :root{--ink:#16130f;--soft:#5d574d;--faint:#8b8478;--rule:#d9d3c6;--wash:#f6f2e9;--accent:${accent}${branded ? `;--rulehead:${accent}` : ''}}
   *{box-sizing:border-box}
   @page{size:${page};margin:16mm 15mm 20mm;@bottom-left{content:${cssString(doc.footer ?? '')};font:7.5pt -apple-system,Helvetica,Arial,sans-serif;color:#8b8478;vertical-align:top;padding-top:4mm}@bottom-right{content:${cssString(`${doc.generated ? `Made with The Cavern · ${doc.generated} · ` : 'Made with The Cavern · '}`)} "Page " counter(page) " of " counter(pages);font:7.5pt -apple-system,Helvetica,Arial,sans-serif;color:#8b8478;vertical-align:top;padding-top:4mm}}
   html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
@@ -139,10 +145,10 @@ export function printHtml(doc: PrintDoc): string {
   .facts dt{font-size:7.5pt;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}.facts dd{margin:1pt 0 0;font-weight:600;overflow-wrap:anywhere}
   table{width:100%;border-collapse:collapse;margin:0 0 10pt;font-size:9.5pt}
   thead{display:table-header-group}tfoot{display:table-footer-group}
-  th{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:left;border-bottom:1.25pt solid var(--ink);padding:4pt 6pt}
+  th{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:left;border-bottom:1.25pt solid var(--${rule});padding:4pt 6pt}
   td{padding:4.5pt 6pt;border-bottom:.5pt solid var(--rule);vertical-align:top;overflow-wrap:anywhere}
   tr{break-inside:avoid}tbody tr:nth-child(even) td{background:var(--wash)}
-  tfoot td{font-weight:700;border-top:1.25pt solid var(--ink);border-bottom:none}
+  tfoot td{font-weight:700;border-top:1.25pt solid var(--${rule});border-bottom:none}
   .right{text-align:right}.center{text-align:center}
   .list{margin:0 0 10pt;padding-left:16pt}.list li{margin:0 0 3pt}
   .tags{display:flex;flex-wrap:wrap;gap:4pt;margin:0 0 10pt}.tags span{border:.75pt solid var(--rule);border-radius:99pt;padding:1.5pt 8pt;font-size:8.5pt;color:var(--soft)}
@@ -151,12 +157,12 @@ export function printHtml(doc: PrintDoc): string {
   .cols{display:grid;gap:0 22pt;margin:0 0 6pt}.cols-2{grid-template-columns:1fr 1fr}.cols-3{grid-template-columns:1fr 1fr 1fr}
   figure{margin:0 0 10pt;break-inside:avoid}figure img{max-width:100%;display:block;border-radius:2pt}figcaption{font-size:8.5pt;color:var(--faint);margin-top:3pt}
   figure.qr{display:inline-block;text-align:center;margin:0 0 10pt}figure.qr svg{display:block}
-  .pb{break-after:page}
+  ${logo ? 'header.top .brand{display:flex;align-items:center;gap:12pt}header.top .brand>div{min-width:0}img.logo{height:30pt;max-width:90pt;object-fit:contain;flex:none}\n  ' : ''}.pb{break-after:page}
   footer.foot{display:flex;justify-content:space-between;gap:12pt;border-top:.5pt solid var(--rule);padding-top:4pt;margin-top:24pt;font-size:7.5pt;color:var(--faint)}
   @media print{footer.foot{display:none}}
   @media screen{body{max-width:820px;margin:24px auto;padding:0 28px 60px}}
   </style></head><body>
-  <header class="top"><p class="kind">${esc(doc.kind)}</p><h1>${esc(doc.title)}</h1>${doc.subtitle ? `<p class="sub">${esc(doc.subtitle)}</p>` : ''}
+  <header class="top">${logo ? `<div class="brand"><img class="logo" src="${esc(logo)}" alt=""><div>` : ''}<p class="kind">${esc(doc.kind)}</p><h1>${esc(doc.title)}</h1>${doc.subtitle ? `<p class="sub">${esc(doc.subtitle)}</p>` : ''}${logo ? '</div></div>' : ''}
   ${meta.length ? `<dl class="meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : ''}</header>
   <main>${doc.blocks.map(block).join('')}</main>
   <footer class="foot"><span>${esc(doc.footer ?? '')}</span><span>${esc(doc.generated ? `Made with The Cavern · ${doc.generated}` : 'Made with The Cavern')}</span></footer>
