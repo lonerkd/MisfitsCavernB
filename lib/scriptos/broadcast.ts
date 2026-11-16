@@ -1,10 +1,5 @@
 import { YJS_SYNC_EVENT } from './cowriting';
-
-/**
- * Supabase Realtime refuses a broadcast over its payload limit (250 KB on the free plan). Leave room for the
- * envelope: an update whose base64 text is longer than this is not sent.
- */
-export const MAX_BROADCAST_UPDATE_CHARS = 200_000;
+import { toWirePayloads } from './chunks';
 
 const SUBSCRIBE_TIMEOUT_MS = 5_000;
 
@@ -20,7 +15,7 @@ export interface BroadcastClient {
   getChannels?(): { topic: string }[];
 }
 
-export type BroadcastResult = 'sent' | 'too-large' | 'failed' | 'editor-open-here';
+export type BroadcastResult = 'sent' | 'failed' | 'editor-open-here';
 
 /**
  * After the offline queue merged its edits into the server's shared document, tell editors already open on the
@@ -28,11 +23,10 @@ export type BroadcastResult = 'sent' | 'too-large' | 'failed' | 'editor-open-her
  * provider sends when asked for the state (`yjs_sync`), so they apply it as they apply any update.
  *
  * Never throws and never blocks the queue: the merge is already saved, and an editor that misses this still
- * merges the stored state at its next save. That is also the answer to an update too large for Realtime: it is
- * skipped, not split.
+ * merges the stored state at its next save. A state too large for one Realtime message is sent as numbered chunks
+ * (`chunks.ts`), which the live provider reassembles.
  */
 export async function broadcastMergedUpdate(client: BroadcastClient, scriptId: string, encodedState: string): Promise<BroadcastResult> {
-  if (encodedState.length > MAX_BROADCAST_UPDATE_CHARS) return 'too-large';
   // `channel(topic)` returns the channel already open for that topic. If an editor in this tab has the script's
   // channel, it is that editor's live co-writing channel: it already syncs the merge, and removing it below would
   // cut the editor off. So leave it alone.
@@ -48,8 +42,11 @@ export async function broadcastMergedUpdate(client: BroadcastClient, scriptId: s
         else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') { clearTimeout(timer); reject(new Error(status)); }
       });
     });
-    const status = await ch.send({ type: 'broadcast', event: YJS_SYNC_EVENT, payload: { update: encodedState } });
-    return status === 'ok' ? 'sent' : 'failed';
+    for (const payload of toWirePayloads(encodedState)) {
+      const status = await ch.send({ type: 'broadcast', event: YJS_SYNC_EVENT, payload });
+      if (status !== 'ok') return 'failed';
+    }
+    return 'sent';
   } catch (error) {
     console.warn('[Offline Sync] Could not tell open editors about the merge:', error);
     return 'failed';
