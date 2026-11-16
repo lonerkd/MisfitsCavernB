@@ -28,7 +28,7 @@ import { plain } from '@/lib/film/mentions';
 
 const FESTIVAL_STATUSES: FestivalRow['status'][] = ['planned', 'submitted', 'accepted', 'rejected'];
 const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
-  planned: '#6b7280', submitted: '#f59e0b', accepted: '#10b981', rejected: '#ef4444',
+  planned: '#6b7280', submitted: 'var(--warn)', accepted: 'var(--ok)', rejected: 'var(--danger)',
 };
 
 const MINI_INPUT: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', colorScheme: 'dark' };
@@ -276,7 +276,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           {tasks.map(t => (
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
-              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? '#10b981' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
+              <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
               <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{mentionsOn ? <MentionText text={t.title} projectId={projectId} entities={entities.rows} /> : t.title}</span>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
@@ -406,7 +406,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
                 disabled={!isOwner}
                 onChange={e => setFestivalStatus(f.id, e.target.value as FestivalRow['status'])}
                 aria-label={`${f.name} submission status`}
-                style={{ background: `${FESTIVAL_STATUS_COLOR[f.status]}18`, border: `1px solid ${FESTIVAL_STATUS_COLOR[f.status]}40`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)' }}
+                style={{ background: `color-mix(in srgb, ${FESTIVAL_STATUS_COLOR[f.status]} 9%, transparent)`, border: `1px solid color-mix(in srgb, ${FESTIVAL_STATUS_COLOR[f.status]} 25%, transparent)`, color: FESTIVAL_STATUS_COLOR[f.status], borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', textTransform: 'var(--caps)' }}
               >
                 {FESTIVAL_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>

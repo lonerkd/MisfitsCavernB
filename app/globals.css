@@ -123,7 +123,7 @@
   --jobs-color:      #8b5cf6;
 
   /* Status — theme-independent. Green means online, done or success. */
-  --success: #10b981;
+  --success: var(--ok);
 
   /* Motion */
   --ease-expo:   cubic-bezier(0.16, 1, 0.3, 1);

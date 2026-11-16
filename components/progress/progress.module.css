@@ -74,7 +74,7 @@
   width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid rgba(var(--fg-rgb), 0.3);
   display: grid; place-items: center; margin-top: 1px; color: transparent;
 }
-.checkDone { background: #10b981; border-color: #10b981; color: #04130d; }
+.checkDone { background: var(--ok); border-color: var(--ok); color: var(--bg); }
 .mLabel { font-family: var(--mono); font-size: 11px; color: var(--fg); }
 .milestoneDone .mLabel { color: var(--fg-muted); text-decoration: line-through; text-decoration-color: rgba(var(--fg-rgb), 0.35); }
 .mHint { font-family: var(--mono); font-size: max(9.5px, var(--mc-min-font, 0px)); color: var(--fg-dim); margin-top: 3px; line-height: 1.45; }

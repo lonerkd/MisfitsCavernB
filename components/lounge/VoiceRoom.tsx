@@ -28,7 +28,7 @@ export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string;
         <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', justifyContent: 'center' }}>
           {everyone.map(m => (
             <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-              <div style={{ border: `2px solid ${m.speaking ? '#10b981' : 'rgba(var(--ink-rgb), 0.15)'}`, borderRadius: '50%', boxShadow: m.speaking ? '0 0 18px rgba(16,185,129,0.6)' : 'none', transition: 'border-color 0.15s, box-shadow 0.15s' }}>
+              <div style={{ border: `2px solid ${m.speaking ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.15)'}`, borderRadius: '50%', boxShadow: m.speaking ? '0 0 18px rgba(16,185,129,0.6)' : 'none', transition: 'border-color 0.15s, box-shadow 0.15s' }}>
                 <Avatar src={m.avatar} name={m.name} size={56} />
               </div>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-muted)' }}>
@@ -42,7 +42,7 @@ export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string;
         <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? (live ? 'Waiting for others to join…' : 'Connecting…') : 'No one here yet'}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-        <button onClick={() => { if (joined) call.leave(); else if (me) call.join({ id: channel.id, name: channel.name }, me); }} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : '#10b981', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => { if (joined) call.leave(); else if (me) call.join({ id: channel.id, name: channel.name }, me); }} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : 'var(--ok)', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>
           <Volume2 size={14} /> {joined ? 'LEAVE VOICE' : elsewhere ? `MOVE HERE FROM ${elsewhere.toUpperCase()}` : 'JOIN VOICE'}
         </button>
         {joined && (

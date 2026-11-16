@@ -102,7 +102,7 @@ export function PostModal({ onClose, onCreated, userId, projectId, projectTitle,
           background: projectId ? 'rgba(16,185,129,0.06)' : 'rgba(245,158,11,0.06)',
           border: `1px solid ${projectId ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)'}`,
         }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? '#10b981' : '#f59e0b', flexShrink: 0 }} />
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: projectId ? 'var(--ok)' : 'var(--warn)', flexShrink: 0 }} />
           <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>
             {projectId ? <>Posting for <strong style={{ color: 'var(--fg)' }}>{projectTitle}</strong></> : 'No active project selected — this posting won’t be linked to a project'}
             {character && <> · casting call for <strong style={{ color: 'var(--fg)' }}>{character}</strong> — accepting someone casts them in the role</>}

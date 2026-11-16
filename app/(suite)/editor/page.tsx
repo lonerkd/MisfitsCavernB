@@ -1455,7 +1455,7 @@ export default function EditorPage() {
           }}>
             <span style={{
               width: 5, height: 5, borderRadius: '50%',
-              background: isSyncing ? '#6366f1' : '#10b981',
+              background: isSyncing ? 'var(--violet)' : 'var(--ok)',
               animation: isSyncing ? 'pulse 1.5s ease-in-out infinite' : 'none',
               display: 'inline-block',
             }} />

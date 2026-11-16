@@ -153,7 +153,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
     <li className={s.panel} style={{ padding: 0 }}>
       <button type="button" onClick={onToggle} aria-expanded={expanded} aria-controls={id}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
-        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: ready.ready ? '#10b981' : rec ? '#f59e0b' : 'rgba(var(--ink-rgb), 0.25)' }} aria-hidden />
+        <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: ready.ready ? 'var(--ok)' : rec ? 'var(--warn)' : 'rgba(var(--ink-rgb), 0.25)' }} aria-hidden />
         <span style={{ flex: 1, minWidth: 0 }}>
           <span style={{ display: 'block', fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{row.name}</span>
           <span className={s.hint}>{summary}{rec?.address ? ` · ${rec.address}` : ''}</span>
