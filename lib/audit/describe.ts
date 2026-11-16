@@ -26,6 +26,7 @@ const SENTENCES: Record<string, string> = {
   admin_unhide_message: 'Brought a message back (admin)',
   admin_suspend_user: 'Suspended an account (admin)',
   admin_unsuspend_user: 'Lifted a suspension (admin)',
+  admin_remove_brief_question: 'Removed a brief question (admin)',
 };
 
 /** The action a log row records, in words. An unknown action reads as its own name, lower-cased. */

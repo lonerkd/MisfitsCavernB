@@ -7,6 +7,7 @@ describe('describeAction', () => {
     expect(describeAction('admin_close_job')).toBe('Closed a reported job (admin)');
     expect(describeAction('admin_suspend_user')).toBe('Suspended an account (admin)');
     expect(describeAction('admin_unsuspend_user')).toBe('Lifted a suspension (admin)');
+    expect(describeAction('admin_remove_brief_question')).toBe('Removed a brief question (admin)');
     expect(describeAction('admin_hide_message')).toBe('Hid a reported message (admin)');
   });
   it('reads an unknown action as itself, with what it was about', () => {

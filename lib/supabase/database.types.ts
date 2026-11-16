@@ -5390,6 +5390,10 @@ export type Database = {
           username: string;
         }[];
       };
+      admin_move_brief_question: {
+        Args: { p_direction: number; p_key: string };
+        Returns: undefined;
+      };
       admin_platform_analytics: {
         Args: { p_since: string };
         Returns: {
@@ -5397,6 +5401,10 @@ export type Database = {
           avg_project_days: number;
           completed_projects: number;
         }[];
+      };
+      admin_remove_brief_question: {
+        Args: { p_key: string };
+        Returns: undefined;
       };
       admin_reported_message: {
         Args: { p_report: string };

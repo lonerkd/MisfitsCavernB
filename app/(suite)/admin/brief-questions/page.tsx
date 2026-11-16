@@ -3,17 +3,20 @@
 // /admin/brief-questions — the questions every project's brief asks
 // (public.brief_questions): a phase, the words, and the choices or the number
 // range. Admins add and remove them without a deploy. Removing one deletes
-// every project's answer to it, so the page says how many before it asks.
-// What a choice implies for the suite (`implies`, `detect`, `ask_when`) is still
-// set by migration.
+// every project's answer to it, so the page says how many before it asks (and
+// the database writes an audit-log entry). Admins also edit a question's words,
+// reorder questions inside a phase, and set what each choice implies for the
+// suite (`implies`, `detect`) and when a question is asked (`ask_when`).
 
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus } from 'lucide-react';
 import { ProtectedPage } from '@/lib/os';
 import { useLoad } from '@/lib/hooks/useLoad';
 import { loadQuestions, resetQuestions } from '@/lib/brief';
-import { addQuestion, countAnswers, removeQuestion } from '@/lib/supabase/admin-brief';
+import { addQuestion, countAnswers, loadRuleVocab, moveQuestion, removeQuestion, updateQuestion } from '@/lib/supabase/admin-brief';
+import { BriefQuestionRow, type QuestionPatch } from '@/components/admin/BriefQuestionRow';
+import type { RuleVocab } from '@/lib/brief/rules';
 import { BRIEF_KINDS, BRIEF_PHASES, checkQuestion, type QuestionInput } from '@/lib/brief/check';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -30,6 +33,10 @@ export default function AdminBriefQuestionsPage() {
   const questions = useMemo(() => loaded.data ?? [], [loaded.data]);
   const [draft, setDraft] = useState<QuestionInput>({ ...EMPTY });
   const [busy, setBusy] = useState(false);
+  const [moving, setMoving] = useState(false);
+  const vocabLoad = useLoad('brief-rule-vocab', loadRuleVocab);
+  // Unknown until read: a name is then only checked for its shape, never refused for a catalogue we could not load.
+  const vocab: RuleVocab = vocabLoad.data ?? {};
 
   const add = async () => {
     const checked = checkQuestion(draft, questions.map((q) => q.key));
@@ -56,6 +63,20 @@ export default function AdminBriefQuestionsPage() {
     loaded.reload();
   };
 
+  const move = async (key: string, direction: -1 | 1) => {
+    setMoving(true);
+    const error = await moveQuestion(key, direction);
+    setMoving(false);
+    if (error) { toast(`Could not move it: ${error}`, 'error'); return; }
+    loaded.reload();
+  };
+
+  const save = async (key: string, patch: QuestionPatch) => {
+    const error = await updateQuestion(key, patch);
+    if (!error) loaded.reload();
+    return error;
+  };
+
   const isNumber = draft.kind === 'number';
 
   return (
@@ -63,7 +84,7 @@ export default function AdminBriefQuestionsPage() {
       <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 24px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
         <Link href="/admin" aria-label="Back to admin" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 13 }}><ArrowLeft size={14} aria-hidden /> Admin</Link>
         <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', margin: '12px 0 4px' }}>Brief questions</h1>
-        <p style={{ color: 'var(--fg-muted)', margin: '0 0 24px', maxWidth: '60ch' }}>What every project’s brief asks, phase by phase. New questions appear on every project; what an answer implies for the suite is set by migration.</p>
+        <p style={{ color: 'var(--fg-muted)', margin: '0 0 24px', maxWidth: '60ch' }}>What every project’s brief asks, phase by phase. New questions appear on every project. Edit a question to set what each answer implies and when it is asked.</p>
 
         <form onSubmit={(e) => { e.preventDefault(); void add(); }} aria-label="Add a question" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-end', marginBottom: 32 }}>
           <label style={label}>Question
@@ -100,20 +121,15 @@ export default function AdminBriefQuestionsPage() {
           <p style={{ color: 'var(--fg-muted)' }}>Loading…</p>
         ) : (
           BRIEF_PHASES.map((phase) => {
-            const inPhase = questions.filter((q) => q.phase === phase);
+            const inPhase = questions.filter((q) => q.phase === phase).sort((a, b) => a.position - b.position || a.key.localeCompare(b.key));
             if (!inPhase.length) return null;
             return (
               <section key={phase} aria-label={phase} style={{ marginBottom: 24 }}>
                 <h2 style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)', textTransform: 'uppercase', margin: '0 0 8px' }}>{phase}</h2>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {inPhase.map((q) => (
-                    <li key={q.key} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 14 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14 }}>{q.label} <span style={{ color: 'var(--fg-muted)', fontSize: 12 }}>· {q.key} · {q.kind === 'number' ? `${q.min_value}–${q.max_value}${q.unit ? ` ${q.unit}` : ''}` : `${q.options.length} options`}</span></div>
-                        {q.hint && <div style={{ fontSize: 13, color: 'var(--fg-muted)' }}>{q.hint}</div>}
-                      </div>
-                      <button type="button" aria-label={`Remove ${q.label}`} onClick={() => void remove(q.key, q.label)} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer', padding: 4 }}><Trash2 size={14} aria-hidden /></button>
-                    </li>
+                  {inPhase.map((q, i) => (
+                    <BriefQuestionRow key={q.key} q={q} all={questions} vocab={vocab} first={i === 0} last={i === inPhase.length - 1} moving={moving}
+                      onMove={(d) => void move(q.key, d)} onRemove={() => void remove(q.key, q.label)} onSave={(patch) => save(q.key, patch)} />
                   ))}
                 </ul>
               </section>
