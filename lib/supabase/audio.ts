@@ -115,6 +115,24 @@ export async function addAudioRef(ref: {
   if (error) throw error;
 }
 
+/**
+ * A Spotify track placed in a scene from Find: saved to the project and tagged in one step. If the project already has it,
+ * that saved track is tagged instead of saving a copy (a track has one scene, so it moves). Says what happened.
+ */
+export async function placeTrackInScene(t: { projectId: string; userId: string | null; uri: string; title: string; description: string; sceneId: string }): Promise<'tagged' | 'moved' | 'already'> {
+  const { data, error } = await supabase.from('project_audio_references').select('id, for_scene, role, tags')
+    .eq('project_id', t.projectId).eq('uri', t.uri).limit(1);
+  if (error) throw error;
+  const existing = data?.[0];
+  if (!existing) {
+    await addAudioRef({ projectId: t.projectId, userId: t.userId, type: 'spotify', uri: t.uri, title: t.title, description: t.description, sceneId: t.sceneId, role: 'temp', tags: [] });
+    return 'tagged';
+  }
+  if (existing.for_scene === t.sceneId) return 'already';
+  await tagAudioRef(existing.id, { sceneId: t.sceneId, role: (existing.role as AudioRole | null) ?? 'temp', tags: existing.tags ?? [] });
+  return existing.for_scene ? 'moved' : 'tagged';
+}
+
 export async function deleteAudioRef(id: string): Promise<void> {
   const { error } = await supabase.from('project_audio_references').delete().eq('id', id);
   if (error) throw error;
@@ -140,11 +158,11 @@ export async function listSpotifyRefs(projectId: string, limit = 20): Promise<{ 
 }
 
 /** A project's scenes in script order, labelled for a picker ("3 · INT. KITCHEN - DAY"). */
-export async function listSceneChoices(projectId: string): Promise<{ id: string; label: string }[]> {
-  const { data, error } = await supabase.from('scenes').select('id, scene_number, heading, title').eq('project_id', projectId)
+export async function listSceneChoices(projectId: string): Promise<{ id: string; label: string; scriptId: string | null }[]> {
+  const { data, error } = await supabase.from('scenes').select('id, scene_number, heading, title, script_id').eq('project_id', projectId)
     .order('scene_number', { ascending: true }).limit(500);
   if (error) throw error;
-  return (data ?? []).map((sc) => ({ id: sc.id, label: `${sc.scene_number ?? '·'} · ${sc.heading || sc.title || 'Untitled scene'}` }));
+  return (data ?? []).map((sc) => ({ id: sc.id, label: `${sc.scene_number ?? '·'} · ${sc.heading || sc.title || 'Untitled scene'}`, scriptId: sc.script_id ?? null }));
 }
 
 /** A project's own sound-effect uploads, newest first. */

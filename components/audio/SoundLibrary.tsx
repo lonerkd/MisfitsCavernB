@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
+import { editorSceneHref } from '@/lib/audio/links';
 import { Disc, Folder, Music, Play, Tag, Trash, UploadCloud, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -21,7 +23,7 @@ const select = 'mc-text text-xs rounded-full border border-[rgba(var(--ink-rgb),
 export function SoundLibrary({ projectId, projectTitle, userId, canTag }: { projectId: string; projectTitle: string; userId: string | null; canTag: boolean }) {
   const { toast } = useToast();
   const { playUri } = useSpotify();
-  const [data, setData] = useState<{ projectId: string; refs: AudioReference[]; sfx: SfxAsset[]; scenes: { id: string; label: string }[] } | null>(null);
+  const [data, setData] = useState<{ projectId: string; refs: AudioReference[]; sfx: SfxAsset[]; scenes: { id: string; label: string; scriptId?: string | null }[] } | null>(null);
   const [filter, setFilter] = useState<LibraryFilter>(NO_FILTER);
   const [tagging, setTagging] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -174,6 +176,10 @@ export function SoundLibrary({ projectId, projectTitle, userId, canTag }: { proj
                 <p className="mc-text text-xs text-[var(--fg-dim)] mt-2 flex flex-wrap gap-x-3 gap-y-1">
                   {i.role && <span>{AUDIO_ROLES[i.role as AudioRole] ?? i.role}</span>}
                   {i.sceneId && <span>{sceneLabel(i.sceneId)}</span>}
+                  {i.sceneId && (() => {
+                    const href = editorSceneHref(ready?.scenes.find((sc) => sc.id === i.sceneId)?.scriptId, i.sceneId);
+                    return href ? <Link href={href} className="underline underline-offset-2 hover:text-[var(--fg-strong)]">Open in the script</Link> : null;
+                  })()}
                   {i.tags.map((t) => <span key={t} className="rounded border border-[rgba(var(--ink-rgb),0.14)] px-1.5">{t}</span>)}
                 </p>
               )}
