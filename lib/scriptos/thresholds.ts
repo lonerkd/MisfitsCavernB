@@ -170,4 +170,124 @@ export const THRESHOLDS = {
     value: 90,
     what: 'a shot score at or above this decides the line is a camera direction',
   },
+  podcastBracketCueConfidence: {
+    value: 90,
+    what: 'a [bracketed] or (parenthesised) line in a podcast script reads as a production cue (parenthetical)',
+  },
+  podcastSpeakerConfidence: {
+    value: 95,
+    what: 'a "NAME: words" line in a podcast script reads as that speaker\'s dialogue',
+  },
+  podcastSegmentConfidence: {
+    value: 85,
+    what: 'an EPISODE / SEGMENT / INTRO line or short all-caps line in a podcast script reads as a segment header',
+  },
+  podcastAsideConfidence: {
+    value: 50,
+    what: 'any other podcast line reads as a show-note aside (action)',
+  },
+  videoOnScreenCueConfidence: {
+    value: 90,
+    what: 'a [bracketed] line in a video script reads as an on-screen cue (shot)',
+  },
+  videoDeliveryNoteConfidence: {
+    value: 85,
+    what: 'a (parenthesised) line in a video script reads as a delivery note',
+  },
+  videoSectionMarkerConfidence: {
+    value: 90,
+    what: 'a timecode line or a HOOK / INTRO / CHAPTER line in a video script reads as a section marker',
+  },
+  videoSpeakerConfidence: {
+    value: 95,
+    what: 'a "NAME: words" line in a video script reads as that speaker\'s dialogue',
+  },
+  videoSectionHeaderConfidence: {
+    value: 80,
+    what: 'a short all-caps line in a video script reads as a section header',
+  },
+  videoSpokenLineConfidence: {
+    value: 70,
+    what: 'any other line in a video script reads as spoken dialogue',
+  },
+  gameJumpConfidence: {
+    value: 90,
+    what: 'a "-> label" line in a game script reads as a jump to another node (transition)',
+  },
+  gameLogicConfidence: {
+    value: 90,
+    what: 'an [IF] / [SET] style line in a game script reads as logic (parenthetical)',
+  },
+  gameCueConfidence: {
+    value: 85,
+    what: 'any other [bracketed] line in a game script reads as a cue (shot)',
+  },
+  gameChoiceConfidence: {
+    value: 90,
+    what: 'a CHOICE / OPTION / bulleted line in a game script reads as the player\'s dialogue',
+  },
+  gamePartConfidence: {
+    value: 90,
+    what: 'an ACT / LEVEL / QUEST line in a game script reads as a part heading (slug)',
+  },
+  gameSpeakerConfidence: {
+    value: 95,
+    what: 'a "NAME: words" line in a game script reads as that speaker\'s dialogue',
+  },
+  gamePartHeaderConfidence: {
+    value: 80,
+    what: 'a short all-caps line in a game script reads as a part header',
+  },
+  gameNarrationConfidence: {
+    value: 60,
+    what: 'any other line in a game script reads as narration (action)',
+  },
+  proseNumberedHeadingConfidence: {
+    value: 80,
+    what: 'a numbered all-caps line in prose reads as a section heading',
+  },
+  proseHeadingConfidence: {
+    value: 80,
+    what: 'a short all-caps line in prose reads as a section heading',
+  },
+  prosePullQuoteConfidence: {
+    value: 65,
+    what: 'a line wrapped in quotation marks in prose reads as a pull quote (dialogue)',
+  },
+  proseParagraphConfidence: {
+    value: 70,
+    what: 'any other line in prose reads as paragraph text (action)',
+  },
+  outlineTimecodeConfidence: {
+    value: 90,
+    what: 'a timecoded line in a documentary outline reads as a segment marker',
+  },
+  outlineLabelConfidence: {
+    value: 85,
+    what: 'a B-ROLL / INTERVIEW / VO labelled line in a documentary outline reads as a segment marker',
+  },
+  outlineAttributedSoundbiteConfidence: {
+    value: 90,
+    what: 'a "NAME: quote" line in a documentary outline reads as an attributed soundbite (dialogue)',
+  },
+  outlineSoundbiteConfidence: {
+    value: 70,
+    what: 'a quoted line with no name in a documentary outline reads as a soundbite (dialogue)',
+  },
+  outlineBeatConfidence: {
+    value: 50,
+    what: 'any other line in a documentary outline reads as a beat description (action)',
+  },
+  treatmentHeaderConfidence: {
+    value: 80,
+    what: 'a short all-caps, # or SCENE / SHOT / BEAT line in a treatment reads as a section header',
+  },
+  treatmentQuoteConfidence: {
+    value: 65,
+    what: 'a quoted line in a treatment reads as a suggested line of dialogue',
+  },
+  treatmentProseConfidence: {
+    value: 60,
+    what: 'any other line in a treatment reads as prose (action)',
+  },
 } as const satisfies Record<string, { value: number; what: string }>;

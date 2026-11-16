@@ -159,6 +159,36 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `pickDialogueAt` | 95 | a dialogue score at or above this decides the line is dialogue |
 | `pickCharacterAt` | 60 | a character score at or above this decides the line is a cue |
 | `pickShotAt` | 90 | a shot score at or above this decides the line is a camera direction |
+| `podcastBracketCueConfidence` | 90 | a [bracketed] or (parenthesised) line in a podcast script reads as a production cue (parenthetical) |
+| `podcastSpeakerConfidence` | 95 | a "NAME: words" line in a podcast script reads as that speaker's dialogue |
+| `podcastSegmentConfidence` | 85 | an EPISODE / SEGMENT / INTRO line or short all-caps line in a podcast script reads as a segment header |
+| `podcastAsideConfidence` | 50 | any other podcast line reads as a show-note aside (action) |
+| `videoOnScreenCueConfidence` | 90 | a [bracketed] line in a video script reads as an on-screen cue (shot) |
+| `videoDeliveryNoteConfidence` | 85 | a (parenthesised) line in a video script reads as a delivery note |
+| `videoSectionMarkerConfidence` | 90 | a timecode line or a HOOK / INTRO / CHAPTER line in a video script reads as a section marker |
+| `videoSpeakerConfidence` | 95 | a "NAME: words" line in a video script reads as that speaker's dialogue |
+| `videoSectionHeaderConfidence` | 80 | a short all-caps line in a video script reads as a section header |
+| `videoSpokenLineConfidence` | 70 | any other line in a video script reads as spoken dialogue |
+| `gameJumpConfidence` | 90 | a "-> label" line in a game script reads as a jump to another node (transition) |
+| `gameLogicConfidence` | 90 | an [IF] / [SET] style line in a game script reads as logic (parenthetical) |
+| `gameCueConfidence` | 85 | any other [bracketed] line in a game script reads as a cue (shot) |
+| `gameChoiceConfidence` | 90 | a CHOICE / OPTION / bulleted line in a game script reads as the player's dialogue |
+| `gamePartConfidence` | 90 | an ACT / LEVEL / QUEST line in a game script reads as a part heading (slug) |
+| `gameSpeakerConfidence` | 95 | a "NAME: words" line in a game script reads as that speaker's dialogue |
+| `gamePartHeaderConfidence` | 80 | a short all-caps line in a game script reads as a part header |
+| `gameNarrationConfidence` | 60 | any other line in a game script reads as narration (action) |
+| `proseNumberedHeadingConfidence` | 80 | a numbered all-caps line in prose reads as a section heading |
+| `proseHeadingConfidence` | 80 | a short all-caps line in prose reads as a section heading |
+| `prosePullQuoteConfidence` | 65 | a line wrapped in quotation marks in prose reads as a pull quote (dialogue) |
+| `proseParagraphConfidence` | 70 | any other line in prose reads as paragraph text (action) |
+| `outlineTimecodeConfidence` | 90 | a timecoded line in a documentary outline reads as a segment marker |
+| `outlineLabelConfidence` | 85 | a B-ROLL / INTERVIEW / VO labelled line in a documentary outline reads as a segment marker |
+| `outlineAttributedSoundbiteConfidence` | 90 | a "NAME: quote" line in a documentary outline reads as an attributed soundbite (dialogue) |
+| `outlineSoundbiteConfidence` | 70 | a quoted line with no name in a documentary outline reads as a soundbite (dialogue) |
+| `outlineBeatConfidence` | 50 | any other line in a documentary outline reads as a beat description (action) |
+| `treatmentHeaderConfidence` | 80 | a short all-caps, # or SCENE / SHOT / BEAT line in a treatment reads as a section header |
+| `treatmentQuoteConfidence` | 65 | a quoted line in a treatment reads as a suggested line of dialogue |
+| `treatmentProseConfidence` | 60 | any other line in a treatment reads as prose (action) |
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
 

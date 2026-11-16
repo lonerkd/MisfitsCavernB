@@ -549,24 +549,24 @@ export class ScriptParser {
 
       if (/^[\[(].*[\])]$/.test(text)) {
         reasoning.push('Bracketed production cue');
-        return { type: 'parenthetical', confidence: 90, scores, reasoning, meta: {} };
+        return { type: 'parenthetical', confidence: THRESHOLDS.podcastBracketCueConfidence.value, scores, reasoning, meta: {} };
       }
 
       const speakerMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
       if (speakerMatch) {
         reasoning.push('Speaker-tagged line');
         return {
-          type: 'dialogue', confidence: 95, scores, reasoning,
+          type: 'dialogue', confidence: THRESHOLDS.podcastSpeakerConfidence.value, scores, reasoning,
           meta: { characterName: speakerMatch[1].trim().toUpperCase() }
         };
       }
 
       if (/^(EPISODE|SEGMENT|INTRO|OUTRO|BREAK|COLD OPEN)\b/i.test(text) || (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value)) {
         reasoning.push('Segment header');
-        return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.podcastSegmentConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       reasoning.push('Show-note / aside');
-      return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
+      return { type: 'action', confidence: THRESHOLDS.podcastAsideConfidence.value, scores, reasoning, meta: {} };
     }
 
     if (this.format === 'video-script') {
@@ -574,27 +574,27 @@ export class ScriptParser {
       // spoken words are the dialogue, with or without a speaker.
       if (/^\[[^\]]+\]$/.test(text)) {
         reasoning.push('On-screen cue (B-roll, graphic, caption)');
-        return { type: 'shot', confidence: 90, scores, reasoning, meta: {} };
+        return { type: 'shot', confidence: THRESHOLDS.videoOnScreenCueConfidence.value, scores, reasoning, meta: {} };
       }
       if (/^\([^)]+\)$/.test(text)) {
         reasoning.push('Delivery note');
-        return { type: 'parenthetical', confidence: 85, scores, reasoning, meta: {} };
+        return { type: 'parenthetical', confidence: THRESHOLDS.videoDeliveryNoteConfidence.value, scores, reasoning, meta: {} };
       }
       if (/^\d{1,2}:\d{2}(:\d{2})?\s*[-–—]/.test(text) || VIDEO_SECTION.test(text)) {
         reasoning.push('Section marker');
-        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.videoSectionMarkerConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       const speaker = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
       if (speaker) {
         reasoning.push('Speaker-tagged line');
-        return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
+        return { type: 'dialogue', confidence: THRESHOLDS.videoSpeakerConfidence.value, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
       }
       if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Section header');
-        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.videoSectionHeaderConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       reasoning.push('Spoken line');
-      return { type: 'dialogue', confidence: 70, scores, reasoning, meta: {} };
+      return { type: 'dialogue', confidence: THRESHOLDS.videoSpokenLineConfidence.value, scores, reasoning, meta: {} };
     }
 
     if (this.format === 'game-script') {
@@ -602,91 +602,91 @@ export class ScriptParser {
       // player speaks; `-> label` sends the story somewhere; [IF flag] / [SET flag] are logic; other [bracketed] lines are cues.
       if (/^->\s*\S/.test(text)) {
         reasoning.push('Jump to another node');
-        return { type: 'transition', confidence: 90, scores, reasoning, meta: { text } };
+        return { type: 'transition', confidence: THRESHOLDS.gameJumpConfidence.value, scores, reasoning, meta: { text } };
       }
       if (/^\[(IF|ELSE|SET|ADD|REMOVE|CHECK|REQUIRE|GIVE|TAKE)\b[^\]]*\]$/i.test(text)) {
         reasoning.push('Logic: a condition or a state change');
-        return { type: 'parenthetical', confidence: 90, scores, reasoning, meta: {} };
+        return { type: 'parenthetical', confidence: THRESHOLDS.gameLogicConfidence.value, scores, reasoning, meta: {} };
       }
       if (/^\[[^\]]+\]$/.test(text)) {
         reasoning.push('Cue (camera, sound, animation)');
-        return { type: 'shot', confidence: 85, scores, reasoning, meta: {} };
+        return { type: 'shot', confidence: THRESHOLDS.gameCueConfidence.value, scores, reasoning, meta: {} };
       }
       const choice = text.match(/^(?:CHOICE|OPTION|PLAYER CHOICE)\s*\d*\s*[:.\-]\s*(.+)$/i) || text.match(/^[*+]\s+(.+)$/);
       if (choice) {
         reasoning.push('A choice the player can make');
-        return { type: 'dialogue', confidence: 90, scores, reasoning, meta: { characterName: 'PLAYER' } };
+        return { type: 'dialogue', confidence: THRESHOLDS.gameChoiceConfidence.value, scores, reasoning, meta: { characterName: 'PLAYER' } };
       }
       if (/^\d{1,3}[.)]\s+\S/.test(text) === false && GAME_SECTION.test(text)) {
         reasoning.push('Part of the game');
-        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.gamePartConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       const speaker = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/);
       if (speaker) {
         reasoning.push('Speaker-tagged line');
-        return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
+        return { type: 'dialogue', confidence: THRESHOLDS.gameSpeakerConfidence.value, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
       }
       if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Part header');
-        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.gamePartHeaderConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       reasoning.push('Narration or description');
-      return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
+      return { type: 'action', confidence: THRESHOLDS.gameNarrationConfidence.value, scores, reasoning, meta: {} };
     }
 
     if (this.format === 'prose') {
       // Prose (a blog post, an essay, a newsletter): headings are the sections, everything else is the text.
       if (/^\d{1,2}[.)]\s+\S.{0,80}$/.test(text) && this.isCaps(text.replace(/^\d{1,2}[.)]\s+/, ''))) {
         reasoning.push('Numbered section heading');
-        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.proseNumberedHeadingConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Section heading');
-        return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.proseHeadingConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
       if (/^["“].+["”]$/.test(text)) {
         reasoning.push('Pull quote');
-        return { type: 'dialogue', confidence: 65, scores, reasoning, meta: {} };
+        return { type: 'dialogue', confidence: THRESHOLDS.prosePullQuoteConfidence.value, scores, reasoning, meta: {} };
       }
       reasoning.push('Paragraph');
-      return { type: 'action', confidence: 70, scores, reasoning, meta: {} };
+      return { type: 'action', confidence: THRESHOLDS.proseParagraphConfidence.value, scores, reasoning, meta: {} };
     }
 
     if (this.format === 'doc-outline') {
 
       if (/^\d{1,2}:\d{2}(:\d{2})?\s*[-–—]/.test(text)) {
         reasoning.push('Timecoded segment marker');
-        return { type: 'slug', confidence: 90, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.outlineTimecodeConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
 
       if (/^(B-ROLL|INTERVIEW|ARCHIVAL|VO|VOICEOVER|TALKING HEAD|SEGMENT|SCENE)\s*[:.\-]/i.test(text)) {
         reasoning.push('Labeled segment marker');
-        return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+        return { type: 'slug', confidence: THRESHOLDS.outlineLabelConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
 
       const quoteMatch = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*["“](.+)["”]$/);
       if (quoteMatch) {
         reasoning.push('Attributed soundbite');
-        return { type: 'dialogue', confidence: 90, scores, reasoning, meta: { characterName: quoteMatch[1].trim().toUpperCase() } };
+        return { type: 'dialogue', confidence: THRESHOLDS.outlineAttributedSoundbiteConfidence.value, scores, reasoning, meta: { characterName: quoteMatch[1].trim().toUpperCase() } };
       }
       if (/^["“].+["”]$/.test(text)) {
         reasoning.push('Soundbite');
-        return { type: 'dialogue', confidence: 70, scores, reasoning, meta: {} };
+        return { type: 'dialogue', confidence: THRESHOLDS.outlineSoundbiteConfidence.value, scores, reasoning, meta: {} };
       }
       reasoning.push('Beat description');
-      return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
+      return { type: 'action', confidence: THRESHOLDS.outlineBeatConfidence.value, scores, reasoning, meta: {} };
     }
 
     if ((this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) || /^#{1,3}\s/.test(text) || /^(SCENE|SHOT|BEAT)\s*\d*/i.test(text)) {
       reasoning.push('Treatment section header');
-      return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
+      return { type: 'slug', confidence: THRESHOLDS.treatmentHeaderConfidence.value, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
     }
     if (/^["“].+["”]$/.test(text)) {
       reasoning.push('Suggested line of dialogue');
-      return { type: 'dialogue', confidence: 65, scores, reasoning, meta: {} };
+      return { type: 'dialogue', confidence: THRESHOLDS.treatmentQuoteConfidence.value, scores, reasoning, meta: {} };
     }
     reasoning.push('Treatment prose');
-    return { type: 'action', confidence: 60, scores, reasoning, meta: {} };
+    return { type: 'action', confidence: THRESHOLDS.treatmentProseConfidence.value, scores, reasoning, meta: {} };
   }
 
   private emptyScores(): Record<LineType, number> {
