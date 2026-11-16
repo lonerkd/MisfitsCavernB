@@ -56,11 +56,15 @@ export async function getCastingsForUser(userId: string): Promise<CastingWithPro
   });
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function setCasting(projectId: string, characterId: string, characterName: string, crewUserId: string, createdBy: string) {
   const { data, error } = await supabase
     .from('character_castings')
     .upsert(
-      { project_id: projectId, character_id: characterId, character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
+      // A character not yet in the graph has no id (the editor passes its name): the castings_link_character trigger finds or
+      // makes the row from the name. Sending the name as character_id fails the uuid column, and casting never saved.
+      { project_id: projectId, ...(UUID.test(characterId) ? { character_id: characterId } : {}), character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
       { onConflict: 'project_id,character_name' },
     )
     .select()
