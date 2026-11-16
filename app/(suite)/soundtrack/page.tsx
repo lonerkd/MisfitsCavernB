@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import { awaitOSUser } from '@/lib/os';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 // The Library is its own tab: loaded when it is opened, so the page's first load stays light.
 const SceneTimeline = dynamic(() => import('@/components/audio/SceneTimeline').then((m) => m.SceneTimeline), {
@@ -37,6 +38,8 @@ function SoundtrackContent() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
+  const phone = usePhoneLayout().phone;
+  const pad = phone ? 'p-4' : 'p-12';
   const { user } = useOSGate();
   const canTag = useCanShape(activeProject?.id, !!user?.id && activeProject?.creator_id === user.id);
 
@@ -143,9 +146,9 @@ function SoundtrackContent() {
 
   if (!isAuthenticated) {
     return (
-      <div className="mc-page p-12 flex flex-col items-center justify-center text-center">
+      <div className={`mc-page ${pad} flex flex-col items-center justify-center text-center`}>
         <Disc size={48} className="mb-6 opacity-20" />
-        <h1 className="mc-title text-4xl mb-4">Sound</h1>
+        <h1 className="mc-title text-3xl md:text-4xl mb-4">Sound</h1>
         <p className="mc-text mb-8 max-w-md text-[var(--fg-dim)]">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
         <Button variant="solid" onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }} className="gap-2 px-8">
           <Disc size={16} /> Connect Spotify
@@ -155,10 +158,10 @@ function SoundtrackContent() {
   }
 
   return (
-    <div className="mc-page p-12">
-      <header className="mb-8 flex items-end justify-between">
+    <div className={`mc-page ${pad} overflow-x-hidden`}>
+      <header className={`${phone ? 'mb-4' : 'mb-8'} flex items-end justify-between`}>
         <div>
-          <h1 className="mc-title text-4xl tracking-wide">Sound</h1>
+          <h1 className={`mc-title ${phone ? 'text-2xl' : 'text-4xl'} tracking-wide`}>Sound</h1>
           <p className="mc-text text-[var(--fg-dim)] [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs mt-2">Find music, place it in scenes, and keep the project’s sound</p>
         </div>
       </header>
@@ -166,12 +169,14 @@ function SoundtrackContent() {
       <SoundDeck />
       <ListenWithoutPremium />
 
-      <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
+      <div role="tablist" aria-label="Sound rooms" className={`flex ${phone ? 'gap-2 mb-4 overflow-x-auto' : 'gap-4 mb-8'} border-b border-[rgba(var(--ink-rgb),0.06)] pb-2`}>
         {SOUND_TABS.map(tab => (
           <button
             key={tab}
+            role="tab"
+            aria-selected={activeTab === tab}
             onClick={() => setActiveTab(tab)}
-            className={`mc-text [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs px-4 py-2 rounded-full transition-colors ${
+            className={`mc-text [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs px-4 py-2 min-h-[44px] shrink-0 rounded-full transition-colors ${
               activeTab === tab ? 'bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-strong)]' : 'text-[var(--fg-dim)] hover:text-[var(--fg-muted)]'
             }`}
           >
@@ -198,7 +203,7 @@ function SoundtrackContent() {
 
           {activeTab === 'library' && (
             !activeProject?.id ? (
-              <div className="p-12 rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center">
+              <div className={`${phone ? 'p-6' : 'p-12'} rounded-2xl border border-dashed border-[rgba(var(--ink-rgb),0.1)] text-center`}>
                 <ShieldAlert size={32} className="opacity-20 mb-4 mx-auto" />
                 <h3 className="mc-title text-xl mb-2">No active project</h3>
                 <p className="mc-text text-sm text-[var(--fg-dim)]">Pick a project to see its sound library.</p>
@@ -210,7 +215,7 @@ function SoundtrackContent() {
 
           {activeTab === 'search' && (
             <div className="max-w-4xl">
-              <form className="flex gap-4 items-end mb-8" onSubmit={handleSearch}>
+              <form className={`flex ${phone ? 'flex-col items-stretch gap-3 mb-4' : 'gap-4 items-end mb-8'}`} onSubmit={handleSearch}>
                 <div className="flex-1">
                   <Input
                     label="Search Spotify for cinematic tracks..."
@@ -219,11 +224,11 @@ function SoundtrackContent() {
                     onChange={e => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <Button type="submit" variant="solid" className="h-[52px] px-8" isLoading={isSearching && searchQuery.length > 0}>
+                <Button type="submit" variant="solid" className="min-h-[52px] px-8" isLoading={isSearching && searchQuery.length > 0}>
                   <Search size={16} className="mr-2" /> Search
                 </Button>
                 {activeProject?.id && (
-                  <Button type="button" variant="outline" className="h-[52px] px-6 border-accent text-accent hover:bg-accent/10" onClick={() => void fillFromScript(activeProject.id, false)}>
+                  <Button type="button" variant="outline" className="min-h-[52px] px-6 border-accent text-accent hover:bg-accent/10" onClick={() => void fillFromScript(activeProject.id, false)}>
                     <Wand2 size={16} className="mr-2" /> Refresh from the script
                   </Button>
                 )}
@@ -233,7 +238,7 @@ function SoundtrackContent() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {searchResults.map((item: any) => (
                   <SpotifyPreview key={item.id} kind={item.type === 'playlist' ? 'playlist' : item.type === 'album' ? 'album' : 'track'} id={item.id} label={item.name}>{(previewButton, previewFrame) => (
-                  <div className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
+                  <div className="p-3 md:p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] group hover:bg-[rgba(var(--ink-rgb),0.05)] transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4 overflow-hidden">
                       {(item.album?.images?.[2]?.url || item.images?.[0]?.url) ? (
@@ -250,13 +255,13 @@ function SoundtrackContent() {
                     <div className="flex items-center gap-2">
                       {previewButton}
                       <button aria-label="Play"
-                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
+                        className="w-11 h-11 md:w-8 md:h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[#1ed760]/20 text-[#1ed760] transition-all"
                         onClick={() => playUri(item.uri)}
                       >
                         <Play size={16} />
                       </button>
                       <button aria-label="Save to the library"
-                        className="w-8 h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
+                        className="w-11 h-11 md:w-8 md:h-8 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100 hover:bg-[rgba(var(--ink-rgb),0.1)] text-[var(--fg-dim)] hover:text-[var(--fg-strong)] transition-all"
                         title="Save to the library"
                         onClick={() => saveToProject(item)}
                       >
@@ -279,7 +284,7 @@ function SoundtrackContent() {
                 ))}
               </div>
 
-              <div className="p-6 mt-8 rounded-2xl bg-[#e8431a]/10 border border-[#e8431a]/20 flex gap-4 items-start">
+              <div className="p-4 md:p-6 mt-8 rounded-2xl bg-[#e8431a]/10 border border-[#e8431a]/20 flex gap-4 items-start">
                 <ShieldAlert size={20} className="text-[#e8431a] shrink-0 mt-1" />
                 <p className="mc-text text-xs leading-relaxed text-[#e8431a]/80">
                   <strong className="text-[#e8431a]">Copyright Notice:</strong> Searching the public Spotify catalog will return copyrighted material. You may link these to your projects as private references or mood inspiration, but they cannot be exported as part of your final mixed media without a license.

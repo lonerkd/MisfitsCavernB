@@ -7,6 +7,8 @@ import { editorSceneHref } from '@/lib/audio/links';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useSpotify } from '@/lib/os/SpotifyContext';
+import { usePhoneLayout } from '@/lib/os/usePhone';
+import { BottomSheet } from '@/components/phone/BottomSheet';
 import { pushUndo, undoOrigin, UndoRefused } from '@/lib/os/undo';
 import { TrackTagger } from '@/components/audio/TrackTagger';
 import { buildTimeline, formatMinutes, sceneSummary, type LengthSource, type TimelineBar } from '@/lib/audio/timeline';
@@ -25,6 +27,7 @@ const SOURCE_NOTE: Record<LengthSource, string> = {
 };
 const PX_PER_MIN = 16;
 const LANE_H = 36;
+const LANE_H_PHONE = 56; // a bar is a thumb target on a phone: 44 pt tall
 // Tracks that share a song share a colour; the hue is spread so neighbours differ.
 const swatch = (n: number) => `hsl(${(n * 67) % 360} 50% 52%)`;
 
@@ -38,6 +41,7 @@ type Loaded = { key: string; scenes: Awaited<ReturnType<typeof loadScriptForTime
 export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { projectId: string; projectTitle: string; canTag: boolean; onFind: (query: string, sceneId: string) => void }) {
   const { toast } = useToast();
   const { playUri } = useSpotify();
+  const phone = usePhoneLayout();
   const [scriptId, setScriptId] = useState<string | null>(null);
   const [data, setData] = useState<Loaded | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
@@ -85,6 +89,7 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
   const sceneChoices = useMemo(() => timeline?.scenes.map((s) => ({ id: s.id, label: `${s.number} · ${s.heading}` })) ?? [], [timeline]);
   const refOf = (id: string) => ready?.refs.find((r) => r.id === id);
   const tracksIn = (sceneId: string) => timeline?.lanes.flatMap((l) => l.bars.filter((b) => b.sceneId === sceneId)) ?? [];
+  const laneH = phone.phone ? LANE_H_PHONE : LANE_H;
   const px = PX_PER_MIN * zoom;
   const width = timeline ? Math.max(timeline.totalMinutes * px, 320) : 320;
   const scene = timeline?.scenes.find((s) => s.id === selected) ?? null;
@@ -122,7 +127,7 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[rgba(var(--ink-rgb),0.1)]">
         <div>
-          <h2 className="mc-title text-2xl">{projectTitle} · scenes</h2>
+          <h2 className={`mc-title ${phone.phone ? "text-xl" : "text-2xl"}`}>{projectTitle} · scenes</h2>
           <p className="mc-text text-sm text-[var(--fg-dim)]">
             {timeline ? `${timeline.scenes.length} scene${timeline.scenes.length === 1 ? '' : 's'}, ${formatMinutes(timeline.totalMinutes)} · ${timeline.gaps.length} with no music` : 'Loading…'}
           </p>
@@ -159,12 +164,12 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
               </div>
               {/* The lanes: one per role. */}
               {timeline.lanes.map((lane) => (
-                <div key={lane.role} style={{ position: 'relative', height: LANE_H, marginTop: 6 }} data-lane={lane.role}>
+                <div key={lane.role} style={{ position: 'relative', height: laneH, marginTop: 6 }} data-lane={lane.role}>
                   <span className="mc-text text-xs text-[var(--fg-dim)]" style={{ position: 'absolute', left: 0, top: -2, zIndex: 2 }}>{lane.label}</span>
                   {canTag && timeline.scenes.map((s) => (
                     <div key={s.id} onDragOver={(e) => { if (dragging.current) { e.preventDefault(); setOver(`${lane.role}:${s.id}`); } }} onDragLeave={() => setOver(null)}
                       onDrop={(e) => { e.preventDefault(); setOver(null); const d = dragging.current; dragging.current = null; if (d) void moveTo(d.trackId, d.from, s.id); }}
-                      style={{ position: 'absolute', left: s.start * px, width: Math.max(s.minutes * px - 2, 6), top: 0, height: LANE_H, background: over === `${lane.role}:${s.id}` ? 'rgba(var(--ink-rgb),0.12)' : 'transparent' }} />
+                      style={{ position: 'absolute', left: s.start * px, width: Math.max(s.minutes * px - 2, 6), top: 0, height: laneH, background: over === `${lane.role}:${s.id}` ? 'rgba(var(--ink-rgb),0.12)' : 'transparent' }} />
                   ))}
                   {lane.bars.map((b) => {
                     const s = timeline.scenes.find((x) => x.id === b.sceneId)!;
@@ -172,7 +177,7 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
                       <button key={b.trackId} type="button" draggable={canTag} aria-label={`${b.title}, in scene ${s.number}`} title={`${b.title} (scene ${s.number})`}
                         onDragStart={() => { dragging.current = { trackId: b.trackId, from: b.sceneId }; }} onDragEnd={() => { dragging.current = null; setOver(null); }}
                         onClick={() => play(b)}
-                        style={{ position: 'absolute', left: s.start * px + 1, width: Math.max(s.minutes * px - 4, 6), top: 12, height: LANE_H - 14, background: swatch(b.swatch), borderRadius: 4, cursor: canTag ? 'grab' : 'pointer' }}
+                        style={{ position: 'absolute', left: s.start * px + 1, width: Math.max(s.minutes * px - 4, 6), top: phone.phone ? 6 : 12, height: phone.phone ? 44 : LANE_H - 14, background: swatch(b.swatch), borderRadius: 4, cursor: canTag ? 'grab' : 'pointer' }}
                         className="mc-text text-xs text-[var(--on-accent)] overflow-hidden whitespace-nowrap text-left px-1">{b.title}</button>
                     );
                   })}
@@ -192,8 +197,17 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
             {timeline.elsewhere > 0 ? ` ${timeline.elsewhere} track${timeline.elsewhere === 1 ? ' is' : 's are'} tagged to scenes in another script.` : ''}
           </p>
 
-          {scene && (
-            <section className="p-5 rounded-2xl border border-[rgba(var(--ink-rgb),0.08)] bg-[var(--sunken)] space-y-4" aria-label={`Scene ${scene.number}`}>
+          {scene && (phone.phone
+            ? <BottomSheet open onClose={() => setSelected(null)} title={`Scene ${scene.number}`} keyboard={phone.keyboard} full>{detail(scene)}</BottomSheet>
+            : detail(scene))}
+        </>
+      )}
+    </div>
+  );
+
+  function detail(scene: NonNullable<typeof timeline>['scenes'][number]) {
+    return (
+            <section className={`${phone.phone ? '' : 'p-5 rounded-2xl border border-[rgba(var(--ink-rgb),0.08)] bg-[var(--sunken)]'} space-y-4`} aria-label={`Scene ${scene.number}`}>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h3 className="mc-title text-lg">{scene.number}. {scene.heading}</h3>
@@ -236,9 +250,6 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
                 </ul>
               )}
             </section>
-          )}
-        </>
-      )}
-    </div>
-  );
+    );
+  }
 }

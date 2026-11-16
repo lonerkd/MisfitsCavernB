@@ -13,6 +13,7 @@ vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/lib/supabase/client', () => ({ supabase: {} }));
 vi.mock('@/lib/supabase/audio', async (orig) => ({ ...(await orig<typeof import('@/lib/supabase/audio')>()), ...audio }));
 vi.mock('@/lib/os/undo', async (orig) => ({ ...(await orig<typeof import('@/lib/os/undo')>()), ...undo }));
+vi.mock('@/lib/os/usePhone', () => ({ usePhoneLayout: () => ({ phone: false, landscape: false, keyboard: 0, typing: false, height: 800, offset: 0 }) }));
 import { SceneTimeline } from './SceneTimeline';
 
 const script = 'INT. KITCHEN - DAY\n\nHe runs. Guns fire. A chase.\n\nEXT. GARDEN - NIGHT\n\nShe waits in silence.\n';
