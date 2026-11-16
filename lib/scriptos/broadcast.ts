@@ -16,9 +16,11 @@ export interface BroadcastChannel {
 export interface BroadcastClient {
   channel(topic: string, config?: unknown): BroadcastChannel;
   removeChannel(channel: BroadcastChannel): unknown;
+  /** The channels this client already has open (Supabase hands back an open one for the same topic). */
+  getChannels?(): { topic: string }[];
 }
 
-export type BroadcastResult = 'sent' | 'too-large' | 'failed';
+export type BroadcastResult = 'sent' | 'too-large' | 'failed' | 'editor-open-here';
 
 /**
  * After the offline queue merged its edits into the server's shared document, tell editors already open on the
@@ -31,6 +33,10 @@ export type BroadcastResult = 'sent' | 'too-large' | 'failed';
  */
 export async function broadcastMergedUpdate(client: BroadcastClient, scriptId: string, encodedState: string): Promise<BroadcastResult> {
   if (encodedState.length > MAX_BROADCAST_UPDATE_CHARS) return 'too-large';
+  // `channel(topic)` returns the channel already open for that topic. If an editor in this tab has the script's
+  // channel, it is that editor's live co-writing channel: it already syncs the merge, and removing it below would
+  // cut the editor off. So leave it alone.
+  if (client.getChannels?.().some((c) => c.topic === `realtime:script_${scriptId}`)) return 'editor-open-here';
   let channel: BroadcastChannel | null = null;
   try {
     channel = client.channel(`script_${scriptId}`, { config: { broadcast: { self: false } } });

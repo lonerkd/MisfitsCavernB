@@ -27,6 +27,14 @@ describe('broadcastMergedUpdate', () => {
     expect(client.removeChannel).toHaveBeenCalledWith(channel);
   });
 
+  it('leaves an editor\x27s live channel in this tab alone: no reuse, no removal', async () => {
+    const { client } = fake();
+    const withEditor = { ...client, getChannels: () => [{ topic: 'realtime:script_s1' }] };
+    expect(await broadcastMergedUpdate(withEditor, 's1', 'QUJD')).toBe('editor-open-here');
+    expect(client.channel).not.toHaveBeenCalled();
+    expect(client.removeChannel).not.toHaveBeenCalled();
+  });
+
   it('skips an update too large for Realtime without opening a channel', async () => {
     const { client } = fake();
     expect(await broadcastMergedUpdate(client, 's1', 'A'.repeat(MAX_BROADCAST_UPDATE_CHARS + 1))).toBe('too-large');
