@@ -32,7 +32,7 @@ export function useScriptCasting(projectId: string | undefined) {
       if (!auth.user) return;
       if (!crewUserId) {
         await removeCasting(projectId, characterId, characterName);
-        setCastings((prev) => { const next = { ...prev }; delete next[characterId]; return next; });
+        setCastings((prev) => { const next = { ...prev }; delete next[characterName.toUpperCase()]; return next; });
         return;
       }
       await setCasting(projectId, characterId, characterName, crewUserId, auth.user.id);
