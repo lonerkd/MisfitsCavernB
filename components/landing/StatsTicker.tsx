@@ -12,7 +12,8 @@ export function StatsTicker({ items }: { items: string[] }) {
     }}>
       <div className="marquee-track">
         {repeated.map((item, i) => (
-          <span key={i} style={{
+          // The second copy only fills the loop; screen readers get the list once.
+          <span key={i} aria-hidden={i >= items.length ? true : undefined} style={{
             fontFamily: 'var(--mono)',
             fontSize: 'max(9px, var(--mc-min-font, 0px))',
             letterSpacing: 'var(--caps-track)',

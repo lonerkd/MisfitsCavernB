@@ -3,9 +3,9 @@ import { defineConfig, devices } from '@playwright/test';
 // Default: test the branch under a locally built/served instance, started by
 // webServer below. PLAYWRIGHT_BASE_URL overrides this to point at a deployed
 // URL (e.g. a Vercel preview or production) for a manual smoke check — that
-// override skips webServer entirely, so it never double-starts a server
+// override (or E2E_BASE_URL, the staging app; see e2e/support/stack.ts) skips webServer entirely, so it never double-starts a server
 // against a URL that's already live.
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || process.env.E2E_BASE_URL || 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './e2e',
@@ -34,7 +34,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: process.env.PLAYWRIGHT_BASE_URL
+  webServer: process.env.PLAYWRIGHT_BASE_URL || process.env.E2E_BASE_URL
     ? undefined
     : {
         command: 'npm run build && npm run start',
