@@ -8,7 +8,7 @@ import { listOpenJobTitles } from '@/lib/supabase/jobs';
 import { latestScriptEditedBy } from '@/lib/supabase/scripts';
 import { listRecentMediaTitles } from '@/lib/supabase/media';
 import { listRecentChannelMessages } from '@/lib/supabase/messages';
-import { tickerItems } from '@/lib/home/ticker';
+import { tickerItems, showPeopleTotal } from '@/lib/home/ticker';
 import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import GrainOverlay from '@/components/ui/GrainOverlay';
@@ -130,7 +130,7 @@ export default function Home() {
 
         <motion.div style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
 
-        <h1 className="sr-only">The Cavern — the production suite for independent filmmakers, by Misfits Cavern</h1>
+        <h1 className="sr-only">The Cavern — the production suite for independent filmmakers</h1>
           <motion.div
             initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
             animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
@@ -292,7 +292,7 @@ export default function Home() {
               { n: stats.scripts, label: 'Screenplays', color: 'var(--accent)' },
               { n: stats.projects, label: 'Productions', color: 'var(--violet)' },
               { n: stats.concepts, label: 'References & Media', color: 'var(--warn)' },
-            ].map((s, i) => (
+            ].filter((s) => s.label !== 'Creators' || showPeopleTotal(s.n)).map((s, i) => (
               <motion.div key={s.label}
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -436,7 +436,6 @@ export default function Home() {
         <div style={{ marginTop: 10, display: 'flex', justifyContent: 'center', gap: 18 }}>
           <Link href="/privacy" style={{ color: 'inherit' }}>Privacy</Link>
           <Link href="/terms" style={{ color: 'inherit' }}>Terms</Link>
-          <Link href="/auth?forgot=1" style={{ color: 'inherit' }}>Forgot password?</Link>
         </div>
       </footer>
     </div>

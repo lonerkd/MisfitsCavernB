@@ -7,13 +7,17 @@ export interface TickerStats { users: number; scripts: number; projects: number;
 export interface TickerJob { title: string; role: string | null; location?: string | null }
 export interface TickerWork { title: string; year: number | null; category: string | null; role: string | null }
 
+/** Below this many people the total reads as an empty platform ("2 filmmakers"), so it is left out. */
+export const MIN_PEOPLE_TOTAL = 25;
+export const showPeopleTotal = (n: number) => n >= MIN_PEOPLE_TOTAL;
+
 const plural = (n: number, one: string, many = `${one}s`) => `${n.toLocaleString('en-US')} ${n === 1 ? one : many}`;
 
 /** Ticker lines, interleaving news (jobs, works) with totals; empty when there's nothing real to say. */
 export function tickerItems(stats: TickerStats | null, jobs: TickerJob[], works: TickerWork[]): string[] {
   const totals: string[] = [];
   if (stats) {
-    if (stats.users) totals.push(plural(stats.users, 'filmmaker'));
+    if (showPeopleTotal(stats.users)) totals.push(plural(stats.users, 'filmmaker'));
     if (stats.scripts) totals.push(`${plural(stats.scripts, 'screenplay')} in progress`);
     if (stats.projects) totals.push(plural(stats.projects, 'production'));
     if (stats.jobs) totals.push(`${plural(stats.jobs, 'open role')}`);
