@@ -115,6 +115,24 @@ export async function addAudioRef(ref: {
   if (error) throw error;
 }
 
+/**
+ * A Spotify track placed in a scene from Find: saved to the project and tagged in one step. If the project already has it,
+ * that saved track is tagged instead of saving a copy (a track has one scene, so it moves). Says what happened.
+ */
+export async function placeTrackInScene(t: { projectId: string; userId: string | null; uri: string; title: string; description: string; sceneId: string }): Promise<'tagged' | 'moved' | 'already'> {
+  const { data, error } = await supabase.from('project_audio_references').select('id, for_scene, role, tags')
+    .eq('project_id', t.projectId).eq('uri', t.uri).limit(1);
+  if (error) throw error;
+  const existing = data?.[0];
+  if (!existing) {
+    await addAudioRef({ projectId: t.projectId, userId: t.userId, type: 'spotify', uri: t.uri, title: t.title, description: t.description, sceneId: t.sceneId, role: 'temp', tags: [] });
+    return 'tagged';
+  }
+  if (existing.for_scene === t.sceneId) return 'already';
+  await tagAudioRef(existing.id, { sceneId: t.sceneId, role: (existing.role as AudioRole | null) ?? 'temp', tags: existing.tags ?? [] });
+  return existing.for_scene ? 'moved' : 'tagged';
+}
+
 export async function deleteAudioRef(id: string): Promise<void> {
   const { error } = await supabase.from('project_audio_references').delete().eq('id', id);
   if (error) throw error;
