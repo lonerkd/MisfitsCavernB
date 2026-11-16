@@ -362,7 +362,7 @@ export class ScriptParser {
       if (forced) {
         analysis = forced;
       } else if (i < THRESHOLDS.titlePageScanLines.value && this.isTitlePageContent(trim)) {
-        analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
+        analysis = { type: 'title', confidence: THRESHOLDS.titlePageKeywordConfidence.value, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
       } else {
         analysis = this.usesScreenplayGrammar()
           ? this.analyzeLine(trim, context)
@@ -705,21 +705,21 @@ export class ScriptParser {
   private preClassify(trim: string): { type: LineType; confidence: number; scores: Record<LineType, number>; reasoning: string[]; meta?: any } | null {
     if (this.format === 'prose') {
       // An article is not Fountain: `#` is a heading, and `>`, `@`, `!`, `~` or a leading dot are ordinary text (a quote, a handle, a file name).
-      if (/^#{1,6}\s/.test(trim)) return { type: 'slug', confidence: 100, scores: this.emptyScores(), reasoning: ['Heading'], meta: { heading: trim.replace(/^#+\s*/, ''), sceneNumber: this.extractSceneNumber(trim) } };
-      if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: 100, scores: this.emptyScores(), reasoning: ['Page break'] };
-      if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: 100, scores: this.emptyScores(), reasoning: ['Note'] };
+      if (/^#{1,6}\s/.test(trim)) return { type: 'slug', confidence: THRESHOLDS.proseHeadingMarkerConfidence.value, scores: this.emptyScores(), reasoning: ['Heading'], meta: { heading: trim.replace(/^#+\s*/, ''), sceneNumber: this.extractSceneNumber(trim) } };
+      if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: THRESHOLDS.forcedPageBreakConfidence.value, scores: this.emptyScores(), reasoning: ['Page break'] };
+      if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: THRESHOLDS.forcedNoteConfidence.value, scores: this.emptyScores(), reasoning: ['Note'] };
       return null;
     }
-    if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: 100, scores: this.emptyScores(), reasoning: ['Page break'] };
-    if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: 100, scores: this.emptyScores(), reasoning: ['Note'] };
-    if (/^#{1,6}\s/.test(trim)) return { type: 'section', confidence: 100, scores: this.emptyScores(), reasoning: ['Section'], meta: { level: (trim.match(/^#+/) || ['#'])[0].length } };
-    if (/^=\s*(?![\s=])/.test(trim)) return { type: 'synopsis', confidence: 100, scores: this.emptyScores(), reasoning: ['Synopsis'] };
-    if (trim.startsWith('~')) return { type: 'lyric', confidence: 100, scores: this.emptyScores(), reasoning: ['Lyric'] };
-    if (trim.startsWith('>') && trim.endsWith('<')) return { type: 'centered', confidence: 100, scores: this.emptyScores(), reasoning: ['Centered text'] };
-    if (trim.startsWith('>')) return { type: 'transition', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced transition'], meta: { text: trim.slice(1).trim() } };
-    if (/^\.[^.\s]/.test(trim)) return { type: 'slug', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced scene heading'], meta: { heading: trim.slice(1).trim(), sceneNumber: this.extractSceneNumber(trim) } };
-    if (trim.startsWith('@')) return { type: 'character', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced character'], meta: { characterName: this.clean(trim.slice(1)) } };
-    if (trim.startsWith('!')) return { type: 'action', confidence: 100, scores: this.emptyScores(), reasoning: ['Forced action'], meta: { text: trim.slice(1).trim() } };
+    if (/^=+\s*$/.test(trim) && trim.length >= 3) return { type: 'pagebreak', confidence: THRESHOLDS.forcedPageBreakConfidence.value, scores: this.emptyScores(), reasoning: ['Page break'] };
+    if (trim.startsWith('[[') && trim.endsWith(']]')) return { type: 'note', confidence: THRESHOLDS.forcedNoteConfidence.value, scores: this.emptyScores(), reasoning: ['Note'] };
+    if (/^#{1,6}\s/.test(trim)) return { type: 'section', confidence: THRESHOLDS.forcedSectionConfidence.value, scores: this.emptyScores(), reasoning: ['Section'], meta: { level: (trim.match(/^#+/) || ['#'])[0].length } };
+    if (/^=\s*(?![\s=])/.test(trim)) return { type: 'synopsis', confidence: THRESHOLDS.forcedSynopsisConfidence.value, scores: this.emptyScores(), reasoning: ['Synopsis'] };
+    if (trim.startsWith('~')) return { type: 'lyric', confidence: THRESHOLDS.forcedLyricConfidence.value, scores: this.emptyScores(), reasoning: ['Lyric'] };
+    if (trim.startsWith('>') && trim.endsWith('<')) return { type: 'centered', confidence: THRESHOLDS.forcedCenteredConfidence.value, scores: this.emptyScores(), reasoning: ['Centered text'] };
+    if (trim.startsWith('>')) return { type: 'transition', confidence: THRESHOLDS.forcedTransitionConfidence.value, scores: this.emptyScores(), reasoning: ['Forced transition'], meta: { text: trim.slice(1).trim() } };
+    if (/^\.[^.\s]/.test(trim)) return { type: 'slug', confidence: THRESHOLDS.forcedHeadingConfidence.value, scores: this.emptyScores(), reasoning: ['Forced scene heading'], meta: { heading: trim.slice(1).trim(), sceneNumber: this.extractSceneNumber(trim) } };
+    if (trim.startsWith('@')) return { type: 'character', confidence: THRESHOLDS.forcedCharacterConfidence.value, scores: this.emptyScores(), reasoning: ['Forced character'], meta: { characterName: this.clean(trim.slice(1)) } };
+    if (trim.startsWith('!')) return { type: 'action', confidence: THRESHOLDS.forcedActionConfidence.value, scores: this.emptyScores(), reasoning: ['Forced action'], meta: { text: trim.slice(1).trim() } };
     return null;
   }
 

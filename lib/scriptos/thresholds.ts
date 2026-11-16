@@ -290,4 +290,52 @@ export const THRESHOLDS = {
     value: 60,
     what: 'any other line in a treatment reads as prose (action)',
   },
+  titlePageKeywordConfidence: {
+    value: 100,
+    what: 'a title-page line (Title:, Author:, Draft date:) in the first lines reads as the title page (the syntax spells it out, so it is never in doubt)',
+  },
+  proseHeadingMarkerConfidence: {
+    value: 100,
+    what: 'a "# " line in prose reads as a heading (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedPageBreakConfidence: {
+    value: 100,
+    what: 'a line of three or more "=" is a page break (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedNoteConfidence: {
+    value: 100,
+    what: 'a line wrapped in [[ ]] is a note (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedSectionConfidence: {
+    value: 100,
+    what: 'a "# " line is a section (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedSynopsisConfidence: {
+    value: 100,
+    what: 'a line led by a single "=" is a synopsis (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedLyricConfidence: {
+    value: 100,
+    what: 'a line led by "~" is a lyric (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedCenteredConfidence: {
+    value: 100,
+    what: 'a line wrapped in > < is centered text (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedTransitionConfidence: {
+    value: 100,
+    what: 'a line led by ">" is a forced transition (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedHeadingConfidence: {
+    value: 100,
+    what: 'a line led by a dot and a letter is a forced scene heading (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedCharacterConfidence: {
+    value: 100,
+    what: 'a line led by "@" is a forced character cue (the syntax spells it out, so it is never in doubt)',
+  },
+  forcedActionConfidence: {
+    value: 100,
+    what: 'a line led by "!" is forced action (the syntax spells it out, so it is never in doubt)',
+  },
 } as const satisfies Record<string, { value: number; what: string }>;
