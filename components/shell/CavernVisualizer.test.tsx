@@ -12,6 +12,8 @@ vi.mock('@/lib/cavern/capture', async (orig) => ({ ...(await orig<typeof import(
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: cap.toast }) }));
 const snd = vi.hoisted(() => ({ supported: true, close: vi.fn(), make: vi.fn() }));
 vi.mock('@/lib/cavern/diveSound', () => ({ soundSupported: () => snd.supported, createDiveSound: snd.make }));
+const journeyFeed = vi.hoisted(() => ({ state: { journey: null as unknown, status: 'no-project' as string } }));
+vi.mock('@/lib/cavern/useJourney', () => ({ useJourney: () => journeyFeed.state }));
 import { CavernVisualizer } from './CavernVisualizer';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
@@ -28,6 +30,11 @@ describe('CavernVisualizer', () => {
     expect(spotify.togglePlay).toHaveBeenCalledOnce(); expect(spotify.nextTrack).toHaveBeenCalledOnce(); expect(spotify.prevTrack).toHaveBeenCalledOnce();
     fireEvent.change(screen.getByRole('slider', { name: 'Seek' }), { target: { value: '90000' } });
     expect(spotify.seek).toHaveBeenCalledWith(90000);
+  });
+  it('says which sync level it runs at: with no project it follows the player only', () => {
+    render(<CavernVisualizer onClose={() => {}} />);
+    expect(screen.getByText('No project open: the cave follows the player only.')).toBeTruthy();
+    expect(screen.getByText('Following the player (the beat is not heard)')).toBeTruthy();
   });
   it('closes with its button and with Escape, and Space plays or pauses', () => {
     const onClose = vi.fn();
