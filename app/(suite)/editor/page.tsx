@@ -44,7 +44,8 @@ import { usePillStage } from '@/lib/os/PillContext';
 import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
+import { BoardView, OutlineView } from '@/components/editor/EditorCenterViews';
+import { ScriptAnalytics } from '@/components/editor/ScriptAnalytics';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
@@ -236,7 +237,7 @@ export default function EditorPage() {
   // storage retries it automatically. Drives the status bar + a one-time toast.
   const [syncPending, setSyncPending] = useState(false);
   const warnedUnsyncedRef = useRef(false);
-  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline' | 'stats'>('write');
+  const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
 
@@ -1022,6 +1023,19 @@ export default function EditorPage() {
         lintIssues={lintIssues}
         stash={stash} textareaRef={textareaRef}
         currentScript={currentScript}
+        analyticsPanel={
+          <ScriptAnalytics
+            currentScriptTitle={currentScript?.title} wordCount={wordCount} pageEst={pageEst}
+            scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
+            dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
+            sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
+            timing={timing} characterTiming={characterTiming}
+            onJumpToScene={jumpToScene}
+            onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
+            targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}
+            briefHref={currentScript?.project_id ? `/projects/${currentScript.project_id}#brief` : undefined}
+          />
+        }
         readingPanel={
           <>
             <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
@@ -1178,19 +1192,6 @@ export default function EditorPage() {
             />
           )}
 
-          {activeView === 'stats' && (
-            <StatsView
-              currentScriptTitle={currentScript?.title} wordCount={wordCount} pageEst={pageEst}
-              scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
-              dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
-              sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
-              timing={timing} characterTiming={characterTiming}
-              onJumpToScene={jumpToScene}
-              onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
-              targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}
-              briefHref={currentScript?.project_id ? `/projects/${currentScript.project_id}#brief` : undefined}
-            />
-          )}
         </div>
 
         <AnimatePresence>

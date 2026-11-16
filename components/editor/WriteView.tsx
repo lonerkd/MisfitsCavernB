@@ -32,7 +32,7 @@ import { usePillStage } from '@/lib/os/PillContext';
 import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
-import { BoardView, OutlineView, StatsView } from '@/components/editor/EditorCenterViews';
+import { BoardView, OutlineView } from '@/components/editor/EditorCenterViews';
 import { TYPE_COLORS } from '@/components/editor/editorConstants';
 import { emphasisSegments } from '@/lib/scriptos/emphasis';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';

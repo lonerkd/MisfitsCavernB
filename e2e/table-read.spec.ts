@@ -70,7 +70,8 @@ test.describe('Table read & runtime (local Supabase)', () => {
     // The project pill arrives a beat after the script and shifts the view
     // switcher right; click once the header has settled.
     await expect(page.locator(`header a[href="/projects/${projectId}"]`)).toBeVisible({ timeout: 20_000 });
-    await page.getByRole('button', { name: 'Stats', exact: true }).click();
+    // The runtime lives in the tools panel's Script section (the centre Stats view folded into it).
+    await page.getByRole('button', { name: 'Script', exact: true, pressed: false }).click();
     const runtime = page.getByRole('region', { name: 'Runtime' });
     await expect(runtime).toContainText('1 scene timed at a table read', { timeout: 20_000 });
     const table = runtime.getByRole('table', { name: 'Runtime by scene' });

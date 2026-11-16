@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { ArrowLeft, ChevronDown, Layers, MoreHorizontal, PanelRight } from 'lucide-react';
 import type { EditorCtx } from './editorCtx';
 
-export const VIEW_LABELS: Record<EditorCtx['activeView'], string> = { write: 'Write', board: 'Board', outline: 'Outline', preview: 'Preview', stats: 'Stats' };
+export const VIEW_LABELS: Record<EditorCtx['activeView'], string> = { write: 'Write', board: 'Board', outline: 'Outline', preview: 'Preview' };
 
 const tap = { minWidth: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--fg)', cursor: 'pointer', borderRadius: 14, padding: '0 8px', fontSize: 14 } as const;
 
