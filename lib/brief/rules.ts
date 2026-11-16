@@ -6,6 +6,7 @@
 // lib/brief/core.ts and lib/brief/parsers.ts read.
 
 import type { BriefOption, BriefQuestion } from './core';
+import { slug } from './check';
 
 /** The names an `implies` may point at; a list left out is not checked against the catalogue. */
 export interface RuleVocab {
@@ -151,4 +152,20 @@ export function checkWords(label: string, hint: string): Checked<{ label: string
   if (l.length > 120) return { ok: false, error: 'Keep the question under 120 characters.' };
   if (h.length > 300) return { ok: false, error: 'Keep the hint under 300 characters.' };
   return { ok: true, value: { label: l, hint: h } };
+}
+
+/** An option's label: 1–80 characters. */
+export function checkOptionLabel(label: string): Checked<string> {
+  const l = label.trim().replace(/\s+/g, ' ');
+  if (!l) return { ok: false, error: 'Every option needs some words.' };
+  if (l.length > 80) return { ok: false, error: `“${l.slice(0, 20)}…”: keep an option under 80 characters.` };
+  return { ok: true, value: l };
+}
+
+/** The id a new option gets from its label ("Festival circuit" → festival_circuit), different from every id already taken. Ids never change afterwards: answers point at them. */
+export function newOptionId(label: string, taken: string[]): string {
+  const base = slug(label).slice(0, 36) || 'option';
+  let id = base;
+  for (let n = 2; taken.includes(id); n += 1) id = `${base}_${n}`;
+  return id;
 }

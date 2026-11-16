@@ -26,21 +26,28 @@ describe('admin-brief', () => {
     expect(result).toBeNull();
   });
 
-  it('countAnswers returns a number', async () => {
-    const mockSelect = vi.fn().mockImplementation(() => ({
-      eq: vi.fn().mockResolvedValue({ count: 5, error: null }),
-    }));
+  it('countAnswers asks the database to count (a whole question, or one option) and says null on failure', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: 5, error: null });
     const originalSupabase = await import('./client');
-    (originalSupabase.supabase as any).from = vi.fn().mockImplementation((table) => {
-      if (table === 'project_brief') {
-        return { select: mockSelect };
-      }
-      return { delete: vi.fn().mockResolvedValue({ error: null }) };
-    });
-
+    (originalSupabase.supabase as any).rpc = rpc;
     countAnswers = await import('./admin-brief').then(m => m.countAnswers);
-    const result = await countAnswers('test');
-    expect(typeof result).toBe('number');
+    expect(await countAnswers('test')).toBe(5);
+    expect(rpc).toHaveBeenCalledWith('admin_count_brief_answers', { p_key: 'test', p_option: null });
+    expect(await countAnswers('test', 'a')).toBe(5);
+    expect(rpc).toHaveBeenLastCalledWith('admin_count_brief_answers', { p_key: 'test', p_option: 'a' });
+    rpc.mockResolvedValue({ data: null, error: { message: 'no' } });
+    expect(await countAnswers('test')).toBeNull();
+  });
+
+  it('removeOption returns how many answers were cleared, or the refusal', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: 3, error: null });
+    const originalSupabase = await import('./client');
+    (originalSupabase.supabase as any).rpc = rpc;
+    const { removeOption } = await import('./admin-brief');
+    expect(await removeOption('goal', 'web')).toEqual({ error: null, cleared: 3 });
+    expect(rpc).toHaveBeenCalledWith('admin_remove_brief_option', { p_key: 'goal', p_option: 'web' });
+    rpc.mockResolvedValue({ data: null, error: { message: 'A question keeps at least two options' } });
+    expect(await removeOption('goal', 'web')).toEqual({ error: 'A question keeps at least two options', cleared: 0 });
   });
 
   it('removeQuestion calls the audited function', async () => {
