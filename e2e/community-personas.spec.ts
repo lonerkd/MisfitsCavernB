@@ -93,7 +93,9 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     await expect(page.locator('[aria-labelledby="today-invites"]')).toHaveCount(0);
     const text = await page.locator('#main-content').innerText();
     for (const secret of [title, taskTitle, secretName, 'Announcement ·', announcement, 'Budget talk']) expect(text).not.toContain(secret);
-    expect(text).not.toContain(sam.username);
+    // Sam may appear in Crew open to work (a public directory of people); never beside the project.
+    const yourDay = await page.locator('#main-content').locator('[aria-labelledby^="today-"]').allInnerTexts();
+    for (const block of yourDay) expect(block).not.toContain(sam.username);
   });
 
   test('Sam, the owner, sees his own project', async ({ page, stack }) => {
