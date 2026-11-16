@@ -44,6 +44,29 @@ describe('reporting', () => {
     expect(await logged(`bad kind ${TAG}`)).toEqual([]);
   });
 
+  it('stores the stack redacted: no origin, path, query string, token or email', async () => {
+    const jwt = ['eyJ' + 'hbGciOiJIUzI1NiJ9', 'eyJ' + 'zdWIiOiIxMjM0NTY3ODkwIn0', 'x'.repeat(43)].join('.') // a fake token, built so secret scanners do not flag a literal;
+    const stack = [
+      'Error: boom',
+      '    at render (https://app.example.com/_next/static/chunks/page-1a2b.js?access_token=SECRETQ&v=1:10:5)',
+      '    at run (C:\\Users\\sam\\app\\lib\\run.ts:3:9)',
+      '    at go (/home/runner/work/app/lib/go.ts:7:1)',
+      `    at who (jo.smith+x@mail.example.com ${jwt} ${'ab12'.repeat(10)})`,
+    ].join('\n');
+    expect((await report(cast.jordan.client, `redact ${TAG}`, { p_stack: stack })).error).toBeNull();
+    const [row] = await logged(`redact ${TAG}`);
+    expect(row.stack).toBe([
+      'Error: boom',
+      '    at render ([origin]/page-1a2b.js:10:5)',
+      '    at run (/run.ts:3:9)',
+      '    at go (/go.ts:7:1)',
+      '    at who ([email] [token] [token])',
+    ].join('\n'));
+    for (const secret of ['example.com', '?', 'SECRETQ', 'Users', 'runner', 'eyJ', 'jo.smith']) {
+      expect(row.stack).not.toContain(secret);
+    }
+  });
+
   it('one person can’t flood it', async () => {
     for (let i = 0; i < 25; i++) await report(cast.riley.client, `flood ${i} ${TAG}`);
     const rows = (await adminClient().from('client_errors').select('id').eq('user_id', cast.riley.id).gte('created_at', new Date(Date.now() - 60_000).toISOString())).data ?? [];
