@@ -8,10 +8,12 @@ import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { createBeatTracker, SILENT, smoothLevel, type Levels } from '@/lib/cavern/audio';
 import { captureSupported, startCapture, type Capture, CaptureError } from '@/lib/cavern/capture';
-import { blendCaves, makeCave, seedOf, type Cave } from '@/lib/cavern/cave';
+import { blendCaves, makeCave, seedOf, type Cave, type ZoneSegment } from '@/lib/cavern/cave';
 import { autoSteer, metres, newDive, reseed, stepDive, type Dive, type Steer } from '@/lib/cavern/dive';
 import { createDiveSound, soundSupported, type DiveSound } from '@/lib/cavern/diveSound';
 import { keySteer, pointerSteer } from '@/lib/cavern/diveSteer';
+import { describeSync, journeyLength, journeyPace, journeyTarget, journeyTint, journeyZones, needsResync, originFor, songFraction, type Journey, type JourneyStatus } from '@/lib/cavern/journey';
+import { useJourney } from '@/lib/cavern/useJourney';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
 import { guideInput, IDLE_TO_AUTO, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
 import { makeSpores, stepSpores, type Spore } from '@/lib/cavern/spores';
@@ -61,6 +63,12 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
   const root = useRef<HTMLDivElement>(null);
   const playing = useRef(isPlaying);
   useEffect(() => { playing.current = isPlaying; }, [isPlaying]);
+  // The project's journey (its scenes, read by mood) and where the song is, for the loop to read without re-rendering it. The song's
+  // progress arrives every few seconds, so the loop carries it forward by the clock between updates.
+  const { journey, status } = useJourney();
+  const feed = useRef<{ journey: Journey | null; status: JourneyStatus; ms: number; dur: number; at: number }>({ journey: null, status: 'no-project', ms: 0, dur: 0, at: 0 });
+  useEffect(() => { feed.current.journey = journey; feed.current.status = status; }, [journey, status]);
+  useEffect(() => { feed.current.ms = progressMs; feed.current.dur = durationMs; feed.current.at = performance.now(); }, [progressMs, durationMs]);
   const mini = variant === 'mini';
   // The player's callbacks change identity whenever playback does (and the parent passes inline callbacks): the fullscreen and key
   // handlers read the latest through refs, so re-rendering never re-runs them.
@@ -117,11 +125,13 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
   const trackId = (currentTrack as { id?: string } | null)?.id ?? currentTrack?.name ?? 'cavern';
   const art = currentTrack?.album?.images?.[0]?.url;
   const world = useRef<{
-    seed: number; cave: Cave; far: Cave; mid: Cave; runner: Runner | null; dive: Dive | null; diveIdle: number; tint: Rgb; input: Input;
+    seed: number; cave: Cave; far: Cave; mid: Cave; runner: Runner | null; dive: Dive | null; diveIdle: number; tint: Rgb; cover: Rgb; input: Input;
+    /** The journey's layout in the cave: the key it was built for, where the song's start sits in x, the sections as zones, and when it was last rebuilt. */
+    jkey: string; origin: number; zones: ZoneSegment[] | undefined; resyncedAt: number;
     guide: Input | null; aim: Steer | null; aimedAt: number; mouse: boolean; want: number; settleFrom: number | null; style: CaveStyle;
   }>({
     seed: seedOf(trackId), cave: makeCave(seedOf(trackId)), far: makeCave(seedOf(trackId) + 101), mid: makeCave(seedOf(trackId) + 202), runner: null, dive: null, diveIdle: IDLE_TO_AUTO,
-    tint: WARM, input: NO_INPUT, guide: null, aim: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null, style: 'run',
+    tint: WARM, cover: WARM, jkey: '', origin: 0, zones: undefined, resyncedAt: -1e9, input: NO_INPUT, guide: null, aim: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null, style: 'run',
   });
   useEffect(() => { world.current.want = seedOf(trackId); }, [trackId]);
 
@@ -152,7 +162,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
 
   // The light takes the cover's colour. A cover the browser will not let us read (cross-origin) leaves the warm default.
   useEffect(() => {
-    if (!art) { world.current.tint = WARM; return; }
+    if (!art) { world.current.cover = WARM; return; }
     let on = true;
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
@@ -161,7 +171,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         const c = document.createElement('canvas'); c.width = c.height = 32;
         const g = c.getContext('2d'); if (!g) return;
         g.drawImage(img, 0, 0, 32, 32);
-        if (on) world.current.tint = asLight(dominantColour(g.getImageData(0, 0, 32, 32).data));
+        if (on) world.current.cover = asLight(dominantColour(g.getImageData(0, 0, 32, 32).data));
       } catch { /* tainted: keep the default */ }
     };
     img.src = art;
@@ -220,6 +230,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
   const distance = useRef<HTMLSpanElement>(null);
   const hearing = useRef<HTMLSpanElement>(null);
   const modeText = useRef<HTMLSpanElement>(null);
+  const journeyText = useRef<HTMLSpanElement>(null);
   const miniText = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -249,25 +260,43 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
     const frame = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); last = now;
       const r0 = W.runner!;
+      // The journey: where the song is (carried forward by the clock between updates), how long the journey is in the cave, and the x the
+      // song says the cave should be at.
+      const F = feed.current;
+      const frac = F.journey ? songFraction(F.ms + (playing.current ? now - F.at : 0), F.dur) : null;
+      const length = F.journey && frac !== null ? journeyLength(F.journey, F.dur) : 0;
+      const jkey = F.journey && frac !== null ? `${F.journey.key}@${Math.round(F.dur / 1000)}` : '';
+      const lost = jkey !== '' && jkey === W.jkey && W.style === 'run' && now - W.resyncedAt > 3000 && needsResync(r0.x, journeyTarget(frac!, length, W.origin));
       // A new song: a new cave, blended in beyond the edge of the screen so nothing pops (the dive's shaft below changes the same way).
-      if (W.want !== W.seed) {
+      if (W.want !== W.seed || jkey !== W.jkey || lost) {
         const from = r0.x + (w / h) * (1 - RUNNER_AT) + 1;
-        W.cave = blendCaves(W.cave, makeCave(W.want), from, 5);
+        const newSong = W.want !== W.seed;
+        // With a journey the song's start is placed so the song's present moment falls where the new cave begins: a song joined or sought
+        // mid-way starts there, and the figure is not sent chasing a section far behind.
+        W.origin = jkey ? originFor(from, frac!, length) : 0;
+        W.zones = jkey ? journeyZones(F.journey!, length, W.origin) : undefined;
+        W.jkey = jkey; W.resyncedAt = now;
+        W.cave = blendCaves(W.cave, makeCave(W.want, W.zones), from, 5);
         W.far = blendCaves(W.far, makeCave(W.want + 101), from, 5);
         W.mid = blendCaves(W.mid, makeCave(W.want + 202), from, 5);
         W.seed = W.want;
         W.settleFrom = from + 5 + 0.5;
-        spores = makeSpores(70, W.cave, r0.x, AHEAD, W.seed);
-        if (W.dive) reseed(W.dive, W.want);
+        if (newSong) {
+          spores = makeSpores(70, W.cave, r0.x, AHEAD, W.seed);
+          if (W.dive) reseed(W.dive, W.want);
+        }
       }
       // Once a layer has left the blend fully behind the camera, it is just the new cave again (not a chain of blends).
       if (W.settleFrom !== null) {
         const aspect = w / h;
         const behind = (par: number) => par * r0.x - RUNNER_AT * aspect > W.settleFrom!;
-        if (behind(1)) W.cave = makeCave(W.seed);
+        if (behind(1)) W.cave = makeCave(W.seed, W.zones);
         if (behind(0.6)) W.mid = makeCave(W.seed + 202);
         if (behind(0.3)) { W.far = makeCave(W.seed + 101); W.settleFrom = null; }
       }
+      // The light: the scene's mood colour over the cover's, following the figure through the journey (the Dive has no x, so it follows the song).
+      if (jkey) W.tint = journeyTint(F.journey!, W.style === 'run' ? Math.min(1, Math.max(0, (r0.x - W.origin) / length)) : frac!, W.cover);
+      else W.tint = W.cover;
       // A mouse left resting over the cave lets go.
       if (W.mouse && W.aim && now - W.aimedAt > HOVER_REST_MS) { W.guide = null; W.aim = null; }
       energy += ((playing.current ? 1 : 0.15) - energy) * Math.min(1, dt * 1.5);
@@ -298,7 +327,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         tally = `${metres(d).toLocaleString()} m down`;
       } else {
         if (!reduce) {
-          W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current);
+          W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin)) : 1);
           spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
         }
         const r = W.runner!;
@@ -311,6 +340,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         if (distance.current) distance.current.textContent = tally;
         if (miniText.current) miniText.current.textContent = tally;
         if (hearing.current) hearing.current.textContent = !capture.current ? 'Following the player (the beat is not heard)' : capture.current.hearing() ? 'Listening: the light follows the music' : 'Listening, but hearing nothing: share a tab or the screen with audio, and play something';
+        if (journeyText.current) journeyText.current.textContent = describeSync({ status: F.status, journey: F.journey, durationKnown: F.dur > 0, fraction: frac, style: W.style, listening: capture.current !== null }).text;
         if (modeText.current) modeText.current.textContent = steering ? 'You are steering' : 'Exploring on its own: touch an arrow key to steer';
       }
       if (!reduce) raf = requestAnimationFrame(frame);
@@ -349,7 +379,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       ) : (
         <>
           <div className={`${v.depth} ${fade}`} aria-live="off">
-            <span ref={distance}>0 m in</span><span ref={modeText}>Exploring on its own: touch an arrow key to steer</span><span ref={hearing}>Following the player (the beat is not heard)</span>
+            <span ref={distance}>0 m in</span><span ref={modeText}>Exploring on its own: touch an arrow key to steer</span><span ref={hearing}>Following the player (the beat is not heard)</span><span ref={journeyText}>No project open: the cave follows the player only.</span>
             <div className={v.styles} role="group" aria-label="How to be in the cave">
               <button type="button" className={v.listen} aria-pressed={style === 'run'} onClick={() => chooseStyle('run')} title="Run through the cave, side-on">Run</button>
               <button type="button" className={v.listen} aria-pressed={style === 'dive'} onClick={() => chooseStyle('dive')} title="Dive down the cave, in the first person">Dive</button>

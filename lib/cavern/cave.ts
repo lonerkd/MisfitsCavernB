@@ -55,19 +55,46 @@ function zoneIndex(x: number, seed: number) {
   return { z, kind: KINDS[Math.floor(hash(z, seed ^ 0x51ed) * KINDS.length)] };
 }
 
-function paramsAt(x: number, seed: number): Params {
+/** A stretch of cave of one kind, from `start` to `end` in screen heights (either may be infinite at the ends of a journey). */
+export interface ZoneSegment { start: number; end: number; kind: ZoneKind }
+type SegmentAt = (x: number) => ZoneSegment;
+
+const seededSegments = (seed: number): SegmentAt => (x) => {
   const { z, kind } = zoneIndex(x, seed);
-  const here = PARAMS[kind];
-  const into = x - z * ZONE_LENGTH;
+  return { start: z * ZONE_LENGTH, end: (z + 1) * ZONE_LENGTH, kind };
+};
+
+/**
+ * The segments a journey lays out (in order, touching): the first reaches back for ever and the last forward for ever, so every x is in
+ * one. A lookup by binary search, because the cave is asked thousands of times a frame.
+ */
+function laidSegments(zones: ZoneSegment[]): SegmentAt {
+  const segs = zones.map((z, i) => ({ ...z, start: i === 0 ? -Infinity : z.start, end: i === zones.length - 1 ? Infinity : z.end }));
+  return (x) => {
+    let lo = 0, hi = segs.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (segs[mid].start <= x) lo = mid; else hi = mid - 1;
+    }
+    return segs[lo];
+  };
+}
+
+function paramsAt(x: number, segAt: SegmentAt): Params {
+  const seg = segAt(x);
+  const here = PARAMS[seg.kind];
+  const into = x - seg.start;
+  // A short stretch blends over a third of itself at each end, so a journey's quick scene is not all blend.
+  const blend = Math.min(BLEND, (seg.end - seg.start) / 3);
   // Blend with the zone before near the start and the zone after near the end, so the cave changes shape smoothly.
-  if (into < BLEND) {
-    const prev = PARAMS[zoneIndex((z - 1) * ZONE_LENGTH, seed).kind];
-    const t = smooth(0.5 + into / (2 * BLEND));
+  if (into < blend) {
+    const prev = PARAMS[segAt(seg.start - 1e-6).kind];
+    const t = smooth(0.5 + into / (2 * blend));
     return lerpParams(prev, here, t);
   }
-  if (into > ZONE_LENGTH - BLEND) {
-    const next = PARAMS[zoneIndex((z + 1) * ZONE_LENGTH, seed).kind];
-    const t = smooth((into - (ZONE_LENGTH - BLEND)) / (2 * BLEND));
+  if (seg.end - x < blend) {
+    const next = PARAMS[segAt(seg.end + 1e-6).kind];
+    const t = smooth((x - (seg.end - blend)) / (2 * blend));
     return lerpParams(here, next, t);
   }
   return here;
@@ -88,21 +115,23 @@ function teeth(x: number, seed: number, period: number, tall: number): number {
   return best;
 }
 
-export function makeCave(seed: number): Cave {
+/** The cave for a seed. With `zones` (a journey's sections laid along x) the kinds of place follow them instead of the seed's own order; the rock's detail is still the seed's. */
+export function makeCave(seed: number, zones?: ZoneSegment[]): Cave {
+  const segAt = zones && zones.length ? laidSegments(zones) : seededSegments(seed);
   const floorAt = (x: number) => {
-    const p = paramsAt(x, seed);
+    const p = paramsAt(x, segAt);
     const roll = (noise(x * 0.35, seed + 11) * 0.7 + noise(x * 0.9, seed + 12) * 0.3) * p.roll;
     const grain = noise(x * 3.1, seed + 13) * 0.012 + noise(x * 7.3, seed + 14) * 0.006; // the rock is never smooth
     return clamp(FLOOR + roll + grain - teeth(x, seed + 21, 0.9, p.floorTeeth), 0.5, 0.92);
   };
   const ceilingAt = (x: number) => {
-    const p = paramsAt(x, seed);
+    const p = paramsAt(x, segAt);
     const wander = (noise(x * 0.3, seed + 31) * 0.6 + noise(x * 0.8, seed + 32) * 0.4) * 0.07 + noise(x * 2.7, seed + 33) * 0.014 + noise(x * 6.9, seed + 34) * 0.007;
     const base = FLOOR - p.clearance + wander + teeth(x, seed + 41, 0.7, p.teeth * 2.4);
     // Never close the passage: whatever the teeth do, there is always room to crouch through.
     return clamp(Math.min(base, floorAt(x) - MIN_CLEARANCE), 0.02, 0.9);
   };
-  return { floorAt, ceilingAt, zoneAt: (x) => zoneIndex(x, seed).kind };
+  return { floorAt, ceilingAt, zoneAt: (x) => segAt(x).kind };
 }
 
 /** Old cave until `from`, the new one after `from + length`, blended between: so a new song changes the cave out of sight, not with a pop. */
