@@ -233,7 +233,7 @@ export function useLounge() {
     let channel: any;
     if (dmTarget && currentUserId) {
       const pairKey = [currentUserId, dmTarget.id].sort().join(':');
-      channel = supabase.channel(`dm:${pairKey}`)
+      channel = supabase.channel(`dm:${pairKey}`, { config: { private: true } })
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
           const m = payload.new;
           if ((m.sender_id === currentUserId && m.receiver_id === dmTarget.id) ||
@@ -274,7 +274,7 @@ export function useLounge() {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const reload = () => { getLoungeUnread().then((u) => { if (alive) setUnread(u); }); };
     reload();
-    const ch = supabase.channel(`lounge-unread:${currentUserId}`)
+    const ch = supabase.channel(`lounge-unread:${currentUserId}`, { config: { private: true } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, () => { clearTimeout(timer); timer = setTimeout(reload, 700); })
       .subscribe();
     return () => { alive = false; clearTimeout(timer); supabase.removeChannel(ch); };
@@ -299,7 +299,7 @@ export function useLounge() {
   useEffect(() => {
     if (!activeChannel) return;
     const uname = myProfile?.username || 'Someone';
-    const ch = supabase.channel(`typing:${activeChannel.id}`, { config: { broadcast: { self: false } } });
+    const ch = supabase.channel(`typing:${activeChannel.id}`, { config: { private: true, broadcast: { self: false } } });
     ch.on('broadcast', { event: 'typing' }, ({ payload }: any) => {
       const name = payload?.username;
       if (!name) return;
@@ -320,7 +320,7 @@ export function useLounge() {
       setThread({ parentId: threadParent.id, replies: data.map((m: any) => ({ id: m.id, user: m.profiles?.username || 'Deleted account', text: m.content, timestamp: new Date(m.created_at), sender_id: m.sender_id, reactions: m.reactions || {} })) });
     };
     load();
-    const ch = supabase.channel(`thread:${threadParent.id}`)
+    const ch = supabase.channel(`thread:${threadParent.id}`, { config: { private: true } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `parent_message_id=eq.${threadParent.id}` }, () => load())
       .subscribe();
     return () => { mounted = false; supabase.removeChannel(ch); };

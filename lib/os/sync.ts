@@ -78,7 +78,7 @@ export function syncActiveProject(projectId: string | null) {
   }
   if (!projectId) return;
 
-  let channel = supabase.channel(`project:${projectId}`);
+  let channel = supabase.channel(`project:${projectId}`, { config: { private: true } });
 
   for (const [table, key] of Object.entries(TABLE_TO_KEY)) {
     channel = channel.on(
@@ -111,7 +111,7 @@ export function syncActiveProject(projectId: string | null) {
 export function syncProjectList() {
   if (listChannel) return;
   listChannel = supabase
-    .channel('projects:list')
+    .channel('projects:list', { config: { private: true } })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, (payload) => {
       const { project, setProject } = osState();
       if (payload.eventType === 'UPDATE' && payload.new) {

@@ -149,7 +149,7 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
         }
       };
 
-      const ch = supabase.channel(`voice:${channelId}`, { config: { presence: { key: meId }, broadcast: { self: false } } });
+      const ch = supabase.channel(`voice:${channelId}`, { config: { private: true, presence: { key: meId }, broadcast: { self: false } } });
       chanRef.current = ch;
 
       const handleOffer = async (payload: any) => {

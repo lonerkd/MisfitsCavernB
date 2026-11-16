@@ -130,7 +130,7 @@ export function useLiveRows<T extends Row>(opts: LiveRowsOptions<T>): LiveRows<T
     };
 
     const channel: RealtimeChannel = supabase
-      .channel(`live:${table}:${scope}:${Math.random().toString(36).slice(2)}`)
+      .channel(`live:${table}:${scope}:${Math.random().toString(36).slice(2)}`, { config: { private: true } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table, filter }, onChange)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table, filter }, onChange)
       // DELETE events carry only the primary key, so they can't be filtered by

@@ -6,7 +6,7 @@ export function useOnlinePresence(currentUserId: string | null | undefined): Set
 
   useEffect(() => {
     if (!currentUserId) return;
-    const ch = supabase.channel('lounge-presence', { config: { presence: { key: currentUserId } } });
+    const ch = supabase.channel('lounge-presence', { config: { private: true, presence: { key: currentUserId } } });
     ch.on('presence', { event: 'sync' }, () => {
       setOnlineIds(new Set(Object.keys(ch.presenceState())));
     }).subscribe(async (status) => {

@@ -48,7 +48,7 @@ export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, contex
   // Live: a teammate's note appears without a reload.
   useEffect(() => {
     if (!scriptId && !projectId) return;
-    const ch = supabase.channel(`notes_${scriptId ?? projectId}`)
+    const ch = supabase.channel(`notes_${scriptId ?? projectId}`, { config: { private: true } })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notes' }, () => load())
       .subscribe();
     return () => { void supabase.removeChannel(ch); };
