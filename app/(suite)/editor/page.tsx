@@ -22,7 +22,7 @@ import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
+import { loadTitlePage, saveTitlePage, getDefaultTitlePage, withScriptTitle, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
 import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, Scene as ParsedScene } from '@/lib/scriptos/types';
@@ -284,7 +284,7 @@ export default function EditorPage() {
   const handleLoadScript = useCallback((script: StoredScript) => {
     setCurrentScript(script);
     setContent(script.content || '');
-    loadTitlePage(script.id).then(setTitlePage);
+    loadTitlePage(script.id).then((tp) => setTitlePage(withScriptTitle(tp, script.title)));
     loadCharacterProfiles(script.id).then(setCharProfiles);
     setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
     setActiveView('write');
@@ -349,7 +349,7 @@ export default function EditorPage() {
         const latest = all[0];
         setCurrentScript(latest);
         setContent(latest.content || '');
-        loadTitlePage(latest.id).then(setTitlePage);
+        loadTitlePage(latest.id).then((tp) => setTitlePage(withScriptTitle(tp, latest.title)));
         loadCharacterProfiles(latest.id).then(setCharProfiles);
         setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
       } else {
