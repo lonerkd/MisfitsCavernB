@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Play, Search, Trash } from 'lucide-react';
+import Link from 'next/link';
+import { PenLine, Play, Search, Trash } from 'lucide-react';
+import { editorSceneHref } from '@/lib/audio/links';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -197,7 +199,14 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
                   <h3 className="mc-title text-lg">{scene.number}. {scene.heading}</h3>
                   <p className="mc-text text-xs text-[var(--fg-dim)]">{scene.mood} · {formatMinutes(scene.minutes)} · {SOURCE_NOTE[scene.source]}</p>
                 </div>
-                <Button variant="outline" className="gap-2" onClick={() => onFind(moodQuery(scene.mood), scene.id)}><Search size={14} /> Find music for this scene</Button>
+                <div className="flex flex-wrap gap-2">
+                  {editorSceneHref(ready?.scriptId, scene.id) && (
+                    <Link href={editorSceneHref(ready?.scriptId, scene.id)!} className="mc-text text-xs inline-flex items-center gap-2 rounded-full border border-[rgba(var(--ink-rgb),0.14)] px-4 min-h-[44px] text-[var(--fg)] hover:text-[var(--fg-strong)]">
+                      <PenLine size={14} aria-hidden /> Open in the script
+                    </Link>
+                  )}
+                  <Button variant="outline" className="gap-2" onClick={() => onFind(moodQuery(scene.mood), scene.id)}><Search size={14} /> Find music for this scene</Button>
+                </div>
               </div>
               {tracksIn(scene.id).length === 0 ? (
                 <p className="mc-text text-sm text-[var(--fg-dim)]">No music in this scene yet.</p>
