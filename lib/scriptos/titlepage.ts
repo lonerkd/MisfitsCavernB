@@ -32,6 +32,12 @@ export function getDefaultTitlePage(): TitlePage {
 
 const DEFAULT_TITLE_PAGE = getDefaultTitlePage();
 
+/** A title page nobody has filled in says "Untitled Screenplay" over a script that has a name: use the script's own title. */
+export function withScriptTitle(tp: TitlePage, scriptTitle: string | null | undefined): TitlePage {
+  const t = (scriptTitle ?? '').trim();
+  return tp.title === DEFAULT_TITLE_PAGE.title && t ? { ...tp, title: t } : tp;
+}
+
 export async function getTitlePage(scriptId: string): Promise<TitlePage> {
   if (typeof window === 'undefined') return DEFAULT_TITLE_PAGE;
   try {
