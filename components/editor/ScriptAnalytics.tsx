@@ -145,7 +145,7 @@ export function ScriptAnalytics({
       {charStats.length > 0 && scenesList.length > 0 && (
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Character Presence</div>
-          <div style={{ overflowX: 'auto' }}>
+          <div role="region" aria-label="Character presence by scene" tabIndex={0} style={{ overflowX: 'auto' }}>
             <div style={{ minWidth: Math.max(400, scenesList.length * 22) }}>
               {charStats.slice(0, 8).map((cs, ci) => {
                 const charColor = CARD_COLORS[ci % CARD_COLORS.length];
@@ -208,7 +208,7 @@ export function ScriptAnalytics({
       {scenesList.length > 0 && (
         <div style={{ marginBottom: 28 }}>
           <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 14 }}>Scene Breakdown</div>
-          <div style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto' }}><div style={{ minWidth: 300 }}>
+          <div role="region" aria-label="Scene breakdown" tabIndex={0} style={{ background: 'var(--bg-3)', border: '1px solid var(--border)', borderRadius: 14, overflowX: 'auto' }}><div style={{ minWidth: 300 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '28px 1fr 52px 52px 60px 52px', gap: 0, padding: '8px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.05)' }}>
               {['#', 'Scene', 'Type', 'Cast', 'Words', 'Time'].map(h => (
                 <div key={h} style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{h}</div>

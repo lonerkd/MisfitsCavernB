@@ -70,7 +70,7 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
     await page.getByLabel('From line', { exact: true }).fill(from);
     await page.getByLabel('To line', { exact: true }).fill(to);
     if (opts.circle) await page.getByLabel('Circle', { exact: true }).check();
-    await page.getByRole('button', { name: 'Log' }).click();
+    await page.getByRole('button', { name: 'Log', exact: true }).click();
     await expect(page.getByRole('list', { name: 'Takes' }).getByText(take, { exact: true })).toBeVisible({ timeout: 20_000 });
   };
 
