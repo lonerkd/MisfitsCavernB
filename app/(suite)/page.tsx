@@ -348,7 +348,7 @@ export default function Home() {
             <ModuleTile
               title="Studio"
               tag="Asset Hub"
-              color="#6366f1"
+              color="var(--studio-color)"
               href="/studio"
               index={1}
               preview={<StudioPreview items={live.assets} caption={loggedIn ? 'Your references and media appear here' : 'Every reference, clip and track in one library'} />}

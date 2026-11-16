@@ -51,7 +51,7 @@
   cursor: pointer;
   text-overflow: ellipsis;
 }
-.projectPicker select:focus-visible { border-color: var(--studio-color, #6366f1); }
+.projectPicker select:focus-visible { border-color: var(--studio-color, var(--violet)); }
 .projectPicker option { background: var(--bg-2); color: var(--fg); }
 
 .tabs {
@@ -98,7 +98,7 @@
 }
 .tab:hover { color: var(--fg-muted); }
 @media (pointer: coarse) { .tab { height: 44px; padding: 0 16px; font-size: 12px; } .tabList { scroll-snap-type: x proximity; overscroll-behavior-x: contain; } .tab { scroll-snap-align: center; } }
-.tab:focus-visible { outline: 2px solid var(--studio-color, #6366f1); outline-offset: 1px; }
+.tab:focus-visible { outline: 2px solid var(--studio-color, var(--violet)); outline-offset: 1px; }
 .tabOn {
   color: var(--fg);
   background: rgba(99, 102, 241, 0.14);

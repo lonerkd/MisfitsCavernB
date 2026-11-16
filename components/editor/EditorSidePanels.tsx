@@ -283,7 +283,7 @@ export function EditorRightPanels({
                                 <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
                               </div>
                               <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, marginBottom: 8 }}>
-                                <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: TYPE_COLORS.character, borderRadius: 4 }} />
+                                <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: 'var(--violet)', borderRadius: 4 }} />
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: 'var(--fg-muted)' }}>
                                 <span>{cs.dialogueLines} lines</span>
