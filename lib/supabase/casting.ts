@@ -18,13 +18,13 @@ export interface CastingWithProject extends Casting {
 export async function getCastingsForProject(projectId: string): Promise<Record<string, Casting>> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), profiles:crew_user_id(username, avatar_url)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, profiles:crew_user_id(username, avatar_url)')
     .eq('project_id', projectId);
   if (error) throw error;
   const byId: Record<string, Casting> = {};
   for (const row of data ?? []) {
     const r = row as any;
-    const name: string = row.character_name ?? r.characters?.name ?? 'Unknown';
+    const name: string = row.character_name ?? 'Unknown';
     // Keyed by the character's name, upper-cased: every reader (the editor's cue card and Character Bible, the casting
     // board) looks a character up by the name it reads in the script.
     byId[name.toUpperCase()] = {
@@ -41,7 +41,7 @@ export async function getCastingsForProject(projectId: string): Promise<Record<s
 export async function getCastingsForUser(userId: string): Promise<CastingWithProject[]> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), projects:project_id(title)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, projects:project_id(title)')
     .eq('crew_user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -50,7 +50,7 @@ export async function getCastingsForUser(userId: string): Promise<CastingWithPro
     return {
       ...row,
       character_id: row.character_id!,
-      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
+      character_name: row.character_name ?? 'Unknown',
       project_title: r.projects?.title ?? undefined,
     };
   });
