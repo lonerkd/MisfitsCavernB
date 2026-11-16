@@ -189,6 +189,18 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `treatmentHeaderConfidence` | 80 | a short all-caps, # or SCENE / SHOT / BEAT line in a treatment reads as a section header |
 | `treatmentQuoteConfidence` | 65 | a quoted line in a treatment reads as a suggested line of dialogue |
 | `treatmentProseConfidence` | 60 | any other line in a treatment reads as prose (action) |
+| `titlePageKeywordConfidence` | 100 | a title-page line (Title:, Author:, Draft date:) in the first lines reads as the title page (the syntax spells it out, so it is never in doubt) |
+| `proseHeadingMarkerConfidence` | 100 | a "# " line in prose reads as a heading (the syntax spells it out, so it is never in doubt) |
+| `forcedPageBreakConfidence` | 100 | a line of three or more "=" is a page break (the syntax spells it out, so it is never in doubt) |
+| `forcedNoteConfidence` | 100 | a line wrapped in [[ ]] is a note (the syntax spells it out, so it is never in doubt) |
+| `forcedSectionConfidence` | 100 | a "# " line is a section (the syntax spells it out, so it is never in doubt) |
+| `forcedSynopsisConfidence` | 100 | a line led by a single "=" is a synopsis (the syntax spells it out, so it is never in doubt) |
+| `forcedLyricConfidence` | 100 | a line led by "~" is a lyric (the syntax spells it out, so it is never in doubt) |
+| `forcedCenteredConfidence` | 100 | a line wrapped in > < is centered text (the syntax spells it out, so it is never in doubt) |
+| `forcedTransitionConfidence` | 100 | a line led by ">" is a forced transition (the syntax spells it out, so it is never in doubt) |
+| `forcedHeadingConfidence` | 100 | a line led by a dot and a letter is a forced scene heading (the syntax spells it out, so it is never in doubt) |
+| `forcedCharacterConfidence` | 100 | a line led by "@" is a forced character cue (the syntax spells it out, so it is never in doubt) |
+| `forcedActionConfidence` | 100 | a line led by "!" is forced action (the syntax spells it out, so it is never in doubt) |
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
 
