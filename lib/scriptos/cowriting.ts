@@ -5,6 +5,11 @@ export const SCRIPT_TEXT_FIELD = 'script';
 export const LOCAL_EDIT_ORIGIN = Symbol('local-script-edit');
 export const REMOTE_EDIT_ORIGIN = Symbol('remote-script-edit');
 
+/** The script channel's Yjs messages (`script_<id>`): sent by the live provider and by the offline queue. */
+export const YJS_UPDATE_EVENT = 'yjs_update';
+export const YJS_SYNC_REQUEST_EVENT = 'yjs_sync_request';
+export const YJS_SYNC_EVENT = 'yjs_sync';
+
 const BASELINE_CLIENT_ID = 0x4d43;
 const LOCAL_STATE_PREFIX = 'mc_script_yjs_';
 
