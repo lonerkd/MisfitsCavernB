@@ -119,7 +119,8 @@ export function transformLineForType(text: string, type: LineType): string {
   }
 }
 
-export function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean }) {
+/** `compact` is a phone: the page's indents shrink so a speech keeps a readable column instead of one word a line. */
+export function LinePreview({ line, index, nightModePreview, sceneNumber, showSceneNumbers, compact }: { line: ScriptLine; index: number; nightModePreview: boolean; sceneNumber?: number; showSceneNumbers?: boolean; compact?: boolean }) {
   const style: React.CSSProperties = {
     fontFamily: 'var(--script)',
     fontSize: 14,
@@ -149,7 +150,7 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
   if (line.type === 'slug') {
     return (
       <div style={{ ...style, position: 'relative', fontWeight: 700, textTransform: 'uppercase', marginTop: index > 0 ? 24 : 0, marginBottom: 8, background: 'rgba(var(--ink-rgb), 0.02)', padding: '4px 8px', borderRadius: 4 }}>
-        {showSceneNumbers && sceneNumber != null && (
+        {showSceneNumbers && !compact && sceneNumber != null && (
           <>
             <span style={{ position: 'absolute', left: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
             <span style={{ position: 'absolute', right: -44, fontSize: 12, fontWeight: 400, color: nightModePreview ? 'var(--fg-dim)' : 'var(--fg-dim)' }}>{sceneNumber}</span>
@@ -161,13 +162,13 @@ export function LinePreview({ line, index, nightModePreview, sceneNumber, showSc
   }
   if (line.type === 'character') {
     const name = line.meta?.isDualDialogue ? displayContent.replace(/^\^/, '') : displayContent;
-    return <div style={{ ...style, marginLeft: '22ch', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{name}{contd ? " (CONT'D)" : ''}</div>;
+    return <div style={{ ...style, marginLeft: compact ? '8ch' : '22ch', textTransform: 'uppercase', fontWeight: 600, marginTop: 16, marginBottom: 0 }}>{name}{contd ? " (CONT'D)" : ''}</div>;
   }
   if (line.type === 'dialogue') {
-    return <div style={{ ...style, marginLeft: '10ch', marginRight: '15ch', marginBottom: 12 }}>{displayContent}</div>;
+    return <div style={{ ...style, marginLeft: compact ? '2ch' : '10ch', marginRight: compact ? '2ch' : '15ch', marginBottom: 12 }}>{displayContent}</div>;
   }
   if (line.type === 'parenthetical') {
-    return <div style={{ ...style, marginLeft: '16ch', marginRight: '20ch', fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>{displayContent}</div>;
+    return <div style={{ ...style, marginLeft: compact ? '5ch' : '16ch', marginRight: compact ? '3ch' : '20ch', fontStyle: 'italic', opacity: 0.6, marginBottom: 0 }}>{displayContent}</div>;
   }
   if (line.type === 'transition') {
     return <div style={{ ...style, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', marginTop: 16, marginBottom: 16 }}>{displayContent}</div>;

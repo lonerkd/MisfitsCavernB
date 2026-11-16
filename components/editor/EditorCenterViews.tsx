@@ -234,7 +234,7 @@ export function OutlineView({
                 <div style={{ width: 40, textAlign: 'right', fontSize: 12, fontWeight: 700, color: tag || 'var(--fg-muted)', fontFamily: 'var(--mono)', flexShrink: 0, paddingTop: 2, borderLeft: tag ? `3px solid ${tag}` : '3px solid transparent', paddingRight: 6 }}>{globalIdx + 1}</div>
               ); })()}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
                   <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'var(--caps)', cursor: 'pointer' }}>{scene.text}</div>
                   <div style={{ display: 'flex', gap: 4 }}>
                     {CARD_COLORS.map(color => {
@@ -242,10 +242,16 @@ export function OutlineView({
                       return (
                       <button
                         key={color}
+                        type="button"
                         title={active ? 'Remove tag' : 'Tag scene'}
+                        aria-label={`${active ? 'Remove' : 'Set'} scene colour ${color}`}
+                        aria-pressed={active}
                         onClick={() => tagScene(globalIdx, color)}
-                        style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', cursor: 'pointer', padding: 0, transition: 'all 0.15s' }}
-                      />
+                        // The button is the touch target (44 pt on a phone, by the global rule); the visible dot stays small inside it.
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                      >
+                        <span aria-hidden style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', transition: 'all 0.15s' }} />
+                      </button>
                     ); })}
                   </div>
                 </div>
