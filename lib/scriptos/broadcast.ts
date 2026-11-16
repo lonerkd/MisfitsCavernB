@@ -39,7 +39,7 @@ export async function broadcastMergedUpdate(client: BroadcastClient, scriptId: s
   if (client.getChannels?.().some((c) => c.topic === `realtime:script_${scriptId}`)) return 'editor-open-here';
   let channel: BroadcastChannel | null = null;
   try {
-    channel = client.channel(`script_${scriptId}`, { config: { broadcast: { self: false } } });
+    channel = client.channel(`script_${scriptId}`, { config: { private: true, broadcast: { self: false } } });
     const ch = channel;
     await new Promise<void>((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error('timed out subscribing')), SUBSCRIBE_TIMEOUT_MS);

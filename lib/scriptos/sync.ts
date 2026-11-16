@@ -246,7 +246,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       const username = profileResult.data?.username || user.email?.split('@')[0] || 'Anonymous';
       usernameRef.current = username;
       channel = supabase.channel(`script_${scriptId}`, {
-        config: { broadcast: { self: false }, presence: { key: user.id } },
+        config: { private: true, broadcast: { self: false }, presence: { key: user.id } },
       });
       channel
         .on('broadcast', { event: YJS_UPDATE_EVENT }, receiveUpdate)
