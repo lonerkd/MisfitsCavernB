@@ -184,6 +184,10 @@ Definer **trigger** functions in `internal` (not callable through the API; liste
 
 ---
 
+### E. Realtime channels (`realtime.messages`)
+
+A script's co-writing channel `script_<script id>` (Yjs updates, state hand-off, appended text, presence) is a **private** Realtime channel: every client opens it with `config: { private: true }` (`lib/scriptos/sync.ts`, `broadcast.ts`, `beats.ts`). Realtime Authorization checks the joined topic (`realtime.topic()`) against policies on `realtime.messages` (migration `20261116000200`): one SELECT (who may receive) and one INSERT (who may send or track presence), both `internal.can_access_script(<id from the topic>)`, the same helper that decides who may update the script (a project script follows `can_access_project`, a personal one its author). Only topics that match `script_<uuid>` are opened; any other topic stays closed until it gets its own policy. The policies are not in `schema.fingerprint` (it covers `public` and `storage.objects`); `tests/integration/script-channel.test.ts` proves them as each persona. The project's Realtime setting "Allow public access" is the owner's to turn off once this is live; code never touches it.
+
 ## 3. Database Changes — the migration workflow (authoritative)
 
 `supabase/migrations/` is the **single source of truth** for the schema. It

@@ -22,7 +22,7 @@ describe('broadcastMergedUpdate', () => {
   it('sends the merged state on the script channel in the live provider\'s yjs_sync shape, then lets go', async () => {
     const { client, channel, sent } = fake();
     expect(await broadcastMergedUpdate(client, 's1', 'QUJD')).toBe('sent');
-    expect(client.channel).toHaveBeenCalledWith('script_s1', expect.anything());
+    expect(client.channel).toHaveBeenCalledWith('script_s1', { config: expect.objectContaining({ private: true }) });
     expect(sent).toEqual([{ type: 'broadcast', event: 'yjs_sync', payload: { update: 'QUJD' } }]);
     expect(client.removeChannel).toHaveBeenCalledWith(channel);
   });

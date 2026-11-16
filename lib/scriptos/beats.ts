@@ -27,7 +27,7 @@ export function beatAsFountain(beat: { title: string | null; content: string | n
 
 /** Tells editors with the script open to add `text` to the end of their copy. */
 export async function broadcastAppend(scriptId: string, text: string): Promise<void> {
-  const channel = supabase.channel(`script_${scriptId}`, { config: { broadcast: { self: false } } });
+  const channel = supabase.channel(`script_${scriptId}`, { config: { private: true, broadcast: { self: false } } });
   await new Promise<void>((resolve) => {
     const timer = setTimeout(resolve, 4000);
     channel.subscribe((status: string) => {
