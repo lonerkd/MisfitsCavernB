@@ -99,7 +99,7 @@
       "count": 2
     },
     "no-restricted-syntax": {
-      "count": 6
+      "count": 5
     }
   },
   "app/(suite)/opengraph-image.tsx": {

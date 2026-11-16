@@ -338,8 +338,8 @@ export default function ProfilePage() {
                 <button key={s} onClick={() => setProfile({ ...profile, status: s })}
                   style={{
                     flex: 1, padding: 12,
-                    background: profile.status === s ? (s === 'OPEN' ? 'rgba(0,255,0,0.08)' : 'rgba(232, 67, 26,0.08)') : 'transparent',
-                    border: `1px solid ${profile.status === s ? (s === 'OPEN' ? '#00ff00' : 'var(--accent)') : 'rgba(var(--ink-rgb), 0.1)'}`,
+                    background: profile.status === s ? (s === 'OPEN' ? 'color-mix(in srgb, var(--ok) 8%, transparent)' : 'rgba(232, 67, 26,0.08)') : 'transparent',
+                    border: `1px solid ${profile.status === s ? (s === 'OPEN' ? 'var(--ok)' : 'var(--accent)') : 'rgba(var(--ink-rgb), 0.1)'}`,
                     color: profile.status === s ? (s === 'OPEN' ? 'var(--ok)' : 'var(--accent)') : 'var(--fg-dim)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', cursor: 'pointer',
                   }}>
