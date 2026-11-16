@@ -67,9 +67,9 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     const page = await signIn(browser, crew);
     await openTool(page, 'Camera report');
     await page.getByLabel('Scene: add a scene').selectOption(sceneId);
-    await page.getByLabel('Shot').fill('A1');
+    await page.getByLabel('Shot', { exact: true }).fill('A1');
     // The island's pill floats over the bottom of the form: click without a pointer, as a keyboard press would.
-    await page.getByRole('button', { name: /^(add|log|schedule)/i }).dispatchEvent('click');
+    await page.getByRole('button', { name: /^(add|log)$/i }).dispatchEvent('click');
     await expect(page.getByText('Sc 1', { exact: true })).toBeVisible();
 
     const stored = await admin.from('production_records').select('scene_ids, data').eq('project_id', projectId).eq('kind', 'cameraReports').single();
@@ -98,7 +98,7 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     await page.getByLabel('Scene: add a scene').selectOption('__other__');
     await page.getByLabel('Scene (typed)').fill('40 (reshoot)');
     await page.getByRole('combobox', { name: 'Character' }).selectOption({ label: 'MAYA' });
-    await page.getByRole('button', { name: /^(add|log|schedule)/i }).dispatchEvent('click');
+    await page.getByRole('button', { name: /^(add|log)$/i }).dispatchEvent('click');
     await expect(page.getByText('Sc 40 (reshoot)')).toBeVisible();
     const stored = await admin.from('production_records').select('scene_ids, character_id').eq('project_id', projectId).eq('kind', 'costumes').single();
     expect(stored.data?.scene_ids).toEqual([]);
@@ -110,7 +110,7 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     await openTool(page, 'Costumes');
     await page.getByLabel('Scene: add a scene').selectOption(sceneId);
     await page.getByRole('combobox', { name: 'Character' }).selectOption({ label: 'ELI' });
-    await page.getByRole('button', { name: /^(add|log|schedule)/i }).dispatchEvent('click');
+    await page.getByRole('button', { name: /^(add|log)$/i }).dispatchEvent('click');
     // MAYA speaks in the kitchen scene; ELI does not appear in it.
     await expect(page.getByRole('note').filter({ hasText: /ELI is not in scene/ })).toBeVisible();
   });

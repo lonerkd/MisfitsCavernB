@@ -18,17 +18,19 @@ export interface CastingWithProject extends Casting {
 export async function getCastingsForProject(projectId: string): Promise<Record<string, Casting>> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), profiles:crew_user_id(username, avatar_url)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, profiles:crew_user_id(username, avatar_url)')
     .eq('project_id', projectId);
   if (error) throw error;
   const byId: Record<string, Casting> = {};
   for (const row of data ?? []) {
-    if (!row.character_id) continue;
     const r = row as any;
-    byId[row.character_id] = {
+    const name: string = row.character_name ?? 'Unknown';
+    // Keyed by the character's name, upper-cased: every reader (the editor's cue card and Character Bible, the casting
+    // board) looks a character up by the name it reads in the script.
+    byId[name.toUpperCase()] = {
       ...row,
-      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
-      character_id: row.character_id!,
+      character_name: name,
+      character_id: row.character_id ?? '',
       username: r.profiles?.username ?? undefined,
       avatar_url: r.profiles?.avatar_url ?? undefined,
     };
@@ -39,7 +41,7 @@ export async function getCastingsForProject(projectId: string): Promise<Record<s
 export async function getCastingsForUser(userId: string): Promise<CastingWithProject[]> {
   const { data, error } = await supabase
     .from('character_castings')
-    .select('id, project_id, character_id, character_name, crew_user_id, created_at, characters:character_id(name), projects:project_id(title)')
+    .select('id, project_id, character_id, character_name, crew_user_id, created_at, projects:project_id(title)')
     .eq('crew_user_id', userId)
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -48,18 +50,22 @@ export async function getCastingsForUser(userId: string): Promise<CastingWithPro
     return {
       ...row,
       character_id: row.character_id!,
-      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
+      character_name: row.character_name ?? 'Unknown',
       project_title: r.projects?.title ?? undefined,
     };
   });
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function setCasting(projectId: string, characterId: string, characterName: string, crewUserId: string, createdBy: string) {
   const { data, error } = await supabase
     .from('character_castings')
     .upsert(
-      { project_id: projectId, character_id: characterId, character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
-      { onConflict: 'project_id,character_id' },
+      // A character not yet in the graph has no id (the editor passes its name): the castings_link_character trigger finds or
+      // makes the row from the name. Sending the name as character_id fails the uuid column, and casting never saved.
+      { project_id: projectId, ...(UUID.test(characterId) ? { character_id: characterId } : {}), character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
+      { onConflict: 'project_id,character_name' },
     )
     .select()
     .single();
@@ -73,7 +79,7 @@ export async function removeCasting(projectId: string, characterId: string, char
     .from('character_castings')
     .delete()
     .eq('project_id', projectId)
-    .eq('character_id', characterId);
+    .eq('character_name', characterName.toUpperCase());
   if (error) throw error;
   await logCastingHistory(projectId, characterId, characterName, 'released', actorId);
 }
