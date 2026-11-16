@@ -65,6 +65,8 @@ export interface EditorRightPanelsProps {
   soundPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
   readingPanel?: React.ReactNode;
+  /** The script's analytics (components/editor/ScriptAnalytics): the old centre Stats view. */
+  analyticsPanel?: React.ReactNode;
 }
 
 function SectionHeader({
@@ -115,10 +117,11 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
   const [lintOpen, setLintOpen] = useState(false);
@@ -133,7 +136,7 @@ export function EditorRightPanels({
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
     ['scene', Wand2, 'Scene'],
     ['audio', Music, 'Sound'],
-    ['script', Lightbulb, 'Insights'],
+    ['script', Lightbulb, 'Script'],
     ['notes', StickyNote, 'Notes'],
   ];
 
@@ -254,6 +257,12 @@ export function EditorRightPanels({
                 {rightPanel === 'script' && (
                   <>
                     {readingPanel}
+                    {analyticsPanel && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <SectionHeader icon={BarChart3} label="Analytics" open={analyticsOpen} onToggle={() => setAnalyticsOpen(o => !o)} />
+                        {analyticsOpen && analyticsPanel}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader icon={ClipboardList} label="Script stats" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
                       {breakdownOpen && (

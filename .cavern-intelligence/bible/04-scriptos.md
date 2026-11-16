@@ -15,7 +15,7 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
 ## Layout
 
 - **Header** (`EditorHeader`): script title, sync state, collaborators'
-  avatars, view switch **Write · Preview · Board · Outline · Stats**.
+  avatars, view switch **Write · Preview · Board · Outline** (the old Stats view lives in the right rail's Script section).
 - **Moving through the script**: **Ctrl/⌘ + G** opens **Go to** — a scene number
   (`12`), a page (`p12`, `page 12`) or a character's name (`maya`, or a unique
   beginning of it). The box previews what Enter lands on before it does: the
@@ -37,13 +37,11 @@ Engineering detail: [`scriptos-engine.md`](../scriptos-engine.md).
   `**bold**`, `_underline_` — drawn styled with the markers dimmed,
   `lib/scriptos/emphasis.ts`; Tab cycles element, autocomplete for
   characters and headings, `(` auto-closes, Enter formats a heading);
-  Preview = paginated; Board = scene cards; Outline = beats; Stats = length,
-  runtime, characters, words.
+  Preview = paginated; Board = scene cards; Outline = beats.
 - **Right panel** (`EditorSidePanels`): **Write** (writing loop: today vs
   goal, streak, sprints — `WritingLoop.tsx`, `lib/writing`), **Breakdown**
   (tag mode), **Refs** (the current scene's references, note and colour —
-  `SceneReferencesPanel`), **Insights** (analysis, the brief's target
-  length), **History** (revisions), **Audio** (soundtrack).
+  `SceneReferencesPanel`), **Script** (**Analytics**, the old centre Stats view, `ScriptAnalytics`: numbers, runtime and the brief's target length, scene timeline, character presence, dialogue against action, the scene table, script health; then reading, stats, character report, validation, revisions, the stash), **History** (revisions), **Audio** (soundtrack).
 - **Footer** (`WriteFooter`): page / scene / word count, focus and
   typewriter modes.
 - Margins: cut notes on their lines (`CutNoteMarkers`, live) and script
