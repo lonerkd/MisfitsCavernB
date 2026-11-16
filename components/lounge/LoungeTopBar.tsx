@@ -1,15 +1,17 @@
 'use client';
 
 import type { Lounge } from '@/components/lounge/useLounge';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 export function LoungeTopBar({ l }: { l: Lounge }) {
   const { activeProject, projects, setActiveProject, crewList, onlineCrew } = l;
+  const { phone, landscape } = usePhoneLayout();
   return (
     <nav className="mc-lounge-top" style={{
       position: 'sticky',
       top: 0,
       padding: '0 clamp(16px, 4vw, 28px)',
-      height: 62,
+      height: phone && landscape ? 44 : 62,
       gap: 12,
       display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
       zIndex: 100,
