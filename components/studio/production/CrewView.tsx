@@ -49,7 +49,8 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
   // The owner changes what someone does on the project; the database refuses anyone else.
   const changeCraft = async (m: CrewRow, craft: string | null) => {
     try {
-      await setCrewCraft(project.id, m.user_id, craft, userId);
+      const who = m.profiles?.username || 'they';
+      await setCrewCraft(project.id, m.user_id, craft, userId, (reason) => toast(`Saved, but ${who} wasn’t notified: ${reason}`, 'error'));
       toast(craft ? `${m.profiles?.username || 'They'} is now ${craft}` : 'Craft cleared', 'success');
       onChanged();
     } catch (e) {

@@ -132,12 +132,13 @@ export default function JobDetailPage() {
       if (result === 'sent') {
         setCoverNote('');
 
-        notify(job.created_by, {
+        const notifyError = await notify(job.created_by, {
           type: 'application',
           title: `New application · ${job.title}`,
           body: 'Someone applied to your posting.',
           link: `/jobs/${job.id}`,
         }, user.id);
+        if (notifyError) toast(`Application sent, but the poster wasn’t notified: ${notifyError}`, 'error');
       }
     } finally {
       setApplying(false);
