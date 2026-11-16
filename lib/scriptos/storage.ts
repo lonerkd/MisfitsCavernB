@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase/client';
 import { get, set, del, keys } from 'idb-keyval';
 import { awaitOSUser, osState, SCRIPT_POINTER_PREFIX } from '@/lib/os';
+import { broadcastMergedUpdate, type BroadcastClient } from './broadcast';
 import { decodeScriptTextUpdate, isScriptLive, mergeServerIntoLocal, scriptTextStateKey, type PersistedScriptText } from './cowriting';
 
 export interface StoredScript {
@@ -136,6 +137,8 @@ async function reconcileWithServer(script: StoredScript, userId: string): Promis
     if (current && sameBytes(current.state, local.state)) await set(stateKey, merged.persisted);
     const latest = await get<StoredScript>(`script_${script.id}`);
     if (latest && latest.updatedAt === script.updatedAt) await set(`script_${script.id}`, { ...latest, content: merged.content, syncPending: false });
+    // Open editors elsewhere see the merge now instead of at their next save; the queue does not wait for it.
+    void broadcastMergedUpdate(supabase as unknown as BroadcastClient, script.id, merged.yjsState);
     return 'merged';
   }
   return 'failed';
