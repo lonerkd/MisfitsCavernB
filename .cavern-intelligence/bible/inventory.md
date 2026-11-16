@@ -29,7 +29,7 @@
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (280) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 30 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-actions, admin-channel-presets, admin-crafts, admin-formats, admin-support-analytics, admin-sweep, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, change-impact, community-page, community-phone, community, continuity, credits, crew-craft, crew-invitations, crew-records, cut-notes, daylight, director-day, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, editor-undo, emphasis, errors, global-chords, grant-request, guides, hide-message, hiring, home-music, install, island-activity, island-call, island-compact-dock, island-onset-clock, island-projects-keys, island-upload, island, keyboard-audit, layout, legal, location-rename, locations, login-smoke, lounge, mobile, money, mood-boards, notes, on-set, onboarding, onset-offline, onset-phone, password-recovery, performer-calls, phases, phone-editor, phone-keyboard, portfolio-page, project-manager, projects-keyboard-phase, readiness-day-date, readiness, reading-corrections, real-data, records-links, reports, role-scoped-money, route-smoke, scene-cost, script-formats, script-share, script-supervisor, search, shortcut-search, shot-designer, split, spotify-connect, studio-journey, studio-undo, suspend-user, table-read, themes, today-owner, transcripts, view-as-role, view-as, voice-two-people, writing-loop, your-data, your-workflow |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-actions, admin-channel-presets, admin-crafts, admin-formats, admin-support-analytics, admin-sweep, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, change-impact, community-page, community-phone, community, continuity, credits, crew-craft, crew-records, cut-notes, daylight, director-day, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, emphasis, errors, global-chords, grant-request, guides, hiring, home-music, install, island-activity, island-call, island-compact-dock, island-onset-clock, island-projects-keys, island-upload, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, mood-boards, notes, on-set, onboarding, onset-offline, onset-phone, password-recovery, performer-calls, phases, phone-editor, phone-keyboard, portfolio-page, project-manager, projects-keyboard-phase, readiness-day-date, readiness, reading-corrections, real-data, records-links, reports, role-scoped-money, route-smoke, scene-cost, script-formats, script-share, script-supervisor, search, shortcut-search, shot-designer, split, spotify-connect, studio-journey, studio-undo, suspend-user, table-read, themes, today-owner, transcripts, view-as-role, view-as, voice-two-people, writing-loop, your-workflow |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 34 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (297) | 72 files · components: crafts, projects, ui · lib: auth, brief, crafts, film, formats, island, os, print, push, roles, scriptos, studio, supabase, types, util, validation | call-sheets, push |
@@ -608,7 +608,7 @@
 | `continuity.spec.ts` | `/auth`, `/studio` |
 | `credits.spec.ts` | `/auth`, `/crew/*`, `/shared/*` |
 | `crew-craft.spec.ts` | `/auth`, `/studio` |
-| `crew-invitations.spec.ts` | `/auth`, `/community` |
+| `crew-invitations.spec.ts` | `/community` |
 | `crew-records.spec.ts` | `/auth`, `/studio` |
 | `cut-notes.spec.ts` | `/auth`, `/editor`, `/studio` |
 | `daylight.spec.ts` | `/auth`, `/studio` |
@@ -623,13 +623,13 @@
 | `editor-package.spec.ts` | `/auth`, `/studio` |
 | `editor-project-script.spec.ts` | `/auth`, `/editor`, `/rest/v1/scripts`, `/studio` |
 | `editor-safety-net.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-undo.spec.ts` | `/auth`, `/editor`, `/studio` |
+| `editor-undo.spec.ts` | `/editor`, `/studio` |
 | `emphasis.spec.ts` | `/auth`, `/editor` |
 | `errors.spec.ts` | `/admin/errors`, `/auth`, `/community` |
 | `global-chords.spec.ts` | `/auth`, `/community`, `/editor`, `/split` |
 | `grant-request.spec.ts` | `/auth`, `/studio` |
 | `guides.spec.ts` | `/auth`, `/projects/*` |
-| `hide-message.spec.ts` | `/admin/reports`, `/auth`, `/lounge` |
+| `hide-message.spec.ts` | `/admin/reports`, `/lounge` |
 | `hiring.spec.ts` | `/auth`, `/jobs`, `/jobs/*`, `/studio` |
 | `home-music.spec.ts` | `/auth`, `/community` |
 | `home-page-crash.spec.ts` | `/` |
@@ -644,7 +644,7 @@
 | `keyboard-audit.spec.ts` | `/`, `/admin`, `/auth`, `/crew`, `/editor`, `/jobs`, `/jobs/*`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/projects/*`, `/settings`, `/shared/*`, `/showcase`, `/soundtrack`, `/studio`, `/welcome` |
 | `layout.spec.ts` | `/auth`, `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/studio` |
 | `legal.spec.ts` | `/`, `/auth`, `/privacy`, `/terms` |
-| `location-rename.spec.ts` | `/auth`, `/studio` |
+| `location-rename.spec.ts` | `/studio` |
 | `locations.spec.ts` | `/auth`, `/studio` |
 | `login-smoke.spec.ts` | `/auth`, `/projects` |
 | `lounge.spec.ts` | `/auth`, `/lounge` |
@@ -695,5 +695,5 @@
 | `view-as.spec.ts` | `/auth`, `/projects/*` |
 | `voice-two-people.spec.ts` | `/auth`, `/lounge` |
 | `writing-loop.spec.ts` | `/auth`, `/editor` |
-| `your-data.spec.ts` | `/auth`, `/crew`, `/profile`, `/settings` |
+| `your-data.spec.ts` | `/crew`, `/profile`, `/settings` |
 | `your-workflow.spec.ts` | `/auth`, `/studio` |

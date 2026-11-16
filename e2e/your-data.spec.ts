@@ -1,44 +1,30 @@
-import { execSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason, type QaUser } from './support/stack';
 
 // Your own data, end to end: the profile page lists what you made and saves
 // your edits, the crew directory finds you, and Settings › Export downloads a
-// file with every section in it. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
-const PASSWORD = randomUUID();
-const TAG = Date.now().toString(36);
+// file with every section in it. Opt-in: E2E_LOCAL_STACK=1 (or the staging
+// variables; see e2e/support/stack.ts).
 
 test.describe('Your profile and data (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
-  const me = { id: '', email: `owner.${TAG}@journey.test`, username: `owner${TAG}` };
+  let me: QaUser;
+  let TAG = '';
   let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: me.username } })).data.user!.id;
-    projectId = (await admin.from('projects').insert({ title: `Lantern ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
-    await admin.from('jobs').insert({ title: `Gaffer ${TAG}`, role: 'Gaffer', project_id: projectId, created_by: me.id, status: 'open' });
-  });
-  test.afterAll(async () => {
-    if (!admin) return;
-    await admin.from('jobs').delete().eq('created_by', me.id);
-    await admin.from('projects').delete().eq('id', projectId);
-    if (me.id) await admin.auth.admin.deleteUser(me.id);
+  test.beforeAll(async ({ stack }) => {
+    TAG = stack.tag;
+    // Not flagged as sample: this spec checks that the crew directory finds the account.
+    me = await stack.createUser({ label: 'owner', sample: false });
+    projectId = (await stack.createProject(me, { title: `Lantern ${TAG}` })).id;
+    await stack.insert('jobs', { title: `Gaffer ${TAG}`, role: 'Gaffer', project_id: projectId, created_by: me.id, status: 'open' });
   });
 
-  test('profile lists my work and saves; the directory finds me; export has every section', async ({ page }) => {
+  test('profile lists my work and saves; the directory finds me; export has every section', async ({ page, stack }) => {
+    const admin = stack.admin;
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await stack.signIn(page, me);
 
     // Profile: what I made is counted, and an edit saves.
     await page.goto('/profile');
@@ -51,7 +37,7 @@ test.describe('Your profile and data (local Supabase)', () => {
 
     // The directory finds me; punctuation in the search is ignored, not an error.
     await page.goto('/crew');
-    await page.getByLabel('Search crew').fill(`(${TAG}).`);
+    await page.getByLabel('Search crew').fill(`(${me.username}).`);
     await expect(page.getByText(me.username).first()).toBeVisible({ timeout: 20_000 });
 
     // Export: one file with the profile, the project and the job.
