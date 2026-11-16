@@ -16,6 +16,7 @@ import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useOSGate, useProject } from '@/lib/os';
 import { getProjectModules } from '@/lib/types/settings';
 import { usePillStage } from '@/lib/os/PillContext';
+import { scrollEdges } from '@/lib/studio/scroll-edges';
 import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { PRODUCTION_VIEWS, STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
@@ -74,6 +75,18 @@ export default function StudioPage() {
   const tabs = ALL_TABS.filter((t) => t.id !== 'promos' || modules.distribution);
   const [tab, view, setTabRaw] = useTab(tabs.map((t) => t.id));
   const tabListRef = useRef<HTMLDivElement>(null);
+  // The strip scrolls sideways on a narrow screen: a soft fade on the side that still has tabs hidden says so.
+  const [edges, setEdges] = useState({ left: false, right: false });
+  useEffect(() => {
+    const el = tabListRef.current;
+    if (!el) return;
+    const update = () => setEdges((prev) => { const n = scrollEdges(el.scrollLeft, el.clientWidth, el.scrollWidth); return n.left === prev.left && n.right === prev.right ? prev : n; });
+    update();
+    el.addEventListener('scroll', update, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(update) : null;
+    ro?.observe(el);
+    return () => { el.removeEventListener('scroll', update); ro?.disconnect(); };
+  }, [activeProject, tab]);
   // On a narrow screen the tab bar scrolls sideways; keep the open tab in view.
   useEffect(() => {
     const reveal = () => tabListRef.current?.querySelector('[aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
@@ -157,7 +170,7 @@ export default function StudioPage() {
 
       {activeProject && (
         <nav className={page.tabs} aria-label="Studio sections">
-          <div ref={tabListRef} className={page.tabList} role="tablist">
+          <div ref={tabListRef} className={page.tabList} role="tablist" data-more-left={edges.left || undefined} data-more-right={edges.right || undefined}>
             {tabs.map((t) => (
               <button
                 key={t.id}
