@@ -411,12 +411,13 @@ export function useLounge() {
       setReplyCounts(prev => ({ ...prev, [threadParent.id]: (prev[threadParent.id] || 0) + 1 }));
 
       if (threadParent.sender_id && threadParent.sender_id !== currentUser.id) {
-        notify(threadParent.sender_id, {
+        const notifyError = await notify(threadParent.sender_id, {
           type: 'reply',
           title: `${myProfile?.username || 'Someone'} replied in a thread`,
           body: text.length > 90 ? text.slice(0, 90) + '…' : text,
           link: `/lounge?channel=${activeChannel.id}`,
         }, currentUser.id);
+        if (notifyError) toast(`Reply sent, but ${threadParent.user || 'they'} wasn’t notified: ${notifyError}`, 'error');
       }
     } catch (e: any) { console.error(e); setThreadInput(text); toast(e?.message || 'Reply failed to send', 'error'); }
   };
@@ -429,12 +430,13 @@ export function useLounge() {
       const from = myProfile?.username || 'Someone';
       if (dmTarget) {
         await sendDirectMessage(currentUser.id, dmTarget.id, text);
-        notify(dmTarget.id, {
+        const notifyError = await notify(dmTarget.id, {
           type: 'reply',
           title: `Direct message from ${from}`,
           body: text.length > 90 ? text.slice(0, 90) + '…' : text,
           link: `/lounge?dm=${currentUser.id}`,
         }, currentUser.id);
+        if (notifyError) toast(`Sent, but ${dmTarget.name} wasn’t notified: ${notifyError}`, 'error');
         return;
       }
       if (!activeChannel) return;
@@ -442,14 +444,15 @@ export function useLounge() {
 
       const mentioned = new Set((text.match(/@([a-zA-Z0-9_]+)/g) || []).map(m => m.slice(1).toLowerCase()));
       if (mentioned.size > 0) {
-        crewList
-          .filter(m => m.id !== currentUser.id && mentioned.has(String(m.name).toLowerCase()))
-          .forEach(m => notify(m.id, {
-            type: 'mention',
-            title: `${from} mentioned you in #${activeChannel.name}`,
-            body: text.length > 90 ? text.slice(0, 90) + '…' : text,
-            link: `/lounge?channel=${activeChannel.id}`,
-          }, currentUser.id));
+        const targets = crewList.filter(m => m.id !== currentUser.id && mentioned.has(String(m.name).toLowerCase()));
+        const results = await Promise.all(targets.map(m => notify(m.id, {
+          type: 'mention',
+          title: `${from} mentioned you in #${activeChannel.name}`,
+          body: text.length > 90 ? text.slice(0, 90) + '…' : text,
+          link: `/lounge?channel=${activeChannel.id}`,
+        }, currentUser.id)));
+        const failed = results.flatMap((err, i) => (err ? [{ name: String(targets[i].name), err }] : []));
+        if (failed.length) toast(`Sent, but ${failed.map(f => f.name).join(', ')} wasn’t notified: ${failed[0].err}`, 'error');
       }
     } catch (e: any) {
       console.error(e);

@@ -94,7 +94,10 @@ export default function JobsPage() {
     else {
       toast('Application sent.', 'success');
       const job = jobs.find((j) => j.id === jobId);
-      if (job) void notify(job.created_by, { type: 'application', title: `New application · ${job.title}`, body: note.trim() ? note.trim().slice(0, 300) : 'Someone applied to your posting.', link: `/jobs/${job.id}` }, user.id);
+      if (job) {
+        const notifyError = await notify(job.created_by, { type: 'application', title: `New application · ${job.title}`, body: note.trim() ? note.trim().slice(0, 300) : 'Someone applied to your posting.', link: `/jobs/${job.id}` }, user.id);
+        if (notifyError) toast(`Application sent, but the poster wasn’t notified: ${notifyError}`, 'error');
+      }
     }
     void loadMyApplications(user.id);
     return true;

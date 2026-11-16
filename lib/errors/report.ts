@@ -3,6 +3,8 @@
 // shape — then the one function that sends. Never throws: reporting an error
 // must not cause another.
 
+import { redactStack } from './redactStack';
+
 export type ErrorKind = 'render' | 'window' | 'promise';
 
 export interface ErrorReport {
@@ -40,7 +42,7 @@ export function toReport(kind: ErrorKind, err: unknown, where: { path: string; u
   return {
     kind,
     message: clean.slice(0, 1000),
-    stack: stack.slice(0, 8000),
+    stack: redactStack(stack.slice(0, 16000)).slice(0, 8000),
     path: where.path.split(/[?#]/)[0].slice(0, 300),
     digest: (where.digest ?? '').slice(0, 100),
     release: where.release.slice(0, 60),
