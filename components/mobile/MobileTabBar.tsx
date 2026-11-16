@@ -137,7 +137,7 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
                   <button key={p.id} type="button" role="radio" aria-checked={on} className={`${m.row} ${on ? m.rowOn : ''}`} onClick={() => { void setActiveProject(p); }}>
                     <span className={m.dot} style={{ background: p.accent_color || 'var(--accent)' }} aria-hidden />
                     <span style={{ color: on ? readable(p.accent_color || '#e8431a') : undefined }}>{p.title}</span>
-                    {on && <span className={m.rowMeta}>Active</span>}
+                    {on ? <span className={m.rowMeta}>Active</span> : p.status ? <span className={m.rowMeta}>{String(p.status).replace(/-/g, ' ')}</span> : null}
                   </button>
                 );
               })}
