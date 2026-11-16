@@ -131,7 +131,7 @@ describe('brief options and their answers', () => {
   const MANY = 'qa_opt_many';
   const DEP = 'qa_opt_dep';
   const opts = (...ids: string[]) => ids.map((id) => ({ id, label: id.toUpperCase() }));
-  const mk = (key: string, kind: 'one' | 'many', ids: string[], extra: Record<string, unknown> = {}) => ({ ...row, key, kind, options: opts(...ids), position: 9000, phase: 'delivery', ...extra });
+  const mk = (key: string, kind: 'one' | 'many', ids: string[], extra: Record<string, unknown> = {}) => ({ ...row, key, kind, options: opts(...ids), position: 9000, phase: 'delivery', ask_when: {}, ...extra }); // every row names ask_when: a bulk insert with mixed keys sends null for the missing ones
   let project2: string;
 
   beforeAll(async () => {
