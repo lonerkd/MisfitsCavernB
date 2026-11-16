@@ -51,7 +51,8 @@ export function guideInput(dx: number, dy: number): Input {
 /** Height of the figure now, for the cave to be checked against. */
 export const heightOf = (r: Runner) => STAND_HEIGHT + (CROUCH_HEIGHT - STAND_HEIGHT) * r.crouch;
 
-export function stepRunner(prev: Runner, dt: number, input: Input, cave: Cave, playing = true): Runner {
+/** `pace` scales the speed the figure is heading for (1 is its own): a journey asks for more to catch up with the song, less to wait for it. */
+export function stepRunner(prev: Runner, dt: number, input: Input, cave: Cave, playing = true, pace = 1): Runner {
   const r = { ...prev };
   const given = hasInput(input);
   r.idleFor = given ? 0 : Math.min(r.idleFor + dt, IDLE_TO_AUTO + 1);
@@ -64,6 +65,7 @@ export function stepRunner(prev: Runner, dt: number, input: Input, cave: Cave, p
   if (!auto) target = input.right ? FAST : input.left ? SLOW : CRUISE;
   else target = CRUISE * (0.92 + 0.16 * Math.sin(r.x * 0.21));
   if (!playing) target *= 0.25;
+  target *= pace;
   r.speed = approach(r.speed, target, auto ? 0.8 : 2.4, dt);
   r.x += r.speed * dt;
 

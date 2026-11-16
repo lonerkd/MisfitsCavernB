@@ -1,0 +1,11 @@
+# Session - 2026-11-15: The cavern follows the project's journey (BACKLOG 3.43, step 3)
+
+**Built:** with a project open, the cavern's Run view moves through the project's scenes in order while the song plays. `lib/cavern/journey.ts` (pure, deterministic) turns the first script's scenes into sections: width from the Scenes timeline's own lengths (`buildTimeline`), mood from `sceneMood`, a kind of place per mood (crawl, teeth, chamber, tunnel) and a light colour per mood. `makeCave(seed, zones)` lays those sections along x (binary-searched segments, the blend shrinking to a third of a short scene; without zones the cave is bit-for-bit the old one, with a test). The song's progress decides where in the journey it is: the journey is as long as the song at the runner's pace, `stepRunner` takes a `pace` (0.55x to 1.7x) that keeps the figure with the song, and a seek, a new song or coming back from the Dive more than 8 screens off rebuilds the journey at the figure, blended beyond the screen edge like a new song. The light is the scene's mood colour over the cover's, eased across boundaries; the Dive takes only the light. `useJourney` loads the active project's scenes; no project, no scenes, a failed load or an unknown song length leaves today's cave.
+
+**Honest sync level:** a line under the controls (`describeSync`) says which levels are running (player state; the project's scenes; the beat when listening) and, when the project's level is off, why. When on it says which scene and that the scenes are laid along the song by length, not by the film's cut.
+
+**Tests:** `lib/cavern/journey.test.ts` (journey from scenes and moods, the song's fraction, sections and zones, cave shaped by zones: same seed same cave, room to run, no cliffs, a one-screen scene, no-zones identical; tint, pace, resync, the label), and a render test for the label in `CavernVisualizer.test.tsx`. Typecheck, lint (0 errors), unit suite and build run before the PR.
+
+**Not verified:** the loop's wiring (rebuild, pace and tint each frame) in a real browser: jsdom cannot run the canvas, and no stack was started. Not flown by ear or eye on the owner's screen or phone.
+
+**Left (BACKLOG 3.43):** scene headings carved in the rock, characters as fireflies, tagged tracks colouring a section, a script picker, the Dive's shaft shaped by the journey, pace following the tempo.
