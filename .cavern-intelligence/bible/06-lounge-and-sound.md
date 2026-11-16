@@ -132,7 +132,11 @@ fetch.
   a lane per role with each tagged track over its scene, hatched gaps where a
   scene has no music; "Find music for this scene" opens Find with the mood's
   search; owners and writers tag, remove and drag a bar to move its tag (with
-  undo).
+  undo). **Deep links (2026-11-15; `lib/audio/links.ts`):** a selected scene's
+  "Open in the script" and a Library track's scene go to
+  `/editor?script=<id>&scene=<id>` (the editor's own scene link, also used by
+  the Studio); `/soundtrack?tab=search|scenes|library` opens that tab, and the
+  editor's Sound panel links back with "Open in Sound".
 - **Tag to a scene from Find** (`components/audio/TagToScene.tsx`,
   `placeTrackInScene` in `lib/supabase/audio.ts`): owners and writers get a
   scene picker on each track result; Tag saves it to the project and tags it

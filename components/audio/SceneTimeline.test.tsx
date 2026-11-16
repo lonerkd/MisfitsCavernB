@@ -53,6 +53,13 @@ describe('SceneTimeline', () => {
     expect(onFind).toHaveBeenCalledWith('action chase film score', 's1');
   });
 
+  it('links a scene’s detail to that scene in the script editor', async () => {
+    await open();
+    fireEvent.click(screen.getByRole('button', { name: /^Scene 2,/ }));
+    const link = within(screen.getByRole('region', { name: 'Scene 2' })).getByRole('link', { name: /Open in the script/ });
+    expect(link.getAttribute('href')).toBe('/editor?script=sc&scene=s2');
+  });
+
   it('says so when a scene has no music', async () => {
     await open();
     fireEvent.click(screen.getByRole('button', { name: /^Scene 2,/ }));

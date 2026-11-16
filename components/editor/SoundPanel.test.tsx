@@ -70,6 +70,10 @@ describe('SoundPanel: music for the scene', () => {
     expect(screen.getByRole('link', { name: 'Connect in Sound' })).toBeTruthy();
     expect(search).not.toHaveBeenCalled();
   });
+  it('links back to the Sound page’s scenes tab', () => {
+    render(<SoundPanel {...base()} />);
+    expect(screen.getByRole('link', { name: 'Open in Sound' }).getAttribute('href')).toBe('/soundtrack?tab=scenes');
+  });
   it('a failed search says why', async () => {
     search.mockRejectedValue(new Error('Spotify search failed'));
     render(<SoundPanel {...base()} />);

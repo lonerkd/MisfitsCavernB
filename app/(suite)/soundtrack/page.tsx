@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent, useCallback } from 'react';
+import React, { useState, useEffect, useEffectEvent, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { parseSoundTab, SOUND_TABS, type SoundTab } from '@/lib/audio/links';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc, Search, ShieldAlert, Play, Plus, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -28,13 +30,24 @@ const SoundLibrary = dynamic(() => import('@/components/audio/SoundLibrary').the
 });
 
 export default function SoundtrackPage() {
+  return <Suspense fallback={null}><SoundtrackContent /></Suspense>;
+}
+
+function SoundtrackContent() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
   const { user } = useOSGate();
   const canTag = useCanShape(activeProject?.id, !!user?.id && activeProject?.creator_id === user.id);
 
-  const [activeTab, setActiveTab] = useState<'search'|'scenes'|'library'>('search');
+  // `?tab=scenes|library|search` opens that tab (the editor's Sound panel links here); following another such link while here switches it.
+  const tabParam = useSearchParams().get('tab');
+  const [activeTab, setActiveTab] = useState<SoundTab>(() => parseSoundTab(tabParam));
+  const [seenTabParam, setSeenTabParam] = useState(tabParam);
+  if (tabParam !== seenTabParam) {
+    setSeenTabParam(tabParam);
+    if (tabParam) setActiveTab(parseSoundTab(tabParam, activeTab));
+  }
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -154,7 +167,7 @@ export default function SoundtrackPage() {
       <ListenWithoutPremium />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
-        {(['search', 'scenes', 'library'] as const).map(tab => (
+        {SOUND_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}

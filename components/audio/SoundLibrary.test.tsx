@@ -41,6 +41,14 @@ describe('SoundLibrary', () => {
     expect(first.getByText('Theme')).toBeTruthy();
   });
 
+  it('links a track tagged to a scene to that scene in the script editor, and no link without one', async () => {
+    audio.listSceneChoices.mockResolvedValue([{ id: 'sc1', label: '1 · INT. KITCHEN - DAY', scriptId: 'scr9' }]);
+    await open();
+    const links = screen.getAllByRole('link', { name: 'Open in the script' });
+    expect(links).toHaveLength(1);
+    expect(links[0].getAttribute('href')).toBe('/editor?script=scr9&scene=sc1');
+  });
+
   it('filters by kind, by tag and by "not in a scene"', async () => {
     await open();
     fireEvent.change(screen.getByLabelText('Kind'), { target: { value: 'sound' } });

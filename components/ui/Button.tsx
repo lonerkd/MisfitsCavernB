@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 
@@ -39,6 +39,17 @@ export function Button({
 }: ButtonProps) {
   const [ripples, setRipples] = useState<{ x: number; y: number; id: number }[]>([]);
   const buttonRef = useRef<HTMLButtonElement | HTMLAnchorElement>(null);
+  // Pending ripple-removal timers, cleared on unmount so none fires after the
+  // component (or a test environment) has gone.
+  const timersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
 
@@ -50,9 +61,11 @@ export function Button({
       const newRipple = { x, y, id: Date.now() };
       setRipples((prev) => [...prev, newRipple]);
 
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        timersRef.current.delete(timer);
         setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
       }, 600);
+      timersRef.current.add(timer);
     }
 
     if (onClick) {
