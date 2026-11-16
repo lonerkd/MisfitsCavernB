@@ -65,6 +65,8 @@ export interface EditorRightPanelsProps {
   soundPanel?: React.ReactNode;
   breakdownPanel?: React.ReactNode;
   readingPanel?: React.ReactNode;
+  /** The script's analytics (components/editor/ScriptAnalytics): the old centre Stats view. */
+  analyticsPanel?: React.ReactNode;
 }
 
 function SectionHeader({
@@ -79,10 +81,8 @@ function SectionHeader({
   right?: React.ReactNode;
 }) {
   return (
+    // The toggle is a real button beside the header's own actions (Compare, Lock), never around them: a button may not hold buttons.
     <div
-      role="button" tabIndex={0} aria-expanded={open} aria-label={label}
-      onClick={onToggle}
-      onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         cursor: 'pointer', padding: '8px 10px', borderRadius: 8,
@@ -94,14 +94,15 @@ function SectionHeader({
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-accent)'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'rgba(var(--fg-rgb), 0.08)'}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)' }}>
+      <button type="button" aria-expanded={open} aria-label={label} onClick={onToggle}
+        style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, background: 'transparent', border: 0, padding: 0, cursor: 'pointer', textAlign: 'left', font: 'inherit', fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)' }}>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <span aria-hidden style={{ width: 22, height: 22, borderRadius: 8, display: 'grid', placeItems: 'center', flexShrink: 0, color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 14%, transparent)', border: '1px solid color-mix(in srgb, var(--accent) 38%, transparent)' }}><Icon size={12} /></span>
         <span>{label}</span>
         {count != null && (
           <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color, background: `${color}1a`, padding: '1px 7px', borderRadius: 9999 }}>{count}</span>
         )}
-      </div>
+      </button>
       {right}
     </div>
   );
@@ -115,10 +116,11 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
   const [lintOpen, setLintOpen] = useState(false);
@@ -133,7 +135,7 @@ export function EditorRightPanels({
   const TABS: [RightPanelTab, React.ComponentType<{ size?: number | string }>, string][] = [
     ['scene', Wand2, 'Scene'],
     ['audio', Music, 'Sound'],
-    ['script', Lightbulb, 'Insights'],
+    ['script', Lightbulb, 'Script'],
     ['notes', StickyNote, 'Notes'],
   ];
 
@@ -254,6 +256,12 @@ export function EditorRightPanels({
                 {rightPanel === 'script' && (
                   <>
                     {readingPanel}
+                    {analyticsPanel && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <SectionHeader icon={BarChart3} label="Analytics" open={analyticsOpen} onToggle={() => setAnalyticsOpen(o => !o)} />
+                        {analyticsOpen && analyticsPanel}
+                      </div>
+                    )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                       <SectionHeader icon={ClipboardList} label="Script stats" open={breakdownOpen} onToggle={() => setBreakdownOpen(o => !o)} />
                       {breakdownOpen && (
