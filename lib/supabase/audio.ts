@@ -158,11 +158,11 @@ export async function listSpotifyRefs(projectId: string, limit = 20): Promise<{ 
 }
 
 /** A project's scenes in script order, labelled for a picker ("3 · INT. KITCHEN - DAY"). */
-export async function listSceneChoices(projectId: string): Promise<{ id: string; label: string }[]> {
-  const { data, error } = await supabase.from('scenes').select('id, scene_number, heading, title').eq('project_id', projectId)
+export async function listSceneChoices(projectId: string): Promise<{ id: string; label: string; scriptId: string | null }[]> {
+  const { data, error } = await supabase.from('scenes').select('id, scene_number, heading, title, script_id').eq('project_id', projectId)
     .order('scene_number', { ascending: true }).limit(500);
   if (error) throw error;
-  return (data ?? []).map((sc) => ({ id: sc.id, label: `${sc.scene_number ?? '·'} · ${sc.heading || sc.title || 'Untitled scene'}` }));
+  return (data ?? []).map((sc) => ({ id: sc.id, label: `${sc.scene_number ?? '·'} · ${sc.heading || sc.title || 'Untitled scene'}`, scriptId: sc.script_id ?? null }));
 }
 
 /** A project's own sound-effect uploads, newest first. */
