@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { broadcastMergedUpdate, MAX_BROADCAST_UPDATE_CHARS, type BroadcastChannel, type BroadcastClient } from './broadcast';
+import { ChunkReassembler, MAX_CHUNK_CHARS } from './chunks';
+import { broadcastMergedUpdate, type BroadcastChannel, type BroadcastClient } from './broadcast';
 
 function fake(opts: { status?: string; sendResult?: unknown; sendThrows?: boolean } = {}) {
   const sent: unknown[] = [];
@@ -35,10 +36,14 @@ describe('broadcastMergedUpdate', () => {
     expect(client.removeChannel).not.toHaveBeenCalled();
   });
 
-  it('skips an update too large for Realtime without opening a channel', async () => {
-    const { client } = fake();
-    expect(await broadcastMergedUpdate(client, 's1', 'A'.repeat(MAX_BROADCAST_UPDATE_CHARS + 1))).toBe('too-large');
-    expect(client.channel).not.toHaveBeenCalled();
+  it('sends a state too large for one message as chunks that reassemble to the original', async () => {
+    const { client, sent } = fake();
+    const big = 'A'.repeat(MAX_CHUNK_CHARS * 2 + 5);
+    expect(await broadcastMergedUpdate(client, 's1', big)).toBe('sent');
+    expect(sent).toHaveLength(3);
+    const r = new ChunkReassembler();
+    const done = (sent as { event: string; payload: unknown }[]).map((m) => { expect(m.event).toBe('yjs_sync'); return r.accept(m.payload); });
+    expect(done[2]).toBe(big);
   });
 
   it('reports a channel that will not subscribe, and cleans up', async () => {

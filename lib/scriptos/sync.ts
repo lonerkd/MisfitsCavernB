@@ -23,6 +23,7 @@ import {
   YJS_UPDATE_EVENT,
   type PersistedScriptText,
 } from './cowriting';
+import { ChunkReassembler, toWirePayloads } from './chunks';
 
 export interface Collaborator {
   userId: string;
@@ -69,31 +70,33 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       applyRemote(content, mapIndex);
     };
 
-    const sendUpdate = (update: Uint8Array) => {
+    const reassembler = new ChunkReassembler();
+
+    /** Send one encoded update, in numbered chunks when it is too large for one Realtime message. */
+    const sendEncoded = (event: string, encoded: string, what: string) => {
       if (!channel || !subscribed) return;
-      void channel.send({
-        type: 'broadcast',
-        event: YJS_UPDATE_EVENT,
-        payload: { update: encodeScriptUpdate(update) },
-      }).then((status) => {
-        if (status === 'ok') setLastSyncedAt(new Date());
-      }).catch((error) => console.warn('[Script Sync] Could not broadcast a Yjs update:', error));
+      const ch = channel;
+      void (async () => {
+        try {
+          for (const payload of toWirePayloads(encoded)) {
+            const status = await ch.send({ type: 'broadcast', event, payload });
+            if (status !== 'ok') return;
+          }
+          setLastSyncedAt(new Date());
+        } catch (error) { console.warn(`[Script Sync] Could not broadcast ${what}:`, error); }
+      })();
     };
+
+    const sendUpdate = (update: Uint8Array) => sendEncoded(YJS_UPDATE_EVENT, encodeScriptUpdate(update), 'a Yjs update');
 
     const sendState = () => {
-      if (!channel || !subscribed || !doc) return;
-      void channel.send({
-        type: 'broadcast',
-        event: YJS_SYNC_EVENT,
-        payload: { update: encodeScriptTextUpdate(doc) },
-      }).then((status) => {
-        if (status === 'ok') setLastSyncedAt(new Date());
-      }).catch((error) => console.warn('[Script Sync] Could not broadcast Yjs state:', error));
+      if (!doc) return;
+      sendEncoded(YJS_SYNC_EVENT, encodeScriptTextUpdate(doc), 'Yjs state');
     };
 
-    const receiveUpdate = ({ payload }: { payload?: { update?: unknown } }) => {
-      const encoded = payload?.update;
-      if (typeof encoded !== 'string' || encoded.length > 2_700_000) return;
+    const receiveUpdate = ({ payload }: { payload?: unknown }) => {
+      const encoded = reassembler.accept(payload);
+      if (encoded === null || encoded.length > 2_700_000) return;
       const update = decodeScriptTextUpdate(encoded);
       if (!update || update.length > 2_000_000) return;
       try { Y.applyUpdate(doc!, update, REMOTE_EDIT_ORIGIN); }
