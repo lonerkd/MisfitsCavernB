@@ -1646,7 +1646,7 @@ function public.add_review_comment(p_token text, p_version uuid, p_name text, p_
 function public.add_script_annotation(p_script uuid, p_line integer, p_type text, p_text text, p_scene_ordinal integer, p_scene_heading text) body=0656275c670d6db611f5dafcebdc95eb
 function public.admin_case_study_projects() body=425af3f7c306d8b78f78e0bd35618964
 function public.admin_close_job(p_job uuid) body=cb7d3176e8c1bfa134a9e734e032b3af
-function public.admin_count_brief_answers(p_key text, p_option text) body=d1ef2d6d0909ff95dc6ab8308a769a93
+function public.admin_count_brief_answers(p_key text, p_option text) body=dc6d962870c59927e28120b6092aa998
 function public.admin_hide_message(p_message uuid, p_hidden boolean) body=d02bc5d58f5a432253fa7db071935f8e
 function public.admin_list_users() body=d851a2d7fa39ad8824280d014c77d28d
 function public.admin_move_brief_question(p_key text, p_direction integer) body=e4cf1eaaae999a872df5bb3261c0e241
