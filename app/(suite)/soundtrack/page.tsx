@@ -14,7 +14,8 @@ import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { useProject, useOSGate } from '@/lib/os';
 import { useCanShape } from '@/lib/brief';
 import dynamic from 'next/dynamic';
-import { addAudioRef, getLatestScript } from '@/lib/supabase/audio';
+import { addAudioRef, getLatestScript, listSceneChoices } from '@/lib/supabase/audio';
+import { TagToScene, type SceneChoice } from '@/components/audio/TagToScene';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -67,7 +68,9 @@ function SoundtrackContent() {
   };
 
   // "Find music for this scene": the scene's mood becomes the search, and Find opens with its tracks.
-  const findForScene = async (query: string) => {
+  const [findSceneId, setFindSceneId] = useState<string | null>(null);
+  const findForScene = async (query: string, sceneId: string) => {
+    setFindSceneId(sceneId);
     setActiveTab('search');
     setSearchQuery(query);
     setIsSearching(true);
@@ -103,6 +106,19 @@ function SoundtrackContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the script's mood once per project
     void fillFromScript(activeProject.id, true);
   }, [activeTab, isAuthenticated, activeProject?.id, filledFor, fillFromScript]);
+
+  // The scenes a Find result can be tagged to (owners and writers only; RLS decides the rest).
+  const [scenes, setScenes] = useState<{ projectId: string; list: SceneChoice[] } | null>(null);
+  useEffect(() => {
+    const pid = activeProject?.id;
+    if (!canTag || !pid || scenes?.projectId === pid) return;
+    let live = true;
+    listSceneChoices(pid)
+      .then((list) => { if (live) setScenes({ projectId: pid, list }); })
+      .catch((err: unknown) => { if (live) toast('Could not load the scenes: ' + (err instanceof Error ? err.message : String(err)), 'error'); });
+    return () => { live = false; };
+  }, [canTag, activeProject?.id, scenes?.projectId, toast]);
+  const sceneList = scenes && scenes.projectId === activeProject?.id ? scenes.list : [];
 
   const saveToProject = async (item: any) => {
     if (!activeProject?.id) {
@@ -176,7 +192,7 @@ function SoundtrackContent() {
             !activeProject?.id ? (
               <p className="mc-text text-[var(--fg-dim)]">Pick a project — its scenes and their music appear here.</p>
             ) : (
-              <SceneTimeline projectId={activeProject.id} projectTitle={activeProject.title} canTag={canTag} onFind={(q) => void findForScene(q)} />
+              <SceneTimeline projectId={activeProject.id} projectTitle={activeProject.title} canTag={canTag} onFind={(q, sceneId) => void findForScene(q, sceneId)} />
             )
           )}
 
@@ -248,6 +264,15 @@ function SoundtrackContent() {
                       </button>
                     </div>
                   </div>
+                  {canTag && activeProject?.id && item.type === 'track' && item.uri && (
+                    <TagToScene
+                      projectId={activeProject.id}
+                      userId={user?.id ?? null}
+                      scenes={sceneList}
+                      initialSceneId={findSceneId}
+                      track={{ uri: item.uri, name: item.name, artist: item.artists?.[0]?.name ?? '' }}
+                    />
+                  )}
                   {previewFrame}
                   </div>
                   )}</SpotifyPreview>
