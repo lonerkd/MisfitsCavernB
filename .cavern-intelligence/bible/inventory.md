@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**53 pages · 7 API routes · 101 tables · 70 database functions · 114 e2e specs**
+**53 pages · 8 API routes · 101 tables · 70 database functions · 114 e2e specs**
 
 ## Routes
 
@@ -45,7 +45,7 @@
 | `/hub` | signed in | `app/(suite)/hub/page.tsx` (11) | 1 files · components: — · lib: — | auth-journey, community-page |
 | `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (553) | 35 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (443) | 53 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, reports, route-smoke |
-| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 88 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, phone-keyboard, route-smoke, voice-two-people |
+| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 89 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, phone-keyboard, route-smoke, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
 | `/` | public | `app/(suite)/page.tsx` (444) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 43 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
@@ -57,7 +57,7 @@
 | `/projects` | signed in | `app/(suite)/projects/page.tsx` (672) | 61 files · components: brand, formats, ui · lib: auth, brief, formats, hooks, island, lounge, onboarding, os, push, scriptos, supabase, types, util, validation | accessibility, auth-journey, island, keyboard-audit, layout, login-smoke, mobile, onboarding, projects-keyboard-phase, route-smoke, search, themes |
 | `/settings` | signed in | `app/(suite)/settings/page.tsx` (347) | 52 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, supabase, themes, types, validation | accessibility, account-deletion, admin-actions, auth-journey, island, keyboard-audit, mobile, phases, phone-keyboard, route-smoke, themes, your-data |
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
-| `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (295) | 68 files · components: audio, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
+| `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (300) | 70 files · components: audio, phone, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (256) | 4 files · components: — · lib: hooks, split | global-chords, split |
 | `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 305 files · components: Flag, ad, breakdown, brief, crafts, film, formats, notes, progress, projects, roles, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, crafts, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, roles, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, change-impact, community-page, continuity, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, editor-undo, grant-request, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, performer-calls, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, role-scoped-money, route-smoke, scene-cost, script-formats, script-supervisor, search, shot-designer, split, studio-journey, studio-undo, transcripts, view-as-role, your-workflow |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (12) | 1 files · components: — · lib: — | community-page, island-onset-clock |
@@ -68,6 +68,7 @@
 | `/api/push/dispatch` (api) | open (page checks) | `app/api/push/dispatch/route.ts` (53) | 5 files · components: — · lib: notifications, push, validation | push |
 | `/api/references/films` (api) | open (page checks) | `app/api/references/films/route.ts` (41) | 4 files · components: — · lib: references, util, validation | **none** |
 | `/api/references/search` (api) | open (page checks) | `app/api/references/search/route.ts` (61) | 3 files · components: — · lib: util, validation | **none** |
+| `/api/time` (api) | open (page checks) | `app/api/time/route.ts` (10) | 1 files · components: — · lib: — | **none** |
 
 ## What each route touches
 
@@ -396,6 +397,10 @@
 - **Tables:** —
 
 ### `/api/references/search`
+
+- **Tables:** —
+
+### `/api/time`
 
 - **Tables:** —
 

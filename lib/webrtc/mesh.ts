@@ -7,7 +7,7 @@ export const MAX_VOICE_PARTICIPANTS = 8;
 
 export const VOICE_ROOM_FULL_MESSAGE = `This voice room is full (${MAX_VOICE_PARTICIPANTS} people). Try again when someone leaves.`;
 
-/** What each person publishes to the room's presence (`joinedAt` is their clock). */
+/** What each person publishes to the room's presence (`joinedAt` is the server's time, see `serverClock.ts`). */
 export type VoicePresenceState = Record<string, Array<{ joinedAt?: number }>>;
 
 /** Is there a seat for one more, given how many others are already here? */
