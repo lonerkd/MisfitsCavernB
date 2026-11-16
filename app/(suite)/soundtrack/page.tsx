@@ -1,6 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent, useCallback } from 'react';
+import React, { useState, useEffect, useEffectEvent, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { parseSoundTab, SOUND_TABS, type SoundTab } from '@/lib/audio/links';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Disc, Search, ShieldAlert, Play, Plus, Wand2 } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
@@ -12,7 +14,8 @@ import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { useProject, useOSGate } from '@/lib/os';
 import { useCanShape } from '@/lib/brief';
 import dynamic from 'next/dynamic';
-import { addAudioRef, getLatestScript } from '@/lib/supabase/audio';
+import { addAudioRef, getLatestScript, listSceneChoices } from '@/lib/supabase/audio';
+import { TagToScene, type SceneChoice } from '@/components/audio/TagToScene';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
@@ -27,13 +30,24 @@ const SoundLibrary = dynamic(() => import('@/components/audio/SoundLibrary').the
 });
 
 export default function SoundtrackPage() {
+  return <Suspense fallback={null}><SoundtrackContent /></Suspense>;
+}
+
+function SoundtrackContent() {
   const { isAuthenticated, playUri } = useSpotify();
   const { activeProject } = useProject();
   const { toast } = useToast();
   const { user } = useOSGate();
   const canTag = useCanShape(activeProject?.id, !!user?.id && activeProject?.creator_id === user.id);
 
-  const [activeTab, setActiveTab] = useState<'search'|'scenes'|'library'>('search');
+  // `?tab=scenes|library|search` opens that tab (the editor's Sound panel links here); following another such link while here switches it.
+  const tabParam = useSearchParams().get('tab');
+  const [activeTab, setActiveTab] = useState<SoundTab>(() => parseSoundTab(tabParam));
+  const [seenTabParam, setSeenTabParam] = useState(tabParam);
+  if (tabParam !== seenTabParam) {
+    setSeenTabParam(tabParam);
+    if (tabParam) setActiveTab(parseSoundTab(tabParam, activeTab));
+  }
 
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -54,7 +68,9 @@ export default function SoundtrackPage() {
   };
 
   // "Find music for this scene": the scene's mood becomes the search, and Find opens with its tracks.
-  const findForScene = async (query: string) => {
+  const [findSceneId, setFindSceneId] = useState<string | null>(null);
+  const findForScene = async (query: string, sceneId: string) => {
+    setFindSceneId(sceneId);
     setActiveTab('search');
     setSearchQuery(query);
     setIsSearching(true);
@@ -90,6 +106,19 @@ export default function SoundtrackPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the script's mood once per project
     void fillFromScript(activeProject.id, true);
   }, [activeTab, isAuthenticated, activeProject?.id, filledFor, fillFromScript]);
+
+  // The scenes a Find result can be tagged to (owners and writers only; RLS decides the rest).
+  const [scenes, setScenes] = useState<{ projectId: string; list: SceneChoice[] } | null>(null);
+  useEffect(() => {
+    const pid = activeProject?.id;
+    if (!canTag || !pid || scenes?.projectId === pid) return;
+    let live = true;
+    listSceneChoices(pid)
+      .then((list) => { if (live) setScenes({ projectId: pid, list }); })
+      .catch((err: unknown) => { if (live) toast('Could not load the scenes: ' + (err instanceof Error ? err.message : String(err)), 'error'); });
+    return () => { live = false; };
+  }, [canTag, activeProject?.id, scenes?.projectId, toast]);
+  const sceneList = scenes && scenes.projectId === activeProject?.id ? scenes.list : [];
 
   const saveToProject = async (item: any) => {
     if (!activeProject?.id) {
@@ -138,7 +167,7 @@ export default function SoundtrackPage() {
       <ListenWithoutPremium />
 
       <div className="flex gap-4 mb-8 border-b border-[rgba(var(--ink-rgb),0.06)] pb-2">
-        {(['search', 'scenes', 'library'] as const).map(tab => (
+        {SOUND_TABS.map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -163,7 +192,7 @@ export default function SoundtrackPage() {
             !activeProject?.id ? (
               <p className="mc-text text-[var(--fg-dim)]">Pick a project — its scenes and their music appear here.</p>
             ) : (
-              <SceneTimeline projectId={activeProject.id} projectTitle={activeProject.title} canTag={canTag} onFind={(q) => void findForScene(q)} />
+              <SceneTimeline projectId={activeProject.id} projectTitle={activeProject.title} canTag={canTag} onFind={(q, sceneId) => void findForScene(q, sceneId)} />
             )
           )}
 
@@ -235,6 +264,15 @@ export default function SoundtrackPage() {
                       </button>
                     </div>
                   </div>
+                  {canTag && activeProject?.id && item.type === 'track' && item.uri && (
+                    <TagToScene
+                      projectId={activeProject.id}
+                      userId={user?.id ?? null}
+                      scenes={sceneList}
+                      initialSceneId={findSceneId}
+                      track={{ uri: item.uri, name: item.name, artist: item.artists?.[0]?.name ?? '' }}
+                    />
+                  )}
                   {previewFrame}
                   </div>
                   )}</SpotifyPreview>
