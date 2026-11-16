@@ -133,6 +133,12 @@ fetch.
   scene has no music; "Find music for this scene" opens Find with the mood's
   search; owners and writers tag, remove and drag a bar to move its tag (with
   undo).
+- **Tag to a scene from Find** (`components/audio/TagToScene.tsx`,
+  `placeTrackInScene` in `lib/supabase/audio.ts`): owners and writers get a
+  scene picker on each track result; Tag saves it to the project and tags it
+  there as a temp score in one step (a track already saved is retagged, not
+  copied; one in another scene moves, and the toast says so). Opened from the
+  timeline’s "Find music for this scene", the picker starts on that scene.
 - **Spotify**: connect (OAuth → `/auth/spotify-callback`, tokens in
   `spotify_connections`), search, play in the global widget (Web Playback).
   **Redirect addresses** (`lib/spotify/redirect.ts`): Spotify only accepts
