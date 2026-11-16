@@ -94,6 +94,15 @@
   background: var(--bg-2); box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
   animation: mc-continue-in 0.25s ease-out;
 }
+/* Frosted mode (BACKLOG 3.48): the floating offer is lit glass, only where the blur can carry it (same guards as app/globals.css). */
+@media (prefers-reduced-transparency: no-preference) {
+  @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    :global([data-frosted]) .continueFloat {
+      background: color-mix(in srgb, var(--frost-tint) calc(var(--frost-lift) * 0.75), color-mix(in srgb, var(--bg-2) 54%, transparent));
+      backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost);
+    }
+  }
+}
 @media (max-width: 760px) { .continueFloat { left: 12px; right: 12px; max-width: none; bottom: calc(76px + env(safe-area-inset-bottom)); } }
 @keyframes mc-continue-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .continueFloat { animation: none; } }

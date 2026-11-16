@@ -1624,6 +1624,7 @@ function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
 function internal.reading_memory_forget_correction() body=7764bdc57efd2ef63d5de7f8b1b34926
 function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82eebf338f
+function internal.reports_notify_outcome() body=dbab3b8ce84f1c257409bd3f704f6c41
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
@@ -1779,6 +1780,7 @@ grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
 grant function internal.reading_memory_forget_correction() postgres
 grant function internal.reading_memory_from_correction() postgres
+grant function internal.reports_notify_outcome() postgres
 grant function internal.review_links_check() postgres
 grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
@@ -2791,6 +2793,7 @@ trigger CREATE TRIGGER reading_corrections_sync_memory AFTER INSERT ON public.re
 trigger CREATE TRIGGER reading_corrections_sync_memory_update AFTER UPDATE OF kind, name ON public.reading_corrections FOR EACH ROW WHEN (((old.kind IS DISTINCT FROM new.kind) OR (old.name IS DISTINCT FROM new.name))) EXECUTE FUNCTION internal.reading_memory_from_correction()
 trigger CREATE TRIGGER reading_line_overrides_check_script BEFORE INSERT OR UPDATE OF project_id, script_id ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_check_script()
 trigger CREATE TRIGGER reading_line_overrides_set_forced_by BEFORE INSERT OR UPDATE ON public.reading_line_overrides FOR EACH ROW EXECUTE FUNCTION internal.line_overrides_set_forced_by()
+trigger CREATE TRIGGER reports_notify_outcome AFTER UPDATE OF status ON public.reports FOR EACH ROW EXECUTE FUNCTION internal.reports_notify_outcome()
 trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
