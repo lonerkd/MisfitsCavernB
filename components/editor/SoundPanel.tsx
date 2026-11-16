@@ -6,6 +6,7 @@ import { BookmarkPlus, Mic2, Music, Pause, Play, Square } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { useSpotify } from '@/lib/os/SpotifyContext';
+import { soundHref } from '@/lib/audio/links';
 import { sceneMood } from '@/lib/spotify/moods';
 import { searchSpotify } from '@/lib/spotify/search';
 import { TrackTagger } from '@/components/audio/TrackTagger';
@@ -184,6 +185,7 @@ export function SoundPanel(p: SoundPanelProps) {
 
       <section aria-label="Saved tracks">
         {heading(<Music size={14} />, 'Saved to this project')}
+        <p style={{ margin: '0 0 8px', fontSize: 12 }}><Link href={soundHref('scenes')} style={{ color: 'var(--accent)' }}>Open in Sound</Link></p>
         {p.refs.length === 0 ? <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)', fontStyle: 'italic' }}>Nothing saved yet. Save a suggestion above, or link tracks from Sound.</p> : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...p.refs].sort((a, b) => Number(!!p.sceneId && b.for_scene === p.sceneId) - Number(!!p.sceneId && a.for_scene === p.sceneId)).map((ref) => {
