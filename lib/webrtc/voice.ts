@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { fetchServerOffset, serverTime } from './serverClock';
 import { canJoinVoiceRoom, holdsSeat, seatedIds, type VoicePresenceState } from './mesh';
 
 export interface VoicePeer {
@@ -199,9 +200,11 @@ export function useVoiceRoom(channelId: string, me: { id: string; name: string; 
           // Full mesh does not scale: turn away before opening a single connection.
           const others = Object.keys(ch.presenceState()).filter(k => k !== meId);
           if (!canJoinVoiceRoom(others.length)) { turnAway(); return; }
+          // Ask the server's clock alongside the microphone prompt: seat order must not trust our own clock.
+          const offsetPending = fetchServerOffset();
           await acquireMic();
           if (cancelled || turnedAwayHere) return;
-          await ch.track(myPresence(Date.now()));
+          await ch.track(myPresence(serverTime(await offsetPending)));
           if (cancelled || turnedAwayHere) return;
 
           const state = ch.presenceState() as VoicePresenceState;
