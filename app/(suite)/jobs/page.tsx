@@ -191,7 +191,7 @@ export default function JobsPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 16px', borderRadius: 9999,
-                background: '#7c3aed', color: '#fff', border: 'none',
+                background: 'var(--violet)', color: '#fff', border: 'none',
                 fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
                 textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer',
                 transition: 'transform 0.2s, box-shadow 0.3s',

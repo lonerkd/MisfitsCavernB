@@ -156,7 +156,7 @@ export function PostModal({ onClose, onCreated, userId, projectId, projectTitle,
             disabled={!form.title || submitting}
             style={{
               marginTop: 6, padding: '14px',
-              background: form.title ? '#8b5cf6' : 'rgba(var(--ink-rgb), 0.05)',
+              background: form.title ? 'var(--violet)' : 'rgba(var(--ink-rgb), 0.05)',
               color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 14,
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
