@@ -62,7 +62,7 @@ export async function getChannelMessagesByUuid(channelUuid: string, limit = 100)
 
 export function subscribeToChannelUuid(channelUuid: string, callback: (payload: any) => void) {
   return supabase
-    .channel(`chan:${channelUuid}`)
+    .channel(`chan:${channelUuid}`, { config: { private: true } })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `channel_uuid=eq.${channelUuid}` }, callback)
     .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `channel_uuid=eq.${channelUuid}` }, callback)
     .subscribe();

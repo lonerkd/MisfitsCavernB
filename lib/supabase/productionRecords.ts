@@ -39,7 +39,7 @@ export async function deleteRecords(projectId: string, kind: RecordKind, ids: st
 
 /** Calls back whenever anyone changes this kind of record on the project. Returns the way to stop listening. */
 export function subscribeToRecords(projectId: string, kind: RecordKind, onChange: () => void): () => void {
-  const channel = supabase.channel(`prod-records:${projectId}:${kind}`)
+  const channel = supabase.channel(`prod-records:${projectId}:${kind}`, { config: { private: true } })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'production_records', filter: `project_id=eq.${projectId}` }, onChange)
     .subscribe();
   return () => { void supabase.removeChannel(channel); };

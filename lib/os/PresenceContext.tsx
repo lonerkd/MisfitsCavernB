@@ -48,7 +48,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
       const myColor = PRESENCE_COLORS[(myUserId.charCodeAt(0) + myUserId.charCodeAt(myUserId.length - 1)) % PRESENCE_COLORS.length];
 
       const room = supabase.channel(`presence:project_${activeProject.id}`, {
-        config: { presence: { key: myUserId } }
+        config: { private: true, presence: { key: myUserId } }
       });
 
       channelRef.current = room;

@@ -27,7 +27,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
     void load();
     // RLS already limits events to what this user may see; reload on ours.
     const channel = supabase
-      .channel(`activity:${project.id}:${Math.random().toString(36).slice(2)}`)
+      .channel(`activity:${project.id}:${Math.random().toString(36).slice(2)}`, { config: { private: true } })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'activity_feed' }, (p) => {
         if ((p.new as { metadata?: { project_id?: string } })?.metadata?.project_id === project.id) void load();
       })
