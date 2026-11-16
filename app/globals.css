@@ -283,6 +283,18 @@ body.custom-cursor-active * {
   html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - 62px - var(--kb, 0px)); }
   html[data-typing='true'] .mc-lounge-composer { padding-bottom: 8px !important; }
   html[data-typing='true'] .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
+  /* The thread panel is fixed to the layout viewport, which iOS leaves behind the keyboard: lift it by --kb so its reply field sits on
+     top of the keyboard like the composer, and keep the home indicator clear when the keyboard is down. */
+  .mc-lounge-thread-panel { width: 100vw !important; max-width: 100vw; padding-top: env(safe-area-inset-top); }
+  .mc-lounge-thread-reply { padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important; }
+  html[data-typing='true'] .mc-lounge-thread-panel { bottom: var(--kb, 0px) !important; }
+  html[data-typing='true'] .mc-lounge-thread-reply { padding-bottom: 14px !important; }
+  /* The reaction picker wraps inside the screen instead of running off its edge. */
+  .mc-lounge-reactpicker { flex-wrap: wrap; width: max-content; max-width: calc(100vw - 32px); }
+}
+/* A touch screen has no hover to reveal a message's actions: show them. */
+@media (hover: none) {
+  .mc-lounge-action { opacity: 1 !important; }
 }
 
 @media (max-width: 860px) {

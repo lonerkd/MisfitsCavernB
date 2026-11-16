@@ -123,7 +123,7 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
-  /** Places known to exist (from project_locations): a heading with one of these names is believed. */
+  /** Places known to exist (from project_locations). Not read yet: planned as heading evidence (BACKLOG 3.22b). */
   places?: readonly string[];
   /** Cues from the previous draft (line indices + names): a line that was a cue last time is likely still one. */
   previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
@@ -214,7 +214,6 @@ export class ScriptParser {
   private rejectedNames: Set<string>;
   private writerMemory?: WriterMemory;
   private lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
-  private places?: readonly string[];
   private previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
@@ -223,7 +222,6 @@ export class ScriptParser {
     this.format = format;
     this.writerMemory = options.context?.writerMemory;
     this.lineOverrides = options.context?.lineOverrides;
-    this.places = options.context?.places;
     this.previousDraftCues = options.context?.previousDraftCues;
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
