@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useLoad } from '@/lib/hooks/useLoad';
 import { useConfirm } from '@/components/ui/Confirm';
 import type { Tables } from '@/lib/supabase/database.types';
+import { redactStack } from '@/lib/errors/redactStack';
 
 type Row = Tables<'client_errors'>;
 type Range = 1 | 7 | 30;
@@ -112,7 +113,7 @@ export default function AdminErrorsPage() {
                         <summary style={{ ...mono, color: 'var(--fg-muted)', cursor: 'pointer' }}>Details</summary>
                         {g.sample.digest && <div style={{ ...mono, marginTop: 6 }}>Digest: {g.sample.digest}</div>}
                         {g.sample.user_agent && <div style={{ ...mono, marginTop: 6, color: 'var(--fg-dim)' }}>{g.sample.user_agent}</div>}
-                        {g.sample.stack && <pre style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'var(--bg)', fontSize: 11, lineHeight: 1.5, overflowX: 'auto', whiteSpace: 'pre', color: 'var(--fg-muted)' }}>{g.sample.stack}</pre>}
+                        {g.sample.stack && <pre style={{ marginTop: 8, padding: 12, borderRadius: 8, background: 'var(--bg)', fontSize: 11, lineHeight: 1.5, overflowX: 'auto', whiteSpace: 'pre', color: 'var(--fg-muted)' }}>{redactStack(g.sample.stack)}</pre>}
                       </details>
                     )}
                   </div>
