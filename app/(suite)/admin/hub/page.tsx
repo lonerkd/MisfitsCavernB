@@ -95,7 +95,7 @@ export default function AdminHubPage() {
 
   return (
     <ProtectedPage require="admin">
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 16px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 16px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
         <Link href="/admin" aria-label="Back to admin" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 13 }}><ArrowLeft size={14} aria-hidden /> Admin</Link>
         <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', margin: '12px 0 4px' }}>Hub posts</h1>
         <p style={{ color: 'var(--fg-muted)', margin: '0 0 20px', maxWidth: '60ch' }}>What’s new and Learn, for everyone or one audience. Drafts are only visible to admins. Publishing a post marked important notifies every account.</p>
@@ -178,7 +178,7 @@ export default function AdminHubPage() {
             ))}
           </ul>
         )}
-      </main>
+      </div>
     </ProtectedPage>
   );
 }

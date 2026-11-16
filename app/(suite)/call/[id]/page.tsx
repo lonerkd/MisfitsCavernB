@@ -136,27 +136,27 @@ export default function CallSheetPage() {
   };
 
   if (state === 'loading') {
-    return <main className={c.page}><div className={c.frame}><div className="skeleton" style={{ height: 180, borderRadius: 14 }} /></div></main>;
+    return <div className={c.page}><div className={c.frame}><div className="skeleton" style={{ height: 180, borderRadius: 14 }} /></div></div>;
   }
   if (state === 'error') {
     return (
-      <main className={c.page}>
+      <div className={c.page}>
         <div className={c.frame}>
           <h1 className={c.title}>Couldn’t load the call sheet</h1>
           <p className={c.lead} role="alert">Check your connection and reload the page. <Link href="/projects">Your projects</Link></p>
         </div>
-      </main>
+      </div>
     );
   }
 
   if (state === 'missing' || !sheet || !snap) {
     return (
-      <main className={c.page}>
+      <div className={c.page}>
         <div className={c.frame}>
           <h1 className={c.title}>Call sheet not found</h1>
           <p className={c.lead}>That call sheet isn&#x2019;t available to you — it may have been removed. <Link href="/projects">Your projects</Link></p>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -167,7 +167,7 @@ export default function CallSheetPage() {
     .sort((a, b) => (a.call_time ?? '99').localeCompare(b.call_time ?? '99'));
 
   return (
-    <main className={c.page}>
+    <div className={c.page}>
       {project && <ViewAsBanner projectId={project.id} />}
       <div className={c.frame}>
         <p className={c.eyebrow}>{project?.title} · call sheet{version ? ` · v${version}` : ''}</p>
@@ -291,6 +291,6 @@ export default function CallSheetPage() {
           {canIssue && <Link href="/studio?tab=production&view=schedule" className={c.secondary} onClick={openInStudio}>Edit in Studio</Link>}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

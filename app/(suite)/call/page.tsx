@@ -57,7 +57,7 @@ export default function MyCallsPage() {
   const earlier = (calls ?? []).filter((x) => x.sheet.shoot_date && x.sheet.shoot_date < today).reverse();
 
   return (
-    <main className={c.page}>
+    <div className={c.page}>
       <div className={c.frame}>
         <p className={c.eyebrow}>The shoot</p>
         <h1 className={c.title}>My calls</h1>
@@ -82,6 +82,6 @@ export default function MyCallsPage() {
           </section>
         )}
       </div>
-    </main>
+    </div>
   );
 }
