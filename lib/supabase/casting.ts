@@ -23,12 +23,14 @@ export async function getCastingsForProject(projectId: string): Promise<Record<s
   if (error) throw error;
   const byId: Record<string, Casting> = {};
   for (const row of data ?? []) {
-    if (!row.character_id) continue;
     const r = row as any;
-    byId[row.character_id] = {
+    const name: string = row.character_name ?? r.characters?.name ?? 'Unknown';
+    // Keyed by the character's name, upper-cased: every reader (the editor's cue card and Character Bible, the casting
+    // board) looks a character up by the name it reads in the script.
+    byId[name.toUpperCase()] = {
       ...row,
-      character_name: row.character_name ?? r.characters?.name ?? 'Unknown',
-      character_id: row.character_id!,
+      character_name: name,
+      character_id: row.character_id ?? '',
       username: r.profiles?.username ?? undefined,
       avatar_url: r.profiles?.avatar_url ?? undefined,
     };
@@ -59,7 +61,7 @@ export async function setCasting(projectId: string, characterId: string, charact
     .from('character_castings')
     .upsert(
       { project_id: projectId, character_id: characterId, character_name: characterName.toUpperCase(), crew_user_id: crewUserId, created_by: createdBy },
-      { onConflict: 'project_id,character_id' },
+      { onConflict: 'project_id,character_name' },
     )
     .select()
     .single();
@@ -73,7 +75,7 @@ export async function removeCasting(projectId: string, characterId: string, char
     .from('character_castings')
     .delete()
     .eq('project_id', projectId)
-    .eq('character_id', characterId);
+    .eq('character_name', characterName.toUpperCase());
   if (error) throw error;
   await logCastingHistory(projectId, characterId, characterName, 'released', actorId);
 }

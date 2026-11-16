@@ -77,11 +77,11 @@ test.describe.serial('Editor find & replace and casting (local Supabase)', () =>
 
     await page.getByTitle('Character Bible').click();
     await page.getByRole('button', { name: /^MAYA/ }).click();
-    await page.getByRole('combobox').selectOption({ label: actor.username });
+    await page.getByRole('combobox', { name: 'Cast as' }).selectOption({ label: actor.username });
     await expect(page.getByText(`Playing: ${actor.username}`)).toBeVisible({ timeout: 15_000 });
     await expect.poll(async () => (await admin.from('character_castings').select('crew_user_id').eq('project_id', projectId).eq('character_name', 'MAYA')).data?.[0]?.crew_user_id ?? null).toBe(actor.id);
 
-    await page.getByRole('combobox').selectOption({ label: '— Not cast —' });
+    await page.getByRole('combobox', { name: 'Cast as' }).selectOption({ label: '— Not cast —' });
     await expect(page.getByText(`Playing: ${actor.username}`)).toHaveCount(0);
     await expect.poll(async () => (await admin.from('character_castings').select('id').eq('project_id', projectId).eq('character_name', 'MAYA')).data?.length ?? 0).toBe(0);
   });
