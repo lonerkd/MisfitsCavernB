@@ -5373,6 +5373,10 @@ export type Database = {
         }[];
       };
       admin_close_job: { Args: { p_job: string }; Returns: undefined };
+      admin_count_brief_answers: {
+        Args: { p_key: string; p_option: string };
+        Returns: number;
+      };
       admin_hide_message: {
         Args: { p_hidden: boolean; p_message: string };
         Returns: undefined;
@@ -5401,6 +5405,10 @@ export type Database = {
           avg_project_days: number;
           completed_projects: number;
         }[];
+      };
+      admin_remove_brief_option: {
+        Args: { p_key: string; p_option: string };
+        Returns: number;
       };
       admin_remove_brief_question: {
         Args: { p_key: string };

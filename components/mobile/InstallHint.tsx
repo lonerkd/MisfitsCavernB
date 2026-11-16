@@ -57,7 +57,7 @@ export function InstallHint({ className = '' }: { className?: string }) {
       {hint === 'ios-share' ? (
         <div className={m.continueBody}>
           <span className={m.continueFrom}>Use it like an app</span>
-          <span className={m.continueLabel}>Tap Share, then “Add to Home Screen” — full screen, works on set offline.</span>
+          <span className={m.continueLabel} style={{ whiteSpace: 'normal' }}>Tap Share, then “Add to Home Screen” — full screen, works on set offline.</span>
         </div>
       ) : (
         <button type="button" className={m.continueBody} onClick={() => void install()}>

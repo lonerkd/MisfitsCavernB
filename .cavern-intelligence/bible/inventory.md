@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**53 pages · 8 API routes · 101 tables · 72 database functions · 114 e2e specs**
+**53 pages · 8 API routes · 101 tables · 74 database functions · 114 e2e specs**
 
 ## Routes
 
@@ -18,7 +18,7 @@
 | `/u/[handle]` | open (page checks) | `app/(public)/u/[handle]/page.tsx` (132) | 13 files · components: portfolio, ui · lib: credits, portfolio, print, supabase | portfolio-page |
 | `/admin/analytics` | admin | `app/(suite)/admin/analytics/page.tsx` (243) | 31 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/audit-logs` | admin | `app/(suite)/admin/audit-logs/page.tsx` (434) | 33 files · components: ui · lib: audit, auth, formats, hooks, os, push, supabase, types, util, validation | accessibility, admin-actions, admin-sweep, suspend-user |
-| `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (143) | 45 files · components: admin, ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | admin-actions, admin-sweep |
+| `/admin/brief-questions` | admin | `app/(suite)/admin/brief-questions/page.tsx` (161) | 45 files · components: admin, ui · lib: auth, brief, formats, hooks, os, push, scriptos, supabase, types, validation | admin-actions, admin-sweep |
 | `/admin/channel-presets` | admin | `app/(suite)/admin/channel-presets/page.tsx` (110) | 33 files · components: ui · lib: auth, formats, hooks, lounge, os, push, supabase, types, validation | accessibility, admin-actions, admin-channel-presets, admin-sweep |
 | `/admin/crafts` | admin | `app/(suite)/admin/crafts/page.tsx` (103) | 35 files · components: ui · lib: auth, crafts, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-crafts, admin-sweep |
 | `/admin/errors` | admin | `app/(suite)/admin/errors/page.tsx` (133) | 32 files · components: ui · lib: auth, errors, formats, hooks, os, push, supabase, types, validation | admin-actions, admin-sweep, errors |
@@ -59,7 +59,7 @@
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (300) | 70 files · components: audio, phone, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, supabase, types, validation | accessibility, auth-journey, keyboard-audit, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (256) | 4 files · components: — · lib: hooks, split | global-chords, split |
-| `/studio` | signed in | `app/(suite)/studio/page.tsx` (232) | 306 files · components: Flag, ad, breakdown, brief, crafts, film, formats, notes, progress, projects, roles, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, crafts, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, roles, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, change-impact, community-page, continuity, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, editor-undo, grant-request, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, performer-calls, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, role-scoped-money, route-smoke, scene-cost, script-formats, script-supervisor, search, shot-designer, split, studio-journey, studio-undo, transcripts, view-as-role, your-workflow |
+| `/studio` | signed in | `app/(suite)/studio/page.tsx` (233) | 306 files · components: Flag, ad, breakdown, brief, crafts, film, formats, notes, progress, projects, roles, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, crafts, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, roles, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, breakdown, call-sheets, change-impact, community-page, continuity, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, editor-undo, grant-request, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, performer-calls, phases, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, role-scoped-money, route-smoke, scene-cost, script-formats, script-supervisor, search, shot-designer, split, studio-journey, studio-undo, transcripts, view-as-role, your-workflow |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (12) | 1 files · components: — · lib: — | community-page, island-onset-clock |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 67 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, split, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
@@ -127,7 +127,7 @@
 ### `/admin/brief-questions`
 
 - **Tables:** `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_presets`, `crafts`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `admin_move_brief_question`, `admin_remove_brief_question`, `get_my_account`, `project_context`
+- **Functions:** `admin_count_brief_answers`, `admin_move_brief_question`, `admin_remove_brief_option`, `admin_remove_brief_question`, `get_my_account`, `project_context`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin/channel-presets`
@@ -520,10 +520,12 @@
 | `add_script_annotation` | called from a route |
 | `admin_case_study_projects` | called from a route |
 | `admin_close_job` | called from a route |
+| `admin_count_brief_answers` | called from a route |
 | `admin_hide_message` | called from a route |
 | `admin_list_users` | called from a route |
 | `admin_move_brief_question` | called from a route |
 | `admin_platform_analytics` | called from a route |
+| `admin_remove_brief_option` | called from a route |
 | `admin_remove_brief_question` | called from a route |
 | `admin_reported_message` | called from a route |
 | `admin_set_suspended` | called from a route |
