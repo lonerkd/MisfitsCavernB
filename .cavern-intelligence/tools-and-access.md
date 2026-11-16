@@ -150,6 +150,7 @@ What guards `main`, and the commands behind each guard:
 | Guard | Where | Local command |
 |---|---|---|
 | Types, lint, unit tests, build | CI `checks` | `npm run typecheck`, `npm run lint`, `npm run test`, `npm run build` |
+| The STATE.md handoff date is within 3 days of the newest session note | CI `checks` | `node scripts/check-state-freshness.mjs` (tests: `scripts/check-state-freshness.test.mjs`) |
 | Page weight (first-load JS per page, gzipped) | CI `checks` | `npm run budget` (after a build); `-- --update` rewrites `performance-budget.json` (+10%) — raise a number only on purpose |
 | Schema = migrations; types = schema; persona tests | CI `database` | `npm run db:drift`, `npm run db:types:check`, `npm run test:integration` |
 | Every e2e spec (the public smoke specs too) against a fresh local stack, in 5 parts balanced by time | `e2e-scheduled.yml` (nightly 03:47 UTC + `workflow_dispatch`; not a PR gate) | `npm run stack:up [-- build]`, then `E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 PLAYWRIGHT_BASE_URL=http://localhost:3000 npx playwright test e2e/<spec>` |

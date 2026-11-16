@@ -71,6 +71,9 @@ jobs:
       # CLAUDE.md, AGENTS.md and .github/copilot-instructions.md are generated
       # from .cavern-intelligence/RULES.md; fail if one was edited or is stale.
       - run: node scripts/sync-intel.js --check
+      # The STATE.md handoff date must not lag the newest session note by more
+      # than 3 days (BACKLOG 3.40c). Unit-tested in scripts/check-state-freshness.test.mjs.
+      - run: node scripts/check-state-freshness.mjs
       # The bible inventory is generated from the code (`npm run bible`); fail
       # if a change moved routes or tables without rebuilding the map — the
       # same pattern as db:types:check. (bible.mjs normalizes Windows paths,
