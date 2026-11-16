@@ -268,7 +268,7 @@ export class ScriptParser {
    */
   private looksLikeUncasedName(text: string, prevBlank: boolean, next: string): boolean {
     if (!prevBlank || !next) return false;
-    if (text.length < 1 || text.length > 24) return false;
+    if (text.length < 1 || text.length > THRESHOLDS.uncasedCueMaxLength.value) return false;
     if (!/\p{L}/u.test(text) || /[A-Za-z]/.test(text)) return false;
     if ([...text].some((c) => c !== c.toLowerCase() || c !== c.toUpperCase())) return false;
     return !/[。.!?！？…,，、:;]$/u.test(text) && !/^[(\[]/.test(text);
@@ -361,7 +361,7 @@ export class ScriptParser {
       let analysis: ReturnType<typeof this.analyzeLine>;
       if (forced) {
         analysis = forced;
-      } else if (i < 50 && this.isTitlePageContent(trim)) {
+      } else if (i < THRESHOLDS.titlePageScanLines.value && this.isTitlePageContent(trim)) {
         analysis = { type: 'title', confidence: 100, scores: this.emptyScores(), reasoning: ['Title page keyword detected'], meta: {} };
       } else {
         analysis = this.usesScreenplayGrammar()
@@ -461,12 +461,12 @@ export class ScriptParser {
       const trim = line.trim();
       const prevBlank = idx === 0 || !this.rawLines[idx - 1].trim();
       const nextRaw = (this.rawLines[idx + 1] || '').trim();
-      if (!(this.isCaps(trim) || this.looksLikeUncasedName(trim, prevBlank, nextRaw)) || trim.length < 1 || trim.length >= 50) return;
+      if (!(this.isCaps(trim) || this.looksLikeUncasedName(trim, prevBlank, nextRaw)) || trim.length < 1 || trim.length >= THRESHOLDS.prescanCueMaxLength.value) return;
       const cleanName = this.clean(trim);
       if (this.rejectedNames.has(cleanName)) return;
       const words = cleanName.split(' ').filter(Boolean);
 
-      if (words.length === 0 || words.length > 4) return;
+      if (words.length === 0 || words.length > THRESHOLDS.prescanCueMaxWords.value) return;
       if ((cleanName.match(/\p{L}/gu) ?? []).length < 1) return;
       if (this.isSceneHeading(trim)) return;
       if (KNOWLEDGE.SCENE_PREFIXES.has(cleanName) || this.isTransitionText(cleanName) || KNOWLEDGE.CAMERA_ANGLES.has(cleanName) || KNOWLEDGE.TIME_OF_DAY.has(cleanName)) return;
@@ -561,7 +561,7 @@ export class ScriptParser {
         };
       }
 
-      if (/^(EPISODE|SEGMENT|INTRO|OUTRO|BREAK|COLD OPEN)\b/i.test(text) || (this.isCaps(text) && text.length < 60)) {
+      if (/^(EPISODE|SEGMENT|INTRO|OUTRO|BREAK|COLD OPEN)\b/i.test(text) || (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value)) {
         reasoning.push('Segment header');
         return { type: 'slug', confidence: 85, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
@@ -589,7 +589,7 @@ export class ScriptParser {
         reasoning.push('Speaker-tagged line');
         return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
       }
-      if (this.isCaps(text) && text.length < 60) {
+      if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Section header');
         return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
@@ -626,7 +626,7 @@ export class ScriptParser {
         reasoning.push('Speaker-tagged line');
         return { type: 'dialogue', confidence: 95, scores, reasoning, meta: { characterName: speaker[1].trim().toUpperCase() } };
       }
-      if (this.isCaps(text) && text.length < 60) {
+      if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Part header');
         return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
@@ -640,7 +640,7 @@ export class ScriptParser {
         reasoning.push('Numbered section heading');
         return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
-      if (this.isCaps(text) && text.length < 60) {
+      if (this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) {
         reasoning.push('Section heading');
         return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
       }
@@ -677,7 +677,7 @@ export class ScriptParser {
       return { type: 'action', confidence: 50, scores, reasoning, meta: {} };
     }
 
-    if ((this.isCaps(text) && text.length < 60) || /^#{1,3}\s/.test(text) || /^(SCENE|SHOT|BEAT)\s*\d*/i.test(text)) {
+    if ((this.isCaps(text) && text.length < THRESHOLDS.capsSlugMaxLength.value) || /^#{1,3}\s/.test(text) || /^(SCENE|SHOT|BEAT)\s*\d*/i.test(text)) {
       reasoning.push('Treatment section header');
       return { type: 'slug', confidence: 80, scores, reasoning, meta: { sceneNumber: this.extractSceneNumber(text) } };
     }
@@ -765,7 +765,7 @@ export class ScriptParser {
       if (trim === '^') { obs.push({ ...base, kind: 'fixed', fixed: 'dual' }); continue; }
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
-      if (i < 50 && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
+      if (i < THRESHOLDS.titlePageScanLines.value && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
       obs.push({ ...base, kind: 'free' });
     }
     return decodeLabels(obs, {
@@ -783,7 +783,7 @@ export class ScriptParser {
   /** "Maya ducks.": the line opens with a name seen speaking and a lowercase word, not a comma ("Maya, wait."), so it narrates. */
   private opensWithKnownName(text: string): boolean {
     const words = text.split(/\s+/);
-    for (let n = Math.min(3, words.length - 1); n >= 1; n--) {
+    for (let n = Math.min(THRESHOLDS.knownNameMaxWords.value, words.length - 1); n >= 1; n--) {
       const name = words.slice(0, n).join(' ').replace(/[^\p{L}\p{N}'#. -]+$/u, '');
       const next = words[n];
       if (this.characterStats.has(name.toUpperCase()) && /^\p{Ll}/u.test(next) && !/[,?]$/.test(words[n - 1])) return true;
@@ -808,7 +808,7 @@ export class ScriptParser {
       if (key && !this.characterStats.has(key) && !this.rejectedNames.has(key)) this.characterStats.set(key, 1);
       // A name seen speaking once is a cue by the rules but a guess by the evidence: a person should look.
       if ((this.characterStats.get(this.clean(name)) ?? 0) <= 1 && !this.learnedNames.has(this.clean(name))) {
-        analysis.confidence = Math.min(analysis.confidence, 60);
+        analysis.confidence = Math.min(analysis.confidence, THRESHOLDS.seenOnceCueConfidenceCap.value);
         analysis.reasoning = [...analysis.reasoning, 'Seen speaking only once'];
       }
     } else if (analysis.meta) analysis.meta = { ...analysis.meta, characterName: undefined };
@@ -867,29 +867,29 @@ export class ScriptParser {
     const cleanName = this.clean(text);
 
     if (this.isSceneHeading(text)) {
-      scores.slug = 100;
+      scores.slug = THRESHOLDS.slugPrefixScore.value;
       reasoning.push('Starts with known scene prefix');
     } else if (upper.startsWith('.') && this.isCaps(text) && text.length > 1) {
-      scores.slug = 90;
+      scores.slug = THRESHOLDS.slugDotScore.value;
       reasoning.push('Starts with dot (shorthand slug)');
     }
 
     if (this.isTransitionText(upper)) {
-      scores.transition = 100;
+      scores.transition = THRESHOLDS.transitionExactScore.value;
       reasoning.push('Exact transition match');
-    } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < 40) {
-      scores.transition = 85;
+    } else if (upper.endsWith(' TO:') && this.isCaps(text) && text.length < THRESHOLDS.transitionToMaxLength.value) {
+      scores.transition = THRESHOLDS.transitionToScore.value;
       reasoning.push('Ends with " TO:" and is caps');
     }
 
     if (text.startsWith('(') && text.endsWith(')')) {
-      scores.parenthetical = 90;
+      scores.parenthetical = THRESHOLDS.parentheticalScore.value;
       reasoning.push('Wrapped in parentheses');
       if (context.prev?.type === 'character') {
-        scores.parenthetical = 100;
+        scores.parenthetical = THRESHOLDS.parentheticalAfterCueScore.value;
         reasoning.push('Follows character');
       } else if (context.prev?.type === 'dialogue') {
-        scores.parenthetical = 80;
+        scores.parenthetical = THRESHOLDS.parentheticalInDialogueScore.value;
         reasoning.push('Inside dialogue block');
       }
     }
@@ -899,33 +899,33 @@ export class ScriptParser {
     // the whole line — or these get misread as action and silently corrupt
     // dialogue attribution and scene cast lists.
     const namePart = text.replace(/\s*\([^)]*\)\s*$/, '').trim();
-    if ((this.isCaps(namePart) || this.looksLikeUncasedName(namePart, context.prev?.type === 'empty', context.next)) && namePart.length >= 1 && namePart.length < 60) {
-      let charScore = 30;
+    if ((this.isCaps(namePart) || this.looksLikeUncasedName(namePart, context.prev?.type === 'empty', context.next)) && namePart.length >= 1 && namePart.length < THRESHOLDS.evidenceCueMaxLength.value) {
+      let charScore: number = THRESHOLDS.cueBaseScore.value;
 
       if (this.characterStats.get(cleanName)! >= 1) {
-        charScore += 20;
+        charScore += THRESHOLDS.cuePrescanBonus.value;
         reasoning.push('Found in cast pre-scan');
       }
 
       if ([...KNOWLEDGE.EXTENSIONS].some(e => upper.includes(e))) {
-        charScore += 50;
+        charScore += THRESHOLDS.cueExtensionBonus.value;
         reasoning.push('Contains character extension');
       }
 
       if (context.next && !this.isCaps(context.next)) {
-        charScore += 30;
+        charScore += THRESHOLDS.cueDialogueNextBonus.value;
         reasoning.push('Followed by likely dialogue');
       }
 
       if (context.prev?.type === 'empty' || context.prev?.type === 'slug' || context.prev?.type === 'action') {
-        charScore += 10;
+        charScore += THRESHOLDS.cueAfterBlockBonus.value;
       }
 
-      if (scores.transition > 50) charScore = 0;
+      if (scores.transition > THRESHOLDS.transitionBlocksCueAbove.value) charScore = 0;
 
       if (this.matchesSetStart(upper, KNOWLEDGE.CAMERA_ANGLES)) {
         charScore = 0;
-        scores.shot = 90;
+        scores.shot = THRESHOLDS.cameraCueScore.value;
         reasoning.push('Identified as Camera Cue');
       }
 
@@ -936,18 +936,18 @@ export class ScriptParser {
     const words = upper.split(/[^A-Z]+/);
 
     const hasMovement = words.some(w => KNOWLEDGE.VERBS_MOVEMENT.has(w));
-    if (hasMovement) { visualScore += 25; reasoning.push('Contains movement verb'); }
+    if (hasMovement) { visualScore += THRESHOLDS.visualMovementScore.value; reasoning.push('Contains movement verb'); }
 
     const hasViolence = words.some(w => KNOWLEDGE.VERBS_VIOLENT.has(w));
-    if (hasViolence) { visualScore += 35; reasoning.push('Contains violent verb'); }
+    if (hasViolence) { visualScore += THRESHOLDS.visualViolentScore.value; reasoning.push('Contains violent verb'); }
 
     const hasInteraction = words.some(w => KNOWLEDGE.VERBS_INTERACTION.has(w));
-    if (hasInteraction) { visualScore += 20; reasoning.push('Contains interaction verb'); }
+    if (hasInteraction) { visualScore += THRESHOLDS.visualInteractionScore.value; reasoning.push('Contains interaction verb'); }
 
     if (!this.isCaps(text)) {
       const capsWords = text.match(/\b[A-Z]{3,}\b/g) || [];
       if (capsWords.some(w => KNOWLEDGE.SOUNDS.has(w))) {
-        visualScore += 30;
+        visualScore += THRESHOLDS.visualSoundScore.value;
         reasoning.push('Contains capitalized sound cue');
       }
     }
@@ -961,26 +961,26 @@ export class ScriptParser {
       if (KNOWLEDGE.SOUNDS.has(w)) this.elements.SFX.add(w);
     });
 
-    scores.action = visualScore + 20;
+    scores.action = visualScore + THRESHOLDS.actionBaseScore.value;
 
     if (!this.isCaps(text)) {
       if (context.prev?.type === 'character' || context.prev?.type === 'parenthetical') {
-        scores.dialogue = 100;
+        scores.dialogue = THRESHOLDS.dialogueAfterCueScore.value;
         reasoning.push('Follows character/parenthetical');
       } else if (this.insideDialogueBlock && context.prev?.type === 'dialogue') {
-        scores.dialogue = 95;
+        scores.dialogue = THRESHOLDS.dialogueContinuationScore.value;
         reasoning.push('Continuation of dialogue block');
       }
     }
 
     let bestType: LineType = 'action';
 
-    if (scores.slug >= 90) bestType = 'slug';
-    else if (scores.transition >= 90) bestType = 'transition';
-    else if (scores.parenthetical >= 90) bestType = 'parenthetical';
-    else if (scores.dialogue >= 95) bestType = 'dialogue';
-    else if (scores.character >= 60) bestType = 'character';
-    else if (scores.shot >= 90) bestType = 'shot';
+    if (scores.slug >= THRESHOLDS.pickSlugAt.value) bestType = 'slug';
+    else if (scores.transition >= THRESHOLDS.pickTransitionAt.value) bestType = 'transition';
+    else if (scores.parenthetical >= THRESHOLDS.pickParentheticalAt.value) bestType = 'parenthetical';
+    else if (scores.dialogue >= THRESHOLDS.pickDialogueAt.value) bestType = 'dialogue';
+    else if (scores.character >= THRESHOLDS.pickCharacterAt.value) bestType = 'character';
+    else if (scores.shot >= THRESHOLDS.pickShotAt.value) bestType = 'shot';
     else bestType = 'action';
 
     if (bestType === 'shot') {

@@ -123,6 +123,42 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `alternativeMinShare` | 0.02 | a second reading of a line is offered only when it holds more than this share of the probability |
 | `titleCaseCueMaxLength` | 28 | the longest a Title Case line can be and still be considered a speaker's name (scripts that do not capitalise cues) |
 | `titleCaseCueMinHeads` | 2 | a Title Case name must head at least this many blocks before it is accepted as a cue (or sit between two that recur) |
+| `uncasedCueMaxLength` | 24 | the longest an unpunctuated line can be and still read as a cue in a script with no capitals (CJK, Arabic, Hebrew) |
+| `prescanCueMaxLength` | 50 | the cast pre-scan ignores a line this long or longer: it is too long to be a name |
+| `prescanCueMaxWords` | 4 | the most words a name can have in the cast pre-scan |
+| `titlePageScanLines` | 50 | a Fountain title page is looked for only in a script's first this many lines |
+| `capsSlugMaxLength` | 60 | an all-caps line shorter than this, in a format without screenplay cues (podcast, game, stage, outline) reads as a scene heading |
+| `transitionToMaxLength` | 40 | the longest an all-caps line ending in " TO:" can be and still be a transition |
+| `evidenceCueMaxLength` | 60 | the longest a cue's name part (without a trailing parenthetical) can be and still score as a character |
+| `knownNameMaxWords` | 3 | the most words of a speaking name looked for at the start of a line that may narrate ("Maya ducks.") |
+| `seenOnceCueConfidenceCap` | 60 | a cue whose name speaks only once is capped at this confidence, so the review asks about it |
+| `slugPrefixScore` | 100 | evidence score of a line that starts with a known scene prefix (INT., EXT.) |
+| `slugDotScore` | 90 | evidence score of a ".SHORTHAND" scene heading |
+| `transitionExactScore` | 100 | evidence score of a line that is exactly a known transition |
+| `transitionToScore` | 85 | evidence score of a short all-caps line ending in " TO:" |
+| `parentheticalScore` | 90 | evidence score of a line wrapped in parentheses |
+| `parentheticalAfterCueScore` | 100 | the parenthetical score when the line follows a character cue |
+| `parentheticalInDialogueScore` | 80 | the parenthetical score when the line follows dialogue (inside a speech) |
+| `cueBaseScore` | 30 | where a cue's evidence score starts, once the line has the shape of a name |
+| `cuePrescanBonus` | 20 | added to a cue's score when the name was found in the cast pre-scan |
+| `cueExtensionBonus` | 50 | added to a cue's score when it carries a character extension (V.O., O.S.) |
+| `cueDialogueNextBonus` | 30 | added to a cue's score when a line of likely dialogue follows |
+| `cueAfterBlockBonus` | 10 | added to a cue's score when it follows a blank line, a heading or action |
+| `transitionBlocksCueAbove` | 50 | a line whose transition score is above this cannot be a cue |
+| `cameraCueScore` | 90 | evidence score of a camera cue (it is kept as action) |
+| `visualMovementScore` | 25 | action evidence added by a movement verb |
+| `visualViolentScore` | 35 | action evidence added by a violent verb |
+| `visualInteractionScore` | 20 | action evidence added by an interaction verb |
+| `visualSoundScore` | 30 | action evidence added by a capitalised sound cue in a line that is not all caps |
+| `actionBaseScore` | 20 | the floor of every line's action score, added to what its verbs and sounds earn |
+| `dialogueAfterCueScore` | 100 | evidence score of a lowercase line straight after a cue or a parenthetical |
+| `dialogueContinuationScore` | 95 | evidence score of a lowercase line continuing a dialogue block |
+| `pickSlugAt` | 90 | a slug score at or above this decides the line is a scene heading |
+| `pickTransitionAt` | 90 | a transition score at or above this decides the line is a transition |
+| `pickParentheticalAt` | 90 | a parenthetical score at or above this decides the line is a parenthetical |
+| `pickDialogueAt` | 95 | a dialogue score at or above this decides the line is dialogue |
+| `pickCharacterAt` | 60 | a character score at or above this decides the line is a cue |
+| `pickShotAt` | 90 | a shot score at or above this decides the line is a camera direction |
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
 
