@@ -1,0 +1,7 @@
+# Session - 2026-11-15: The Sound page on a phone (BACKLOG 3.42)
+
+**Built:** the Sound page for 393x852 and 852x393, through `usePhoneLayout` (`lib/os/usePhone.ts`): page padding drops from `p-12` to `p-4` and the page cannot scroll sideways; the tab row is a scrollable `tablist` of 44 pt tabs (`role="tab"`, `aria-selected`); the deck (`SoundDeck`) is compact (a smaller cover, the transport on its own full-width row, no volume slider or Cavern page link, `data-compact` says which way it is held); the Find form stacks, its buttons grow to 52 pt and the Play / Save buttons are 44 pt; the Library's empty state and filter row stop forcing width; the tag-to-scene picker and button are 44 pt. On the Scenes timeline the bars are 44 pt tall, the box scrolls sideways on its own, and a scene tapped opens its detail in the existing `BottomSheet` (`components/phone/BottomSheet.tsx`) instead of inline; on the desk the detail stays inline.
+
+**Tests:** `components/audio/SoundPhone.test.tsx` (6, hook mocked: compact deck in both orientations and the desk layout off a phone, the scene sheet on a phone and inline on the desk, the timeline's own scroll box and 44 pt bars, 44 pt tag controls). The two older test files mock the hook as a desk.
+
+**Not verified:** a real iPhone pass in either orientation (jsdom has no layout, so 44 pt and "no horizontal scroll" are asserted from the styles and classes, not measured); a browser spec at both sizes (BACKLOG 3.42 keeps it); the sheet with the keyboard up while tagging.

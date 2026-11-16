@@ -14,6 +14,7 @@ vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: vi.fn() }) }
 const cavern = vi.hoisted(() => ({ open: vi.fn() }));
 vi.mock('@/lib/cavern/CavernContext', () => ({ useCavern: () => ({ mode: 'closed', open: cavern.open, minimise: vi.fn(), close: vi.fn() }) }));
 vi.mock('./ListenWithoutPremium', () => ({ ListenWithoutPremium: () => <div>embedded players here</div> }));
+vi.mock('@/lib/os/usePhone', () => ({ usePhoneLayout: () => ({ phone: false, landscape: false, keyboard: 0, typing: false, height: 800, offset: 0 }) }));
 import { SoundDeck } from './SoundDeck';
 
 afterEach(() => { cleanup(); vi.clearAllMocks(); spotify.useIframeFallback = false; spotify.elsewhere = null; spotify.currentTrack = { name: 'Night Drive', artists: [{ name: 'Kavinsky' }], album: { images: [] } }; });

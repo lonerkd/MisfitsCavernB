@@ -19,7 +19,7 @@ export default function HelpCasePage({ params }: { params: Promise<{ id: string 
 
   return (
     <ProtectedPage require="signed-in">
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 16px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 16px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
         <Link href="/hub/help" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 13 }}><ArrowLeft size={14} aria-hidden /> Help</Link>
         {loaded.loading && !loaded.data && <p style={{ color: 'var(--fg-muted)' }}>Loading…</p>}
         {loaded.error != null && (
@@ -37,7 +37,7 @@ export default function HelpCasePage({ params }: { params: Promise<{ id: string 
             <SupportThread kase={kase} viewer="person" onChange={loaded.reload} />
           </>
         )}
-      </main>
+      </div>
     </ProtectedPage>
   );
 }

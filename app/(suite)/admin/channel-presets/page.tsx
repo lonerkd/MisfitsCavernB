@@ -61,7 +61,7 @@ export default function AdminChannelPresetsPage() {
 
   return (
     <ProtectedPage require="admin">
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 24px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '24px 24px 96px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
         <Link href="/admin" aria-label="Back to admin" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 13 }}><ArrowLeft size={14} aria-hidden /> Admin</Link>
         <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.8rem', margin: '12px 0 4px' }}>Channel suggestions</h1>
         <p style={{ color: 'var(--fg-muted)', margin: '0 0 24px', maxWidth: '60ch' }}>The channels the Lounge offers a production as it moves through its phases.</p>
@@ -103,7 +103,7 @@ export default function AdminChannelPresetsPage() {
             </ul>
           </section>
         ))}
-      </main>
+      </div>
     </ProtectedPage>
   );
 }
