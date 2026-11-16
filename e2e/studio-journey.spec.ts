@@ -137,7 +137,7 @@ test.describe('Studio journey (local Supabase)', () => {
     // Look in <main>: while the page streams in, React briefly keeps a hidden
     // copy of it in its streaming buffer (<div hidden id="S:…"> under <body>),
     // which a document-wide text query would also match.
-    await expect(anon.locator('main').getByText('This project isn’t shared, or the link is wrong.')).toBeVisible();
+    await expect(anon.locator('#main-content').getByText('This project isn’t shared, or the link is wrong.')).toBeVisible();
     await viewer.close();
 
     // 7. Crew sees library changes live, without reloading.
