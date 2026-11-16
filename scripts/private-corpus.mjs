@@ -5,10 +5,12 @@
 // written into the repository: this script reads the files, prints measurements,
 // and writes its report under `.private-corpus/.reports/` (also ignored).
 //
-//   node scripts/private-corpus.mjs                 every file
-//   node scripts/private-corpus.mjs --limit 20      the first 20
-//   node scripts/private-corpus.mjs --file Name.pdf one file
-//   node scripts/private-corpus.mjs --json          the report only
+// Run it through vite-node, which reads the app's TypeScript (plain node cannot):
+//
+//   npx vite-node scripts/private-corpus.mjs                 every file
+//   npx vite-node scripts/private-corpus.mjs --limit 20      the first 20
+//   npx vite-node scripts/private-corpus.mjs --file Name.pdf one file
+//   npx vite-node scripts/private-corpus.mjs --json          the report only
 //
 // Every file is first CLASSIFIED, because a file that cannot be parsed is not a
 // parsing failure:
