@@ -332,7 +332,7 @@ export default function ProjectHubPage() {
             <DeptWindow
               title="Studio"
               tag="Assets"
-              color="#6366f1"
+              color="var(--studio-color)"
               href="/studio"
               delay={0.1}
               stats={[

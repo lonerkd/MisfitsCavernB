@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ChevronRight, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { recentServerSnapshot, recentSnapshot, recordRecent, subscribeRecent } from '@/lib/studio/recent-tools';
 import { useMyCapabilities, useMyRole } from '@/lib/roles/capabilities';
 import { YourWorkflow } from '../production/YourWorkflow';
 import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
@@ -110,6 +111,8 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'crew', label: PRODUCTION_VIEW_LABELS.crew, icon: <Users size={12} />, group: 'People' },
 ];
 
+const VIEW_IDS: string[] = VIEWS.map((v) => v.id);
+
 /** The views whose layout has no header of its own: the Production tab gives them one (the rest open with their own ToolHeader). */
 const TAB_HEADED: Partial<Record<View, string>> = {
   story: 'The story laid out by act, scene and story day.',
@@ -143,6 +146,13 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   const q = find.trim().toLowerCase();
   // A search keeps the open view's chip in sight, so the list never hides where you are.
   const shown = (v: (typeof VIEWS)[number]) => !q || v.label.toLowerCase().includes(q) || v.id === view;
+  // Groups can be folded; a search opens every group with a match, so a fold never hides a result.
+  const [folded, setFolded] = useState<Set<string>>(new Set());
+  const toggleGroup = (g: string) => setFolded((prev) => { const n = new Set(prev); if (n.has(g)) n.delete(g); else n.add(g); return n; });
+  // The last six tools opened, on this device only.
+  const recent = useSyncExternalStore(subscribeRecent, () => recentSnapshot(VIEW_IDS), recentServerSnapshot);
+  useEffect(() => { recordRecent(view, VIEW_IDS); }, [view]);
+  const recentViews = recent.map((id) => VIEWS.find((v) => v.id === id)).filter((v): v is (typeof VIEWS)[number] => !!v && v.id !== view && shown(v));
 
   const loadCrew = useCallback(() => getProjectCrew(project.id).then((rows) => setCrew(rows as unknown as CrewRow[])), [project.id]);
   // The OS store's crew changes live (Realtime); refetch the joined rows then.
@@ -176,19 +186,36 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                   <strong style={{ color: 'var(--fg-muted)' }}>Still missing for this role:</strong> {kit.gaps.join(' · ')}
                 </div>
               )}
-              {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => (
+              {recentViews.length > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>Recently used</span>
+                  <div className={s.chips} role="group" aria-label="Recently used tools" style={{ marginBottom: 0 }}>
+                    {recentViews.map((v) => (
+                      <button key={v.id} type="button" className={s.chip} onClick={() => onView(v.id)}>{v.icon} {v.label}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => {
+                const open = !!q || !folded.has(group);
+                return (
                 <div key={group} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>{group}</span>
-                  <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
+                  <button type="button" aria-expanded={open} onClick={() => toggleGroup(group)} disabled={!!q}
+                    style={{ all: 'unset', cursor: q ? 'default' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4, minHeight: 44, fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', minWidth: 90, flexShrink: 0 }}>
+                    <ChevronRight size={11} aria-hidden style={{ transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }} />{group}
+                    {!open && <span style={{ opacity: 0.7 }}> ({VIEWS.filter((v) => v.group === group).length})</span>}
+                  </button>
+                  {open && <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
                     {VIEWS.filter((v) => v.group === group && shown(v)).map((v) => (
                       <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
                         {v.icon} {v.label}
                         {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}
                       </button>
                     ))}
-                  </div>
+                  </div>}
                 </div>
-              ))}
+                );
+              })}
             </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}

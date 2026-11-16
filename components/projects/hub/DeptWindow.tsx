@@ -208,7 +208,7 @@ export function TimelinePreview({ deadline, milestones }: { deadline: string; mi
           const done = m.status === 'done' || m.status === 'completed';
           return (
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: done ? '#10b981' : 'rgba(var(--ink-rgb), 0.1)' }} />
+              <div style={{ width: 6, height: 6, borderRadius: '50%', flexShrink: 0, background: done ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.1)' }} />
               <span style={{ flex: 1, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: done ? 'var(--fg-muted)' : 'var(--fg-dim)', textDecoration: done ? 'line-through' : 'none', opacity: done ? 0.5 : 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</span>
               {m.end_date && <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{new Date(m.end_date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>}
             </div>

@@ -450,7 +450,7 @@
 .postCols { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 18px; align-items: start; }
 @media (max-width: 520px) { .postCols { grid-template-columns: 1fr; } }
 .progress { height: 3px; border-radius: 4px; background: rgba(var(--ink-rgb), 0.06); overflow: hidden; }
-.progress > div { height: 100%; background: #10b981; transition: width 0.4s var(--ease-expo, ease); }
+.progress > div { height: 100%; background: var(--ok); transition: width 0.4s var(--ease-expo, ease); }
 .itemRow { display: grid; grid-template-columns: 124px minmax(0, 1fr) auto; grid-template-areas: 'status title del' '. meta meta'; gap: 4px 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(var(--ink-rgb), 0.04); }
 .itemRow .input, .itemRow .select { height: 28px; padding-top: 0; padding-bottom: 0; font-size: 11px; }
 .itemRow > .itemStatus { grid-area: status; }

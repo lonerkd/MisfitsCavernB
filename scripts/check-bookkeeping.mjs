@@ -8,10 +8,10 @@
 //   1. an open `[BACKLOG x]` issue whose item is no longer in BACKLOG.md      -> done but open: close it
 //   2. a BACKLOG item with no issue yet                                         -> info (the owner runs backlog-to-issues --create)
 //   3. two BACKLOG items with the same number                                   -> renumber one
-//   4. STATE.md "Resume here (handoff, DATE)" older than the newest session note by > 14 days -> refresh the handoff
-//   5. BACKLOG "Last audited" more than 45 days before today                                -> info
+//   4. BACKLOG "Last audited" more than 45 days before today                                -> info
+// The STATE.md handoff's freshness is not checked here (one fact, one home): see scripts/check-state-freshness.mjs, which fails CI.
 import { execFileSync } from 'node:child_process';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { parseBacklog } from './backlog-to-issues.mjs';
 
 const REPO = process.env.GITHUB_REPOSITORY || 'lonerkd/MisfitsCavernB';
@@ -44,11 +44,7 @@ if (!offline) {
   }
 }
 
-const sessions = readdirSync(new URL('sessions/', root)).filter((f) => /^\d{4}-\d\d-\d\d-.+\.md$/.test(f)).sort();
-const newest = sessions.length ? new Date(sessions[sessions.length - 1].slice(0, 10)) : null;
-const handoff = /Resume here \(handoff, (\d{4}-\d\d-\d\d)\)/.exec(readFileSync(new URL('STATE.md', root), 'utf8'));
-if (!handoff) add('warn', 'STATE.md has no "Resume here (handoff, DATE)" heading', 'restore it');
-else if (newest && days(new Date(handoff[1]), newest) > 14) add('warn', `STATE.md handoff is dated ${handoff[1]}; the newest session note is ${sessions[sessions.length - 1].slice(0, 10)}`, 'reread STATE "Resume here" and "Direction" against BACKLOG and the notes, fix what moved, redate it');
+// STATE.md handoff freshness: scripts/check-state-freshness.mjs (a CI gate), not repeated here.
 
 const audited = /Last audited: (\d{4}-\d\d-\d\d)/.exec(backlog);
 if (audited && days(new Date(audited[1]), new Date()) > 45) add('info', `BACKLOG "Last audited" is ${audited[1]}`, 'audit each item against the code, then redate it');

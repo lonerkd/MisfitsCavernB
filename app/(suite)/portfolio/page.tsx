@@ -246,9 +246,9 @@ function ProjectBible({ project, onClose }: { project: Video | null; onClose: ()
 
 const FEST_COLOR: Record<string, string> = {
   planned: '#6b7280',
-  submitted: '#f59e0b',
-  accepted: '#10b981',
-  rejected: '#ef4444',
+  submitted: 'var(--warn)',
+  accepted: 'var(--ok)',
+  rejected: 'var(--danger)',
 };
 
 interface FestivalEntry { id: string; name: string; status: string; deadline?: string; projectTitle: string; }
@@ -408,7 +408,7 @@ export default function PortfolioPage() {
                   <div key={f.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderLeft: `3px solid ${col}`, borderRadius: 8, padding: 16 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
                       <span style={{ fontFamily: 'var(--display)', fontSize: '1.15rem', letterSpacing: '-0.02em' }}>{f.name}</span>
-                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: col, background: `${col}1e`, border: `1px solid ${col}44`, borderRadius: 9999, padding: '3px 9px' }}>{f.status}</span>
+                      <span style={{ flexShrink: 0, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: col, background: `color-mix(in srgb, ${col} 12%, transparent)`, border: `1px solid color-mix(in srgb, ${col} 27%, transparent)`, borderRadius: 9999, padding: '3px 9px' }}>{f.status}</span>
                     </div>
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{f.projectTitle}{f.deadline ? ` · ${f.deadline}` : ''}</div>
                   </div>
