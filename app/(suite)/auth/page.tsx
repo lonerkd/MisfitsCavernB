@@ -1,6 +1,7 @@
 'use client';
 
 import { signInMessage } from '@/lib/auth/errors';
+import { authHeading, type AuthMode } from '@/lib/auth/heading';
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useSearchParam } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
@@ -19,7 +20,7 @@ import { RECOVERY_PATH, recoveryErrorMessage } from '@/lib/auth/recovery';
 import { supabase } from '@/lib/supabase/client';
 import { Flag } from '@/components/Flag';
 
-type Mode = 'signin' | 'signup' | 'forgot';
+type Mode = AuthMode;
 
 interface Field {
   name: string;
@@ -271,7 +272,7 @@ export default function AuthPage() {
             lineHeight: 1,
             margin: '0 0 10px',
           }}>
-            MISFITS<br /><span style={{ color: 'var(--accent)' }}>CAVERN</span>
+            {authHeading(mode)[0]}<br /><span style={{ color: 'var(--accent)' }}>{authHeading(mode)[1]}</span>
           </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
             {mode === 'signin' ? 'Welcome back, misfit.' : mode === 'signup' ? 'Join the cavern.' : 'Forgot it? It happens.'}
