@@ -76,5 +76,5 @@ export function contextKey(context: ParseContext | undefined): string {
     ? JSON.stringify(context.writerMemory)
     : '';
   const overrideKey = (context.lineOverrides ?? []).map((o) => `${o.line_index}:${o.forced_type}`).join(',');
-  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${(context.places ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}`;
+  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}`;
 }
