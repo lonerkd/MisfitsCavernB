@@ -64,7 +64,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
             <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
               next={lines.length === 0 ? { text: 'Set the budget on the project page to see it here.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
               actions={<PrintButton label="the budget" build={() => budgetDoc({
-                project: project.title, accent: project.accent_color, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
+                project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
               })} />} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>

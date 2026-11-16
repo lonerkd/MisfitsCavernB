@@ -43,7 +43,7 @@ export function RevisionsView() {
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<FileText size={16} />} eyebrow="Story & planning" title="Script revisions" purpose="The script’s locked revisions and what changed." accent={project.accent_color} summary={<>{script.title} · {rows.length} locked</>} actions={<><div style={{ display: 'flex', gap: 8 }}>
           {rows.length > 0 && <PrintButton label="the revision history" build={() => revisionsDoc({
-            project: project.title, accent: project.accent_color, script: script.title,
+            project: project.title, accent: project.accent_color, logo: project.logo_url, script: script.title,
             revisions: rows.map((r) => ({ colour: REVISION_COLORS[r.colorIndex % REVISION_COLORS.length].name, label: r.label, date: r.date ? new Date(r.date).toLocaleDateString() : null })),
             generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
           })} />}

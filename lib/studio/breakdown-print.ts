@@ -16,6 +16,7 @@ export interface BreakdownSheetScene {
 export interface BreakdownPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   scenes: BreakdownSheetScene[];
   generated: string;
 }
@@ -39,7 +40,7 @@ export function breakdownDoc(i: BreakdownPrintInput): PrintDoc {
   return {
     title: 'Breakdown sheets',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Scenes', i.scenes.length]],
     blocks,
     footer: i.project,

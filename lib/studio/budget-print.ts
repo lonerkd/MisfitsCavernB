@@ -5,6 +5,7 @@ import type { PrintDoc } from '@/lib/print/kit';
 export interface BudgetPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   lines: Array<{ label: string; planned: number; committed: number; paid: number; left: number }>;
   totals: { planned: number; committed: number; paid: number; left: number };
   /** Approved labour already counted in "paid", when there is some. */
@@ -24,7 +25,7 @@ export function budgetDoc(i: BudgetPrintInput): PrintDoc {
     title: 'Budget',
     kind: 'Budget vs spend',
     subtitle: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Planned', f(i.totals.planned)], ['Committed', f(i.totals.committed)], ['Paid', f(i.totals.paid)], [over ? 'Over by' : 'Left', over ? f(-i.totals.left) : f(i.totals.left)]],
     blocks: [
       ...(over ? [{ type: 'note' as const, tone: 'warn' as const, text: `The project is ${f(-i.totals.left)} over its planned budget.` }] : []),

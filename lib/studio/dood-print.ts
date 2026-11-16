@@ -5,6 +5,7 @@ import type { PrintColumn, PrintDoc } from '@/lib/print/kit';
 export interface DoodPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   /** The shoot days in order (only days with scenes). */
   days: number[];
   rows: Array<{ name: string; cells: string[]; worked: number }>;
@@ -20,7 +21,7 @@ export function doodDoc(i: DoodPrintInput): PrintDoc {
   return {
     title: 'Day out of days',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['Cast', i.rows.length], ['Shoot days', i.days.length]],
     blocks: [
       {

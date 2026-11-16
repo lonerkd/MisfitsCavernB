@@ -32,7 +32,7 @@ export function EditorPackagePanel() {
     takes, camera, sound, offloads,
   }), [t.scenes, shots.rows, takes, camera, sound, offloads]);
 
-  const doc = () => editorPackageDoc(pkg, { project: project.title, accent: project.accent_color, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
+  const doc = () => editorPackageDoc(pkg, { project: project.title, accent: project.accent_color, logo: project.logo_url, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
 
   return (
     <section className={s.panel} style={{ padding: 12 }} aria-labelledby="ed-package">

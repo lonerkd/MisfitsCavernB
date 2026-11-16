@@ -68,7 +68,7 @@ export function LocationsView() {
         progress={inScript > 0 ? { value: locked, of: inScript, label: 'locked down' } : null}
         next={inScript > locked ? { text: `${inScript - locked} location${inScript - locked === 1 ? '' : 's'} still to lock down. Open one to set its status and permit.` } : null}
         actions={rows.length > 0 ? <PrintButton label="the locations list" build={() => locationsDoc({
-          project: project.title, accent: project.accent_color, format: (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }),
+          project: project.title, accent: project.accent_color, logo: project.logo_url, format: (n) => n.toLocaleString(undefined, { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
           rows: rows.map((r) => ({
             name: r.name, address: r.record?.address ?? null, contact: r.record?.contact ?? null,

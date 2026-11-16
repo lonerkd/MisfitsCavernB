@@ -91,7 +91,7 @@ export function ContinuityView() {
       <ToolHeader icon={<Eye size={16} />} eyebrow="Story & planning" title="Continuity" purpose="Scenes by story day, with each character's look and the changes to check." accent={project.accent_color}
         progress={null} stats={warnings.length ? [{ label: 'look changes to check', value: warnings.length }] : []}
         actions={<><PrintButton label="the continuity sheet" build={() => continuityDoc({
-          project: project.title, accent: project.accent_color,
+          project: project.title, accent: project.accent_color, logo: project.logo_url,
           warnings: warnings.map((w) => lookChangeText(nameOf.get(w.character_id) ?? 'Someone', w)),
           days: groups.map((g) => ({
             label: g.day != null ? `Story day ${g.day}` : 'No story day yet',

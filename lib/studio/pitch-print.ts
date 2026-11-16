@@ -5,6 +5,7 @@ import type { PrintBlock, PrintDoc } from '@/lib/print/kit';
 export interface PitchPrintInput {
   title: string;
   accent?: string | null;
+  logo?: string | null;
   logline: string | null;
   concepts: Array<{ url: string; title: string | null }>;
   characters: string[];
@@ -33,5 +34,5 @@ export function pitchDoc(i: PitchPrintInput): PrintDoc {
       : [{ type: 'text', text: 'No story beats yet.' }],
   });
 
-  return { title: i.title, kind: 'Pitch', accent: i.accent, blocks, footer: i.title, generated: i.generated };
+  return { title: i.title, kind: 'Pitch', accent: i.accent, logo: i.logo, blocks, footer: i.title, generated: i.generated };
 }

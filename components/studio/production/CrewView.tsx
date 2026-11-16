@@ -66,7 +66,7 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
           stats={[{ label: crew.length === 1 ? 'person' : 'people', value: crew.length }]}
           next={crew.length === 0 ? { text: isOwner ? 'Recruit your first person, or post a role to Jobs.' : 'The project owner recruits crew.' } : null}
           actions={<>{crew.length > 0 && <PrintButton label="the cast and crew list" build={() => crewDoc({
-              project: project.title, accent: project.accent_color,
+              project: project.title, accent: project.accent_color, logo: project.logo_url,
               crew: crew.map((m) => ({ name: m.profiles?.username || 'Unknown', role: m.craft || (m.role === 'lead' ? 'Lead' : 'Crew'), status: m.status ?? null, away: canShape ? awayText(m.user_id) : null })),
               generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
             })} />}{isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}</>} />

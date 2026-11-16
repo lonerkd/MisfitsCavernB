@@ -15,6 +15,12 @@ describe('printing the role tools', () => {
     expect(recordKindOfView('breakdown')).toBeNull();
   });
 
+  it('carries the project’s logo into the document', () => {
+    const doc = recordsDoc({ kind: 'costumes', project: 'The Pier', logo: 'https://cdn.test/logo.png', generated: 'd', rows: [] });
+    expect(doc.logo).toBe('https://cdn.test/logo.png');
+    expect(printHtml(doc)).toContain('<img class="logo" src="https://cdn.test/logo.png" alt="">');
+  });
+
   it('prints a tool’s records in its columns, with the project as the kind and the entry count', () => {
     const doc = recordsDoc({ kind: 'costumes', project: 'The Pier', accent: '#0f766e', generated: 'd', rows: [
       { id: '1', character: 'MAYA', scene: '12', change: 'Wet coat', status: 'ready' }, { id: '2', character: 'LUIS', scene: '', change: null, status: 'fitting' },

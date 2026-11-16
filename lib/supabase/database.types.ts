@@ -3564,6 +3564,7 @@ export type Database = {
           festival_submissions: Json | null;
           id: string;
           is_sample: boolean;
+          logo_url: string | null;
           project_type: string;
           settings: Json | null;
           share_token: string;
@@ -3586,6 +3587,7 @@ export type Database = {
           festival_submissions?: Json | null;
           id?: string;
           is_sample?: boolean;
+          logo_url?: string | null;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -3607,6 +3609,7 @@ export type Database = {
           festival_submissions?: Json | null;
           id?: string;
           is_sample?: boolean;
+          logo_url?: string | null;
           project_type?: string;
           settings?: Json | null;
           share_token?: string;
@@ -5566,6 +5569,7 @@ export type Database = {
           author_role: string;
           author_username: string;
           content: string;
+          format: string;
           title: string;
         }[];
       };

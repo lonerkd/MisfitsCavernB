@@ -6,6 +6,7 @@ import type { PrintBlock, PrintDoc } from '@/lib/print/kit';
 export interface CallSheetPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   day: number;
   /** The shoot date as people say it ("Thu 12 Mar 2026"), or null when none is set. */
   date: string | null;
@@ -59,7 +60,7 @@ export function callSheetDoc(i: CallSheetPrintInput): PrintDoc {
     title: `Day ${i.day}${i.date ? ` · ${i.date}` : ''}`,
     kind: 'Call sheet',
     subtitle: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['General call', i.generalCall], ['Shooting call', i.shootingCall], ['Est. wrap', i.wrap], ['Location', i.location], ['Weather', i.weather], ['Light', i.light]],
     blocks,
     footer: i.project,

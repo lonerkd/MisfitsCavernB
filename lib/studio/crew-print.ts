@@ -7,6 +7,7 @@ export interface CrewPrintRow { name: string; role: string; status: string | nul
 export interface CrewPrintInput {
   project: string;
   accent?: string | null;
+  logo?: string | null;
   crew: CrewPrintRow[];
   generated: string;
 }
@@ -19,7 +20,7 @@ export function crewDoc(i: CrewPrintInput): PrintDoc {
   return {
     title: 'Cast and crew',
     kind: i.project,
-    accent: i.accent,
+    accent: i.accent, logo: i.logo,
     meta: [['People', i.crew.length], ['Confirmed', i.crew.length ? `${confirmed} of ${i.crew.length}` : null]],
     blocks: [{
       type: 'table',

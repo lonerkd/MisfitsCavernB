@@ -631,6 +631,7 @@ column projects.end_date date
 column projects.festival_submissions jsonb default '[]'::jsonb
 column projects.id uuid default uuid_generate_v4() not null
 column projects.is_sample boolean default false not null
+column projects.logo_url text
 column projects.project_type text default 'Feature'::text not null
 column projects.settings jsonb default '{"modules": {"lounge": true, "studio": true, "scriptos": true, "portfolio": true, "distribution": true}, "contentType": "screenplay", "exportProfile": {"format": "fdx", "includeTitlePage": true}, "editorMechanics": {"spellcheck": "en-US", "autoComplete": true, "strictFormatting": true}}'::jsonb
 column projects.share_token text default encode(gen_random_bytes(16), 'hex'::text) not null
@@ -1357,6 +1358,7 @@ constraint project_tasks.project_tasks_assigned_to_fkey FOREIGN KEY (assigned_to
 constraint project_tasks.project_tasks_pkey PRIMARY KEY (id)
 constraint project_tasks.project_tasks_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint projects.projects_creator_id_fkey FOREIGN KEY (creator_id) REFERENCES profiles(id) ON DELETE CASCADE
+constraint projects.projects_logo_url_https CHECK (((logo_url IS NULL) OR ((logo_url ~ '^https://[^[:space:]]+$'::text) AND (char_length(logo_url) <= 500))))
 constraint projects.projects_pkey PRIMARY KEY (id)
 constraint projects.projects_project_type_fkey FOREIGN KEY (project_type) REFERENCES project_formats(name) ON UPDATE CASCADE
 constraint projects.projects_share_token_key UNIQUE (share_token)
@@ -1671,7 +1673,7 @@ function public.get_review(p_token text) body=911a1941cb14915110ffeec34a9f9513
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
-function public.get_shared_script(p_token text) body=57843a878a330c3324079c89ed662871
+function public.get_shared_script(p_token text) body=b10410cba5e1a9adbd998eb246df4b6d
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
 function public.hub_case_study_project(p_post uuid) body=fec46019f2d6f2c42655f9f6736a8b28

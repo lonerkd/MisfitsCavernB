@@ -77,7 +77,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
             const locName = new Map(locations.rows.map((l) => [l.id, l.name]));
             const who = new Map(crew.map((c) => [c.user_id, c.username]));
             return paperworkDoc({
-              project: project.title, accent: project.accent_color,
+              project: project.title, accent: project.accent_color, logo: project.logo_url,
               needed: gaps.map((g) => `${g.title}: ${g.why}`),
               groups: byKind.map((g) => ({
                 label: g.plural,

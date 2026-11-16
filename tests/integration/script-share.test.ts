@@ -83,7 +83,16 @@ describe('script share links — the token is the only way in', () => {
       expect(rows[0].title).toBe('Shared Draft');
       expect(rows[0].content).toContain('Read me.');
       expect(rows[0].author_username).toBe(cast.sam.username);
-      expect(Object.keys(rows[0]).sort()).toEqual(['author_avatar_url', 'author_role', 'author_username', 'content', 'title']);
+      expect(Object.keys(rows[0]).sort()).toEqual(['author_avatar_url', 'author_role', 'author_username', 'content', 'format', 'title']);
+    }
+  });
+
+  it('the script’s format comes with it, so the page reads it with the editor’s rules', async () => {
+    const token = await tokenOf(scriptId);
+    const set = await cast.sam.client.from('scripts').update({ format: 'podcast' }).eq('id', scriptId);
+    expect(set.error).toBeNull();
+    for (const client of [anonClient(), cast.riley.client]) {
+      expect((await lookup(token, client))[0].format).toBe('podcast');
     }
   });
 

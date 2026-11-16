@@ -90,7 +90,7 @@ export function CastBreakdownView() {
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<Users size={16} />} eyebrow="People" title="Cast breakdown" purpose="Cast by character, with scenes and screen time." accent={project.accent_color} summary={<>{castCount} of {sorted.length} cast · {scenes.rows.length} scenes</>} actions={<><PrintButton label="the cast breakdown" build={() => castDoc({
-          project: project.title, accent: project.accent_color,
+          project: project.title, accent: project.accent_color, logo: project.logo_url,
           rows: sorted.map((c) => {
             const crewId = castingByChar.get(c.name.toUpperCase());
             const days = daysByChar.get(c.name);

@@ -79,7 +79,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
     const callOf = (t: CallTarget) => mine.find((c) => ('crew_user_id' in t ? c.crew_user_id === t.crew_user_id : c.character_name === t.character_name));
     const ok = printDocument(callSheetDoc({
       project: project.title,
-      accent: project.accent_color,
+      accent: project.accent_color, logo: project.logo_url,
       day,
       date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : null,
       generalCall: hhmm(sheet?.general_call), shootingCall: hhmm(sheet?.shooting_call), wrap: hhmm(sheet?.estimated_wrap),
