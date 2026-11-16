@@ -1,15 +1,10 @@
-import { execSync } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { type Page } from '@playwright/test';
+import { test, expect, stackEnabled, stackSkipReason, type QaUser } from './support/stack';
 
 // Role model, step 3b in a real browser against a local stack: a person who was invited to a project sees the invitation on
 // Community › Your day (they cannot read the project yet), accepts it and joins with the craft and access they were offered,
-// or declines it and stays out. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
-const PASSWORD = randomUUID();
-const TAG = Date.now().toString(36);
+// or declines it and stays out. Opt-in: E2E_LOCAL_STACK=1 (or the staging variables; see e2e/support/stack.ts).
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 
 async function axeViolations(page: Page): Promise<string[]> {
@@ -24,42 +19,30 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Crew invitations (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
-  const owner = { id: '' };
-  const guest = { id: '', email: `invg.${TAG}@journey.test` };
+  let owner: QaUser;
+  let guest: QaUser;
   const projects: { id: string; title: string }[] = [];
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    owner.id = (await admin.auth.admin.createUser({ email: `invo.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: `invo${TAG}` } })).data.user!.id;
-    guest.id = (await admin.auth.admin.createUser({ email: guest.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `invg${TAG}` } })).data.user!.id;
+  test.beforeAll(async ({ stack }) => {
+    owner = await stack.createUser({ label: 'invo' });
+    guest = await stack.createUser({ label: 'invg' });
     for (const name of ['Accepted', 'Declined']) {
-      const title = `${name} film ${TAG}`;
-      const id = (await admin.from('projects').insert({ title, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
-      await admin.from('project_crew').insert({ project_id: id, user_id: guest.id, role: 'contributor', craft: 'Gaffer', status: 'pending', invited_by: owner.id });
+      const title = `${name} film ${stack.tag}`;
+      const { id } = await stack.createProject(owner, { title, status: 'pre-production' });
+      const crew = await stack.admin.from('project_crew').insert({ project_id: id, user_id: guest.id, role: 'contributor', craft: 'Gaffer', status: 'pending', invited_by: owner.id });
+      expect(crew.error).toBeNull();
+      // Registered after the project, so it runs first at teardown (the crew row goes before the project).
+      stack.onCleanup(`crew ${id}`, async () => { await stack.admin.from('project_crew').delete().eq('project_id', id); });
       projects.push({ id, title });
     }
   });
 
-  test.afterAll(async () => {
-    if (!admin) return;
-    for (const p of projects) {
-      await admin.from('project_crew').delete().eq('project_id', p.id);
-      await admin.from('projects').delete().eq('id', p.id);
-    }
-    for (const id of [owner.id, guest.id]) if (id) await admin.auth.admin.deleteUser(id);
-  });
-
-  test('see an invitation, accept one and decline the other', async ({ page }) => {
+  test('see an invitation, accept one and decline the other', async ({ page, stack }) => {
+    const admin = stack.admin;
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', guest.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await stack.signIn(page, guest);
 
     await page.goto('/community');
     const card = page.locator('[aria-labelledby="today-invites"]');
@@ -90,6 +73,6 @@ test.describe('Crew invitations (local Supabase)', () => {
 
     // The owner was told about both.
     const told = await admin.from('notifications').select('title').eq('user_id', owner.id).eq('type', 'crew');
-    expect((told.data ?? []).map((n) => n.title).sort()).toEqual([`invg${TAG} declined the invitation`, `invg${TAG} joined the crew`]);
+    expect((told.data ?? []).map((n) => n.title).sort()).toEqual([`${guest.username} declined the invitation`, `${guest.username} joined the crew`]);
   });
 });

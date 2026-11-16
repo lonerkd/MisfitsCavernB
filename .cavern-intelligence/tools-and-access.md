@@ -198,6 +198,17 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   added or get much slower: run the suite with `--reporter=json` into a file,
   then `node scripts/e2e-shard.mjs --update <file>`. One worker per shard —
   on 4 CPUs, 3 workers ran no faster and timed out.
+- **Writing an e2e spec: use `e2e/support/stack.ts`** (`import { test, expect,
+  stackEnabled, stackSkipReason } from './support/stack'`). Its worker-scoped
+  `stack` fixture picks the backend — the local stack by default
+  (`E2E_LOCAL_STACK=1`, URL and service key from `npx supabase status`), or
+  staging when `E2E_SUPABASE_URL`, `E2E_SUPABASE_SERVICE_KEY` and `E2E_BASE_URL`
+  are set (never production) — and gives `createUser` (QA-marked: `qa.…@journey.test`,
+  username `qa…`; flagged `is_sample` on staging so the public totals, the
+  directory and people search leave it out; pass `sample` to override),
+  `signIn(page, user)`, `insert` / `createProject` / `onCleanup`, and
+  tears down everything it made even when the spec fails. About 100 older specs
+  still carry their own copy of that setup (BACKLOG 3.37); move one when you touch it.
 - **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
   (the `changes` job decides); `checks` still runs. Pushes to `main` run
   `checks` and `database`.
