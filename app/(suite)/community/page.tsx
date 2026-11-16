@@ -26,7 +26,7 @@ function Section({ id, icon, title, children }: { id: string; icon: React.ReactN
 export default function CommunityPage() {
   return (
     <ProtectedPage require="signed-in">
-      <main style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)' }}>
         <h1 className="sr-only">Community</h1>
         <YourDay />
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 16px 96px', display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -43,7 +43,7 @@ export default function CommunityPage() {
             <WhenNear><HouseMusic /></WhenNear>
           </Section>
         </div>
-      </main>
+      </div>
     </ProtectedPage>
   );
 }

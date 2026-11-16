@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**53 pages · 7 API routes · 101 tables · 70 database functions · 113 e2e specs**
+**53 pages · 7 API routes · 101 tables · 70 database functions · 114 e2e specs**
 
 ## Routes
 
@@ -35,7 +35,7 @@
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (297) | 72 files · components: crafts, projects, ui · lib: auth, brief, crafts, film, formats, island, os, print, push, roles, scriptos, studio, supabase, types, util, validation | call-sheets, push |
 | `/call` | signed in | `app/(suite)/call/page.tsx` (88) | 50 files · components: ui · lib: auth, film, formats, island, os, push, scriptos, studio, supabase, today, types, validation | performer-calls |
 | `/cavern` | signed in | `app/(suite)/cavern/page.tsx` (22) | 2 files · components: — · lib: cavern | **none** |
-| `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: Flag, community, home, landing, mobile, roles, ui · lib: auth, crafts, film, flags, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, install, island-compact-dock, island-projects-keys, island, layout, mobile, script-formats, shortcut-search, today-owner |
+| `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: Flag, community, home, landing, mobile, roles, ui · lib: auth, crafts, film, flags, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-personas, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, install, island-compact-dock, island-projects-keys, island, layout, mobile, script-formats, shortcut-search, today-owner |
 | `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 45 files · components: ui · lib: auth, credits, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 42 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1520) | 221 files · components: Flag, ad, audio, breakdown, characters, editor, notes, phone, story, studio, ui · lib: ad, audio, auth, breakdown, brief, characters, errors, film, flags, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, push, scriptos, split, spotify, storage, story, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, cut-notes, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, mobile, notes, onboarding, phases, phone-editor, reading-corrections, route-smoke, script-share, split, studio-journey, table-read, writing-loop |
@@ -45,7 +45,7 @@
 | `/hub` | signed in | `app/(suite)/hub/page.tsx` (11) | 1 files · components: — · lib: — | auth-journey, community-page |
 | `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (553) | 35 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (443) | 53 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, reports, route-smoke |
-| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 88 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, phone-keyboard, route-smoke, voice-two-people |
+| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 88 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, phone-keyboard, route-smoke, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
 | `/` | public | `app/(suite)/page.tsx` (444) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 43 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
@@ -603,6 +603,7 @@
 | `call-sheets.spec.ts` | `/auth`, `/call/*`, `/studio` |
 | `change-impact.spec.ts` | `/auth`, `/studio` |
 | `community-page.spec.ts` | `/auth`, `/community`, `/hub`, `/lounge`, `/studio`, `/today` |
+| `community-personas.spec.ts` | `/community`, `/lounge` |
 | `community-phone.spec.ts` | `/auth`, `/community` |
 | `community.spec.ts` | `/auth`, `/lounge` |
 | `continuity.spec.ts` | `/auth`, `/studio` |
