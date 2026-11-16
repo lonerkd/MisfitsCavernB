@@ -53,3 +53,6 @@ Server: `internal.can_view_channel` → `internal.in_project_audience`,
   or any admin; roster members with `can_manage`.
 - **Creating**: project channels — creator or crew; community — admins only.
 - **Messages** can be deleted by their sender or whoever runs the channel.
+
+## 4. The Lounge on a phone, with the keyboard up
+`components/phone/PhoneKeyboard.tsx` (reading `usePhoneLayout`) marks `html[data-typing='true']` and publishes the keyboard's height as `--kb`; the Lounge reacts in CSS only (`app/globals.css`, the 760 px block), with no hook of its own. The room (`.mc-lounge-body`) ends where the keyboard starts, so the composer sits on it. The thread panel (`.mc-lounge-thread-panel`, fixed to the layout viewport, which iOS leaves behind the keyboard) is full width on a phone and lifted by `--kb`; its reply bar (`.mc-lounge-thread-reply`) keeps the home indicator clear with `env(safe-area-inset-bottom)` while the keyboard is down. Message actions (`.mc-lounge-action`: react, reply in thread, edit, pin) are shown on a screen with no hover (`@media (hover: none)`), and the reaction picker wraps inside the screen. The thread slide-in does not move under `prefers-reduced-motion`. Tested with the hook mocked (`components/lounge/LoungeKeyboard.test.tsx`); not yet seen on a real iPhone.

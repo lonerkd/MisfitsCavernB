@@ -57,6 +57,7 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
     if (text === msg.text) { setEditing(false); return; }
     if (await onEdit(msg, text)) setEditing(false);
   };
+  const actionClass = 'mc-lounge-action';
   const actionStyle: React.CSSProperties = { opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'var(--surface)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' };
   const reactions = Object.entries(msg.reactions || {}).filter(([, u]) => u.length > 0);
 
@@ -129,12 +130,12 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
         <div style={{ position: 'relative' }}>
           <button
             onClick={() => setPickerOpen(o => !o)}
-            aria-label="Add reaction"
+            aria-label="Add reaction" className={actionClass}
             style={{ opacity: hovered || pickerOpen ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'var(--surface)', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 12, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Smile size={13} />
           </button>
           {pickerOpen && (
-            <div style={{ position: 'absolute', bottom: '100%', [isMe ? 'right' : 'left']: 0, marginBottom: 6, display: 'flex', gap: 2, padding: 5, background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 20 } as React.CSSProperties}>
+            <div className="mc-lounge-reactpicker" style={{ position: 'absolute', bottom: '100%', [isMe ? 'right' : 'left']: 0, marginBottom: 6, display: 'flex', gap: 2, padding: 5, background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 8, boxShadow: '0 10px 30px rgba(0,0,0,0.6)', zIndex: 20 } as React.CSSProperties}>
               {REACTION_CHOICES.map(e => (
                 <button key={e} onClick={() => { onReact(msg.id, e); setPickerOpen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, padding: '2px 4px', borderRadius: 8 }}>{e}</button>
               ))}
@@ -143,19 +144,19 @@ export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, reply
         </div>
 
         {onOpenThread && (
-          <button onClick={() => onOpenThread(msg)} aria-label="Reply in thread"
+          <button onClick={() => onOpenThread(msg)} aria-label="Reply in thread" className={actionClass}
             style={{ opacity: hovered ? 1 : 0, transition: 'opacity 0.15s', width: 26, height: 26, borderRadius: '50%', border: '1px solid rgba(var(--ink-rgb), 0.1)', background: 'var(--surface)', color: 'var(--fg-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <MessageSquare size={12} />
           </button>
         )}
         {isMe && onEdit && !editing && !msg.hidden && (
-          <button type="button" onClick={() => { setDraft(msg.text); setEditing(true); }} aria-label="Edit message" title="Edit" style={actionStyle}>
+          <button type="button" onClick={() => { setDraft(msg.text); setEditing(true); }} aria-label="Edit message" title="Edit" className={actionClass} style={actionStyle}>
             <Pencil size={11} />
           </button>
         )}
         {!isMe && !msg.hidden && currentUserId && <ReportButton kind="message" targetId={msg.id} style={actionStyle} />}
         {canPin && onPin && (
-          <button type="button" onClick={() => onPin(msg)} aria-label={msg.pinned ? 'Unpin message' : 'Pin message'} title={msg.pinned ? 'Unpin' : 'Pin'} style={actionStyle}>
+          <button type="button" onClick={() => onPin(msg)} aria-label={msg.pinned ? 'Unpin message' : 'Pin message'} title={msg.pinned ? 'Unpin' : 'Pin'} className={actionClass} style={actionStyle}>
             {msg.pinned ? <PinOff size={11} /> : <Pin size={11} />}
           </button>
         )}
