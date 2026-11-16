@@ -142,7 +142,7 @@ export default function WelcomePage() {
   const stepNo = ['craft', 'guide', 'why', 'project'].indexOf(step) + 1;
 
   return (
-    <main className={w.page}>
+    <div className={w.page}>
       <div className={w.frame}>
         <p className={w.eyebrow}>Welcome to the cavern · step {stepNo} of 4</p>
 
@@ -244,6 +244,6 @@ export default function WelcomePage() {
           <Link href="/projects">Skip for now</Link> — you can start a project or change your craft any time.
         </p>
       </div>
-    </main>
+    </div>
   );
 }

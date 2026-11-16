@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
         </Link>
       </div>
 
-      <main style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 2 }}>
+      <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2rem, 7vw, 3rem)', fontWeight: 400, letterSpacing: '-0.02em', lineHeight: 1, margin: '0 0 10px' }}>
             NEW <span style={{ color: 'var(--accent)' }}>PASSWORD</span>
@@ -147,7 +147,7 @@ export default function ResetPasswordPage() {
             </form>
           )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

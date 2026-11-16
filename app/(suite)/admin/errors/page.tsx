@@ -67,7 +67,7 @@ export default function AdminErrorsPage() {
           <h1 style={{ fontFamily: 'var(--display)', fontSize: '1.2rem', letterSpacing: '-0.02em', margin: 0 }}>ERRORS</h1>
         </header>
 
-        <main style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '28px 24px' }}>
+        <div style={{ maxWidth: 'var(--w-content)', margin: '0 auto', padding: '28px 24px' }}>
           <p style={{ ...mono, color: 'var(--fg-muted)', margin: '0 0 18px', lineHeight: 1.6, letterSpacing: '-0.02em' }}>
             Crashes and uncaught errors people hit, reported by the app itself. Grouped by message and page; kept 30 days.
           </p>
@@ -125,7 +125,7 @@ export default function AdminErrorsPage() {
               </li>
             ))}
           </ul>
-        </main>
+        </div>
       </div>
     </ProtectedPage>
   );
