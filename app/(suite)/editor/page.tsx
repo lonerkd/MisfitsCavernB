@@ -1304,6 +1304,7 @@ export default function EditorPage() {
                             <div>
                               <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
                               <select
+                                aria-label="Cast as"
                                 value={cast?.crew_user_id || ''}
                                 onChange={e => handleCastCharacter(nameToId.get(name.toUpperCase()) ?? name, name, e.target.value)}
                                 disabled={projectCrew.length === 0}
