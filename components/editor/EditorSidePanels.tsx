@@ -294,9 +294,9 @@ export function EditorRightPanels({
                                 <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: 'var(--violet)', borderRadius: 4 }} />
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 11, color: 'var(--fg-muted)' }}>
-                                <span>{cs.dialogueLines} lines</span>
-                                <span>{cs.dialogueWords} words</span>
-                                <span>{cs.scenesIn.length} scenes</span>
+                                <span>{cs.dialogueLines} {cs.dialogueLines === 1 ? 'line' : 'lines'}</span>
+                                <span>{cs.dialogueWords} {cs.dialogueWords === 1 ? 'word' : 'words'}</span>
+                                <span>{cs.scenesIn.length} {cs.scenesIn.length === 1 ? 'scene' : 'scenes'}</span>
                                 <span>~{cs.avgWordsPerLine} w/line</span>
                               </div>
                               {Object.keys(cs.speaksTo).length > 0 && (
