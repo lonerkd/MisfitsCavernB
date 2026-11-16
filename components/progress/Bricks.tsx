@@ -77,7 +77,7 @@ export function Brick({ tool, projectId, onNavigate }: { tool: ToolState; projec
   }
   return (
     <PlaceLink place={tool.place} projectId={projectId} onNavigate={onNavigate} className={p.brick} title={tool.blurb}>
-      {tool.early && <span className={p.brickTag}>Early</span>}
+      {tool.early && <span className={p.brickTag} title="Open early: you have already started on it, before its phase">Early<span className="sr-only"> — you have already started on this before its phase</span></span>}
       <span className={p.brickIcon} aria-hidden><Icon size={15} /></span>
       <span className={p.brickLabel}>{tool.label}</span>
     </PlaceLink>
