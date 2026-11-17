@@ -17,6 +17,7 @@ import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 import DeleteAccount from '@/components/settings/DeleteAccount';
 import { PUSH_HINT, usePushSetting } from '@/components/settings/usePushSetting';
+import { ISLAND_STATE_LABELS, readIslandPrefs, writeIslandPrefs } from '@/lib/island/prefs';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
 
 const PREF_KEYS = {
@@ -91,6 +92,7 @@ export default function SettingsPage() {
   const [cursor, setCursor] = useState(() => getPref(PREF_KEYS.cursor, true));
   const [motion, setMotion] = useState(() => getPref(PREF_KEYS.motion, false));
   const [islandScale, setIslandScale] = useState(readIslandScale);
+  const [islandStates, setIslandStates] = useState(readIslandPrefs);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
@@ -275,6 +277,11 @@ export default function SettingsPage() {
               <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{islandScale.toFixed(2)}x</span>
             </div>
           } />
+          {ISLAND_STATE_LABELS.map(({ key, label, hint }) => (
+            <Row key={key} label={`Island: ${label}`} hint={`${hint} On this device.`} control={
+              <Toggle on={islandStates[key]} onChange={(v) => setIslandStates(writeIslandPrefs({ ...islandStates, [key]: v }))} />
+            } />
+          ))}
         </Section>
 
         <Section icon={<Bell size={15} />} title="Notifications">

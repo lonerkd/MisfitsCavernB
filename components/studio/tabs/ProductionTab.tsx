@@ -148,7 +148,10 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   const shown = (v: (typeof VIEWS)[number]) => !q || v.label.toLowerCase().includes(q) || v.id === view;
   // Groups can be folded; a search opens every group with a match, so a fold never hides a result.
   const [folded, setFolded] = useState<Set<string>>(new Set());
-  const toggleGroup = (g: string) => setFolded((prev) => { const n = new Set(prev); if (n.has(g)) n.delete(g); else n.add(g); return n; });
+  // The full list stays shut until asked for (the open tool, "Your tools" and "Recently used" are always in reach); a search opens it.
+  const [showAll, setShowAll] = useState(false);
+  const listOpen = showAll || !!q;
+  const toggleGroup =(g: string) => setFolded((prev) => { const n = new Set(prev); if (n.has(g)) n.delete(g); else n.add(g); return n; });
   // The last six tools opened, on this device only.
   const recent = useSyncExternalStore(subscribeRecent, () => recentSnapshot(VIEW_IDS), recentServerSnapshot);
   useEffect(() => { recordRecent(view, VIEW_IDS); }, [view]);
@@ -163,8 +166,14 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
     <section aria-labelledby="production-title">
       <SectionHeader id="production-title" title="Production" />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-              <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
-                style={{ alignSelf: 'flex-start', width: 'min(100%, 280px)', minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
+                  style={{ width: 'min(100%, 280px)', minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
+                <button type="button" aria-expanded={listOpen} aria-controls="production-tool-list" className={s.chip} style={{ minHeight: 44 }} onClick={() => setShowAll((v) => !v)}>
+                  <ChevronRight size={12} aria-hidden style={{ transform: listOpen ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }} /> All tools ({VIEWS.length})
+                </button>
+                <span style={{ fontSize: 12, color: 'var(--fg-dim)' }}>Open now: <strong style={{ color: 'var(--fg)' }}>{PRODUCTION_VIEW_LABELS[view]}</strong></span>
+              </div>
               {q && !VIEWS.some((v) => v.id !== view && v.label.toLowerCase().includes(q)) && <p role="status" style={{ margin: 0, fontSize: 12, color: 'var(--fg-dim)' }}>No tool matches “{find}”.</p>}
               {kit && !q && (myViews.length > 0 || kit.home) && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -196,6 +205,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                   </div>
                 </div>
               )}
+              {listOpen && <div id="production-tool-list" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {GROUPS.filter((group) => VIEWS.some((v) => v.group === group && shown(v))).map((group) => {
                 const open = !!q || !folded.has(group);
                 return (
@@ -216,6 +226,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                 </div>
                 );
               })}
+              </div>}
             </div>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}

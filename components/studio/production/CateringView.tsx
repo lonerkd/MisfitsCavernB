@@ -6,7 +6,8 @@ import Link from 'next/link';
 import { ChefHat, PenLine, Plus, Trash2, Users } from 'lucide-react';
 import { useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
-import { useShootDays } from '@/lib/studio';
+import { useCallSheetCalls, useCallSheets, useShootDays } from '@/lib/studio';
+import { mealSuggestion } from '@/lib/studio/meal-plan';
 import { useStudio } from '../StudioContext';
 import { patchProjectSettings } from '@/lib/supabase/progress';
 import { cx } from '../ui';
@@ -32,6 +33,8 @@ export function CateringView() {
   const { project, scriptId } = useStudio();
   const { refreshProject } = useProject();
   const shootDays = useShootDays(project.id);
+  const sheets = useCallSheets(project.id);
+  const calls = useCallSheetCalls(project.id);
   const { toast } = useToast();
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<MealPlan>({ headcount: 0, mealTime: '', dietary: '', vendor: '', notes: '', status: 'planned' });
@@ -90,6 +93,8 @@ export function CateringView() {
           const key = String(day.day_number);
           const plan = catering[key];
           const isEditing = editing === key;
+          const fromSheet = mealSuggestion(day.day_number, sheets.rows, calls.rows);
+          const differs = !!fromSheet && !!plan && plan.headcount !== fromSheet.headcount;
           return (
             <li key={day.id} className={s.panel} style={{ padding: 12 }}>
               <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center', marginBottom: plan || isEditing ? 8 : 0 }}>
@@ -114,6 +119,13 @@ export function CateringView() {
                   </button>
                 )}
               </div>
+
+              {fromSheet && !isEditing && (!plan || differs) && (
+                <div className={s.row} role="note" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 6, fontSize: 12, color: differs ? 'var(--warn)' : 'var(--fg-dim)' }}>
+                  <span>{differs ? 'The call sheet has ' + fromSheet.headcount + ' called; this plan says ' + plan!.headcount + '.' : 'The call sheet has ' + fromSheet.headcount + ' called' + (fromSheet.mealTime ? ', first meal by ' + fromSheet.mealTime + ' (six hours after the ' + fromSheet.generalCall + ' call).' : '.')}</span>
+                  <button type="button" className={cx(s.btn, s.small)} onClick={() => void save(key, { headcount: fromSheet.headcount, mealTime: plan?.mealTime || fromSheet.mealTime, dietary: plan?.dietary ?? '', vendor: plan?.vendor ?? '', notes: plan?.notes ?? '', status: plan?.status ?? 'planned' })}>{plan ? 'Update headcount' : 'Use these'}</button>
+                </div>
+              )}
 
               {plan && !isEditing && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13 }}>

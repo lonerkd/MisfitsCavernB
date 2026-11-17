@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { cx } from '../ui';
+import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { daysWaiting, localIsoDate } from '@/lib/studio/comms-wait';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -25,11 +27,28 @@ export function CommsView() {
     status: 'pending',
   });
   const [filter, setFilter] = useState<'all' | CommEntry['status']>('all');
+  const [names, setNames] = useState<string[]>([]);
+  const namesListId = useId();
+
+  // Crew usernames on this project, so a "to" names a real person. A failed read leaves the field free-text.
+  useEffect(() => {
+    let live = true;
+    getProjectCrew(project.id).then(
+      (rows) => {
+        if (!live) return;
+        setNames(Array.from(new Set(rows.map((r) => r.username?.trim()).filter((n): n is string => Boolean(n)))));
+      },
+      () => { if (live) setNames([]); },
+    );
+    return () => { live = false; };
+  }, [project.id]);
 
   const filtered = useMemo(
     () => (filter === 'all' ? items : items.filter((i) => i.status === filter)),
     [items, filter],
   );
+
+  const today = localIsoDate();
 
   const add = async () => {
     if (!draft.to.trim() || !draft.subject.trim()) return;
@@ -60,7 +79,10 @@ export function CommsView() {
           </label>
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>To</span>
-            <input className={s.input} value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} placeholder="Crew member" />
+            <input className={s.input} list={namesListId} value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} placeholder="Crew member" />
+            <datalist id={namesListId}>
+              {names.map((n) => <option key={n} value={n} />)}
+            </datalist>
           </label>
           <label className={s.field} style={{ flex: '0 0 110px' }}>
             <span className={s.label}>Channel</span>
@@ -83,28 +105,34 @@ export function CommsView() {
       </div>
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {filtered.map((c) => (
-          <li key={c.id} className={s.panel} style={{ padding: 12 }}>
-            <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <span className={s.hint} style={{ fontSize: 11 }}>{c.date}</span>
-              <span style={{ fontWeight: 600 }}>{c.to}</span>
-              <span className={s.chip}>{c.channel}</span>
-              <span style={{ flex: 1, minWidth: 0 }}>{c.subject}</span>
-              <select
-                className={s.input}
-                style={{ width: 90, fontSize: 12 }}
-                value={c.status}
-                onChange={(e) => updateStatus(c.id, e.target.value as CommEntry['status'])}
-              >
-                {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
-              </select>
-              <button className={s.btn} onClick={() => remove(c.id)} title="Delete">
-                <Trash2 size={12} />
-              </button>
-            </div>
-            {c.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{c.notes}</p>}
-          </li>
-        ))}
+        {filtered.map((c) => {
+          const waited = daysWaiting(c, today);
+          return (
+            <li key={c.id} className={s.panel} style={{ padding: 12 }}>
+              <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                <span className={s.hint} style={{ fontSize: 11 }}>{c.date}</span>
+                <span style={{ fontWeight: 600 }}>{c.to}</span>
+                <span className={s.chip}>{c.channel}</span>
+                <span style={{ flex: 1, minWidth: 0 }}>{c.subject}</span>
+                {waited !== null && (
+                  <span style={{ color: 'var(--warn)', fontSize: 12, fontWeight: 600 }}>waiting {waited} days</span>
+                )}
+                <select
+                  className={s.input}
+                  style={{ width: 90, fontSize: 12 }}
+                  value={c.status}
+                  onChange={(e) => updateStatus(c.id, e.target.value as CommEntry['status'])}
+                >
+                  {STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
+                </select>
+                <button className={s.btn} onClick={() => remove(c.id)} title="Delete">
+                  <Trash2 size={12} />
+                </button>
+              </div>
+              {c.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{c.notes}</p>}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

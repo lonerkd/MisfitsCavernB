@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { HardDrive, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { OffloadsFromReports } from './OffloadsFromReports';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
@@ -45,6 +46,8 @@ export function MediaOffloadView() {
             </button>
           ))}
         </div></>} />
+
+      <OffloadsFromReports items={items} save={save} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

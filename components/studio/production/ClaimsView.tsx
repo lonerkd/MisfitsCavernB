@@ -7,6 +7,7 @@ import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
+import { ClaimsFromWraps } from './ClaimsFromWraps';
 import s from '../studio.module.css';
 
 type Entry = { id: string; incident: string; date: string; policy: string; amount: string; status: 'filed' | 'in review' | 'paid' | 'denied'; notes: string };
@@ -37,6 +38,9 @@ export function ClaimsView() {
       )}
       {seesMoney && !runsMoney && (
         <NeedsCapability className={s.hint} projectId={project.id} capability="budget.write" lead="You can read these. Adding and changing them is for the people who run the money." />
+      )}
+      {runsMoney && (
+      <ClaimsFromWraps items={items} save={save} />
       )}
       {runsMoney && (
       <div className={s.panel} style={{ padding: 12 }}>

@@ -19,6 +19,7 @@ vi.mock('@/lib/supabase/productionRecords', () => ({
   subscribeToRecords: (_p: string, _k: string, cb: () => void) => { onChange = cb; return () => {}; },
 }));
 import { saveFailureMessage, useSettingsList } from './useSettingsList';
+import { peekUndo, undoLast, clearUndo } from '@/lib/os/undo';
 
 const permit = (id: string) => ({ id, location: `L${id}`, permitType: 'film', issuedBy: 'city', expiry: '', status: 'pending' as const });
 const load = async () => {
@@ -28,7 +29,7 @@ const load = async () => {
 };
 
 beforeEach(() => { rows = [permit('a'), permit('b')]; upsert.mockResolvedValue(undefined); del.mockResolvedValue(undefined); confirm.mockResolvedValue(true); });
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); clearUndo(); localStorage.clear(); vi.clearAllMocks(); });
 
 describe('useSettingsList', () => {
   it('reads the project’s records of its kind; none is an empty list, not an error', async () => {
@@ -83,6 +84,51 @@ describe('useSettingsList', () => {
     expect(confirm).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining('this permit'), danger: true }));
     await act(async () => { await result.current.remove('a'); });
     expect(del).toHaveBeenCalledWith('p1', 'permits', ['a']);
+  });
+
+  it('a save can be taken back: a removed record is written again, an added one is removed again', async () => {
+    const { result } = await load();
+    await act(async () => { await result.current.remove('a'); });
+    expect(peekUndo('')?.label).toBe('Removed an entry');
+    upsert.mockClear(); del.mockClear();
+    await act(async () => { await undoLast(''); });
+    expect(upsert).toHaveBeenCalledWith('p1', 'permits', [permit('a')]);
+    expect(del).toHaveBeenCalledWith('p1', 'permits', []);
+    await act(async () => { await result.current.save([...result.current.items, permit('n')]); });
+    expect(peekUndo('')?.label).toBe('Added an entry');
+    del.mockClear();
+    await act(async () => { await undoLast(''); });
+    expect(del).toHaveBeenCalledWith('p1', 'permits', ['n']);
+  });
+
+  it('offline: the save is kept on this device, shown at once, and sent when the connection returns', async () => {
+    upsert.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    const { result } = await load();
+    let ok = false;
+    await act(async () => { ok = await result.current.save([...result.current.items, permit('c')]); });
+    expect(ok).toBe(true);
+    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/saved on this device/i), 'info');
+    expect(result.current.items.map((i) => i.id)).toEqual(['a', 'b', 'c']);
+    expect(JSON.parse(localStorage.getItem('mc_record_queue') ?? '[]')).toHaveLength(1);
+    upsert.mockClear();
+    await act(async () => { window.dispatchEvent(new Event('online')); });
+    await waitFor(() => expect(upsert).toHaveBeenCalledWith('p1', 'permits', [permit('c')]));
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('mc_record_queue') ?? '[]')).toHaveLength(0));
+  });
+
+  it('a refusal is not queued: it is told, not hidden', async () => {
+    upsert.mockRejectedValueOnce({ code: '42501', message: 'row-level security' });
+    const { result } = await load();
+    await act(async () => { await result.current.save([permit('z')]); });
+    expect(localStorage.getItem('mc_record_queue')).toBeNull();
+    expect(toast).toHaveBeenCalledWith(expect.stringMatching(/only the owner and crew/), 'error');
+  });
+
+  it('a failed save leaves nothing to undo', async () => {
+    upsert.mockRejectedValue(new Error('no'));
+    const { result } = await load();
+    await act(async () => { await result.current.save([permit('z')]); });
+    expect(peekUndo('')).toBeUndefined();
   });
 
   it('a change by someone else refreshes the list', async () => {

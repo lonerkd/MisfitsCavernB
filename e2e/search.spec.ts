@@ -79,5 +79,7 @@ test.describe('Suite-wide search (local Supabase)', () => {
     await palette.getByRole('button', { name: new RegExp(`LIGHTHOUSE ${TAG.toUpperCase()}`) }).click({ timeout: 15_000 });
     await page.waitForURL(/\/studio\?tab=production&view=locations/);
     await expect(page.getByLabel('Active project')).toHaveValue(projectId, { timeout: 30_000 });
+    // ...and its card, not just the list: the hit carries the place's id.
+    await expect(page.getByRole('dialog', { name: /^Location:/ })).toBeVisible({ timeout: 15_000 });
   });
 });

@@ -5,6 +5,7 @@ import { ClipboardCheck, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
+import { WrapFromDays } from './WrapFromDays';
 import s from '../studio.module.css';
 
 type WrapEntry = { id: string; date: string; dayNumber: number; shotsGot: number; pages: string; incidents: string; notes: string };
@@ -31,6 +32,8 @@ export function WrapView() {
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<ClipboardCheck size={16} />} eyebrow="Reports & logs" title="Wrap reports" purpose="Wrap reports: what was shot and what is left." accent={project.accent_color} summary={<>{items.length} reports · {items.reduce((a, b) => a + b.shotsGot, 0)} shots got</>} />
+
+      <WrapFromDays items={items} save={save} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>

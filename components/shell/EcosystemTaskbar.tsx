@@ -27,6 +27,7 @@ import { assignKeys, type PillSlot } from '@/lib/island/slots';
 import { countKeyUse } from '@/lib/island/keyUse';
 import { peekUndo, scopeOf, subscribeUndo } from '@/lib/os/undo';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
+import { ISLAND_PREFS_EVENT, applyIslandPrefs, readIslandPrefs, DEFAULT_ISLAND_PREFS } from '@/lib/island/prefs';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
 import dynamic from 'next/dynamic';
@@ -242,11 +243,20 @@ export default function EcosystemTaskbar() {
   const shownIndex = activities.length ? pick % activities.length : 0;
   const activity = activities[shownIndex] ?? null;
 
-  const mode = islandMode({
+  // Which states this person has switched off (Settings › Appearance), per device.
+  const [statePrefs, setStatePrefs] = useState(DEFAULT_ISLAND_PREFS);
+  useEffect(() => {
+    const read = () => setStatePrefs(readIslandPrefs());
+    read();
+    window.addEventListener(ISLAND_PREFS_EVENT, read);
+    window.addEventListener('storage', read);
+    return () => { window.removeEventListener(ISLAND_PREFS_EVENT, read); window.removeEventListener('storage', read); };
+  }, []);
+  const mode = islandMode(applyIslandPrefs({
     caps: kbActive, capsDismissed, typing,
     engaged: hover || held || kbFocus || pinned || projectsOpen,
     zone: zoneActive, live: !!transient, activity: !!activity,
-  });
+  }, statePrefs));
   const deck = isDeck(mode);
   /** Every control on the deck answers to a key while Caps Lock is on. */
   const keys = deck && kbActive && !capsDismissed;

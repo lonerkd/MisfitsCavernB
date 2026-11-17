@@ -5,6 +5,9 @@ import EmptyState from '@/components/ui/EmptyState';
 import { AlertTriangle, Plus, Shield, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useSettingsList } from './useSettingsList';
+import { SceneLinkField, useRecordTargets } from './RecordLinks';
+import { sceneChip } from '@/lib/studio/record-links';
+import { SafetyFromScript } from './SafetyFromScript';
 import { cx } from '../ui';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -21,6 +24,8 @@ interface SafetyItem {
   mitigation: string;
   owner: string;
   status: ItemStatus;
+  scene_ids?: string[];
+  scene?: string;
 }
 
 const SEV_LABEL: Record<Severity, string> = { low: 'Low', medium: 'Medium', high: 'High' };
@@ -29,7 +34,8 @@ const STATUS_LABEL: Record<ItemStatus, string> = { identified: 'Identified', mit
 const STATUS_COLOR: Record<ItemStatus, string> = { identified: 'var(--danger)', mitigated: 'var(--warn)', resolved: 'var(--ok)' };
 
 export function SafetyView() {
-  const { project } = useStudio();
+  const { project, scenes } = useStudio();
+  const t = useRecordTargets();
   const { items, save } = useSettingsList('safety');
   const { toast } = useToast();
   const [adding, setAdding] = useState(false);
@@ -65,7 +71,8 @@ export function SafetyView() {
     high: items.filter((i) => i.severity === 'high' && i.status !== 'resolved').length,
   }), [items]);
 
-  if (items.length === 0 && !adding) {
+  const fromScript = scenes.rows.length > 0;
+  if (items.length === 0 && !adding && !fromScript) {
     return (
       <EmptyState
         icon={<Shield size={26} />}
@@ -80,6 +87,8 @@ export function SafetyView() {
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<Shield size={16} />} eyebrow="Shoot day" title="Safety & risk" purpose="Hazards, who is responsible, and whether each is resolved." accent={project.accent_color} summary={<>{counts.resolved} of {counts.total} resolved{counts.high > 0 ? ` · ${counts.high} high-risk open` : ''}</>} actions={<>{!adding && <button type="button" className={cx(s.btn, s.small)} onClick={() => setAdding(true)}><Plus size={11} /> Add hazard</button>}</>} />
 
+      <SafetyFromScript items={items} save={save} />
+
       {adding && (
         <form className={s.panel} style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 8 }} onSubmit={addItem}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 8 }}>
@@ -91,6 +100,7 @@ export function SafetyView() {
               <span className={s.hint}>Location</span>
               <input className={s.input} placeholder="Where" value={draft.location} onChange={(e) => setDraft({ ...draft, location: e.target.value })} />
             </label>
+            <SceneLinkField scenes={t.scenes} sceneById={t.sceneById} ids={draft.scene_ids ?? []} text={draft.scene ?? ''} onChange={(n) => setDraft({ ...draft, scene: n.text, scene_ids: n.ids })} placeholder="12" />
             <label className={s.stack} style={{ gap: 4 }}>
               <span className={s.hint}>Severity</span>
               <select className={s.select} value={draft.severity} onChange={(e) => setDraft({ ...draft, severity: e.target.value as Severity })}>
@@ -148,6 +158,7 @@ export function SafetyView() {
                     <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void removeItem(item.id)} aria-label="Remove"><Trash2 size={11} /></button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginTop: 4, fontSize: 12 }}>
+                    {sceneChip(item, t.sceneById) && <span className={s.hint}>Scene: {sceneChip(item, t.sceneById)}</span>}
                     {item.location && <span className={s.hint}>Location: {item.location}</span>}
                     {item.owner && <span className={s.hint}>Owner: {item.owner}</span>}
                     {item.mitigation && <span className={s.hint}>Mitigation: {item.mitigation}</span>}

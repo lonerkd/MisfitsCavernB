@@ -76,6 +76,7 @@ test.describe('Phases v2 (local Supabase)', () => {
     await intro.getByRole('button', { name: /Got it/ }).click();
     await expect(intro).toHaveCount(0);
     await page.reload();
+    await page.getByRole('button', { name: /^All tools/ }).click();
     await expect(page.getByRole('tab', { name: /Schedule/ })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByRole('complementary', { name: 'New: Schedule & call sheets' })).toHaveCount(0);
   });

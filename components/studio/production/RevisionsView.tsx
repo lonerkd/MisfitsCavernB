@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FileText } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
-import { REVISION_COLORS, loadRevisionsDB, type Revision } from '@/lib/scriptos/revisions';
+import { REVISION_COLORS, diffSnapshots, loadRevisionsDB, type Revision } from '@/lib/scriptos/revisions';
 import { useStudio } from '../StudioContext';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { revisionsDoc } from '@/lib/studio/revisions-print';
@@ -39,6 +39,10 @@ export function RevisionsView() {
 
   const rows = mine.rows ?? [];
   const editorHref = `/editor?script=${scriptId}`;
+  // Lines changed since the previous locked revision (null for the first lock), from the stored snapshots.
+  const linesChanged = new Map<string, number | null>(
+    rows.map((r, i) => [r.id, i === 0 ? null : diffSnapshots(rows[i - 1].snapshot, r.snapshot).length]),
+  );
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
       <ToolHeader icon={<FileText size={16} />} eyebrow="Story & planning" title="Script revisions" purpose="The script’s locked revisions and what changed." accent={project.accent_color} summary={<>{script.title} · {rows.length} locked</>} actions={<><div style={{ display: 'flex', gap: 8 }}>
@@ -65,6 +69,7 @@ export function RevisionsView() {
                   <span className={s.chip} style={{ background: c.bg, color: 'var(--fg-strong)', border: `1px solid ${c.color}` }}>{c.name}</span>
                   <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{r.label}</span>
                   <span className={s.hint}>{r.date ? new Date(r.date).toLocaleDateString() : ''}</span>
+                  <span className={s.hint}>{(() => { const n = linesChanged.get(r.id); return n == null ? 'first lock' : `${n} line${n === 1 ? '' : 's'} changed`; })()}</span>
                 </div>
               </li>
             );

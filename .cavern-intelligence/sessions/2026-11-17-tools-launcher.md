@@ -1,0 +1,5 @@
+# Session - 2026-11-17: the Production tools list is shut until asked for (BACKLOG 3.47)
+
+The owner: the tools should be hidden by default and open on a press, with recently used and deep links easy. The Production tab showed all 40 tool chips in six groups at all times. Now the grouped list sits behind an **All tools (40)** button (a search opens it by itself); what stays in view is the search, **Open now: <tool>**, **Your tools** (the craft's own), **Recently used** (the last six, this device) and the open tool. Deep links already worked (`/studio?tab=production&view=<tool>`) and still do. No migration. Three specs that looked for a tool's tab now open the list first (`phases`, `view-as-role`, `your-workflow`).
+
+**Verified:** typecheck, lint, the tab's unit test. **Not run:** the three edited specs (need a local stack); not looked at in a browser or on a phone. **Left (owner, same message):** settings to turn features and island states on and off; deeper tool integration (BACKLOG 3.18, 3.47).

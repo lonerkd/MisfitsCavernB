@@ -73,6 +73,7 @@ test.describe('Your workflow (local Supabase)', () => {
     await expect(page.getByRole('button', { name: /Open Safety$/ }).first()).toBeVisible();
     await expect(page.getByRole('button', { name: /Open Money$/ })).toHaveCount(0);
     await page.getByRole('button', { name: /Return the gear and report damage\. Open Gear/ }).click();
+    await page.getByRole('button', { name: /^All tools/ }).click();
     await expect(page.getByRole('tab', { name: /Gear/ }).first()).toHaveAttribute('aria-selected', 'true');
     expect(await axeViolations(page)).toEqual([]);
   });

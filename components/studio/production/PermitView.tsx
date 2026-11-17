@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { FileCheck, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
+import { PermitsFromLocations } from './PermitsFromLocations';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
@@ -44,6 +45,8 @@ export function PermitView() {
             </button>
           ))}
         </div></>} />
+
+      <PermitsFromLocations items={items} save={save} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
