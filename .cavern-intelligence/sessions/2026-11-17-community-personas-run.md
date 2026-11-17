@@ -1,0 +1,3 @@
+# Session - 2026-11-17: the Community persona spec, run for the first time (BACKLOG 3.36)
+
+`e2e/community-personas.spec.ts` was written on 2026-11-15 and never run. Run now against the local stack (db reset from every migration) and a production build: Jordan (confirmed crew) sees the project, its task, announcement and only the private channel he is in; Riley (outsider) sees none of it and keeps the public parts; Sam sees his own project. **3 of 3 pass** (23 s); no code change was needed. Also recorded: 3.46's last look (folded groups and tinted chips in Paper, phone and desk) found no defects, so the item is done. Docs only; no migration. Not run on a real iPhone.
