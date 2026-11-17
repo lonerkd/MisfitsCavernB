@@ -41,7 +41,7 @@ export interface ProjectSettings {
   /** Director's notebook entries. */
   directorNotes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; title: string; notes: string; reference: string; createdAt: string; change?: boolean; notified_at?: string | null; notified_count?: number | null }>;
   /** Production risk register. */
-  risks?: Array<{ id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' }>;
+  risks?: Array<{ id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed'; scene_ids?: string[]; scene?: string }>;
   /** Camera report entries. */
   cameraReports?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; shot: string; lens: string; tStop: string; filter: string; camera: string; media: string; notes: string }>;
   /** Sound report entries. */

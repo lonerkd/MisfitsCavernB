@@ -5,9 +5,10 @@ import { AlertTriangle, Plus, Trash2 } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
+import { RiskFromScript } from './RiskFromScript';
 import s from '../studio.module.css';
 
-type RiskEntry = { id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed' };
+type RiskEntry = { id: string; risk: string; category: string; probability: 'low' | 'medium' | 'high'; impact: 'low' | 'medium' | 'high'; mitigation: string; owner: string; status: 'open' | 'mitigated' | 'closed'; scene_ids?: string[]; scene?: string };
 
 type Level = 'low' | 'medium' | 'high';
 const LEVELS: Level[] = ['low', 'medium', 'high'];
@@ -55,6 +56,8 @@ export function RiskRegisterView() {
             </button>
           ))}
         </div></>} />
+
+      <RiskFromScript items={items} save={save} />
 
       <div className={s.panel} style={{ padding: 12 }}>
         <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
