@@ -1,0 +1,9 @@
+# Session - 2026-11-17: the backlog every session loads is an index (BACKLOG 3.52)
+
+`CLAUDE.md` `@`-imports `BACKLOG.md`, which had grown to 108 KB: about 85% of every session's startup context (`STATE` 6 KB, `RULES` 8 KB, `INDEX` 4.5 KB). Done as the item described (from closed PR #539), checked against the three scripts that read the backlog first.
+
+**Changed (no app code, no migration):** the full text moved, unedited, to `.cavern-intelligence/BACKLOG-detail.md`; `BACKLOG.md` is **generated** from it by `scripts/backlog-slim.mjs` (run by `npm run sync-intel`, and checked by `node scripts/sync-intel.js --check` in CI, so the two cannot drift): sections 1 and 2 (the owner's list and what to verify) whole, and each upgrade or wishlist item as its heading, its first real sentence, its plan link and its "Done when". **24 KB instead of 108 KB** (about 78% smaller); a session's whole startup context goes from about 127 KB to about 43 KB. `backlog-to-issues.mjs` now reads the bodies from the detail file; `check-bookkeeping.mjs` reads ids and the "Last audited" line, which the index keeps (no change needed; it reports the same 0 drift). `RULES.md`, `INDEX.md` and `STATE.md` say to **edit `BACKLOG-detail.md`**, never the index.
+
+**Verified:** `scripts/backlog-slim.test.mjs` (the condensing, the section handling, and that the committed index equals what the detail file generates with every item still present and in order), the existing script tests, `check-bookkeeping`, `sync-intel --check`.
+
+**Known limit:** the first sentence is picked by rule, so a few items show their first sentence rather than their best one (for example "Built 2026-11-15: …" or "In short: …"). The rule is in `condense()`; a better line per item means editing the first sentence of that item in the detail file. Item 3.52 itself is closed with this note.

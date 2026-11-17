@@ -10,7 +10,7 @@ files at the root are generated from [`RULES.md`](RULES.md) by
 | Layer | File(s) | Holds | Changes |
 |---|---|---|---|
 | **Rules** | [`RULES.md`](RULES.md) | how to work: non-negotiables, the change cycle, personas, where to look | rarely, by decision |
-| **Now** | [`STATE.md`](STATE.md) · [`BACKLOG.md`](BACKLOG.md) · [`sessions/`](sessions/README.md) · [`STATE-history.md`](STATE-history.md) | the handoff · every open task, scoped · one note per PR · sessions before 2026-10-11 | the handoff when it changes; BACKLOG and a new session note every PR |
+| **Now** | [`STATE.md`](STATE.md) · [`BACKLOG.md`](BACKLOG.md) (the index, generated) · [`BACKLOG-detail.md`](BACKLOG-detail.md) (its full text, the file to edit) · [`sessions/`](sessions/README.md) · [`STATE-history.md`](STATE-history.md) | the handoff · every open task, scoped · one note per PR · sessions before 2026-10-11 | the handoff when it changes; BACKLOG and a new session note every PR |
 | **What it is** | [`bible/`](bible/README.md) | every part of the suite: purpose, screens, states, rules, connections, gaps; the generated inventory; the audit | when a part changes |
 | **How it works** | the deep docs below | the engineering of each system | with the code |
 | **Product and brand** | [`overview-and-goals.md`](overview-and-goals.md) · [`brand/`](brand/README.md) · [`restructure-proposal.md`](restructure-proposal.md) | vision · the mark and the brand decisions · the plan for the repo | by decision |
@@ -51,6 +51,6 @@ hand-written copy of the rules.
 ## The contract
 
 - A change to files, architecture or access updates the doc that owns it in
-  the same PR, then `npm run sync-intel`, then a note in `sessions/` and `BACKLOG.md`.
+  the same PR, then `npm run sync-intel`, then a note in `sessions/` and `BACKLOG-detail.md`.
 - One fact, one home. If you find the same thing in two places, keep the
   owner (the table above) and link to it from the other.

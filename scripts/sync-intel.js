@@ -222,9 +222,16 @@ function checkAdapters() {
   console.log('Agent entry files match RULES.md.');
 }
 
+// The backlog every session loads is an index generated from BACKLOG-detail.md (BACKLOG 3.52).
+function backlogIndex(check) {
+  return import('./backlog-slim.mjs').then((m) => { const status = m.run({ check }); if (status) process.exit(status); });
+}
+
 if (process.argv.includes('--check')) {
   checkAdapters();
+  backlogIndex(true);
 } else {
   generateManifest();
   writeAdapters();
+  backlogIndex(false);
 }

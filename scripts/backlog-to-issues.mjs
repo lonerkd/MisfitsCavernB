@@ -71,10 +71,10 @@ const sizeLabel = (size) => {
 const needsOwner = (it) => /needs a product call|owner decision|owner's decision|needs the owner|lawyer|owner:/i.test(`${it.heading} ${it.body.slice(0, 500)}`);
 
 function issueBody(it) {
-  const body = it.body.length > 5000 ? `${it.body.slice(0, 5000)}\n\n…(truncated; the full text is in BACKLOG.md)` : it.body;
+  const body = it.body.length > 5000 ? `${it.body.slice(0, 5000)}\n\n…(truncated; the full text is in BACKLOG-detail.md)` : it.body;
   return [
     `<!-- backlog-id:${it.id} -->`,
-    `From \`.cavern-intelligence/BACKLOG.md\` §${it.id}${it.size ? ` (size ${it.size})` : ''}. The BACKLOG stays the source of truth; update it, not this copy.`,
+    `From \`.cavern-intelligence/BACKLOG-detail.md\` §${it.id}${it.size ? ` (size ${it.size})` : ''}. The BACKLOG stays the source of truth (BACKLOG-detail.md; BACKLOG.md is its index); update it, not this copy.`,
     '',
     body,
     '',
@@ -95,7 +95,7 @@ function existingIds() {
 }
 
 function main() {
-  const path = new URL('../.cavern-intelligence/BACKLOG.md', import.meta.url);
+  const path = new URL('../.cavern-intelligence/BACKLOG-detail.md', import.meta.url);
   const all = parseBacklog(readFileSync(path, 'utf8'));
   const seen = new Set();
   for (const it of all) {
