@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { useProject } from '@/lib/os';
 import { awaitOSUser } from '@/lib/os';
@@ -10,17 +10,22 @@ export interface PresenceState {
   email: string;
   color: string;
   sceneIdx: number | null;
+  /** The tool they have open in the Studio ("production:safety"), or null when they are elsewhere. */
+  tool?: string | null;
   lastActive: string;
 }
 
 interface PresenceContextType {
   onlineUsers: PresenceState[];
   updateScenePresence: (sceneIdx: number | null) => void;
+  /** Say which tool this person has open (null when they leave it), so others in the project see who is where. */
+  updateToolPresence: (tool: string | null) => void;
 }
 
 const PresenceContext = createContext<PresenceContextType>({
   onlineUsers: [],
   updateScenePresence: () => {},
+  updateToolPresence: () => {},
 });
 
 const PRESENCE_COLORS = [
@@ -31,6 +36,8 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
   const { activeProject } = useProject();
   const [onlineUsers, setOnlineUsers] = useState<PresenceState[]>([]);
   const channelRef = useRef<any>(null);
+  // What this person is showing the others; each change re-tracks the whole of it.
+  const mineRef = useRef<{ sceneIdx: number | null; tool: string | null }>({ sceneIdx: null, tool: null });
 
   useEffect(() => {
     if (!activeProject?.id || typeof window === 'undefined') return;
@@ -72,7 +79,8 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
               userId: myUserId,
               email: myEmail,
               color: myColor,
-              sceneIdx: null,
+              sceneIdx: mineRef.current.sceneIdx,
+              tool: mineRef.current.tool,
               lastActive: new Date().toISOString()
             });
           }
@@ -92,6 +100,7 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
   }, [activeProject?.id]);
 
   const updateScenePresence = async (sceneIdx: number | null) => {
+    mineRef.current = { ...mineRef.current, sceneIdx };
     const currentChannel = channelRef.current;
     if (currentChannel && currentChannel.state === 'joined') {
       const user = await awaitOSUser();
@@ -103,13 +112,25 @@ export function PresenceProvider({ children }: { children: React.ReactNode }) {
         email: user.email || 'Unknown',
         color: myColor,
         sceneIdx,
+        tool: mineRef.current.tool,
         lastActive: new Date().toISOString()
       });
     }
   };
 
+  const updateToolPresence = useCallback(async (tool: string | null) => {
+    mineRef.current = { ...mineRef.current, tool };
+    const currentChannel = channelRef.current;
+    if (currentChannel && currentChannel.state === 'joined') {
+      const user = await awaitOSUser();
+      if (!user) return;
+      const myColor = PRESENCE_COLORS[(user.id.charCodeAt(0) + user.id.charCodeAt(user.id.length - 1)) % PRESENCE_COLORS.length];
+      await currentChannel.track({ userId: user.id, email: user.email || 'Unknown', color: myColor, sceneIdx: mineRef.current.sceneIdx, tool, lastActive: new Date().toISOString() });
+    }
+  }, []);
+
   return (
-    <PresenceContext.Provider value={{ onlineUsers, updateScenePresence }}>
+    <PresenceContext.Provider value={{ onlineUsers, updateScenePresence, updateToolPresence }}>
       {children}
     </PresenceContext.Provider>
   );

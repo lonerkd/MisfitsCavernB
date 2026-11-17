@@ -14,11 +14,11 @@ const STATUSES: GearEntry['status'][] = ['needed', 'packed', 'on-set', 'returned
 
 export function GearView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('gear');
+  const { items, shown, save, remove } = useSettingsList('gear');
   const [draft, setDraft] = useState<Omit<GearEntry, 'id'>>({ item: '', category: 'camera', owner: '', status: 'needed' });
   const [filter, setFilter] = useState<'all' | GearEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.item.trim()) return;
@@ -86,6 +86,7 @@ export function GearView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

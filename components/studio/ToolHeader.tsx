@@ -1,7 +1,12 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
+import { Search } from 'lucide-react';
 import { readable } from '@/lib/util/color';
+import { usePresence } from '@/lib/os/PresenceContext';
+import { useCurrentUser } from '@/lib/os';
+import { hereLine, othersInTool } from '@/lib/studio/tool-presence';
+import { ToolHereContext, useToolFind } from './toolFind';
 import h from './toolHeader.module.css';
 
 /** Actions a parent supplies to the header of whatever tool it is showing (the Production tab's Print / CSV for a record tool), so the tool need not know. */
@@ -34,6 +39,12 @@ export interface ToolHeaderProps {
 export function ToolHeader({ icon, id, as: Heading = 'h3', eyebrow, title, purpose, summary, accent, progress, stats, next, actions }: ToolHeaderProps) {
   const pa = accent ? readable(accent) : undefined;
   const extra = useContext(ToolActionsContext);
+  const find = useToolFind();
+  const tool = useContext(ToolHereContext);
+  const { onlineUsers } = usePresence();
+  const { user } = useCurrentUser();
+  const others = tool ? othersInTool(onlineUsers, tool, user?.id) : [];
+  const here = hereLine(others);
   const pct = progress && progress.of > 0 ? Math.min(100, Math.round((progress.value / progress.of) * 100)) : null;
   return (
     <header className={h.head} style={pa ? ({ '--pa': pa } as React.CSSProperties) : undefined}>
@@ -47,6 +58,23 @@ export function ToolHeader({ icon, id, as: Heading = 'h3', eyebrow, title, purpo
         </div>
         {(actions || extra) && <div className={h.actions}>{actions}{extra}</div>}
       </div>
+      {(find?.searchable || here) && (
+        <div className={h.tools}>
+          {find?.searchable && (
+            <label className={h.find}>
+              <Search size={12} aria-hidden />
+              <input type="search" aria-label="Search this tool" placeholder="Search this tool" value={find.q} onChange={(e) => find.setQ(e.target.value)} />
+              {find.q.trim() && find.counts && <span className={h.findCount} role="status">{find.counts.shown} of {find.counts.total}</span>}
+            </label>
+          )}
+          {here && (
+            <span className={h.here} role="status">
+              <span className={h.dots} aria-hidden>{others.slice(0, 4).map((o) => <span key={o.userId} className={h.dot} style={{ background: o.color }} />)}</span>
+              {here}
+            </span>
+          )}
+        </div>
+      )}
       {(stats?.length || progress) && (
         <div className={h.stats}>
           {progress && (

@@ -20,7 +20,7 @@ export function PoView() {
   const caps = useMyCapabilities(project.id);
   const seesMoney = caps.can('budget.read');
   const runsMoney = caps.can('budget.write');
-  const { items, save, remove } = useSettingsList('purchaseOrders');
+  const { items, shown, save, remove } = useSettingsList('purchaseOrders');
   const [draft, setDraft] = useState<Omit<PoEntry, 'id'>>({
     poNumber: '',
     vendor: '',
@@ -53,7 +53,7 @@ export function PoView() {
     return () => { live = false; };
   }, [project.id, seesMoney, runsMoney]);
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const departments = useMemo(
     () => Array.from(new Set(budgetLines.map((l) => l.category.trim()).filter(Boolean))),
@@ -151,6 +151,7 @@ export function PoView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

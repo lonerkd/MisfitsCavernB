@@ -15,7 +15,7 @@ const STATUSES: VfxEntry['status'][] = ['identified', 'shot', 'delivered', 'appr
 
 export function VfxView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('vfxShots');
+  const { items, shown, save, remove } = useSettingsList('vfxShots');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<VfxEntry, 'id'>>({
     shot: '',
@@ -26,7 +26,7 @@ export function VfxView() {
   });
   const [filter, setFilter] = useState<'all' | VfxEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.shot.trim()) return;
@@ -92,6 +92,7 @@ export function VfxView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

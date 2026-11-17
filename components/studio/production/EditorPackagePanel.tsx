@@ -22,10 +22,10 @@ export function EditorPackagePanel() {
   const { project, shots } = useStudio();
   const { toast } = useToast();
   const t = useRecordTargets();
-  const takes = useSettingsList('scriptNotes').items as unknown as ScriptTake[];
-  const camera = useSettingsList('cameraReports').items as unknown as PackageInput['camera'];
-  const sound = useSettingsList('soundReports').items as unknown as PackageInput['sound'];
-  const offloads = useSettingsList('mediaOffloads').items as unknown as PackageInput['offloads'];
+  const takes = useSettingsList('scriptNotes', { find: false }).items as unknown as ScriptTake[];
+  const camera = useSettingsList('cameraReports', { find: false }).items as unknown as PackageInput['camera'];
+  const sound = useSettingsList('soundReports', { find: false }).items as unknown as PackageInput['sound'];
+  const offloads = useSettingsList('mediaOffloads', { find: false }).items as unknown as PackageInput['offloads'];
 
   const pkg = useMemo(() => editorPackage({
     scenes: t.scenes, shots: shots.rows.map((x) => ({ id: x.id, scene_id: x.scene_id, shot_number: x.shot_number, description: x.description })),

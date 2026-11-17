@@ -12,7 +12,7 @@ const STATUSES: ScoutEntry['status'][] = ['scouted', 'approved', 'rejected'];
 
 export function ScoutView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('scouts');
+  const { items, shown, save, remove } = useSettingsList('scouts');
   const [draft, setDraft] = useState<Omit<ScoutEntry, 'id'>>({
     locationName: '',
     date: new Date().toISOString().slice(0, 10),
@@ -23,7 +23,7 @@ export function ScoutView() {
   });
   const [filter, setFilter] = useState<'all' | ScoutEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.locationName.trim()) return;
@@ -99,6 +99,7 @@ export function ScoutView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

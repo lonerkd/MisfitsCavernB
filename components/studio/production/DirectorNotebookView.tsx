@@ -14,7 +14,7 @@ type NoteEntry = { id: string; scene_ids?: string[]; character_id?: string | nul
 
 export function DirectorNotebookView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('directorNotes');
+  const { items, shown, save, remove } = useSettingsList('directorNotes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<NoteEntry, 'id' | 'createdAt'>>({
     scene: '',
@@ -26,8 +26,8 @@ export function DirectorNotebookView() {
   const [filter, setFilter] = useState('');
 
   const filtered = useMemo(
-    () => (filter ? items.filter((i) => i.scene.toLowerCase().includes(filter.toLowerCase()) || i.title.toLowerCase().includes(filter.toLowerCase())) : items),
-    [items, filter],
+    () => (filter ? shown.filter((i) => i.scene.toLowerCase().includes(filter.toLowerCase()) || i.title.toLowerCase().includes(filter.toLowerCase())) : shown),
+    [shown, filter],
   );
 
   const add = async () => {
@@ -73,6 +73,7 @@ export function DirectorNotebookView() {
         </label>
       </div>
 
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {sorted.map((n) => (
           <li key={n.id} className={s.panel} style={{ padding: 12 }}>

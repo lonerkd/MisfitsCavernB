@@ -47,12 +47,13 @@ function useSceneLines(scene: { id: string; script_id: string | null; heading: s
 
 export function ScriptSupView() {
   const { project, shots } = useStudio();
-  const { items, save, remove } = useSettingsList('scriptNotes');
+  const { items, shown, save, remove } = useSettingsList('scriptNotes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Draft>(EMPTY);
   const [lined, setLined] = useState<string>('');
 
   const takes = items as unknown as Array<ScriptTake & { id: string }>;
+  const shownTakes = shown as unknown as Array<ScriptTake & { id: string }>; // the take rows the person sees (search-narrowed)
   const shotsOf = (sceneId: string | undefined) => (sceneId ? shots.rows.filter((x) => x.scene_id === sceneId) : []);
   const shotName = (id: string) => shots.rows.find((x) => x.id === id)?.shot_number ?? null;
   const draftScene = draft.scene_ids?.[0];
@@ -128,7 +129,7 @@ export function ScriptSupView() {
       </div>
 
       <ul aria-label="Takes" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {takes.map((n) => {
+        {shownTakes.map((n) => {
           const span = n.from_line ? takeSpan(n, 9999) : null;
           return (
             <li key={n.id} className={s.panel} style={{ padding: 12 }}>
@@ -151,6 +152,7 @@ export function ScriptSupView() {
           );
         })}
       </ul>
+      {takes.length > 0 && shownTakes.length === 0 && <p className={s.hint}>No records match your search.</p>}
 
       <section className={s.panel} style={{ padding: 12 }} aria-labelledby="ss-lined">
         <div className={s.row} style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>

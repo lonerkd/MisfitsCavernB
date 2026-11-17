@@ -17,7 +17,7 @@ const STATUSES: CommEntry['status'][] = ['pending', 'sent', 'replied'];
 
 export function CommsView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('comms');
+  const { items, shown, save, remove } = useSettingsList('comms');
   const [draft, setDraft] = useState<Omit<CommEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     to: '',
@@ -44,8 +44,8 @@ export function CommsView() {
   }, [project.id]);
 
   const filtered = useMemo(
-    () => (filter === 'all' ? items : items.filter((i) => i.status === filter)),
-    [items, filter],
+    () => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)),
+    [shown, filter],
   );
 
   const today = localIsoDate();
@@ -104,6 +104,7 @@ export function CommsView() {
         </label>
       </div>
 
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filtered.map((c) => {
           const waited = daysWaiting(c, today);
