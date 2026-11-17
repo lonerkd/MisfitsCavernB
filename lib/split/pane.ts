@@ -23,13 +23,14 @@ export function inPane(): boolean {
 }
 
 /**
- * Whether this page is in a pane. Known on the client's first render, so only
- * branch on it where both branches render the same server markup — e.g.
- * chrome that is client-only anyway.
+ * Whether this page is in a pane. False while the page hydrates (the server cannot know), then true in a pane:
+ * the chrome that hides in a pane draws for one frame first, never as a hydration mismatch.
  */
 export function useInPane(): boolean {
-  // Fixed for the page's life, so there's nothing to subscribe to.
-  return useSyncExternalStore(noSubscribe, inPane, inPane);
+  // Fixed for the page's life, so there's nothing to subscribe to. The server snapshot is a plain `false`, never `inPane()`: React
+  // reads it while hydrating in the browser too, and inside a split pane that said "in a pane" for HTML the server drew as a full
+  // page (React error #418 on every pane).
+  return useSyncExternalStore(noSubscribe, inPane, () => false);
 }
 const noSubscribe = () => () => {};
 

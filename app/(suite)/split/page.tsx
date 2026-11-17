@@ -1,8 +1,9 @@
 'use client';
 
+import { Lamp } from '@/components/ui/DiscSwitch';
 import React, { Suspense, createRef, useCallback, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowLeftRight, ChevronDown, Columns2, Link2, Link2Off, Maximize2, Rows2, X } from 'lucide-react';
+import { ArrowLeftRight, ChevronDown, Columns2, Maximize2, Rows2, X } from 'lucide-react';
 import {
   DEFAULT_LAYOUT, clampRatio, projectOf, surfacesFor, isSplitMessage, layoutFromSearch, layoutToSearch, surfaceOf,
   type SplitLayout, type Surface,
@@ -138,7 +139,7 @@ function Split({ search }: { search: string }) {
           <button type="button" className={s.tool} onClick={swap} aria-label="Swap the panes"><ArrowLeftRight size={14} aria-hidden /><span>Swap</span></button>
           <button type="button" role="switch" aria-checked={layout.linked} className={`${s.tool} ${layout.linked ? s.toolOn : ''}`} onClick={() => update({ linked: !layout.linked })}
             title="Linked panes follow each other: the script's scene shows in the Studio, and the Studio can send the script to a scene">
-            {layout.linked ? <Link2 size={14} aria-hidden /> : <Link2Off size={14} aria-hidden />}<span>Linked</span>
+            <Lamp on={layout.linked} small /><span>Linked</span>
           </button>
           <button type="button" className={s.tool} onClick={() => full('a')} aria-label="Close split screen"><X size={14} aria-hidden /><span>Close</span></button>
         </div>

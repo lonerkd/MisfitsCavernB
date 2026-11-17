@@ -1,5 +1,6 @@
 'use client';
 
+import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import { useCallback, useEffect, useEffectEvent, useState, type CSSProperties } from 'react';
 import { Link2, Copy, RefreshCw } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -132,18 +133,7 @@ export function ShareScriptButton({ script, projectCreatorId }: { script: Stored
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               <span style={{ ...label, color: 'var(--fg)' }}>Read-only link</span>
-              <button
-                type="button" role="switch" aria-checked={!!current?.shared} disabled={busy || !current}
-                onClick={toggleShared}
-                style={{
-                  ...label, padding: '6px 12px', borderRadius: 9999, cursor: busy ? 'wait' : 'pointer',
-                  border: '1px solid rgba(var(--ink-rgb), 0.12)',
-                  background: current?.shared ? 'var(--accent)' : 'transparent',
-                  color: current?.shared ? 'var(--on-accent)' : 'var(--fg-muted)',
-                }}
-              >
-                {current?.shared ? 'On' : 'Off'}
-              </button>
+              <DiscSwitch on={!!current?.shared} onChange={() => toggleShared()} label="Read-only link" disabled={busy || !current} />
             </div>
             <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: 'var(--fg-dim)' }}>
               {current?.shared

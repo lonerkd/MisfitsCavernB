@@ -9,6 +9,38 @@ import React from 'react';
 
 export const DISC_SIZE = 28;
 
+/** The disc itself, without a button: for a control that carries its own words (a toolbar chip) and wants the same lamp.
+    `small` is the 18 px lamp for a chip; the default is the 28 px lamp of a switch row. */
+export function Lamp({ on, lit = 'var(--accent)', small }: { on: boolean; lit?: string; small?: boolean }) {
+  const size = small ? 18 : DISC_SIZE;
+  const dotOn = small ? 8 : 14;
+  const dotOff = small ? 4 : 6;
+  const inner = size - 4;
+  const at = (d: number) => (inner - d) / 2;
+  return (
+    <span
+      aria-hidden
+      style={{
+        position: 'relative', display: 'inline-block', flexShrink: 0, width: size, height: size, borderRadius: '50%', boxSizing: 'border-box',
+        border: `2px solid ${on ? lit : 'rgba(var(--ink-rgb), 0.28)'}`,
+        background: on ? `color-mix(in srgb, ${lit} 16%, transparent)` : 'rgba(var(--ink-rgb), 0.04)',
+        boxShadow: on ? `0 0 ${small ? 8 : 14}px color-mix(in srgb, ${lit} 45%, transparent)` : 'none',
+        transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
+      }}
+    >
+      <span
+        style={{
+          position: 'absolute', borderRadius: '50%',
+          width: on ? dotOn : dotOff, height: on ? dotOn : dotOff,
+          top: on ? at(dotOn) : small ? 1 : 3, left: on ? at(dotOn) : small ? 1 : 3,
+          background: on ? lit : 'var(--fg-dim)',
+          transition: 'all 0.22s cubic-bezier(.3,.9,.3,1)',
+        }}
+      />
+    </span>
+  );
+}
+
 export function DiscSwitch({
   on, onChange, label, accent, disabled,
 }: {
@@ -36,26 +68,7 @@ export function DiscSwitch({
         cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.5 : 1,
       }}
     >
-      <span
-        aria-hidden
-        style={{
-          position: 'relative', display: 'block', width: DISC_SIZE, height: DISC_SIZE, borderRadius: '50%', boxSizing: 'border-box',
-          border: `2px solid ${on ? lit : 'rgba(var(--ink-rgb), 0.28)'}`,
-          background: on ? `color-mix(in srgb, ${lit} 16%, transparent)` : 'rgba(var(--ink-rgb), 0.04)',
-          boxShadow: on ? `0 0 14px color-mix(in srgb, ${lit} 45%, transparent)` : 'none',
-          transition: 'border-color 0.2s, background 0.2s, box-shadow 0.2s',
-        }}
-      >
-        <span
-          style={{
-            position: 'absolute', borderRadius: '50%',
-            width: on ? 14 : 6, height: on ? 14 : 6,
-            top: on ? 5 : 3, left: on ? 5 : 3,
-            background: on ? lit : 'var(--fg-dim)',
-            transition: 'all 0.22s cubic-bezier(.3,.9,.3,1)',
-          }}
-        />
-      </span>
+      <Lamp on={on} lit={lit} />
     </button>
   );
 }
