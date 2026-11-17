@@ -159,7 +159,7 @@ export function ShareTab() {
             {ordered.map((m) => {
               const n = scenesByMedia.get(m.id)?.length ?? 0;
               return (
-                <div key={m.id} className={s.publishRow}>
+                <div key={m.id} className={`${s.publishRow} ${s.publishRowThumb}`}>
                   <div className={s.publishThumb}><MediaThumbVisual media={m} src={mediaSrc(m, signed)} /></div>
                   <div style={{ minWidth: 0 }}>
                     <div className={s.cardTitle}>{m.title || 'Untitled'}</div>
