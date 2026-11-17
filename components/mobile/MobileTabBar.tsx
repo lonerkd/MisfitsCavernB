@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Sun, FolderOpen, Search, MessageSquare, X, FileText, LayoutGrid, Briefcase, Users, Film, Music,
-  User, Settings, Bell, Plus, ChevronLeft, type LucideIcon,
+  User, Settings, Bell, Plus, ChevronLeft, Globe, type LucideIcon,
 } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
@@ -41,6 +41,7 @@ const TOOLS = [
   { href: '/community#updates', label: 'Updates', icon: Bell },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/', label: 'Front page', icon: Globe },
 ] as const;
 
 /** Pages that are the whole screen, or for people outside the suite. */

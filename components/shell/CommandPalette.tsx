@@ -4,7 +4,7 @@ import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users, ShieldCheck } from 'lucide-react';
+import { Home, Compass, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, CornerDownLeft, Film, LogOut, Keyboard, Columns2, Clapperboard, UserRound, MapPin, FileCheck2, ListChecks, MessageSquareText, Users, ShieldCheck } from 'lucide-react';
 import { splitHref } from '@/lib/split/pane';
 import { useProject, useCurrentUser } from '@/lib/os';
 import { shortcuts, matchesShortcut, looksLikeKeys } from '@/lib/os/shortcuts';
@@ -119,6 +119,7 @@ export default function CommandPalette() {
       { id: 'nav-editor', label: 'Open ScriptOS', hint: 'Screenplay editor', icon: <FileText size={15} />, run: go('/editor'), group: 'Navigate', keywords: 'write script screenplay' },
       { id: 'nav-studio', label: 'Open Studio', hint: 'Production suite', icon: <LayoutGrid size={15} />, run: go('/studio'), group: 'Navigate', keywords: 'production board schedule' },
       { id: 'nav-home', label: 'Go to Community', hint: "Your day, what's new, crew, music", icon: <Home size={15} />, run: go('/community'), group: 'Navigate', keywords: 'home dashboard today hub news updates newsletter learn guides crew lounge music' },
+      { id: 'nav-front', label: 'Go to the front page', hint: 'The public home page of The Cavern', icon: <Compass size={15} />, run: go('/'), group: 'Navigate', keywords: 'landing website marketing welcome' },
       { id: 'nav-lounge', label: 'Open Lounge', hint: 'Community feed', icon: <MessageSquare size={15} />, run: go('/lounge'), group: 'Navigate', keywords: 'chat community feed' },
       { id: 'nav-projects', label: 'Open Projects', icon: <FolderOpen size={15} />, run: go('/projects'), group: 'Navigate', keywords: 'films' },
       { id: 'nav-portfolio', label: 'Open Portfolio', icon: <Briefcase size={15} />, run: go('/portfolio'), group: 'Navigate', keywords: 'work showcase' },
