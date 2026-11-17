@@ -1,4 +1,5 @@
 const fs = require('fs');
+const { execFileSync } = process.getBuiltinModule('node:child_process');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
@@ -222,9 +223,14 @@ function checkAdapters() {
   console.log('Agent entry files match RULES.md.');
 }
 
+// BACKLOG.md is a generated index of backlog-detail.md (scripts/backlog-index.mjs).
+const backlogIndex = (...args) => execFileSync(process.execPath, [path.join(__dirname, 'backlog-index.mjs'), ...args], { stdio: 'inherit' });
+
 if (process.argv.includes('--check')) {
   checkAdapters();
+  try { backlogIndex('--check'); } catch { process.exit(1); }
 } else {
   generateManifest();
   writeAdapters();
+  backlogIndex();
 }

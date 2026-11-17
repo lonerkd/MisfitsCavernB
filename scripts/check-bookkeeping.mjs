@@ -22,7 +22,7 @@ const days = (a, b) => Math.round((b - a) / 86_400_000);
 const findings = [];
 const add = (level, what, fix) => findings.push({ level, what, fix });
 
-const backlog = readFileSync(new URL('BACKLOG.md', root), 'utf8');
+const backlog = readFileSync(new URL('backlog-detail.md', root), 'utf8');
 const items = parseBacklog(backlog);
 const ids = new Set(items.map((i) => i.id));
 const counts = new Map();
