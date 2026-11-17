@@ -360,3 +360,15 @@ describe('computeProgress edge cases', () => {
 // A type-level guard that the tool ids used above are real.
 const _ids: ToolId[] = ['post', 'portfolio'];
 void _ids;
+
+describe('where the toolkit and the milestones send you', () => {
+  it('the Budget and Revisions tiles open the Studio tools that carry those names, not the editor or the project page', () => {
+    const tool = (id: string) => TOOLS.find((t) => t.id === id)!;
+    expect(placeHref(tool('budget').place, 'p1')).toBe('/studio?tab=production&view=money');
+    expect(placeHref(tool('revisions').place, 'p1')).toBe('/studio?tab=production&view=revisions');
+  });
+  it('"Build a character" opens the editor on the Script section, where the Character Report is', () => {
+    const m = MILESTONES.find((x) => x.id === 'characters')!;
+    expect(placeHref(m.place, 'p1')).toBe('/editor?panel=script');
+  });
+});

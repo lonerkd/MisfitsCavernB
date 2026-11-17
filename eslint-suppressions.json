@@ -357,7 +357,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 4
+      "count": 3
     }
   },
   "components/lounge/ChannelRail.tsx": {

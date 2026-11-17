@@ -304,6 +304,9 @@ body.custom-cursor-active * {
   .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   .mc-lounge-body[data-pane='list']::after { content: ''; flex: none; height: 72px; }
   html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - 44px - var(--kb, 0px)); }
+  /* The chat header's buttons keep their icons and lose their words sideways (their names stay in aria-label), and the header is slimmer. */
+  .mc-lounge-label { display: none; }
+  .mc-lounge-chathead { padding-top: 4px !important; padding-bottom: 4px !important; }
 }
 /* A touch screen has no hover to reveal a message's actions: show them. */
 @media (hover: none) {

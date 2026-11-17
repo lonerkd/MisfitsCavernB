@@ -2593,6 +2593,7 @@ realtime public.character_castings
 realtime public.character_media
 realtime public.characters
 realtime public.deliverables
+realtime public.entities
 realtime public.expenses
 realtime public.links
 realtime public.media

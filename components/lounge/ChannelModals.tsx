@@ -1,5 +1,6 @@
 'use client';
 
+import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect, useCallback } from 'react';
 import { Hash, Lock, X, Volume2, BookOpen, Search } from 'lucide-react';
 import { audienceOptions, defaultPostPolicy, type ChannelAudience } from '@/lib/lounge/audience';
@@ -70,9 +71,7 @@ export function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
 
         <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div><div style={{ fontSize: 12, color: 'var(--fg)' }}>Private channel</div><div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2 }}>Invite-only, within who it’s for</div></div>
-          <button role="switch" aria-checked={isPrivate} aria-label="Private channel" onClick={() => setIsPrivate(v => !v)} style={{ width: 42, height: 24, borderRadius: 9999, border: 'none', cursor: 'pointer', background: isPrivate ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)', position: 'relative', flexShrink: 0 }}>
-            <span style={{ position: 'absolute', top: 3, left: isPrivate ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
-          </button>
+          <DiscSwitch on={isPrivate} onChange={setIsPrivate} label="Private channel" />
         </div>
 
         {type === 'text' && (
