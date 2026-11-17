@@ -165,7 +165,7 @@
   --sunken: rgba(0, 0, 0, 0.25);
   --jobs-text: #a78bfa;
   /* Status colours for text: bright on dark themes, deepened on light ones. */
-  --ok: #34d399; --warn: #f5a524; --info: #7cc4ff; --danger: #ff6b6b; --violet: #a5b4fc;
+  --ok: #34d399; --warn: #f5a524; --info: #7cc4ff; --danger: #ff6b6b; --violet: #a5b4fc; --on-violet: #0b0e1a;
   color-scheme: dark;
 }
 
@@ -952,7 +952,7 @@ p {
   --fg-rgb: 31, 26, 20; --ink-rgb: 31, 26, 20; --fg-strong: #0d0a07; --surface: rgba(255, 252, 245, 0.92); --surface-2: rgba(246, 241, 231, 0.92); --on-accent: #ffffff; --sunken: rgba(31, 26, 20, 0.045);
   --script-color: #b3361a; --studio-color: #3f3a8f; --lounge-color: #0f7a55; --portfolio-color: #9a5b00; --jobs-color: #6b3fa0; --jobs-text: #6b3fa0;
   --ambient-r: 179; --ambient-g: 54; --ambient-b: 26;
-  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca;
+  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca; --on-violet: #ffffff;
   color-scheme: light;
 }
 
@@ -966,7 +966,7 @@ p {
   --fg-rgb: 17, 17, 17; --ink-rgb: 17, 17, 17; --fg-strong: #000000; --surface: rgba(255, 255, 255, 0.96); --surface-2: rgba(247, 247, 247, 0.96); --on-accent: #ffffff; --sunken: rgba(17, 17, 17, 0.045);
   --script-color: #c8102e; --studio-color: #1f3fbf; --lounge-color: #0a7a4a; --portfolio-color: #a05a00; --jobs-color: #6a2fa0; --jobs-text: #6a2fa0;
   --ambient-r: 200; --ambient-g: 16; --ambient-b: 46;
-  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca;
+  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca; --on-violet: #ffffff;
   color-scheme: light;
 }
 
@@ -1019,7 +1019,7 @@ p {
   --fg-rgb: 14, 42, 44; --ink-rgb: 14, 42, 44; --fg-strong: #04181a; --surface: rgba(255, 255, 255, 0.9); --surface-2: rgba(238, 246, 245, 0.92); --on-accent: #ffffff; --sunken: rgba(14, 42, 44, 0.045);
   --script-color: #096a68; --studio-color: #3b4cc0; --lounge-color: #0b7a3a; --portfolio-color: #9a5b00; --jobs-color: #6b3fa0; --jobs-text: #6b3fa0;
   --ambient-r: 11; --ambient-g: 122; --ambient-b: 120;
-  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca;
+  --ok: #0b6b40; --warn: #804c00; --info: #1d5fa8; --danger: #b42318; --violet: #4338ca; --on-violet: #ffffff;
   color-scheme: light;
 }
 
