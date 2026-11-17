@@ -392,6 +392,11 @@ column mood_board_items.w real default 24 not null
 column mood_board_items.x real default 5 not null
 column mood_board_items.y real default 5 not null
 column mood_board_items.z integer default 0 not null
+column mood_board_shares.board_id uuid not null
+column mood_board_shares.created_at timestamp with time zone default now() not null
+column mood_board_shares.created_by uuid default auth.uid()
+column mood_board_shares.project_id uuid not null
+column mood_board_shares.token text default (replace((gen_random_uuid())::text, '-'::text, ''::text) || replace((gen_random_uuid())::text, '-'::text, ''::text)) not null
 column mood_boards.created_at timestamp with time zone default now() not null
 column mood_boards.created_by uuid default auth.uid()
 column mood_boards.id uuid default gen_random_uuid() not null
@@ -1203,6 +1208,11 @@ constraint mood_board_items.mood_board_items_pkey PRIMARY KEY (id)
 constraint mood_board_items.mood_board_items_w_check CHECK (((w >= (5)::double precision) AND (w <= (100)::double precision)))
 constraint mood_board_items.mood_board_items_x_check CHECK (((x >= (0)::double precision) AND (x <= (100)::double precision)))
 constraint mood_board_items.mood_board_items_y_check CHECK (((y >= (0)::double precision) AND (y <= (100)::double precision)))
+constraint mood_board_shares.mood_board_shares_board_fkey FOREIGN KEY (board_id, project_id) REFERENCES mood_boards(id, project_id) ON DELETE CASCADE
+constraint mood_board_shares.mood_board_shares_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_board_shares.mood_board_shares_pkey PRIMARY KEY (board_id)
+constraint mood_board_shares.mood_board_shares_token_check CHECK ((char_length(token) >= 32))
+constraint mood_board_shares.mood_board_shares_token_key UNIQUE (token)
 constraint mood_boards.mood_boards_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint mood_boards.mood_boards_id_project_key UNIQUE (id, project_id)
 constraint mood_boards.mood_boards_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 120)))
@@ -1592,7 +1602,7 @@ function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
 function internal.is_project_member(pid uuid) body=3ec152b6e40d467766b845bd2d662376
-function internal.is_shared_media_object(object_name text) body=7d496d1a44aaf63d763367888424eef2
+function internal.is_shared_media_object(object_name text) body=fae9950a1d27428c430034f0c7338610
 function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
 function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
 function internal.job_listed(p_creator uuid, p_project uuid) body=ba9899bf9296febceeff1cec4a9ce574
@@ -1675,6 +1685,7 @@ function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
 function public.get_recent_work(p_limit integer) body=c2b64fda478668ca6c5908e5a54ad4ca
 function public.get_review(p_token text) body=911a1941cb14915110ffeec34a9f9513
+function public.get_shared_board(p_token text) body=525fbd11adb4d9b8a5829f9f2974b6ec
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
@@ -1836,6 +1847,7 @@ grant function public.get_public_showcase(p_limit integer) anon,authenticated,po
 grant function public.get_published_media(p_media_id uuid) anon,authenticated,postgres,service_role
 grant function public.get_recent_work(p_limit integer) anon,authenticated,postgres,service_role
 grant function public.get_review(p_token text) anon,authenticated,postgres,service_role
+grant function public.get_shared_board(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_portfolio(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
@@ -2008,6 +2020,9 @@ index CREATE INDEX mood_board_items_board_idx ON public.mood_board_items USING b
 index CREATE INDEX mood_board_items_created_by_idx ON public.mood_board_items USING btree (created_by)
 index CREATE INDEX mood_board_items_media_idx ON public.mood_board_items USING btree (media_id, project_id)
 index CREATE INDEX mood_board_items_project_idx ON public.mood_board_items USING btree (project_id)
+index CREATE INDEX mood_board_shares_board_fkey_idx ON public.mood_board_shares USING btree (board_id, project_id)
+index CREATE INDEX mood_board_shares_created_by_idx ON public.mood_board_shares USING btree (created_by)
+index CREATE INDEX mood_board_shares_project_idx ON public.mood_board_shares USING btree (project_id)
 index CREATE INDEX mood_boards_created_by_idx ON public.mood_boards USING btree (created_by)
 index CREATE INDEX mood_boards_project_idx ON public.mood_boards USING btree (project_id)
 index CREATE INDEX notes_created_by_idx ON public.notes USING btree (created_by, created_at DESC)
@@ -2195,6 +2210,8 @@ index CREATE UNIQUE INDEX media_pkey ON public.media USING btree (id)
 index CREATE UNIQUE INDEX media_storage_path_key ON public.media USING btree (storage_path)
 index CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
 index CREATE UNIQUE INDEX mood_board_items_pkey ON public.mood_board_items USING btree (id)
+index CREATE UNIQUE INDEX mood_board_shares_pkey ON public.mood_board_shares USING btree (board_id)
+index CREATE UNIQUE INDEX mood_board_shares_token_key ON public.mood_board_shares USING btree (token)
 index CREATE UNIQUE INDEX mood_boards_id_project_key ON public.mood_boards USING btree (id, project_id)
 index CREATE UNIQUE INDEX mood_boards_pkey ON public.mood_boards USING btree (id)
 index CREATE UNIQUE INDEX notes_pkey ON public.notes USING btree (id)
@@ -2408,6 +2425,9 @@ policy public.mood_board_items "mood_board_items delete" PERMISSIVE DELETE to au
 policy public.mood_board_items "mood_board_items insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.mood_board_items "mood_board_items update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.mood_board_items "mood_board_items view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_board_shares "mood_board_shares delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.mood_board_shares "mood_board_shares insert" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.mood_board_shares "mood_board_shares view" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
 policy public.mood_boards "mood_boards delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.mood_boards "mood_boards insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -2671,6 +2691,7 @@ rls lounge_reads enabled=true forced=false
 rls media enabled=true forced=false
 rls messages enabled=true forced=false
 rls mood_board_items enabled=true forced=false
+rls mood_board_shares enabled=true forced=false
 rls mood_boards enabled=true forced=false
 rls notes enabled=true forced=false
 rls notifications enabled=true forced=false

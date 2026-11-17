@@ -1,0 +1,17 @@
+.main { min-height: 100vh; background: var(--bg); color: var(--fg); position: relative; padding: 0 20px 72px; }
+.hero { max-width: 1100px; margin: 0 auto; padding: 72px 0 24px; }
+.eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); margin: 0 0 14px; }
+.title { font-family: var(--display); font-size: clamp(2rem, 7vw, 4rem); letter-spacing: -0.02em; line-height: 1; margin: 0; }
+.canvas { position: relative; max-width: 1100px; margin: 0 auto; aspect-ratio: 16 / 10; background: var(--bg-3); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.card { position: absolute; box-sizing: border-box; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+.image { width: 100%; display: block; border-radius: 6px; aspect-ratio: 4 / 3; object-fit: cover; }
+.caption { font-size: 11px; color: var(--fg-muted); padding: 3px 2px 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note { font-size: 13px; padding: 6px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--fg); }
+.link { display: flex; align-items: center; gap: 6px; padding: 8px; font-size: 13px; color: var(--fg); text-decoration: none; overflow-wrap: anywhere; }
+.empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--fg-muted); }
+.footer { max-width: 1100px; margin: 18px auto 0; font-size: 12px; color: var(--fg-muted); }
+.footer a { color: var(--fg); }
+.missing { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: var(--bg); color: var(--fg); padding: 24px; text-align: center; }
+.wordmark { font-family: var(--display); font-size: 2rem; letter-spacing: 0.2em; }
+.back { color: var(--fg); }
+@media (max-width: 700px) { .canvas { aspect-ratio: 4 / 5; } }

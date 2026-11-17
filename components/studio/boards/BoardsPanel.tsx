@@ -6,14 +6,15 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { printHtmlString } from '@/lib/print/print';
-import { ImagePlus, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid } from 'lucide-react';
+import { ImagePlus, Link2, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
+import { useCanShape } from '@/lib/brief';
 import {
-  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, clampPoint, dominantColours, mediaSrc, studio, useMoodBoardItems, useMoodBoards, useSignedUrls,
-  type BoardTemplate, type MoodBoard, type MoodBoardItem,
+  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, mediaSrc, studio, useMoodBoardItems, useMoodBoards, useSignedUrls,
+  type BoardTemplate, type MoodBoard, type MoodBoardItem, type MoodBoardShare,
 } from '@/lib/studio';
 import { boardPrintHtml } from '@/lib/studio/boards-print';
 import { useStudio } from '../StudioContext';
@@ -46,7 +47,8 @@ async function paletteOf(srcs: string[]): Promise<string[]> {
 }
 
 export function BoardsPanel() {
-  const { project, userId, media } = useStudio();
+  const { project, userId, media, isOwner } = useStudio();
+  const canShape = useCanShape(project.id, isOwner);
   const { toast } = useToast();
   const confirm = useConfirm();
   const boards = useMoodBoards(project.id);
@@ -62,12 +64,24 @@ export function BoardsPanel() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const [drag, setDrag] = useState<{ id: string; x: number; y: number } | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [share, setShare] = useState<{ boardId: string; row: MoodBoardShare | null } | null>(null);
 
   const active: MoodBoard | undefined = boards.rows.find((r) => r.id === activeId) ?? boards.rows[0];
   const boardItems = useMemo(() => items.rows.filter((i) => i.board_id === active?.id), [items.rows, active?.id]);
   const mediaById = useMemo(() => new Map(media.rows.map((m) => [m.id, m])), [media.rows]);
   const signed = useSignedUrls(boardItems.map((i) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m && (m.kind === 'image' || m.kind === 'video') ? m.storage_path : null; }));
   const srcOf = useCallback((i: MoodBoardItem) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m ? mediaSrc(m, signed) : null; }, [mediaById, signed]);
+
+  // The link belongs to people who shape the project: it is read only when the panel is opened.
+  const shareBoardId = canShape && shareOpen ? active?.id ?? null : null;
+  useEffect(() => {
+    if (!shareBoardId) return;
+    let alive = true;
+    studio.getBoardShare(shareBoardId).then((row) => { if (alive) setShare({ boardId: shareBoardId, row }); }, (e) => { if (alive) toast(errMessage(e, 'Could not read the board link'), 'error'); });
+    return () => { alive = false; };
+  }, [shareBoardId, toast]);
+  const currentShare = share && share.boardId === active?.id ? share.row : undefined;
 
   const [palette, setPalette] = useState<{ key: string; colours: string[] } | null>(null);
   const imageSrcs = useMemo(() => boardItems.filter((i) => i.media_id && mediaById.get(i.media_id)?.kind === 'image').map(srcOf).filter((x): x is string => !!x), [boardItems, mediaById, srcOf]);
@@ -136,6 +150,27 @@ export function BoardsPanel() {
         items.upsertLocal(await studio.updateBoardItem(item.id, back));
       }, origin);
     }
+  };
+
+  const makeLink = async () => {
+    if (!active) return;
+    const row = await run(() => studio.shareBoard(active, userId), 'Could not make the board link');
+    if (row) setShare({ boardId: active.id, row });
+  };
+  const stopSharing = async () => {
+    if (!active) return;
+    if (!(await confirm('Stop sharing this board? The link stops working at once.'))) return;
+    if (await run(() => studio.closeBoardShare(active.id).then(() => true), 'Could not close the board link')) setShare({ boardId: active.id, row: null });
+  };
+  const replaceLink = async () => {
+    if (!active) return;
+    if (!(await confirm('Make a new link? The old one stops working at once, and anyone you sent it to will need the new one.'))) return;
+    const row = await run(() => studio.newBoardLink(active, userId), 'Could not make a new link');
+    if (row) setShare({ boardId: active.id, row });
+  };
+  const copyLink = async (token: string) => {
+    try { await navigator.clipboard.writeText(boardShareUrl(window.location.origin, token)); toast('Link copied', 'success'); }
+    catch { toast('Could not copy: select the link and copy it', 'error'); }
   };
 
   const removeItem = async (item: MoodBoardItem) => {
@@ -219,8 +254,24 @@ export function BoardsPanel() {
                 <button type="button" className={s.btn} onClick={() => setPicking(true)}><ImagePlus size={12} /> Add from library</button>
                 <button type="button" className={s.btn} aria-expanded={noting} onClick={() => setNoting((v) => !v)}><StickyNote size={12} /> Add note</button>
                 <button type="button" className={s.btn} onClick={print} disabled={!boardItems.length}><Printer size={12} /> Print / PDF</button>
+                {canShape && <button type="button" className={s.btn} aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}><Link2 size={12} /> Share link</button>}
                 <button type="button" className={s.btnDanger} onClick={() => void removeBoard(active)}><Trash2 size={12} /> Delete board</button>
               </div>
+              {canShape && shareOpen && (
+                <div className={b.share} role="group" aria-label="Share this board">
+                  <p className={b.hint}>Anyone with the link can see this board: its cards, notes and the images on it. Not the rest of the library. You can stop it at any time.</p>
+                  {currentShare === undefined ? <p className={b.hint}>Looking…</p> : currentShare ? (
+                    <div className={b.bar}>
+                      <input className={`${s.input} ${b.grow}`} aria-label="Board link" readOnly value={boardShareUrl(typeof window === 'undefined' ? '' : window.location.origin, currentShare.token)} onFocus={(e) => e.currentTarget.select()} />
+                      <button type="button" className={s.btnPrimary} onClick={() => void copyLink(currentShare.token)}>Copy link</button>
+                      <button type="button" className={s.btn} onClick={() => void replaceLink()}>New link</button>
+                      <button type="button" className={s.btnDanger} onClick={() => void stopSharing()}>Stop sharing</button>
+                    </div>
+                  ) : (
+                    <button type="button" className={s.btnPrimary} onClick={() => void makeLink()}>Make a link</button>
+                  )}
+                </div>
+              )}
               {noting && (
                 <div className={b.bar}>
                   <textarea className={`${s.textarea} ${b.grow}`} aria-label="Note text" rows={2} maxLength={1000} value={noteText} onChange={(e) => setNoteText(e.target.value)} placeholder="A line, a colour, a feeling..." />
