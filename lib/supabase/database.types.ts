@@ -2269,6 +2269,46 @@ export type Database = {
           },
         ];
       };
+      mood_board_shares: {
+        Row: {
+          board_id: string;
+          created_at: string;
+          created_by: string | null;
+          project_id: string;
+          token: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          board_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          project_id: string;
+          token?: string;
+        };
+        Update: {
+          board_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          project_id?: string;
+          token?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_board_shares_board_fkey";
+            columns: ["board_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "mood_boards";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "mood_board_shares_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       mood_boards: {
         Row: {
           created_at: string;
@@ -5565,6 +5605,7 @@ export type Database = {
         }[];
       };
       get_review: { Args: { p_token: string }; Returns: Json };
+      get_shared_board: { Args: { p_token: string }; Returns: Json };
       get_shared_lookbook: { Args: { p_token: string }; Returns: Json };
       get_shared_portfolio: { Args: { p_token: string }; Returns: Json };
       get_shared_project: {
