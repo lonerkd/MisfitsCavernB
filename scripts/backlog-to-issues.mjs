@@ -95,7 +95,7 @@ function existingIds() {
 }
 
 function main() {
-  const path = new URL('../.cavern-intelligence/BACKLOG.md', import.meta.url);
+  const path = new URL('../.cavern-intelligence/backlog-detail.md', import.meta.url);
   const all = parseBacklog(readFileSync(path, 'utf8'));
   const seen = new Set();
   for (const it of all) {
