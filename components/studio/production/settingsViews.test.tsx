@@ -26,6 +26,10 @@ vi.mock('@/lib/studio', () => ({
   useProjectLocations: () => ({ rows: [] }),
   locationRows: () => [],
   locationKey: (n: string | null | undefined) => (n ?? '').trim().toUpperCase(),
+  useShootDays: () => ({ rows: [], status: 'ready' }),
+  useCallSheets: () => ({ rows: [] }),
+  useCallSheetCalls: () => ({ rows: [] }),
+  studio: { listBudgetLines: async () => [], listVendors: async () => [] },
 }));
 vi.mock('@/lib/supabase/productionRecords', () => ({
   listRecords: async (_p: string, kind: string) => store[kind] ?? [],

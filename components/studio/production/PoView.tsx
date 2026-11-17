@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { Receipt, Plus, Trash2 } from 'lucide-react';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { NeedsCapability } from '@/components/roles/NeedsCapability';
+import { studio, type BudgetItem, type Vendor } from '@/lib/studio';
+import { approvedPoTotal } from '@/lib/studio/po-totals';
 import { useSettingsList } from './useSettingsList';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
@@ -27,8 +29,36 @@ export function PoView() {
     status: 'draft',
   });
   const [filter, setFilter] = useState<'all' | PoEntry['status']>('all');
+  const [budgetLines, setBudgetLines] = useState<BudgetItem[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const vendorListId = useId();
+  const departmentListId = useId();
+
+  // The budget (to read its total and its categories) and the vendors (to name a real one on a PO). Both are read through
+  // RLS; a failed read leaves the list empty rather than blocking the PO list.
+  useEffect(() => {
+    let live = true;
+    if (seesMoney) {
+      studio.listBudgetLines(project.id).then(
+        (rows) => { if (live) setBudgetLines(rows); },
+        () => { if (live) setBudgetLines([]); },
+      );
+    }
+    if (runsMoney) {
+      studio.listVendors(project.id).then(
+        (rows) => { if (live) setVendors(rows); },
+        () => { if (live) setVendors([]); },
+      );
+    }
+    return () => { live = false; };
+  }, [project.id, seesMoney, runsMoney]);
 
   const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+
+  const departments = useMemo(
+    () => Array.from(new Set(budgetLines.map((l) => l.category.trim()).filter(Boolean))),
+    [budgetLines],
+  );
 
   const add = async () => {
     if (!draft.vendor.trim()) return;
@@ -41,10 +71,14 @@ export function PoView() {
   };
 
   const total = items.reduce((a, b) => a + (parseFloat(b.amount) || 0), 0);
+  const committed = approvedPoTotal(items);
+  const budgetTotal = budgetLines.reduce((a, b) => a + (Number(b.amount) || 0), 0);
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
-      <ToolHeader icon={<Receipt size={16} />} eyebrow="Budget & docs" title="Purchase orders" purpose="Purchase orders: vendor, amount and whether it is approved or paid." accent={project.accent_color} summary={<>{items.length} POs · ${total.toFixed(2)} total</>} actions={<><div className={s.row} style={{ gap: 6 }}>
+      <ToolHeader icon={<Receipt size={16} />} eyebrow="Budget & docs" title="Purchase orders" purpose="Purchase orders: vendor, amount and whether it is approved or paid." accent={project.accent_color} summary={<>{items.length} POs · ${total.toFixed(2)} total{seesMoney && (
+        <span style={{ display: 'block' }}>Approved or paid POs: ${committed.toFixed(2)} against the budget&apos;s ${budgetTotal.toFixed(2)}</span>
+      )}</>} actions={<><div className={s.row} style={{ gap: 6 }}>
           {(['all', ...STATUSES] as const).map((st) => (
             <button key={st} className={s.btn} onClick={() => setFilter(st)} style={filter === st ? { background: 'var(--accent)', color: 'var(--on-accent)' } : {}}>
               {st}
@@ -67,11 +101,17 @@ export function PoView() {
           </label>
           <label className={s.field} style={{ flex: '1 1 160px' }}>
             <span className={s.label}>Vendor</span>
-            <input className={s.input} value={draft.vendor} onChange={(e) => setDraft({ ...draft, vendor: e.target.value })} placeholder="Rental house" />
+            <input className={s.input} list={vendorListId} value={draft.vendor} onChange={(e) => setDraft({ ...draft, vendor: e.target.value })} placeholder="Rental house" />
+            <datalist id={vendorListId}>
+              {vendors.map((v) => <option key={v.id} value={v.name} />)}
+            </datalist>
           </label>
           <label className={s.field} style={{ flex: '1 1 140px' }}>
             <span className={s.label}>Department</span>
-            <input className={s.input} value={draft.department} onChange={(e) => setDraft({ ...draft, department: e.target.value })} placeholder="Camera" />
+            <input className={s.input} list={departmentListId} value={draft.department} onChange={(e) => setDraft({ ...draft, department: e.target.value })} placeholder="Camera" />
+            <datalist id={departmentListId}>
+              {departments.map((d) => <option key={d} value={d} />)}
+            </datalist>
           </label>
           <label className={s.field} style={{ flex: '0 0 100px' }}>
             <span className={s.label}>Amount</span>
