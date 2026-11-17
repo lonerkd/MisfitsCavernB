@@ -1,5 +1,6 @@
 'use client';
 
+import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect } from 'react';
 import { User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid } from 'lucide-react';
 import Link from 'next/link';
@@ -32,25 +33,7 @@ const RowLabel = React.createContext<string | undefined>(undefined);
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   const label = React.useContext(RowLabel);
-  // The button is the touch target (44 pt on a phone, by the global rule); the track is drawn inside it, so the rule
-  // cannot stretch the switch into a disc.
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      onClick={() => onChange(!on)}
-      style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', cursor: 'pointer', padding: 0, flexShrink: 0 }}
-    >
-      <span aria-hidden style={{
-        width: 42, height: 24, borderRadius: 9999, position: 'relative', display: 'block',
-        background: on ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.12)', transition: 'background 0.2s',
-      }}>
-        <span style={{ position: 'absolute', top: 3, left: on ? 21 : 3, width: 18, height: 18, borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
-      </span>
-    </button>
-  );
+  return <DiscSwitch on={on} onChange={onChange} label={label || 'Toggle'} />;
 }
 
 function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {

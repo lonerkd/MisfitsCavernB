@@ -178,9 +178,6 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "app/(suite)/showcase/page.tsx": {
