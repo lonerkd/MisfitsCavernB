@@ -39,16 +39,18 @@ export interface CreateUserOptions {
   sample?: boolean;
 }
 
-function connect(): { url: string; key: string; staging: boolean } {
-  if (STAGING) return { url: process.env.E2E_SUPABASE_URL!, key: process.env.E2E_SUPABASE_SERVICE_KEY!, staging: true };
+function connect(): { url: string; key: string; anon: string; staging: boolean } {
+  if (STAGING) return { url: process.env.E2E_SUPABASE_URL!, key: process.env.E2E_SUPABASE_SERVICE_KEY!, anon: process.env.E2E_SUPABASE_ANON_KEY ?? '', staging: true };
   const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-  return { url: s.API_URL, key: s.SERVICE_ROLE_KEY, staging: false };
+  return { url: s.API_URL, key: s.SERVICE_ROLE_KEY, anon: s.ANON_KEY ?? s.PUBLISHABLE_KEY, staging: false };
 }
 
 export class Stack {
   readonly admin: SupabaseClient;
   readonly staging: boolean;
   readonly url: string;
+  /** The project's public (anon) key: what the app itself signs in with. On staging it is E2E_SUPABASE_ANON_KEY. */
+  readonly anonKey: string;
   /** One tag per run, in every email, username and title the helper makes. */
   readonly tag = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   private users: QaUser[] = [];
@@ -58,8 +60,15 @@ export class Stack {
   constructor() {
     const c = connect();
     this.url = c.url;
+    this.anonKey = c.anon;
     this.staging = c.staging;
     this.admin = createClient(c.url, c.key, { auth: { persistSession: false } });
+  }
+
+  /** A client with the public key and no session: what a person's browser has before signing in (then `auth.signInWithPassword`). */
+  anonClient(): SupabaseClient {
+    if (!this.anonKey) throw new Error('no anon key: on staging set E2E_SUPABASE_ANON_KEY');
+    return createClient(this.url, this.anonKey, { auth: { persistSession: false } });
   }
 
   /** Create a confirmed user with a QA-marked email and username and a fresh password. */

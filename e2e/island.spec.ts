@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The island at desk size, in a real browser against a local stack: it rests
 // as a small pill naming the page; opens to the whole suite when reached for;
 // shrinks to a dot while you type; holds a keyboard deck open under Caps Lock;
 // and keeps a menu open until you click away. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const DESK = { viewport: { width: 1280, height: 800 } };
@@ -23,15 +22,14 @@ const capsOff = (page: Page) =>
   page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keyup', { key: 'CapsLock', modifierCapsLock: false, bubbles: true })); });
 
 test.describe('The island (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `island.${TAG}@journey.test` };
   let projectId: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `island${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Lighthouse ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('channels').insert({ project_id: projectId, name: `general-${TAG}`, type: 'text' });

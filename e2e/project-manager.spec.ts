@@ -1,18 +1,17 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The project page's Production Management, as the owner and as crew: tasks,
 // budget, milestones and crew are saved and survive a reload; festivals and
 // settings are the owner's; adding an unknown username says so.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Production Management (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `pm-owner.${TAG}@journey.test`, username: `pmowner${TAG}` };
@@ -30,9 +29,8 @@ test.describe('Production Management (local Supabase)', () => {
     return page;
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const p of [owner, crew, newcomer]) {
       p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: p.username } })).data.user!.id;
     }

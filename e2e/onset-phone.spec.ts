@@ -1,23 +1,21 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, devices } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { devices } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // On set on a phone (an iPhone 15 Pro, portrait): the day's page never scrolls sideways, every control is a thumb's size, and the note
 // field stays above the keyboard (faked through `visualViewport`). Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const SCRIPT = 'INT. TUNNEL - NIGHT\n\nMAYA\nQuiet.\n\nEXT. RIDGE - DAWN\n\nJO\nMove.\n';
 const d = new Date();
 const TODAY = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 test.describe('On set on a phone (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   let admin: SupabaseClient; let userId = ''; let email = ''; let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     email = `osph.${Date.now()}@journey.test`;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `osph${Date.now().toString(36)}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: 'Underground', creator_id: userId, status: 'production' }).select('id').single()).data!.id;

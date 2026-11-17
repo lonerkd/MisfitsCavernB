@@ -1,14 +1,13 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Browser, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser, Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Call sheets reach the crew, in real browsers against a local stack: the
 // owner issues Day 1, the crew member gets their own call and confirms from
 // the crew view, the owner sees who confirmed, and a change becomes a
 // revision. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -26,7 +25,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Call sheets reach the crew (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `cs-owner.${TAG}@journey.test`, name: `csowner${TAG}` };
@@ -44,9 +43,8 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
     return page;
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const who of [owner, crew, outsider]) {
       const { data } = await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } });
       who.id = data.user!.id;

@@ -1,18 +1,17 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The editor puts the caret back after it reshapes the text itself (an opening parenthesis becomes a pair, a
 // Tab cycles the line). The next key must land at the caret, not at the end of the script, even when it is
 // pressed at once. Real data, no mocks. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. PIER - DAY\n\nBoats come in.\n';
 
 test.describe('Caret after the editor reshapes the text (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
@@ -20,9 +19,8 @@ test.describe('Caret after the editor reshapes the text (local Supabase)', () =>
   let scriptId = '';
   const email = `caret.${TAG}@journey.test`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `caret${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Caret ${TAG}`, creator_id: userId }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;

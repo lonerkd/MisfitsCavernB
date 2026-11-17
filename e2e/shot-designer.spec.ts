@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // The shot designer in a real browser against a local stack: add a shot, set
 // the camera on the visual picker, reorder, and see a script-made shot's line.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights a match.\n';
@@ -21,7 +20,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Shot designer (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId: string;
@@ -30,9 +29,8 @@ test.describe('Shot designer (local Supabase)', () => {
   let scriptId: string;
   let stack: { API_URL: string; ANON_KEY: string };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     stack = s;
     email = `sd.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sd${Date.now().toString(36)}` } });
