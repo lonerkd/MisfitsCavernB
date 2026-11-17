@@ -1,5 +1,6 @@
 'use client';
 
+import { Lamp } from '@/components/ui/DiscSwitch';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlignLeft, Type, ChevronDown, ChevronUp } from 'lucide-react';
@@ -342,9 +343,10 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label, 
                     background: reviewMode ? 'rgba(var(--ink-rgb), 0.12)' : 'rgba(var(--ink-rgb), 0.05)',
                     border: 'none', borderRadius: 8, padding: '4px 10px',
                     color: reviewMode ? 'var(--accent)' : 'var(--fg-dim)', cursor: 'pointer', fontSize: 11,
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
                   }}
                 >
-                  Review
+                  <Lamp on={reviewMode} small /> Review
                 </button>
               )}
               {mode === 'lines' && (
