@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { useInPane, projectPairSearch } from '@/lib/split/pane';
 import { Columns2 } from 'lucide-react';
 import { useScrollToHash } from '@/lib/util/scrollToHash';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 import { TwoPanesOffer } from '@/components/projects/TwoPanesOffer';
 import { getProjectOverview, getProjectRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
 import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
@@ -132,6 +133,7 @@ export default function ProjectHubPage() {
 
   const viewMode = useViewAs(id);
   const project = realProject;
+  const phone = usePhoneLayout();
   // The sections draw after the project loads, so a #brief / #production link is scrolled to once they are there.
   useScrollToHash(!loading && !!realProject);
 
@@ -253,7 +255,8 @@ export default function ProjectHubPage() {
           <TwoPanesOffer projectId={id} phase={progressState.progress?.current.id ?? project.phase} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
             {project.isOwner && <ViewAsSwitch projectId={id} />}
-            {!inPane && (
+            {/* On a phone the split only stacks its two panes, which the pill and the tool header already do better. */}
+            {!inPane && !phone.phone && (
               <Link href={`/split${projectPairSearch(id, progressState.progress?.current.id ?? project.phase)}`} title="The project in one pane, the tool this phase works in beside it. Tools you open from the toolkit come up beside the project."
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 12px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-strong)', textDecoration: 'none' }}>
                 <Columns2 size={13} aria-hidden /> Two panes

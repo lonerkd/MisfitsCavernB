@@ -857,6 +857,19 @@ export default function EditorPage() {
     if (idx >= 0) jumpRef.current(idx);
     if (msg.noteId) setPendingNote(msg.noteId);
   });
+  // `?panel=script` (a milestone's "Build a character" points at the Script section's Character Report) opens that section of the rail
+  // once the script is up, in the sheet on a phone and in the side rail on a desk.
+  const panelParam = useRef<RightPanelTab | null>((() => {
+    const want = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('panel') : null;
+    return want === 'scene' || want === 'audio' || want === 'script' || want === 'notes' ? want : null;
+  })());
+  useEffect(() => {
+    const want = panelParam.current;
+    if (!want || !currentScript?.id) return;
+    panelParam.current = null;
+    setRightPanel(want);
+    if (isMobile) setSheet('tools'); else setShowRightSidebar(true);
+  }, [currentScript?.id, isMobile]);
   const sceneParam = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('scene') : null);
   useEffect(() => {
     const want = sceneParam.current;
