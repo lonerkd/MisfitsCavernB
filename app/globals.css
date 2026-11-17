@@ -804,18 +804,21 @@ p {
   50%       { transform: translateY(-8px); }
 }
 
-/* Loading skeleton */
+/* Loading skeleton: a shimmer of the theme's own ink, so it is a pale ghost on Paper and a dim one on Cavern
+   (it was hard-coded near-black, which read as heavy black bars on every light theme). */
 .skeleton {
-  background: linear-gradient(90deg, #111 0%, #1a1a1a 50%, #111 100%);
+  background: linear-gradient(90deg, rgba(var(--ink-rgb), 0.06) 0%, rgba(var(--ink-rgb), 0.13) 50%, rgba(var(--ink-rgb), 0.06) 100%);
   background-size: 400px 100%;
   animation: shimmer 1.4s ease infinite;
   border-radius: var(--r-xs);
 }
 
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
 /* Progress bar */
 .progress-bar {
   height: 2px;
-  background: #1a1a1a;
+  background: rgba(var(--ink-rgb), 0.12);
   overflow: hidden;
   border-radius: 4px;
 }
