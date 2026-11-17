@@ -46,8 +46,8 @@ export default function AdminDashboard() {
               ADMIN PANEL
             </h1>
           </div>
-          <Link href="/" style={{ color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 11 }}>
-            ← BACK TO HOME
+          <Link href="/community" style={{ color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 11 }}>
+            ← BACK TO COMMUNITY
           </Link>
         </header>
 

@@ -68,7 +68,7 @@ export default function AdminError({
             Try Again
           </button>
           <Link
-            href="/"
+            href="/community"
             style={{
               padding: '10px 24px',
               background: 'transparent',

@@ -104,7 +104,7 @@ export async function proxy(request: NextRequest) {
     const admin = !!account?.[0]?.is_admin;
     if (flagNeedsAdmin && !admin) return flagOff(request, path);
     if (isAdminPath && !admin) {
-      return NextResponse.redirect(new URL('/', request.url));
+      return NextResponse.redirect(new URL('/community', request.url));
     }
   }
 
