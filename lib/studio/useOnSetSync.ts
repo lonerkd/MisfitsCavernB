@@ -18,7 +18,7 @@ async function send(op: OnSetOp) {
   }
 }
 
-const isOnline = () => (typeof navigator === 'undefined' ? true : navigator.onLine);
+const isOnline = () => (typeof navigator === 'undefined' ? true : navigator.onLine !== false);
 
 export interface OnSetSync {
   online: boolean;

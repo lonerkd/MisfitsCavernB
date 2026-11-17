@@ -1,5 +1,6 @@
 'use client';
 
+import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { Briefcase, ExternalLink } from 'lucide-react';
@@ -435,25 +436,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           ] as [keyof ProjectSettings['modules'], string][]).map(([key, label]) => (
             <Row key={key}>
               <span style={{ flex: 1, fontSize: 11 }}>{label}</span>
-              <button
-                type="button"
-                onClick={() => toggleModule(key)}
-                role="switch"
-                aria-checked={settings.modules[key]}
-                aria-label={`toggle ${label}`}
-                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
-              >
-                <span aria-hidden style={{
-                  width: 32, height: 18, borderRadius: 9999, position: 'relative', display: 'block',
-                  background: settings.modules[key] ? `${accent}40` : 'rgba(var(--ink-rgb), 0.08)',
-                  border: `1px solid ${settings.modules[key] ? accent : 'rgba(var(--ink-rgb), 0.15)'}`,
-                }}>
-                  <span style={{
-                    width: 12, height: 12, borderRadius: '50%', background: settings.modules[key] ? accent : 'var(--fg-dim)',
-                    position: 'absolute', top: 2, left: settings.modules[key] ? 17 : 2, transition: 'left 0.18s',
-                  }} />
-                </span>
-              </button>
+              <DiscSwitch on={settings.modules[key]} onChange={() => toggleModule(key)} label={`toggle ${label}`} accent={accent} />
             </Row>
           ))}
         </Panel>}

@@ -209,7 +209,8 @@ export default function ProjectHubPage() {
           </div>
           )}
           {ownerView && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span aria-hidden style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>Visible to</span>
               <select
                 value={project.visibility}
                 onChange={e => changeVisibility(e.target.value as 'private' | 'team' | 'link' | 'public')}
@@ -218,7 +219,7 @@ export default function ProjectHubPage() {
                 style={{
                   fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)',
                   background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-                  borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none',
+                  borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none', maxWidth: '100%',
                 }}
               >
                 {PROJECT_VISIBILITY.map(v => (
