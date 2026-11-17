@@ -303,7 +303,12 @@ body.custom-cursor-active * {
      window scroll, and scrolling the latest message into view then took the chat header off the top. */
   .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   .mc-lounge-body[data-pane='list']::after { content: ''; flex: none; height: 72px; }
-  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - 44px - var(--kb, 0px)); }
+  /* Typing sideways, the keyboard takes about half of a 393 px screen: the top bar and the chat header would take most of what is left
+     (the message list was down to a line or two), so both step aside until the keyboard goes; the composer and the messages stay. */
+  html[data-typing='true'] .mc-lounge-top, html[data-typing='true'] .mc-lounge-chathead { display: none !important; }
+  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--kb, 0px)); }
+  /* The island makes way for the keyboard, so the chat column no longer leaves its height empty under the composer. */
+  html[data-typing='true'] .mc-lounge-chat { padding-bottom: 0 !important; }
   /* The chat header's buttons keep their icons and lose their words sideways (their names stay in aria-label), and the header is slimmer. */
   .mc-lounge-label { display: none; }
   .mc-lounge-chathead { padding-top: 4px !important; padding-bottom: 4px !important; }
