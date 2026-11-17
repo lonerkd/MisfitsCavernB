@@ -9,7 +9,9 @@ describe('search results', () => {
     expect(hitTarget({ kind: 'script', id: 's1', project_id: 'p1' }).href).toBe('/editor?script=s1');
     expect(hitTarget({ kind: 'task', id: 't1', project_id: 'p1' }).href).toBe('/projects/p1#production');
     expect(hitTarget({ kind: 'person', id: 'u1', project_id: null }).href).toBe('/crew/u1');
-    expect(hitTarget({ kind: 'location', id: 'l1', project_id: 'p1' })).toEqual({ href: '/studio?tab=production&view=locations', needsProject: true });
+    expect(hitTarget({ kind: 'location', id: 'l1', project_id: 'p1' })).toEqual({ href: '/studio?tab=production&view=locations&card=l1', needsProject: true });
+    expect(hitTarget({ kind: 'scene', id: 's9', project_id: 'p1' }).href).toBe('/studio?tab=scenes&card=s9');
+    expect(hitTarget({ kind: 'character', id: 'c3', project_id: 'p1' }).href).toBe('/studio?tab=production&view=cast&card=c3');
   });
 
   it('every kind has a name and a place', () => {

@@ -40,10 +40,11 @@ export function hitTarget(hit: Pick<SearchHit, 'kind' | 'id' | 'project_id'>): {
     case 'task': return { href: `/projects/${hit.project_id}#production`, needsProject: false };
     case 'job': return { href: '/jobs', needsProject: false };
     case 'person': return { href: `/crew/${hit.id}`, needsProject: false };
-    case 'scene': return { href: '/studio?tab=scenes', needsProject: true };
-    case 'character': return { href: '/studio?tab=production&view=crew', needsProject: true };
+    // A scene, character or location opens its card (the entity shares the row's id) over the tool that lists it; where the card is off the id is ignored.
+    case 'scene': return { href: `/studio?tab=scenes&card=${hit.id}`, needsProject: true };
+    case 'character': return { href: `/studio?tab=production&view=cast&card=${hit.id}`, needsProject: true };
     case 'media': return { href: '/studio?tab=library', needsProject: true };
-    case 'location': return { href: '/studio?tab=production&view=locations', needsProject: true };
+    case 'location': return { href: `/studio?tab=production&view=locations&card=${hit.id}`, needsProject: true };
     case 'document': return { href: '/studio?tab=production&view=paperwork', needsProject: true };
     case 'note': return { href: '/studio?tab=post', needsProject: true };
   }
