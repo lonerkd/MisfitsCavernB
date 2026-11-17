@@ -211,8 +211,8 @@ A voice room is a full mesh and now refuses a 9th person (`lib/webrtc/mesh.ts`: 
 ### 3.28 The Lounge overhaul and the platform hub — L (owner, 2026-10-25)
 A full redesign of the Lounge plus a platform-wide hub: *What's new*, *Learn*, *Status* (incidents), *Case studies*, *Help* (support cases). Plan: [plans/2026-10-25-lounge-overhaul.md](plans/2026-10-25-lounge-overhaul.md). **Done when every slice's done-when holds.**
 
-### 3.25 Story interview — a guided path from idea to skeleton — M/L (owner idea, 2026-10-20)
-A step-by-step interview that builds the story's skeleton **before** dialogue is written, and teaches a newcomer the workflow as they go. **Done when a first-time user can answer the interview and land in the editor with a scene skeleton that persists, and a reload resumes mid-interview.**
+### 3.25 Story interview — a guided path from idea to skeleton — S left (owner idea, 2026-10-20)
+A stored, resumable interview that builds the story's skeleton before dialogue is written and teaches the craft as it goes. **Done when a first-time user can answer it and land in the editor with a scene skeleton that persists, and a reload resumes mid-interview (the e2e spec holds this).**
 
 ### 3.26 Story-structure templates — S/M (owner idea, 2026-10-20)
 Selectable structures to lay a skeleton over: three-act, five-act (Freytag), the hero's journey, the story circle, a seven-point outline, a beat sheet, and a free "none". **Done when a template can be chosen, applied, and reported on, and the beats it creates survive a reload.**
