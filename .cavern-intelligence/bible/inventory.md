@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**54 pages · 8 API routes · 102 tables · 75 database functions · 118 e2e specs**
+**54 pages · 8 API routes · 102 tables · 75 database functions · 119 e2e specs**
 
 ## Routes
 
@@ -36,7 +36,7 @@
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (297) | 72 files · components: crafts, projects, ui · lib: auth, brief, crafts, film, formats, island, os, print, push, roles, scriptos, studio, supabase, types, util, validation | call-sheets, push |
 | `/call` | signed in | `app/(suite)/call/page.tsx` (88) | 50 files · components: ui · lib: auth, film, formats, island, os, push, scriptos, studio, supabase, today, types, validation | performer-calls |
 | `/cavern` | signed in | `app/(suite)/cavern/page.tsx` (22) | 2 files · components: — · lib: cavern | **none** |
-| `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: Flag, community, home, landing, mobile, roles, ui · lib: auth, crafts, film, flags, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-personas, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, install, island-compact-dock, island-projects-keys, island, layout, mobile, page-errors, script-formats, shortcut-search, today-owner |
+| `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: Flag, community, home, landing, mobile, roles, ui · lib: auth, crafts, film, flags, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-personas, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, home-routing, install, island-compact-dock, island-projects-keys, island, layout, mobile, page-errors, script-formats, shortcut-search, today-owner |
 | `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 45 files · components: ui · lib: auth, credits, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 42 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, page-errors, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1540) | 225 files · components: Flag, ad, audio, breakdown, characters, editor, notes, phone, story, studio, ui · lib: ad, audio, auth, breakdown, brief, characters, errors, film, flags, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, push, scriptos, split, spotify, storage, story, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, cut-notes, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, mobile, notes, onboarding, page-errors, phases, phone-editor, reading-corrections, route-smoke, script-share, split, story-interview, studio-journey, table-read, writing-loop |
@@ -48,7 +48,7 @@
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (447) | 54 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, page-errors, reports, route-smoke |
 | `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 91 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, page-errors, phone-keyboard, route-smoke, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
-| `/` | public | `app/(suite)/page.tsx` (444) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, keyboard-audit, legal, real-data, route-smoke |
+| `/` | public | `app/(suite)/page.tsx` (444) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, home-routing, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 43 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
 | `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (484) | 42 files · components: portfolio, ui · lib: auth, formats, island, os, portfolio, push, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, portfolio-page, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 41 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, page-errors, your-data |
@@ -655,6 +655,7 @@
 | `hiring.spec.ts` | `/auth`, `/jobs`, `/jobs/*`, `/studio` |
 | `home-music.spec.ts` | `/auth`, `/community` |
 | `home-page-crash.spec.ts` | `/` |
+| `home-routing.spec.ts` | `/`, `/community` |
 | `install.spec.ts` | `/auth`, `/community` |
 | `island-activity.spec.ts` | `/auth`, `/editor`, `/studio` |
 | `island-call.spec.ts` | `/auth`, `/lounge` |

@@ -8,7 +8,7 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2 } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -600,11 +600,12 @@ export default function EcosystemTaskbar() {
             {([
               { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
               { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
+              { id: 'front', name: 'Front page', icon: Globe, path: '/' },
             ] as const).map(item => {
               const Icon = item.icon;
               return (
                 <span key={item.id} className={s.slot} data-tip={item.name}>
-                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={pathname.startsWith(item.path) ? 'page' : undefined}>
+                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={(item.path === '/' ? pathname === '/' : pathname.startsWith(item.path)) ? 'page' : undefined}>
                     <Icon size={19} strokeWidth={1.5} aria-hidden />
                   </Link>
                 </span>

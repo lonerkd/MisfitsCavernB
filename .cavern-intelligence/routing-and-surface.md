@@ -40,7 +40,7 @@ hide nav, ⌘K and island entries. Environment: `VERCEL_ENV` /
 
 | Route | Tier | Module | Key files |
 |---|---|---|---|
-| `/` | public | Landing | `app/(suite)/page.tsx`, `components/PhotoScatter`, `ParticleBackground` |
+| `/` | public | Landing — **the front page**, for everyone, signed in or out; never redirects (shared links and previews stay the same). Signed in, its button reads "Open Community". Reached from the shell by **Front page** (taskbar beside Profile / Settings, the phone's More sheet, the command palette) | `app/(suite)/page.tsx`, `components/PhotoScatter`, `ParticleBackground` |
 | `/auth` | public | Auth | `app/(suite)/auth/page.tsx`, `lib/supabase/auth.ts`, `lib/account/password-strength.ts` |
 | `/auth/callback` | public | Auth | OAuth code exchange |
 | `/auth/spotify-callback` | protected* | Soundtrack | `lib/spotify/*`, `SpotifyContext` |
@@ -74,6 +74,8 @@ hide nav, ⌘K and island entries. Environment: `VERCEL_ENV` /
 | `/admin/analytics` | admin | Admin | `lib/supabase/stats.ts` |
 | `/admin/audit-logs` | admin | Admin | `lib/supabase/audit.ts` |
 | `/admin/errors` | admin | Admin | errors people hit, grouped (`client_errors`, reported by `lib/errors/report.ts`) |
+
+**Two homes, one rule.** *Community* (`/community`) is the signed-in home: the installed app's `start_url`, the first tab, where sign-in lands and where every in-app "Home" goes (the editor's back arrow, the admin pages, the in-suite error pages, the Spotify callback, a non-admin turned away from `/admin`). *The front page* (`/`) is the public landing and stays reachable when signed in (above). Public and signed-out surfaces (share links, 404, auth errors) keep `/` as their home, since the visitor may not be signed in. A new "Home" link picks by that: inside the signed-in suite it is `/community`; on a public page it is `/`.
 
 \* `/auth/spotify-callback` isn't in the protected list but is only reached
 mid-OAuth from an authed session.

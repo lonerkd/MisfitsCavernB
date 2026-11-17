@@ -183,8 +183,8 @@ export default function Home() {
             transition={{ delay: 0.85, duration: 0.9 }}
           >
            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 40 }}>
-            <Button href={loggedIn ? '/projects' : '/auth'} variant="solid" size="lg">
-              {loggedIn ? 'Enter Studio' : 'Enter The Cavern'}
+            <Button href={loggedIn ? '/community' : '/auth'} variant="solid" size="lg">
+              {loggedIn ? 'Open Community' : 'Enter The Cavern'}
             </Button>
             <Button href="/portfolio" variant="ghost" size="lg">
               View Work
