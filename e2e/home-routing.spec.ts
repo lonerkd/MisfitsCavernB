@@ -12,7 +12,9 @@ test.describe('Home routing (local Supabase)', () => {
     // Desktop: the taskbar has a Front page entry beside Profile and Settings.
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/community');
-    await page.getByRole('link', { name: 'Front page' }).first().click();
+    const front = page.getByRole('link', { name: 'Front page' }).first();
+    if (!(await front.isVisible())) await page.getByRole('button', { name: /^Open the island/ }).click();
+    await front.click();
     await expect(page).toHaveURL(/\/$/);
     // The landing does not redirect, and its signed-in button now says where it goes.
     const open = page.getByRole('link', { name: 'Open Community' }).first();
@@ -21,14 +23,20 @@ test.describe('Home routing (local Supabase)', () => {
     await expect(page).toHaveURL(/\/community$/);
   });
 
-  test('on a phone the More sheet carries the Front page', async ({ page, stack }) => {
+  test('on a phone the menu sheet carries the Front page', async ({ browser, stack }) => {
     const user = await stack.createUser({ label: 'homephone' });
-    await stack.signIn(page, user);
-    await page.setViewportSize({ width: 393, height: 852 });
-    await page.goto('/community');
-    await page.getByRole('button', { name: /more/i }).first().click();
-    await page.getByRole('link', { name: 'Front page' }).click();
-    await expect(page).toHaveURL(/\/$/);
+    // The phone layout follows a touch pointer, not only the width.
+    const ctx = await browser.newContext({ viewport: { width: 393, height: 852 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    try {
+      await stack.signIn(page, user);
+      await page.goto('/community');
+      await page.getByRole('button', { name: /^Menu\./ }).click();
+      await page.getByRole('link', { name: 'Front page' }).click();
+      await expect(page).toHaveURL(/\/$/);
+    } finally {
+      await ctx.close();
+    }
   });
 
   test('a signed-out visitor still gets the landing at the domain', async ({ page }) => {
