@@ -64,3 +64,13 @@ export function dominantColours(rgba: ArrayLike<number>, count = 5): string[] {
       return '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('');
     });
 }
+
+/** What a board's share link shows: the board, its cards, and for a library item only what shows it. */
+export interface SharedBoardItem {
+  id: string; x: number; y: number; w: number; z: number; note: string | null;
+  media: { id: string; kind: string; title: string; storage_path: string | null; external_url: string | null; mime_type: string | null; width: number | null; height: number | null } | null;
+}
+export interface SharedBoard { name: string; template: BoardTemplate; project_title: string; items: SharedBoardItem[] }
+
+/** The address of a board's public page. */
+export const boardShareUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/b/${token}`;

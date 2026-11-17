@@ -14,6 +14,7 @@ import { logActivity } from '@/lib/supabase/activity';
 import { callFor, toSnapshot } from './call-sheet';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
+import type { SharedBoard } from './boards';
 import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
@@ -25,6 +26,7 @@ export type CharacterMedia = Tables<'character_media'>;
 export type Shot = Tables<'shots'>;
 export type MoodBoard = Tables<'mood_boards'>;
 export type MoodBoardItem = Tables<'mood_board_items'>;
+export type MoodBoardShare = Tables<'mood_board_shares'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
@@ -744,6 +746,40 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+
+  /** The board's share link, if it has one (only people who shape the project can read it). */
+  async function getBoardShare(boardId: string): Promise<MoodBoardShare | null> {
+    const { data, error } = await db.from('mood_board_shares').select('*').eq('board_id', boardId).maybeSingle();
+    if (error) fail(error, 'Could not read the board link');
+    return data;
+  }
+
+  async function shareBoard(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string): Promise<MoodBoardShare> {
+    const { data, error } = await db.from('mood_board_shares').insert({ board_id: board.id, project_id: board.project_id, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not make the board link');
+    return data;
+  }
+
+  /** Close the link: the address stops working at once. */
+  async function closeBoardShare(boardId: string): Promise<void> {
+    const { error } = await db.from('mood_board_shares').delete().eq('board_id', boardId);
+    if (error) fail(error, 'Could not close the board link');
+  }
+
+  /** A new address: the old one stops working at once. */
+  async function newBoardLink(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string): Promise<MoodBoardShare> {
+    await closeBoardShare(board.id);
+    return shareBoard(board, userId);
+  }
+
+  /** What a board's public link reads (anyone holding the token; null for a wrong or closed link). */
+  async function getSharedBoard(token: string): Promise<SharedBoard | null> {
+    const { data, error } = await db.rpc('get_shared_board', { p_token: token });
+    if (error) fail(error, 'Could not load the shared board');
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+    return data as unknown as SharedBoard;
+  }
+
   async function removeBoardItem(id: string): Promise<void> {
     const { error } = await db.from('mood_board_items').delete().eq('id', id);
     if (error) fail(error, 'Could not take that off the board');
@@ -1143,7 +1179,7 @@ export function createStudioApi(db: Client) {
   }
 
   return {
-    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
+    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, getBoardShare, shareBoard, closeBoardShare, newBoardLink, getSharedBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
