@@ -18,6 +18,7 @@ import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { ToolHeader } from '../ToolHeader';
 import { budgetDoc } from '@/lib/studio/budget-print';
+import { BudgetLines } from './BudgetLines';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -62,7 +63,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
         <>
           <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
             <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
-              next={lines.length === 0 ? { text: 'Set the budget on the project page to see it here.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
+              next={lines.length === 0 ? { text: runsBudget ? 'Add the first budget line below, or let the breakdown write them.' : 'No budget lines yet.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
               actions={<PrintButton label="the budget" build={() => budgetDoc({
                 project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -81,7 +82,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               ))}
             </div>
             {lines.length === 0 ? (
-              <p className={s.hint}>No budget lines yet. Set the budget on the project page.</p>
+              <p className={s.hint}>{runsBudget ? 'No budget lines yet. Add one below, or update from the breakdown.' : 'No budget lines yet.'}</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <caption className="sr-only">Each budget line: planned, committed, paid, left</caption>
@@ -105,6 +106,8 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               </table>
             )}
           </section>
+
+          {runsBudget && <BudgetLines projectId={project.id} userId={userId} lines={lines} onChange={() => { studio.listBudgetLines(project.id).then(setLines).catch(() => undefined); }} />}
 
           <SceneCostSection />
 

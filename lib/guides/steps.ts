@@ -253,11 +253,11 @@ const S: StepDef[] = [
     why: 'The shot list is how you know a day is shootable — and what to drop when you run late.',
     how: ['Open each scene in Studio › Scenes.', 'Add shots: size, angle, movement.', 'Link references to show the look.'],
   } },
-  { id: 'budget', phase: 'pre-production', title: 'Set a budget', place: hub('production'), hours: 3, milestone: 'budget', text: {
+  { id: 'budget', phase: 'pre-production', title: 'Set a budget', place: view('money'), hours: 3, milestone: 'budget', text: {
     do: 'Estimate the budget from the script, then adjust it.',
     tip: 'Keep 10% aside for what goes wrong.',
     why: 'A budget turns “can we afford this?” into lines you can say yes or no to.',
-    how: ['Estimate from the script on the project page.', 'Adjust lines to real quotes.', 'Track spend in Studio › Money as you go.'],
+    how: ['In Studio › Money, add lines or press Update from the breakdown.', 'Adjust lines to real quotes.', 'Track spend there as you go.'],
     watch: 'Feed people well. Food is the cheapest way to keep a crew.',
   } },
   { id: 'schedule', phase: 'pre-production', title: 'Schedule the shoot', place: view('schedule'), hours: 3, milestone: 'schedule', text: {
