@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { execFileSync } = require('child_process');
+const { execFileSync } = process.getBuiltinModule('node:child_process');
 const path = require('path');
 
 const ROOT_DIR = path.resolve(__dirname, '..');
