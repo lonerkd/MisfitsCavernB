@@ -194,6 +194,8 @@ export function OutlineView({
   onStoryInterview?: () => void;
 }) {
   const [structureId, setStructureId] = useState('none');
+  // The colour palette is closed until a scene's tag is pressed: six dots on every row were noise, and each is a 44 pt target on a phone.
+  const [paletteFor, setPaletteFor] = useState<number | null>(null);
   const structure = getStructure(structureId)!;
   const positions = scenesList.length > 1 ? scenesList.map((_, i) => i / (scenesList.length - 1)) : scenesList.map(() => 0);
   const coverage = checkCoverage(structure, positions);
@@ -236,23 +238,36 @@ export function OutlineView({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 4 }}>
                   <div onClick={() => jumpToScene(globalIdx)} title="Open this scene in the script" style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.slug, textTransform: 'var(--caps)', cursor: 'pointer' }}>{scene.text}</div>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {CARD_COLORS.map(color => {
-                      const active = sceneColors[globalIdx] === color;
-                      return (
-                      <button
-                        key={color}
-                        type="button"
-                        title={active ? 'Remove tag' : 'Tag scene'}
-                        aria-label={`${active ? 'Remove' : 'Set'} scene colour ${color}`}
-                        aria-pressed={active}
-                        onClick={() => tagScene(globalIdx, color)}
-                        // The button is the touch target (44 pt on a phone, by the global rule); the visible dot stays small inside it.
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-                      >
-                        <span aria-hidden style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', transition: 'all 0.15s' }} />
-                      </button>
-                    ); })}
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {paletteFor === globalIdx
+                      ? CARD_COLORS.map(color => {
+                        const active = sceneColors[globalIdx] === color;
+                        return (
+                        <button
+                          key={color}
+                          type="button"
+                          title={active ? 'Remove tag' : 'Tag scene'}
+                          aria-label={`${active ? 'Remove' : 'Set'} scene colour ${color}`}
+                          aria-pressed={active}
+                          onClick={() => { tagScene(globalIdx, color); setPaletteFor(null); }}
+                          // The button is the touch target (44 pt on a phone, by the global rule); the visible dot stays small inside it.
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          <span aria-hidden style={{ width: active ? 14 : 10, height: active ? 14 : 10, borderRadius: '50%', background: color, border: active ? '2px solid #fff' : '1px solid rgba(var(--ink-rgb), 0.1)', transition: 'all 0.15s' }} />
+                        </button>
+                      ); })
+                      : (
+                        <button
+                          type="button"
+                          title="Tag this scene with a colour"
+                          aria-label={sceneColors[globalIdx] ? `Scene colour ${sceneColors[globalIdx]}. Change` : 'Tag scene with a colour'}
+                          aria-expanded={false}
+                          onClick={() => setPaletteFor(globalIdx)}
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                        >
+                          <span aria-hidden style={{ width: 14, height: 14, borderRadius: '50%', boxSizing: 'border-box', background: sceneColors[globalIdx] || 'transparent', border: sceneColors[globalIdx] ? '2px solid #fff' : '1.5px dashed rgba(var(--ink-rgb), 0.35)' }} />
+                        </button>
+                      )}
                   </div>
                 </div>
                 {sceneNotes[globalIdx] && <div style={{ fontSize: 12, color: 'var(--fg-muted)', marginBottom: 4, fontStyle: 'italic' }}>“{sceneNotes[globalIdx]}”</div>}

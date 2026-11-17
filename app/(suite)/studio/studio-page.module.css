@@ -127,7 +127,7 @@
 
 @media (max-width: 640px) {
   .bar { padding: 0 14px; }
-  .projectPicker select { max-width: 160px; }
+  .projectPicker select { max-width: min(56vw, 240px); }
   .tabs { justify-content: flex-start; }
 }
 .tabLoading { min-height: 40vh; display: grid; place-items: center; }

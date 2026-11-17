@@ -58,9 +58,15 @@ export function retryDelayMs(attempts: number): number {
   return Math.min(RETRY_BASE_MS * 2 ** Math.max(0, attempts - 1), RETRY_MAX_MS);
 }
 
+/** Whether the network is up. Node 21+ defines a global `navigator` with no `onLine`, so the server must read "no answer" as
+    online: reading it as offline made the server draw an "Offline" chip the browser then disagreed with (React error #418). */
+export function readOnline(nav: { onLine?: boolean } | undefined = typeof navigator === 'undefined' ? undefined : navigator): boolean {
+  return nav?.onLine !== false;
+}
+
 let status: SyncStatus = {
   pending: 0, deletes: 0, syncing: false, nextRetryAt: null, attempts: 0,
-  online: typeof navigator === 'undefined' ? true : navigator.onLine,
+  online: readOnline(),
 };
 const listeners = new Set<() => void>();
 
