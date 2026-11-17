@@ -28,7 +28,7 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    "Resume here" if there is one) — then the newest notes in
    [`sessions/`](sessions/README.md) for what the last PRs did (Claude Code
    prints the latest three at start).
-3. [`BACKLOG.md`](BACKLOG.md) — every open task, scoped. Pick from it.
+3. [`BACKLOG.md`](BACKLOG.md) — every open task: the owner's list in full, then one line per upgrade (a generated index). Pick from it, then read the item's full text in [`backlog-detail.md`](backlog-detail.md); **edit items there**, never in the index, and `npm run sync-intel` regenerates it.
 4. [`INDEX.md`](INDEX.md) — the map: where everything else is, the playbook
    included. Nothing else is a required read to start.
 
@@ -67,7 +67,7 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    changing auth settings, or a design decision the owner hasn't made.
 8. **Docs move with code.** A change to files, architecture or access
    updates the doc that owns it in the same PR, then `npm run sync-intel`,
-   then a session note and `BACKLOG.md` (`STATE.md` only when the handoff
+   then a session note and `backlog-detail.md` (`STATE.md` only when the handoff
    changes).
 9. **The free tiers are the budget.** Vercel Hobby (10 GB deployment storage,
    100 deployments a day), Supabase free (2 projects), GitHub Actions minutes.
@@ -96,7 +96,7 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
 5. **Verify** — the commands above; for UI, look at it (`npm run dev`, or the
    `run-misfits-cavern` skill); for realtime, two sessions at once.
 6. **Sync** — `npm run sync-intel`; add a note for this PR in `sessions/`
-   (`YYYY-MM-DD-slug.md` — a new file, so it never conflicts); BACKLOG gains
+   (`YYYY-MM-DD-slug.md` — a new file, so it never conflicts); `backlog-detail.md` gains
    what was found and not done (what, where, size, done-when) and loses what's
    done. Edit `STATE.md` only when the handoff itself changes (a decision,
    work finished or opened, something the owner must do).
