@@ -159,3 +159,61 @@ describe('every other topic is private too, by who it belongs to', () => {
     expect(await canWrite(cast.sam.id, 'projects:list')).toBe(false);
   });
 });
+
+describe('Lounge topics follow who can see the channel', () => {
+  const channel = async (row: Record<string, unknown>): Promise<string> => {
+    const name = `rt-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const ins = await cast.sam.client.from('channels').insert({ ...row, name, created_by: cast.sam.id });
+    if (ins.error) throw ins.error;
+    const q = cast.sam.client.from('channels').select('id').eq('name', name);
+    const { data, error } = await q.single();
+    if (error) throw error;
+    return data.id;
+  };
+
+  it("a project channel's typing, voice and chan topics reach crew, never the outsider", async () => {
+    const id = await channel({ project_id: projectId });
+    for (const t of [`typing:${id}`, `voice:${id}`, `chan:${id}`]) {
+      expect(await canRead(cast.jordan.id, t)).toBe(true);
+      expect(await canRead(cast.riley.id, t)).toBe(false);
+    }
+    expect(await canWrite(cast.jordan.id, `typing:${id}`)).toBe(true);
+    expect(await canWrite(cast.riley.id, `typing:${id}`)).toBe(false);
+    expect(await canWrite(cast.riley.id, `voice:${id}`)).toBe(false);
+    // chan: is receive-only (row events); nobody sends on it.
+    expect(await canWrite(cast.sam.id, `chan:${id}`)).toBe(false);
+  });
+
+  it('a private channel is for its members only, on every one of its topics', async () => {
+    const id = await channel({ project_id: projectId, is_private: true });
+    for (const t of [`typing:${id}`, `voice:${id}`, `chan:${id}`]) {
+      expect(await canRead(cast.riley.id, t)).toBe(false);
+      expect(await canRead(cast.jordan.id, t)).toBe(false); // crew on the project, but not a member
+      expect(await canRead(cast.sam.id, t)).toBe(true); // the owner
+    }
+    const add = await cast.sam.client.from('channel_members').insert({ channel_id: id, user_id: cast.jordan.id, can_post: true });
+    expect(add.error).toBeNull();
+    for (const t of [`typing:${id}`, `voice:${id}`, `chan:${id}`]) {
+      expect(await canRead(cast.jordan.id, t)).toBe(true);
+      expect(await canRead(cast.riley.id, t)).toBe(false);
+    }
+    expect(await canWrite(cast.jordan.id, `typing:${id}`)).toBe(true);
+    expect(await canWrite(cast.riley.id, `typing:${id}`)).toBe(false);
+  });
+
+  it('a channel that does not exist opens for nobody', async () => {
+    const ghost = randomUUID();
+    for (const t of [`typing:${ghost}`, `voice:${ghost}`, `chan:${ghost}`]) {
+      expect(await canRead(cast.sam.id, t)).toBe(false);
+    }
+  });
+
+  it("notes_<id> follows the script or the project, not the outsider", async () => {
+    for (const id of [scriptId, projectId]) {
+      expect(await canRead(cast.jordan.id, `notes_${id}`)).toBe(true);
+      expect(await canRead(cast.riley.id, `notes_${id}`)).toBe(false);
+    }
+    expect(await canRead(cast.sam.id, `notes_${personalScriptId}`)).toBe(false);
+    expect(await canRead(cast.riley.id, `notes_${personalScriptId}`)).toBe(true);
+  });
+});
