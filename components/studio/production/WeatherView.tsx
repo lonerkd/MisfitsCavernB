@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Cloud, CloudRain, CloudSun, Loader2, MapPin, PenLine, Sun, Wind } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useProjectLocations, useShootDays, studio, type ShootDay } from '@/lib/studio';
+import { dayExposure, weatherAdvice } from '@/lib/studio/weather-plan';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { ToolHeader } from '../ToolHeader';
@@ -52,7 +53,7 @@ function isBad(code: number | null, precip: number | null, wind: number | null):
 }
 
 export function WeatherView() {
-  const { project, scriptId } = useStudio();
+  const { project, scriptId, scenes } = useStudio();
   const locations = useProjectLocations(project.id);
   const shootDays = useShootDays(project.id);
   const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
@@ -167,7 +168,10 @@ export function WeatherView() {
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
         {datedDays.map((day) => {
           const w = day.shoot_date ? weather[day.shoot_date] : null;
-          const bad = w ? isBad(w.weatherCode, w.precipitation, w.windSpeed) : false;
+          const exposure = dayExposure(scenes.rows, day.day_number);
+          // Weather only matters to the exteriors scheduled that day; an interior day is not at risk whatever the sky does.
+          const stormy = w ? isBad(w.weatherCode, w.precipitation, w.windSpeed) : false;
+          const bad = stormy && exposure.exterior.length > 0;
           return (
             <li key={day.id} className={s.panel} style={{ padding: 12, borderLeft: bad ? '3px solid var(--danger)' : undefined }}>
               <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -190,9 +194,9 @@ export function WeatherView() {
                 )}
                 {!w && !loading && <span className={s.hint}>No forecast data</span>}
               </div>
-              {w && bad && (
-                <p className={s.hint} style={{ margin: '6px 0 0', color: 'var(--danger)' }}>
-                  Conditions may affect the shoot — consider a backup plan or a different day.
+              {w && (
+                <p className={s.hint} style={{ margin: '6px 0 0', color: bad ? 'var(--danger)' : undefined }}>
+                  {weatherAdvice(exposure, stormy)}
                 </p>
               )}
             </li>
