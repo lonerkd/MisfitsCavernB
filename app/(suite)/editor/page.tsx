@@ -54,6 +54,7 @@ import { useFindReplace } from '@/components/editor/useFindReplace';
 import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
 import { StoryInterview } from '@/components/story/StoryInterview';
+import { skeletonFountain, type SkeletonScene } from '@/lib/story/interview';
 import { RelationshipMap } from '@/components/characters/RelationshipMap';
 import type { Relationship } from '@/lib/characters/depth';
 import { SceneMusic } from '@/components/editor/SceneMusic';
@@ -758,9 +759,11 @@ export default function EditorPage() {
     return rows;
   }, [lines, scenesList, timing.pages]);
 
-  const applySkeleton = (scenes: { title: string }[]) => {
-    const block = scenes.map((s) => `INT. ${s.title.toUpperCase()} - DAY`).join('\n\n');
-    setContent((prev) => (prev ? prev + '\n\n' + block : block));
+  const applySkeleton = (scenes: SkeletonScene[]) => {
+    const { text, added, skipped } = skeletonFountain(scenes, content);
+    if (added === 0) { toast('Every beat of this skeleton is already in the script.', 'info'); setShowStoryInterview(false); return; }
+    setContent((prev) => (prev.trim() ? prev.replace(/\s+$/, '') + '\n\n' + text : text));
+    toast(`Added ${added} scene${added === 1 ? '' : 's'} to the script${skipped ? ` (${skipped} already there)` : ''}. Replace each TBD with the real place.`, 'success');
     setShowStoryInterview(false);
   };
 
@@ -1202,6 +1205,7 @@ export default function EditorPage() {
               sceneFilter={sceneFilter} setSceneFilter={setSceneFilter} filteredScenes={filteredScenes}
               scenesList={scenesList} lines={lines} sceneColors={sceneIndex.colors} sceneNotes={sceneIndex.notes}
               jumpToScene={jumpToScene} tagScene={sceneIndex.tag}
+              onStoryInterview={() => setShowStoryInterview(true)}
             />
           )}
 
