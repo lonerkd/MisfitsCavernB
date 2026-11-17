@@ -7,7 +7,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { deleteRecords, listRecords, subscribeToRecords, upsertRecords, type RecordItem } from '@/lib/supabase/productionRecords';
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
+import { undoPlan } from '@/lib/studio/record-undo';
+import { enqueue, flushQueue, isNetworkFailure, readQueue } from '@/lib/studio/record-queue';
+import { deleteRecords, listRecords, subscribeToRecords, upsertRecords, type RecordItem, type RecordKind } from '@/lib/supabase/productionRecords';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { useStudio } from '../StudioContext';
 
@@ -29,6 +32,15 @@ export function saveFailureMessage(e: unknown): string {
   return message || 'Could not save. Check your connection and try again.';
 }
 
+/** What the server has, with this device's not-yet-sent changes laid over it, so an offline save does not vanish on a refresh. */
+function withQueued<T extends { id: string }>(rows: T[], projectId: string, kind: string): T[] {
+  const mine = readQueue().filter((c) => c.projectId === projectId && c.kind === kind);
+  if (mine.length === 0) return rows;
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  for (const c of mine) { if (c.record) byId.set(c.id, c.record as unknown as T); else byId.delete(c.id); }
+  return [...byId.values()];
+}
+
 export function useSettingsList<K extends SettingsListKey>(key: K) {
   type Item = SettingsListItem<K> & { id: string };
   const { project } = useStudio();
@@ -43,19 +55,37 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
   useEffect(() => {
     let live = true;
     listRecords(project.id, key).then(
-      (rows) => { if (live) setItems(rows as Item[]); },
+      (rows) => { if (live) setItems(withQueued(rows as Item[], project.id, key)); },
       (e) => { if (live) toast(saveFailureMessage(e) || 'Could not load this list.', 'error'); },
     );
     return () => { live = false; };
   }, [project.id, key, tick, toast]);
 
+  // Send what was saved offline, now and whenever the connection comes back.
+  useEffect(() => {
+    let alive = true;
+    const flush = () => {
+      if (readQueue().length === 0) return;
+      void flushQueue({ upsert: (p, k, r) => upsertRecords(p, k as RecordKind, r as unknown as RecordItem[]), remove: (p, k, ids) => deleteRecords(p, k as RecordKind, ids) }).then((r) => {
+        if (!alive) return;
+        if (r.sent > 0) { toast(r.sent === 1 ? 'Sent the change saved offline.' : `Sent ${r.sent} changes saved offline.`, 'success'); reload(); }
+        for (const x of r.refused) toast(`A change saved offline was refused: ${saveFailureMessage({ message: x.message })}`, 'error');
+      });
+    };
+    flush();
+    window.addEventListener('online', flush);
+    return () => { alive = false; window.removeEventListener('online', flush); };
+  }, [toast, reload]);
+
   useEffect(() => subscribeToRecords(project.id, key, () => { if (!busy.current) reload(); }), [project.id, key, reload]);
 
   /** Saves the list: new and changed records are written, records missing from it are removed. True when saved. */
-  const save = useCallback(async (next: Item[]): Promise<boolean> => {
+  /** `undoable: false` for a write that is itself an undo. */
+  const save = useCallback(async (next: Item[], opts: { undoable?: boolean } = {}): Promise<boolean> => {
     if (busy.current) { toast('Still saving the last change. Try again in a moment.', 'info'); return false; }
     busy.current = true;
     setSaving(true);
+    const origin = undoOrigin(); // where the save is made, taken before the first await
     try {
       const before = new Map(items.map((i) => [i.id, JSON.stringify(i)]));
       const changed = next.filter((i) => before.get(i.id) !== JSON.stringify(i)) as unknown as RecordItem[];
@@ -64,8 +94,23 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
       await upsertRecords(project.id, key, changed);
       await deleteRecords(project.id, key, gone);
       setItems(next);
+      const plan = opts.undoable === false ? null : undoPlan(items, next);
+      if (plan) {
+        pushUndo(plan.label, async () => {
+          await upsertRecords(project.id, key, plan.restore as unknown as RecordItem[]);
+          await deleteRecords(project.id, key, plan.drop);
+          reload();
+        }, origin);
+      }
       return true;
     } catch (e) {
+      if (isNetworkFailure(e)) {
+        // No connection: keep the change on this device and send it when it is back, as the script editor does.
+        const was = new Map(items.map((i) => [i.id, JSON.stringify(i)]));
+        const nextIds = new Set(next.map((i) => i.id));
+        const queued = enqueue(project.id, key, next.filter((i) => was.get(i.id) !== JSON.stringify(i)) as unknown as Array<{ id: string } & Record<string, unknown>>, items.filter((i) => !nextIds.has(i.id)).map((i) => i.id));
+        if (queued) { setItems(next); toast('No connection. Saved on this device; it will send when you are back online.', 'info'); return true; }
+      }
       toast(saveFailureMessage(e), 'error');
       reload();
       return false;
@@ -77,7 +122,7 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
 
   /** Asks first (this cannot be undone), then removes the record. */
   const remove = useCallback(async (id: string, what = 'this entry'): Promise<boolean> => {
-    const ok = await confirm({ title: 'Delete?', message: `Delete ${what}? This cannot be undone.`, confirmLabel: 'DELETE', danger: true });
+    const ok = await confirm({ title: 'Delete?', message: `Delete ${what}? Ctrl/⌘ Z brings it back.`, confirmLabel: 'DELETE', danger: true });
     if (!ok) return false;
     return save(items.filter((i) => i.id !== id));
   }, [confirm, save, items]);
