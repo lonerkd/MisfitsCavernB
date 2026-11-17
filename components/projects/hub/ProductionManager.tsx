@@ -255,7 +255,8 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           {!noBudget && (
             <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>
               {budget.length === 0 ? 'No budget lines yet. ' : `${budget.length} budget line${budget.length === 1 ? '' : 's'}. `}
-              The budget lives in <Link href="/studio?tab=production&view=money" className="mc-hit" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Studio › Money</Link>: lines, spend, vendors and what is left.
+              The budget lives in Studio › Money: lines, spend, vendors and what is left.
+              {' '}<Link href="/studio?tab=production&view=money" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, color: 'var(--fg)', textDecoration: 'underline' }}>Open the budget</Link>
             </p>
           )}
         </Panel>

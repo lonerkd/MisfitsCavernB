@@ -62,7 +62,7 @@ test.describe('Production Management (local Supabase)', () => {
 
     // The budget has one home, Studio › Money: the project page points there and carries no budget form of its own.
     await expect(sam.getByPlaceholder('Category')).toHaveCount(0);
-    await expect(sam.getByRole('link', { name: /Studio › Money/ })).toBeVisible();
+    await expect(sam.getByRole('link', { name: 'Open the budget' })).toBeVisible();
 
     // A milestone.
     await sam.getByPlaceholder('Milestone').fill(`Picture lock ${TAG}`);
