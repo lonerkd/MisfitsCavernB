@@ -416,11 +416,8 @@
     }
   },
   "components/projects/hub/ProductionManager.tsx": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 2
     }
   },
   "components/shell/CommandPalette.tsx": {

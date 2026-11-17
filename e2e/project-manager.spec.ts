@@ -60,11 +60,11 @@ test.describe('Production Management (local Supabase)', () => {
     await sam.getByRole('button', { name: 'toggle', exact: true }).click();
     await expect.poll(async () => (await admin.from('project_tasks').select('completed').eq('project_id', projectId).single()).data?.completed).toBe(true);
 
-    // A budget line and a milestone.
-    await sam.getByPlaceholder('Category').fill('Catering');
-    await sam.getByPlaceholder('Amount').fill('450');
-    await sam.getByPlaceholder('Amount').press('Enter');
-    await expect.poll(async () => (await admin.from('budget_items').select('category, amount').eq('project_id', projectId)).data).toEqual([{ category: 'Catering', amount: 450 }]);
+    // The budget has one home, Studio › Money: the project page points there and carries no budget form of its own.
+    await expect(sam.getByPlaceholder('Category')).toHaveCount(0);
+    await expect(sam.getByRole('link', { name: 'Open the budget' })).toBeVisible();
+
+    // A milestone.
     await sam.getByPlaceholder('Milestone').fill(`Picture lock ${TAG}`);
     await sam.getByPlaceholder('Milestone').press('Enter');
     await expect.poll(async () => (await admin.from('timeline_items').select('title').eq('project_id', projectId)).data?.map((r) => r.title)).toEqual([`Picture lock ${TAG}`]);

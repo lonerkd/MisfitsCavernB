@@ -156,7 +156,7 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'shots', phase: 'pre-production', label: 'Plan your shots', hint: 'A shot list for each scene.',
     place: { kind: 'studio', tab: 'scenes' }, done: (s) => s.shots > 0 },
   { id: 'budget', phase: 'pre-production', label: 'Set a budget', hint: 'Estimate one from the script, then adjust.',
-    place: { kind: 'hub', anchor: 'production' }, done: (s) => s.budget_lines > 0 },
+    place: { kind: 'studio', tab: 'production', view: 'money' }, done: (s) => s.budget_lines > 0 },
   { id: 'schedule', phase: 'pre-production', label: 'Date your first shoot day', hint: 'Schedule → call sheet with a date.',
     place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets > 0 },
 

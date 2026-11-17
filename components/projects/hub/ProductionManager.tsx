@@ -3,15 +3,12 @@
 import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Briefcase, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import * as hub from '@/lib/supabase/project-hub';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { getProductionData, type BudgetRow, type CrewRow, type FestivalRow, type PortfolioRow, type TaskRow, type TimelineRow } from '@/lib/supabase/project-hub';
-import { breakdown, costByCategory } from '@/lib/breakdown';
-import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { notify } from '@/lib/supabase/notifications';
-import { usePillZone } from '@/lib/os/PillContext';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import { SCRIPT_FORMATS, type ScriptFormat } from '@/lib/formats/script-formats';
@@ -21,7 +18,6 @@ import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { NeedsCapability } from '@/components/roles/NeedsCapability';
-import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
 import { MentionInput, MentionText } from '@/components/film/Mentions';
@@ -34,10 +30,9 @@ const FESTIVAL_STATUS_COLOR: Record<FestivalRow['status'], string> = {
 
 const MINI_INPUT: React.CSSProperties = { background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 4, padding: '2px 4px', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', colorScheme: 'dark' };
 
-/** Everything the production manager shows, and which budget lines are already posted as jobs. */
+/** Everything the production manager shows. */
 async function fetchProjectPage(projectId: string) {
-  const [data, posted] = await Promise.all([getProductionData(projectId), getBudgetItemIdsWithJobs(projectId)]);
-  return { ...data, posted };
+  return getProductionData(projectId);
 }
 
 export function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
@@ -48,18 +43,13 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   // The budget is held by the roles that run the money: seeing it and changing it are separate (the database decides).
   const caps = useMyCapabilities(projectId);
   const noBudget = !caps.loading && !caps.can('budget.read');
-  const canWriteBudget = caps.can('budget.write');
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
   const [crew, setCrew] = useState<CrewRow[]>([]);
   const [owner, setOwner] = useState<{ id: string; username: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [breakdownNote, setBreakdownNote] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
 
-  const [postedBudgetIds, setPostedBudgetIds] = useState<Set<string>>(new Set());
-  const [postingBudgetId, setPostingBudgetId] = useState<string | null>(null);
 
   const [portfolio, setPortfolio] = useState<PortfolioRow[]>([]);
   const [settings, setSettings] = useState<ProjectSettings>({ modules: { scriptos: true, studio: true, lounge: true, portfolio: true, distribution: true } });
@@ -79,7 +69,6 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
         setTimeline(d.timeline);
         setCrew(d.crew);
         setPortfolio(d.portfolio);
-        setPostedBudgetIds(d.posted);
         if (d.settings) setSettings(d.settings);
         setFestivals(d.festivals);
         setOwner(d.owner);
@@ -143,58 +132,6 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
     const prev = tasks;
     setTasks(p => p.filter(x => x.id !== id));
     if (!await attempt(() => hub.deleteTask(id))) setTasks(prev);
-  };
-
-  const addBudget = async (category: string, amount: number) => {
-    let row: BudgetRow | undefined;
-    if (await attempt(async () => { row = await hub.addBudgetItem(projectId, userId, category, amount); })) setBudget(p => [...p, row!]);
-  };
-  const delBudget = async (id: string) => {
-    if (!await confirm('Delete this budget line? This cannot be undone.')) return;
-    const prev = budget;
-    setBudget(p => p.filter(x => x.id !== id));
-    if (!await attempt(() => hub.deleteBudgetItem(id))) setBudget(prev);
-  };
-
-  const postJobFromBudget = async (b: BudgetRow) => {
-    if (!userId || postedBudgetIds.has(b.id)) return;
-    setPostingBudgetId(b.id);
-    writes.current += 1;
-    try {
-      // The job's craft: the one this budget line is about (a job needs one from the crafts list).
-      const craft = suggestCraft(b.category, await loadCrafts());
-      await createJob(projectId, userId, b.category.replace(/^Breakdown · /, ''), craft, '', Number(b.amount) || undefined, b.id);
-      setPostedBudgetIds(prev => new Set(prev).add(b.id));
-      toast(`Posted "${b.category}" to the Jobs board`, 'success');
-    } catch (e: any) {
-      toast(e.message || 'Could not post this as a job', 'error');
-    } finally {
-      setPostingBudgetId(null);
-    }
-  };
-  const setActual = async (id: string, actual: number | null) => {
-    const before = budget.find(x => x.id === id)?.actual_cost ?? null;
-    setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: actual } : x));
-    if (!await attempt(() => hub.setBudgetActual(id, actual))) setBudget(p => p.map(x => x.id === id ? { ...x, actual_cost: before } : x));
-  };
-
-  // The budget's breakdown lines come from the breakdown itself: each
-  // element's cost, or its category's unit cost (Studio › Production › Breakdown).
-  const syncFromBreakdown = async () => {
-    setAnalyzing(true); setErr(null);
-    try {
-      const [cats, els] = await Promise.all([breakdown.listCategories(projectId), breakdown.listElements(projectId)]);
-      const costs = costByCategory(cats, els);
-      if (!els.length) { setBreakdownNote('Nothing tagged yet — break the script down in ScriptOS (tag mode) first.'); return; }
-      const r = await breakdown.syncBudget(projectId, costs.map((c) => ({ label: c.category.label, amount: c.amount })));
-      await load();
-      const unpriced = costs.reduce((n, c) => n + c.unpriced, 0);
-      setBreakdownNote(`${els.length} elements · $${Math.round(costs.reduce((n, c) => n + c.amount, 0)).toLocaleString()}${unpriced ? ` · ${unpriced} still unpriced` : ''}${r.added + r.updated + r.removed ? '' : ' · already up to date'}`);
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setAnalyzing(false);
-    }
   };
 
   const addTimeline = async (title: string, start: string, end: string) => {
@@ -263,8 +200,6 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   ];
 
   const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
-  const totalActual = budget.reduce((s, b) => s + Number(b.actual_cost || 0), 0);
-  const hasActuals = budget.some(b => b.actual_cost != null);
 
   return (
     <div style={{ marginTop: 40 }}>
@@ -317,38 +252,13 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
           {noBudget && <NeedsCapability projectId={projectId} capability="budget.read" lead="The budget is held by the people who run the money." />}
-          {!noBudget && budget.length === 0 && <Empty>No budget items</Empty>}
-          {!noBudget && budget.length > 0 && (
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: '0 0 8px' }}>
-              Actuals follow what’s paid in <Link href="/studio?tab=production&view=money" style={{ color: 'var(--fg)', textDecoration: 'underline' }}>Studio › Money</Link> — spend, vendors and timesheets.
+          {!noBudget && (
+            <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>
+              {budget.length === 0 ? 'No budget lines yet. ' : `${budget.length} budget line${budget.length === 1 ? '' : 's'}. `}
+              The budget lives in Studio › Money: lines, spend, vendors and what is left.
+              {' '}<Link href="/studio?tab=production&view=money" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, color: 'var(--fg)', textDecoration: 'underline' }}>Open the budget</Link>
             </p>
           )}
-          {!noBudget && budget.map(b => (
-            <BudgetRowItem
-              key={b.id} item={b} posted={postedBudgetIds.has(b.id)} posting={postingBudgetId === b.id}
-              onSetActual={actual => setActual(b.id, actual)}
-              onPostJob={() => postJobFromBudget(b)}
-              onDelete={() => delBudget(b.id)}
-              readOnly={!canWriteBudget}
-            />
-          ))}
-          {!noBudget && hasActuals && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid rgba(var(--ink-rgb), 0.06)', fontFamily: 'var(--mono)', fontSize: 11 }}>
-              <span style={{ color: 'var(--fg-dim)' }}>Actual ${totalActual.toLocaleString()} / Planned ${totalBudget.toLocaleString()}</span>
-              <span style={{ color: totalActual > totalBudget ? 'var(--danger)' : 'var(--ok)' }}>{totalActual > totalBudget ? '+' : ''}{(totalActual - totalBudget).toLocaleString()}</span>
-            </div>
-          )}
-          {canWriteBudget && <>
-          <AddForm placeholder="Category" second="Amount" fields={['text', 'number']} onSubmit={(v) => v[0] && addBudget(v[0], Number(v[1] || 0))} accent={accent} />
-
-          <button onClick={syncFromBreakdown} disabled={analyzing} style={{ marginTop: 8, width: '100%', background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.3)', color: 'var(--violet)', borderRadius: 8, padding: '6px 10px', cursor: analyzing ? 'wait' : 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>
-            {analyzing ? 'READING THE BREAKDOWN…' : '✦ UPDATE FROM THE BREAKDOWN'}
-          </button>
-          <div style={{ marginTop: 6, fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', lineHeight: 1.5 }}>
-            {breakdownNote ?? 'Writes one “Breakdown · …” line per category from element costs. '}
-            {' '}<Link href="/studio?tab=production&view=breakdown" className="mc-hit" style={{ color: 'var(--violet)', textDecoration: 'underline', textUnderlineOffset: 2 }}>Open the breakdown →</Link>
-          </div>
-          </>}
         </Panel>
 
         <Panel title="Timeline" accent={accent}>
@@ -465,68 +375,6 @@ function Empty({ children }: { children: React.ReactNode }) {
 }
 function DelBtn({ onClick }: { onClick: () => void }) {
   return <button type="button" onClick={onClick} aria-label="Delete" style={{ background: 'none', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', fontSize: 13, lineHeight: 1, flexShrink: 0, minWidth: 24, minHeight: 24 }} onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.7')}>×</button>;
-}
-
-function BudgetRowItem({
-  item, posted, posting, onSetActual, onPostJob, onDelete, readOnly,
-}: {
-  item: BudgetRow;
-  posted: boolean;
-  posting: boolean;
-  onSetActual: (actual: number | null) => void;
-  onPostJob: () => void;
-  onDelete: () => void;
-  /** Seeing the budget is not changing it: no actual box, no Post as job, no delete. */
-  readOnly?: boolean;
-}) {
-  const over = item.actual_cost != null && Number(item.actual_cost) > Number(item.amount);
-  const zoneHandlers = usePillZone({
-    module: 'home',
-    title: item.category,
-    accent: over ? '#ff6b6b' : '#8b5cf6',
-    fields: [
-      { label: 'Planned', value: `$${Number(item.amount).toLocaleString()}` },
-      ...(item.actual_cost != null ? [{ label: 'Actual', value: `$${Number(item.actual_cost).toLocaleString()}`, color: over ? 'var(--danger)' : undefined }] : []),
-    ],
-    actions: posted || readOnly ? [] : [{ id: 'post-job', slot: 'create', label: '→ Post as Job', onClick: onPostJob }],
-  }, 2);
-
-  return (
-    <div onMouseEnter={zoneHandlers.onMouseEnter} onMouseLeave={zoneHandlers.onMouseLeave} onClick={zoneHandlers.onClick}>
-      <Row>
-        <span style={{ flex: 1, fontSize: 11 }}>{item.category}</span>
-        <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }} title="planned">${Number(item.amount).toLocaleString()}</span>
-        {readOnly ? (
-          <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: over ? 'var(--danger)' : 'var(--fg-dim)', minWidth: 64, textAlign: 'right' }} title="actual">{item.actual_cost != null ? `$${Number(item.actual_cost).toLocaleString()}` : '—'}</span>
-        ) : <>
-        <input
-          type="number"
-          defaultValue={item.actual_cost ?? ''}
-          placeholder="actual"
-          onBlur={(e) => { const v = e.target.value.trim(); onSetActual(v === '' ? null : Number(v)); }}
-          style={{ width: 64, background: 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${over ? 'rgba(255,80,80,0.5)' : 'rgba(var(--ink-rgb), 0.08)'}`, borderRadius: 4, padding: '3px 5px', color: over ? 'var(--danger)' : 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, textAlign: 'right', outline: 'none' }}
-        />
-        <button
-          onClick={onPostJob}
-          disabled={posted || posting}
-          title={posted ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}
-          aria-label="Post as job"
-          style={{
-            background: posted ? 'rgba(16,185,129,0.1)' : 'rgba(var(--ink-rgb), 0.04)',
-            border: `1px solid ${posted ? 'rgba(16,185,129,0.3)' : 'rgba(var(--ink-rgb), 0.1)'}`,
-            borderRadius: 4, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: posted ? 'default' : 'pointer', flexShrink: 0,
-            color: posted ? 'var(--ok)' : 'var(--fg-dim)',
-            opacity: posting ? 0.5 : 1,
-          }}
-        >
-          <Briefcase size={11} />
-        </button>
-        <DelBtn onClick={onDelete} />
-        </>}
-      </Row>
-    </div>
-  );
 }
 
 function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: { placeholder: string; second?: string; fields: string[]; dateLabels?: string[]; onSubmit: (vals: string[]) => void; accent: string }) {
