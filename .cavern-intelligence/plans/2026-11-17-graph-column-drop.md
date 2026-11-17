@@ -4,6 +4,10 @@ BACKLOG 3.18 (e), step 5 of [2026-10-27-graph-cutover-audit.md](2026-10-27-graph
 and cannot be rolled back by a deploy, so nothing here is applied until the owner says yes (RULES 7). This note measures what each
 column still is, so the owner decides on facts.
 
+## Correction, same day, after the owner said yes and the database was read
+
+The verdict below that `scenes.cast_list` is a true duplicate was wrong. **It is the input of the graph's own link**: the trigger `internal.scenes_link_cast` turns the text into `scene_characters` (and creates the `characters`) on every scenes write; `internal.characters_rename` rewrites the text on a rename; and `public.sync_script_scenes` (invoker rights, no access to `internal`) is the only writer, from the script. Production and staging are clear (0 scenes know their cast only from the text; 25 of 50 production scenes carry the text, all linked), and nothing else reads it. But dropping it means moving the linking out of the trigger into a new function the sync calls (in `public`, since the sync cannot reach `internal`), rewriting `sync_script_scenes` and `characters_rename`, and reworking about a dozen integration tests, the demo seed and three e2e specs that insert scenes with `cast_list`. Size **L**, risk medium, for no change a person sees. **Recommendation: keep it** and call the text what it is, the script's own cast cue, from which the links are derived; BACKLOG 3.18 (e) closes as "keep". Nothing was changed.
+
 ## What each column is today
 
 | Column | The graph's replacement | Still written by | Verdict |
