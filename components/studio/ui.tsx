@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 import s from './studio.module.css';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
@@ -88,9 +89,18 @@ export function Modal({ title, onClose, children, actions, narrow }: { title: st
   }, []);
 
   const titleId = `modal-${title.replace(/\W+/g, '-').toLowerCase()}`;
+  // While the phone keyboard is up the dialog lives in what is still visible: iOS does not shrink the layout viewport for it, so a
+  // modal sized to 100vh and centred ran under the keyboard and hid the field being typed in (worst in landscape, where it covers most of the screen).
+  const phone = usePhoneLayout();
+  const typing = phone.typing;
+  useEffect(() => {
+    if (!typing) return;
+    const t = setTimeout(() => (document.activeElement as HTMLElement | null)?.scrollIntoView?.({ block: 'nearest' }), 60);
+    return () => clearTimeout(t);
+  }, [typing, phone.height]);
   return createPortal(
-    <div className={s.backdrop} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className={cx(s.page, s.modal, narrow && s.modalNarrow)}>
+    <div className={s.backdrop} style={typing ? { top: phone.offset, bottom: 'auto', height: phone.height, alignItems: 'flex-start', padding: 8 } : undefined} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className={cx(s.page, s.modal, narrow && s.modalNarrow)} style={typing ? { maxHeight: phone.height - 16 } : undefined}>
         <div className={s.modalHead}>
           <div id={titleId} className={s.modalTitle}>{title}</div>
           <div className={s.actions}>
