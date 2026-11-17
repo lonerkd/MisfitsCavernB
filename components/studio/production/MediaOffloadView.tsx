@@ -14,7 +14,7 @@ const STATUSES: MediaEntry['status'][] = ['pending', 'verified', 'archived'];
 
 export function MediaOffloadView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('mediaOffloads');
+  const { items, shown, save, remove } = useSettingsList('mediaOffloads');
   const [draft, setDraft] = useState<Omit<MediaEntry, 'id'>>({
     card: '',
     camera: '',
@@ -25,7 +25,7 @@ export function MediaOffloadView() {
   });
   const [filter, setFilter] = useState<'all' | MediaEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.card.trim()) return;
@@ -101,6 +101,7 @@ export function MediaOffloadView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

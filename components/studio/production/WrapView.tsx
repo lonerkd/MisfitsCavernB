@@ -12,7 +12,7 @@ type WrapEntry = { id: string; date: string; dayNumber: number; shotsGot: number
 
 export function WrapView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('wraps');
+  const { items, shown, save, remove } = useSettingsList('wraps');
   const [draft, setDraft] = useState<Omit<WrapEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
     dayNumber: 1,
@@ -27,7 +27,7 @@ export function WrapView() {
     setDraft({ date: new Date().toISOString().slice(0, 10), dayNumber: items.length + 2, shotsGot: 0, pages: '', incidents: '', notes: '' });
   };
 
-  const sorted = [...items].sort((a, b) => b.date.localeCompare(a.date));
+  const sorted = [...shown].sort((a, b) => b.date.localeCompare(a.date));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -84,6 +84,7 @@ export function WrapView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

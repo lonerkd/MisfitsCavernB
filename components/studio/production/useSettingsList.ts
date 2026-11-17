@@ -13,6 +13,7 @@ import { enqueue, flushQueue, isNetworkFailure, readQueue } from '@/lib/studio/r
 import { deleteRecords, listRecords, subscribeToRecords, upsertRecords, type RecordItem, type RecordKind } from '@/lib/supabase/productionRecords';
 import type { ProjectSettings } from '@/lib/types/settings';
 import { useStudio } from '../StudioContext';
+import { useRecordFind } from '../toolFind';
 
 /** The settings keys that hold a list of records, each with an `id`. */
 export type SettingsListKey =
@@ -41,7 +42,8 @@ function withQueued<T extends { id: string }>(rows: T[], projectId: string, kind
   return [...byId.values()];
 }
 
-export function useSettingsList<K extends SettingsListKey>(key: K) {
+/** `find: false` for a panel that only reads another tool's list (it must not become that tool's search). */
+export function useSettingsList<K extends SettingsListKey>(key: K, opts: { find?: boolean } = {}) {
   type Item = SettingsListItem<K> & { id: string };
   const { project } = useStudio();
   const { toast } = useToast();
@@ -127,5 +129,7 @@ export function useSettingsList<K extends SettingsListKey>(key: K) {
     return save(items.filter((i) => i.id !== id));
   }, [confirm, save, items]);
 
-  return { items, save, remove, saving };
+  // The records that match what the person typed in the tool's search box (all of them when it is empty); views draw this.
+  const { shown } = useRecordFind(items as unknown as Array<Record<string, unknown>>, opts.find !== false);
+  return { items, shown: shown as unknown as Item[], save, remove, saving };
 }

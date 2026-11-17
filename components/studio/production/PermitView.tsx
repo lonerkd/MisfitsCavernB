@@ -14,7 +14,7 @@ const STATUSES: PermitEntry['status'][] = ['pending', 'approved', 'expired'];
 
 export function PermitView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('permits');
+  const { items, shown, save, remove } = useSettingsList('permits');
   const [draft, setDraft] = useState<Omit<PermitEntry, 'id'>>({
     location: '',
     permitType: '',
@@ -24,7 +24,7 @@ export function PermitView() {
   });
   const [filter, setFilter] = useState<'all' | PermitEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.location.trim()) return;
@@ -95,6 +95,7 @@ export function PermitView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

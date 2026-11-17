@@ -36,7 +36,7 @@ const STATUS_COLOR: Record<ItemStatus, string> = { identified: 'var(--danger)', 
 export function SafetyView() {
   const { project, scenes } = useStudio();
   const t = useRecordTargets();
-  const { items, save } = useSettingsList('safety');
+  const { items, shown, save } = useSettingsList('safety');
   const { toast } = useToast();
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
@@ -124,7 +124,7 @@ export function SafetyView() {
       )}
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {items.map((item) => {
+        {shown.map((item) => {
           const isEditing = editing === item.id;
           return (
             <li key={item.id} className={s.panel} style={{ padding: 12, borderLeft: '3px solid ' + SEV_COLOR[item.severity] }}>
@@ -169,6 +169,7 @@ export function SafetyView() {
           );
         })}
 </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
 
       <p className={s.hint} style={{ fontSize: 11 }}>
         Safety items are stored with the project. For formal risk assessments, attach the document in Production › Paperwork.

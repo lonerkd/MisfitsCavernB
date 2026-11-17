@@ -16,7 +16,7 @@ const EMPTY: Omit<StillEntry, 'id'> = { scene: '', frames: '', photographer: '',
 /** The unit photographer's log: which frames were taken in which scene, what is selected, what has gone to the client. */
 export function StillsView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('stills');
+  const { items, shown, save, remove } = useSettingsList('stills');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<StillEntry, 'id'>>(EMPTY);
 
@@ -57,7 +57,7 @@ export function StillsView() {
       </div>
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((m) => (
+        {shown.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{m.subject}</span>
@@ -73,6 +73,7 @@ export function StillsView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }
