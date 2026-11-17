@@ -4,6 +4,7 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { usePhoneLayout } from '@/lib/os/usePhone';
+import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import s from './studio.module.css';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
@@ -30,19 +31,9 @@ export function StatusPill({ tone, children, title }: { tone: 'ok' | 'busy' | 'e
   );
 }
 
-export function Toggle({ on, onChange, label, disabled, title }: { on: boolean; onChange: (next: boolean) => void; label: string; disabled?: boolean; title?: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      title={title ?? label}
-      disabled={disabled}
-      className={cx(s.toggle, on && s.toggleOn)}
-      onClick={() => onChange(!on)}
-    />
-  );
+// The Studio's switch is the suite's disc (components/ui/DiscSwitch.tsx): one look for every on/off.
+export function Toggle({ on, onChange, label, disabled }: { on: boolean; onChange: (next: boolean) => void; label: string; disabled?: boolean; title?: string }) {
+  return <DiscSwitch on={on} onChange={onChange} label={label} disabled={disabled} />;
 }
 
 export function ErrorBar({ message, onRetry }: { message: string; onRetry?: () => void }) {
