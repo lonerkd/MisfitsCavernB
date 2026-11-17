@@ -1229,6 +1229,8 @@ export default function EditorPage() {
         originalText={revisions.find(r => r.id === diffRevisionId)?.snapshot ?? ''}
         modifiedText={content}
         label={revisions.find(r => r.id === diffRevisionId)?.label ?? 'Revision'}
+        // Review mode (accept or reject each change, kept per script) needs these; without them its switch never showed.
+        projectId={currentScript?.project_id ?? undefined} scriptId={currentScript?.id ?? undefined} userId={sessionUser?.id ?? undefined}
       />}
 
       {showCompare && (
