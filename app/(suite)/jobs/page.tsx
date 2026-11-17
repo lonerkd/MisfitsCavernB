@@ -1,5 +1,6 @@
 'use client';
 
+import { useSlowWhile } from '@/lib/util/useSlowWhile';
 import { useState, useEffect, useEffectEvent } from 'react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { Search, Plus, Briefcase } from 'lucide-react';
@@ -31,6 +32,8 @@ export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [myJobs, setMyJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  // After a few seconds of skeletons, say so: a silent wait reads as broken.
+  const slow = useSlowWhile(loading, 6000);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -237,7 +240,7 @@ export default function JobsPage() {
             }}
           >
             All Roles
-            <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{jobs.length}</span>
+            <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{loading ? '' : jobs.length}</span>
           </button>
 
           {postedCrafts.map(r => {
@@ -297,7 +300,8 @@ export default function JobsPage() {
               </div>
 
               {loading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div role="status" aria-busy="true" aria-label="Loading job listings" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {slow && <p style={{ margin: 0, fontSize: 12, color: 'var(--fg-muted)' }}>Still loading. The connection may be slow.</p>}
                   {[0, 1, 2].map(i => (
                     <div key={i} style={{ padding: 24, background: 'var(--bg-2)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, height: 120 }}>
                       <div className="skeleton" style={{ width: 120, height: 14, borderRadius: 4, marginBottom: 16 }} />
