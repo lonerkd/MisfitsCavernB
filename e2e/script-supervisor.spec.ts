@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { linkCast } from './support/cast';
 
 // The director's day at a glance, in a real browser against a local stack: a Direction craft sees the next shoot day's scenes, the
 // shots planned for each and what still needs them; a gaffer and an outsider see no such card. Opt-in: E2E_LOCAL_STACK=1.
@@ -35,7 +36,8 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `ssowner${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Lined ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     const scriptId = (await admin.from('scripts').insert({ title: 'Lined', content: SCRIPT, project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
-    const sceneId = (await admin.from('scenes').insert({ project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'INT. KITCHEN - DAY', heading: 'INT. KITCHEN - DAY', location: 'Kitchen', cast_list: 'MAYA, BEN', shoot_day: 1 }).select('id').single()).data!.id;
+    const sceneId = (await admin.from('scenes').insert({ project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'INT. KITCHEN - DAY', heading: 'INT. KITCHEN - DAY', location: 'Kitchen', shoot_day: 1 }).select('id').single()).data!.id;
+    await linkCast(admin, projectId, sceneId, ['MAYA', 'BEN']);
     await admin.from('shots').insert({ project_id: projectId, scene_id: sceneId, shot_number: '1A', description: 'Wide master' });
   });
 

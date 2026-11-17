@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { createCrewedProject, addSceneWithCast } from './support/project';
 import { createStudioApi } from '@/lib/studio/api';
 
 // A performer's own list of calls ("My calls"): every issued call sheet on the productions they belong to, with the call they
@@ -16,7 +16,7 @@ beforeAll(async () => {
   const sam = cast.sam.client;
   await sam.from('project_crew').update({ craft: 'Actor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   await sam.from('character_castings').insert({ project_id: projectId, character_name: 'MAYA', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
-  await sam.from('scenes').insert({ project_id: projectId, scene_number: 1, title: 'Scene 1', heading: 'INT. KITCHEN - DAY', cast_list: 'MAYA, BEN', shoot_day: 1 });
+  await addSceneWithCast(sam, projectId, { scene_number: 1, title: 'Scene 1', heading: 'INT. KITCHEN - DAY', shoot_day: 1 }, ['MAYA', 'BEN']);
   issuedId = (await sam.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: '2026-12-01', general_call: '07:00', location_address: '12 Pier Rd' }).select('id').single()).data!.id;
   draftId = (await sam.from('call_sheets').insert({ project_id: projectId, shoot_day: 2, shoot_date: '2026-12-02', general_call: '08:00' }).select('id').single()).data!.id;
   // Maya's own call, then issue day 1; day 2 stays a draft.

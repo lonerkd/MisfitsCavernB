@@ -1,17 +1,11 @@
 // Who is in a scene. The film graph keeps this as rows (`scene_characters`, linking a
-// scene to a character by id); `scenes.cast_list` is the older comma-separated text the
-// database keeps in step with it. Read the rows; fall back to the text only for a scene
-// that has no rows yet, so nothing disappears while the links catch up.
+// scene to a character by id). The script's cast cue is turned into those rows when the
+// script's scenes are synced; nothing is kept as text.
 
 export interface SceneCharacterLink { scene_id: string; character_id: string }
 export interface NamedCharacter { id: string; name: string }
 
 const normal = (name: string) => name.trim().toUpperCase();
-
-/** The old comma-separated text, as upper-case names. */
-export function castFromText(castList: string | null | undefined): string[] {
-  return (castList ?? '').split(',').map(normal).filter(Boolean);
-}
 
 /** scene id → the upper-case names of the characters linked to it, in character-name order. */
 export function castByScene(links: SceneCharacterLink[], characters: NamedCharacter[]): Map<string, string[]> {
@@ -27,7 +21,7 @@ export function castByScene(links: SceneCharacterLink[], characters: NamedCharac
   return out;
 }
 
-/** The cast of one scene: its linked characters, else the text. */
-export function castOfScene(scene: { id: string; cast_list: string | null }, byScene: Map<string, string[]>): string[] {
-  return byScene.get(scene.id) ?? castFromText(scene.cast_list);
+/** The cast of one scene: its linked characters. */
+export function castOfScene(scene: { id: string }, byScene: Map<string, string[]>): string[] {
+  return byScene.get(scene.id) ?? [];
 }

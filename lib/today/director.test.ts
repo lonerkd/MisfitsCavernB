@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { dayGlance, isDirectionCraft, type GlanceInput, type GlanceScene } from './director';
 
-const scene = (n: number, extra: Partial<GlanceScene> = {}): GlanceScene => ({ id: `s${n}`, scene_number: n, title: `INT. ROOM ${n} - DAY`, time_of_day: 'DAY', location: 'Room', cast_list: 'MAYA, BEN', status: 'planned', ...extra });
+const scene = (n: number, extra: Partial<GlanceScene> = {}): GlanceScene => ({ id: `s${n}`, scene_number: n, title: `INT. ROOM ${n} - DAY`, time_of_day: 'DAY', location: 'Room', cast: ['MAYA', 'BEN'], status: 'planned', ...extra });
 const base = (extra: Partial<GlanceInput> = {}): GlanceInput => ({
   today: '2026-11-15', day: { day_number: 2, shoot_date: '2026-11-17' }, scenes: [scene(3), scene(1)], shotsByScene: { s1: 2, s3: 1 },
   sheet: { issued_at: '2026-11-14T10:00:00Z', general_call: '07:00', location_address: '12 Pier Rd', weather: null }, crew: 4, acked: 4, ...extra,
@@ -27,7 +27,7 @@ describe('dayGlance', () => {
   });
 
   it('flags a scene with no shots, no location or no cast, and says how many scenes have no shots', () => {
-    const g = dayGlance(base({ scenes: [scene(1), scene(2, { location: ' ', cast_list: null })], shotsByScene: { s1: 1 } }));
+    const g = dayGlance(base({ scenes: [scene(1), scene(2, { location: ' ', cast: [] })], shotsByScene: { s1: 1 } }));
     expect(g.scenes[1].flags).toEqual(['No shots planned', 'No location', 'No cast listed']);
     expect(g.attention).toEqual(['1 of 2 scenes has no shots planned']);
   });

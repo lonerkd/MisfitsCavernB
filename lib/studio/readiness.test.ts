@@ -1,10 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { nextShootDay, readinessByDay, sceneReadiness, type ReadinessInput, type ReadinessScene } from './readiness';
 
-const scene = (id: string, patch: Partial<ReadinessScene> = {}): ReadinessScene => ({ id, status: 'planned', cast_list: 'MAYA, DEV', shoot_day: 1, ...patch });
+const scene = (id: string, patch: Partial<ReadinessScene> = {}): ReadinessScene => ({ id, status: 'planned', shoot_day: 1, ...patch });
 
 const input = (patch: Partial<ReadinessInput> = {}): ReadinessInput => ({
   cast: new Set(['MAYA', 'DEV']),
+  castOf: () => ['MAYA', 'DEV'],
   elementsByScene: new Map([['a', [{ name: 'Lantern', status: 'ready' }]]]),
   shotsByScene: new Map([['a', 3]]),
   refsByScene: new Map([['a', 1]]),
@@ -32,7 +33,7 @@ describe('sceneReadiness', () => {
   });
 
   it('a scene nobody speaks in has no casting to do; references never block', () => {
-    const r = sceneReadiness(scene('a', { cast_list: null }), input({ refsByScene: new Map() }));
+    const r = sceneReadiness(scene('a'), input({ refsByScene: new Map(), castOf: () => [] }));
     expect(r.checks.find((c) => c.id === 'cast')?.state).toBe('none');
     expect(r.checks.find((c) => c.id === 'refs')?.state).toBe('todo');
     expect(r).toMatchObject({ state: 'ready', total: 3 });
@@ -51,14 +52,14 @@ describe('sceneReadiness', () => {
   });
 
   it('long lists are shortened', () => {
-    const r = sceneReadiness(scene('a', { cast_list: 'A, B, C, D, E' }), input({ cast: new Set() }));
+    const r = sceneReadiness(scene('a'), input({ cast: new Set(), castOf: () => ['A', 'B', 'C', 'D', 'E'] }));
     expect(r.blocker?.detail).toBe('Cast A, B, C +2');
   });
 });
 
 describe('cast from the graph', () => {
   it('counts the characters the graph links, not the scene text', () => {
-    const r = sceneReadiness(scene('a', { cast_list: 'MAYA, DEV' }), input({ castOf: () => ['MAYA', 'ZED'] }));
+    const r = sceneReadiness(scene('a'), input({ castOf: () => ['MAYA', 'ZED'] }));
     const cast = r.checks.find((c) => c.id === 'cast');
     expect(cast).toMatchObject({ state: 'todo' });
     expect(cast?.detail).toContain('ZED');

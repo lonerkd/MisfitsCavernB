@@ -3,7 +3,6 @@
 // the references — never ticked by hand. Pure, so the board, tests and any
 // future report compute it the same way.
 
-import { castOf } from './stripboard';
 import { locationKey, locationReadiness } from './locations';
 
 export type CheckId = 'cast' | 'location' | 'elements' | 'shots' | 'date' | 'refs' | 'script';
@@ -35,7 +34,6 @@ export interface SceneReadiness {
 export interface ReadinessScene {
   id: string;
   status: string | null;
-  cast_list: string | null;
   shoot_day: number | null;
   /** From the heading (INT. HARBOR - NIGHT → HARBOR). */
   location?: string | null;
@@ -72,7 +70,7 @@ function locationCheck(scene: ReadinessScene, input: ReadinessInput): ReadinessC
 }
 
 export function sceneReadiness(scene: ReadinessScene, input: ReadinessInput): SceneReadiness {
-  const characters = (input.castOf ?? castOf)(scene);
+  const characters = (input.castOf ?? (() => []))(scene);
   const uncast = characters.filter((c) => !input.cast.has(c));
   const elements = input.elementsByScene.get(scene.id) ?? [];
   const pending = elements.filter((e) => e.status !== 'ready');

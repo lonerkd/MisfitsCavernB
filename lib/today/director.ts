@@ -9,7 +9,7 @@ export const DIRECTION_CRAFTS = ['Director', 'First assistant director', 'Second
 export const isDirectionCraft = (craft: string | null | undefined): boolean => (DIRECTION_CRAFTS as readonly string[]).includes(craft ?? '');
 
 export interface GlanceScene {
-  id: string; scene_number: number; title: string; time_of_day: string | null; location: string | null; cast_list: string | null; status: string | null;
+  id: string; scene_number: number; title: string; time_of_day: string | null; location: string | null; cast: string[]; status: string | null;
 }
 export interface GlanceSheet { issued_at: string | null; general_call: string | null; location_address: string | null; weather: string | null }
 export interface GlanceInput {
@@ -37,8 +37,6 @@ export interface DayGlance {
   sheet: GlanceSheet | null;
 }
 
-const castOf = (s: string | null) => (s ?? '').split(/[,;]/).map((x) => x.trim()).filter(Boolean);
-
 export function dayGlance(i: GlanceInput): DayGlance {
   const inDays = i.day.shoot_date ? daysUntil(i.day.shoot_date, i.today) : null;
   const scenes = [...i.scenes].sort((a, b) => a.scene_number - b.scene_number).map((s): GlanceScene2 => {
@@ -46,8 +44,8 @@ export function dayGlance(i: GlanceInput): DayGlance {
     const flags: string[] = [];
     if (shots === 0) flags.push('No shots planned');
     if (!s.location?.trim()) flags.push('No location');
-    if (castOf(s.cast_list).length === 0) flags.push('No cast listed');
-    return { ...s, shots, cast: castOf(s.cast_list), flags };
+    if (s.cast.length === 0) flags.push('No cast listed');
+    return { ...s, shots, flags };
   });
   const attention: string[] = [];
   const soon = inDays !== null && inDays <= 7;

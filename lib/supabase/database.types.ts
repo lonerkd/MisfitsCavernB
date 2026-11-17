@@ -4163,7 +4163,6 @@ export type Database = {
       };
       scenes: {
         Row: {
-          cast_list: string | null;
           color: string | null;
           created_at: string | null;
           est_duration: string | null;
@@ -4191,7 +4190,6 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
-          cast_list?: string | null;
           color?: string | null;
           created_at?: string | null;
           est_duration?: string | null;
@@ -4218,7 +4216,6 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
-          cast_list?: string | null;
           color?: string | null;
           created_at?: string | null;
           est_duration?: string | null;

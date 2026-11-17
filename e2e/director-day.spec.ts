@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { linkCast } from './support/cast';
 
 // The director's day at a glance, in a real browser against a local stack: a Direction craft sees the next shoot day's scenes, the
 // shots planned for each and what still needs them; a gaffer and an outsider see no such card. Opt-in: E2E_LOCAL_STACK=1.
@@ -47,9 +48,10 @@ test.describe('The director\'s day at a glance (local Supabase)', () => {
     const iso = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     await admin.from('shoot_days').insert({ project_id: projectId, day_number: 1, shoot_date: iso });
     const scenes = (await admin.from('scenes').insert([
-      { project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'INT. KITCHEN - DAY', heading: 'INT. KITCHEN - DAY', location: 'Kitchen', cast_list: 'MAYA, BEN', shoot_day: 1 },
-      { project_id: projectId, script_id: scriptId, ordinal: 1, scene_number: 2, title: 'EXT. ROOF - NIGHT', heading: 'EXT. ROOF - NIGHT', location: 'Roof', cast_list: 'MAYA', shoot_day: 1 },
+      { project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'INT. KITCHEN - DAY', heading: 'INT. KITCHEN - DAY', location: 'Kitchen', shoot_day: 1 },
+      { project_id: projectId, script_id: scriptId, ordinal: 1, scene_number: 2, title: 'EXT. ROOF - NIGHT', heading: 'EXT. ROOF - NIGHT', location: 'Roof', shoot_day: 1 },
     ]).select('id, scene_number')).data!;
+    for (const [num, names] of [[1, ['MAYA', 'BEN']], [2, ['MAYA']]] as const) await linkCast(admin, projectId, scenes.find((x: { scene_number: number }) => x.scene_number === num)!.id, [...names]);
     const first = scenes.find((x: { scene_number: number }) => x.scene_number === 1)!.id;
     await admin.from('shots').insert({ project_id: projectId, scene_id: first, shot_number: '1A', description: 'Wide' });
   });
