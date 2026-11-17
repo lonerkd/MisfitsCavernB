@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { test, expect } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { castOfScene } from './support/cast';
 
 // The deep brain, B8: a person tells the reader a name is not a character; it is
 // remembered for the project, the reader obeys it (the Bible, the scene's cast),
@@ -34,7 +35,10 @@ test.describe.serial('Telling the reader what a name is (local Supabase)', () =>
     if (me.id) await admin.auth.admin.deleteUser(me.id);
   });
 
-  const castList = async () => (await admin.from('scenes').select('cast_list').eq('script_id', scriptId).order('ordinal').limit(1).single()).data?.cast_list ?? null;
+  const castList = async () => {
+    const first = (await admin.from('scenes').select('id').eq('script_id', scriptId).is('removed_at', null).order('ordinal').limit(1).single()).data;
+    return first ? castOfScene(admin, first.id) : null;
+  };
 
   test('not a character: it leaves the Bible and the scene’s cast, is remembered, and can be taken back', async ({ page }) => {
     test.setTimeout(150_000);

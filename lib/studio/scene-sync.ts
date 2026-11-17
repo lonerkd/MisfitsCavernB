@@ -30,14 +30,20 @@ export type ParsedSceneInput = Pick<Scene, 'heading'> & Partial<Pick<Scene, 'loc
 
 /** A scene row as read from public.scenes for one script. */
 export type IndexedScene = Pick<SceneColumns, 'id' | 'heading' | 'ordinal' | 'removed_at'> &
-  Partial<Pick<SceneColumns, 'location' | 'time_of_day' | 'cast_list' | 'est_duration'>>;
+  Partial<Pick<SceneColumns, 'location' | 'time_of_day' | 'est_duration'>> & {
+    /** The upper-case names of the characters linked to the scene (its cast), sorted; absent when not loaded. */
+    cast?: string[];
+  };
 
 /**
  * One entry of the plan sent to sync_script_scenes, in script order — the
  * columns that function writes, with the ones it always fills made non-null.
  */
-export type ScenePlanRow = Pick<SceneColumns, 'id' | 'location' | 'cast_list'> & {
+export type ScenePlanRow = Pick<SceneColumns, 'id' | 'location'> & {
   [K in 'heading' | 'time_of_day' | 'est_duration']: NonNullable<SceneColumns[K]>;
+} & {
+  /** The script's cast cue (comma-separated names); the server turns it into links, it is not stored as text. */
+  cast_list: string | null;
 };
 
 export interface ScenePlan {
@@ -177,6 +183,13 @@ export function alignSceneIds(existing: IndexedScene[], parsed: ParsedSceneInput
   return ids.map((id) => id ?? newId());
 }
 
+/** Whether a scene's linked cast is what the script's cue names. */
+export function sameCast(linked: readonly string[], cue: string | null): boolean {
+  const want = Array.from(new Set((cue ?? '').split(',').map((n) => n.trim().toUpperCase()).filter(Boolean))).sort();
+  const have = Array.from(new Set(linked.map((n) => n.trim().toUpperCase()).filter(Boolean))).sort();
+  return want.length === have.length && want.every((n, i) => n === have[i]);
+}
+
 export function planSceneSync(existing: IndexedScene[], parsed: ParsedSceneInput[], newId: () => string): ScenePlan {
   const active = existing
     .filter((s) => !s.removed_at)
@@ -196,7 +209,7 @@ export function planSceneSync(existing: IndexedScene[], parsed: ParsedSceneInput
         cur.heading !== row.heading ||
         (cur.location ?? null) !== row.location ||
         (cur.time_of_day ?? null) !== row.time_of_day ||
-        (cur.cast_list ?? null) !== row.cast_list ||
+        !sameCast(cur.cast ?? [], row.cast_list) ||
         (cur.est_duration ?? null) !== row.est_duration
       );
     });

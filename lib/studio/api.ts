@@ -5,7 +5,6 @@
 // client (lib/studio/index.ts), and tests/integration pass a signed-in persona,
 // so the integration suite exercises this exact code against a real database.
 
-import { castFromText } from '@/lib/film/cast';
 import { beginUpload } from '@/lib/island/uploads';
 import { uploadWithProgress } from '@/lib/supabase/uploadProgress';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -324,6 +323,19 @@ export function createStudioApi(db: Client) {
     return data.sort(byOrdinal);
   }
 
+  /** scene id → the upper-case names of its linked characters (its cast), sorted. */
+  async function listSceneCastNames(sceneIds: string[]): Promise<Map<string, string[]>> {
+    const out = new Map<string, string[]>();
+    if (sceneIds.length === 0) return out;
+    const { data, error } = await db.from('scene_characters').select('scene_id, characters(name)').in('scene_id', sceneIds);
+    if (error) fail(error, 'Could not load scene casts');
+    for (const r of (data ?? []) as Array<{ scene_id: string; characters: { name: string } | null }>) {
+      const name = r.characters?.name?.trim().toUpperCase();
+      if (name) out.set(r.scene_id, [...(out.get(r.scene_id) ?? []), name].sort());
+    }
+    return out;
+  }
+
   async function listProjectScenes(projectId: string): Promise<SceneRow[]> {
     const { data, error } = await db.from('scenes').select('*').eq('project_id', projectId).is('removed_at', null);
     if (error) fail(error, 'Could not load scenes');
@@ -336,9 +348,11 @@ export function createStudioApi(db: Client) {
    */
   async function syncScriptScenes(scriptId: string, parsed: ParsedSceneInput[]): Promise<SceneRow[]> {
     for (let attempt = 0; attempt < 4; attempt++) {
-      const existing = await listScenes(scriptId, { includeRemoved: true });
+      const rows = await listScenes(scriptId, { includeRemoved: true });
+      const cast = await listSceneCastNames(rows.map((r) => r.id));
+      const existing = rows.map((r) => ({ ...r, cast: cast.get(r.id) ?? [] }));
       const plan = planSceneSync(existing, parsed, () => crypto.randomUUID());
-      if (!plan.changed) return existing.filter((s) => !s.removed_at).sort(byOrdinal);
+      if (!plan.changed) return rows.filter((s) => !s.removed_at).sort(byOrdinal);
       const { error } = await db.rpc('sync_script_scenes', {
         p_script_id: scriptId,
         p_base_ids: plan.baseIds,
@@ -541,7 +555,7 @@ export function createStudioApi(db: Client) {
     const [p, cl, sc, crew, cast, ack] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, ordinal, script_id, heading, title, location, cast_list, est_duration, scene_characters(characters(name))')
+      db.from('scenes').select('id, scene_number, ordinal, script_id, heading, title, location, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
       db.from('character_castings').select('character_id, character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
@@ -559,7 +573,7 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []).map(({ scene_characters, cast_list, ...scene }) => ({ ...scene, cast: sceneCast(cast_list, scene_characters) })),
+      scenes: (sc.data ?? []).map(({ scene_characters, ...scene }) => ({ ...scene, cast: sceneCast(scene_characters) })),
       people,
       castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
       castIds: (cast.data ?? []).map((r) => r.character_id ?? ''),
@@ -1193,11 +1207,10 @@ export function createStudioApi(db: Client) {
   };
 }
 
-/** A scene's cast for the call sheet: the linked characters in name order, else the older text (as the Studio reads it: `lib/film/cast.ts`). */
-export function sceneCast(castList: string | null, links: Array<{ characters: { name: string } | null }> | null | undefined): string[] {
+/** A scene's cast for the call sheet: the linked characters in name order (as the Studio reads it: `lib/film/cast.ts`). */
+export function sceneCast(links: Array<{ characters: { name: string } | null }> | null | undefined): string[] {
   const linked = (links ?? []).map((l) => l.characters?.name?.trim().toUpperCase()).filter((n): n is string => !!n);
-  // The text keeps its script order (first appearance); each name once either way.
-  return linked.length ? Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b)) : Array.from(new Set(castFromText(castList)));
+  return Array.from(new Set(linked)).sort((a, b) => a.localeCompare(b));
 }
 
 export type StudioApi = ReturnType<typeof createStudioApi>;

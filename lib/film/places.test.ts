@@ -19,7 +19,7 @@ describe('a scene’s place through the graph', () => {
 });
 
 const sc = (id: string, n: number, location: string, location_id: string | null, day = 1) => ({
-  id, scene_number: n, location, location_id, time_of_day: null, est_duration: null, cast_list: null, shoot_day: day,
+  id, scene_number: n, location, location_id, time_of_day: null, est_duration: null, shoot_day: day,
 });
 
 describe('readers follow a rename', () => {
@@ -45,7 +45,7 @@ describe('readers follow a rename', () => {
       cast: new Set<string>(), elementsByScene: new Map(), shotsByScene: new Map(), refsByScene: new Map(), dateOfDay: new Map<number, string>(),
       locations: new Map([['DOCK OFFICE', { status: 'confirmed', permit: 'granted' }]]),
     };
-    const scene: ReadinessScene = { id: 'a', status: null, cast_list: null, shoot_day: 1, location: 'HARBOR', location_id: 'p1' };
+    const scene: ReadinessScene = { id: 'a', status: null, shoot_day: 1, location: 'HARBOR', location_id: 'p1' };
     const check = (placeOf?: (s: ReadinessScene) => string) =>
       sceneReadiness(scene, { ...input, placeOf }).checks.find((c) => c.id === 'location')!;
     expect(check().state).toBe('todo'); // by the heading's text the place was never scouted

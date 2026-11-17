@@ -725,7 +725,6 @@ column scene_states.notes text default ''::text not null
 column scene_states.project_id uuid not null
 column scene_states.scene_id uuid not null
 column scene_states.updated_at timestamp with time zone default now() not null
-column scenes.cast_list text
 column scenes.color text
 column scenes.created_at timestamp with time zone default now()
 column scenes.est_duration text
@@ -1590,7 +1589,7 @@ function internal.can_shape_project(pid uuid) body=ba331449795455856618ec3944851
 function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae281362452785
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
-function internal.characters_rename() body=318754cf015e76713452d914dafbc551
+function internal.characters_rename() body=421698b6b036bb12456237c0c3ea4daa
 function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
@@ -1639,7 +1638,6 @@ function internal.reading_memory_forget_correction() body=7764bdc57efd2ef63d5de7
 function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82eebf338f
 function internal.reports_notify_outcome() body=dbab3b8ce84f1c257409bd3f704f6c41
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
-function internal.scenes_link_cast() body=63617283e27d64e886846b772634ad92
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
@@ -1719,7 +1717,7 @@ function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6
 function public.set_my_ui_prefs(p_patch jsonb) body=c1fa628a1c22cf9168a08af0d5e175f4
 function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) body=b5a59a26ef1800855579b43d2ea7bc72
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
-function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=cd7c798c9b867c97472b04543e032949
+function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=fa1280f297dc6e67b412711fe4d49e8e
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=7541910170337e67eb33e1f13087fe83
 function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba786d52dc7715f088f3
@@ -1801,7 +1799,6 @@ grant function internal.reading_memory_forget_correction() postgres
 grant function internal.reading_memory_from_correction() postgres
 grant function internal.reports_notify_outcome() postgres
 grant function internal.review_links_check() postgres
-grant function internal.scenes_link_cast() postgres
 grant function internal.scenes_link_place_and_day() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
@@ -2831,7 +2828,6 @@ trigger CREATE TRIGGER reading_line_overrides_set_forced_by BEFORE INSERT OR UPD
 trigger CREATE TRIGGER reports_notify_outcome AFTER UPDATE OF status ON public.reports FOR EACH ROW EXECUTE FUNCTION internal.reports_notify_outcome()
 trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links FOR EACH ROW EXECUTE FUNCTION internal.review_links_check()
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
-trigger CREATE TRIGGER scenes_link_cast AFTER INSERT OR UPDATE OF cast_list ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_cast()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.scripts_share_guard()
