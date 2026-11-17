@@ -39,10 +39,10 @@ export interface CreateUserOptions {
   sample?: boolean;
 }
 
-function connect(): { url: string; key: string; anon: string; staging: boolean } {
-  if (STAGING) return { url: process.env.E2E_SUPABASE_URL!, key: process.env.E2E_SUPABASE_SERVICE_KEY!, anon: process.env.E2E_SUPABASE_ANON_KEY ?? '', staging: true };
+function connect(): { url: string; key: string; anon: string; db: string; staging: boolean } {
+  if (STAGING) return { url: process.env.E2E_SUPABASE_URL!, key: process.env.E2E_SUPABASE_SERVICE_KEY!, anon: process.env.E2E_SUPABASE_ANON_KEY ?? '', db: process.env.E2E_SUPABASE_DB_URL ?? '', staging: true };
   const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-  return { url: s.API_URL, key: s.SERVICE_ROLE_KEY, anon: s.ANON_KEY ?? s.PUBLISHABLE_KEY, staging: false };
+  return { url: s.API_URL, key: s.SERVICE_ROLE_KEY, anon: s.ANON_KEY ?? s.PUBLISHABLE_KEY, db: s.DB_URL, staging: false };
 }
 
 export class Stack {
@@ -51,6 +51,8 @@ export class Stack {
   readonly url: string;
   /** The project's public (anon) key: what the app itself signs in with. On staging it is E2E_SUPABASE_ANON_KEY. */
   readonly anonKey: string;
+  /** The Postgres connection string, for a spec that must run SQL (locally from `supabase status`; on staging E2E_SUPABASE_DB_URL). Empty when unknown. */
+  readonly dbUrl: string;
   /** One tag per run, in every email, username and title the helper makes. */
   readonly tag = Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   private users: QaUser[] = [];
@@ -61,6 +63,7 @@ export class Stack {
     const c = connect();
     this.url = c.url;
     this.anonKey = c.anon;
+    this.dbUrl = c.db;
     this.staging = c.staging;
     this.admin = createClient(c.url, c.key, { auth: { persistSession: false } });
   }

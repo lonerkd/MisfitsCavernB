@@ -1,23 +1,16 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page, Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The Studio, end to end, in a real browser against a real local Supabase
 // (the stack the CI `database` job starts). Nothing is mocked:
 //   upload in the Studio → link to a scene → see it in the editor → publish
 //   → open the share link logged out → crew sees library changes live.
 // Opt-in: E2E_LOCAL_STACK=1, with the app built against the local stack.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights a match. The flame shakes.\n\nSAM\nHello?\n\nEXT. ROAD - DAY\n\nA truck passes.\n';
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-
-type Stack = { url: string; anon: string; service: string };
-function stack(): Stack {
-  const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-  return { url: s.API_URL, anon: s.ANON_KEY, service: s.SERVICE_ROLE_KEY };
-}
 
 async function makeUser(admin: SupabaseClient, label: string) {
   const email = `${label}.${Date.now()}.${Math.floor(Math.random() * 1e4)}@journey.test`;
@@ -42,19 +35,17 @@ async function openStudio(page: Page, projectId: string, tab: string) {
 }
 
 test.describe('Studio journey (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   test.describe.configure({ mode: 'serial' });
 
-  let s: Stack;
   let admin: SupabaseClient;
   let sam: { id: string; email: string };
   let jordan: { id: string; email: string };
   let projectId: string;
   let scriptId: string;
 
-  test.beforeAll(async () => {
-    s = stack();
-    admin = createClient(s.url, s.service, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     sam = await makeUser(admin, 'sam');
     jordan = await makeUser(admin, 'jordan');
     const project = await admin.from('projects').insert({ title: 'The Cave', creator_id: sam.id, description: 'A flame in the dark.' }).select('id').single();
