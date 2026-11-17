@@ -436,21 +436,23 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             <Row key={key}>
               <span style={{ flex: 1, fontSize: 11 }}>{label}</span>
               <button
+                type="button"
                 onClick={() => toggleModule(key)}
-                className="mc-hit"
                 role="switch"
                 aria-checked={settings.modules[key]}
                 aria-label={`toggle ${label}`}
-                style={{
-                  width: 32, height: 18, borderRadius: 9999, position: 'relative', cursor: 'pointer', flexShrink: 0,
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0 }}
+              >
+                <span aria-hidden style={{
+                  width: 32, height: 18, borderRadius: 9999, position: 'relative', display: 'block',
                   background: settings.modules[key] ? `${accent}40` : 'rgba(var(--ink-rgb), 0.08)',
                   border: `1px solid ${settings.modules[key] ? accent : 'rgba(var(--ink-rgb), 0.15)'}`,
-                }}
-              >
-                <div style={{
-                  width: 12, height: 12, borderRadius: '50%', background: settings.modules[key] ? accent : 'var(--fg-dim)',
-                  position: 'absolute', top: 2, left: settings.modules[key] ? 17 : 2, transition: 'left 0.18s',
-                }} />
+                }}>
+                  <span style={{
+                    width: 12, height: 12, borderRadius: '50%', background: settings.modules[key] ? accent : 'var(--fg-dim)',
+                    position: 'absolute', top: 2, left: settings.modules[key] ? 17 : 2, transition: 'left 0.18s',
+                  }} />
+                </span>
               </button>
             </Row>
           ))}
