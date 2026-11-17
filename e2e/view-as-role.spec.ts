@@ -67,6 +67,7 @@ test.describe('View as a role (local Supabase)', () => {
     await expect(page.getByRole('note', { name: /still lacks/ })).toContainText('No invoices, cash-flow or Excel');
 
     // The suite is a lens, not a wall: every other tool is still there.
+    await page.getByRole('button', { name: /^All tools/ }).click();
     await expect(page.getByRole('tab', { name: /Schedule/ })).toBeVisible();
 
     // A casting director: no budget, so the screen says so and offers the ask; their own suite has casting, not money.
