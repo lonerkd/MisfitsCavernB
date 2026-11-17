@@ -1,17 +1,16 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 // The admin's real actions, in a real browser against a local stack: grant and remove admin rights, suspend a person (they cannot sign in) and lift it, each recorded in the audit log; clear a reported error; the platform totals count real accounts. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 
 
 test.describe.serial('Admin actions (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let apiUrl = '';
@@ -20,10 +19,9 @@ test.describe.serial('Admin actions (local Supabase)', () => {
   const member = { id: '', email: `aa-mem.${TAG}@journey.test`, name: `aamem${TAG}` };
   const ERR = `Admin sweep error ${TAG}`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    apiUrl = s.API_URL; anonKey = s.ANON_KEY ?? s.PUBLISHABLE_KEY;
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    apiUrl = stack.url; anonKey = stack.anonKey;
+    admin = stack.admin;
     for (const who of [boss, member]) {
       who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } })).data.user!.id;
     }

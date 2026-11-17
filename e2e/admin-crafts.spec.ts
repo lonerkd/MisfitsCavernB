@@ -1,26 +1,24 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // An admin adds a craft without a deploy and everyone then sees it (here, as a
 // choice a member can make on their profile list); removing it is confirmed. A
 // member is turned away from the page, and the database refuses their write.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const CRAFT = `Dolly grip ${TAG}`;
 
 test.describe.serial('Admin crafts (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const users: Record<'boss' | 'member', { id: string; email: string }> = {} as never;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const k of ['boss', 'member'] as const) {
       const email = `ac${k}.${TAG}@journey.test`;
       const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${k}${TAG}` } });
@@ -72,15 +70,14 @@ test.describe.serial('Admin crafts (local Supabase)', () => {
     await boss.ctx.close();
   });
 
-  test('a member is turned away, and the database refuses their write', async ({ browser }) => {
+  test('a member is turned away, and the database refuses their write', async ({ browser, stack }) => {
     test.setTimeout(120_000);
     const member = await signIn(browser, users.member.email);
     await member.page.goto('/admin/crafts');
     await expect(member.page.getByRole('form', { name: 'Add a craft' })).toHaveCount(0);
     await member.ctx.close();
 
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    const asMember = createClient(s.API_URL, s.ANON_KEY, { auth: { persistSession: false } });
+    const asMember = stack.anonClient();
     await asMember.auth.signInWithPassword({ email: users.member.email, password: PASSWORD });
     const { error } = await asMember.from('crafts').insert({ name: `Sneaky ${TAG}`, department: 'Camera', color: '#ffffff', position: 999 });
     expect(error).not.toBeNull();
