@@ -107,12 +107,13 @@ export async function getDirectorDay(projectId: string, today: string): Promise<
   const day = (days.data ?? [])[0] as { day_number: number; shoot_date: string | null } | undefined;
   if (!day) return null;
   const [scenes, sheet, crew] = await Promise.all([
-    supabase.from('scenes').select('id, scene_number, title, time_of_day, location, cast_list, status').eq('project_id', projectId).eq('shoot_day', day.day_number).order('scene_number'),
+    supabase.from('scenes').select('id, scene_number, title, time_of_day, location, status, scene_characters(characters(name))').eq('project_id', projectId).eq('shoot_day', day.day_number).order('scene_number'),
     supabase.from('call_sheets').select('id, issued_at, version, general_call, location_address, weather').eq('project_id', projectId).eq('shoot_day', day.day_number).maybeSingle(),
     supabase.from('project_crew').select('user_id').eq('project_id', projectId).eq('status', 'confirmed'),
   ]);
   for (const r of [scenes, sheet, crew]) if (r.error) throw r.error;
-  const sceneRows = (scenes.data ?? []) as import('@/lib/today/director').GlanceScene[];
+  const sceneRows = ((scenes.data ?? []) as Array<Omit<import('@/lib/today/director').GlanceScene, 'cast'> & { scene_characters: Array<{ characters: { name: string } | null }> | null }>)
+    .map(({ scene_characters, ...s }): import('@/lib/today/director').GlanceScene => ({ ...s, cast: Array.from(new Set((scene_characters ?? []).map((l) => l.characters?.name?.trim().toUpperCase()).filter((n): n is string => !!n))).sort() }));
   const sheetRow = sheet.data as { id: string; issued_at: string | null; version: number; general_call: string | null; location_address: string | null; weather: string | null } | null;
   const [shots, acks] = await Promise.all([
     sceneRows.length ? supabase.from('shots').select('scene_id').eq('project_id', projectId).in('scene_id', sceneRows.map((r) => r.id)) : Promise.resolve({ data: [], error: null }),

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, anonClient, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { createCrewedProject, linkCast } from './support/project';
 
 // The film graph, step 3: when in the story a scene happens, and how each
 // character looks in it (continuity). As personas: Sam owns, Jordan is crew,
@@ -17,12 +17,13 @@ beforeAll(async () => {
 afterAll(async () => { await destroyCast(cast); });
 
 let n = 0;
-async function addScene(extra: Record<string, unknown> = {}, project = projectId) {
+async function addScene(extra: Record<string, unknown> = {}, project = projectId, names = ['MAYA']) {
   n += 1;
   const { data, error } = await cast.sam.client.from('scenes')
-    .insert({ project_id: project, scene_number: n, title: `Scene ${n}`, cast_list: 'MAYA', ...extra })
+    .insert({ project_id: project, scene_number: n, title: `Scene ${n}`, ...extra })
     .select('id').single();
   if (error) throw error;
+  await linkCast(cast.sam.client, project, data.id, names);
   return data.id;
 }
 const characterId = async (name: string, project = projectId) =>
@@ -60,7 +61,7 @@ describe('continuity: how a character looks in a scene', () => {
   });
 
   it('goes with the scene', async () => {
-    const s = await addScene({ cast_list: 'LEO' });
+    const s = await addScene({}, projectId, ['LEO']);
     const leo = await characterId('LEO');
     await cast.sam.client.from('scene_states').insert({ project_id: projectId, scene_id: s, character_id: leo, look: 'Suit' });
     await cast.sam.client.from('scenes').delete().eq('id', s);

@@ -83,7 +83,7 @@ export interface StudioData {
   /** Open another Studio tab or view in place (an empty state's next step). */
   goTo: (tab: StudioTab, view?: ProductionView) => void;
   /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
-  castOf: (scene: Pick<SceneRow, 'id' | 'cast_list'>) => string[];
+  castOf: (scene: Pick<SceneRow, 'id'>) => string[];
   /** scene id → how many role-tool records (camera reports, costumes, …) are linked to it, by tool. */
   recordsByScene: Map<string, KindCount[]>;
   /** The card (flag `entity_cards`): which entity is open, how to open and close it. `cardsOn` is false where the flag is off. */
@@ -238,7 +238,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const recordsByScn = useMemo(() => recordsByScene(recordLinks.rows), [recordLinks.rows]);
   const sceneCharacterLinks = useSceneCharacters(projectId);
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
-  const castOf = useCallback((scene: Pick<SceneRow, 'id' | 'cast_list'>) => castOfScene(scene, castByScn), [castByScn]);
+  const castOf = useCallback((scene: Pick<SceneRow, 'id'>) => castOfScene(scene, castByScn), [castByScn]);
 
   const cardsOn = useFlag('entity_cards');
   const wantedCard = new URLSearchParams(useLocationSearch()).get('card');

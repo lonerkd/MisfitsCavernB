@@ -3,10 +3,10 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { Client as Pg } from 'pg';
 import { anonClient, createCast, destroyCast, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { addSceneWithCast, createCrewedProject } from './support/project';
 
-// The film graph's backfill (spec §6 step 2): fill places, days and characters
-// from today's text. The spec says near-identical names are never guessed
+// The film graph's backfill (spec §6 step 2): fill places and days from today's text
+// (the characters' backfill went with scenes.cast_list, 2026-11-17; the cast is linked by the script sync now). The spec says near-identical names are never guessed
 // together. This runs the migrations' own backfill SQL, taken verbatim from the
 // files, over legacy-shaped rows (text only, no links, triggers off) inside a
 // transaction that is rolled back, and reads what it made.
@@ -23,7 +23,6 @@ function backfillOf(sql: string) {
   return sql.slice(start, end);
 }
 const PLACES = backfillOf(migration('20261010010000_film_graph_days_and_places.sql'));
-const PEOPLE = backfillOf(migration('20261011010000_film_graph_people_in_scenes.sql'));
 
 beforeAll(async () => {
   cast = await createCast();
@@ -32,7 +31,7 @@ beforeAll(async () => {
 });
 afterAll(async () => { await destroyCast(cast); });
 
-type Legacy = { location?: string | null; cast_list?: string | null };
+type Legacy = { location?: string | null };
 async function backfill(scenes: Legacy[], run: (pg: Pg, ids: string[]) => Promise<void>) {
   const pg = new Pg({ connectionString: process.env.SUPABASE_TEST_DB_URL });
   await pg.connect();
@@ -43,14 +42,13 @@ async function backfill(scenes: Legacy[], run: (pg: Pg, ids: string[]) => Promis
     const ids: string[] = [];
     for (const [i, s] of scenes.entries()) {
       const { rows } = await pg.query(
-        'insert into public.scenes (project_id, scene_number, title, location, cast_list) values ($1, $2, $3, $4, $5) returning id',
-        [projectId, 9000 + i, `Legacy ${i}`, s.location ?? null, s.cast_list ?? null],
+        'insert into public.scenes (project_id, scene_number, title, location) values ($1, $2, $3, $4) returning id',
+        [projectId, 9000 + i, `Legacy ${i}`, s.location ?? null],
       );
       ids.push(rows[0].id);
     }
     await pg.query('alter table public.scenes enable trigger user');
     await pg.query(PLACES);
-    await pg.query(PEOPLE);
     await run(pg, ids);
   } finally {
     await pg.query('rollback').catch(() => undefined);
@@ -58,15 +56,8 @@ async function backfill(scenes: Legacy[], run: (pg: Pg, ids: string[]) => Promis
   }
 }
 let sceneNumber = 9900;
-async function addScene(cast_list: string, location: string, project = projectId) {
-  const { error } = await cast.sam.client.from('scenes').insert({
-    project_id: project,
-    scene_number: sceneNumber++,
-    title: 'Ambiguous name candidate',
-    cast_list,
-    location,
-  });
-  if (error) throw error;
+async function addScene(character: string, location: string, project = projectId) {
+  await addSceneWithCast(cast.sam.client, project, { scene_number: sceneNumber++, title: 'Ambiguous name candidate', location }, [character]);
 }
 const names = async (pg: Pg, table: 'project_locations' | 'characters') =>
   (await pg.query(`select name from public.${table} where project_id = $1 order by name`, [projectId])).rows.map((r) => r.name as string);
@@ -100,34 +91,6 @@ describe('backfill of places', () => {
   });
 });
 
-describe('backfill of characters', () => {
-  it('makes one character per normalised cue and links each scene to it', async () => {
-    await backfill([{ cast_list: 'maya, Leo ,MAYA' }, { cast_list: ' Leo' }], async (pg, ids) => {
-      expect(await names(pg, 'characters')).toEqual(['LEO', 'MAYA']);
-      const { rows } = await pg.query(
-        'select sc.scene_id, c.name from public.scene_characters sc join public.characters c on c.id = sc.character_id where sc.scene_id = any($1) order by 2',
-        [ids],
-      );
-      expect(rows.filter((r) => r.scene_id === ids[0]).map((r) => r.name)).toEqual(['LEO', 'MAYA']);
-      expect(rows.filter((r) => r.scene_id === ids[1]).map((r) => r.name)).toEqual(['LEO']);
-    });
-  });
-
-  it('keeps a cue spelled two ways as two characters, never merged by similarity', async () => {
-    const cues = ['JOHN', 'JOHN (V.O.)', 'JON', 'DR. SMITH', 'DR SMITH', 'MARY ANN', 'MARYANN'];
-    await backfill(cues.map((c) => ({ cast_list: c })), async (pg) => {
-      expect(await names(pg, 'characters')).toEqual([...cues].sort());
-    });
-  });
-
-  it('does not change the cast_list text it read', async () => {
-    await backfill([{ cast_list: 'maya, JON' }], async (pg, ids) => {
-      const { rows } = await pg.query('select cast_list from public.scenes where id = $1', [ids[0]]);
-      expect(rows[0].cast_list).toBe('maya, JON');
-    });
-  });
-});
-
 describe('listing ambiguous matches for a person to settle', () => {
   it('lists near-identical place names (COFFEE SHOP / COFFEE  SHOP) for review', async () => {
     await backfill([{ location: 'COFFEE SHOP' }, { location: 'COFFEE  SHOP' }], async (pg) => {
@@ -138,19 +101,6 @@ describe('listing ambiguous matches for a person to settle', () => {
       );
       expect(rows.map((r) => [r.entity_type, ...[r.name_a, r.name_b].sort()])).toEqual([
         ['location', 'COFFEE  SHOP', 'COFFEE SHOP'],
-      ]);
-    });
-  });
-
-  it('lists cues that may be the same character (DR. SMITH / DR SMITH) for review', async () => {
-    await backfill([{ cast_list: 'DR. SMITH' }, { cast_list: 'DR SMITH' }], async (pg) => {
-      expect(await names(pg, 'characters')).toEqual(['DR SMITH', 'DR. SMITH']);
-      const { rows } = await pg.query(
-        "select entity_type, name_a, name_b from public.film_graph_ambiguous_names where project_id = $1 and entity_type = 'character'",
-        [projectId],
-      );
-      expect(rows.map((r) => [r.entity_type, ...[r.name_a, r.name_b].sort()])).toEqual([
-        ['character', 'DR SMITH', 'DR. SMITH'],
       ]);
     });
   });

@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { linkCast } from './support/cast';
 
 // A performer's working surface, in a real browser against a local stack: "My calls" lists the call sheets issued on their
 // production with their own call, the call sheet shows their own pages with their lines marked, and they confirm from there.
@@ -42,7 +43,8 @@ test.describe('Performer calls and pages (local Supabase)', () => {
     projectId = (await admin.from('projects').insert({ title: `Harbor ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: actor.id, role: 'contributor', craft: 'Actor', status: 'confirmed' });
     const scriptId = (await admin.from('scripts').insert({ title: 'Harbor', content: SCRIPT, project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
-    await admin.from('scenes').insert({ project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'Scene 1', heading: 'INT. HARBOR - NIGHT', cast_list: 'MAYA, BEN', shoot_day: 1 });
+    const harborScene = (await admin.from('scenes').insert({ project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'Scene 1', heading: 'INT. HARBOR - NIGHT', shoot_day: 1 }).select('id').single()).data!.id;
+    await linkCast(admin, projectId, harborScene, ['MAYA', 'BEN']);
     await admin.from('character_castings').insert({ project_id: projectId, character_name: 'MAYA', crew_user_id: actor.id, created_by: owner.id });
     sheetId = (await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: inDays(3), general_call: '07:00', location_address: '12 Pier Rd' }).select('id').single()).data!.id;
     await admin.from('call_sheet_calls').insert({ call_sheet_id: sheetId, project_id: projectId, character_name: 'MAYA', call_time: '06:30', remarks: 'Hair and makeup first' });

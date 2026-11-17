@@ -28,7 +28,10 @@ describe('syncing the scene index', () => {
   it('first sync creates one scene per heading, in order, with script-derived fields', async () => {
     const scenes = await createStudioApi(cast.sam.client).syncScriptScenes(scriptId, scenesOf(V1));
     expect(scenes.map((s) => [s.scene_number, s.heading])).toEqual([[1, 'INT. CAVE - NIGHT'], [2, 'EXT. ROAD - DAY']]);
-    expect(scenes[0]).toMatchObject({ project_id: projectId, script_id: scriptId, cast_list: 'SAM', time_of_day: 'NIGHT', removed_at: null });
+    expect(scenes[0]).toMatchObject({ project_id: projectId, script_id: scriptId, time_of_day: 'NIGHT', removed_at: null });
+    // The cast cue became links (and a character), not text on the scene.
+    const linked = await cast.sam.client.from('scene_characters').select('characters(name)').eq('scene_id', scenes[0].id);
+    expect((linked.data ?? []).map((r) => (r.characters as unknown as { name: string }).name)).toEqual(['SAM']);
   });
 
   it('syncing an unchanged script writes nothing', async () => {
@@ -41,10 +44,12 @@ describe('syncing the scene index', () => {
   it('the server also leaves unchanged rows untouched when handed a no-op plan', async () => {
     const api = createStudioApi(cast.sam.client);
     const before = await api.listScenes(scriptId);
+    const links = (await cast.sam.client.from('scene_characters').select('scene_id, characters(name)').in('scene_id', before.map((s) => s.id))).data ?? [];
+    const castOf = (id: string) => links.filter((l) => l.scene_id === id).map((l) => (l.characters as unknown as { name: string }).name).join(', ') || null;
     const { error } = await cast.sam.client.rpc('sync_script_scenes', {
       p_script_id: scriptId,
       p_base_ids: before.map((s) => s.id),
-      p_scenes: before.map((s) => ({ id: s.id, heading: s.heading, location: s.location, time_of_day: s.time_of_day, cast_list: s.cast_list, est_duration: s.est_duration })),
+      p_scenes: before.map((s) => ({ id: s.id, heading: s.heading, location: s.location, time_of_day: s.time_of_day, cast_list: castOf(s.id), est_duration: s.est_duration })),
     });
     expect(error).toBeNull();
     const after = await api.listScenes(scriptId);

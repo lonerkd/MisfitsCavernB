@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createCast, destroyCast, type Cast } from './support/personas';
-import { createCrewedProject } from './support/project';
+import { createCrewedProject, addSceneWithCast } from './support/project';
 
 // Film graph, step 2 finished: a call-sheet call for a character is linked to
 // the character (call_sheet_calls.character_id), follows a rename, and is
@@ -22,7 +22,7 @@ const characterId = async (name: string) =>
 
 describe('call_sheet_calls.character_id', () => {
   it('a call for a name links to that character, made if new and shared with the scenes that name it', async () => {
-    await cast.sam.client.from('scenes').insert({ project_id: projectId, scene_number: 1, title: 'Scene 1', cast_list: 'MAYA' });
+    await addSceneWithCast(cast.sam.client, projectId, { scene_number: 1, title: 'Scene 1' }, ['MAYA']);
     const maya = await characterId('MAYA');
     expect(maya).not.toBeNull();
 

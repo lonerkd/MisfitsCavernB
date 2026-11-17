@@ -13,7 +13,6 @@ export interface StripScene {
   location_id?: string | null;
   time_of_day: string | null;
   est_duration: string | null;
-  cast_list: string | null;
   shoot_day: number | null;
   status?: string | null;
   /** Whether the reader was unsure about this scene's read (deep brain). */
@@ -34,9 +33,6 @@ export const STRIP_LABEL: Record<StripKind, string> = {
   'int-day': 'INT · DAY', 'ext-day': 'EXT · DAY', 'int-night': 'INT · NIGHT', 'ext-night': 'EXT · NIGHT',
 };
 
-export function castOf(s: Pick<StripScene, 'cast_list'>): string[] {
-  return (s.cast_list ?? '').split(',').map((c) => c.trim().toUpperCase()).filter(Boolean);
-}
 
 const locationKey = (s: StripScene) => (s.location ?? '').trim().toUpperCase();
 
@@ -59,7 +55,7 @@ export interface BoardDay {
 export function buildBoard(
   scenes: StripScene[],
   capacityEighths: number,
-  castFor: (s: StripScene) => string[] = castOf,
+  castFor: (s: StripScene) => string[] = () => [],
   /** Where a scene shoots (graph first); defaults to the heading's text. */
   placeFor: (s: StripScene) => string = locationKey,
 ): BoardDay[] {

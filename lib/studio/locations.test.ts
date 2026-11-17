@@ -35,7 +35,7 @@ describe('location on the readiness board', () => {
     cast: new Set(), elementsByScene: new Map([['s1', [{ name: 'Lantern', status: 'ready' }]]]),
     shotsByScene: new Map([['s1', 1]]), refsByScene: new Map(), dateOfDay: new Map([[1, '2026-11-03']]),
   };
-  const sc = { id: 's1', status: null, cast_list: null, shoot_day: 1, location: 'Harbor' };
+  const sc = { id: 's1', status: null, shoot_day: 1, location: 'Harbor' };
 
   it('blocks a scene until its location is locked down', () => {
     const blocked = sceneReadiness(sc, { ...base, locations: new Map() });

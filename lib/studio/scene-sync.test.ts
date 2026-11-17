@@ -95,7 +95,7 @@ describe('planSceneSync', () => {
   const stored = (rows: Array<ParsedSceneInput & { id: string }>): IndexedScene[] =>
     rows.map((r, i) => {
       const row = toPlanRow(r.id, r, i);
-      return { ...row, ordinal: i, removed_at: null };
+      return { ...row, ordinal: i, removed_at: null, cast: (row.cast_list ?? '').split(', ').filter(Boolean) };
     });
 
   it('reports no change when the stored index already matches the script', () => {
@@ -125,7 +125,7 @@ describe('planSceneSync', () => {
     expect(first.scenes.map((s) => s.heading)).toEqual(['INT. CAVE - NIGHT', 'EXT. ROAD - DAY']);
     expect(first.scenes[0].cast_list).toBe('SAM');
 
-    const index = first.scenes.map((s, i) => ({ ...s, ordinal: i, removed_at: null }));
+    const index = first.scenes.map((s, i) => ({ ...s, ordinal: i, removed_at: null, cast: (s.cast_list ?? '').split(', ').filter(Boolean) }));
     const v2 = parseScript('EXT. CLIFF - DAWN\n\nWind.\n\nINT. CAVE - NIGHT\n\nSam lights a match.\n\nSAM\nHello?\n\nEXT. ROAD - DAY\n\nA truck passes.\n');
     const second = planSceneSync(index, v2.scenes, gen);
     expect(second.scenes.map((s) => s.id)).toEqual(['new3', first.scenes[0].id, first.scenes[1].id]);

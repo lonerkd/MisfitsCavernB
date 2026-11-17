@@ -175,8 +175,15 @@ function buildProject(p: DemoProject) {
       const row = toPlanRow(id, scene, i);
       sceneLocations.set(i + 1, locationKey(row.location));
       const note = p.sceneNotes?.find((x) => x.scene === i + 1);
-      emit(`  insert into public.scenes (id, project_id, script_id, scene_number, ordinal, heading, title, location, time_of_day, cast_list, est_duration, shoot_day, status, note, color)
-  values ('${id}', pid, '${scriptId}', ${i + 1}, ${i}, ${q(row.heading)}, ${q(row.heading.slice(0, 200))}, ${q(row.location)}, ${q(row.time_of_day)}, ${q(row.cast_list)}, ${q(row.est_duration)}, ${n(shootDayOf.get(i + 1))}, ${p.wrapped?.includes(i + 1) ? `'wrapped'` : 'default'}, ${q(note?.note)}, ${q(note?.color)});`);
+      emit(`  insert into public.scenes (id, project_id, script_id, scene_number, ordinal, heading, title, location, time_of_day, est_duration, shoot_day, status, note, color)
+  values ('${id}', pid, '${scriptId}', ${i + 1}, ${i}, ${q(row.heading)}, ${q(row.heading.slice(0, 200))}, ${q(row.location)}, ${q(row.time_of_day)}, ${q(row.est_duration)}, ${n(shootDayOf.get(i + 1))}, ${p.wrapped?.includes(i + 1) ? `'wrapped'` : 'default'}, ${q(note?.note)}, ${q(note?.color)});`);
+      // The scene's cast is the graph's links (the script sync's job in the app): its characters, created when new, then the links.
+      const names = Array.from(new Set((row.cast_list ?? '').split(',').map((x) => x.trim().toUpperCase()).filter(Boolean)));
+      if (names.length) {
+        const list = names.map((x) => q(x)).join(', ');
+        emit(`  insert into public.characters (project_id, name) select pid, x from unnest(array[${list}]) x on conflict (project_id, name) do nothing;`);
+        emit(`  insert into public.scene_characters (scene_id, character_id, project_id) select '${id}', c.id, pid from public.characters c where c.project_id = pid and c.name = any (array[${list}]) on conflict do nothing;`);
+      }
     });
     if (p.script.locked) {
       emit(`  insert into public.script_revisions (script_id, color_index, label, snapshot, created_by, created_at) values ('${scriptId}', 0, ${q(p.script.locked)}, ${long(p.script.text)}, ${who(owner)}, ${ago(60 * 24 * 8)});`);
