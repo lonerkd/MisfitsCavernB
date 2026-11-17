@@ -157,7 +157,7 @@ export function PostModal({ onClose, onCreated, userId, projectId, projectTitle,
             style={{
               marginTop: 6, padding: '14px',
               background: form.title ? 'var(--violet)' : 'rgba(var(--ink-rgb), 0.05)',
-              color: form.title ? 'var(--fg-strong)' : 'var(--fg-dim)',
+              color: form.title ? 'var(--on-violet)' : 'var(--fg-dim)',
               border: 'none', borderRadius: 14,
               fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
               textTransform: 'var(--caps)', fontWeight: 600,
