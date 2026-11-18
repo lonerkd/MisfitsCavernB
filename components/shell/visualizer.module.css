@@ -8,7 +8,6 @@
 .btn { min-width: 48px; min-height: 48px; border-radius: 28px; border: 0; background: rgba(255, 255, 255, 0.08); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .btnMain { background: #fff; color: #000; min-width: 56px; min-height: 56px; }
 .corner { position: absolute; top: max(16px, env(safe-area-inset-top)); right: max(16px, env(safe-area-inset-right)); display: flex; gap: 8px; }
-.styles { display: flex; gap: 6px; pointer-events: none; }
 .listen[aria-pressed='true'] { background: rgba(255, 255, 255, 0.28); }
 .btn:focus-visible, .listen:focus-visible, .miniBtn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
