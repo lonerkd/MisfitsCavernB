@@ -2,7 +2,7 @@
 
 import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect } from 'react';
-import { User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid } from 'lucide-react';
+import { User, Bell, Palette, ShieldCheck, LogOut, Check, Download, MonitorSmartphone, AlertTriangle, LayoutGrid, CalendarDays } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
@@ -16,6 +16,7 @@ import { ThemePicker } from '@/components/ui/ThemePicker';
 import { GuideSetup } from '@/components/guides/GuideSetup';
 import { DEPTHS, EXPERIENCES, TEAMS, depthOf } from '@/lib/guides/profile';
 import DeleteAccount from '@/components/settings/DeleteAccount';
+import { CalendarFeed } from '@/components/settings/CalendarFeed';
 import { PUSH_HINT, usePushSetting } from '@/components/settings/usePushSetting';
 import { ISLAND_STATE_LABELS, readIslandPrefs, writeIslandPrefs } from '@/lib/island/prefs';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
@@ -289,6 +290,10 @@ export default function SettingsPage() {
           <Row label="Comment replies" hint="When someone replies to your notes or reviews." control={<Toggle on={notifyReplies} onChange={v => setNotifyPref('replies', v)} />} />
           <Row label="Job & casting alerts" hint="New roles matching your profile." control={<Toggle on={notifyJobs} onChange={v => setNotifyPref('jobs', v)} />} />
           <Row label="Product updates" hint="Occasional news about new tools and features." control={<Toggle on={notifyProduct} onChange={v => setNotifyPref('product', v)} />} />
+        </Section>
+
+        <Section icon={<CalendarDays size={15} />} title="Calendar">
+          <CalendarFeed />
         </Section>
 
         <Section icon={<ShieldCheck size={15} />} title="Data & Privacy">
