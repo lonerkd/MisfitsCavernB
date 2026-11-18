@@ -147,8 +147,6 @@ export function describeSync(input: {
   /** The song's length is known (a journey needs it). */
   durationKnown: boolean;
   fraction: number | null;
-  /** Run lays the journey out as cave; Dive takes only its light. */
-  style: 'run' | 'dive';
   listening: boolean;
 }): SyncReport {
   const levels = [1];
@@ -157,9 +155,7 @@ export function describeSync(input: {
     levels.push(3);
     const { section } = sectionAt(input.journey, input.fraction);
     const where = `scene ${section.number} of ${input.journey.sections.length}, ${section.mood}`;
-    text = input.style === 'run'
-      ? `Following the project: ${where}. The scenes are laid along the song by their length (the song is not your cut).`
-      : `Following the project: ${where} lights the shaft. Its shape comes from the song only.`;
+    text = `Following the project: ${where}. The scenes are laid along the song by their length (the song is not your cut).`;
   } else if (input.status === 'ready' && input.journey) text = 'The song’s length is not known, so there is no journey: the cave follows the player only.';
   else if (input.status === 'loading') text = 'Reading the project’s scenes… following the player for now.';
   else if (input.status === 'no-scenes') text = 'This project has no scenes yet: the cave follows the player only.';
