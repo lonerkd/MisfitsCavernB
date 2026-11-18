@@ -173,7 +173,7 @@ describe('moods and colours', () => {
 
 describe('the honest label', () => {
   const j: Journey = journeyFromScenes(scenes, SCRIPT)!;
-  const base = { status: 'ready' as const, journey: j, durationKnown: true, fraction: 0.5, style: 'run' as const, listening: false };
+  const base = { status: 'ready' as const, journey: j, durationKnown: true, fraction: 0.5, listening: false };
   it('says it follows the project, which scene, and that the song is not the cut, when the journey is on', () => {
     const r = describeSync(base);
     expect(r.levels).toEqual([1, 3]);
@@ -181,7 +181,6 @@ describe('the honest label', () => {
     expect(r.text).toContain('Action');
     expect(r.text).toContain('not your cut');
   });
-  it('says the Dive takes only the light', () => expect(describeSync({ ...base, style: 'dive' }).text).toContain('lights the shaft'));
   it('adds level 2 only when it is listening', () => expect(describeSync({ ...base, listening: true }).levels).toEqual([1, 2, 3]));
   it('says plainly why the project level is off', () => {
     expect(describeSync({ ...base, status: 'no-project', journey: null, fraction: null })).toEqual({ levels: [1], text: 'No project open: the cave follows the player only.' });

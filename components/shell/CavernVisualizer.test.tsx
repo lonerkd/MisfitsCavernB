@@ -10,8 +10,6 @@ vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
 const cap = vi.hoisted(() => ({ supported: true, start: vi.fn(), toast: vi.fn() }));
 vi.mock('@/lib/cavern/capture', async (orig) => ({ ...(await orig<typeof import('@/lib/cavern/capture')>()), captureSupported: () => cap.supported, startCapture: cap.start }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: cap.toast }) }));
-const snd = vi.hoisted(() => ({ supported: true, close: vi.fn(), make: vi.fn() }));
-vi.mock('@/lib/cavern/diveSound', () => ({ soundSupported: () => snd.supported, createDiveSound: snd.make }));
 const journeyFeed = vi.hoisted(() => ({ state: { journey: null as unknown, status: 'no-project' as string } }));
 vi.mock('@/lib/cavern/useJourney', () => ({ useJourney: () => journeyFeed.state }));
 import { CavernVisualizer } from './CavernVisualizer';
@@ -178,47 +176,17 @@ describe('CavernVisualizer', () => {
       expect(document.querySelector('canvas')).toBe(before);
     });
   });
-  describe('run or dive', () => {
-    afterEach(() => { try { localStorage.removeItem('mc_cavern_style'); } catch { /* none */ } });
-    it('offers both, runs by default, and remembers the choice on this device', () => {
-      const { unmount } = render(<CavernVisualizer onClose={() => {}} />);
-      expect(screen.getByRole('button', { name: 'Run' }).getAttribute('aria-pressed')).toBe('true');
-      fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
-      expect(screen.getByRole('button', { name: 'Dive' }).getAttribute('aria-pressed')).toBe('true');
-      expect(localStorage.getItem('mc_cavern_style')).toBe('dive');
-      unmount();
+  describe('one way to be in the cave', () => {
+    it('has no Run / Dive choice and no Sound toggle (the Dive was removed on 2026-11-18)', () => {
       render(<CavernVisualizer onClose={() => {}} />);
-      expect(screen.getByRole('button', { name: 'Dive' }).getAttribute('aria-pressed')).toBe('true');
+      expect(screen.queryByRole('button', { name: 'Dive' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Run' })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Sound/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: 'How to be in the cave' })).toBeNull();
     });
-    describe('sound', () => {
-      afterEach(() => { try { localStorage.removeItem('mc_cavern_sound'); } catch { /* none */ } snd.supported = true; });
-      it('is a dive-only button, off until asked, remembered, and made on the click', () => {
-        snd.make.mockReturnValue({ play: vi.fn(), close: snd.close });
-        render(<CavernVisualizer onClose={() => {}} />);
-        expect(screen.queryByRole('button', { name: /Sound/ })).toBeNull(); // not in the run view
-        fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
-        const btn = screen.getByRole('button', { name: /Sound/ });
-        expect(btn.getAttribute('aria-pressed')).toBe('false');
-        expect(snd.make).not.toHaveBeenCalled();
-        fireEvent.click(btn);
-        expect(btn.getAttribute('aria-pressed')).toBe('true');
-        expect(snd.make).toHaveBeenCalledOnce();
-        expect(localStorage.getItem('mc_cavern_sound')).toBe('on');
-        fireEvent.click(btn);
-        expect(snd.close).toHaveBeenCalled();
-        expect(localStorage.getItem('mc_cavern_sound')).toBe('off');
-      });
-      it('is not offered where the browser has no Web Audio', () => {
-        snd.supported = false;
-        render(<CavernVisualizer onClose={() => {}} />);
-        fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
-        expect(screen.queryByRole('button', { name: /Sound/ })).toBeNull();
-      });
-    });
-    it('the arrow keys steer in the dive without closing it', () => {
+    it('the arrow keys steer without closing it', () => {
       const onClose = vi.fn();
       render(<CavernVisualizer onClose={onClose} />);
-      fireEvent.click(screen.getByRole('button', { name: 'Dive' }));
       for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) { fireEvent.keyDown(window, { key }); fireEvent.keyUp(window, { key }); }
       expect(onClose).not.toHaveBeenCalled();
     });
