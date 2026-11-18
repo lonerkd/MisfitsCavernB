@@ -12,6 +12,8 @@ import {
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { useDraft } from '@/lib/hooks/useDraft';
+import { listSigningRequests, type SigningRequest } from '@/lib/supabase/signing';
+import { SendForSignature, SigningStatus } from './SendForSignature';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { paperworkDoc } from '@/lib/studio/paperwork-print';
@@ -47,10 +49,18 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
   const locations = useProjectLocations(project.id);
   const castings = useCastings(project.id);
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [requests, setRequests] = useState<SigningRequest[]>([]);
   const [adding, setAdding] = useDraft<{ kind: DocKind; title: string } | null>('paperwork-adding', null);
   const { toast } = useToast();
   const today = localToday();
 
+  useEffect(() => {
+    if (!canShape) return;
+    let alive = true;
+    listSigningRequests(project.id).then((r) => { if (alive) setRequests(r); }, (e: unknown) => { if (alive) toast(e instanceof Error ? e.message : 'Could not load the signature requests', 'error'); });
+    return () => { alive = false; };
+  }, [project.id, canShape, toast]);
+  const putRequest = (r: SigningRequest) => setRequests((all) => (all.some((x) => x.id === r.id) ? all.map((x) => (x.id === r.id ? r : x)) : [r, ...all]));
   useEffect(() => { if (canShape && seesVendors) studio.listVendors(project.id).then(setVendors).catch(() => setVendors([])); }, [project.id, canShape, seesVendors]);
 
   const gaps = useMemo(() => (canShape ? paperworkGaps({
@@ -131,7 +141,7 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
           <h3 id={`paper-${g.id}`} className={s.hint} style={{ margin: 0, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>{g.plural} · {g.rows.length}</h3>
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
             {g.rows.map((d) => (
-              <DocItem key={d.id} doc={d} canShape={canShape} today={today} crew={crew} vendors={vendors}
+              <DocItem key={d.id} doc={d} canShape={canShape} today={today} crew={crew} vendors={vendors} requests={requests.filter((r) => r.document_id === d.id)} onRequest={putRequest}
                 locations={locations.rows.map((l) => ({ id: l.id, name: l.name }))} isMine={d.person_id === userId}
                 onChange={(row, removedId) => { if (row) docs.upsertLocal(row); else if (removedId) docs.removeLocal(removedId); }} />
             ))}
@@ -142,7 +152,8 @@ export function PaperworkView({ crew }: { crew: CrewRow[] }) {
   );
 }
 
-function DocItem({ doc, canShape, today, crew, vendors, locations, isMine, onChange }: {
+function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, locations, isMine, onChange }: {
+  requests: SigningRequest[]; onRequest: (r: SigningRequest) => void;
   doc: ProjectDocument; canShape: boolean; today: string; crew: CrewRow[]; vendors: Vendor[];
   locations: { id: string; name: string }[]; isMine: boolean;
   onChange: (row: ProjectDocument | null, removedId?: string) => void;
@@ -150,6 +161,8 @@ function DocItem({ doc, canShape, today, crew, vendors, locations, isMine, onCha
   const { toast } = useToast();
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const { project, userId } = useStudio();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const kind = doc.kind as DocKind;
@@ -194,8 +207,16 @@ function DocItem({ doc, canShape, today, crew, vendors, locations, isMine, onCha
         {doc.storage_path
           ? <button type="button" className={cx(s.btn, s.small)} onClick={() => void openFile()}>Open {doc.file_name}</button>
           : <span className={s.hint}>No file</span>}
+        {canShape && (doc.kind === 'release' || doc.kind === 'contract') && doc.status !== 'done' && (
+          <button type="button" className={cx(s.btn, s.small)} aria-expanded={sending} onClick={() => setSending((v) => !v)}>Send for signature</button>
+        )}
         {canShape && <button type="button" className={cx(s.btnGhost, s.small)} aria-expanded={open} aria-label={open ? `Done editing ${doc.title}` : `Edit ${doc.title}`} onClick={() => setOpen((v) => !v)}>{open ? 'Done' : 'Edit'}</button>}
       </div>
+      {canShape && <SigningStatus requests={requests} onChanged={(r) => { onRequest(r); }} />}
+      {canShape && sending && (
+        <SendForSignature projectId={project.id} projectTitle={project.title} userId={userId} documentId={doc.id} kind={doc.kind} crew={crew} personId={doc.person_id}
+          onCreated={(r) => { onRequest(r); onChange({ ...doc, status: doc.status === 'done' ? 'done' : 'pending' }); }} onClose={() => setSending(false)} />
+      )}
       {canShape && open && (
         <div style={{ padding: '0 12px 12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, alignItems: 'end' }}>
           <div className={s.row} style={{ gap: 6, gridColumn: '1 / -1', flexWrap: 'wrap' }} role="radiogroup" aria-label={`${doc.title} status`}>
