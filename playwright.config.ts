@@ -24,6 +24,10 @@ export default defineConfig({
     // doesn't match the pinned headless-shell build (e.g. only a full
     // Chromium binary is available). Unset by default; CI never sets it.
     launchOptions: process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : undefined,
+    // A headless browser reports a LIGHT device, and with no saved choice the suite now follows it (Paper). The journeys were
+    // written against Misfit and the accessibility spec checks it, so they run on a dark device; e2e/theme-default.spec.ts
+    // covers the light one.
+    colorScheme: 'dark',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

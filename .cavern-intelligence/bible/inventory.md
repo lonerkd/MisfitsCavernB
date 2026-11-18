@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 104 tables · 80 database functions · 123 e2e specs**
+**55 pages · 9 API routes · 104 tables · 80 database functions · 124 e2e specs**
 
 ## Routes
 
@@ -31,7 +31,7 @@
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (280) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 30 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, auth-journey, auth-validation, community-page, install, island, keyboard-audit, legal, login-smoke, password-recovery, route-smoke, split, suspend-user |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, auth-journey, auth-validation, community-page, install, island, keyboard-audit, legal, login-smoke, password-recovery, route-smoke, split, suspend-user, theme-default |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 35 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (297) | 71 files · components: crafts, projects, ui · lib: auth, brief, crafts, film, formats, island, os, print, push, roles, scriptos, studio, supabase, types, util, validation | call-sheets, push |
@@ -735,6 +735,7 @@
 | `studio-undo.spec.ts` | `/studio` |
 | `suspend-user.spec.ts` | `/admin/audit-logs`, `/admin/users`, `/auth`, `/crew/*` |
 | `table-read.spec.ts` | `/editor`, `/projects/*` |
+| `theme-default.spec.ts` | `/auth` |
 | `themes.spec.ts` | `/projects`, `/projects/*`, `/settings` |
 | `today-owner.spec.ts` | `/community` |
 | `tool-find-presence.spec.ts` | `/studio` |
