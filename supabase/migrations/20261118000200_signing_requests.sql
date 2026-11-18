@@ -26,7 +26,8 @@ CREATE TABLE public.signing_requests (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX signing_requests_project_idx ON public.signing_requests (project_id, created_at DESC);
-CREATE INDEX signing_requests_document_idx ON public.signing_requests (document_id) WHERE document_id IS NOT NULL;
+CREATE INDEX signing_requests_created_by_idx ON public.signing_requests (created_by);
+CREATE INDEX signing_requests_document_idx ON public.signing_requests (document_id);
 
 ALTER TABLE public.signing_requests ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.signing_requests FROM anon;
