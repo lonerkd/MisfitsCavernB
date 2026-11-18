@@ -275,7 +275,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
       }
       const r = W.runner!;
-      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, level: heard.level, bass: heard.bass, pulse });
+      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: heard.level, bass: heard.bass, pulse });
       const steering = !isAuto(r);
       const tally = `${Math.round(r.x * 3).toLocaleString()} m in`;
       if (now - shown > 500) {
