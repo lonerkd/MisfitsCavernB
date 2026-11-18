@@ -4,6 +4,9 @@ name: Mobile audit
 # the local stack. It fails when a route is worse than scripts/mobile-audit-baseline.json (sideways scroll, controls under a thumb,
 # text too small, controls under a fixed bar, a field or its button hidden by the keyboard). The numbers only shrink: fix something,
 # run `node scripts/mobile-audit.mjs --update`, commit the smaller baseline. Chromium imitates an iPhone; real Safari still needs a person.
+# The same built app, stack and browser also run what only a browser finds, which no PR check ran before (2026-11-18): a page error or
+# hydration error on 18 surfaces at three sizes (e2e/page-errors.spec.ts) and text that does not read in Paper, on every screen and in
+# what opens on a click (scripts/theme-scan.mjs). Each found a real defect the week they were written. No new job: these are steps.
 # Not a required check yet (as with claude-review: make it required after it has run green on a few real pull requests).
 on:
   pull_request:
@@ -13,6 +16,8 @@ on:
       - 'lib/os/**'
       - 'lib/island/**'
       - 'scripts/mobile-audit*'
+      - 'scripts/theme-scan.mjs'
+      - 'e2e/page-errors.spec.ts'
       - '.github/workflows/mobile-audit.yml'
   workflow_dispatch:
 
@@ -23,7 +28,7 @@ concurrency:
 jobs:
   mobile-audit:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -51,6 +56,19 @@ jobs:
         env:
           PLAYWRIGHT_BASE_URL: http://localhost:3000
         run: node scripts/mobile-audit.mjs mobile-audit --check
+      - name: No page error or hydration error on any main surface
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+          E2E_LOCAL_STACK: '1'
+          E2E_LIVE_AUTH: '1'
+        run: npx playwright test e2e/page-errors.spec.ts --trace off --workers=1
+      - name: Every screen, and every state that opens on a click, reads in Paper
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: |
+          node scripts/bible-shots.mjs projects > /dev/null   # seeds the demo world the scan signs in to
+          THEME=paper node scripts/theme-scan.mjs
+          THEME=paper node scripts/theme-scan.mjs --states
       - uses: actions/upload-artifact@v7
         if: always()
         with:

@@ -29,6 +29,10 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    **If a `nightly-review` issue is open** (Claude Code prints it at start; or
    `gh issue list --label nightly-review`), its unchecked boxes are the first
    task of the day: fix them, tick them off, then pick from the backlog.
+   **If an `e2e-red` issue is open** (`gh issue list --label e2e-red`), the
+   nightly browser journeys failed on `main`: fixing that comes before the
+   backlog and before any new feature (reproduce the spec alone first). Red
+   that nobody owns is how a contrast defect sat on `main` for two nights.
 2. [`STATE.md`](.cavern-intelligence/STATE.md) — the handoff: open work, known issues (start at its
    "Resume here" if there is one) — then the newest notes in
    [`sessions/`](.cavern-intelligence/sessions/README.md) for what the last PRs did (Claude Code
@@ -45,6 +49,13 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    `npm run test`, `npm run build`. DB/RLS changes: a persona test in
    `tests/integration/` (owner ✅, crew scoped ✅, outsider ❌). Report what
    you ran and what it showed; say plainly what's unverified.
+   **A change a person can see is looked at in a browser before it merges, and
+   a change to a flow runs its spec** (the `run-misfits-cavern` skill). The pull
+   request says so on a `Verified: <what you ran, what you saw>` line, and **a
+   pull request that says it was not run, or not looked at, is not ready: the
+   gate fails it.** A residual gap only a real device, a real account or a
+   person can check may be named ("Not verified: a real nine-person room");
+   work that is simply not done goes in the backlog, not in a merge.
 3. **One cohesive system.** Feedback through `useToast()`, confirmation
    through `useConfirm()` — never `alert`/`confirm`. Account preferences in
    the database; `localStorage` only for device-level things and caches.
@@ -85,6 +96,11 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
     hooks and the agent workflows are not furniture: when one is wasteful,
     wrong for the owner's setup, or behind the tools, improve it in the same PR
     and say why in the session note. The budget above is the ruler.
+11. **A review that is not your own, for what is costly.** A pull request the
+    risk bot rates high, or one that declares a **Large change**, is reviewed by
+    something that did not write it before it merges: run the `code-review`
+    skill (fresh reviewers) on the diff, fix what is real, and put what it found
+    in the description. Writing "reviewed" about your own work is not a review.
 
 ## The change cycle
 
