@@ -49,13 +49,19 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
   };
 
   const log = async (page: Page, take: string, from: string, to: string, opts: { shot?: boolean; circle?: boolean } = {}) => {
-    // The scene stays chosen after the first take: link it only the first time.
-    if ((await page.getByLabel('Unlink scene 1').count()) === 0) {
-      const addScene = page.getByLabel('Scene: add a scene');
-      await expect(addScene.locator('option')).not.toHaveCount(1, { timeout: 30_000 });
-      await addScene.selectOption({ index: 1 });
-    }
-    await expect(page.getByLabel('Unlink scene 1')).toBeVisible();
+    // The scene stays chosen after the first take: link it only the first time. A person who picks a scene and sees it did not stick
+    // picks again, so this does too: it retries the pick until the link shows. (A pick made just before the view finished loading
+    // was lost under load, and no wait on the link alone can bring it back: it failed even with 30 s. Whether the view should keep
+    // a pick made while it loads is open, BACKLOG 3.37.)
+    const unlink = page.getByLabel('Unlink scene 1');
+    await expect(async () => {
+      if (!(await unlink.isVisible())) {
+        const addScene = page.getByLabel('Scene: add a scene');
+        await expect(addScene.locator('option')).not.toHaveCount(1, { timeout: 10_000 });
+        await addScene.selectOption({ index: 1 });
+      }
+      await expect(unlink).toBeVisible({ timeout: 6_000 });
+    }).toPass({ timeout: 60_000 });
     if (opts.shot) {
       const shot = page.getByLabel('Shot', { exact: true });
       await expect(shot).toBeEnabled({ timeout: 30_000 });

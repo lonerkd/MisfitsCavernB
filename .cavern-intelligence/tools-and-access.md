@@ -221,7 +221,9 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   `ignoreCommand` runs `scripts/vercel-ignore.sh`: a branch deploys only when a file that
   goes into the app changed since its last deployment (`VERCEL_GIT_PREVIOUS_SHA`), so
   tests, e2e, migrations, dev scripts, docs and dependency-bot branches do not cost one;
-  `main` always builds. Add a path the app reads to that script's list (and its test) if one
+  `main` always builds. **When it cannot tell** what a branch changed (a first push has no previous
+  deployment and Vercel's clone has no `origin/main`) **it builds**: judging only the last commit once hid an
+  app change under a notes commit (#662, 2026-11-18). Add a path the app reads to that script's list (and its test) if one
   is ever skipped wrongly. When the cap is hit anyway the `Vercel` status fails with
   `api-deployments-free-per-day`; it is not a required check, so merging is unaffected.
 - **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
