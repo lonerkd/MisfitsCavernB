@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 8 API routes · 103 tables · 79 database functions · 123 e2e specs**
+**55 pages · 9 API routes · 104 tables · 80 database functions · 123 e2e specs**
 
 ## Routes
 
@@ -57,13 +57,14 @@
 | `/projects/[id]/pitch` | signed in | `app/(suite)/projects/[id]/pitch/page.tsx` (626) | 45 files · components: ui · lib: auth, formats, notifications, os, portfolio, push, scriptos, supabase, types, util, validation | accessibility, project-manager |
 | `/projects/[id]/world` | signed in | `app/(suite)/projects/[id]/world/page.tsx` (17) | 7 files · components: world · lib: supabase, world | **none** |
 | `/projects` | signed in | `app/(suite)/projects/page.tsx` (672) | 61 files · components: brand, formats, ui · lib: auth, brief, formats, hooks, island, lounge, onboarding, os, push, scriptos, supabase, types, util, validation | accessibility, auth-journey, island, keyboard-audit, layout, login-smoke, mobile, onboarding, page-errors, projects-keyboard-phase, route-smoke, search, themes |
-| `/settings` | signed in | `app/(suite)/settings/page.tsx` (337) | 55 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, supabase, themes, types, validation | accessibility, account-deletion, admin-actions, auth-journey, island, keyboard-audit, mobile, page-errors, phases, phone-keyboard, route-smoke, themes, your-data |
+| `/settings` | signed in | `app/(suite)/settings/page.tsx` (342) | 57 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, supabase, themes, types, validation | accessibility, account-deletion, admin-actions, auth-journey, island, keyboard-audit, mobile, page-errors, phases, phone-keyboard, route-smoke, themes, your-data |
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (302) | 73 files · components: audio, phone, studio, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (257) | 5 files · components: ui · lib: hooks, split | global-chords, page-errors, split |
 | `/studio` | signed in | `app/(suite)/studio/page.tsx` (259) | 335 files · components: Flag, ad, breakdown, brief, crafts, film, formats, notes, progress, projects, roles, studio, ui, world · lib: ad, auth, availability, breakdown, brief, casting, crafts, film, flags, formats, guides, hooks, hub, integrations, island, lounge, notes, notifications, os, pocket, print, push, references, review, roles, scriptos, split, storage, studio, supabase, themes, types, util, validation, world, writing | accessibility, ad-export, auth-journey, availability, beat-to-script, board-share, breakdown, budget-lines, call-sheets, change-impact, community-page, continuity, crew-craft, crew-records, cut-notes, daylight, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, editor-undo, grant-request, hiring, island-activity, island-onset-clock, island-upload, keyboard-audit, layout, location-rename, locations, mobile, money, mood-boards, notes, on-set, onset-offline, onset-phone, page-errors, performer-calls, phases, production-from-script, production-tools-open, project-manager, readiness-day-date, readiness, reading-corrections, real-data, records-links, role-scoped-money, route-smoke, scene-cost, script-formats, script-supervisor, search, shot-designer, split, story-interview, studio-find-presence, studio-journey, studio-undo, tool-find-presence, transcripts, view-as-role, your-workflow |
 | `/today` | signed in | `app/(suite)/today/page.tsx` (12) | 1 files · components: — · lib: — | community-page, island-onset-clock |
 | `/welcome` | signed in | `app/(suite)/welcome/page.tsx` (250) | 67 files · components: brief, crafts, formats, guides, progress, ui · lib: auth, brief, crafts, formats, guides, hooks, lounge, onboarding, os, pocket, push, scriptos, split, supabase, themes, types, util, validation | accessibility, auth-journey, keyboard-audit, onboarding |
+| `/api/calendar/[token]` (api) | public | `app/api/calendar/[token]/route.ts` (21) | 2 files · components: — · lib: calendar | **none** |
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
 | `/api/discord/test` (api) | public | `app/api/discord/test/route.ts` (65) | 3 files · components: — · lib: util, validation | **none** |
 | `/api/links` (api) | open (page checks) | `app/api/links/route.ts` (53) | 4 files · components: — · lib: integrations, studio, util | **none** |
@@ -355,7 +356,7 @@
 
 ### `/settings`
 
-- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `notifications`, `profiles`, `project_audio_references`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `sfx_assets`, `timeline_items`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `calendar_feeds`, `campaigns`, `jobs`, `notifications`, `profiles`, `project_audio_references`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `sfx_assets`, `timeline_items`
 - **Functions:** `account_deletion_plan`, `delete_my_account`, `get_my_account`, `get_my_ui_prefs`, `set_my_ui_prefs`, `transfer_project`
 - **Realtime:** `project`, `projects:list`
 
@@ -389,6 +390,11 @@
 - **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `channel_members`, `channel_presets`, `channels`, `crafts`, `discord_integrations`, `jobs`, `media`, `notifications`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
 - **Functions:** `advance_phase`, `can_manage_channel`, `can_post_channel`, `get_my_account`, `get_my_ui_prefs`, `has_discord_webhook`, `patch_project_settings`, `project_context`, `project_progress`, `projects_progress`, `set_my_ui_prefs`
 - **Realtime:** `project`, `projects:list`
+
+### `/api/calendar/[token]`
+
+- **Tables:** —
+- **Functions:** `calendar_feed`
 
 ### `/api/discord/notify`
 
@@ -431,6 +437,7 @@
 | `breakdown_elements` | `/editor`, `/studio` |
 | `brief_questions` | `/admin/brief-questions`, `/call/[id]`, `/editor`, `/lounge`, `/projects/[id]`, `/projects`, `/soundtrack`, `/studio`, `/welcome` |
 | `budget_items` | `/b/[token]`, `/p/[token]`, `/shared/[token]`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth/callback`, `/auth`, `/auth/spotify-callback`, `/call/[id]`, `/call`, `/community`, `/crew/[id]`, `/crew`, `/editor`, `/hub/[id]`, `/hub/help/[id]`, `/hub/help`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/welcome` |
+| `calendar_feeds` | `/settings` |
 | `call_sheet_acks` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/community`, `/editor`, `/studio` |
 | `call_sheet_calls` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/community`, `/editor`, `/studio` |
 | `call_sheets` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/community`, `/editor`, `/studio` |
@@ -548,6 +555,7 @@
 | `advance_phase` | called from a route |
 | `append_to_script` | called from a route |
 | `breakdown_memory` | called from a route |
+| `calendar_feed` | called from a route |
 | `can_manage_channel` | called from a route |
 | `can_post_channel` | called from a route |
 | `decide_review` | called from a route |

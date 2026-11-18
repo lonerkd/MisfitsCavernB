@@ -22,7 +22,11 @@ export async function proxy(request: NextRequest) {
     '/auth',
     '/api/discord',
     '/api/public',
+<<<<<<< HEAD
     '/sign',
+=======
+    '/api/calendar',
+>>>>>>> origin/main
     '/_next',
     '/favicon.ico',
     '/opengraph-image',
