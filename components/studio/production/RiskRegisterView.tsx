@@ -16,7 +16,7 @@ const STATUSES: RiskEntry['status'][] = ['open', 'mitigated', 'closed'];
 
 export function RiskRegisterView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('risks');
+  const { items, shown, save, remove } = useSettingsList('risks');
   const [draft, setDraft] = useState<Omit<RiskEntry, 'id'>>({
     risk: '',
     category: 'schedule',
@@ -28,7 +28,7 @@ export function RiskRegisterView() {
   });
   const [filter, setFilter] = useState<'all' | RiskEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.risk.trim()) return;
@@ -119,6 +119,7 @@ export function RiskRegisterView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

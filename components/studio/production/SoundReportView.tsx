@@ -13,7 +13,7 @@ type SoundEntry = { id: string; scene_ids?: string[]; character_id?: string | nu
 
 export function SoundReportView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('soundReports');
+  const { items, shown, save, remove } = useSettingsList('soundReports');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<SoundEntry, 'id'>>({
     scene: '',
@@ -64,7 +64,7 @@ export function SoundReportView() {
       </div>
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((s2) => (
+        {shown.map((s2) => (
           <li key={s2.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {sceneChip(s2, t.sceneById) && <span className={s.chip}>Sc {sceneChip(s2, t.sceneById)}</span>}
@@ -80,6 +80,7 @@ export function SoundReportView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

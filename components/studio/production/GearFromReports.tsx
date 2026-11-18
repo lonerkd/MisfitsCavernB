@@ -20,8 +20,8 @@ const NOT_EQUIPMENT = new Set(['', '-', 'n/a']);
  * does not have yet. Adding writes a gear item (status needed); nothing changes in the reports.
  */
 export function GearFromReports({ items, save }: { items: GearEntry[]; save: (next: GearEntry[]) => Promise<boolean> }) {
-  const cameraReports = useSettingsList('cameraReports');
-  const soundReports = useSettingsList('soundReports');
+  const cameraReports = useSettingsList('cameraReports', { find: false });
+  const soundReports = useSettingsList('soundReports', { find: false });
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 

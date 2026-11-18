@@ -13,7 +13,7 @@ type CameraEntry = { id: string; scene_ids?: string[]; character_id?: string | n
 
 export function CameraReportView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('cameraReports');
+  const { items, shown, save, remove } = useSettingsList('cameraReports');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CameraEntry, 'id'>>({
     scene: '',
@@ -73,8 +73,9 @@ export function CameraReportView() {
         </label>
       </div>
 
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((c) => (
+        {shown.map((c) => (
           <li key={c.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
               {sceneChip(c, t.sceneById) && <span className={s.chip}>Sc {sceneChip(c, t.sceneById)}</span>}

@@ -22,6 +22,7 @@ import type { ScriptFormat } from '@/lib/scriptos/parser';
 import { awaitOSUser } from '@/lib/os';
 import { readable } from '@/lib/util/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
+import { HereLine } from '@/components/studio/HereLine';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { useProjectBrief, useCanShape } from '@/lib/brief';
 import { BriefPanel } from '@/components/brief/BriefPanel';
@@ -264,6 +265,7 @@ export default function ProjectHubPage() {
             )}
           </div>
           <h1 style={{ fontFamily: 'var(--display)', fontSize: 'clamp(2.6rem, 7vw, 4.4rem)', fontWeight: 900, letterSpacing: '-0.045em', lineHeight: 0.9, margin: 0 }}>{project.title}</h1>
+          <HereLine tool="project" />
           <LoglineEditor
             projectId={id}
             value={project.description}

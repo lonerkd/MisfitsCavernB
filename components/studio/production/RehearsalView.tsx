@@ -13,7 +13,7 @@ type RehearsalEntry = { id: string; scene_ids?: string[]; character_id?: string 
 
 export function RehearsalView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('rehearsals');
+  const { items, shown, save, remove } = useSettingsList('rehearsals');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<RehearsalEntry, 'id'>>({
     date: new Date().toISOString().slice(0, 10),
@@ -30,7 +30,7 @@ export function RehearsalView() {
     setDraft({ date: new Date().toISOString().slice(0, 10), time: '10:00', location: '', participants: '', scenes: '', notes: '' });
   };
 
-  const sorted = [...items].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  const sorted = [...shown].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
 
   return (
     <div className={s.stack} style={{ gap: 24, maxWidth: 900 }}>
@@ -82,6 +82,7 @@ export function RehearsalView() {
           </li>
         ))}
       </ul>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
     </div>
   );
 }

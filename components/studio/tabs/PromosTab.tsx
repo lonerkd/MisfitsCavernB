@@ -11,6 +11,7 @@ import { logActivity } from '@/lib/supabase/activity';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { TabHeader } from '../TabHeader';
+import { useRecordFind } from '../toolFind';
 import s from '../studio.module.css';
 
 const STAGES = [
@@ -53,6 +54,7 @@ export function PromosTab() {
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState({ title: '', platform: '', audience: '', budget: '' });
   const campaigns = useMemo(() => project.campaigns ?? [], [project.campaigns]);
+  const { shown: shownCampaigns } = useRecordFind(campaigns as unknown as Array<Record<string, unknown>>);
   const platforms = useUsedPlatforms(useMemo(() => campaigns.map((c) => c.platform), [campaigns]));
 
   const add = async (e: React.FormEvent) => {
@@ -159,7 +161,7 @@ export function PromosTab() {
 
       {campaigns.length ? (
         <div className={s.stack} style={{ gap: 10 }}>
-          {campaigns.map((c) => (
+          {(shownCampaigns as unknown as typeof campaigns).map((c) => (
             <div key={c.id} className={s.panel} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
               <div style={{ minWidth: 0, flex: '1 1 240px' }}>
                 <div className={s.cardMeta} style={{ marginBottom: 6 }}>

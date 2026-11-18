@@ -17,7 +17,7 @@ const keyOf = (v: string) => v.trim().toLowerCase();
  * Adding writes a pending offload entry for the card; nothing changes in the camera reports.
  */
 export function OffloadsFromReports({ items, save }: { items: OffloadEntry[]; save: (next: OffloadEntry[]) => Promise<boolean> }) {
-  const cameraReports = useSettingsList('cameraReports');
+  const cameraReports = useSettingsList('cameraReports', { find: false });
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 
