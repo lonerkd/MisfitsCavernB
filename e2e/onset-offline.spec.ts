@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // On set without signal, against a local stack: the connection drops mid-day;
@@ -22,8 +22,8 @@ test.describe('On set offline (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `osoff.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `osoff${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `osoff${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Underground', creator_id: userId, status: 'production' }).select('id').single()).data!.id;
     await admin.from('scripts').insert({ title: 'Underground', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId });
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: TODAY, general_call: '07:00', estimated_wrap: '19:00' });
@@ -33,16 +33,11 @@ test.describe('On set offline (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('changes made with no signal wait on the device and are sent when it’s back', async ({ page, context }) => {
     test.setTimeout(150_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto('/studio?tab=production&view=onset');
     const picker = page.getByLabel('Active project');

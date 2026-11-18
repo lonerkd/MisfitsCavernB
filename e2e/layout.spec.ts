@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,7 +31,7 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `layout${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `layout${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Harbour ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     // A busy project: enough channels that the Lounge's channel list is taller than the screen.
     await admin.from('channels').insert(Array.from({ length: 18 }, (_, i) => ({ project_id: projectId, name: `dept-${i}-${TAG}`, type: 'text' })));
@@ -41,18 +41,13 @@ test.describe('Layout guard at desk size (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('id', scriptId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('the dock hides nothing', async ({ browser }) => {
     test.setTimeout(120_000);
     const ctx = await browser.newContext(DESK);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     // Opened, every app in the island's strip is whole and on screen.
     await page.goto('/community');

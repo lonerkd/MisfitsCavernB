@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -34,7 +34,7 @@ test.describe.serial('Daylight (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `light${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `light${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Harbor ${TAG}`, creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('scripts').insert({ title: 'Harbor', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId });
     await admin.from('shoot_days').insert({ project_id: projectId, day_number: 1, shoot_date: '2026-06-21' });
@@ -44,15 +44,10 @@ test.describe.serial('Daylight (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   async function open(page: Page, view: string) {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
     await page.goto(`/studio?tab=production&view=${view}`);
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Leaving the suite from Settings: a project other people work on has to be
@@ -21,7 +21,7 @@ test.describe('Delete account (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const p of [leaver, crew]) {
-      p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: p.username } })).data.user!.id;
+      p.id = (await stack.createUser({ email: p.email, password: PASSWORD, username: p.username })).id;
     }
     sharedId = (await admin.from('projects').insert({ title: `Harbour ${TAG}`, creator_id: leaver.id }).select('id').single()).data!.id;
     soloId = (await admin.from('projects').insert({ title: `Notebook ${TAG}`, creator_id: leaver.id }).select('id').single()).data!.id;
@@ -35,11 +35,7 @@ test.describe('Delete account (local Supabase)', () => {
 
   test('hand over, then delete for good', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', leaver.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: leaver.email, password: PASSWORD });
 
     await page.goto('/settings');
     await page.getByRole('button', { name: 'DELETE ACCOUNT…' }).click();

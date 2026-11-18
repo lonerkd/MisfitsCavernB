@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 
 // "Connect Spotify" on a site Spotify can't send anyone back to (a local or
 // preview address) must say why, here — not fail silently, and not walk the
@@ -12,24 +11,15 @@ const TAG = Date.now().toString(36);
 test.describe('Spotify connect (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
   const me = { id: '', email: `sp.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sp${TAG}` } })).data.user!.id;
-  });
-  test.afterAll(async () => {
-    if (admin && me.id) await admin.auth.admin.deleteUser(me.id);
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `sp${TAG}` })).id;
   });
 
   test('says why it can’t connect, and stays on the site', async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
 
     await page.goto('/soundtrack');
     await page.getByRole('button', { name: /Connect Spotify/ }).first().click();

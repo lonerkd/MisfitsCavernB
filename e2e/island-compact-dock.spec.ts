@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser } from '@playwright/test';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The island at a narrow width (island_v2, local runs have it on): a window under 760 px with a
 // mouse keeps the dock and has no tab bar; a touch phone keeps the tab bar and has no dock.
@@ -14,22 +13,15 @@ const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch:
 test.describe('Compact dock (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
   const user = { id: '', email: `cd.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    user.id = (await admin.auth.admin.createUser({ email: user.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cd${TAG}` } })).data.user!.id;
+    user.id = (await stack.createUser({ email: user.email, password: PASSWORD, username: `cd${TAG}` })).id;
   });
-  test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });
 
   const open = async (browser: Browser, opts: object) => {
     const page = await (await browser.newContext(opts)).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: user.email, password: PASSWORD });
     await page.goto('/community');
     return page;
   };

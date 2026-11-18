@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -22,18 +22,14 @@ test.describe('Beat → script (local Supabase)', () => {
 
   const signIn = async (browser: Browser, who: { email: string }) => {
     const page = await (await browser.newContext()).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
     return page;
   };
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[owner, `btowner${TAG}`], [crew, `btcrew${TAG}`]] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: name } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: name })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Lantern ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, craft: 'Writer', status: 'confirmed' });
@@ -92,18 +88,14 @@ test.describe('Beat → script (local Supabase)', () => {
 
   test('only people who can open the project can add to its script', async ({ stack }) => {
     const outsiderEmail = `bt-out.${TAG}@journey.test`;
-    const outsiderId = (await admin.auth.admin.createUser({ email: outsiderEmail, password: PASSWORD, email_confirm: true, user_metadata: { username: `btout${TAG}` } })).data.user!.id;
-    try {
-      const riley = stack.anonClient();
-      await riley.auth.signInWithPassword({ email: outsiderEmail, password: PASSWORD });
-      const before = (await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content;
-      const { error } = await riley.rpc('append_to_script', { p_script: scriptId, p_text: '\nRILEY WAS HERE' });
-      expect(error?.message).toMatch(/not found/i);
-      expect((await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content).toBe(before);
-      const anon = stack.anonClient();
-      expect((await anon.rpc('append_to_script', { p_script: scriptId, p_text: '\nANON' })).error).not.toBeNull();
-    } finally {
-      await admin.auth.admin.deleteUser(outsiderId);
-    }
+    await stack.createUser({ email: outsiderEmail, password: PASSWORD, username: `btout${TAG}` });
+    const riley = stack.anonClient();
+    await riley.auth.signInWithPassword({ email: outsiderEmail, password: PASSWORD });
+    const before = (await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content;
+    const { error } = await riley.rpc('append_to_script', { p_script: scriptId, p_text: '\nRILEY WAS HERE' });
+    expect(error?.message).toMatch(/not found/i);
+    expect((await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content).toBe(before);
+    const anon = stack.anonClient();
+    expect((await anon.rpc('append_to_script', { p_script: scriptId, p_text: '\nANON' })).error).not.toBeNull();
   });
 });

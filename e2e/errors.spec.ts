@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The suite hears about errors people hit: an uncaught error in the browser
@@ -16,22 +16,17 @@ test.describe('Error log (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `errs${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `errs${TAG}` })).id;
     await admin.from('profiles').update({ is_admin: true }).eq('id', owner.id);
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('client_errors').delete().like('message', `%${TAG}%`);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('an uncaught error is logged once and shown to admins', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await page.goto('/community?from=a-link');
     await page.waitForTimeout(1500); // the reporter mounts with the shell

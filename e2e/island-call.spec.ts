@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { chromium, type Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -21,7 +21,7 @@ test.describe('The island holds a voice call (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `call${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `call${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Call ${TAG}`, creator_id: userId, status: 'production' }).select('id').single()).data!.id;
     const { error } = await admin.from('channels').insert({ project_id: projectId, name: room, type: 'voice', created_by: userId });
     if (error) throw new Error(`voice channel: ${error.message}`);
@@ -29,7 +29,6 @@ test.describe('The island holds a voice call (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    if (userId) await admin.auth.admin.deleteUser(userId);
   });
 
   const island = (page: Page) => page.getByRole('navigation', { name: 'Suite' });
@@ -61,11 +60,7 @@ test.describe('The island holds a voice call (local Supabase)', () => {
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, permissions: ['microphone'] });
     const page = await ctx.newPage();
     try {
-      await page.goto('/auth');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', PASSWORD);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await signInAs(page, { email: email, password: PASSWORD });
 
       await page.goto('/lounge');
       const picker = page.getByLabel('Active project');

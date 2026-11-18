@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { chromium } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -18,14 +18,13 @@ test.describe('Mood boards (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `boards${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `boards${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Boards ${TAG}`, creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('media').insert({ project_id: projectId, kind: 'link', title: 'Rain on glass', external_url: 'https://example.com/rain', created_by: userId });
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    if (userId) await admin.auth.admin.deleteUser(userId);
   });
 
   test('make a board, add a reference and a note, arrange them, and it is all still there after a reload', async () => {
@@ -34,11 +33,7 @@ test.describe('Mood boards (local Supabase)', () => {
     const ctx = await browser.newContext({ viewport: { width: 1400, height: 1000 } });
     const page = await ctx.newPage();
     try {
-      await page.goto('/auth');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', PASSWORD);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await signInAs(page, { email: email, password: PASSWORD });
       await page.goto('/studio?tab=library&view=boards');
       const picker = page.getByLabel('Active project');
       await picker.waitFor();

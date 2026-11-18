@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -24,17 +24,13 @@ test.describe('Installing on iPhone (local Supabase)', () => {
     const ctx = await browser.newContext(opts);
     if (init) await ctx.addInitScript(init);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     return page;
   };
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `inst${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `inst${TAG}` })).id;
   });
   test.afterAll(async () => { if (me.id) await admin?.auth.admin.deleteUser(me.id); });
 

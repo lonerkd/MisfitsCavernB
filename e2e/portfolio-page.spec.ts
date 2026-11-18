@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -20,11 +20,7 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
 
   const signIn = async (browser: Browser) => {
     const page = await (await browser.newContext()).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
     return page;
   };
   const visitor = async (browser: Browser) => (await browser.newContext()).newPage();
@@ -32,8 +28,8 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    const { data } = await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: owner.name } });
-    owner.id = data.user!.id;
+    const data = await stack.createUser({ email: owner.email, password: PASSWORD, username: owner.name });
+    owner.id = data.id;
     await admin.from('profiles').update({ role: 'Director', bio: 'Short films about water.' }).eq('id', owner.id);
     const pub = await admin.from('portfolio_projects').insert({ user_id: owner.id, title: 'Public Film', visibility: 'public', cover_url: COVER, year: 2026 }).select('share_token').single();
     if (pub.error) throw pub.error;
@@ -54,7 +50,6 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('creator_id', owner.id);
     await admin.from('portfolio_projects').delete().eq('user_id', owner.id);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('off by default: a visitor gets a not-found', async ({ browser }) => {

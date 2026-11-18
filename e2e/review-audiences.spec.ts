@@ -16,7 +16,7 @@ test.describe('Review links by audience (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    ownerId = (await admin.auth.admin.createUser({ email: `ra-owner.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: `raowner${TAG}` } })).data.user!.id;
+    ownerId = (await stack.createUser({ email: `ra-owner.${TAG}@journey.test`, password: randomUUID(), username: `raowner${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Pitch ${TAG}`, creator_id: ownerId }).select('id').single()).data!.id;
     const scriptId = (await admin.from('scripts').insert({ title: 'The pitch', content: 'INT. ROOM - DAY\n\nThe pitch.', project_id: projectId, created_by: ownerId, last_edited_by: ownerId }).select('id').single()).data!.id;
     const v = (await admin.from('item_versions').insert({ project_id: projectId, script_id: scriptId, label: 'Cut 1', created_by: ownerId }).select('id').single()).data!.id;
@@ -27,7 +27,6 @@ test.describe('Review links by audience (local Supabase)', () => {
   });
   test.afterAll(async () => {
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(ownerId);
   });
 
   test('the client can approve, comment and name themselves', async ({ page }) => {

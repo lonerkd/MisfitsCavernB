@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 
 // Shortcuts are searchable: the command palette finds one by its keys or its name, Enter opens the shortcuts panel on it,
 // and the panel has its own filter. Opt-in: E2E_LOCAL_STACK=1.
@@ -10,22 +9,15 @@ const TAG = Date.now().toString(36);
 test.describe('Searching the shortcuts (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
   const user = { id: '', email: `sk.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    user.id = (await admin.auth.admin.createUser({ email: user.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sk${TAG}` } })).data.user!.id;
+    user.id = (await stack.createUser({ email: user.email, password: PASSWORD, username: `sk${TAG}` })).id;
   });
-  test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });
 
   test('the palette finds a shortcut by its keys, and the panel opens on it and filters', async ({ page }) => {
     test.setTimeout(90_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: user.email, password: PASSWORD });
     await page.goto('/community');
     await page.waitForLoadState('domcontentloaded');
     await page.locator('body').click();
