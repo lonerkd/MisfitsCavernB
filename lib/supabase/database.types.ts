@@ -4864,6 +4864,76 @@ export type Database = {
           },
         ];
       };
+      signing_requests: {
+        Row: {
+          body: string;
+          body_hash: string | null;
+          created_at: string;
+          created_by: string | null;
+          decline_reason: string | null;
+          document_id: string | null;
+          expires_at: string;
+          id: string;
+          project_id: string;
+          signed_at: string | null;
+          signed_name: string | null;
+          signer_label: string | null;
+          status: string;
+          title: string;
+          token: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          body: string;
+          body_hash?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          decline_reason?: string | null;
+          document_id?: string | null;
+          expires_at?: string;
+          id?: string;
+          project_id: string;
+          signed_at?: string | null;
+          signed_name?: string | null;
+          signer_label?: string | null;
+          status?: string;
+          title: string;
+          token?: string;
+        };
+        Update: {
+          body?: string;
+          body_hash?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          decline_reason?: string | null;
+          document_id?: string | null;
+          expires_at?: string;
+          id?: string;
+          project_id?: string;
+          signed_at?: string | null;
+          signed_name?: string | null;
+          signer_label?: string | null;
+          status?: string;
+          title?: string;
+          token?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "signing_requests_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "project_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "signing_requests_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       spotify_connections: {
         Row: {
           access_token: string;
@@ -5498,6 +5568,10 @@ export type Database = {
         };
         Returns: boolean;
       };
+      decline_signing: {
+        Args: { p_reason?: string; p_token: string };
+        Returns: boolean;
+      };
       delete_my_account: { Args: { p_confirm: string }; Returns: undefined };
       edit_message: {
         Args: { p_content: string; p_message: string };
@@ -5624,6 +5698,19 @@ export type Database = {
           author_username: string;
           content: string;
           format: string;
+          title: string;
+        }[];
+      };
+      get_signing: {
+        Args: { p_token: string };
+        Returns: {
+          body: string;
+          expires_at: string;
+          project_title: string;
+          signed_at: string;
+          signed_name: string;
+          signer_label: string;
+          status: string;
           title: string;
         }[];
       };
@@ -5836,6 +5923,10 @@ export type Database = {
         Args: { p_admin: boolean; p_user: string };
         Returns: undefined;
       };
+      sign_document: {
+        Args: { p_agree: boolean; p_name: string; p_token: string };
+        Returns: boolean;
+      };
       sync_script_scenes: {
         Args: { p_base_ids: string[]; p_scenes: Json; p_script_id: string };
         Returns: string[];
@@ -5852,6 +5943,7 @@ export type Database = {
         Args: { p_project: string; p_to: string };
         Returns: undefined;
       };
+      void_signing: { Args: { p_id: string }; Returns: boolean };
     };
     Enums: {
       [_ in never]: never;
