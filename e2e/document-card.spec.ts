@@ -8,7 +8,7 @@ test.describe('The card opens from a document (local Supabase)', () => {
   test('a Card button on a paperwork row opens that document’s card, and it closes', async ({ page, stack }) => {
     test.setTimeout(120_000);
     const owner = await stack.createUser({ label: 'doccard' });
-    const project = await stack.createProject(owner, { title: `Doc card ${stack.tag}` });
+    const project = await stack.createProject(owner, { title: `Doc card ${stack.tag}`, status: 'pre-production' }); // Paperwork is a pre-production tool: earlier phases show it behind "Opens in Pre-Production"
     const title = `Location release — doc${stack.tag}`;
     await stack.insert('project_documents', { project_id: project.id, kind: 'release', title, status: 'needed', created_by: owner.id });
 
