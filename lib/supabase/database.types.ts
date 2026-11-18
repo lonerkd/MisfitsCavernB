@@ -445,6 +445,25 @@ export type Database = {
           },
         ];
       };
+      calendar_feeds: {
+        Row: {
+          created_at: string;
+          token: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          token?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          token?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       call_sheet_acks: {
         Row: {
           acked_at: string;
@@ -5484,6 +5503,20 @@ export type Database = {
           category_key: string;
           name: string;
           projects: number;
+        }[];
+      };
+      calendar_feed: {
+        Args: { p_token: string };
+        Returns: {
+          day: string;
+          end_time: string;
+          kind: string;
+          location: string;
+          notes: string;
+          project_title: string;
+          start_time: string;
+          summary: string;
+          uid: string;
         }[];
       };
       can_manage_channel: { Args: { cid: string }; Returns: boolean };
