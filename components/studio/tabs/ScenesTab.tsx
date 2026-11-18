@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Clapperboard, FileText, PenLine, Plus, RefreshCw, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
 import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNote } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
@@ -155,7 +156,7 @@ export function ScenesTab() {
 }
 
 function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote> }) {
-  const { scenes, links, postNotes, followScene, openInScript, castOf, doubtfulSceneOrdinals } = useStudio();
+  const { project, userId, scenes, links, postNotes, followScene, openInScript, castOf, doubtfulSceneOrdinals } = useStudio();
   const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
   const { toast } = useToast();
@@ -169,8 +170,13 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
   const update = async (patch: Partial<Pick<SceneRow, 'note' | 'color'>>) => {
+    const origin = undoOrigin();
+    const before: Partial<Pick<SceneRow, 'note' | 'color'>> = {};
+    if ('color' in patch) before.color = scene.color;
+    if ('note' in patch) before.note = scene.note;
     try {
       scenes.upsertLocal(await studio.updateScene(scene.id, patch));
+      pushUndo('color' in patch ? `Changed scene ${scene.scene_number}'s colour` : `Edited scene ${scene.scene_number}'s note`, async () => { scenes.upsertLocal(await studio.updateScene(scene.id, before)); }, origin);
       return true;
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save', 'error');
@@ -187,9 +193,11 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
   };
 
   const unlink = async (mediaId: string) => {
+    const origin = undoOrigin();
     try {
       await studio.unlinkMedia(scene.id, mediaId);
       links.removeLocal(`${scene.id}:${mediaId}`);
+      pushUndo(`Unlinked a reference from scene ${scene.scene_number}`, async () => { links.upsertLocal(await studio.linkMedia(project.id, userId, scene.id, mediaId)); }, origin);
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not unlink', 'error');
     }
