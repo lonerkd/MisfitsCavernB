@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import Avatar from '@/components/ui/Avatar';
 import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, listAllCastingNotes, addCastingNote, deleteCastingNote, listAuditions, scheduleAudition, cancelAudition, listCastingHistory, type Casting, type CastingNote, type CastingAudition, type CastingHistoryEntry } from '@/lib/supabase/casting';
 import { exportCastingSheet } from '@/lib/casting/export';
@@ -14,6 +15,8 @@ import { useStudio } from './StudioContext';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useScriptCharacters } from './production/useScriptCharacters';
+import { useRecordFind } from './toolFind';
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/util/color';
 import { useOnChange } from '@/lib/hooks/useOnChange';
@@ -40,10 +43,13 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const caps = useMyCapabilities(projectId);
   const decides = caps.can('casting.decide');
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId, scriptFormat);
   const chars = scriptChars.map((c) => ({ id: c.row?.id, name: c.name, color: c.color }));
   const loading = status === 'loading';
   const [castings, setCastings] = useState<Record<string, Casting>>({});
+  const findable = useMemo(() => chars.map((c) => ({ ...c, performer: castings[c.name.toUpperCase()]?.username ?? '' })), [chars, castings]);
+  const { shown: shownChars } = useRecordFind(findable as unknown as Array<Record<string, unknown>>);
   const [selected, setSelected] = useState<string | null>(null);
   const [assigning, setAssigning] = useState(false);
   const [notes, setNotes] = useState<CastingNote[]>([]);
@@ -99,7 +105,15 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     if (!selected) return;
     try {
       const casting = castings[selected.toUpperCase()];
+      const origin = undoOrigin();
+      const who = selected;
+      const before = casting?.crew_user_id ?? null;
       await setCasting(projectId, casting?.character_id || selected, selected, crewUserId, userId!);
+      pushUndo(`Cast ${who}`, async () => {
+        if (before) await setCasting(projectId, casting?.character_id || who, who, before, userId!);
+        else await removeCasting(projectId, casting?.character_id || who, who, userId!);
+        await loadCastings();
+      }, origin);
       logActivity(`cast a performer as ${selected}`, 'project', projectId);
       await loadCastings();
       setAssigning(false);
@@ -110,7 +124,9 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     try { 
       const casting = castings[name.toUpperCase()];
       if (!casting) return;
+      const origin = undoOrigin();
       await removeCasting(projectId, casting.character_id, name, userId!);
+      pushUndo(`Reopened casting for ${name}`, async () => { await setCasting(projectId, casting.character_id, name, casting.crew_user_id, userId!); await loadCastings(); }, origin);
       logActivity(`reopened casting for ${name}`, 'project', projectId); 
       await loadCastings(); 
       toast(`${name} reopened`, 'info'); 
@@ -123,6 +139,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     catch (e) { toast(e instanceof Error ? e.message : 'Could not add note', 'error'); }
   };
   const removeNote = async (id: string) => {
+    if (!await confirm('Remove this note?')) return;
     try { await deleteCastingNote(id); setNotes((n) => n.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not remove note', 'error'); }
   };
@@ -141,6 +158,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not schedule', 'error'); }
   };
   const cancelAud = async (id: string) => {
+    if (!await confirm('Cancel this audition?')) return;
     try { await cancelAudition(id); setAuditions((a) => a.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not cancel', 'error'); }
   };
@@ -160,7 +178,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
       {chars.length > 0 && (
         <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 24 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {chars.map(c => {
+            {(shownChars as unknown as typeof chars).map(c => {
               const cast = castings[c.name.toUpperCase()];
               const active = selected === c.name;
               return (
