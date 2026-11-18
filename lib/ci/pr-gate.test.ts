@@ -16,7 +16,7 @@ const TEST = file('lib/x/x.test.ts', 'A', 30, 'it("works", () => { expect(1).toB
 
 describe('the merge gate', () => {
   it('passes a small change with a test and a note', () => {
-    expect(run([file('lib/x/x.ts', 'M', 80), TEST, NOTE]).failed).toEqual([]);
+    expect(run([file('lib/x/x.ts', 'M', 80), TEST, NOTE], { body: 'Verified: ran the unit tests and the checks locally, and the spec against the local stack.' }).failed).toEqual([]);
   });
 
   describe('migrations-append-only', () => {
@@ -235,6 +235,43 @@ describe('the merge gate', () => {
     });
     it('a defined token passes', () => {
       expect(run([file('components/x/Y.tsx', 'M', 1, "const s = { color: 'var(--warn)' };"), NOTE, TEST]).byId['tokens-defined'].ok).toBe(true);
+    });
+  });
+  describe('not-run-claims', () => {
+    const code = [file('components/x/Y.tsx', 'M', 10), NOTE, TEST];
+    it('a PR that says it was not run, tested or looked at fails', () => {
+      for (const body of ['e2e specs rewritten but not run', 'Not run: the three edited specs', 'It was not looked at in a browser.', "I haven't tested the phone", 'I have not run them in a browser.', 'Not run: build, and no visual check in a browser.']) {
+        expect(run(code, { body }).failed, body).toContain('not-run-claims');
+      }
+    });
+    it('what only a real device, a person or staging can check may be named', () => {
+      for (const body of ['Not seen on a real iPhone.', 'Not run against staging.', 'Not verified in production.', 'Not tested on a phone.', 'Waits on a practitioner to run it.', 'Not verified: a real nine-person room.', '- Not verified: a real Spotify Premium account.', 'Not verified: the paginated calls (needs more than this sandbox).']) {
+        expect(run(code, { body }).byId['not-run-claims'].ok, body).toBe(true);
+      }
+    });
+    it('words inside a code fence are quoted text, not a claim', () => {
+      expect(run(code, { body: 'Output:\n```\n3 not run\n```\nVerified: ran it' }).byId['not-run-claims'].ok).toBe(true);
+    });
+    it('applies only when source changes (a note may say what it likes)', () => {
+      expect(run([NOTE], { body: 'not run' }).byId['not-run-claims'].ok).toBe(true);
+    });
+  });
+
+  describe('verified', () => {
+    it('a change of 40+ source lines needs a Verified line', () => {
+      const big = [file('components/x/Y.tsx', 'M', LIMITS.verifiedFromAddedLines), NOTE, TEST];
+      expect(run(big, { body: 'Does a thing.' }).failed).toContain('verified');
+      expect(run(big, { body: 'Verified: ran the checks, built against the local stack and looked at it in a browser.' }).byId.verified.ok).toBe(true);
+      expect(run(big, { body: '- **Verified:** typecheck, unit tests, and the spec against a local stack' }).byId.verified.ok).toBe(true);
+    });
+    it('a short placeholder is not enough', () => {
+      const big = [file('lib/x/x.ts', 'M', 50), NOTE, TEST];
+      expect(run(big, { body: 'Verified: yes' }).failed).toContain('verified');
+    });
+    it('a small change, tests or notes alone, and a dependency bot need none', () => {
+      expect(run([file('lib/x/x.ts', 'M', 5), NOTE, TEST], { body: '' }).byId.verified.ok).toBe(true);
+      expect(run([TEST, NOTE], { body: '' }).byId.verified.ok).toBe(true);
+      expect(run([file('lib/x/x.ts', 'M', 50), TEST], { title: 'chore(deps): bump x', author: 'dependabot[bot]', body: '' } as never).byId.verified.ok).toBe(true);
     });
   });
 });

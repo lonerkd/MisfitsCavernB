@@ -31,6 +31,7 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal/legal.ts` names the operator).
+- **Make `mobile-audit` a required check** (GitHub › Settings › Rules) once it has run green on a few real pull requests (2026-11-18: it now also runs the page-error spec and the Paper theme scan, which found real defects); and `claude-review` is still not required, so a "high-risk" label cannot stop a merge (RULES 11 asks for an independent review instead). Only you can change the ruleset.
 - **Optional — branch protection on `main`** with `checks` and `database`
   required. (`e2e-local` is now a nightly scheduled check, not a PR gate.)
   Branch protection turns on GitHub auto-merge, so a green PR merges itself

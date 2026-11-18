@@ -20,7 +20,7 @@ const GENERATED = /^(lib\/supabase\/database\.types\.ts|supabase\/schema\.finger
 const SESSIONS = /^\.cavern-intelligence\/sessions\/[^/]+\.md$/;
 const MIGRATION = /^supabase\/migrations\/[^/]+\.sql$/;
 
-export const LIMITS = { testsFromAddedLines: 60, newComponentLines: 60, largeAddedLines: 1200, largeFiles: 40 };
+export const LIMITS = { testsFromAddedLines: 60, newComponentLines: 60, largeAddedLines: 1200, largeFiles: 40, verifiedFromAddedLines: 40 };
 
 // The end of the SQL statement starting at `from`: the first `;` outside a single-quoted string, a "quoted identifier"
 // and a dollar-quoted body ($$ ... $$, $fn1$ ... $fn1$), so every body form is covered (not only dollar quotes).
@@ -181,6 +181,27 @@ export function evaluate(ctx) {
     add('lint-baseline-shrinks', grew.length === 0,
       `eslint-suppressions.json grew: ${grew.slice(0, 6).join('; ')}${grew.length > 6 ? '; …' : ''}. Fix the new violation instead of recording it. (An owner-approved baseline change is not a thing an author can grant.)`);
   }
+
+  // 10. What a change says about itself. Two checks, both about the description (the diff cannot say what was run):
+  //   - a change to source of any size must not say it was NOT run, tested or looked at: a PR that says it is not ready is
+  //     not ready. Work that is not done goes in the backlog, not in a merge. (A residual gap that only a real device, a real
+  //     account, a person or staging can check is fine to name: "Not verified: a real nine-person room" is the honest sentence.)
+  //   - a change of 40+ added source lines names what was run and what was seen: a `Verified: <what, 20+ characters>` line.
+  const UNRUN = /\b(?:not|never|wasn'?t|weren'?t|haven'?t|hasn'?t)\s+(?:been\s+|yet\s+)?(?:run|ran|looked\s+at|tested)\b/i;
+  const OUT_OF_REACH = /real\s+\w+|on\s+a\s+(?:phone|device)|staging|production|windows|printed|a\s+person|practitioner|the\s+owner/i;
+  let fenced = false;
+  const unrun = [];
+  for (const line of body.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; continue; }
+    if (fenced) continue;
+    if (UNRUN.test(line) && !OUT_OF_REACH.test(line)) unrun.push(line.trim().slice(0, 140));
+  }
+  const changesApp = src.length > 0;
+  add('not-run-claims', isDeps || !changesApp || unrun.length === 0,
+    `The description says it was not run, tested or looked at (${unrun[0] ?? ''}). Run it, or take that part out and put it in the backlog. A change that says it is not ready is not ready. (Only what a real device, a person or staging must check may be named as not done.)`);
+  const verified = waiver(body, 'Verified');
+  add('verified', isDeps || srcAdded < LIMITS.verifiedFromAddedLines || !!verified,
+    `This PR adds ${srcAdded} lines of source and its description has no line "Verified: <what you ran and what you saw, 20+ characters>". Say what you ran (the checks, the specs, a build against the local stack) and, for anything a person sees, what you looked at in a browser.`);
 
   return out;
 }
