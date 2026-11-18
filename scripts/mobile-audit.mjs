@@ -32,7 +32,8 @@ const ROUTES = [
   `/editor?script=${script.id}`, '/lounge', '/crew', '/jobs', '/profile', '/settings', '/soundtrack', '/portfolio', '/welcome',
 ];
 
-const base = devices['iPhone 15 Pro'];
+// A dark device: the audit's baseline was taken on Misfit, and with no saved choice the app follows the device (headless is light).
+const base = { ...devices['iPhone 15 Pro'], colorScheme: 'dark' };
 const MODES = [
   { name: 'portrait', ctx: { ...base } },
   { name: 'landscape', ctx: { ...base, viewport: { width: 852, height: 393 }, screen: { width: 852, height: 393 } } },
