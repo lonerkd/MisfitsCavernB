@@ -7,6 +7,8 @@ import { requestNoteFocus } from '@/lib/notes/focus';
 
 import { ViewAsBanner, OutsiderPreview } from '@/components/projects/ViewAs';
 import { useViewAs } from '@/lib/os/viewAs';
+import { usePresence } from '@/lib/os/PresenceContext';
+import { ToolFindProvider, ToolHereContext } from '@/components/studio/toolFind';
 import React, { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import Link from 'next/link';
@@ -75,6 +77,13 @@ export default function StudioPage() {
   const tabs = ALL_TABS.filter((t) => t.id !== 'promos' || modules.distribution);
   const [tab, view, setTabRaw] = useTab(tabs.map((t) => t.id));
   const tabListRef = useRef<HTMLDivElement>(null);
+  // Who is in which tab: Production names its own tool (production:<view>); every other tab names itself.
+  const { updateToolPresence } = usePresence();
+  useEffect(() => {
+    if (!activeProject || tab === 'production') return;
+    void updateToolPresence(`studio:${tab}`);
+    return () => { void updateToolPresence(null); };
+  }, [tab, activeProject, updateToolPresence]);
   // The strip scrolls sideways on a narrow screen: a soft fade on the side that still has tabs hidden says so.
   const [edges, setEdges] = useState({ left: false, right: false });
   useEffect(() => {
@@ -225,6 +234,8 @@ export default function StudioPage() {
                 ) : (
                   <>
                     {STUDIO_TAB_TOOL[tab] && <ToolIntro tool={toolState(progress, STUDIO_TAB_TOOL[tab]!)} accent={activeProject.accent_color} />}
+                    <ToolHereContext.Provider value={`studio:${tab}`}>
+                    <ToolFindProvider key={tab}>
                     {tab === 'overview' && <OverviewTab onOpen={setTab} onNavigate={navigate} />}
                     {tab === 'library' && <LibraryTab />}
                     {tab === 'scenes' && <ScenesTab />}
@@ -233,6 +244,8 @@ export default function StudioPage() {
                     {tab === 'promos' && <PromosTab />}
                     {tab === 'pitch' && <PitchTab />}
                     {tab === 'share' && <ShareTab />}
+                    </ToolFindProvider>
+                    </ToolHereContext.Provider>
                   </>
                 )}
               </div>

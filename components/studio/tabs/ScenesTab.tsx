@@ -10,6 +10,7 @@ import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNo
 import { useStudio } from '../StudioContext';
 import { StatusPill, ErrorBar, cx } from '../ui';
 import { TabHeader } from '../TabHeader';
+import { useRecordFind } from '../toolFind';
 import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaDetail } from '../media/MediaDetail';
 import { MediaPicker } from '../media/MediaPicker';
@@ -24,6 +25,7 @@ import s from '../studio.module.css';
  */
 export function ScenesTab() {
   const { project, userId, scripts, scriptsStatus, scriptId, setScriptId, scenes, sceneSync, media, mediaById, mediaByScene, links, followScene } = useStudio();
+  const { shown: shownScenes } = useRecordFind(scenes.rows as unknown as Array<Record<string, unknown>>);
 
   // Linked split screen: bring the script's current scene into view.
   useEffect(() => {
@@ -120,7 +122,7 @@ export function ScenesTab() {
         />
       ) : (
         <div className={s.sceneList}>
-          {scenes.rows.map((sc) => (
+          {(shownScenes as unknown as typeof scenes.rows).map((sc) => (
             <SceneCard
               key={sc.id}
               scene={sc}

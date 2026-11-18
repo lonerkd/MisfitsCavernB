@@ -18,6 +18,7 @@ import { CutScript, type LinePick } from '../post/CutScript';
 import { PaperEdit } from '../post/PaperEdit';
 import { ErrorBar, cx } from '../ui';
 import { TabHeader } from '../TabHeader';
+import { useRecordFind } from '../toolFind';
 import s from '../studio.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 
@@ -260,7 +261,8 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
   const [show, setShow] = useState<'open' | 'all'>('open');
   const [dept, setDept] = useState<PostDepartment | ''>('');
   const sceneById = useMemo(() => new Map(scenes.rows.map((sc) => [sc.id, sc])), [scenes.rows]);
-  const list = notes.filter((n) => (show === 'all' || !n.resolved_at) && (!dept || n.department === dept));
+  const { shown: foundNotes } = useRecordFind(notes as unknown as Array<Record<string, unknown>>);
+  const list = (foundNotes as unknown as PostNote[]).filter((n) => (show === 'all' || !n.resolved_at) && (!dept || n.department === dept));
   const open = notes.filter((n) => !n.resolved_at).length;
 
   const toggle = async (n: PostNote) => {
