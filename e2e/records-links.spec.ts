@@ -33,6 +33,10 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     const picker = page.getByLabel('Active project');
     await picker.waitFor();
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    // The tool list opens on a press (BACKLOG 3.47): open it, then pick the tool.
+    const all = page.getByRole('button', { name: /^All tools/ });
+    await all.waitFor();
+    if ((await all.getAttribute('aria-expanded')) === 'false') await all.click();
     await page.getByText(tool, { exact: true }).first().click();
   };
 
