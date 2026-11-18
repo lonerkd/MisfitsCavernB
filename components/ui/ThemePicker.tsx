@@ -83,7 +83,7 @@ export function ThemePicker({ signedIn }: { signedIn: boolean }) {
         <span className={t.frostText}><strong>Frosted</strong><span> Translucent surfaces with a blur behind them, over any theme below.</span></span>
       </button>
       <div className={t.grid} role="radiogroup" aria-label="Theme">
-        {card('system', 'System', 'Cavern in the dark, Paper in the light — follows your device',
+        {card('system', 'System', 'Paper in the light, Misfit in the dark — follows your device',
           <span className={t.preview} aria-hidden style={{ background: 'linear-gradient(135deg, #040710 50%, #f6f1e7 50%)' }}><Monitor size={16} className={t.systemIcon} /></span>,
           () => choose({ id: 'system' }))}
         {THEMES.map((th) => card(th.id, th.label, th.hint, <Preview swatch={th.swatch} />, () => choose({ id: th.id })))}

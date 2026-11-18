@@ -38,7 +38,7 @@ const ROUTE_ARGS = ARGS.filter((a) => a !== '--states');
 const routes = ROUTE_ARGS.length ? ROUTE_ARGS : WITH_STATES ? [] : DEFAULT_ROUTES;
 
 const browser = await chromium.launch(process.env.MC_LOCAL_CHROMIUM ? { executablePath: process.env.MC_LOCAL_CHROMIUM } : {});
-const ctx = await browser.newContext({ viewport: PHONE ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: PHONE, isMobile: PHONE });
+const ctx = await browser.newContext({ viewport: PHONE ? { width: 390, height: 844 } : { width: 1440, height: 900 }, hasTouch: PHONE, isMobile: PHONE, colorScheme: 'dark' });
 if (THEME) await ctx.addInitScript(([t, f]) => { try { localStorage.setItem('mc_theme', JSON.stringify(f ? { id: t, frosted: true } : { id: t })); } catch { /* private mode */ } }, [THEME, FROSTED]);
 const page = await ctx.newPage();
 await page.goto(`${BASE}/auth`, { waitUntil: 'networkidle' });
