@@ -27,6 +27,8 @@ export default function NotificationBell() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   const unread = items.filter(n => !n.read).length;
+  // The badge's own text is part of the button's name (WCAG 2.5.3 Label in Name): "Notifications, 3 unread", "Notifications, 9+ unread".
+  const bellLabel = unread > 0 ? `Notifications, ${unread > 9 ? '9+' : unread} unread` : 'Notifications';
 
   const load = useCallback(async (uid: string) => {
     setItems(await fetchNotifications(uid));
@@ -90,8 +92,8 @@ export default function NotificationBell() {
         whileHover={{ scale: 1.18, y: -6 }}
         whileTap={{ scale: 0.93 }}
         transition={{ type: 'spring', stiffness: 500, damping: 26 }}
-        title="Notifications"
-        aria-label="Notifications"
+        title={bellLabel}
+        aria-label={bellLabel}
         aria-expanded={open}
         style={{
           width: 46, height: 46, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center',
