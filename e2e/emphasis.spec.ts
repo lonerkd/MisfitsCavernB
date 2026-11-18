@@ -1,26 +1,23 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Fountain emphasis while writing: *italic*, **bold**, _underline_ show
 // styled in the editor (markers dimmed), every character stays where the
 // textarea puts it (so the caret doesn't drift), and the saved text and the
 // Fountain export keep the markers. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Emphasis in the editor (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const me = { id: '', email: `em.${TAG}@journey.test` };
   let scriptId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `em${TAG}` } })).data.user!.id;
     scriptId = (await admin.from('scripts').insert({ title: `Emphasis ${TAG}`, content: 'INT. HARBOUR - NIGHT\n\n', created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;
   });

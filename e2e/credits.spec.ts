@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page, Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Credits against a local stack: a crew member's profile lists what they did
 // (from the project's crew and casting), one click puts it in their portfolio,
 // and the share page carries the cast & crew and festival laurels. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const TAG = Date.now().toString(36);
@@ -21,7 +20,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Credits (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let owner: string;
@@ -31,9 +30,8 @@ test.describe('Credits (local Supabase)', () => {
   let projectId: string;
   let token: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner = (await admin.auth.admin.createUser({ email: `cro.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: `owner${TAG}` } })).data.user!.id;
     crewEmail = `crc.${TAG}@journey.test`;
     crewName = `gaffer${TAG}`;

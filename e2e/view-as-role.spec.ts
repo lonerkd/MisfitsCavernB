@@ -1,25 +1,22 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Role model, step 6 in a real browser against a local stack: the owner previews the project as a specific role (a craft at an
 // access level) and every screen that follows a person's capabilities shows what that role sees: its own suite of tools first,
 // the screens it may and may not open, and what its job still lacks. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('View as a role (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `viewasr.${TAG}@journey.test` };
   let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `viewasr${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Preview ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('budget_items').insert({ project_id: projectId, category: `Camera ${TAG}`, amount: 1000 });

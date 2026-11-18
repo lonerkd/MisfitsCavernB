@@ -1,14 +1,13 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Split screen in a real browser against a local stack: the script beside
 // the Studio, linked — the caret's scene lights up in the Studio, the Studio
 // sends the script to a scene — any surface in either pane, keyboard resize,
 // and only this site may frame its pages. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights the lantern.\n\nSAM\nWho’s there?\n\nEXT. RIDGE - DAWN\n\nWind over the ridge.\n';
@@ -22,7 +21,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Split screen (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId: string;
@@ -30,9 +29,8 @@ test.describe('Split screen (local Supabase)', () => {
   let projectId: string;
   let scriptId: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     email = `sp.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sp${Date.now().toString(36)}` } });
     userId = data.user!.id;
