@@ -66,8 +66,8 @@ export const TOOLKITS: Record<string, Toolkit> = {
   // Sound
   'Production sound mixer': T(['sound', 'gear', 'mediaoffload', 'schedule']),
   'Boom operator': T(['sound', 'gear', 'schedule']),
-  'Sound designer': T(['sound', 'editorial', 'revisions'], ['No sound spotting or effects list tied to scenes (R17)']),
-  'Re-recording mixer': T(['sound', 'editorial', 'revisions']),
+  'Sound designer': T(['spotting', 'sound', 'editorial', 'revisions']),
+  'Re-recording mixer': T(['spotting', 'sound', 'editorial', 'revisions']),
   // Art
   'Production designer': T(['props', 'world', 'locations', 'breakdown', 'continuity', 'scout'], ['References cannot become tracked assets: no Pinterest import (R14)']),
   'Art director': T(['props', 'breakdown', 'locations', 'continuity', 'gear']),
@@ -87,8 +87,8 @@ export const TOOLKITS: Record<string, Toolkit> = {
   'Motion designer': T(['vfx', 'editorial']),
   'Post supervisor': T(['editorial', 'mediaoffload', 'schedule', 'claims', 'reports'], POST.gaps),
   // Music
-  'Composer': T(['sound', 'editorial', 'revisions'], ['No cue sheet; Spotify playback is verified with fakes only (R17)']),
-  'Music supervisor': T(['sound', 'editorial', 'revisions', 'paperwork'], ['No cue sheet or licensing tracker; Spotify playback is verified with fakes only (R17)']),
+  'Composer': T(['cues', 'sound', 'editorial', 'revisions'], ['Spotify playback is verified with fakes only (R17)']),
+  'Music supervisor': T(['cues', 'sound', 'editorial', 'revisions', 'paperwork'], ['Spotify playback is verified with fakes only (R17)']),
   // Performance: their surface is the call page, not the Studio
   'Actor': T(['rehearsal'], ['Calls, the call sheet and their own pages are on the call pages (My calls); there is no lines-learning or self-tape tool, and nothing after the shoot day (R19)'], 'call'),
   'Stunt performer': T(['rehearsal', 'safety'], ['Calls and pages only; no stunt-specific plan or safety sign-off (R19)'], 'call'),

@@ -53,6 +53,16 @@ describe('production records', () => {
     await cast.sam.client.from('project_crew').update({ role: 'contributor' }).eq('project_id', projectId).eq('user_id', cast.jordan.id);
   });
 
+  it('the music cue sheet and the sound spotting list are known kinds: crew write them, an outsider cannot, and each is read back with its fields', async () => {
+    expect((await add('jordan', 'cue-1', 'cues')).error).toBeNull();
+    expect((await add('jordan', 'spot-1', 'spotting')).error).toBeNull();
+    expect((await add('riley', 'cue-2', 'cues')).error).not.toBeNull();
+    expect((await add('riley', 'spot-2', 'spotting')).error).not.toBeNull();
+    const seen = await cast.jordan.client.from('production_records').select('kind, item_id').eq('project_id', projectId).in('kind', ['cues', 'spotting']);
+    expect((seen.data ?? []).map((r) => r.item_id).sort()).toEqual(['cue-1', 'spot-1']);
+    expect((await cast.riley.client.from('production_records').select('id').eq('project_id', projectId).in('kind', ['cues', 'spotting'])).data ?? []).toEqual([]);
+  });
+
   it('only the known kinds, small records, and a record keeps its project, kind and id', async () => {
     expect((await add('sam', 'k-1', 'nonsense')).error?.code).toBe('23514');
     expect((await add('jordan', 'k-stills', 'stills')).error).toBeNull(); expect((await add('jordan', 'k-extras', 'extras')).error).toBeNull(); expect((await add('jordan', 'k-ed', 'editorial')).error).toBeNull(); expect((await add('sam', 'k-cl', 'claims')).error).toBeNull(); // the stills log is a known kind, written by crew

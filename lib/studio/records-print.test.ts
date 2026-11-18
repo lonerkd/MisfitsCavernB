@@ -6,7 +6,7 @@ import { PRODUCTION_VIEWS } from '@/lib/os/progress';
 describe('printing the role tools', () => {
   it('every record tool has a spec on a real Production view, and each view maps back to its kind', () => {
     const kinds = Object.keys(RECORD_PRINT) as Array<keyof typeof RECORD_PRINT>;
-    expect(kinds).toHaveLength(21);
+    expect(kinds).toHaveLength(23);
     for (const k of kinds) {
       expect(PRODUCTION_VIEWS as readonly string[], k).toContain(RECORD_PRINT[k].view);
       expect(recordKindOfView(RECORD_PRINT[k].view), k).toBe(k);
@@ -53,5 +53,15 @@ describe('script supervisor notes print the lined run of each take', () => {
     expect(html).toContain('3–5');
     expect(html).toContain('7 off camera');
     expect(html).toContain('Lines');
+  });
+
+  it('prints the music cue sheet in cue-number order with running times, not as typed', () => {
+    const doc = recordsDoc({ kind: 'cues', project: 'Harbour', accent: null, logo: null, generated: '18 Nov 2026', rows: [
+      { id: 'b', cue: '1M10', title: 'Chase', tcIn: '1:00', tcOut: '2:30' },
+      { id: 'a', cue: '1M2', title: 'Theme', tcIn: '0:10', tcOut: '0:40' },
+    ] as never });
+    const table = doc.blocks[0] as { rows: Array<Record<string, unknown>> };
+    expect(table.rows.map((r) => r.cue)).toEqual(['1M2', '1M10']);
+    expect(table.rows.map((r) => r.duration)).toEqual(['0:30', '1:30']);
   });
 });
