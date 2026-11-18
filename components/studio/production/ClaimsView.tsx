@@ -20,7 +20,7 @@ export function ClaimsView() {
   const caps = useMyCapabilities(project.id);
   const seesMoney = caps.can('budget.read');
   const runsMoney = caps.can('budget.write');
-  const { items, save, remove } = useSettingsList('claims');
+  const { items, shown, save, remove } = useSettingsList('claims');
   const [draft, setDraft] = useState<Omit<Entry, 'id'>>(EMPTY);
 
   const add = async () => {
@@ -69,8 +69,9 @@ export function ClaimsView() {
         </label>
       </div>
       )}
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((m) => (
+        {shown.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{m.incident}</span>

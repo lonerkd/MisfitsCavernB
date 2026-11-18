@@ -16,7 +16,7 @@ const INCIDENT_LIMIT = 140;
  * with the incident text and the wrap's date; the claim's status starts as "filed", and nothing in the wrap changes.
  */
 export function ClaimsFromWraps({ items, save }: { items: ClaimEntry[]; save: (next: ClaimEntry[]) => Promise<boolean> }) {
-  const wraps = useSettingsList('wraps');
+  const wraps = useSettingsList('wraps', { find: false });
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
 

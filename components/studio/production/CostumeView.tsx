@@ -15,7 +15,7 @@ const STATUSES: CostumeEntry['status'][] = ['fitting', 'ready', 'on-set', 'clean
 
 export function CostumeView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('costumes');
+  const { items, shown, save, remove } = useSettingsList('costumes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<CostumeEntry, 'id'>>({
     character: '',
@@ -25,7 +25,7 @@ export function CostumeView() {
   });
   const [filter, setFilter] = useState<'all' | CostumeEntry['status']>('all');
 
-  const filtered = useMemo(() => (filter === 'all' ? items : items.filter((i) => i.status === filter)), [items, filter]);
+  const filtered = useMemo(() => (filter === 'all' ? shown : shown.filter((i) => i.status === filter)), [shown, filter]);
 
   const add = async () => {
     if (!draft.character.trim()) return;
@@ -61,6 +61,7 @@ export function CostumeView() {
         </div>
       </div>
 
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
         {filtered.map((c) => (
           <li key={c.id} className={s.panel} style={{ padding: 12 }}>

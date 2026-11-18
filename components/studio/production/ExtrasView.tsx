@@ -16,7 +16,7 @@ const EMPTY: Omit<ExtraEntry, 'id'> = { scene: '', role: '', count: '', wardrobe
 /** Background actors: who is needed in which scene, how many, in what wardrobe, and whether they are booked. */
 export function ExtrasView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('extras');
+  const { items, shown, save, remove } = useSettingsList('extras');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<ExtraEntry, 'id'>>(EMPTY);
 
@@ -56,8 +56,9 @@ export function ExtrasView() {
         </label>
       </div>
 
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((m) => (
+        {shown.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{m.role}</span>

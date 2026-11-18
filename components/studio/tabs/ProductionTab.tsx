@@ -17,6 +17,8 @@ import { recordKindOfView } from '@/lib/studio/records-print';
 import { useStudio } from '../StudioContext';
 import { SectionHeader, cx } from '../ui';
 import { ToolHeader, ToolActionsContext } from '../ToolHeader';
+import { ToolFindProvider, ToolHereContext } from '../toolFind';
+import { usePresence } from '@/lib/os/PresenceContext';
 import type { CrewRow } from '../production/CrewView';
 import s from '../studio.module.css';
 
@@ -155,6 +157,12 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   // The last six tools opened, on this device only.
   const recent = useSyncExternalStore(subscribeRecent, () => recentSnapshot(VIEW_IDS), recentServerSnapshot);
   useEffect(() => { recordRecent(view, VIEW_IDS); }, [view]);
+  // Tell the others in the project which tool this is, so each tool's header can say who else is in it.
+  const { updateToolPresence } = usePresence();
+  useEffect(() => {
+    void updateToolPresence(`production:${view}`);
+    return () => { void updateToolPresence(null); };
+  }, [view, updateToolPresence]);
   const recentViews = recent.map((id) => VIEWS.find((v) => v.id === id)).filter((v): v is (typeof VIEWS)[number] => !!v && v.id !== view && shown(v));
 
   const loadCrew = useCallback(() => getProjectCrew(project.id).then((rows) => setCrew(rows as unknown as CrewRow[])), [project.id]);
@@ -228,6 +236,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
               })}
               </div>}
             </div>
+      <ToolHereContext.Provider value={`production:${view}`}>
+      <ToolFindProvider key={view}>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
       {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
@@ -277,6 +287,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
       {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
       </ToolActionsContext.Provider>
+      </ToolFindProvider>
+      </ToolHereContext.Provider>
     </section>
   );
 }

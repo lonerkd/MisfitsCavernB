@@ -17,7 +17,7 @@ const EMPTY: Omit<Entry, 'id'> = { scene: '', item: '', version: '', recipient: 
 /** What goes to the editor and when: dailies, audio, notes, the cut. Whether it has been sent and whether it arrived. */
 export function EditorialView() {
   const { project } = useStudio();
-  const { items, save, remove } = useSettingsList('editorial');
+  const { items, shown, save, remove } = useSettingsList('editorial');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Omit<Entry, 'id'>>(EMPTY);
 
@@ -58,8 +58,9 @@ export function EditorialView() {
           <textarea className={s.textarea} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} rows={2} />
         </label>
       </div>
+      {items.length > 0 && shown.length === 0 && <p className={s.hint}>No records match your search.</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {items.map((m) => (
+        {shown.map((m) => (
           <li key={m.id} className={s.panel} style={{ padding: 12 }}>
             <div className={s.row} style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{ fontWeight: 600, flex: 1, minWidth: 0 }}>{m.item}</span>
