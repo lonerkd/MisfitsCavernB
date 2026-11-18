@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -36,8 +36,8 @@ test.describe('Table read & runtime (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `tr.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `tr${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `tr${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Table read', creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Table read', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
@@ -45,15 +45,10 @@ test.describe('Table read & runtime (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('runtime per scene, a timed scene calibrates the rest, rows jump to the scene', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });

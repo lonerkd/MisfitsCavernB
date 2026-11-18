@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,8 +31,8 @@ test.describe('Shot designer (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `sd.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sd${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `sd${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Boards', creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Boards', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
@@ -40,15 +40,10 @@ test.describe('Shot designer (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('add shots, set the camera visually, reorder, see the script line', async ({ page, stack }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto('/studio?tab=scenes');
     const picker = page.getByLabel('Active project');

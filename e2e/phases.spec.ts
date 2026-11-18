@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,8 +23,8 @@ test.describe('Phases v2 (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `phases.${TAG}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `ph${TAG}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `ph${TAG}` });
+    userId = data.id;
     // In pre-production, with a shoot day that has already come.
     shootId = (await admin.from('projects').insert({ title: `Shoot ${TAG}`, creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('call_sheets').insert({ project_id: shootId, shoot_day: 1, shoot_date: '2020-01-06' });
@@ -37,15 +37,10 @@ test.describe('Phases v2 (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().in('project_id', [shootId, draftId]);
     await admin.from('projects').delete().in('id', [shootId, draftId]);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   const signIn = async (page: Page) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
   };
 
   test('suggests the phase the shoot has reached; "not yet" is remembered', async ({ page }) => {

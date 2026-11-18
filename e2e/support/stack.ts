@@ -31,6 +31,12 @@ export interface QaUser { id: string; email: string; password: string; username:
 export interface CreateUserOptions {
   /** Short label that goes into the email and username. */
   label?: string;
+  /** Use this exact email (default: a QA-marked one made from the label). */
+  email?: string;
+  /** Use this password (default: a fresh one). A spec that signs in with its own constant passes it. */
+  password?: string;
+  /** Use this username (default: `qa<label><tag><n>`). */
+  username?: string;
   /**
    * Flag the profile `is_sample` so `get_platform_stats`, the directory and people search leave it out.
    * Default: on for staging (a shared backend whose numbers matter), off locally (the database is thrown
@@ -43,6 +49,15 @@ function connect(): { url: string; key: string; anon: string; db: string; stagin
   if (STAGING) return { url: process.env.E2E_SUPABASE_URL!, key: process.env.E2E_SUPABASE_SERVICE_KEY!, anon: process.env.E2E_SUPABASE_ANON_KEY ?? '', db: process.env.E2E_SUPABASE_DB_URL ?? '', staging: true };
   const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
   return { url: s.API_URL, key: s.SERVICE_ROLE_KEY, anon: s.ANON_KEY ?? s.PUBLISHABLE_KEY, db: s.DB_URL, staging: false };
+}
+
+/** Sign in through the real /auth form and wait to land somewhere else. Needs no Stack, so a describe-level helper can call it. */
+export async function signInAs(page: Page, user: { email: string; password: string }): Promise<void> {
+  await page.goto('/auth');
+  await page.fill('input[name="email"]', user.email);
+  await page.fill('input[name="password"]', user.password);
+  await page.locator('button[type="submit"]').click();
+  await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
 }
 
 export class Stack {
@@ -78,8 +93,8 @@ export class Stack {
   async createUser(opts: CreateUserOptions = {}): Promise<QaUser> {
     const label = (opts.label ?? 'u').replace(/[^a-z0-9]/gi, '').toLowerCase() || 'u';
     const n = this.n++;
-    const username = `${QA_PREFIX}${label}${this.tag}${n}`;
-    const user: QaUser = { id: '', email: `${QA_PREFIX}.${label}.${this.tag}.${n}@${QA_DOMAIN}`, password: randomUUID(), username };
+    const username = opts.username ?? `${QA_PREFIX}${label}${this.tag}${n}`;
+    const user: QaUser = { id: '', email: opts.email ?? `${QA_PREFIX}.${label}.${this.tag}.${n}@${QA_DOMAIN}`, password: opts.password ?? randomUUID(), username };
     const { data, error } = await this.admin.auth.admin.createUser({
       email: user.email,
       password: user.password,
@@ -124,12 +139,8 @@ export class Stack {
   }
 
   /** Sign in through the real /auth form and wait to land somewhere else. */
-  async signIn(page: Page, user: QaUser): Promise<void> {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', user.password);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+  async signIn(page: Page, user: { email: string; password: string }): Promise<void> {
+    await signInAs(page, user);
   }
 
   /** Delete everything this run made. Never throws; says what it could not remove. */

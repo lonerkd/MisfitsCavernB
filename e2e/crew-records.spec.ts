@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser, Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -21,11 +21,7 @@ test.describe('Crew records (local Supabase)', () => {
 
   const signIn = async (browser: Browser, who: typeof owner) => {
     const page = await (await browser.newContext()).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
     return page;
   };
 
@@ -45,8 +41,8 @@ test.describe('Crew records (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const who of [owner, crew, viewer]) {
-      const { data } = await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } });
-      who.id = data.user!.id;
+      const data = await stack.createUser({ email: who.email, password: PASSWORD, username: who.name });
+      who.id = data.id;
     }
     projectId = (await admin.from('projects').insert({ title: `Records ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     const crewRows = await admin.from('project_crew').insert([
@@ -59,7 +55,6 @@ test.describe('Crew records (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    for (const who of [owner, crew, viewer]) await admin.auth.admin.deleteUser(who.id);
   });
 
   test('crew add a permit, it survives a reload, and the owner sees it', async ({ browser }) => {

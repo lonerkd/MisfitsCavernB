@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Changing a project's phase without dragging: Alt + →/← on its card on the Projects
@@ -16,22 +16,17 @@ test.describe('Projects board by keyboard (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `phase${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `phase${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Phase ${TAG}`, creator_id: me.id, status: 'pre-production' }).select('id').single()).data!.id;
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    if (me.id) await admin.auth.admin.deleteUser(me.id);
   });
 
   test('Alt + →/← moves a project between phases', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/projects');
 
     const card = `[data-project-card="${projectId}"] a`;

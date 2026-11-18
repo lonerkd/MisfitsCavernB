@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -30,7 +30,7 @@ test.describe('Your workflow (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [k, who] of Object.entries(people)) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `yw${k}${TAG}` } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `yw${k}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Workflow ${TAG}`, creator_id: people.owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert([
@@ -45,11 +45,7 @@ test.describe('Your workflow (local Supabase)', () => {
   });
 
   const signIn = async (page: Page, who: { email: string }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
   };
   const open = async (page: Page) => {
     await page.goto('/studio?tab=production');

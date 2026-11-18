@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Community: one page for your day, what's new, crew open to work, the suite's parts and numbers,
 // and the house music; the old Today and Hub index land on it. Opt-in: E2E_LOCAL_STACK=1.
@@ -10,14 +9,11 @@ const TAG = Date.now().toString(36);
 test.describe('Community page (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
   const user = { id: '', email: `cm.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    user.id = (await admin.auth.admin.createUser({ email: user.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cm${TAG}` } })).data.user!.id;
+    user.id = (await stack.createUser({ email: user.email, password: PASSWORD, username: `cm${TAG}` })).id;
   });
-  test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });
 
   test('signed out it asks for sign-in; signed in it holds every section and the old routes land on it', async ({ page }) => {
     test.setTimeout(120_000);

@@ -26,7 +26,7 @@ test.describe('Share pages, signed out (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: `share.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: owner.username } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: `share.${TAG}@journey.test`, password: randomUUID(), username: owner.username })).id;
 
     projectId = (await admin.from('projects').insert({ title: `Breakwater ${TAG}`, creator_id: owner.id, visibility: 'link' }).select('id').single()).data!.id;
     storagePath = `${projectId}/${mediaId}/still.png`;
@@ -47,7 +47,6 @@ test.describe('Share pages, signed out (local Supabase)', () => {
     await admin.from('media').delete().eq('id', mediaId);
     await admin.storage.from('project-media').remove([storagePath]);
     await admin.from('projects').delete().eq('id', projectId);
-    if (owner.id) await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('/p/<token> unfurls: title, description and picture in the server HTML', async ({ request, page }) => {
