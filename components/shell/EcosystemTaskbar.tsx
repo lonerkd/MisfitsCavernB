@@ -8,7 +8,7 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2, Globe } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
@@ -39,7 +39,7 @@ import { useHubUnread } from '@/components/hub/useHubUnread';
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
-  { id: 'home',      name: 'Community', icon: Home,          path: '/community', color: 'var(--accent)' },
+  { id: 'home',      name: 'Home',      icon: Home,          path: '/'         , color: 'var(--accent)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' },
@@ -610,12 +610,11 @@ export default function EcosystemTaskbar() {
             {([
               { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
               { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
-              { id: 'front', name: 'Front page', icon: Globe, path: '/' },
             ] as const).map(item => {
               const Icon = item.icon;
               return (
                 <span key={item.id} className={s.slot} data-tip={item.name}>
-                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={(item.path === '/' ? pathname === '/' : pathname.startsWith(item.path)) ? 'page' : undefined}>
+                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={pathname.startsWith(item.path) ? 'page' : undefined}>
                     <Icon size={19} strokeWidth={1.5} aria-hidden />
                   </Link>
                 </span>

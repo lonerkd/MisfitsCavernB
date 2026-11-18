@@ -73,8 +73,8 @@ export default function AuthPage() {
   // New accounts land on surfaces that work without projects: /welcome, /community, /hub.
   // Everything else requires at least one project and will bounce.
   // Existing accounts honour the redirect param (e.g. /studio after a gated visit).
-  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/community';
-  const isNewSurface = redirectTo === '/welcome' || redirectTo === '/community' || redirectTo === '/hub';
+  const redirectTo = raw.startsWith('/') && !raw.startsWith('//') && !raw.startsWith('/auth') ? raw : '/';
+  const isNewSurface = redirectTo === '/welcome' || redirectTo === '/' || redirectTo === '/community' || redirectTo === '/hub';
 
   // Navigate when the session is actually established in the OS store — not on a
   // timer. osSignIn/osSignUp mark the store 'authed' before returning, so the
@@ -87,7 +87,7 @@ export default function AuthPage() {
       // New accounts only land on surfaces that work without projects.
       // Existing accounts honour their redirect target (e.g. /studio after gating).
       if (isNewAccount.current && !isNewSurface) {
-        router.replace('/community');
+        router.replace('/');
       } else {
         router.replace(isNewAccount.current && isNewSurface ? '/welcome' : redirectTo);
       }
