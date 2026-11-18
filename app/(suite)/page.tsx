@@ -23,8 +23,10 @@ import { STAGES, PipelineStage, PipelineConnector } from '@/components/landing/P
 import { ScriptOSPreview, StudioPreview, LoungePreview, PortfolioPreview } from '@/components/landing/Previews';
 import { ModuleTile } from '@/components/landing/ModuleTile';
 import { StatsTicker } from '@/components/landing/StatsTicker';
-import { SignedInHome } from '@/components/home/SignedInHome';
-import { ModulePicker } from '@/components/home/ModulePicker';
+import dynamic from 'next/dynamic';
+// Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them); the phone's picker only on a phone.
+const SignedInHome = dynamic(() => import('@/components/home/SignedInHome').then((m) => m.SignedInHome), { loading: () => null });
+const ModulePicker = dynamic(() => import('@/components/home/ModulePicker').then((m) => m.ModulePicker), { loading: () => null });
 import { usePhoneLayout } from '@/lib/os/usePhone';
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
