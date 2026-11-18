@@ -79,7 +79,11 @@ export const waiver = (body, label) => {
     const m = lead.exec(lines[i]);
     if (!m) continue;
     let reason = lines[i].slice(m[0].length);
-    if (!reason.trim()) reason = lines.slice(i + 1).find((l) => l.trim()) ?? '';
+    if (!reason.trim()) {
+      // The reason alone on the next line: but not a heading, a comment or an unticked box, which are not the author's words.
+      const next = lines.slice(i + 1).find((l) => l.trim()) ?? '';
+      reason = /^\s*(#|<!--|[-*+]\s*\[[ xX]\])/.test(next) ? '' : next;
+    }
     reason = reason.trim().replace(/[*_]+$/, '').trim();
     if (reason.length >= 20) return reason;
   }
@@ -187,8 +191,10 @@ export function evaluate(ctx) {
   //     not ready. Work that is not done goes in the backlog, not in a merge. (A residual gap that only a real device, a real
   //     account, a person or staging can check is fine to name: "Not verified: a real nine-person room" is the honest sentence.)
   //   - a change of 40+ added source lines names what was run and what was seen: a `Verified: <what, 20+ characters>` line.
-  const UNRUN = /\b(?:not|never|wasn'?t|weren'?t|haven'?t|hasn'?t)\s+(?:been\s+|yet\s+)?(?:run|ran|looked\s+at|tested)\b/i;
-  const OUT_OF_REACH = /real\s+\w+|on\s+a\s+(?:phone|device)|staging|production|windows|printed|a\s+person|practitioner|the\s+owner/i;
+  const UNRUN = /\b(?:not|never|wasn['\u2019]?t|weren['\u2019]?t|haven['\u2019]?t|hasn['\u2019]?t)\s+(?:been\s+|yet\s+)?(?:run|ran|looked\s+at|tested)\b/i;
+  // Only what a machine here cannot reach: a real device or account, a person, staging, the live site. (Not the bare words
+  // "real", "production" or "windows": "not run against a production build" is an admission, not an exemption.)
+  const OUT_OF_REACH = /real\s+(?:[\w-]+\s+){0,2}?(?:iphone|device|phone|android|safari|account|person|people|user|users|room|network)\b|on\s+a\s+(?:phone|device)|\bstaging\b|\b(?:in|on|against)\s+(?:the\s+)?(?:live\s+site|production\b(?!\s+build))|on\s+windows|\bprinted\b|\ba\s+person\b|\bpractitioners?\b|\bthe\s+owner\b/i;
   let fenced = false;
   const unrun = [];
   for (const line of body.split(/\r?\n/)) {
@@ -196,12 +202,16 @@ export function evaluate(ctx) {
     if (fenced) continue;
     if (UNRUN.test(line) && !OUT_OF_REACH.test(line)) unrun.push(line.trim().slice(0, 140));
   }
-  const changesApp = src.length > 0;
+  // What a person sees includes style: a stylesheet change counts as app code here, and a test or e2e spec that says it was not
+  // run is as much a claim as an app change that says so.
+  const css = files.filter((f) => /\.css$/.test(f.path) && /^(app|components)\//.test(f.path) && f.status !== 'D');
+  const cssAdded = css.reduce((n, f) => n + f.added.length, 0);
+  const changesApp = src.length > 0 || css.length > 0 || files.some((f) => TEST.test(f.path) && f.status !== 'D');
   add('not-run-claims', isDeps || !changesApp || unrun.length === 0,
     `The description says it was not run, tested or looked at (${unrun[0] ?? ''}). Run it, or take that part out and put it in the backlog. A change that says it is not ready is not ready. (Only what a real device, a person or staging must check may be named as not done.)`);
   const verified = waiver(body, 'Verified');
-  add('verified', isDeps || srcAdded < LIMITS.verifiedFromAddedLines || !!verified,
-    `This PR adds ${srcAdded} lines of source and its description has no line "Verified: <what you ran and what you saw, 20+ characters>". Say what you ran (the checks, the specs, a build against the local stack) and, for anything a person sees, what you looked at in a browser.`);
+  add('verified', isDeps || srcAdded + cssAdded < LIMITS.verifiedFromAddedLines || !!verified,
+    `This PR adds ${srcAdded + cssAdded} lines of source and style and its description has no line "Verified: <what you ran and what you saw, 20+ characters>". Say what you ran (the checks, the specs, a build against the local stack) and, for anything a person sees, what you looked at in a browser.`);
 
   return out;
 }

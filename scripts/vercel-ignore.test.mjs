@@ -8,10 +8,13 @@ import { join, resolve } from 'node:path';
 // Exit 0 = skip the deployment, 1 = build it. Each case makes a throwaway repo and a commit, then asks.
 const SCRIPT = resolve('scripts/vercel-ignore.sh');
 let dir;
-const git = (...a) => execFileSync('git', a, { cwd: dir, encoding: 'utf8', env: { ...process.env, GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
+// No GIT_* variable from the outside: a git hook (the pre-push that runs these tests) exports GIT_DIR and GIT_INDEX_FILE, and a
+// `git commit` here would then land in the REAL repository instead of the throwaway one.
+const cleanEnv = () => Object.fromEntries(Object.entries(process.env).filter(([k]) => !k.startsWith('GIT_')));
+const git = (...a) => execFileSync('git', a, { cwd: dir, encoding: 'utf8', env: { ...cleanEnv(), GIT_AUTHOR_NAME: 't', GIT_AUTHOR_EMAIL: 't@t', GIT_COMMITTER_NAME: 't', GIT_COMMITTER_EMAIL: 't@t' } }).trim();
 const write = (f, s = 'x') => { mkdirSync(join(dir, f, '..'), { recursive: true }); writeFileSync(join(dir, f), s + Math.random()); };
 const commit = (...files) => { for (const f of files) write(f); git('add', '-A'); git('commit', '-qm', 'c'); return git('rev-parse', 'HEAD'); };
-const ask = (env = {}) => spawnSync('bash', [SCRIPT], { cwd: dir, env: { ...process.env, VERCEL_GIT_COMMIT_REF: 'claude/x', VERCEL_GIT_PREVIOUS_SHA: '', ...env } }).status;
+const ask = (env = {}) => spawnSync('bash', [SCRIPT], { cwd: dir, env: { ...cleanEnv(), VERCEL_GIT_COMMIT_REF: 'claude/x', VERCEL_GIT_PREVIOUS_SHA: '', ...env } }).status;
 
 beforeAll(() => { dir = mkdtempSync(join(tmpdir(), 'vi-')); git('init', '-q', '-b', 'main'); commit('app/page.tsx'); });
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
@@ -51,9 +54,16 @@ describe('vercel-ignore: a push builds only when it can change the app', () => {
     commit('README.md');
     expect(ask({ VERCEL_GIT_PREVIOUS_SHA: deployed })).toBe(0);
   });
-  it('always builds main, and never builds a dependency bot branch', () => {
-    commit('README.md');
-    expect(ask({ VERCEL_GIT_COMMIT_REF: 'main' })).toBe(1);
+  it('judges main like a branch, since the last production deployment; with none known it builds', () => {
+    const deployed = commit('components/p.tsx');
+    commit('README.md', 'e2e/z.spec.ts');
+    expect(ask({ VERCEL_GIT_COMMIT_REF: 'main', VERCEL_GIT_PREVIOUS_SHA: deployed })).toBe(0);   // a merge of notes and tests
+    commit('lib/app-change.ts');
+    expect(ask({ VERCEL_GIT_COMMIT_REF: 'main', VERCEL_GIT_PREVIOUS_SHA: deployed })).toBe(1);   // the app changed
+    expect(ask({ VERCEL_GIT_COMMIT_REF: 'main' })).toBe(1);                                      // previous unknown: build
+    expect(ask({ VERCEL_GIT_COMMIT_REF: 'main', VERCEL_GIT_PREVIOUS_SHA: 'deadbeef'.repeat(5) })).toBe(1);
+  });
+  it('never builds a dependency bot branch', () => {
     commit('package.json');
     expect(ask({ VERCEL_GIT_COMMIT_REF: 'dependabot/npm_and_yarn/x' })).toBe(0);
   });
