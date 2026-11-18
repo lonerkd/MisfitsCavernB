@@ -72,10 +72,11 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
     await kase.getByRole('textbox', { name: 'Answer' }).fill(ANSWER);
     await kase.getByRole('button', { name: 'Send' }).click();
     await expect(kase).toContainText(ANSWER, { timeout: 20_000 });
+    // The page shows the answer as soon as it is sent; the case's status and the member's notification are written a moment after.
+    // Wait for them, do not read them the instant the page changes (this failed under load, never alone).
+    await expect.poll(async () => (await admin.from('support_cases').select('status').eq('subject', SUBJECT).single()).data?.status, { timeout: 20_000 }).toBe('waiting');
+    await expect.poll(async () => JSON.stringify((await admin.from('notifications').select('title, body').eq('user_id', member.id)).data), { timeout: 20_000 }).toContain(SUBJECT);
     const row = await admin.from('support_cases').select('id, status').eq('subject', SUBJECT).single();
-    expect(row.data!.status).toBe('waiting');
-    const told = await admin.from('notifications').select('title, body').eq('user_id', member.id);
-    expect(JSON.stringify(told.data)).toContain(SUBJECT);
 
     // The member sees the answer, and the case now reads as answered.
     await mem.goto(`/hub/help/${row.data!.id}`);

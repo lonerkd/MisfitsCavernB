@@ -49,13 +49,15 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
   };
 
   const log = async (page: Page, take: string, from: string, to: string, opts: { shot?: boolean; circle?: boolean } = {}) => {
-    // The scene stays chosen after the first take: link it only the first time.
-    if ((await page.getByLabel('Unlink scene 1').count()) === 0) {
+    // The scene stays chosen after the first take: link it only the first time. The link is a saved write, so wait for it as long as
+    // the page's own load takes (the default 10 s was too short under load, which is where this failed).
+    const unlink = page.getByLabel('Unlink scene 1');
+    if (!(await unlink.isVisible())) {
       const addScene = page.getByLabel('Scene: add a scene');
       await expect(addScene.locator('option')).not.toHaveCount(1, { timeout: 30_000 });
       await addScene.selectOption({ index: 1 });
     }
-    await expect(page.getByLabel('Unlink scene 1')).toBeVisible();
+    await expect(unlink).toBeVisible({ timeout: 30_000 });
     if (opts.shot) {
       const shot = page.getByLabel('Shot', { exact: true });
       await expect(shot).toBeEnabled({ timeout: 30_000 });
