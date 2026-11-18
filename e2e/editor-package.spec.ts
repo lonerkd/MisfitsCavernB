@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -32,7 +32,7 @@ test.describe('Package for the editor (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `epowner${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `epowner${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Package ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     const scriptId = (await admin.from('scripts').insert({ title: 'Package', content: 'INT. KITCHEN - DAY\n', project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
     sceneId = (await admin.from('scenes').insert({ project_id: projectId, script_id: scriptId, ordinal: 0, scene_number: 1, title: 'INT. KITCHEN - DAY', heading: 'INT. KITCHEN - DAY', shoot_day: 1 }).select('id').single()).data!.id;
@@ -50,15 +50,10 @@ test.describe('Package for the editor (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    if (owner.id) await admin.auth.admin.deleteUser(owner.id);
   });
 
   const signIn = async (page: Page) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
   };
   const open = async (page: Page) => {
     await page.goto('/studio?tab=production&view=editorial');

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -36,7 +36,7 @@ test.describe('Lounge (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, uname] of [[owner, `lowner${TAG}`], [crew, `lcrew${TAG}`]] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: uname } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: uname })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Lounge ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, craft: 'Gaffer', status: 'confirmed' });
@@ -46,16 +46,11 @@ test.describe('Lounge (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    for (const who of [owner, crew]) await admin.auth.admin.deleteUser(who.id);
   });
 
   test('unread until opened; pin, edit, search', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await page.goto('/lounge');
     const picker = page.getByLabel('Active project');
@@ -119,11 +114,7 @@ test.describe('Lounge (local Supabase)', () => {
     const roomId = (await admin.from('channels').insert({ project_id: projectId, name: room, created_by: owner.id, is_private: true }).select('id').single()).data!.id;
     await admin.from('budget_items').insert({ project_id: projectId, category: `Ferry hire ${TAG}`, amount: 300, created_by: owner.id });
 
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await page.goto('/lounge');
     const picker = page.getByLabel('Active project');

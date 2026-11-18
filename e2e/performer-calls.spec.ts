@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { linkCast } from './support/cast';
@@ -36,7 +36,7 @@ test.describe('Performer calls and pages (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[owner, 'pcowner'], [actor, 'pcactor'], [outsider, 'pcout']] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${name}${TAG}` } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `${name}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Harbor ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: actor.id, role: 'contributor', craft: 'Actor', status: 'confirmed' });
@@ -59,11 +59,7 @@ test.describe('Performer calls and pages (local Supabase)', () => {
   });
 
   const signIn = async (page: Page, who: { email: string }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
   };
 
   test('my calls → the call sheet → my pages with my lines marked → confirmed', async ({ page }) => {

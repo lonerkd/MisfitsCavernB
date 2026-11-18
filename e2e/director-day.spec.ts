@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { linkCast } from './support/cast';
@@ -34,7 +34,7 @@ test.describe('The director\'s day at a glance (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[owner, 'ddowner'], [director, 'dddir'], [gaffer, 'ddgaf'], [outsider, 'ddout']] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${name}${TAG}` } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `${name}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Glance ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert([
@@ -61,11 +61,7 @@ test.describe('The director\'s day at a glance (local Supabase)', () => {
   });
 
   const signIn = async (page: Page, who: { email: string }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
   };
 
   test('the director sees the day: its scenes, the shots planned, and what needs them', async ({ page }) => {

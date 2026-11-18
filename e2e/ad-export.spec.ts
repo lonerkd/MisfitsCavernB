@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Campaign deliverables, Export: the buttons hand the browser real files — the piece's working text and a PDF —
@@ -18,7 +18,7 @@ test.describe('Ad export (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `adx${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `adx${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Spring ${TAG}`, creator_id: userId, project_type: 'Advertising' }).select('id').single()).data!.id;
     const copy = [
       ['Radio 30', '# HEADLINE\nFresh start for spring\n\n# VO\nOne two three four five six seven\n\n# CTA\nBuy now\n'],
@@ -34,7 +34,6 @@ test.describe('Ad export (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    if (userId) await admin.auth.admin.deleteUser(userId);
   });
 
   test('a piece as text, the whole set as text, and a PDF each download with the real copy in them', async ({ browser }) => {
@@ -42,11 +41,7 @@ test.describe('Ad export (local Supabase)', () => {
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, acceptDownloads: true });
     const page = await ctx.newPage();
     try {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

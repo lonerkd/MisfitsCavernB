@@ -39,7 +39,7 @@ test.describe('Web Push (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     dbUrl = stack.dbUrl;
-    userId = (await admin.auth.admin.createUser({ email: `push.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: `push${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email: `push.${TAG}@journey.test`, password: randomUUID(), username: `push${TAG}` })).id;
 
     // The stand-in push service: records what it's sent and says Created.
     server = createServer((req, res) => {
@@ -66,7 +66,6 @@ test.describe('Web Push (local Supabase)', () => {
     server?.close();
     if (admin && userId) {
       await admin.from('push_subscriptions').delete().eq('user_id', userId);
-      await admin.auth.admin.deleteUser(userId);
     }
   });
 

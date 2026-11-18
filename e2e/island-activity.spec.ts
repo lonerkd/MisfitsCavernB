@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,7 +23,7 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `isl${TAG}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `isl${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Island ${TAG}`, creator_id: userId }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
@@ -31,15 +31,10 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    if (userId) await admin.auth.admin.deleteUser(userId);
   });
 
   async function openEditor(page: Page) {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

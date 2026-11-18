@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs, type Stack } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,19 +31,15 @@ test.describe('Onboarding + the projects board (local Supabase)', () => {
   let admin: SupabaseClient;
   const users: string[] = [];
 
-  const newUser = async (prefix: string) => {
+  const newUser = async (stack: Stack, prefix: string) => {
     const email = `${prefix}.${TAG}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${prefix}${TAG}` } });
-    users.push(data.user!.id);
-    return { id: data.user!.id, email };
+    const data = await stack.createUser({ email, password: PASSWORD, username: `${prefix}${TAG}` });
+    users.push(data.id);
+    return { id: data.id, email };
   };
 
   const signIn = async (page: Page, email: string) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
   };
 
   test.beforeAll(async ({ stack }) => {
@@ -55,13 +51,12 @@ test.describe('Onboarding + the projects board (local Supabase)', () => {
     for (const id of users) {
       await admin.from('scripts').delete().eq('created_by', id);
       await admin.from('projects').delete().eq('creator_id', id);
-      await admin.auth.admin.deleteUser(id);
     }
   });
 
-  test('welcome → a first project with a head start → straight into the script', async ({ page }) => {
+  test('welcome → a first project with a head start → straight into the script', async ({ page, stack }) => {
     test.setTimeout(120_000);
-    const me = await newUser('wel');
+    const me = await newUser(stack, 'wel');
     await signIn(page, me.email);
     await page.goto('/welcome');
 
@@ -105,9 +100,9 @@ test.describe('Onboarding + the projects board (local Supabase)', () => {
     await expect.poll(async () => (await admin.from('scripts').select('id').eq('project_id', project.id)).data?.length, { timeout: 20_000 }).toBe(1);
   });
 
-  test('the board: next steps, search, archive and restore', async ({ page }) => {
+  test('the board: next steps, search, archive and restore', async ({ page, stack }) => {
     test.setTimeout(120_000);
-    const me = await newUser('brd');
+    const me = await newUser(stack, 'brd');
     const [noir, western] = (await admin.from('projects').insert([
       { title: `Alpha Noir ${TAG}`, creator_id: me.id, description: 'A singer lies to the wrong detective.' },
       { title: `Beta Western ${TAG}`, creator_id: me.id },

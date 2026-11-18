@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { devices } from '@playwright/test';
-import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Every page is keyboard-safe on a phone: with the keyboard up (faked through `visualViewport`, the only thing the app reads) a
 // field you tap ends above it, in both orientations, and the page leaves room to scroll to the last field. Opt-in: E2E_LOCAL_STACK=1.
@@ -12,14 +11,11 @@ const SIDEWAYS = { ...PHONE, viewport: { width: 852, height: 393 }, screen: { wi
 
 test.describe('The keyboard on a phone (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
-  let admin: SupabaseClient;
   const me = { id: '', email: `phonekb.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `pkb${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `pkb${TAG}` })).id;
   });
-  test.afterAll(async () => { if (admin && me.id) await admin.auth.admin.deleteUser(me.id); });
 
   for (const [name, device, kb] of [['portrait', PHONE, 336], ['landscape', SIDEWAYS, 200]] as const) {
     test(`${name}: the field you tap on Settings ends above the keyboard`, async ({ browser }) => {
@@ -32,11 +28,7 @@ test.describe('The keyboard on a phone (local Supabase)', () => {
         w.__setKb = (n) => { w.__kb = n; window.dispatchEvent(new Event('resize')); };
       });
       const page = await ctx.newPage();
-      await page.goto('/auth');
-      await page.fill('input[name="email"]', me.email);
-      await page.fill('input[name="password"]', PASSWORD);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await signInAs(page, { email: me.email, password: PASSWORD });
       await page.goto('/settings');
       const fields = page.locator('input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="color"]):visible, textarea:visible');
       await expect(fields.first()).toBeVisible({ timeout: 30_000 });
@@ -66,11 +58,7 @@ test.describe('The keyboard on a phone (local Supabase)', () => {
       w.__setKb = (n) => { w.__kb = n; window.dispatchEvent(new Event('resize')); };
     });
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/lounge');
     // The first channels are read-only guides: open channels until one has a composer.
     const channels = page.locator('.mc-lounge-channels button');

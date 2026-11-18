@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { devices, type Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -29,7 +29,7 @@ test.describe('The editor on a phone (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `ped${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `ped${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Phone ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;
   });
@@ -37,7 +37,6 @@ test.describe('The editor on a phone (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('created_by', me.id);
     await admin.from('projects').delete().eq('id', projectId);
-    if (me.id) await admin.auth.admin.deleteUser(me.id);
   });
 
   for (const [name, device] of [['portrait', PHONE], ['landscape', SIDEWAYS]] as const) {
@@ -46,11 +45,7 @@ test.describe('The editor on a phone (local Supabase)', () => {
       const ctx = await browser.newContext(device);
       const page = await ctx.newPage();
       await fakeKeyboard(page);
-      await page.goto('/auth');
-      await page.fill('input[name="email"]', me.email);
-      await page.fill('input[name="password"]', PASSWORD);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await signInAs(page, { email: me.email, password: PASSWORD });
       await page.goto(`/editor?script=${scriptId}`);
       const script = page.getByRole('textbox', { name: 'Script', exact: true });
       await expect(script).toHaveValue(BASE, { timeout: 30_000 });
