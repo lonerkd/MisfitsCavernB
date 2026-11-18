@@ -37,13 +37,8 @@ advisors and every screen that day — `bible/audit-2026-10-06.md`).
   instead of waiting for a session to notice.
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
-- **Stashes**: the cloud container's ("legal") is dropped — every line was
-  already on `main` (re-checked 2026-10-06). **Old stashes on the Windows machine** (the one that made the island
-  branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites
-  and were never reconciled. Look at each (`git stash show -p stash@{n}`);
-  anything not on `main` goes into a branch, then drop them. (The cloud
-  container's only stash, "legal", is fully on `main` — checked line by line.)
-- **Stale remote branches**: 17 of the 18 deleted 2026-10-06 (tips matched; restore with `git push origin <sha>:refs/heads/<name>` from the list in git history of this file). `claude/design-scales` stays — it now carries PR #137 (data access through `lib/`, the sign-in fix).
+- **Stashes**: the cloud container's ("legal") is dropped (every line was on `main`). **Old stashes on the Windows machine** (the one that made the island branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites and were never reconciled. Not reachable from a cloud session (checked 2026-11-18: no computer folder is attached): look at each there (`git stash show -p stash@{n}`); anything not on `main` goes into a branch, then drop them.
+- **Stale remote branches** (checked 2026-11-18 against PR state and `git cherry`; a cloud session cannot delete branches, both the API and git return 403, so these are yours): **safe to delete**, their changes are on `main` or superseded: `claude/backlog-index` (96c5dc9c), `claude/governance-budget` (cdfdc6ac; its one idea, counting more workflow files as prose in `ci.yml`'s `changes` job, was not ported on purpose), `claude/rules-merge` (a858cd87): `git push origin --delete claude/backlog-index claude/governance-budget claude/rules-merge`, or the Branches page. **Not to delete:** `cavern-offline` (37 commits of your own from 2026-10-15, "the open-source, local-first cut": decide what it is), `claude/tool-breadth` (closed today by another session with commits that may not be on `main`), and the branches of open PRs. `claude/design-scales` is gone.
 
 ## 2. To verify
 
