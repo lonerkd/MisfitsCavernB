@@ -30,7 +30,7 @@
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (280) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 30 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
-| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, account-deletion, ad-export, admin-actions, admin-channel-presets, admin-crafts, admin-formats, admin-support-analytics, admin-sweep, announcements, auth-journey, auth-validation, availability, beat-to-script, breakdown, brief, call-sheets, change-impact, community-page, community-phone, community, continuity, credits, crew-craft, crew-records, cut-notes, daylight, director-day, documents, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-package, editor-project-script, editor-safety-net, emphasis, errors, global-chords, grant-request, guides, hiring, home-music, install, island-activity, island-call, island-compact-dock, island-onset-clock, island-projects-keys, island-upload, island, keyboard-audit, layout, legal, locations, login-smoke, lounge, mobile, money, mood-boards, notes, on-set, onboarding, onset-offline, onset-phone, password-recovery, performer-calls, phases, phone-editor, phone-keyboard, portfolio-page, project-manager, projects-keyboard-phase, readiness-day-date, readiness, reading-corrections, real-data, records-links, reports, role-scoped-money, route-smoke, scene-cost, script-formats, script-share, script-supervisor, search, shortcut-search, shot-designer, split, spotify-connect, studio-journey, studio-undo, suspend-user, table-read, themes, today-owner, transcripts, view-as-role, view-as, voice-two-people, writing-loop, your-workflow |
+| `/auth` | public | `app/(suite)/auth/page.tsx` (497) | 41 files · components: Flag, ui · lib: account, auth, flags, formats, hooks, logging, os, push, supabase, types, validation | accessibility, auth-journey, auth-validation, community-page, install, island, keyboard-audit, legal, login-smoke, password-recovery, route-smoke, split, suspend-user |
 | `/auth/reset` | public | `app/(suite)/auth/reset/page.tsx` (154) | 10 files · components: ui · lib: account, auth, logging, supabase | password-recovery |
 | `/auth/spotify-callback` | public | `app/(suite)/auth/spotify-callback/page.tsx` (77) | 35 files · components: ui · lib: auth, errors, formats, hooks, os, push, spotify, supabase, types, validation | **none** |
 | `/call/[id]` | signed in | `app/(suite)/call/[id]/page.tsx` (297) | 71 files · components: crafts, projects, ui · lib: auth, brief, crafts, film, formats, island, os, print, push, roles, scriptos, studio, supabase, types, util, validation | call-sheets, push |
@@ -604,123 +604,123 @@
 | Spec | Opens |
 |---|---|
 | `accessibility.spec.ts` | `/`, `/admin`, `/admin/analytics`, `/admin/audit-logs`, `/admin/channel-presets`, `/admin/crafts`, `/admin/formats`, `/admin/reports`, `/admin/users`, `/auth`, `/crew`, `/crew/*`, `/does-not-exist`, `/editor`, `/jobs`, `/jobs/*`, `/lounge`, `/p/*`, `/portfolio`, `/portfolio/manage`, `/profile`, `/projects`, `/projects/*`, `/projects/*/pitch`, `/settings`, `/shared/*`, `/showcase`, `/soundtrack`, `/studio`, `/welcome` |
-| `account-deletion.spec.ts` | `/`, `/auth`, `/settings` |
-| `ad-export.spec.ts` | `/auth`, `/studio` |
-| `admin-actions.spec.ts` | `/admin`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth`, `/community`, `/settings`, `/somewhere` |
-| `admin-channel-presets.spec.ts` | `/admin/channel-presets`, `/auth` |
-| `admin-crafts.spec.ts` | `/admin/crafts`, `/auth` |
-| `admin-formats.spec.ts` | `/admin/formats`, `/auth` |
-| `admin-support-analytics.spec.ts` | `/admin`, `/admin/analytics`, `/admin/support`, `/auth`, `/hub/help`, `/hub/help/*` |
-| `admin-sweep.spec.ts` | `/admin`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin/reports`, `/admin/support`, `/admin/users`, `/auth` |
-| `announcements.spec.ts` | `/auth`, `/lounge`, `/projects/*` |
+| `account-deletion.spec.ts` | `/`, `/settings` |
+| `ad-export.spec.ts` | `/studio` |
+| `admin-actions.spec.ts` | `/admin`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin/reports`, `/admin/support`, `/admin/users`, `/community`, `/settings`, `/somewhere` |
+| `admin-channel-presets.spec.ts` | `/admin/channel-presets` |
+| `admin-crafts.spec.ts` | `/admin/crafts` |
+| `admin-formats.spec.ts` | `/admin/formats` |
+| `admin-support-analytics.spec.ts` | `/admin`, `/admin/analytics`, `/admin/support`, `/hub/help`, `/hub/help/*` |
+| `admin-sweep.spec.ts` | `/admin`, `/admin/analytics`, `/admin/audit-logs`, `/admin/brief-questions`, `/admin/channel-presets`, `/admin/crafts`, `/admin/errors`, `/admin/formats`, `/admin/hub`, `/admin/reports`, `/admin/support`, `/admin/users` |
+| `announcements.spec.ts` | `/lounge`, `/projects/*` |
 | `auth-journey.spec.ts` | `/auth`, `/community`, `/crew`, `/editor`, `/hub`, `/jobs`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/settings`, `/soundtrack`, `/studio`, `/welcome` |
 | `auth-validation.spec.ts` | `/auth` |
-| `availability.spec.ts` | `/auth`, `/profile`, `/studio` |
-| `beat-to-script.spec.ts` | `/auth`, `/editor`, `/rest/v1/scripts`, `/studio` |
+| `availability.spec.ts` | `/profile`, `/studio` |
+| `beat-to-script.spec.ts` | `/editor`, `/rest/v1/scripts`, `/studio` |
 | `board-share.spec.ts` | `/studio` |
-| `breakdown.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `brief.spec.ts` | `/auth`, `/jobs`, `/lounge`, `/projects/*` |
+| `breakdown.spec.ts` | `/editor`, `/studio` |
+| `brief.spec.ts` | `/jobs`, `/lounge`, `/projects/*` |
 | `budget-lines.spec.ts` | `/projects/*`, `/studio` |
-| `call-sheets.spec.ts` | `/auth`, `/call/*`, `/studio` |
-| `change-impact.spec.ts` | `/auth`, `/studio` |
+| `call-sheets.spec.ts` | `/call/*`, `/studio` |
+| `change-impact.spec.ts` | `/studio` |
 | `community-page.spec.ts` | `/auth`, `/community`, `/hub`, `/lounge`, `/studio`, `/today` |
 | `community-personas.spec.ts` | `/community`, `/lounge` |
-| `community-phone.spec.ts` | `/auth`, `/community` |
-| `community.spec.ts` | `/auth`, `/lounge` |
-| `continuity.spec.ts` | `/auth`, `/studio` |
-| `credits.spec.ts` | `/auth`, `/crew/*`, `/shared/*` |
-| `crew-craft.spec.ts` | `/auth`, `/studio` |
+| `community-phone.spec.ts` | `/community` |
+| `community.spec.ts` | `/lounge` |
+| `continuity.spec.ts` | `/studio` |
+| `credits.spec.ts` | `/crew/*`, `/shared/*` |
+| `crew-craft.spec.ts` | `/studio` |
 | `crew-invitations.spec.ts` | `/community` |
-| `crew-records.spec.ts` | `/auth`, `/studio` |
-| `cut-notes.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `daylight.spec.ts` | `/auth`, `/studio` |
-| `director-day.spec.ts` | `/auth`, `/community` |
-| `documents.spec.ts` | `/auth`, `/studio` |
-| `editor-caret-after-edit.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-cowriting.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-find-cast.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-gutter.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-keyboard-reorder.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `editor-offline-merge.spec.ts` | `/auth`, `/community`, `/editor`, `/studio` |
-| `editor-package.spec.ts` | `/auth`, `/studio` |
-| `editor-project-script.spec.ts` | `/auth`, `/editor`, `/rest/v1/scripts`, `/studio` |
-| `editor-safety-net.spec.ts` | `/auth`, `/editor`, `/studio` |
+| `crew-records.spec.ts` | `/studio` |
+| `cut-notes.spec.ts` | `/editor`, `/studio` |
+| `daylight.spec.ts` | `/studio` |
+| `director-day.spec.ts` | `/community` |
+| `documents.spec.ts` | `/studio` |
+| `editor-caret-after-edit.spec.ts` | `/editor`, `/studio` |
+| `editor-cowriting.spec.ts` | `/editor`, `/studio` |
+| `editor-find-cast.spec.ts` | `/editor`, `/studio` |
+| `editor-gutter.spec.ts` | `/editor`, `/studio` |
+| `editor-keyboard-reorder.spec.ts` | `/editor`, `/studio` |
+| `editor-offline-merge.spec.ts` | `/community`, `/editor`, `/studio` |
+| `editor-package.spec.ts` | `/studio` |
+| `editor-project-script.spec.ts` | `/editor`, `/rest/v1/scripts`, `/studio` |
+| `editor-safety-net.spec.ts` | `/editor`, `/studio` |
 | `editor-undo.spec.ts` | `/editor`, `/studio` |
-| `emphasis.spec.ts` | `/auth`, `/editor` |
-| `errors.spec.ts` | `/admin/errors`, `/auth`, `/community` |
-| `global-chords.spec.ts` | `/auth`, `/community`, `/editor`, `/split` |
-| `grant-request.spec.ts` | `/auth`, `/studio` |
-| `guides.spec.ts` | `/auth`, `/projects/*` |
+| `emphasis.spec.ts` | `/editor` |
+| `errors.spec.ts` | `/admin/errors`, `/community` |
+| `global-chords.spec.ts` | `/community`, `/editor`, `/split` |
+| `grant-request.spec.ts` | `/studio` |
+| `guides.spec.ts` | `/projects/*` |
 | `hide-message.spec.ts` | `/admin/reports`, `/lounge` |
-| `hiring.spec.ts` | `/auth`, `/jobs`, `/jobs/*`, `/studio` |
-| `home-music.spec.ts` | `/auth`, `/community` |
+| `hiring.spec.ts` | `/jobs`, `/jobs/*`, `/studio` |
+| `home-music.spec.ts` | `/community` |
 | `home-page-crash.spec.ts` | `/` |
 | `home-routing.spec.ts` | `/`, `/community` |
 | `install.spec.ts` | `/auth`, `/community` |
-| `island-activity.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `island-call.spec.ts` | `/auth`, `/lounge` |
-| `island-compact-dock.spec.ts` | `/auth`, `/community` |
-| `island-onset-clock.spec.ts` | `/auth`, `/studio`, `/today` |
-| `island-projects-keys.spec.ts` | `/auth`, `/community` |
-| `island-upload.spec.ts` | `/auth`, `/studio` |
+| `island-activity.spec.ts` | `/editor`, `/studio` |
+| `island-call.spec.ts` | `/lounge` |
+| `island-compact-dock.spec.ts` | `/community` |
+| `island-onset-clock.spec.ts` | `/studio`, `/today` |
+| `island-projects-keys.spec.ts` | `/community` |
+| `island-upload.spec.ts` | `/studio` |
 | `island.spec.ts` | `/auth`, `/community`, `/lounge`, `/projects`, `/settings` |
 | `keyboard-audit.spec.ts` | `/`, `/admin`, `/auth`, `/crew`, `/editor`, `/jobs`, `/jobs/*`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/projects/*`, `/settings`, `/shared/*`, `/showcase`, `/soundtrack`, `/studio`, `/welcome` |
-| `layout.spec.ts` | `/auth`, `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/studio` |
+| `layout.spec.ts` | `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/studio` |
 | `legal.spec.ts` | `/`, `/auth`, `/privacy`, `/terms` |
 | `location-rename.spec.ts` | `/studio` |
-| `locations.spec.ts` | `/auth`, `/studio` |
+| `locations.spec.ts` | `/studio` |
 | `login-smoke.spec.ts` | `/auth`, `/projects` |
-| `lounge.spec.ts` | `/auth`, `/lounge` |
-| `mobile.spec.ts` | `/auth`, `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/settings`, `/studio` |
-| `money.spec.ts` | `/auth`, `/studio` |
-| `mood-boards.spec.ts` | `/auth`, `/studio` |
-| `notes.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `on-set.spec.ts` | `/auth`, `/studio` |
-| `onboarding.spec.ts` | `/auth`, `/editor`, `/jobs`, `/projects`, `/welcome` |
-| `onset-offline.spec.ts` | `/auth`, `/studio` |
-| `onset-phone.spec.ts` | `/auth`, `/studio` |
+| `lounge.spec.ts` | `/lounge` |
+| `mobile.spec.ts` | `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/settings`, `/studio` |
+| `money.spec.ts` | `/studio` |
+| `mood-boards.spec.ts` | `/studio` |
+| `notes.spec.ts` | `/editor`, `/studio` |
+| `on-set.spec.ts` | `/studio` |
+| `onboarding.spec.ts` | `/editor`, `/jobs`, `/projects`, `/welcome` |
+| `onset-offline.spec.ts` | `/studio` |
+| `onset-phone.spec.ts` | `/studio` |
 | `page-errors.spec.ts` | `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/projects/*`, `/settings`, `/soundtrack`, `/split`, `/studio` |
 | `password-recovery.spec.ts` | `/auth`, `/auth/reset` |
-| `performer-calls.spec.ts` | `/auth`, `/call`, `/studio` |
-| `phases.spec.ts` | `/auth`, `/editor`, `/projects/*`, `/settings`, `/studio` |
-| `phone-editor.spec.ts` | `/auth`, `/editor` |
-| `phone-keyboard.spec.ts` | `/auth`, `/lounge`, `/settings` |
-| `portfolio-page.spec.ts` | `/auth`, `/crew/*`, `/p/*`, `/portfolio`, `/portfolio/manage`, `/portfolios`, `/shared/*`, `/u/*`, `/u/*$` |
+| `performer-calls.spec.ts` | `/call`, `/studio` |
+| `phases.spec.ts` | `/editor`, `/projects/*`, `/settings`, `/studio` |
+| `phone-editor.spec.ts` | `/editor` |
+| `phone-keyboard.spec.ts` | `/lounge`, `/settings` |
+| `portfolio-page.spec.ts` | `/crew/*`, `/p/*`, `/portfolio`, `/portfolio/manage`, `/portfolios`, `/shared/*`, `/u/*`, `/u/*$` |
 | `production-from-script.spec.ts` | `/editor`, `/studio` |
 | `production-tools-open.spec.ts` | `/editor`, `/studio` |
-| `project-manager.spec.ts` | `/auth`, `/projects/*`, `/projects/*/pitch`, `/studio` |
-| `projects-keyboard-phase.spec.ts` | `/auth`, `/projects` |
+| `project-manager.spec.ts` | `/projects/*`, `/projects/*/pitch`, `/studio` |
+| `projects-keyboard-phase.spec.ts` | `/projects` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |
-| `readiness-day-date.spec.ts` | `/auth`, `/studio` |
-| `readiness.spec.ts` | `/auth`, `/studio` |
-| `reading-corrections.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `real-data.spec.ts` | `/`, `/auth`, `/studio` |
-| `records-links.spec.ts` | `/auth`, `/studio` |
-| `reports.spec.ts` | `/admin/reports`, `/auth`, `/jobs`, `/jobs/*` |
+| `readiness-day-date.spec.ts` | `/studio` |
+| `readiness.spec.ts` | `/studio` |
+| `reading-corrections.spec.ts` | `/editor`, `/studio` |
+| `real-data.spec.ts` | `/`, `/studio` |
+| `records-links.spec.ts` | `/studio` |
+| `reports.spec.ts` | `/admin/reports`, `/jobs`, `/jobs/*` |
 | `review-audiences.spec.ts` | `/review/*` |
-| `role-scoped-money.spec.ts` | `/auth`, `/studio` |
+| `role-scoped-money.spec.ts` | `/studio` |
 | `route-smoke.spec.ts` | `/`, `/auth`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/portfolio`, `/projects`, `/settings`, `/showcase`, `/studio`, `/this-path-does-not-exist` |
-| `scene-cost.spec.ts` | `/auth`, `/studio` |
-| `script-formats.spec.ts` | `/auth`, `/community`, `/studio` |
-| `script-share.spec.ts` | `/auth`, `/editor` |
-| `script-supervisor.spec.ts` | `/auth`, `/studio` |
-| `search.spec.ts` | `/auth`, `/editor\\`, `/projects`, `/studio` |
+| `scene-cost.spec.ts` | `/studio` |
+| `script-formats.spec.ts` | `/community`, `/studio` |
+| `script-share.spec.ts` | `/editor` |
+| `script-supervisor.spec.ts` | `/studio` |
+| `search.spec.ts` | `/editor\\`, `/projects`, `/studio` |
 | `share-pages.spec.ts` | `/m/*`, `/m/not-a-uuid`, `/p/*`, `/p/not-a-real-token` |
-| `shortcut-search.spec.ts` | `/auth`, `/community` |
-| `shot-designer.spec.ts` | `/auth`, `/studio` |
+| `shortcut-search.spec.ts` | `/community` |
+| `shot-designer.spec.ts` | `/studio` |
 | `split.spec.ts` | `/auth`, `/editor`, `/p/not-a-token`, `/projects/*`, `/split`, `/studio` |
-| `spotify-connect.spec.ts` | `/auth`, `/soundtrack` |
+| `spotify-connect.spec.ts` | `/soundtrack` |
 | `story-interview.spec.ts` | `/editor`, `/studio` |
-| `studio-journey.spec.ts` | `/auth`, `/editor`, `/studio` |
-| `studio-undo.spec.ts` | `/auth`, `/studio` |
+| `studio-journey.spec.ts` | `/editor`, `/studio` |
+| `studio-undo.spec.ts` | `/studio` |
 | `suspend-user.spec.ts` | `/admin/audit-logs`, `/admin/users`, `/auth`, `/crew/*` |
-| `table-read.spec.ts` | `/auth`, `/editor`, `/projects/*` |
-| `themes.spec.ts` | `/auth`, `/projects`, `/projects/*`, `/settings` |
-| `today-owner.spec.ts` | `/auth`, `/community` |
-| `transcripts.spec.ts` | `/auth`, `/studio` |
-| `view-as-role.spec.ts` | `/auth`, `/projects/*`, `/studio` |
-| `view-as.spec.ts` | `/auth`, `/projects/*` |
-| `voice-two-people.spec.ts` | `/auth`, `/lounge` |
-| `writing-loop.spec.ts` | `/auth`, `/editor` |
+| `table-read.spec.ts` | `/editor`, `/projects/*` |
+| `themes.spec.ts` | `/projects`, `/projects/*`, `/settings` |
+| `today-owner.spec.ts` | `/community` |
+| `transcripts.spec.ts` | `/studio` |
+| `view-as-role.spec.ts` | `/projects/*`, `/studio` |
+| `view-as.spec.ts` | `/projects/*` |
+| `voice-two-people.spec.ts` | `/lounge` |
+| `writing-loop.spec.ts` | `/editor` |
 | `your-data.spec.ts` | `/crew`, `/profile`, `/settings` |
-| `your-workflow.spec.ts` | `/auth`, `/studio` |
+| `your-workflow.spec.ts` | `/studio` |
