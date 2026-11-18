@@ -7,6 +7,14 @@
 <!-- "No migration", or the migration file and what it changes. A migration is
 applied to production (and the fingerprint checked) before merging. -->
 
+## Verified
+
+<!-- `Verified: <what you ran and what you saw>`: the checks, the specs, a build against the local stack and, for anything a
+person sees, what you looked at in a browser. Not-run or not-looked-at is not ready (the gate fails it); a real device, a real
+account or a person may be named as the one thing not checked. -->
+
+Verified: 
+
 ## Tests
 
 <!-- Unit / integration (personas: owner, crew, outsider) / e2e added or changed,
