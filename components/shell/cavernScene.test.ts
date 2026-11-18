@@ -45,6 +45,21 @@ describe('drawing the cavern', () => {
     expect(calls.filter((c) => c === 'fill').length).toBeGreaterThan(30);
   });
 
+  it('hangs stalactites and raises stalagmites at places the song seed picks: the same song, the same formations, another song, others', () => {
+    const shape = (seed: number) => { const { ctx, calls } = fakeCtx(); drawScene(ctx, 1280, 720, { ...scene(), seed }); return calls.filter((c) => c === 'quadraticCurveTo').length; };
+    expect(shape(7)).toBeGreaterThan(10);                 // there are formations at all
+    expect(shape(7)).toBe(shape(7));                      // the same seed draws the same
+    const counts = new Set([1, 2, 3, 4, 5, 6, 7, 8].map(shape));
+    expect(counts.size).toBeGreaterThan(1);               // another song does not draw the very same
+  });
+
+  it('draws the traveller as one filled silhouette that the lantern lights, with no outline-only limbs left', () => {
+    const { ctx, calls } = fakeCtx();
+    drawScene(ctx, 1280, 720, { ...scene(), seed: 3 });
+    expect(calls.some((c) => c === 'clip')).toBe(true);   // the lantern's light is clipped to the figure's shape
+    expect(calls.some((c) => c.endsWith(':NaN'))).toBe(false);
+  });
+
   it('puts the runner left of centre on the ground, with the lantern ahead of it and above the feet', () => {
     const r = newRunner(cave);
     const p = poseOf(r, 1000, 600, 0);

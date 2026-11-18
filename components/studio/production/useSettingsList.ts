@@ -19,7 +19,7 @@ import { useRecordFind } from '../toolFind';
 export type SettingsListKey =
   | 'safety' | 'comms' | 'gear' | 'wraps' | 'rehearsals' | 'scouts' | 'directorNotes' | 'risks'
   | 'cameraReports' | 'soundReports' | 'vfxShots' | 'costumes' | 'permits' | 'scriptNotes' | 'purchaseOrders'
-  | 'mediaOffloads' | 'makeup' | 'stills' | 'extras' | 'editorial' | 'claims';
+  | 'mediaOffloads' | 'makeup' | 'stills' | 'extras' | 'editorial' | 'claims' | 'cues' | 'spotting';
 
 export type SettingsListItem<K extends SettingsListKey> = NonNullable<ProjectSettings[K]> extends Array<infer T> ? T : never;
 

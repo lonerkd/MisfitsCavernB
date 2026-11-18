@@ -3,32 +3,22 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Disc, Ear, EarOff, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, Volume2, VolumeX, X } from 'lucide-react';
+import { Disc, Ear, EarOff, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { useToast } from '@/components/ui/Toast';
 import { createBeatTracker, SILENT, smoothLevel, type Levels } from '@/lib/cavern/audio';
 import { captureSupported, startCapture, type Capture, CaptureError } from '@/lib/cavern/capture';
 import { blendCaves, makeCave, seedOf, type Cave, type ZoneSegment } from '@/lib/cavern/cave';
-import { autoSteer, metres, newDive, reseed, stepDive, type Dive, type Steer } from '@/lib/cavern/dive';
-import { createDiveSound, soundSupported, type DiveSound } from '@/lib/cavern/diveSound';
-import { keySteer, pointerSteer } from '@/lib/cavern/diveSteer';
 import { describeSync, journeyLength, journeyPace, journeyTarget, journeyTint, journeyZones, needsResync, originFor, songFraction, type Journey, type JourneyStatus } from '@/lib/cavern/journey';
 import { useJourney } from '@/lib/cavern/useJourney';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
-import { guideInput, IDLE_TO_AUTO, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
+import { guideInput, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
 import { makeSpores, stepSpores, type Spore } from '@/lib/cavern/spores';
-import { drawDive } from './cavernDive';
 import { drawScene, RUNNER_AT } from './cavernScene';
 import v from './visualizer.module.css';
 
 const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
 
-/** The two ways to be in the cave: running through it side-on (the default), or diving down it in the first person. */
-export type CaveStyle = 'run' | 'dive';
-const STYLE_KEY = 'mc_cavern_style';
-const SOUND_KEY = 'mc_cavern_sound';
-const readSound = (): boolean => { try { return localStorage.getItem(SOUND_KEY) === 'on'; } catch { return false; } };
-const readStyle = (): CaveStyle => { try { return localStorage.getItem(STYLE_KEY) === 'dive' ? 'dive' : 'run'; } catch { return 'run'; } };
 /** A mouse that has stopped moving this long lets go: a pointer left resting over the cave must not steer it for ever (or keep the autopilot off). */
 const HOVER_REST_MS = 2000;
 
@@ -43,13 +33,11 @@ interface Props {
 }
 
 /**
- * The cavern, full screen or in the corner. Two ways to be in it:
- * - **Run** (default): a stick-figure ninja runs through endless dark caves holding a lantern, seen from the side. Right runs faster,
- *   left slower, up leaps, down crouches.
- * - **Dive**: the first person. You are a grey blob falling down a shaft, looking straight down; tiles come up at you, you bounce on
- *   them and steer to catch the next.
+ * The cavern, full screen or in the corner: a traveller with a lantern walks and runs through an endless cave painted in light, seen
+ * from the side. Right runs faster, left slower, up leaps, down crouches. (The first-person Dive that used to sit beside it was
+ * removed on 2026-11-18: grey tiles falling down a square shaft, unrelated to the place.)
  * Steer with the arrow keys or WASD, or with the pointer: a mouse steers by **hovering** over the cave (no click, nothing is
- * captured, moving off it lets go), a finger by holding. Left alone for a few seconds either one carries on by itself, and any input
+ * captured, moving off it lets go), a finger by holding. Left alone for a few seconds it carries on by itself, and any input
  * hands it back without a jerk. There is no way to lose.
  *
  * It follows the player: the cave is seeded from the song (the same song, the same cave), the light takes the cover's colour, and it
@@ -125,40 +113,17 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
   const trackId = (currentTrack as { id?: string } | null)?.id ?? currentTrack?.name ?? 'cavern';
   const art = currentTrack?.album?.images?.[0]?.url;
   const world = useRef<{
-    seed: number; cave: Cave; far: Cave; mid: Cave; runner: Runner | null; dive: Dive | null; diveIdle: number; tint: Rgb; cover: Rgb; input: Input;
+    seed: number; cave: Cave; far: Cave; mid: Cave; runner: Runner | null; tint: Rgb; cover: Rgb; input: Input;
     /** The journey's layout in the cave: the key it was built for, where the song's start sits in x, the sections as zones, and when it was last rebuilt. */
     jkey: string; origin: number; zones: ZoneSegment[] | undefined; resyncedAt: number;
-    guide: Input | null; aim: Steer | null; aimedAt: number; mouse: boolean; want: number; settleFrom: number | null; style: CaveStyle;
+    guide: Input | null; aimedAt: number; mouse: boolean; want: number; settleFrom: number | null;
   }>({
-    seed: seedOf(trackId), cave: makeCave(seedOf(trackId)), far: makeCave(seedOf(trackId) + 101), mid: makeCave(seedOf(trackId) + 202), runner: null, dive: null, diveIdle: IDLE_TO_AUTO,
-    tint: WARM, cover: WARM, jkey: '', origin: 0, zones: undefined, resyncedAt: -1e9, input: NO_INPUT, guide: null, aim: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null, style: 'run',
+    seed: seedOf(trackId), cave: makeCave(seedOf(trackId)), far: makeCave(seedOf(trackId) + 101), mid: makeCave(seedOf(trackId) + 202), runner: null,
+    tint: WARM, cover: WARM, jkey: '', origin: 0, zones: undefined, resyncedAt: -1e9, input: NO_INPUT, guide: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null,
   });
   useEffect(() => { world.current.want = seedOf(trackId); }, [trackId]);
 
-  // Which of the two, remembered on this device (it is a taste of this screen, not an account setting).
-  const [style, setStyleState] = useState<CaveStyle>(readStyle); // made only in the browser, so the device's choice is there from the first frame
   const kick = useRef<() => void>(() => {});
-  useEffect(() => { world.current.style = style; }, []); // eslint-disable-line react-hooks/exhaustive-deps -- the start only: later changes go through chooseStyle
-  const chooseStyle = useCallback((s: CaveStyle) => {
-    world.current.style = s; setStyleState(s);
-    try { localStorage.setItem(STYLE_KEY, s); } catch { /* a private window: it is simply not remembered */ }
-    kick.current(); // a still frame (reduced motion) is drawn again in the new view
-  }, []);
-
-  // The dive's sounds: off until the person turns them on (remembered on this device), never made in the corner window, and the audio
-  // device is made only when a sound is first wanted.
-  const [sound, setSoundState] = useState(readSound);
-  const canSound = soundSupported();
-  const soundOn = useRef(sound);
-  const voice = useRef<DiveSound | null>(null);
-  const toggleSound = useCallback(() => {
-    const on = !soundOn.current;
-    soundOn.current = on; setSoundState(on);
-    try { localStorage.setItem(SOUND_KEY, on ? 'on' : 'off'); } catch { /* a private window: it is simply not remembered */ }
-    if (on) voice.current ??= createDiveSound(); // made on the click, which the browser counts as the person's go-ahead
-    else { voice.current?.close(); voice.current = null; }
-  }, []);
-  useEffect(() => () => { voice.current?.close(); voice.current = null; }, []);
 
   // The light takes the cover's colour. A cover the browser will not let us read (cross-origin) leaves the warm default.
   useEffect(() => {
@@ -202,10 +167,9 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
     const W = world.current, rect = e.currentTarget.getBoundingClientRect(), r = W.runner;
     W.mouse = e.pointerType === 'mouse';
     W.aimedAt = performance.now();
-    W.aim = pointerSteer((e.clientX - rect.left) / rect.width, (e.clientY - rect.top) / rect.height);
     if (r) W.guide = guideInput(((e.clientX - rect.left) - rect.width * RUNNER_AT) / rect.height, ((e.clientY - rect.top) - r.y * rect.height) / rect.height);
   }, []);
-  const letGo = useCallback(() => { world.current.guide = null; world.current.aim = null; }, []);
+  const letGo = useCallback(() => { world.current.guide = null; }, []);
 
   // Listening to the computer's sound is opt-in: the browser asks which tab or screen to share, and only then does the cave hear the beat.
   const { toast } = useToast();
@@ -266,8 +230,8 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       const frac = F.journey ? songFraction(F.ms + (playing.current ? now - F.at : 0), F.dur) : null;
       const length = F.journey && frac !== null ? journeyLength(F.journey, F.dur) : 0;
       const jkey = F.journey && frac !== null ? `${F.journey.key}@${Math.round(F.dur / 1000)}` : '';
-      const lost = jkey !== '' && jkey === W.jkey && W.style === 'run' && now - W.resyncedAt > 3000 && needsResync(r0.x, journeyTarget(frac!, length, W.origin));
-      // A new song: a new cave, blended in beyond the edge of the screen so nothing pops (the dive's shaft below changes the same way).
+      const lost = jkey !== '' && jkey === W.jkey && now - W.resyncedAt > 3000 && needsResync(r0.x, journeyTarget(frac!, length, W.origin));
+      // A new song: a new cave, blended in beyond the edge of the screen so nothing pops.
       if (W.want !== W.seed || jkey !== W.jkey || lost) {
         const from = r0.x + (w / h) * (1 - RUNNER_AT) + 1;
         const newSong = W.want !== W.seed;
@@ -283,7 +247,6 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         W.settleFrom = from + 5 + 0.5;
         if (newSong) {
           spores = makeSpores(70, W.cave, r0.x, AHEAD, W.seed);
-          if (W.dive) reseed(W.dive, W.want);
         }
       }
       // Once a layer has left the blend fully behind the camera, it is just the new cave again (not a chain of blends).
@@ -294,11 +257,11 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         if (behind(0.6)) W.mid = makeCave(W.seed + 202);
         if (behind(0.3)) { W.far = makeCave(W.seed + 101); W.settleFrom = null; }
       }
-      // The light: the scene's mood colour over the cover's, following the figure through the journey (the Dive has no x, so it follows the song).
-      if (jkey) W.tint = journeyTint(F.journey!, W.style === 'run' ? Math.min(1, Math.max(0, (r0.x - W.origin) / length)) : frac!, W.cover);
+      // The light: the scene's mood colour over the cover's, following the figure through the journey.
+      if (jkey) W.tint = journeyTint(F.journey!, Math.min(1, Math.max(0, (r0.x - W.origin) / length)), W.cover);
       else W.tint = W.cover;
       // A mouse left resting over the cave lets go.
-      if (W.mouse && W.aim && now - W.aimedAt > HOVER_REST_MS) { W.guide = null; W.aim = null; }
+      if (W.mouse && W.guide && now - W.aimedAt > HOVER_REST_MS) W.guide = null;
       energy += ((playing.current ? 1 : 0.15) - energy) * Math.min(1, dt * 1.5);
       t += dt * (0.25 + energy * 0.75);
       // What it hears, if the person has shared audio: smoothed, so the light breathes with the music instead of strobing.
@@ -307,40 +270,20 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       heard = { bass: smoothLevel(heard.bass, raw.bass, dt), mid: smoothLevel(heard.mid, raw.mid, dt), treble: smoothLevel(heard.treble, raw.treble, dt), level: smoothLevel(heard.level, raw.level, dt) };
       const pulse = cap ? beat.update(raw.bass, dt) : 0;
 
-      let steering: boolean, tally: string;
-      if (W.style === 'dive') {
-        const d = (W.dive ??= newDive(W.seed));
-        const held = W.input;
-        const keyed = held.left || held.right || held.up || held.down;
-        const given = keyed || !!W.aim;
-        W.diveIdle = given ? 0 : Math.min(W.diveIdle + dt, IDLE_TO_AUTO + 1);
-        steering = W.diveIdle < IDLE_TO_AUTO;
-        const steer = keyed ? keySteer(held.left, held.right, held.up, held.down) : W.aim ?? (steering ? { x: 0, z: 0 } : autoSteer(d));
-        if (!reduce) {
-          const events = stepDive(d, dt * (0.25 + energy * 0.75), steer);
-          if (events.length && soundOn.current && !latest.current.mini) {
-            const v = (voice.current ??= createDiveSound());
-            if (v) for (const e of events) v.play(e);
-          }
-        }
-        drawDive(ctx, d, w, h, { tint: W.tint, level: heard.level, pulse, compact: latest.current.mini });
-        tally = `${metres(d).toLocaleString()} m down`;
-      } else {
-        if (!reduce) {
-          W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin)) : 1);
-          spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
-        }
-        const r = W.runner!;
-        drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, level: heard.level, bass: heard.bass, pulse });
-        steering = !isAuto(r);
-        tally = `${Math.round(r.x * 3).toLocaleString()} m in`;
+      if (!reduce) {
+        W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin)) : 1);
+        spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
       }
+      const r = W.runner!;
+      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: heard.level, bass: heard.bass, pulse });
+      const steering = !isAuto(r);
+      const tally = `${Math.round(r.x * 3).toLocaleString()} m in`;
       if (now - shown > 500) {
         shown = now;
         if (distance.current) distance.current.textContent = tally;
         if (miniText.current) miniText.current.textContent = tally;
         if (hearing.current) hearing.current.textContent = !capture.current ? 'Following the player (the beat is not heard)' : capture.current.hearing() ? 'Listening: the light follows the music' : 'Listening, but hearing nothing: share a tab or the screen with audio, and play something';
-        if (journeyText.current) journeyText.current.textContent = describeSync({ status: F.status, journey: F.journey, durationKnown: F.dur > 0, fraction: frac, style: W.style, listening: capture.current !== null }).text;
+        if (journeyText.current) journeyText.current.textContent = describeSync({ status: F.status, journey: F.journey, durationKnown: F.dur > 0, fraction: frac, listening: capture.current !== null }).text;
         if (modeText.current) modeText.current.textContent = steering ? 'You are steering' : 'Exploring on its own: touch an arrow key to steer';
       }
       if (!reduce) raf = requestAnimationFrame(frame);
@@ -364,7 +307,7 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       <canvas
         ref={canvas} aria-hidden className={v.canvas}
         onPointerDown={(e) => { if (e.pointerType !== 'mouse') e.currentTarget.setPointerCapture?.(e.pointerId); aimAt(e); }}
-        onPointerMove={(e) => { if (e.pointerType === 'mouse' || world.current.aim) aimAt(e); }}
+        onPointerMove={(e) => { if (e.pointerType === 'mouse' || world.current.guide) aimAt(e); }}
         onPointerUp={(e) => { if (e.pointerType !== 'mouse') letGo(); }}
         onPointerCancel={letGo}
         onPointerLeave={(e) => { if (e.pointerType === 'mouse') letGo(); }}
@@ -380,11 +323,6 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         <>
           <div className={`${v.depth} ${fade}`} aria-live="off">
             <span ref={distance}>0 m in</span><span ref={modeText}>Exploring on its own: touch an arrow key to steer</span><span ref={hearing}>Following the player (the beat is not heard)</span><span ref={journeyText}>No project open: the cave follows the player only.</span>
-            <div className={v.styles} role="group" aria-label="How to be in the cave">
-              <button type="button" className={v.listen} aria-pressed={style === 'run'} onClick={() => chooseStyle('run')} title="Run through the cave, side-on">Run</button>
-              <button type="button" className={v.listen} aria-pressed={style === 'dive'} onClick={() => chooseStyle('dive')} title="Dive down the cave, in the first person">Dive</button>
-            </div>
-            {style === 'dive' && canSound && <button type="button" className={v.listen} onClick={toggleSound} aria-pressed={sound} title="Soft sounds for landings and springs">{sound ? <Volume2 size={14} /> : <VolumeX size={14} />} Sound</button>}
             {canListen && <button type="button" className={v.listen} onClick={() => (listening === 'on' ? stopListening() : void startListening())} disabled={listening === 'starting'} aria-pressed={listening === 'on'}>{listening === 'on' ? <EarOff size={14} /> : <Ear size={14} />} {listening === 'on' ? 'Stop listening' : 'Listen to the music'}</button>}
           </div>
           <div className={`${v.corner} ${fade}`}>

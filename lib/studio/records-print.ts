@@ -3,6 +3,7 @@
 // decides the page. A record's scene is its linked scene numbers when they resolve, else its typed label (`sceneChip`).
 import type { PrintColumn, PrintDoc } from '@/lib/print/kit';
 import type { RecordKind } from '@/lib/supabase/productionRecords';
+import { cueSheetRows, type Cue } from './cues';
 
 export interface RecordPrintSpec {
   /** The Production view that holds this tool (its tab id). */
@@ -36,6 +37,8 @@ export const RECORD_PRINT: Record<RecordKind, RecordPrintSpec> = {
   stills: { view: 'stills', title: 'Stills log', columns: [C('scene', 'Scene', '9%'), C('subject', 'Subject'), C('frames', 'Frames', '14%'), C('photographer', 'Photographer', '16%'), C('status', 'Status', '12%'), C('notes', 'Notes')] },
   extras: { view: 'extras', title: 'Extras', columns: [C('scene', 'Scene', '9%'), C('role', 'Role'), C('count', 'How many', '10%'), C('wardrobe', 'Wardrobe', '20%'), C('status', 'Status', '12%'), C('notes', 'Notes')] },
   editorial: { view: 'editorial', title: 'Editorial handoff', columns: [C('item', 'Item'), C('scene', 'Scene', '9%'), C('version', 'Version', '9%'), C('recipient', 'To', '16%'), C('due', 'Due', '12%'), C('status', 'Status', '11%')] },
+  cues: { view: 'cues', title: 'Music cue sheet', landscape: true, columns: [C('cue', 'Cue', '7%'), C('title', 'Title'), C('kind', 'Kind', '9%'), C('use', 'Use', '13%'), C('composer', 'Composer', '13%'), C('publisher', 'Publisher', '13%'), C('pro', 'PRO', '6%'), C('master', 'Master', '10%'), C('tcIn', 'In', '6%'), C('tcOut', 'Out', '6%'), C('duration', 'Time', '6%')] },
+  spotting: { view: 'spotting', title: 'Sound spotting list', columns: [C('scene', 'Scene', '9%'), C('tc', 'Time', '9%'), C('kind', 'Type', '14%'), C('note', 'What is needed'), C('source', 'Source', '16%'), C('status', 'Status', '11%')] },
   claims: { view: 'claims', title: 'Insurance claims', columns: [C('incident', 'Incident'), C('date', 'Date', '12%'), C('policy', 'Policy', '16%'), C('amount', 'Amount', '12%'), C('status', 'Status', '12%'), C('notes', 'Notes')] },
 };
 
@@ -67,7 +70,8 @@ export interface RecordsPrintInput {
 
 export function recordsDoc(i: RecordsPrintInput): PrintDoc {
   const spec = RECORD_PRINT[i.kind];
-  const rows = i.rows.map((r) => {
+  // The cue sheet is read by a performing-rights society in cue-number order, with each cue's running time: it is built, not copied.
+  const rows = i.kind === 'cues' ? cueSheetRows(i.rows as unknown as Cue[]) : i.rows.map((r) => {
     const out: Record<string, string | number | null> = {};
     for (const c of spec.columns) out[c.key] = plain(r[c.key]);
     if (i.sceneOf && spec.columns.some((c) => c.key === 'scene')) out.scene = i.sceneOf(r) || out.scene;

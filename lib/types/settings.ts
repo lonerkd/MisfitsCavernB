@@ -62,6 +62,10 @@ export interface ProjectSettings {
   extras?: Array<{ id: string; scene_ids?: string[]; scene: string; role: string; count: string; wardrobe: string; call: string; status: 'requested' | 'booked' | 'confirmed'; notes: string }>;
   /** Editorial handoff: what goes to the editor and when. */
   editorial?: Array<{ id: string; scene_ids?: string[]; scene: string; item: string; version: string; recipient: string; due: string; status: 'pending' | 'sent' | 'received'; notes: string }>;
+  /** The music cue sheet and licensing tracker (`lib/studio/cues.ts`). */
+  cues?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; cue: string; title: string; kind: 'score' | 'source' | 'needle drop' | 'vocal' | 'other'; use: 'background instrumental' | 'background vocal' | 'visual vocal' | 'visual instrumental' | 'main title' | 'end credits' | 'logo'; composer: string; publisher: string; pro: string; masterOwner: string; tcIn: string; tcOut: string; status: 'needed' | 'requested' | 'negotiating' | 'cleared' | 'denied' | 'original'; fee: number | null; territory: string; term: string; contact: string; notes: string }>;
+  /** The sound spotting list (`lib/studio/spotting.ts`). */
+  spotting?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; tc: string; kind: 'effect' | 'foley' | 'ambience' | 'dialogue fix' | 'ADR' | 'walla' | 'other'; note: string; source: string; status: 'to spot' | 'sourced' | 'cut' | 'approved' }>;
   /** Insurance claims. */
   claims?: Array<{ id: string; incident: string; date: string; policy: string; amount: string; status: 'filed' | 'in review' | 'paid' | 'denied'; notes: string }>;
   /** Stills log (the unit photographer). */
