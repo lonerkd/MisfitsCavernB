@@ -1,20 +1,19 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The island holds what is running (lib/island/activities): a writing sprint on the clock with working
 // pause / resume / reset on the island itself, and the editor's offline queue — "saved on this device" while
 // the connection is down, gone once it has synced. Opt-in: E2E_LOCAL_STACK=1. Set ISLAND_SHOTS=<dir> to also
 // save pictures of the island in each state.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const SHOTS = process.env.ISLAND_SHOTS;
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n';
 
 test.describe.serial('The island holds activities (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
@@ -22,9 +21,8 @@ test.describe.serial('The island holds activities (local Supabase)', () => {
   let scriptId = '';
   const email = `island.${TAG}@journey.test`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `isl${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Island ${TAG}`, creator_id: userId }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;

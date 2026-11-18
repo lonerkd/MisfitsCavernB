@@ -1,14 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
-import { test, type Page } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { test, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
 
 // Keyboard-only audit: tabs through every page and reports what a person without a
 // mouse cannot do. It writes e2e/keyboard-audit.json and prints a summary; it does
 // not fail the run (a report, until the findings are fixed and it can gate).
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const MAX_TABS = 160;
 
 interface Finding { route: string; kind: string; detail: string }
@@ -87,12 +85,11 @@ async function audit(page: Page, route: string): Promise<Finding[]> {
 }
 
 test.describe('Keyboard-only audit (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 with the app built against a local Supabase stack');
+  test.skip(!stackEnabled, stackSkipReason);
   test.setTimeout(600_000);
 
-  test('report', async ({ browser }) => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    const admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test('report', async ({ browser, stack }) => {
+    const admin = stack.admin;
     const password = randomUUID();
     const email = `kbd.${Date.now()}@journey.test`;
     const { data: u } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { username: `kbd${Date.now().toString(36)}` } });

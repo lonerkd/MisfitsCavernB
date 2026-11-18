@@ -1,29 +1,26 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // On set without signal, against a local stack: the connection drops mid-day;
 // a shot got, the scene wrapped and a day note still show at once and wait on
 // the device — through a reload with no signal — and are sent when the
 // connection comes back. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const SCRIPT = 'INT. MINE SHAFT - NIGHT\n\nLamps flicker.\n\nEXT. PIT HEAD - DAWN\n\nSteam rises.\n';
 const d = new Date();
 const TODAY = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 test.describe('On set offline (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId: string;
   let email: string;
   let projectId: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     email = `osoff.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `osoff${Date.now().toString(36)}` } });
     userId = data.user!.id;

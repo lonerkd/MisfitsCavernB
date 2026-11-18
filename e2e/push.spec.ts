@@ -1,9 +1,8 @@
-import { execSync } from 'node:child_process';
 import { createECDH, randomBytes, randomUUID } from 'node:crypto';
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { Client as Pg } from 'pg';
 const ece = require('http_ece') as { decrypt: (buf: Buffer, opts: Record<string, unknown>) => Buffer };
 
@@ -15,14 +14,13 @@ const ece = require('http_ece') as { decrypt: (buf: Buffer, opts: Record<string,
 // VAPID_PRIVATE_KEY, PUSH_DISPATCH_SECRET and SUPABASE_SERVICE_ROLE_KEY
 // (CI sets test-only ones). PUSH_E2E_HOST: how the database container reaches
 // this machine (Docker Desktop: host.docker.internal; CI: the network gateway).
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const SECRET = process.env.PUSH_DISPATCH_SECRET ?? '';
 const CONFIGURED = !!(SECRET && process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 const TAG = Date.now().toString(36);
 
 test.describe('Web Push (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
-  test.skip(ENABLED && !CONFIGURED, 'start the app with VAPID keys and PUSH_DISPATCH_SECRET (see the spec header)');
+  test.skip(!stackEnabled, stackSkipReason);
+  test.skip(stackEnabled && !CONFIGURED, 'start the app with VAPID keys and PUSH_DISPATCH_SECRET (see the spec header)');
 
   let admin: SupabaseClient;
   let dbUrl = '';
@@ -38,10 +36,9 @@ test.describe('Web Push (local Supabase)', () => {
     try { await pg.query(sql, params); } finally { await pg.end(); }
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    dbUrl = s.DB_URL;
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
+    dbUrl = stack.dbUrl;
     userId = (await admin.auth.admin.createUser({ email: `push.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: `push${TAG}` } })).data.user!.id;
 
     // The stand-in push service: records what it's sent and says Created.

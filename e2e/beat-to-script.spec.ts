@@ -1,18 +1,17 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Story beat → script, two sessions: the owner is writing (with an edit not
 // yet saved) while a crew member adds a beat to the script from the Studio's
 // beat board. The beat lands at the end of the open script, the owner's
 // typing is kept, and the saved script has both. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Beat → script (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `bt-owner.${TAG}@journey.test` };
@@ -31,9 +30,8 @@ test.describe('Beat → script (local Supabase)', () => {
     return page;
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const [who, name] of [[owner, `btowner${TAG}`], [crew, `btcrew${TAG}`]] as const) {
       who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: name } })).data.user!.id;
     }
@@ -92,18 +90,17 @@ test.describe('Beat → script (local Supabase)', () => {
     expect(saved.split('Ana waits by the lamp.').length - 1).toBe(1);
   });
 
-  test('only people who can open the project can add to its script', async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
+  test('only people who can open the project can add to its script', async ({ stack }) => {
     const outsiderEmail = `bt-out.${TAG}@journey.test`;
     const outsiderId = (await admin.auth.admin.createUser({ email: outsiderEmail, password: PASSWORD, email_confirm: true, user_metadata: { username: `btout${TAG}` } })).data.user!.id;
     try {
-      const riley = createClient(s.API_URL, s.ANON_KEY, { auth: { persistSession: false } });
+      const riley = stack.anonClient();
       await riley.auth.signInWithPassword({ email: outsiderEmail, password: PASSWORD });
       const before = (await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content;
       const { error } = await riley.rpc('append_to_script', { p_script: scriptId, p_text: '\nRILEY WAS HERE' });
       expect(error?.message).toMatch(/not found/i);
       expect((await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content).toBe(before);
-      const anon = createClient(s.API_URL, s.ANON_KEY, { auth: { persistSession: false } });
+      const anon = stack.anonClient();
       expect((await anon.rpc('append_to_script', { p_script: scriptId, p_text: '\nANON' })).error).not.toBeNull();
     } finally {
       await admin.auth.admin.deleteUser(outsiderId);

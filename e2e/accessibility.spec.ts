@@ -1,13 +1,11 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
 
 // Every page, signed out and signed in, against WCAG 2.0/2.1/2.2 A + AA (the
 // standard Lighthouse and Google's accessibility audits apply), with real data
 // from a local stack. Any violation fails. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -31,12 +29,11 @@ async function violations(page: Page, route: string | null) {
 }
 
 test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 with the app built against a local Supabase stack');
+  test.skip(!stackEnabled, stackSkipReason);
   test.setTimeout(240_000);
 
-  test('every page passes', async ({ browser }) => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    const admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test('every page passes', async ({ browser, stack }) => {
+    const admin = stack.admin;
     const password = randomUUID();
     const email = `a11y.${Date.now()}@journey.test`;
     const { data: u } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { username: `a11y${Date.now().toString(36)}` } });

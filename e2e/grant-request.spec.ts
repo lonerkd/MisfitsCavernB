@@ -1,11 +1,10 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Role model: the owner's notification for "asks for access" opens the crew screen with a one-click Grant. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -21,15 +20,14 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Granting a request in one click (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   let admin: SupabaseClient;
   const owner = { id: '', email: `grantmo.${TAG}@journey.test` };
   const crew = { id: '', email: `grantmc.${TAG}@journey.test` };
   let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `grantmo${TAG}` } })).data.user!.id;
     crew.id = (await admin.auth.admin.createUser({ email: crew.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `grantmc${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Grant ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
