@@ -24,6 +24,8 @@ import { ScriptOSPreview, StudioPreview, LoungePreview, PortfolioPreview } from 
 import { ModuleTile } from '@/components/landing/ModuleTile';
 import { StatsTicker } from '@/components/landing/StatsTicker';
 import { SignedInHome } from '@/components/home/SignedInHome';
+import { ModulePicker } from '@/components/home/ModulePicker';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 interface LiveData {
@@ -43,6 +45,7 @@ export default function Home() {
   const [works, setWorks] = useState<Array<{ title: string; year: number | null; category: string | null; accent: string | null }>>([]);
 
   const { activeProject } = useProject();
+  const { phone } = usePhoneLayout();
 
   useEffect(() => {
     const palette = ['#6366f1', '#10b981', '#e8431a', '#f59e0b', '#8b5cf6', '#06b6d4'];
@@ -295,12 +298,14 @@ export default function Home() {
 
       {loggedIn && <SignedInHome />}
 
-      {loggedIn === false && (<>
       {/* ══════════════════════════════════════════════
           MODULE GRID — asymmetric layout
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '80px 24px 100px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
-
+      {loggedIn !== null && (
+      <section aria-labelledby="home-parts" style={{ padding: loggedIn ? '8px 24px 80px' : '80px 24px 100px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
+        <h2 id="home-parts" className="sr-only">{loggedIn ? 'Jump back in' : 'The parts of the suite'}</h2>
+        {loggedIn && <p aria-hidden style={{ margin: '0 0 12px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)' }}>Jump back in</p>}
+        {phone ? <ModulePicker loggedIn={!!loggedIn} data={{ scriptLines: live.scriptLines, assets: live.assets, messages: live.messages, works }} /> : (<>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
 
           <ModuleTile
@@ -357,8 +362,11 @@ export default function Home() {
           preview={<PortfolioPreview works={works} />}
           style={{ minHeight: 0 }}
         />
+        </>)}
       </section>
+      )}
 
+      {loggedIn === false && (<>
       {/* ══════════════════════════════════════════════
           CLOSING CTA
       ══════════════════════════════════════════════ */}
