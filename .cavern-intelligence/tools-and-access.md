@@ -217,6 +217,13 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   (a describe-level helper can call it); `createUser` also takes an explicit
   `email`, `password` and `username`. `npm run typecheck` also type-checks `e2e/`
   (`e2e/tsconfig.json`).
+- **Vercel previews are budgeted** (free plan: 100 deployments a day). `vercel.json`'s
+  `ignoreCommand` runs `scripts/vercel-ignore.sh`: a branch deploys only when a file that
+  goes into the app changed since its last deployment (`VERCEL_GIT_PREVIOUS_SHA`), so
+  tests, e2e, migrations, dev scripts, docs and dependency-bot branches do not cost one;
+  `main` always builds. Add a path the app reads to that script's list (and its test) if one
+  is ever skipped wrongly. When the cap is hit anyway the `Vercel` status fails with
+  `api-deployments-free-per-day`; it is not a required check, so merging is unaffected.
 - **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
   (the `changes` job decides); `checks` still runs. Pushes to `main` run
   `checks` and `database`.

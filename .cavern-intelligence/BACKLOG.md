@@ -16,11 +16,13 @@ Sizes: **S** ≈ an hour or two · **M** ≈ a session · **L** ≈ several sess
   move to Pro (also brings daily backups).
 - **Vercel usage** — the Hobby free tier caps Deployment Storage at 10 GB and
   deployments at 100/day; the multi-agent workflow (every branch push is a
-  preview deployment) hit both on 2026-11-09, Vercel paused the project, and
-  production was left 10 commits behind `main` (fixed 2026-11-11 — the session
-  note). Decide: cut deployment volume (fewer pushes per PR; a broader
-  `ignoreCommand` in `vercel.json`, which today inspects only the tip commit),
-  or move to Pro.
+  preview deployment) hit both on 2026-11-09 and the daily cap again on
+  2026-11-18. **Decided 2026-11-18 (owner): cut deployment volume.** Built:
+  `scripts/vercel-ignore.sh` (the `ignoreCommand`) builds only when a file that
+  goes into the app changed since the branch's last deployment, never for
+  tests, e2e, migrations, dev scripts, docs or dependency-bot branches; the
+  habit stays: one push per PR, update a branch only right before it merges.
+  Pro stays open if that is still not enough.
 - **GitGuardian**: mark the two open incidents false positives (test fixtures); delete the two throwaway e2e accounts in production (Authentication › Users).
 - **Email sender** — a custom SMTP provider (Resend, Postmark…) in Supabase ›
   Auth › SMTP, on a domain you own, before strangers sign up (3.15).
