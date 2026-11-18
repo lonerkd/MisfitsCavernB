@@ -70,9 +70,10 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     await page.getByRole('button', { name: /^(add|log)$/i }).dispatchEvent('click');
     await expect(page.getByText('Sc 1', { exact: true })).toBeVisible();
 
-    const stored = await admin.from('production_records').select('scene_ids, data').eq('project_id', projectId).eq('kind', 'cameraReports').single();
-    expect(stored.data?.scene_ids).toEqual([sceneId]);
-    expect(stored.data?.data).toMatchObject({ scene: '1' });
+    // The page shows the record from its own state at once; the row lands a moment later, so wait for it rather than read it straight away.
+    const stored = () => admin.from('production_records').select('scene_ids, data').eq('project_id', projectId).eq('kind', 'cameraReports').maybeSingle();
+    await expect.poll(async () => (await stored()).data?.scene_ids, { timeout: 10_000 }).toEqual([sceneId]);
+    expect((await stored()).data?.data).toMatchObject({ scene: '1' });
 
     // A scene is added before it in the script: the Studio's sync renumbers the kitchen to 2, and the record follows the link,
     // not the typed "1".
