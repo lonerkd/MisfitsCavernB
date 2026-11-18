@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Y from 'yjs';
 
 // Conflict-free co-writing (ADR 0008) with two real browsers: simultaneous
@@ -9,13 +9,12 @@ import * as Y from 'yjs';
 // and — the invariant the design rests on — the stored script text and the
 // stored Yjs state always spell the same text once things settle.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. PIER - DAY\n\nBoats come in.\n';
 
 test.describe.serial('Co-writing with Yjs (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const people = [
@@ -25,9 +24,8 @@ test.describe.serial('Co-writing with Yjs (local Supabase)', () => {
   let projectId = '';
   let scriptId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const [i, p] of people.entries()) {
       p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cw${i}${TAG}` } })).data.user!.id;
     }

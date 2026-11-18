@@ -1,25 +1,23 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Mood boards (Studio > Library > Mood boards): a board is an object of its own, its cards are saved where they sit.
 // Real data, no mocks. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Mood boards (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
   let projectId = '';
   const email = `boards.${TAG}@journey.test`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `boards${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Boards ${TAG}`, creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('media').insert({ project_id: projectId, kind: 'link', title: 'Rain on glass', external_url: 'https://example.com/rain', created_by: userId });

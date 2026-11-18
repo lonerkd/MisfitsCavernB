@@ -208,8 +208,13 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   username `qa…`; flagged `is_sample` on staging so the public totals, the
   directory and people search leave it out; pass `sample` to override),
   `signIn(page, user)`, `insert` / `createProject` / `onCleanup`, and
-  tears down everything it made even when the spec fails. About 100 older specs
-  still carry their own copy of that setup (BACKLOG 3.37); move one when you touch it.
+  tears down everything it made even when the spec fails. It also gives
+  `admin` (the service client), `anonClient()` / `anonKey` (the app's public key),
+  `url` and `dbUrl` (for a spec that must run SQL; on staging
+  `E2E_SUPABASE_ANON_KEY` / `E2E_SUPABASE_DB_URL`). No spec reads `supabase status`
+  or `E2E_LOCAL_STACK` itself (`scripts/e2e-setup-guard.test.mjs` fails one that does).
+  About 100 specs still make their own users and sign in by hand (BACKLOG 3.37, tier 2);
+  move one when you touch it. `npm run typecheck` also type-checks `e2e/` (`e2e/tsconfig.json`).
 - **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
   (the `changes` job decides); `checks` still runs. Pushes to `main` run
   `checks` and `database`.

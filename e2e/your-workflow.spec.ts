@@ -1,12 +1,11 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // A role's written workflow, in a real browser against a local stack: a gaffer and an accountant each see their own steps in order, with the
 // tools they can open as buttons and no tool they cannot (the gaffer is not offered Money). Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -22,15 +21,14 @@ async function axeViolations(page: Page): Promise<string[]> {
 
 
 test.describe('Your workflow (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const people = { owner: { id: '', email: `yw-owner.${TAG}@journey.test` }, gaffer: { id: '', email: `yw-gaf.${TAG}@journey.test` }, acct: { id: '', email: `yw-acc.${TAG}@journey.test` } };
   let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const [k, who] of Object.entries(people)) {
       who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `yw${k}${TAG}` } })).data.user!.id;
     }

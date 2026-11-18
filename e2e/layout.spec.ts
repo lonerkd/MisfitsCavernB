@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Layout guard at desk size: the island never hides anything, and never costs
 // the page its bottom edge. Opened, every app in its strip is fully visible; at
@@ -10,7 +10,6 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 // side run to the foot of the screen. These broke silently once; this keeps
 // them from breaking again.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const DESK = { viewport: { width: 1440, height: 900 } };
@@ -24,15 +23,14 @@ const belowDockTop = (page: Page, selector: string) => page.evaluate((sel) => {
 }, selector);
 
 test.describe('Layout guard at desk size (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `layout.${TAG}@journey.test` };
   let projectId: string, scriptId: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `layout${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Harbour ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     // A busy project: enough channels that the Lounge's channel list is taller than the screen.

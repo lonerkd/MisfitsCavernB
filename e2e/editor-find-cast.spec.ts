@@ -1,18 +1,16 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Two things the editor page did itself, now in hooks (editor-page-apart):
 // find & replace over the script, and casting a character from the Character
 // Bible. Guards the move. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nMAYA\nStill here.\n';
 
 test.describe.serial('Editor find & replace and casting (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const me = { id: '', email: `fc.${TAG}@journey.test` };
@@ -20,9 +18,8 @@ test.describe.serial('Editor find & replace and casting (local Supabase)', () =>
   let projectId = '';
   let scriptId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `fc${TAG}` } })).data.user!.id;
     actor.id = (await admin.auth.admin.createUser({ email: `act.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: actor.username } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `FindCast ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;

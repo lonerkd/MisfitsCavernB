@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The Cavern as an installed iPhone app: every page names a launch screen for
 // each iPhone size (and they exist), and Today tells an iPhone in Safari how
 // to add it to the Home Screen — not once it's installed, and not after
 // "Not now". Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const IPHONE = {
@@ -16,7 +15,7 @@ const IPHONE = {
 };
 
 test.describe('Installing on iPhone (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const me = { id: '', email: `inst.${TAG}@journey.test` };
@@ -33,9 +32,8 @@ test.describe('Installing on iPhone (local Supabase)', () => {
     return page;
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `inst${TAG}` } })).data.user!.id;
   });
   test.afterAll(async () => { if (me.id) await admin?.auth.admin.deleteUser(me.id); });

@@ -1,12 +1,11 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // On a shoot day the island's "On set · Day N" also says where the day is: the phase, the time on set, and what is
 // left to the planned wrap (BACKLOG 4.1, On set's day clock). Real browser, real local Supabase, real set log.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -14,16 +13,15 @@ const local = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.
 const hhmm = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
 
 test.describe('The island says where the shoot day is (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
   let projectId = '';
   const email = `onclock.${TAG}@journey.test`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `onclock${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Clock ${TAG}`, creator_id: userId, status: 'production' }).select('id').single()).data!.id;
   });

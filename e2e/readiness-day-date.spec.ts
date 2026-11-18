@@ -1,27 +1,25 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The film graph: a shoot day's date is the day's own. A day dated on the schedule with no call sheet yet is a
 // dated day in Readiness (it used to read "no date", because Readiness looked only at call sheets).
 // Real data, no mocks. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const SCRIPT = 'INT. KITCHEN - DAY\n\nMAYA stirs a pot.\n';
 
 test.describe('Readiness reads a day’s own date (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
   let projectId = '';
   const email = `daydate.${TAG}@journey.test`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `daydate${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Daydate ${TAG}`, creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('scripts').insert({ title: 'Kitchen', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId });

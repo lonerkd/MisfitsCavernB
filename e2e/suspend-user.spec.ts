@@ -1,25 +1,23 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // An admin suspends a member from /admin/users: the member cannot sign in any
 // more (and the page says so, in words), nothing of theirs is deleted, and
 // lifting it lets them in again. Admins have no suspend button. Opt-in:
 // E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe.serial('Suspending an account (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const users: Record<'boss' | 'member', { id: string; email: string; name: string }> = {} as never;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const k of ['boss', 'member'] as const) {
       const email = `su${k}.${TAG}@journey.test`;
       const name = `su${k}${TAG}`;
