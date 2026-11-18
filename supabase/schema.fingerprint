@@ -852,6 +852,21 @@ column shots.scene_id uuid not null
 column shots.shot_number text not null
 column shots.shot_size text
 column shots.status text default 'planned'::text
+column signing_requests.body text not null
+column signing_requests.body_hash text
+column signing_requests.created_at timestamp with time zone default now() not null
+column signing_requests.created_by uuid default auth.uid()
+column signing_requests.decline_reason text
+column signing_requests.document_id uuid
+column signing_requests.expires_at timestamp with time zone default (now() + '30 days'::interval) not null
+column signing_requests.id uuid default gen_random_uuid() not null
+column signing_requests.project_id uuid not null
+column signing_requests.signed_at timestamp with time zone
+column signing_requests.signed_name text
+column signing_requests.signer_label text
+column signing_requests.status text default 'pending'::text not null
+column signing_requests.title text not null
+column signing_requests.token text default (replace((gen_random_uuid())::text, '-'::text, ''::text) || replace((gen_random_uuid())::text, '-'::text, ''::text)) not null
 column spotify_connections.access_token text not null
 column spotify_connections.expires_at bigint not null
 column spotify_connections.refresh_token text not null
@@ -1513,6 +1528,17 @@ constraint shots.shots_pkey PRIMARY KEY (id)
 constraint shots.shots_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint shots.shots_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
 constraint shots.shots_status_check CHECK ((status = ANY (ARRAY['planned'::text, 'shot'::text, 'omitted'::text])))
+constraint signing_requests.signing_requests_body_check CHECK (((char_length(body) >= 1) AND (char_length(body) <= 20000)))
+constraint signing_requests.signing_requests_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint signing_requests.signing_requests_decline_reason_check CHECK ((char_length(decline_reason) <= 1000))
+constraint signing_requests.signing_requests_document_id_fkey FOREIGN KEY (document_id) REFERENCES project_documents(id) ON DELETE SET NULL
+constraint signing_requests.signing_requests_pkey PRIMARY KEY (id)
+constraint signing_requests.signing_requests_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint signing_requests.signing_requests_signed_name_check CHECK (((char_length(signed_name) >= 2) AND (char_length(signed_name) <= 120)))
+constraint signing_requests.signing_requests_signer_label_check CHECK ((char_length(signer_label) <= 120))
+constraint signing_requests.signing_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'signed'::text, 'declined'::text, 'void'::text])))
+constraint signing_requests.signing_requests_title_check CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))
+constraint signing_requests.signing_requests_token_key UNIQUE (token)
 constraint spotify_connections.spotify_connections_pkey PRIMARY KEY (user_id)
 constraint spotify_connections.spotify_connections_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint story_interviews.story_interviews_pkey PRIMARY KEY (project_id)
@@ -1622,6 +1648,7 @@ function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
 function internal.notes_guard() body=82d05cc6e3308cb72b8594b19c7b1f03
 function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
+function internal.notify_signing(p_project uuid, p_title text, p_body text) body=6bf7082aae481bd3ab9a9ecde4f6104a
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
 function internal.portfolio_laurels_guard() body=92df427843493295fdf81484d5461323
@@ -1676,6 +1703,7 @@ function public.calendar_feed(p_token uuid) body=d7334df59e5407fb84587540767fcab
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
 function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) body=f56bc6bce319c5103fd9ec40f4e68179
+function public.decline_signing(p_token text, p_reason text) body=1c8db71b29bc26f3ec24cc6092288e74
 function public.delete_my_account(p_confirm text) body=8ef9379ae7b3335ec94b05c3aa743bbb
 function public.edit_message(p_message uuid, p_content text) body=a2e6caca798669ed8d994d672b1b472f
 function public.get_my_account() body=cf0d46c5bc28d66b3ac22ce525fab001
@@ -1695,6 +1723,7 @@ function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc
 function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
 function public.get_shared_script(p_token text) body=b10410cba5e1a9adbd998eb246df4b6d
+function public.get_signing(p_token text) body=dffc57e2d7fdade6dbd6f339721d353c
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
 function public.has_discord_webhook(cid uuid) body=2330fcb7cac9591d23b52f3a07cfbec3
 function public.hub_case_study_project(p_post uuid) body=fec46019f2d6f2c42655f9f6736a8b28
@@ -1724,12 +1753,14 @@ function public.send_call_sheet_reminders() body=71fca793ad758e7b15271dd6c1b6ed6
 function public.set_my_ui_prefs(p_patch jsonb) body=c1fa628a1c22cf9168a08af0d5e175f4
 function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) body=b5a59a26ef1800855579b43d2ea7bc72
 function public.set_user_admin(p_user uuid, p_admin boolean) body=ed1838073cc2716c80d87a696cd66211
+function public.sign_document(p_token text, p_name text, p_agree boolean) body=fd7fb376ecb39e1631034a1464e7f5ca
 function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) body=fa1280f297dc6e67b412711fe4d49e8e
 function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) body=59dc3fbdf93b154c40d6c24603fc8972
 function public.toggle_message_reaction(p_message uuid, p_emoji text) body=7541910170337e67eb33e1f13087fe83
 function public.transfer_project(p_project uuid, p_to uuid) body=4c29e8d35cfbba786d52dc7715f088f3
 function public.update_updated_at() body=926f3813391bf919b1861ac45cc92c4a
 function public.update_updated_at_column() body=3210625d1c794f6db7b3c3defc5984dd
+function public.void_signing(p_id uuid) body=34a1c2e37fe9ab49063a97b10f6b1327
 grant function internal.activity_project_id(meta jsonb) authenticated,postgres,service_role
 grant function internal.ad_deliverable_for_script() postgres
 grant function internal.ad_deliverable_title() postgres
@@ -1784,6 +1815,7 @@ grant function internal.mood_boards_touch() postgres
 grant function internal.notes_guard() postgres
 grant function internal.notes_notify() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
+grant function internal.notify_signing(p_project uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
 grant function internal.portfolio_laurels_guard() postgres
@@ -1838,6 +1870,7 @@ grant function public.calendar_feed(p_token uuid) anon,authenticated,postgres,se
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) anon,authenticated,postgres,service_role
+grant function public.decline_signing(p_token text, p_reason text) anon,authenticated,postgres,service_role
 grant function public.delete_my_account(p_confirm text) authenticated,postgres,service_role
 grant function public.edit_message(p_message uuid, p_content text) authenticated,postgres,service_role
 grant function public.get_my_account() authenticated,postgres,service_role
@@ -1857,6 +1890,7 @@ grant function public.get_shared_lookbook(p_token text) anon,authenticated,postg
 grant function public.get_shared_portfolio(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
+grant function public.get_signing(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role
 grant function public.has_discord_webhook(cid uuid) authenticated,postgres,service_role
 grant function public.hub_case_study_project(p_post uuid) authenticated,postgres,service_role
@@ -1886,12 +1920,14 @@ grant function public.send_call_sheet_reminders() postgres,service_role
 grant function public.set_my_ui_prefs(p_patch jsonb) authenticated,postgres,service_role
 grant function public.set_paper_edit(p_project uuid, p_line_ids uuid[]) authenticated,postgres,service_role
 grant function public.set_user_admin(p_user uuid, p_admin boolean) authenticated,postgres,service_role
+grant function public.sign_document(p_token text, p_name text, p_agree boolean) anon,authenticated,postgres,service_role
 grant function public.sync_script_scenes(p_script_id uuid, p_base_ids uuid[], p_scenes jsonb) authenticated,postgres,service_role
 grant function public.tag_scene_element(p_scene uuid, p_name text, p_category uuid) authenticated,postgres,service_role
 grant function public.toggle_message_reaction(p_message uuid, p_emoji text) authenticated,postgres,service_role
 grant function public.transfer_project(p_project uuid, p_to uuid) authenticated,postgres,service_role
 grant function public.update_updated_at() PUBLIC,anon,authenticated,postgres,service_role
 grant function public.update_updated_at_column() PUBLIC,anon,authenticated,postgres,service_role
+grant function public.void_signing(p_id uuid) authenticated,postgres,service_role
 index CREATE INDEX activity_feed_project_idx ON public.activity_feed USING btree (((metadata ->> 'project_id'::text)), created_at DESC)
 index CREATE INDEX ad_references_approved_by_idx ON public.ad_references USING btree (approved_by)
 index CREATE INDEX ad_references_created_by_idx ON public.ad_references USING btree (created_by)
@@ -2127,6 +2163,9 @@ index CREATE INDEX sfx_assets_user_id_fkey_idx ON public.sfx_assets USING btree 
 index CREATE INDEX shots_created_by_fkey_idx ON public.shots USING btree (created_by)
 index CREATE INDEX shots_frame_fkey_idx ON public.shots USING btree (frame_media_id, project_id)
 index CREATE INDEX shots_scene_fkey_idx ON public.shots USING btree (scene_id, project_id)
+index CREATE INDEX signing_requests_created_by_idx ON public.signing_requests USING btree (created_by)
+index CREATE INDEX signing_requests_document_idx ON public.signing_requests USING btree (document_id)
+index CREATE INDEX signing_requests_project_idx ON public.signing_requests USING btree (project_id, created_at DESC)
 index CREATE INDEX support_case_messages_author_idx ON public.support_case_messages USING btree (author_id)
 index CREATE INDEX support_case_messages_case_idx ON public.support_case_messages USING btree (case_id, created_at)
 index CREATE INDEX support_cases_opened_by_idx ON public.support_cases USING btree (opened_by, updated_at DESC)
@@ -2288,6 +2327,8 @@ index CREATE UNIQUE INDEX shoot_days_number_key ON public.shoot_days USING btree
 index CREATE UNIQUE INDEX shoot_days_pkey ON public.shoot_days USING btree (id)
 index CREATE UNIQUE INDEX shots_id_project_key ON public.shots USING btree (id, project_id)
 index CREATE UNIQUE INDEX shots_pkey ON public.shots USING btree (id)
+index CREATE UNIQUE INDEX signing_requests_pkey ON public.signing_requests USING btree (id)
+index CREATE UNIQUE INDEX signing_requests_token_key ON public.signing_requests USING btree (token)
 index CREATE UNIQUE INDEX spotify_connections_pkey ON public.spotify_connections USING btree (user_id)
 index CREATE UNIQUE INDEX story_interviews_pkey ON public.story_interviews USING btree (project_id)
 index CREATE UNIQUE INDEX support_case_messages_pkey ON public.support_case_messages USING btree (id)
@@ -2563,6 +2604,8 @@ policy public.sfx_assets "sfx_assets read" PERMISSIVE SELECT to authenticated us
 policy public.sfx_assets "sfx_assets update own" PERMISSIVE UPDATE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.shoot_days "shoot_days access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.shots "shots access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
+policy public.signing_requests "signing_requests_create" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND (status = 'pending'::text) AND (signed_at IS NULL) AND (signed_name IS NULL) AND (body_hash IS NULL) AND (decline_reason IS NULL) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((document_id IS NULL) OR (EXISTS ( SELECT 1 FROM project_documents d WHERE ((d.id = signing_requests.document_id) AND (d.project_id = signing_requests.project_id))))))
+policy public.signing_requests "signing_requests_read" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
 policy public.spotify_connections "spotify_connections delete own" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.spotify_connections "spotify_connections insert own" PERMISSIVE INSERT to authenticated using - check (user_id = ( SELECT auth.uid() AS uid))
 policy public.spotify_connections "spotify_connections read own" PERMISSIVE SELECT to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
@@ -2746,6 +2789,7 @@ rls set_log enabled=true forced=false
 rls sfx_assets enabled=true forced=false
 rls shoot_days enabled=true forced=false
 rls shots enabled=true forced=false
+rls signing_requests enabled=true forced=false
 rls spotify_connections enabled=true forced=false
 rls story_interviews enabled=true forced=false
 rls support_case_messages enabled=true forced=false
