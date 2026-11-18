@@ -1,15 +1,14 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Browser, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser, Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { describeRange } from '../lib/availability/core';
 
 // Crew availability in a real browser against a local stack: a gaffer marks
 // the dates they're away on their profile; the owner sees it on the shoot day
 // that falls in them and on the crew list — the dates, never the note.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -25,7 +24,7 @@ async function axeViolations(page: Page, selector: string): Promise<string[]> {
 }
 
 test.describe('Crew availability (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `av-owner.${TAG}@journey.test`, name: `avowner${TAG}` };
@@ -49,9 +48,8 @@ test.describe('Crew availability (local Supabase)', () => {
     if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
   };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const who of [owner, crew]) {
       const { data } = await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } });
       who.id = data.user!.id;

@@ -1,24 +1,21 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The outside roles' review link, in a real browser against a local stack: each audience sees what it may do, and the page for
 // the press has no way to comment or decide. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const TAG = Date.now().toString(36);
 
 test.describe('Review links by audience (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let ownerId = '';
   let projectId = '';
   const tokens: Record<string, string> = {};
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     ownerId = (await admin.auth.admin.createUser({ email: `ra-owner.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: `raowner${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Pitch ${TAG}`, creator_id: ownerId }).select('id').single()).data!.id;
     const scriptId = (await admin.from('scripts').insert({ title: 'The pitch', content: 'INT. ROOM - DAY\n\nThe pitch.', project_id: projectId, created_by: ownerId, last_edited_by: ownerId }).select('id').single()).data!.id;

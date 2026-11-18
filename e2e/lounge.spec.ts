@@ -1,14 +1,13 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The Lounge in a real browser against a local stack: a crew member's posts
 // show as unread for the owner until the channel is opened; the owner pins
 // one and finds it under Pinned; edits their own post; and search jumps to a
 // message. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -25,7 +24,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Lounge (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `lounge-owner.${TAG}@journey.test` };
@@ -34,9 +33,8 @@ test.describe('Lounge (local Supabase)', () => {
   let channelId: string;
   const name = `set-${TAG}`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const [who, uname] of [[owner, `lowner${TAG}`], [crew, `lcrew${TAG}`]] as const) {
       who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: uname } })).data.user!.id;
     }

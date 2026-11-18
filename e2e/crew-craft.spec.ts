@@ -1,14 +1,13 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Role model, step 1, in a real browser against a local stack: the owner recruits someone in
 // Studio › Cast & crew by choosing their craft and what they can do (two choices, not one), the
 // invitation is stored that way, and the owner can change the craft afterwards.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -25,16 +24,15 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Crew craft (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `crewo.${TAG}@journey.test` };
   const guest = { id: '', name: `invitee${TAG}` };
   let projectId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `crewo${TAG}` } })).data.user!.id;
     guest.id = (await admin.auth.admin.createUser({ email: `crewg.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: guest.name } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Crew ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;

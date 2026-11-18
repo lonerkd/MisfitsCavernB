@@ -1,18 +1,17 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // A person's own portfolio page, in a real browser against a local stack: off until the owner publishes it from the manage screen;
 // then a signed-out visitor sees the person and ONLY their public pieces; link only is reachable but told not to be indexed;
 // off is a not-found again. A piece's own page shows its cover. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const COVER = 'https://images.example.com/still.jpg';
 
 test.describe('A person’s portfolio page (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `pp-owner.${TAG}@journey.test`, name: `ppowner${TAG}` };
@@ -31,9 +30,8 @@ test.describe('A person’s portfolio page (local Supabase)', () => {
   const visitor = async (browser: Browser) => (await browser.newContext()).newPage();
   const robots = (page: import('@playwright/test').Page) => page.locator('meta[name="robots"]').getAttribute('content');
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     const { data } = await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: owner.name } });
     owner.id = data.user!.id;
     await admin.from('profiles').update({ role: 'Director', bio: 'Short films about water.' }).eq('id', owner.id);

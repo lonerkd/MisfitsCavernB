@@ -1,7 +1,7 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Y from 'yjs';
 
 // Offline capture meets a collaborator (ADR 0008). One writer loses the connection and types; another keeps
@@ -9,13 +9,12 @@ import * as Y from 'yjs';
 // edits are in the script, the stored text equals the text the stored Yjs state spells, and a device that has
 // never seen the script opens on the merged text — not on a stale copy that quietly drops an edit.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. PIER - DAY\n\nBoats come in.\n';
 
 test.describe.serial('Offline writer and online collaborator (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const people = [
@@ -26,9 +25,8 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
   let projectId = '';
   let scriptId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const [i, p] of people.entries()) {
       p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `om${i}${TAG}` } })).data.user!.id;
     }

@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, devices, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { devices, type Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The editor on an iPhone 15 Pro, held both ways: a slim bar with four doors (script list, view, tools, more) and bottom sheets
 // instead of a sideways-scrolling desk bar and drawers; with the keyboard up an element strip rides on it and one tap inserts an
 // element at the caret. Chromium cannot raise a real iOS keyboard, so `visualViewport` is faked (the page reads only that).
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n';
@@ -23,14 +22,13 @@ async function fakeKeyboard(page: Page) {
 }
 
 test.describe('The editor on a phone (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   let admin: SupabaseClient;
   const me = { id: '', email: `phoneed.${TAG}@journey.test` };
   let projectId = '', scriptId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `ped${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Phone ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;

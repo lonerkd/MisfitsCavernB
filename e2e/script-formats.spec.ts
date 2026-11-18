@@ -1,19 +1,18 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // A podcast script and a documentary outline are read with their own rules (BACKLOG 3.35): opening one in the
 // Studio writes the scene index from the segments, not from screenplay headings. Real browser, real local stack.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const PODCAST = 'COLD OPEN\n\nHOST: Welcome back to the show.\nGUEST: Glad to be here.\n\nSEGMENT ONE\n\nHOST: Tell me how you started.\nGUEST: By accident, honestly.\n';
 const OUTLINE = '00:00 - Opening on the harbour at dawn\nGulls over grey water.\n\nINTERVIEW: Marta Ruiz\nMarta: "The sea gave and the sea took."\n\nB-ROLL: nets drying on the pier\n';
 
 test.describe('Podcast and outline scripts keep their own scene index (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
@@ -21,9 +20,8 @@ test.describe('Podcast and outline scripts keep their own scene index (local Sup
   const email = `fmt.${TAG}@journey.test`;
   const scripts: Record<string, string> = {};
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `fmt${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Formats ${TAG}`, creator_id: userId, status: 'production' }).select('id').single()).data!.id;
     for (const [format, content] of [['podcast', PODCAST], ['doc-outline', OUTLINE]] as const) {
