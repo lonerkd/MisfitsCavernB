@@ -22,6 +22,7 @@ export async function proxy(request: NextRequest) {
     '/auth',
     '/api/discord',
     '/api/public',
+    '/sign',
     '/api/calendar',
     '/_next',
     '/favicon.ico',
