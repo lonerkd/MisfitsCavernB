@@ -12,6 +12,7 @@ import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { SoundDeck } from '@/components/audio/SoundDeck';
 import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { useProject, useOSGate } from '@/lib/os';
+import { HereLine } from '@/components/studio/HereLine';
 import { useCanShape } from '@/lib/brief';
 import dynamic from 'next/dynamic';
 import { addAudioRef, getLatestScript, listSceneChoices } from '@/lib/supabase/audio';
@@ -162,6 +163,7 @@ function SoundtrackContent() {
       <header className={`${phone ? 'mb-4' : 'mb-8'} flex items-end justify-between`}>
         <div>
           <h1 className={`mc-title ${phone ? 'text-2xl' : 'text-4xl'} tracking-wide`}>Sound</h1>
+          {activeProject && <HereLine tool="soundtrack" />}
           <p className="mc-text text-[var(--fg-dim)] [text-transform:var(--caps)] tracking-[var(--caps-track)] text-xs mt-2">Find music, place it in scenes, and keep the project’s sound</p>
         </div>
       </header>
