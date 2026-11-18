@@ -6,6 +6,7 @@
 // `entity_cards`. What it shows is `lib/film/card.ts`; this only draws it.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowLeft, X } from 'lucide-react';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useStudio } from '@/components/studio/StudioContext';
@@ -87,14 +88,16 @@ export function EntityCardHost() {
   const failed = entities.status === 'error';
 
   const groupTitle: React.CSSProperties = { margin: '16px 0 6px', fontSize: 12, color: 'var(--fg-muted)', fontWeight: 600 };
-  return (
+  // Portalled to <body>: the Studio's sticky bar (z-index 100) sits in a stacking context the card would otherwise share, and covered
+  // the card's Close button (found by e2e/document-card.spec.ts).
+  return createPortal(
     <aside
       ref={panel}
       tabIndex={-1}
       role="dialog"
       aria-label={card ? `${KIND_NAME[card.kind]}: ${card.title}` : 'Card'}
       style={{
-        position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)', zIndex: 60, overflowY: 'auto',
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(420px, 100vw)', zIndex: 120, overflowY: 'auto',
         background: 'var(--bg-2)', color: 'var(--fg)', borderLeft: '1px solid var(--border-2)', padding: '16px 16px 96px', outline: 'none',
       }}
     >
@@ -171,6 +174,7 @@ export function EntityCardHost() {
           </section>
         </>
       )}
-    </aside>
+    </aside>,
+    document.body,
   );
 }
