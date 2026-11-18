@@ -36,6 +36,8 @@ test.describe('Crew records (local Supabase)', () => {
     await all.waitFor();
     if ((await all.getAttribute('aria-expanded')) === 'false') await all.click();
     await page.getByText(tool, { exact: true }).first().click();
+    // Choosing a tool closes the list, so the tool is in view.
+    await expect(all).toHaveAttribute('aria-expanded', 'false');
   };
 
   test.beforeAll(async ({ stack }) => {

@@ -157,6 +157,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   // The full list stays shut until asked for (the open tool, "Your tools" and "Recently used" are always in reach); a search opens it.
   const [showAll, setShowAll] = useState(false);
   const listOpen = showAll || !!q;
+  // Choosing a tool from the list closes it (and clears the search that opened it), so the tool is in view, not a scroll away.
+  const pickFromList = (v: View) => { setShowAll(false); setFind(''); onView(v); };
   const toggleGroup =(g: string) => setFolded((prev) => { const n = new Set(prev); if (n.has(g)) n.delete(g); else n.add(g); return n; });
   // The last six tools opened, on this device only.
   const recent = useSyncExternalStore(subscribeRecent, () => recentSnapshot(VIEW_IDS), recentServerSnapshot);
@@ -229,7 +231,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                   </button>
                   {open && <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
                     {VIEWS.filter((v) => v.group === group && shown(v)).map((v) => (
-                      <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
+                      <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => pickFromList(v.id)}>
                         {v.icon} {v.label}
                         {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}
                       </button>
