@@ -5,6 +5,7 @@ import { Pencil, Plus, Users, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { studio, useCharacterMedia, useSignedUrls, mediaSrc, characterMediaKey, type Media } from '@/lib/studio';
 import { useStudio } from './StudioContext';
+import { useRecordFind } from './toolFind';
 import { useScriptCharacters, type ScriptCharacter } from './production/useScriptCharacters';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { MediaPicker } from './media/MediaPicker';
@@ -20,6 +21,8 @@ export function CharacterBible() {
   const { toast } = useToast();
   const { chars, status, ensureRow, save } = useScriptCharacters(scriptId, userId, scriptFormat);
   const looks = useCharacterMedia(project.id);
+  const { shown: shownChars } = useRecordFind(useMemo(() => chars.map((c) => ({ name: c.name, full_name: c.row?.full_name ?? '', age: c.row?.age ?? '', arc: c.row?.arc ?? '', description: c.row?.description ?? '' })), [chars]));
+  const shownNames = new Set(shownChars.map((c) => c.name));
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [pickFor, setPickFor] = useState<ScriptCharacter | null>(null);
@@ -68,7 +71,7 @@ export function CharacterBible() {
       {status === 'error' && <p className={s.hint}>Couldn’t read the script’s characters.</p>}
       {status === 'ready' && chars.length === 0 && <p className={s.hint}>Characters appear here once they speak in the screenplay.</p>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: 12 }}>
-        {chars.map((c) => {
+        {chars.filter((c) => shownNames.has(c.name)).map((c) => {
           const isEditing = editing === c.name && draft;
           const charLooks = c.row ? looksByChar.get(c.row.id) ?? [] : [];
           return (
