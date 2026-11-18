@@ -2,7 +2,14 @@ name: E2E (scheduled)
 
 # Full 5-shard browser journeys — runs daily on main and on demand.
 # Not required on PRs (too slow). Runs independently of CI so a flaky
-# shard here doesn't block a merge; failures page the feed.
+# shard here doesn't block a merge. A failure on the nightly (not a manual run) opens, or adds to, ONE issue labelled
+# `e2e-red`: RULES.md makes an open `e2e-red` issue the first task of the next session, before the backlog. Until
+# 2026-11-18 a red nightly only uploaded artifacts and nobody was told: it sat red for two nights on a real contrast
+# defect. Close the issue when the nightly is green again.
+permissions:
+  contents: read
+  issues: write   # only to open or add to the `e2e-red` issue below
+
 on:
   schedule:
     # Daily at 03:47 UTC (offset from :00 to avoid peak runner traffic).
@@ -37,6 +44,22 @@ jobs:
           FILES=$(node scripts/e2e-shard.mjs ${{ matrix.shard }} 5)
           echo "$FILES" | tr ' ' '\n'
           E2E_LOCAL_STACK=1 E2E_LIVE_AUTH=1 npx playwright test $FILES
+      - name: Tell someone (one `e2e-red` issue, opened or added to)
+        if: failure() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SHARD: ${{ matrix.shard }}
+        run: |
+          sleep $((SHARD * 8))   # the shards finish together: staggered, only the first opens the issue
+          gh label create e2e-red --color B60205 --description "the nightly e2e is red: first task of the next session" 2>/dev/null || true
+          n=$(gh issue list --label e2e-red --state open --json number --jq '.[0].number // empty')
+          line="- $(date -u +%F) part $SHARD of 5 failed: $RUN (the failing specs are in that run's log; reproduce one with the run-misfits-cavern skill)"
+          if [ -n "$n" ]; then
+            gh issue comment "$n" --body "$line"
+          else
+            gh issue create --label e2e-red --title "The nightly e2e is red" --body "$(printf '%s\n\n%s\n' 'The scheduled journeys failed on main. Fixing this comes before the backlog (RULES.md). Reproduce the failing spec alone first: most past failures were a real defect, a few were a missing wait; a spec that only fails under load is a bug in the spec, fix the wait, do not retry it away. Close this issue when the nightly is green.' "$line")"
+          fi
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
