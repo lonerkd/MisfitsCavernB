@@ -21,10 +21,14 @@ case "$ref" in dependabot/*) exit 0 ;; esac
 
 base="${VERCEL_GIT_PREVIOUS_SHA:-}"
 if [ -z "$base" ] || ! git cat-file -e "${base}^{commit}" 2>/dev/null; then
-  # Production with no known previous deployment: build (a fork point of main is main itself, an empty diff).
+  # No known previous deployment (a branch's first push, or a clone without it). Production builds. A branch is judged against its
+  # fork point from main, but ONLY when main is known: Vercel's clone often has no origin/main, and the old fallback to the parent
+  # judged just the last commit, which skipped a branch whose app change was under a docs commit (seen on #662, 2026-11-18).
+  # When we cannot tell what the branch changed, we build: one deployment is the cost of not hiding a change from its preview.
   [ "$ref" = "main" ] && exit 1
-  # A branch's first push has no previous deployment: its fork point from main when main is known, else the parent.
-  if git rev-parse --verify -q origin/main >/dev/null 2>&1; then base="$(git merge-base HEAD origin/main 2>/dev/null || echo 'HEAD^')"; else base="HEAD^"; fi
+  git rev-parse --verify -q origin/main >/dev/null 2>&1 || exit 1
+  base="$(git merge-base HEAD origin/main 2>/dev/null)" || exit 1
+  [ -n "$base" ] || exit 1
 fi
 
 files="$(git diff --name-only "$base" HEAD 2>/dev/null)" || exit 1   # cannot tell: build

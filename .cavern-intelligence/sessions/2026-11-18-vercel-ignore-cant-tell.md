@@ -1,0 +1,11 @@
+# Session - 2026-11-18: the deployment rule skipped a change it should have built (first sight of it on Vercel)
+
+`scripts/vercel-ignore.sh` (the fewer-deployments rule, `2026-11-18-cut-deployments.md`) was written without ever having run on Vercel: the daily cap had been hit, so I said so ("not verified on Vercel"). Its first real run was the preview of #662, and Vercel reported **Ignored** for a pull request that changes `components/shell/NotificationBell.tsx`.
+
+**Cause, from the commits:** #662's last commit was a notes commit; the branch as a whole changes app code. With no previous deployment for a new branch (`VERCEL_GIT_PREVIOUS_SHA` empty) and no `origin/main` in Vercel's clone, the script's fallback was the parent commit, so it judged **only the last commit**: the exact bug it was written to remove, reintroduced by its own fallback. A person reviewing a preview first (RULES 6) would have had none for an app change.
+
+**Fix:** when it cannot tell what a branch changed, it **builds** (production too): a known previous deployment, or a known fork point from main, is judged by path; otherwise one deployment is the cost of never hiding a change from its preview. A new branch therefore costs at most one deployment, then the saved previous SHA applies. `scripts/vercel-ignore.test.mjs` has the case (a change under a notes commit, no previous, no `origin/main`: builds; it fails against the old script, checked) and one for a known fork point (judged against the fork, not the tip); the older cases now say what the previous deployment was, as Vercel does.
+
+**Verified:** 11 unit tests, including under `GIT_DIR`/`GIT_INDEX_FILE` set as the pre-push hook sets them, and against the old script (the new case fails there). **Not verified:** on Vercel again: the next new branch's first push shows it (it should build); `VERCEL_GIT_PREVIOUS_SHA` on a second push has still not been seen set.
+
+**What this says about the process:** the gate I added today asks every pull request for a `Verified:` line; this change shipped with "not verified on Vercel" named honestly, and the first real run caught it within hours, as the rule intends. The lesson I am applying: a rule that decides *not to run* a check must default to running it when it cannot tell.
