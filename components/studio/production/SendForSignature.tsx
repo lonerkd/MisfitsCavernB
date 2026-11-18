@@ -113,7 +113,7 @@ export function SendForSignature({ projectId, projectTitle, userId, documentId, 
       <datalist id="signers">{crew.map((c) => <option key={c.user_id} value={c.username} />)}</datalist>
       <label className={s.stack} style={{ gap: 4 }}><span className={s.hint}>What they will read and sign. Edit it freely.</span>
         <textarea className={s.textarea} rows={12} maxLength={20000} value={body} onChange={(e) => setEdited({ base: generated, text: e.target.value })} /></label>
-      <p className={s.hint} style={{ margin: 0 }}>This is a starting text, not legal advice. Have a lawyer review anything you rely on. A typed name and an agreement tick is the signature; the production keeps the name, the time and a fingerprint of the text.</p>
+      <p className={s.hint} style={{ margin: 0 }}>This is a starting text, not legal advice, and The Cavern is not a party to what you send: you are responsible for it. Have a lawyer review anything you rely on. A typed name and an agreement tick is the signature; the production keeps the name, the time and a fingerprint of the text.</p>
       {/\[[a-z ]+\]/i.test(body) && <p className={s.hint} style={{ margin: 0, color: 'var(--warn)' }}>The text still has [blanks] to fill in.</p>}
       <div className={s.row} style={{ gap: 8 }}>
         <button type="submit" className={s.btnPrimary} disabled={busy || !signer.trim() || !body.trim()}>{busy ? 'Making…' : 'Make the signing link'}</button>

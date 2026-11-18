@@ -104,6 +104,7 @@ export function SignClient({ token, view }: { token: string; view: SigningView }
           {note && <p role="alert" style={{ margin: 0, color: 'var(--danger)', fontSize: 14 }}>{note}</p>}
         </section>
       )}
+      <p style={{ marginTop: 32, fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.5 }}>This page is only a way to sign. The document is between you and {view.project_title}; The Cavern is not a party to it and does not give legal advice. If you are unsure, ask a lawyer before you sign.</p>
     </main>
   );
 }
