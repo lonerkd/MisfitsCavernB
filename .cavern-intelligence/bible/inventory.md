@@ -49,7 +49,7 @@
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (447) | 54 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, page-errors, reports, route-smoke |
 | `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (110) | 91 files · components: crafts, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, page-errors, phone-keyboard, route-smoke, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
-| `/` | public | `app/(suite)/page.tsx` (438) | 96 files · components: Flag, brand, community, home, landing, mobile, roles, shell, ui · lib: auth, brand, community, crafts, film, flags, formats, guides, home, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | accessibility, account-deletion, home-page-crash, home-routing, keyboard-audit, legal, real-data, route-smoke |
+| `/` | public | `app/(suite)/page.tsx` (438) | 96 files · components: Flag, brand, community, home, landing, mobile, roles, shell, ui · lib: auth, brand, community, crafts, film, flags, formats, guides, home, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | accessibility, account-deletion, home-page-crash, home-routing, island, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 43 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
 | `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (484) | 42 files · components: portfolio, ui · lib: auth, formats, island, os, portfolio, push, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, portfolio-page, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 41 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, page-errors, your-data |
@@ -680,7 +680,7 @@
 | `island-onset-clock.spec.ts` | `/studio`, `/today` |
 | `island-projects-keys.spec.ts` | `/community` |
 | `island-upload.spec.ts` | `/studio` |
-| `island.spec.ts` | `/auth`, `/community`, `/lounge`, `/projects`, `/settings` |
+| `island.spec.ts` | `/`, `/auth`, `/community`, `/lounge`, `/projects`, `/settings` |
 | `keyboard-audit.spec.ts` | `/`, `/admin`, `/auth`, `/crew`, `/editor`, `/jobs`, `/jobs/*`, `/lounge`, `/portfolio`, `/profile`, `/projects`, `/projects/*`, `/settings`, `/shared/*`, `/showcase`, `/soundtrack`, `/studio`, `/welcome` |
 | `layout.spec.ts` | `/community`, `/crew`, `/editor`, `/jobs`, `/lounge`, `/projects`, `/projects/*`, `/studio` |
 | `legal.spec.ts` | `/`, `/auth`, `/privacy`, `/terms` |
