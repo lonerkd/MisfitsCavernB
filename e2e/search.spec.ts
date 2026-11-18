@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Suite-wide search in a real browser against a local stack: it finds a line
 // written inside a script and opens it in the editor, and finds a location
 // and opens Studio › Locations on its project. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const WORD = `zephyr${TAG}`;
@@ -22,16 +21,15 @@ async function axeViolations(page: Page, selector: string): Promise<string[]> {
 }
 
 test.describe('Suite-wide search (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `search-owner.${TAG}@journey.test` };
   let projectId: string;
   let scriptId: string;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `searcher${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Tidewater ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({

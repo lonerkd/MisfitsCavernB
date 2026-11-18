@@ -1,13 +1,12 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The shot designer in a real browser against a local stack: add a shot, set
 // the camera on the visual picker, reorder, and see a script-made shot's line.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights a match.\n';
@@ -21,19 +20,16 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 test.describe('Shot designer (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId: string;
   let email: string;
   let projectId: string;
   let scriptId: string;
-  let stack: { API_URL: string; ANON_KEY: string };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
-    stack = s;
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     email = `sd.${Date.now()}@journey.test`;
     const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sd${Date.now().toString(36)}` } });
     userId = data.user!.id;
@@ -47,7 +43,7 @@ test.describe('Shot designer (local Supabase)', () => {
     await admin.auth.admin.deleteUser(userId);
   });
 
-  test('add shots, set the camera visually, reorder, see the script line', async ({ page }) => {
+  test('add shots, set the camera visually, reorder, see the script line', async ({ page, stack }) => {
     await page.goto('/auth');
     await page.fill('input[name="email"]', email);
     await page.fill('input[name="password"]', PASSWORD);
@@ -66,7 +62,7 @@ test.describe('Shot designer (local Supabase)', () => {
     await expect(scene.getByRole('article', { name: /^Shot 1\.1$/ })).toBeVisible({ timeout: 10_000 });
 
     // A "Shot" margin note in the script (as the writer) becomes a shot that shows its line.
-    const writer = createClient(stack.API_URL, stack.ANON_KEY, { auth: { persistSession: false } });
+    const writer = stack.anonClient();
     await writer.auth.signInWithPassword({ email, password: PASSWORD });
     const note = await writer.rpc('add_script_annotation', { p_script: scriptId, p_line: 2, p_type: 'shot', p_text: 'Match flares', p_scene_ordinal: 0, p_scene_heading: 'INT. CAVE - NIGHT' });
     expect(note.error).toBeNull();

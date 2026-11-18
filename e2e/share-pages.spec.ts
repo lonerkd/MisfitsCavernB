@@ -1,7 +1,6 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The public share surfaces, signed out:
 // - /p/<token>: a published portfolio's link unfurls (title, description,
@@ -10,13 +9,12 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 //   item is published and the project is link-shared, and stops at once when
 //   either is undone.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const TAG = Date.now().toString(36);
 // A 1×1 PNG.
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 test.describe('Share pages, signed out (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', username: `share${TAG}` };
@@ -26,9 +24,8 @@ test.describe('Share pages, signed out (local Supabase)', () => {
   const mediaId = randomUUID();
   let storagePath = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: `share.${TAG}@journey.test`, password: randomUUID(), email_confirm: true, user_metadata: { username: owner.username } })).data.user!.id;
 
     projectId = (await admin.from('projects').insert({ title: `Breakwater ${TAG}`, creator_id: owner.id, visibility: 'link' }).select('id').single()).data!.id;

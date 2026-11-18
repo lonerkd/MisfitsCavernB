@@ -1,22 +1,20 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, devices } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { devices } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Community on a phone (an iPhone 15 Pro, both ways up): the page never scrolls sideways and every control is a thumb's size.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const PHONE = devices['iPhone 15 Pro'];
 const SIDEWAYS = { ...PHONE, viewport: { width: 852, height: 393 }, screen: { width: 852, height: 393 } };
 
 test.describe('Community on a phone (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   let admin: SupabaseClient; let userId = ''; let email = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     email = `cph.${Date.now()}@journey.test`;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cph${Date.now().toString(36)}` } })).data.user!.id;
     await admin.from('projects').insert({ title: 'Underground', creator_id: userId, status: 'production' });

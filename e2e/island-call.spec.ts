@@ -1,18 +1,17 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, chromium, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { chromium, type Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The island holds a voice call. The call belongs to the suite, not to the Lounge page: join a room, leave the
 // Lounge for another page, and the call is still there with Mute and Leave under your thumb. Real browser, real
 // local stack, a fake microphone (Chromium's own, so no hardware). Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const SHOTS = process.env.ISLAND_SHOTS; // a folder: screenshots of the island while it holds the call
 
 test.describe('The island holds a voice call (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   let userId = '';
@@ -20,9 +19,8 @@ test.describe('The island holds a voice call (local Supabase)', () => {
   const email = `call.${TAG}@journey.test`;
   const room = `Writers ${TAG}`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `call${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Call ${TAG}`, creator_id: userId, status: 'production' }).select('id').single()).data!.id;
     const { error } = await admin.from('channels').insert({ project_id: projectId, name: room, type: 'voice', created_by: userId });

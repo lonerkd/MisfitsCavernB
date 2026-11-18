@@ -1,11 +1,10 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Caps Lock + P opens the project list, and the keys choose from it: arrows move, Enter picks, 1–9 pick by number (they used to
 // jump to apps, and the arrows moved through the island's own controls). Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
@@ -15,14 +14,13 @@ const capsOff = (page: Page) =>
   page.evaluate(() => { window.dispatchEvent(new KeyboardEvent('keyup', { key: 'CapsLock', modifierCapsLock: false, bubbles: true })); });
 
 test.describe('Choosing a project with the keys (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
   let admin: SupabaseClient;
   const owner = { id: '', email: `projkeys.${TAG}@journey.test` };
   const titles = [`Alpha ${TAG}`, `Bravo ${TAG}`, `Charlie ${TAG}`];
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `pk${TAG}` } })).data.user!.id;
     for (const title of titles) await admin.from('projects').insert({ title, creator_id: owner.id, status: 'production' });
   });

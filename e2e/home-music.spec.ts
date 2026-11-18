@@ -1,23 +1,20 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The Cavern's own playlists on Today: all four are offered, the page opens on Solitude with Spotify's player in it (the
 // frame's address is the playlist's embed), and picking another swaps the player. Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Music from the Cavern (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const user = { id: '', email: `hm.${TAG}@journey.test` };
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     user.id = (await admin.auth.admin.createUser({ email: user.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `hm${TAG}` } })).data.user!.id;
   });
   test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });

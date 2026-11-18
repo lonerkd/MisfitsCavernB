@@ -1,15 +1,14 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, type Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { Page } from '@playwright/test';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The suite on a phone, in a real browser against a local stack: the tab bar
 // replaces the dock, no page scrolls sideways, More reaches every tool and the
 // active project, Today shows the day on set and lets you tick off your tasks,
 // and the Lounge is list → conversation → back, reachable by link.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -40,7 +39,7 @@ const overflow = (page: Page) => page.evaluate(() => {
 });
 
 test.describe('The suite on a phone (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const owner = { id: '', email: `phone.${TAG}@journey.test` };
@@ -50,9 +49,8 @@ test.describe('The suite on a phone (local Supabase)', () => {
   const today = new Date();
   const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `pocket${TAG}` } })).data.user!.id;
     projectId = (await admin.from('projects').insert({ title: `Tidewater ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 2, shoot_date: iso, general_call: '07:30', location_address: '12 Harbour Rd' });

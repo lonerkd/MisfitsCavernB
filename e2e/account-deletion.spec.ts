@@ -1,18 +1,16 @@
-import { execSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { test, expect } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Leaving the suite from Settings: a project other people work on has to be
 // handed over first; then, with the username typed, the account and its own
 // projects go, and the handed-over project stays with its new owner.
 // Opt-in: E2E_LOCAL_STACK=1.
-const ENABLED = process.env.E2E_LOCAL_STACK === '1';
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 
 test.describe('Delete account (local Supabase)', () => {
-  test.skip(!ENABLED, 'set E2E_LOCAL_STACK=1 and build the app against the local stack');
+  test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
   const leaver = { id: '', email: `leaver.${TAG}@journey.test`, username: `leaver${TAG}` };
@@ -20,9 +18,8 @@ test.describe('Delete account (local Supabase)', () => {
   let sharedId = '';
   let soloId = '';
 
-  test.beforeAll(async () => {
-    const s = JSON.parse(execSync('npx supabase status -o json', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }));
-    admin = createClient(s.API_URL, s.SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  test.beforeAll(async ({ stack }) => {
+    admin = stack.admin;
     for (const p of [leaver, crew]) {
       p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: p.username } })).data.user!.id;
     }
