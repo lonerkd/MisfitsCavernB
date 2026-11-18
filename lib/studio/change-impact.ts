@@ -39,6 +39,7 @@ export const RECORD_DEPARTMENT: Record<string, { department: string; label: stri
   cameraReports: { department: 'Camera', label: 'Camera reports' }, stills: { department: 'Camera', label: 'Stills' },
   soundReports: { department: 'Sound', label: 'Sound reports' }, extras: { department: 'Production', label: 'Extras' },
   scriptNotes: { department: 'Direction', label: 'Script supervisor notes' },
+  cues: { department: 'Sound', label: 'Music cues' }, spotting: { department: 'Sound', label: 'Sound spotting' },
 };
 
 export interface ImpactDepartment { department: string; why: string[]; people: Array<{ user_id: string; name: string; craft: string }> }
