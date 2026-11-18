@@ -162,7 +162,7 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
   const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
-  const { project, userId } = useStudio();
+  const { project, userId, cardsOn, openCard } = useStudio();
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const kind = doc.kind as DocKind;
@@ -207,6 +207,8 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
         {doc.storage_path
           ? <button type="button" className={cx(s.btn, s.small)} onClick={() => void openFile()}>Open {doc.file_name}</button>
           : <span className={s.hint}>No file</span>}
+        {/* A document is an entity under its own id: its card holds what is attached to it (scenes, locations, people, tasks). */}
+        {cardsOn && <button type="button" className={cx(s.btnGhost, s.small)} aria-label={`Open the card for ${doc.title}`} onClick={() => openCard(doc.id)}>Card</button>}
         {canShape && (doc.kind === 'release' || doc.kind === 'contract') && doc.status !== 'done' && (
           <button type="button" className={cx(s.btn, s.small)} aria-expanded={sending} onClick={() => setSending((v) => !v)}>Send for signature</button>
         )}
