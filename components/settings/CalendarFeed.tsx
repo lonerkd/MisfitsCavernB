@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CalendarPlus, Copy, RefreshCw } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
+import { createFeed, deleteFeed, getFeedToken, replaceFeedToken } from '@/lib/supabase/calendar';
 import { useCurrentUser } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -22,41 +22,33 @@ export function CalendarFeed() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     if (!user) return;
-    const { data, error } = await supabase.from('calendar_feeds').select('token').eq('user_id', user.id).maybeSingle();
-    if (error) { toast('Could not load your calendar link', 'error'); setToken(null); return; }
-    setToken(data?.token ?? null);
+    let alive = true;
+    getFeedToken(user.id).then(
+      (tk) => { if (alive) setToken(tk); },
+      (e: unknown) => { if (alive) { toast(e instanceof Error ? e.message : 'Could not load your calendar link', 'error'); setToken(null); } },
+    );
+    return () => { alive = false; };
   }, [user, toast]);
-  useEffect(() => { void load(); }, [load]);
 
   const url = token ? `${typeof window === 'undefined' ? '' : window.location.origin}/api/calendar/${token}.ics` : '';
   const webcal = url.replace(/^https?:/, 'webcal:');
 
-  const turnOn = async () => {
-    if (!user) return;
+  const run = async (action: () => Promise<string | null>, done?: string) => {
     setBusy(true);
-    const { data, error } = await supabase.from('calendar_feeds').insert({ user_id: user.id }).select('token').single();
-    setBusy(false);
-    if (error || !data) { toast('Could not make the link', 'error'); return; }
-    setToken(data.token);
+    try { setToken(await action()); if (done) toast(done, 'success'); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong', 'error'); }
+    finally { setBusy(false); }
   };
+  const turnOn = () => { if (user) void run(() => createFeed(user.id)); };
   const replace = async () => {
     if (!user || !await confirm({ title: 'Replace the link?', message: 'Calendars using the old link stop updating until you add the new one.', confirmLabel: 'Replace' })) return;
-    setBusy(true);
-    const { data, error } = await supabase.from('calendar_feeds').update({ token: crypto.randomUUID() }).eq('user_id', user.id).select('token').single();
-    setBusy(false);
-    if (error || !data) { toast('Could not replace the link', 'error'); return; }
-    setToken(data.token);
-    toast('New link ready. Add it to your calendar again.', 'success');
+    await run(() => replaceFeedToken(user.id), 'New link ready. Add it to your calendar again.');
   };
   const turnOff = async () => {
     if (!user || !await confirm({ title: 'Turn the calendar feed off?', message: 'The link stops working. You can make a new one any time.', confirmLabel: 'Turn off', danger: true })) return;
-    setBusy(true);
-    const { error } = await supabase.from('calendar_feeds').delete().eq('user_id', user.id);
-    setBusy(false);
-    if (error) { toast('Could not turn it off', 'error'); return; }
-    setToken(null);
+    await run(async () => { await deleteFeed(user.id); return null; });
   };
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); toast('Link copied', 'success'); }
@@ -68,7 +60,7 @@ export function CalendarFeed() {
     return (
       <div style={{ display: 'grid', gap: 10 }}>
         <p style={hint}>Your shoot days, issued call sheets (with your own call time) and the tasks assigned to you, in the calendar on your phone. Anyone with the link can read it, so keep it to yourself.</p>
-        <div><button type="button" style={btn} onClick={() => void turnOn()} disabled={busy}><CalendarPlus size={12} /> {busy ? 'MAKING…' : 'MAKE MY CALENDAR LINK'}</button></div>
+        <div><button type="button" style={btn} onClick={turnOn} disabled={busy}><CalendarPlus size={12} /> {busy ? 'MAKING…' : 'MAKE MY CALENDAR LINK'}</button></div>
       </div>
     );
   }
