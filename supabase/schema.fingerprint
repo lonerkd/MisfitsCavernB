@@ -84,6 +84,9 @@ column budget_items.id uuid default uuid_generate_v4() not null
 column budget_items.job_id uuid
 column budget_items.project_id uuid not null
 column budget_items.updated_at timestamp with time zone default now()
+column calendar_feeds.created_at timestamp with time zone default now() not null
+column calendar_feeds.token uuid default gen_random_uuid() not null
+column calendar_feeds.user_id uuid not null
 column call_sheet_acks.acked_at timestamp with time zone default now() not null
 column call_sheet_acks.call_sheet_id uuid not null
 column call_sheet_acks.project_id uuid not null
@@ -990,6 +993,9 @@ constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint calendar_feeds.calendar_feeds_pkey PRIMARY KEY (user_id)
+constraint calendar_feeds.calendar_feeds_token_key UNIQUE (token)
+constraint calendar_feeds.calendar_feeds_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint call_sheet_acks.call_sheet_acks_pkey PRIMARY KEY (call_sheet_id, user_id)
 constraint call_sheet_acks.call_sheet_acks_sheet_fkey FOREIGN KEY (call_sheet_id, project_id) REFERENCES call_sheets(id, project_id) ON DELETE CASCADE
 constraint call_sheet_acks.call_sheet_acks_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -1666,6 +1672,7 @@ function public.admin_set_suspended(p_user uuid, p_suspended boolean) body=8de2d
 function public.advance_phase(p_project uuid, p_to text, p_default text, p_exceptions jsonb) body=3a306a1b6ee8fc13cd2348be1aa96b02
 function public.append_to_script(p_script uuid, p_text text) body=2f0ee0349c99fd212a171f033d4ff8a1
 function public.breakdown_memory(p_exclude uuid) body=3f2e938cdd904bf1162b4ecd719fb4c3
+function public.calendar_feed(p_token uuid) body=d7334df59e5407fb84587540767fcabd
 function public.can_manage_channel(cid uuid) body=c87a3223f49df32ffe20b8a8c17de549
 function public.can_post_channel(cid uuid) body=106059039179454d7e17568b42fac9ca
 function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) body=f56bc6bce319c5103fd9ec40f4e68179
@@ -1827,6 +1834,7 @@ grant function public.admin_set_suspended(p_user uuid, p_suspended boolean) auth
 grant function public.advance_phase(p_project uuid, p_to text, p_default text, p_exceptions jsonb) authenticated,postgres,service_role
 grant function public.append_to_script(p_script uuid, p_text text) authenticated,postgres,service_role
 grant function public.breakdown_memory(p_exclude uuid) authenticated,postgres,service_role
+grant function public.calendar_feed(p_token uuid) anon,authenticated,postgres,service_role
 grant function public.can_manage_channel(cid uuid) authenticated,postgres,service_role
 grant function public.can_post_channel(cid uuid) authenticated,postgres,service_role
 grant function public.decide_review(p_token text, p_version uuid, p_decision text, p_name text, p_note text) anon,authenticated,postgres,service_role
@@ -2150,6 +2158,8 @@ index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdow
 index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
 index CREATE UNIQUE INDEX budget_items_id_project_key ON public.budget_items USING btree (id, project_id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX calendar_feeds_pkey ON public.calendar_feeds USING btree (user_id)
+index CREATE UNIQUE INDEX calendar_feeds_token_key ON public.calendar_feeds USING btree (token)
 index CREATE UNIQUE INDEX call_sheet_acks_pkey ON public.call_sheet_acks USING btree (call_sheet_id, user_id)
 index CREATE UNIQUE INDEX call_sheet_calls_character_key ON public.call_sheet_calls USING btree (call_sheet_id, character_name) WHERE (character_name IS NOT NULL)
 index CREATE UNIQUE INDEX call_sheet_calls_crew_key ON public.call_sheet_calls USING btree (call_sheet_id, crew_user_id) WHERE (crew_user_id IS NOT NULL)
@@ -2318,6 +2328,7 @@ policy public.budget_items "budget items add" PERMISSIVE INSERT to authenticated
 policy public.budget_items "budget items change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
 policy public.budget_items "budget items read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
 policy public.budget_items "budget items remove" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check -
+policy public.calendar_feeds "calendar_feeds_owner" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.call_sheets "call_sheets access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -2652,6 +2663,7 @@ rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
 rls brief_questions enabled=true forced=false
 rls budget_items enabled=true forced=false
+rls calendar_feeds enabled=true forced=false
 rls call_sheet_acks enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false
 rls call_sheets enabled=true forced=false
