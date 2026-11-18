@@ -48,9 +48,16 @@ describe('dim text', () => {
 });
 
 describe('the default', () => {
-  it('is Misfit, first in the picker, and what a person with no choice sees', () => {
+  it('follows the device for a person with no choice: Misfit (the brand look) in the dark, Paper in the light', () => {
+    expect(DEFAULT_CHOICE).toEqual({ id: 'system' });
+    expect(resolveTheme(DEFAULT_CHOICE, false)).toBe('misfit');
+    expect(resolveTheme(DEFAULT_CHOICE, true)).toBe('paper');
+    expect(themeMode(DEFAULT_CHOICE, false)).toBe('dark');
+    expect(themeMode(DEFAULT_CHOICE, true)).toBe('light');
+  });
+
+  it('keeps Misfit as the brand look: the dark half, first in the picker', () => {
     expect(DEFAULT_THEME_ID).toBe('misfit');
-    expect(DEFAULT_CHOICE).toEqual({ id: 'misfit' });
     expect(THEMES[0].id).toBe('misfit');
     expect(THEMES[0].mode).toBe('dark');
   });
@@ -77,15 +84,29 @@ describe('the early script (first paint)', () => {
     expect(paint('cyberpunk')).toBe('neon');
   });
 
-  it('falls back to the default for an id the catalogue does not have (no CSS block would style it)', () => {
+  it('falls back to following the device for an id the catalogue does not have (no CSS block would style it)', () => {
     expect(paint(JSON.stringify({ id: 'nope' }))).toBe('misfit');
+    expect(paint(JSON.stringify({ id: 'nope' }), true)).toBe('paper');
     expect(paint('"<script>"')).toBe('misfit');
+    expect(paint('"<script>"', true)).toBe('paper');
   });
 
-  it('follows the device for System, and leaves the page as rendered when nothing is stored', () => {
+  it('follows the device when nothing is stored, or the stored value is empty or broken', () => {
+    expect(paint(null)).toBe('misfit');
+    expect(paint(null, true)).toBe('paper');
+    expect(paint('')).toBe('misfit');
+    expect(paint('{broken', true)).toBe('paper');
+    expect(paint('{}', true)).toBe('paper');
+  });
+
+  it('a stored choice wins over the device, light or dark', () => {
+    expect(paint(JSON.stringify({ id: 'misfit' }), true)).toBe('misfit');
+    expect(paint(JSON.stringify({ id: 'paper' }), false)).toBe('paper');
+  });
+
+  it('follows the device for System: Paper in the light, Misfit in the dark (Cavern before 2026-11-18)', () => {
     expect(paint(JSON.stringify({ id: 'system' }), true)).toBe('paper');
-    expect(paint(JSON.stringify({ id: 'system' }), false)).toBe('default');
-    expect(paint(null)).toBeUndefined();
+    expect(paint(JSON.stringify({ id: 'system' }), false)).toBe('misfit');
   });
 });
 
@@ -96,16 +117,16 @@ describe('choosing', () => {
     expect(toThemeChoice('paper')).toEqual({ id: 'paper' });
     expect(toThemeChoice({ id: 'system' })).toEqual({ id: 'system' });
     expect(toThemeChoice({ id: 'custom', bg: '#FFFFFF', accent: '#0b7a78' })).toEqual({ id: 'custom', bg: '#ffffff', accent: '#0b7a78' });
-    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual({ id: 'misfit' });
-    expect(toThemeChoice('nope')).toEqual({ id: 'misfit' });
-    expect(toThemeChoice(null)).toEqual({ id: 'misfit' });
+    expect(toThemeChoice({ id: 'custom', bg: 'white', accent: '#000000' })).toEqual(DEFAULT_CHOICE);
+    expect(toThemeChoice('nope')).toEqual(DEFAULT_CHOICE);
+    expect(toThemeChoice(null)).toEqual(DEFAULT_CHOICE);
     // Someone who chose Cavern keeps it: only a missing or unreadable choice falls back.
     expect(toThemeChoice('default')).toEqual({ id: 'default' });
   });
 
   it('System follows the device', () => {
     expect(resolveTheme({ id: 'system' }, true)).toBe('paper');
-    expect(resolveTheme({ id: 'system' }, false)).toBe('default');
+    expect(resolveTheme({ id: 'system' }, false)).toBe('misfit');
     expect(themeMode({ id: 'system' }, true)).toBe('light');
     expect(themeMode({ id: 'editorial' }, false)).toBe('light');
   });

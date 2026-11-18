@@ -50,9 +50,13 @@ export function withFrosted(c: ThemeChoice, on: boolean): ThemeChoice {
   return (on ? { ...rest, frosted: true } : rest) as ThemeChoice;
 }
 
-/** What a person who has not chosen sees: Misfit (owner, 2026-11-05). Paper and Cavern stay one tap away, and System gives Paper on a light device and Cavern on a dark one. */
+/**
+ * The brand look, and the dark half of "follow the device": Misfit (owner, 2026-11-05).
+ * What a person who has not chosen sees follows their device (owner, 2026-11-18): Paper on a light one, Misfit on a dark
+ * one, changing as the device does. A saved choice always wins; every theme stays one tap away.
+ */
 export const DEFAULT_THEME_ID: ThemeId = 'misfit';
-export const DEFAULT_CHOICE: ThemeChoice = { id: DEFAULT_THEME_ID };
+export const DEFAULT_CHOICE: ThemeChoice = { id: 'system' };
 const HEX = /^#[0-9a-f]{6}$/i;
 
 /** Tolerant reader for a stored choice (account prefs, this device, or an old plain name). */
@@ -115,9 +119,9 @@ export function customTokens(bg: string, accent: string): Record<string, string>
   };
 }
 
-/** The preset a choice shows now (System asks the device). */
+/** The preset a choice shows now (System asks the device: Paper in the light, Misfit in the dark). */
 export function resolveTheme(choice: ThemeChoice, prefersLight: boolean): ThemeId | 'custom' {
-  if (choice.id === 'system') return prefersLight ? 'paper' : 'default';
+  if (choice.id === 'system') return prefersLight ? 'paper' : DEFAULT_THEME_ID;
   return choice.id;
 }
 
@@ -173,9 +177,9 @@ export function applyTheme(choice: ThemeChoice) {
  * page paints (app/layout.tsx), so a light theme never flashes dark.
  */
 export const EARLY_THEME_SCRIPT = `(function(){try{var r=localStorage.getItem('${THEME_KEY}');var c;try{c=JSON.parse(r)}catch(e){c=r}
-if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono',inkrust:'misfit'})[c]||c};if(!c||!c.id)return;var d=document.documentElement;
+if(typeof c==='string')c={id:({cyberpunk:'neon',obsidian:'mono',inkrust:'misfit'})[c]||c};if(!c||!c.id)c={id:'system'};var d=document.documentElement;
 if(c.frosted===true)d.dataset.frosted='';
 if(c.id==='custom'){var v=JSON.parse(localStorage.getItem('${THEME_VARS_KEY}')||'null');if(!v)return;d.dataset.theme='custom';for(var k in v)d.style.setProperty(k,v[k]);return;}
-var id=c.id;if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'default';
-else if(${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='${DEFAULT_THEME_ID}';
+var id=c.id;if(id!=='system'&&${JSON.stringify(THEMES.map((t) => t.id))}.indexOf(id)<0)id='system';
+if(id==='system')id=window.matchMedia('(prefers-color-scheme: light)').matches?'paper':'${DEFAULT_THEME_ID}';
 d.dataset.theme=id;}catch(e){}})();`;

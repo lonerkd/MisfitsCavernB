@@ -170,7 +170,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 
 | Theme | Mode | Look |
 |---|---|---|
-| `misfit` (Misfit) — **the default** | dark | ink-blue night, pale-gold text, rust accent (`#f34013`, lifted so it passes AA) |
+| `misfit` (Misfit) — **the default on a dark device** | dark | ink-blue night, pale-gold text, rust accent (`#f34013`, lifted so it passes AA) |
 | `paper` (Paper) | light | warm off-white, ink text, rust accent |
 | `default` (Cavern) | dark | near-black, cool white text, ember accent — the brand's night look |
 | `vampire` (Vampire) | dark | black, blood red accent |
@@ -184,7 +184,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | `lagoon` | light | pale teal, teal accent |
 | `forest` | dark | deep green, sage accent |
 
-Misfit is what a person sees until they choose (owner: Paper on 2026-11-03, then Misfit on 2026-11-05 — commit `3d90e1b4`; `DEFAULT_THEME_ID` in `lib/themes/themes.ts`, first in the picker, the rest in the order below). Someone who chose Cavern or Paper keeps it; the old id `inkrust` reads as `misfit`. Plus **System** (Paper when the device is light, Cavern when dark) and
+What a person sees until they choose **follows their device** (owner, 2026-11-18): Paper on a light one, Misfit on a dark one, changing as the device does (`DEFAULT_CHOICE` is `system` in `lib/themes/themes.ts`; the early script in `app/layout.tsx` resolves it before paint). History: Paper on 2026-11-03, Misfit alone on 2026-11-05 (commit `3d90e1b4`), the device from 2026-11-18. Misfit is the brand look and the dark half (`DEFAULT_THEME_ID`, first in the picker, the rest in the order below). Someone who chose a theme keeps it; the old id `inkrust` reads as `misfit`. Plus **System**, the same as the default and the card that returns to it (Paper when the device is light, Misfit when dark; before 2026-11-18 its dark half was Cavern), and
 **Custom** (a background + an accent; `customTokens()` derives readable text,
 lines and status colours from the background's luminance).
 
@@ -210,7 +210,7 @@ lines and status colours from the background's luminance).
 - `lib/themes.test.ts` checks every preset's block: tokens present, text ≥ 7:1
   on the background, accent ≥ 3:1, `--on-accent` ≥ 4.5:1 on the accent.
   `e2e/themes.spec.ts` checks it applies, persists, follows the account, and
-  passes axe colour-contrast in the default theme (`accessibility.spec.ts` checks every page in Misfit).
+  passes axe colour-contrast in the default theme (`accessibility.spec.ts` checks every page in Misfit: the e2e runner is pinned to a dark device, since a headless browser reports a light one and the suite would otherwise follow it into Paper).
 
 
 ## Accessibility (WCAG 2.2 AA — enforced in CI)
