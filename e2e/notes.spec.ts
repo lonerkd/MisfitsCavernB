@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser, Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,7 +23,7 @@ test.describe('Notes (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[sam, 'sam'], [jordan, 'jordan']] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `n${name}${TAG}` } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `n${name}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Notes ${TAG}`, creator_id: sam.id }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: jordan.id, craft: 'Production designer', status: 'confirmed' });
@@ -40,11 +40,7 @@ test.describe('Notes (local Supabase)', () => {
   async function openEditor(browser: Browser, who: { email: string }) {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toBeVisible({ timeout: 30_000 });
     await page.getByTitle('Notes', { exact: true }).click();

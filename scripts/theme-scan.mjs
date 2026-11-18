@@ -10,7 +10,7 @@
 //   PHONE=1 npm run theme:scan               at phone width
 //   SCAN_EMAIL=… SCAN_PASSWORD=… npm run theme:scan   another local account than the demo one
 //   npm run theme:scan -- /jobs /community       only these routes
-//   npm run theme:scan -- --states               what opens on a click: the job modal, notifications, search, the island (the menu sheet with PHONE=1)
+//   npm run theme:scan -- --states               what opens on a click or is not there: the job modal, notifications, search, the island (the menu sheet with PHONE=1), empty searches, a 404, the New Project and New channel dialogs, Delete account
 //
 // Needs the local stack and the demo account (npm run stack:up -- build, then npm run bible:shots once). Local only.
 import { chromium } from '@playwright/test';
@@ -142,6 +142,25 @@ const STATES = [
   } },
   { name: PHONE ? '/community › the menu sheet' : '/community › the island, open', route: '/community', open: async () => {
     await page.getByRole('button', { name: PHONE ? /^Menu\./ : /^Open the island/ }).first().click({ timeout: 8000 });
+  } },
+  // Empty and error states: what a screen says when there is nothing to show or nothing there.
+  { name: '/jobs › no position matches the search', route: '/jobs', open: async () => {
+    await page.getByPlaceholder('Search positions…').fill('zzzz-nothing-matches-zzzz', { timeout: 8000 });
+  } },
+  { name: '/crew › no one matches the search', route: '/crew', open: async () => {
+    await page.getByPlaceholder('Search by name, skill, bio…').fill('zzzz-nothing-matches-zzzz', { timeout: 8000 });
+  } },
+  { name: '404, a page that is not there', route: '/zz-not-a-page', open: async () => {} },
+  { name: 'a project that does not exist', route: '/projects/00000000-0000-0000-0000-000000000000', open: async () => {} },
+  // Dialogs that open on a click and change nothing until confirmed.
+  { name: '/projects › New Project (dialog)', route: '/projects', open: async () => {
+    await page.getByRole('button', { name: /New Project/ }).first().click({ timeout: 8000 });
+  } },
+  { name: '/lounge › New channel (dialog)', route: '/lounge', desktopOnly: true, open: async () => {
+    await page.getByRole('button', { name: /^New (community )?channel$/ }).first().click({ timeout: 8000 });
+  } },
+  { name: '/settings › Delete account (the plan, the danger zone)', route: '/settings', open: async () => {
+    await page.getByRole('button', { name: /DELETE ACCOUNT/ }).first().click({ timeout: 8000 });
   } },
 ];
 let stateCount = 0;

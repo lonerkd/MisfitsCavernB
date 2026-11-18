@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import * as Y from 'yjs';
@@ -28,7 +28,7 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [i, p] of people.entries()) {
-      p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `om${i}${TAG}` } })).data.user!.id;
+      p.id = (await stack.createUser({ email: p.email, password: PASSWORD, username: `om${i}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Offline merge ${TAG}`, creator_id: people[0].id }).select('id').single()).data!.id;
     for (const p of people.slice(1)) {
@@ -46,11 +46,7 @@ test.describe.serial('Offline writer and online collaborator (local Supabase)', 
   async function writer(browser: Browser, who: number): Promise<{ ctx: BrowserContext; page: Page; script: ReturnType<Page['getByLabel']> }> {
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', people[who].email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: people[who].email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

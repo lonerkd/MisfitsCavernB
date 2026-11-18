@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -22,11 +22,7 @@ async function contrastViolations(page: Page): Promise<string[]> {
 }
 
 async function signIn(page: Page, email: string) {
-  await page.goto('/auth');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+  await signInAs(page, { email: email, password: PASSWORD });
 }
 
 const theme = (page: Page) => page.evaluate(() => document.documentElement.dataset.theme);
@@ -40,14 +36,13 @@ test.describe('Themes (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `themer${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `themer${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Lantern Road ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
   });
 
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('a preset applies at once, stays, follows the account, and reads', async ({ page, browser }) => {

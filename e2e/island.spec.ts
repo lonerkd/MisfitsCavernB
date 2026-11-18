@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -30,14 +30,13 @@ test.describe('The island (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `island${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `island${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Lighthouse ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('channels').insert({ project_id: projectId, name: `general-${TAG}`, type: 'text' });
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('rests, opens, yields to typing, and takes keys under Caps Lock', async ({ browser }) => {
@@ -164,11 +163,7 @@ test.describe('The island (local Supabase)', () => {
     test.setTimeout(90_000);
     const ctx = await browser.newContext(DESK);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await page.goto('/settings');
     const slider = page.getByRole('slider', { name: 'Island size' });

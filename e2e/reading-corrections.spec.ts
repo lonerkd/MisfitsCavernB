@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { castOfScene } from './support/cast';
 
@@ -21,7 +21,7 @@ test.describe.serial('Telling the reader what a name is (local Supabase)', () =>
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `rc${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `rc${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Corrections ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Dark', content: SCRIPT, project_id: projectId, created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;
   });
@@ -29,7 +29,6 @@ test.describe.serial('Telling the reader what a name is (local Supabase)', () =>
     if (!admin) return;
     await admin.from('scripts').delete().eq('created_by', me.id);
     await admin.from('projects').delete().eq('id', projectId);
-    if (me.id) await admin.auth.admin.deleteUser(me.id);
   });
 
   const castList = async () => {
@@ -39,11 +38,7 @@ test.describe.serial('Telling the reader what a name is (local Supabase)', () =>
 
   test('not a character: it leaves the Bible and the scene’s cast, is remembered, and can be taken back', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

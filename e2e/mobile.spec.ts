@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -51,7 +51,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `pocket${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `pocket${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Tidewater ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 2, shoot_date: iso, general_call: '07:30', location_address: '12 Harbour Rd' });
     taskId = (await admin.from('project_tasks').insert({ project_id: projectId, title: `Confirm the boat ${TAG}`, assigned_to: owner.id, due_date: iso }).select('id').single()).data!.id;
@@ -61,18 +61,13 @@ test.describe('The suite on a phone (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('tab bar, Today, More, and nothing scrolls sideways', async ({ browser }) => {
     test.setTimeout(180_000);
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     // Today: the day on set with the way there, and the task — ticked off here.
     await page.goto('/community');
@@ -128,11 +123,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     test.setTimeout(90_000);
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
     await page.goto('/projects');
     await page.goto(`/lounge?channel=${channelId}`);
     await expect(page.getByPlaceholder(`Message #harbour-${TAG}...`)).toBeVisible({ timeout: 30_000 });
@@ -150,11 +141,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
 
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     // Today offers the desk's place, and taking it goes there.
     await page.goto('/community');
@@ -199,11 +186,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
   test('on a desk the dock stays and the tab bar does not show', async ({ browser }) => {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
     await page.goto('/community');
     await expect(page.locator('nav.mc-dock')).toBeVisible({ timeout: 30_000 });
     await expect(page.locator('[data-mobile-tabbar]')).toBeHidden();

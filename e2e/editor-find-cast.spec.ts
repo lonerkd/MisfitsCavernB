@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Two things the editor page did itself, now in hooks (editor-page-apart):
@@ -20,8 +20,8 @@ test.describe.serial('Editor find & replace and casting (local Supabase)', () =>
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `fc${TAG}` } })).data.user!.id;
-    actor.id = (await admin.auth.admin.createUser({ email: `act.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: actor.username } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `fc${TAG}` })).id;
+    actor.id = (await stack.createUser({ email: `act.${TAG}@journey.test`, password: PASSWORD, username: actor.username })).id;
     projectId = (await admin.from('projects').insert({ title: `FindCast ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: actor.id, craft: 'Actor', status: 'confirmed' });
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: BASE, project_id: projectId, created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;
@@ -34,11 +34,7 @@ test.describe.serial('Editor find & replace and casting (local Supabase)', () =>
   });
 
   async function openEditor(page: import('@playwright/test').Page) {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

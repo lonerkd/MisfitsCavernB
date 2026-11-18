@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,7 +23,7 @@ test.describe.serial('Admin actions (local Supabase)', () => {
     apiUrl = stack.url; anonKey = stack.anonKey;
     admin = stack.admin;
     for (const who of [boss, member]) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: who.name })).id;
     }
     await admin.from('profiles').update({ is_admin: true }).eq('id', boss.id);
     await admin.from('client_errors').insert({ kind: 'window', message: ERR, path: '/somewhere', user_id: member.id });
@@ -35,11 +35,7 @@ test.describe.serial('Admin actions (local Supabase)', () => {
   });
 
   const signIn = async (page: Page, who: { email: string }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
   };
   const canSignIn = async () => {
     const c = createClient(apiUrl, anonKey, { auth: { persistSession: false } });

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -28,8 +28,8 @@ test.describe('Granting a request in one click (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `grantmo${TAG}` } })).data.user!.id;
-    crew.id = (await admin.auth.admin.createUser({ email: crew.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `grantmc${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `grantmo${TAG}` })).id;
+    crew.id = (await stack.createUser({ email: crew.email, password: PASSWORD, username: `grantmc${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Grant ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, role: 'contributor', craft: 'Casting director', status: 'confirmed' });
   });
@@ -46,11 +46,7 @@ test.describe('Granting a request in one click (local Supabase)', () => {
   test('the request names the person and the permission, and one click grants it', async ({ page }) => {
     test.setTimeout(120_000);
     const link = `/studio?project=${projectId}&tab=production&view=crew&grant=${crew.id}.budget.read`;
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
     await page.goto(link);
 
     const bar = page.getByRole('status', { name: 'Request for access' });

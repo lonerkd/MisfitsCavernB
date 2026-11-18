@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -21,18 +21,14 @@ test.describe('Production Management (local Supabase)', () => {
 
   const signIn = async (browser: Browser, who: { email: string }) => {
     const page = await (await browser.newContext()).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
     return page;
   };
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const p of [owner, crew, newcomer]) {
-      p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: p.username } })).data.user!.id;
+      p.id = (await stack.createUser({ email: p.email, password: PASSWORD, username: p.username })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Ferry ${TAG}`, creator_id: owner.id }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, craft: 'Editor', status: 'confirmed' });

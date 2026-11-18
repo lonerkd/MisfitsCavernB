@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -36,7 +36,7 @@ test.describe('Transcripts and the paper edit (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `docmaker${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `docmaker${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Tidewater ${TAG}`, creator_id: owner.id, status: 'post-production' }).select('id').single()).data!.id;
     await admin.from('media').insert({ project_id: projectId, kind: 'video', title: 'Ana interview', external_url: 'https://example.com/ana.mp4', created_by: owner.id });
   });
@@ -44,16 +44,11 @@ test.describe('Transcripts and the paper edit (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('paste a transcript, star the moments, order the paper edit', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await openStudio(page, projectId, 'library');
     await page.getByRole('button', { name: 'Ana interview — Video' }).click({ timeout: 30_000 });

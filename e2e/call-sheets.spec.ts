@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Browser, Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -35,19 +35,15 @@ test.describe('Call sheets reach the crew (local Supabase)', () => {
 
   const signIn = async (browser: Browser, who: typeof owner) => {
     const page = await (await browser.newContext()).newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
     return page;
   };
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const who of [owner, crew, outsider]) {
-      const { data } = await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: who.name } });
-      who.id = data.user!.id;
+      const data = await stack.createUser({ email: who.email, password: PASSWORD, username: who.name });
+      who.id = data.id;
     }
     projectId = (await admin.from('projects').insert({ title: `Harbor ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, craft: 'Gaffer', status: 'confirmed' });

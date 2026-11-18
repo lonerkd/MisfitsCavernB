@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
-import type { SupabaseClient } from '@supabase/supabase-js';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 
 // The suite's global chords (lib/os/chords.ts) mean the same thing in every tool: Ctrl K opens search and Ctrl / the
 // shortcuts panel, on the Today page and inside the editor's text box alike. Opt-in: E2E_LOCAL_STACK=1.
@@ -10,22 +9,15 @@ const TAG = Date.now().toString(36);
 test.describe.serial('Global chords (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
-  let admin: SupabaseClient;
   const user = { id: '', email: `gc.${TAG}@journey.test` };
 
   test.beforeAll(async ({ stack }) => {
-    admin = stack.admin;
-    user.id = (await admin.auth.admin.createUser({ email: user.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `gc${TAG}` } })).data.user!.id;
+    user.id = (await stack.createUser({ email: user.email, password: PASSWORD, username: `gc${TAG}` })).id;
   });
-  test.afterAll(async () => { if (admin && user.id) await admin.auth.admin.deleteUser(user.id); });
 
   test('Ctrl K opens search and Ctrl / the shortcuts, on Today and in the editor', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: user.email, password: PASSWORD });
 
     for (const route of ['/community', '/editor']) {
       await page.goto(route);
@@ -53,11 +45,7 @@ test.describe.serial('Global chords (local Supabase)', () => {
 
   test('inside a split pane the search and shortcuts open on the split page', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', user.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: user.email, password: PASSWORD });
 
     await page.goto('/community');
     await page.keyboard.press('Control+\\');

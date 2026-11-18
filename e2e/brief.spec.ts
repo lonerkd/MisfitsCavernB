@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The project brief against a local stack: answer it as choices on the
@@ -25,8 +25,8 @@ test.describe('Project brief (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `brief.${TAG}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `brief${TAG}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `brief${TAG}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: `Cabin ${TAG}`, creator_id: userId, status: 'pre-production', project_type: 'Short Film' }).select('id').single()).data!.id;
     await admin.from('scripts').insert({ title: 'Cabin', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId });
   });
@@ -35,16 +35,11 @@ test.describe('Project brief (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('answer the brief; it names what the project needs and prefills the job', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto(`/projects/${projectId}`);
     const brief = page.getByRole('region', { name: /What are you making|Horror/ });
@@ -83,11 +78,7 @@ test.describe('Project brief (local Supabase)', () => {
 
   test('the Lounge offers the channels this phase calls for', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto('/lounge');
     const suggested = page.getByRole('group', { name: 'Suggested channels' });

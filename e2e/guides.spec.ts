@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -25,11 +25,7 @@ async function axeViolations(page: Page): Promise<string[]> {
 }
 
 async function signIn(page: Page, email: string) {
-  await page.goto('/auth');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+  await signInAs(page, { email: email, password: PASSWORD });
 }
 
 test.describe('Guides (local Supabase)', () => {
@@ -43,7 +39,7 @@ test.describe('Guides (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[owner, `gowner${TAG}`], [actor, `gactor${TAG}`]] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: name } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: name })).id;
     }
     projectId = (await admin.from('projects').insert({
       title: `Guided ${TAG}`, creator_id: owner.id, status: 'concept', project_type: 'Short Film',
@@ -56,7 +52,6 @@ test.describe('Guides (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    for (const who of [owner, actor]) await admin.auth.admin.deleteUser(who.id);
   });
 
   test('the owner’s walkthrough, tuned and ticked', async ({ page }) => {

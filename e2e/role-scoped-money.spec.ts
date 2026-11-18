@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Role model, step 3a, in a real browser against a local stack: the budget follows a person's craft. A crew member whose
@@ -18,8 +18,8 @@ test.describe('The budget follows the role (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: `rolemo.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: `rolemo${TAG}` } })).data.user!.id;
-    crew.id = (await admin.auth.admin.createUser({ email: crew.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `rolemc${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: `rolemo.${TAG}@journey.test`, password: PASSWORD, username: `rolemo${TAG}` })).id;
+    crew.id = (await stack.createUser({ email: crew.email, password: PASSWORD, username: `rolemc${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Budget ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('budget_items').insert({ project_id: projectId, category: `Camera ${TAG}`, amount: 1000 });
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, role: 'contributor', craft: 'Casting director', status: 'confirmed' });
@@ -39,11 +39,7 @@ test.describe('The budget follows the role (local Supabase)', () => {
 
   test('no budget, then the budget to read, then the budget to run', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', crew.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: crew.email, password: PASSWORD });
 
     const open = async () => {
       await page.goto('/studio?tab=production&view=money');
@@ -82,11 +78,7 @@ test.describe('The budget follows the role (local Supabase)', () => {
     test.setTimeout(120_000);
     await admin.from('production_records').insert({ project_id: projectId, kind: 'purchaseOrders', item_id: 'po-e2e', data: { id: 'po-e2e', poNumber: 'PO-77', vendor: `Lens House ${TAG}`, department: 'Camera', amount: '1500', status: 'draft' }, created_by: owner.id });
     await setCraft('Casting director');
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', crew.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: crew.email, password: PASSWORD });
 
     const open = async () => {
       await page.goto('/studio?tab=production&view=po');

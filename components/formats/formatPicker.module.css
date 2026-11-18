@@ -16,7 +16,7 @@
 .card:disabled { cursor: default; opacity: 0.6; }
 .cardOn { border-color: rgba(232, 67, 26, 0.6); background: rgba(232, 67, 26, 0.12); color: var(--fg); }
 .icon { display: flex; color: var(--fg-muted); flex-shrink: 0; }
-.cardOn .icon { color: #ff7a4d; }
+.cardOn .icon { color: var(--accent); }
 .name { line-height: 1.2; }
 
 .journey {
