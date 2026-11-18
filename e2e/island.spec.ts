@@ -72,7 +72,7 @@ test.describe('The island (local Supabase)', () => {
     await shape(page, 'open');
     const controls = page.getByRole('group', { name: 'Projects controls' });
     await expect(controls.getByRole('button', { name: '+ New Project' })).toBeVisible();
-    for (const name of ['Community', 'ScriptOS', 'Studio', 'Lounge', 'Portfolio', 'Profile', 'Settings']) {
+    for (const name of ['Home', 'ScriptOS', 'Studio', 'Lounge', 'Portfolio', 'Profile', 'Settings']) {
       await expect(island(page).getByRole('link', { name, exact: true })).toBeVisible();
     }
     await expect(page.getByRole('button', { name: 'Search (Caps Lock, then slash)' })).toBeVisible();
@@ -140,7 +140,7 @@ test.describe('The island (local Supabase)', () => {
     await capsKey(page, 'CapsLock');
     await shape(page, 'caps');
     await expect(surface(page)).toContainText('put away');
-    await expect(island(page).getByRole('link', { name: 'Community', exact: true })).toBeVisible();
+    await expect(island(page).getByRole('link', { name: 'Home', exact: true })).toBeVisible();
     // E is Find on every page that has one (a slot, not a position) — here, the Lounge's message search.
     await capsKey(page, 'E');
     await expect(page.getByRole('dialog', { name: 'Search the Lounge' })).toBeVisible();
@@ -151,8 +151,8 @@ test.describe('The island (local Supabase)', () => {
     await capsOff(page);
     await capsKey(page, 'CapsLock');
     await shape(page, 'caps'); // a fresh Caps Lock brings it back
-    await capsKey(page, '1'); // the first app: Community
-    await page.waitForURL(/\/community/);
+    await capsKey(page, '1'); // the first app: Home
+    await page.waitForURL((u) => u.pathname === '/');
     await capsOff(page);
     await shape(page, 'rest');
 

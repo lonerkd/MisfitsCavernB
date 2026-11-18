@@ -6,5 +6,5 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(sp)) for (const x of Array.isArray(v) ? v : v === undefined ? [] : [v]) q.append(k, x);
   const s = q.toString();
-  redirect(s ? `/community?${s}` : '/community');
+  redirect(s ? `/?${s}` : '/');
 }

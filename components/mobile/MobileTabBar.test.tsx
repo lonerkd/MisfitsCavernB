@@ -5,7 +5,7 @@ import { render, cleanup } from '@testing-library/react';
 
 const phone = vi.hoisted(() => ({ typing: false }));
 
-vi.mock('next/navigation', () => ({ usePathname: () => '/community' }));
+vi.mock('next/navigation', () => ({ usePathname: () => '/' }));
 vi.mock('next/link', () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 vi.mock('@/lib/os', () => ({
   useSession: () => ({ status: 'authed' }),

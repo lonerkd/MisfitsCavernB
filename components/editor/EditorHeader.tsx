@@ -68,7 +68,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link href="/community" aria-label="Back to Community" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
+            <Link href="/" aria-label="Back to home" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
               <ArrowLeft size={18} />

@@ -27,21 +27,15 @@ test.describe('Community page (local Supabase)', () => {
 
     for (const old of ['/today', '/hub']) {
       await page.goto(old);
-      await expect(page).toHaveURL(/\/community$/);
+      await expect(page).toHaveURL(/\/$/);
     }
-    await expect(page.getByRole('heading', { level: 1, name: 'Community' })).toBeAttached();
-    for (const name of ["What's new", 'Crew open to work', 'The Cavern', 'Music from the Cavern']) {
+    await expect(page.getByRole('heading', { level: 1, name: /The Cavern/ })).toBeAttached();
+    for (const name of ["What's new", 'Crew open to work', 'Music from the Cavern']) {
       await expect(page.getByRole('heading', { name, exact: true })).toBeVisible({ timeout: 30_000 });
     }
 
-    // The previews are a picker: choosing a part shows it and the way in.
-    await page.getByRole('tab', { name: 'Studio' }).click();
-    await expect(page.getByRole('link', { name: /Open Studio/ })).toHaveAttribute('href', '/studio');
-    await page.getByRole('tab', { name: 'Lounge' }).click();
-    await expect(page.getByRole('link', { name: /Open Lounge/ })).toHaveAttribute('href', '/lounge');
-
     // A share keeps its query string through the old Today route.
     await page.goto('/today?text=hello');
-    await expect(page).toHaveURL(/\/community\?text=hello/);
+    await expect(page).toHaveURL(/\/\?text=hello/);
   });
 });

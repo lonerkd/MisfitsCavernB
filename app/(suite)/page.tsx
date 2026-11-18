@@ -23,6 +23,11 @@ import { STAGES, PipelineStage, PipelineConnector } from '@/components/landing/P
 import { ScriptOSPreview, StudioPreview, LoungePreview, PortfolioPreview } from '@/components/landing/Previews';
 import { ModuleTile } from '@/components/landing/ModuleTile';
 import { StatsTicker } from '@/components/landing/StatsTicker';
+import dynamic from 'next/dynamic';
+// Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them); the phone's picker only on a phone.
+const SignedInHome = dynamic(() => import('@/components/home/SignedInHome').then((m) => m.SignedInHome), { loading: () => null });
+const ModulePicker = dynamic(() => import('@/components/home/ModulePicker').then((m) => m.ModulePicker), { loading: () => null });
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
 interface LiveData {
@@ -34,13 +39,15 @@ interface LiveData {
 interface PlatformStats { creators: number; scripts: number; projects: number; concepts: number }
 
 export default function Home() {
-  const [loggedIn, setLoggedIn] = useState(false);
+  // null until the session is known, so a signed-in person never sees the signed-out page flash by.
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], latestScriptTitle: null });
   const [ticker, setTicker] = useState<string[]>([]);
   const [works, setWorks] = useState<Array<{ title: string; year: number | null; category: string | null; accent: string | null }>>([]);
 
   const { activeProject } = useProject();
+  const { phone } = usePhoneLayout();
 
   useEffect(() => {
     const palette = ['#6366f1', '#10b981', '#e8431a', '#f59e0b', '#8b5cf6', '#06b6d4'];
@@ -97,7 +104,7 @@ export default function Home() {
           HERO — cinematic full-screen
       ══════════════════════════════════════════════ */}
       <section style={{
-        minHeight: '100svh',
+        minHeight: loggedIn ? '46svh' : '100svh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -183,12 +190,16 @@ export default function Home() {
             transition={{ delay: 0.85, duration: 0.9 }}
           >
            <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 40 }}>
-            <Button href={loggedIn ? '/community' : '/auth'} variant="solid" size="lg">
-              {loggedIn ? 'Open Community' : 'Enter The Cavern'}
-            </Button>
-            <Button href="/portfolio" variant="ghost" size="lg">
-              View Work
-            </Button>
+            {loggedIn === null ? null : loggedIn ? (
+              <Button href={activeProject ? '/studio' : '/projects'} variant="solid" size="lg">
+                {activeProject ? `Open ${activeProject.title}` : 'Your projects'}
+              </Button>
+            ) : (
+              <>
+                <Button href="/auth" variant="solid" size="lg">Enter The Cavern</Button>
+                <Button href="/portfolio" variant="ghost" size="lg">View Work</Button>
+              </>
+            )}
           </div>
           </motion.div>
         </motion.div>
@@ -209,35 +220,8 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ══════════════════════════════════════════════
-          RESUME BAND — returning creators land back in their studio
-      ══════════════════════════════════════════════ */}
-      {loggedIn && (activeProject || live.latestScriptTitle) && (
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          style={{ maxWidth: 900, margin: '-20px auto 0', padding: '0 24px' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 20, flexWrap: 'wrap', padding: '20px 24px', background: 'linear-gradient(120deg, rgba(232, 67, 26,0.08), rgba(99,102,241,0.05))', border: '1px solid rgba(232, 67, 26,0.18)', borderRadius: 14 }}>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'rgba(232, 67, 26,0.8)', marginBottom: 6 }}>Welcome back</div>
-              <div style={{ fontFamily: 'var(--display)', fontSize: '1.6rem', letterSpacing: '-0.02em', lineHeight: 1 }}>
-                {activeProject ? `Resume ${activeProject.title}` : 'Continue your screenplay'}
-              </div>
-              {live.latestScriptTitle && <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', marginTop: 6 }}>Last edited · {live.latestScriptTitle}</div>}
-            </div>
-            <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
-              <Button href="/editor" variant="ghost" size="sm">Open ScriptOS</Button>
-              <Button href={activeProject ? '/studio' : '/projects'} variant="solid" size="sm">
-                Open Studio
-              </Button>
-            </div>
-          </div>
-        </motion.section>
-      )}
-
+      {/* The marketing story is for people who have not signed in: a signed-in person already knows it. */}
+      {loggedIn === false && (<>
       {/* ══════════════════════════════════════════════
           WORKFLOW PIPELINE
       ══════════════════════════════════════════════ */}
@@ -307,16 +291,23 @@ export default function Home() {
         </section>
       )}
 
+      </>)}
+
       {/* ══════════════════════════════════════════════
           STATS TICKER
       ══════════════════════════════════════════════ */}
       <StatsTicker items={ticker} />
 
+      {loggedIn && <SignedInHome />}
+
       {/* ══════════════════════════════════════════════
           MODULE GRID — asymmetric layout
       ══════════════════════════════════════════════ */}
-      <section style={{ padding: '80px 24px 100px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
-
+      {loggedIn !== null && (
+      <section aria-labelledby="home-parts" style={{ padding: loggedIn ? '8px 24px 80px' : '80px 24px 100px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
+        <h2 id="home-parts" className="sr-only">{loggedIn ? 'Jump back in' : 'The parts of the suite'}</h2>
+        {loggedIn && <p aria-hidden style={{ margin: '0 0 12px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)' }}>Jump back in</p>}
+        {phone ? <ModulePicker loggedIn={!!loggedIn} data={{ scriptLines: live.scriptLines, assets: live.assets, messages: live.messages, works }} /> : (<>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
 
           <ModuleTile
@@ -373,8 +364,11 @@ export default function Home() {
           preview={<PortfolioPreview works={works} />}
           style={{ minHeight: 0 }}
         />
+        </>)}
       </section>
+      )}
 
+      {loggedIn === false && (<>
       {/* ══════════════════════════════════════════════
           CLOSING CTA
       ══════════════════════════════════════════════ */}
@@ -423,6 +417,8 @@ export default function Home() {
           </AnimatedSection>
         </div>
       </section>
+      </>)}
+
 
       <footer style={{
         textAlign: 'center',
