@@ -37,7 +37,7 @@ export function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
           <label style={label}>Type</label>
           <div style={{ display: 'flex', gap: 8 }}>
             {(['text', 'voice', 'guide'] as const).map(t => (
-              <button key={t} aria-pressed={type === t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: type === t ? '#ff7a4d' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
+              <button key={t} aria-pressed={type === t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: type === t ? 'var(--accent)' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
                 {t === 'text' ? <Hash size={13} /> : t === 'voice' ? <Volume2 size={13} /> : <BookOpen size={13} />} {t}
               </button>
             ))}
