@@ -1,6 +1,6 @@
 # Screens (generated)
 
-> Taken by `npm run bible:shots` on the demo world (project "Night Shift at the Lantern"), dark theme, 2026-10-06. Desktop 1440 wide, phone 390; long pages are cut at 2400/3200px. What each screen is for is in the chapters.
+> Taken by `npm run bible:shots` on the demo world (project "Night Shift at the Lantern"), dark theme, 2026-11-18. Desktop 1440 wide, phone 390; long pages are cut at 2400/3200px. What each screen is for is in the chapters.
 
 | Screen | Path | Desktop | Phone |
 |---|---|---|---|
@@ -13,7 +13,7 @@
 | **public-press-kit** | `/p/…` | <img src="public-press-kit--desktop.webp" width="320"> | <img src="public-press-kit--phone.webp" width="120"> |
 | **public-shared-script** | `/s/…` | <img src="public-shared-script--desktop.webp" width="320"> | <img src="public-shared-script--phone.webp" width="120"> |
 | **home** | `/` | <img src="home--desktop.webp" width="320"> | <img src="home--phone.webp" width="120"> |
-| **today** | `/today` | <img src="today--desktop.webp" width="320"> | <img src="today--phone.webp" width="120"> |
+| **community** | `/community` | <img src="community--desktop.webp" width="320"> | <img src="community--phone.webp" width="120"> |
 | **welcome** | `/welcome` | <img src="welcome--desktop.webp" width="320"> | <img src="welcome--phone.webp" width="120"> |
 | **projects** | `/projects` | <img src="projects--desktop.webp" width="320"> | <img src="projects--phone.webp" width="120"> |
 | **project-hub** | `/projects/…` | <img src="project-hub--desktop.webp" width="320"> | <img src="project-hub--phone.webp" width="120"> |
