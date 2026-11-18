@@ -5,6 +5,7 @@ import { CheckCircle2, Circle, FileText, Film, ListChecks, Plus, Trash2, X } fro
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
+import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { getProjectTeam } from '@/lib/supabase/crew-management';
 import {
   studio, usePostItems, useSignedUrls, classifyUrl,
@@ -266,7 +267,12 @@ function NoteList({ notes, player }: { notes: PostNote[]; player: React.RefObjec
   const open = notes.filter((n) => !n.resolved_at).length;
 
   const toggle = async (n: PostNote) => {
-    try { postNotes.upsertLocal(await studio.setPostNoteResolved(n.id, userId, !n.resolved_at)); }
+    const origin = undoOrigin();
+    const wasResolved = !!n.resolved_at;
+    try {
+      postNotes.upsertLocal(await studio.setPostNoteResolved(n.id, userId, !wasResolved));
+      pushUndo(wasResolved ? 'Reopened a note' : 'Resolved a note', async () => { postNotes.upsertLocal(await studio.setPostNoteResolved(n.id, userId, wasResolved)); }, origin);
+    }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not update the note', 'error'); }
   };
   const remove = async (n: PostNote) => {

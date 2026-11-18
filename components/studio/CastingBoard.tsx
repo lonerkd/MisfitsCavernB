@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
 import Avatar from '@/components/ui/Avatar';
 import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, listAllCastingNotes, addCastingNote, deleteCastingNote, listAuditions, scheduleAudition, cancelAudition, listCastingHistory, type Casting, type CastingNote, type CastingAudition, type CastingHistoryEntry } from '@/lib/supabase/casting';
 import { exportCastingSheet } from '@/lib/casting/export';
@@ -42,6 +43,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   const caps = useMyCapabilities(projectId);
   const decides = caps.can('casting.decide');
   const { toast } = useToast();
+  const confirm = useConfirm();
   const { chars: scriptChars, status } = useScriptCharacters(scriptId, userId, scriptFormat);
   const chars = scriptChars.map((c) => ({ id: c.row?.id, name: c.name, color: c.color }));
   const loading = status === 'loading';
@@ -137,6 +139,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     catch (e) { toast(e instanceof Error ? e.message : 'Could not add note', 'error'); }
   };
   const removeNote = async (id: string) => {
+    if (!await confirm('Remove this note?')) return;
     try { await deleteCastingNote(id); setNotes((n) => n.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not remove note', 'error'); }
   };
@@ -155,6 +158,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not schedule', 'error'); }
   };
   const cancelAud = async (id: string) => {
+    if (!await confirm('Cancel this audition?')) return;
     try { await cancelAudition(id); setAuditions((a) => a.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not cancel', 'error'); }
   };
