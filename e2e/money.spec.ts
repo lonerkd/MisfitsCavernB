@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -34,7 +34,7 @@ test.describe('Money (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const [who, name] of [[owner, `mowner${TAG}`], [crew, `mcrew${TAG}`]] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: name } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: name })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Ledger ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew.id, craft: 'Gaffer', status: 'confirmed' });
@@ -45,16 +45,11 @@ test.describe('Money (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('id', projectId);
-    for (const who of [owner, crew]) await admin.auth.admin.deleteUser(who.id);
   });
 
   test('a purchase order → paid → the budget line follows; hours approved at a rate', async ({ page }) => {
     test.setTimeout(120_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     await page.goto('/studio?tab=production&view=money');
     const picker = page.getByLabel('Active project');

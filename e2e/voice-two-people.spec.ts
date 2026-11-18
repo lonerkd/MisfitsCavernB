@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { chromium, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -23,7 +23,7 @@ test.describe('Two people in a voice room (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     for (const p of people) {
-      p.id = (await admin.auth.admin.createUser({ email: p.email, password: PASSWORD, email_confirm: true, user_metadata: { username: p.name } })).data.user!.id;
+      p.id = (await stack.createUser({ email: p.email, password: PASSWORD, username: p.name })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Pair ${TAG}`, creator_id: people[0].id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: people[1].id, craft: 'Writer', status: 'confirmed' });
@@ -43,11 +43,7 @@ test.describe('Two people in a voice room (local Supabase)', () => {
   async function enter(browser: Browser, who: number): Promise<{ ctx: BrowserContext; page: Page }> {
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, permissions: ['microphone'] });
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', people[who].email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: people[who].email, password: PASSWORD });
     await page.goto('/lounge');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();

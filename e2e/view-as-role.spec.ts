@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Role model, step 6 in a real browser against a local stack: the owner previews the project as a specific role (a craft at an
@@ -17,7 +17,7 @@ test.describe('View as a role (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `viewasr${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `viewasr${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Preview ${TAG}`, creator_id: owner.id, status: 'pre-production' }).select('id').single()).data!.id;
     await admin.from('budget_items').insert({ project_id: projectId, category: `Camera ${TAG}`, amount: 1000 });
   });
@@ -26,16 +26,11 @@ test.describe('View as a role (local Supabase)', () => {
     if (!admin) return;
     await admin.from('budget_items').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    if (owner.id) await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('preview as an accountant, a casting director and a gaffer', async ({ page }) => {
     test.setTimeout(150_000);
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
 
     // Choose the role on the project page, where the switch lives.
     await page.goto(`/projects/${projectId}`);

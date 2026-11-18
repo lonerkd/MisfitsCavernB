@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -32,8 +32,8 @@ test.describe('Cut notes on script lines (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `cn.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cn${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `cn${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Cut lines', creator_id: userId, status: 'post-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Cut lines', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
     cutId = (await admin.from('post_cuts').insert({ project_id: projectId, title: 'Assembly', url: 'https://youtu.be/dQw4w9WgXcQ', created_by: userId }).select('id').single()).data!.id;
@@ -43,15 +43,10 @@ test.describe('Cut notes on script lines (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('pin a note to a line, open it in the script, come back to the cut', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     // A link to the cut opens its project's Post tab.
     await page.goto(`/studio?tab=post&project=${projectId}&cut=${cutId}&t=12`);

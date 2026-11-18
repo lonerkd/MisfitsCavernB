@@ -28,7 +28,7 @@ export function ThreadPanel({ l }: { l: Lounge }) {
         ) : threadReplies.map(r => (
           <div key={r.id} style={{ marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 3 }}>
-              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: r.sender_id === currentUser?.id ? '#ff7a4d' : 'var(--ok)', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
+              <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: r.sender_id === currentUser?.id ? 'var(--accent)' : 'var(--ok)', fontWeight: 600 }}>{r.sender_id === currentUser?.id ? 'You' : r.user}</span>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-subtle)' }}>{r.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
             </div>
             <div style={{ fontFamily: 'var(--serif)', fontSize: 14, lineHeight: 1.6, color: 'rgba(var(--fg-rgb), 0.82)' }}>{r.text}</div>

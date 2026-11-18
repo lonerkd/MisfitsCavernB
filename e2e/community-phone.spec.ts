@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import { devices } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -16,13 +16,12 @@ test.describe('Community on a phone (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `cph.${Date.now()}@journey.test`;
-    userId = (await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `cph${Date.now().toString(36)}` } })).data.user!.id;
+    userId = (await stack.createUser({ email, password: PASSWORD, username: `cph${Date.now().toString(36)}` })).id;
     await admin.from('projects').insert({ title: 'Underground', creator_id: userId, status: 'production' });
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('creator_id', userId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   for (const [name, device] of [['portrait', PHONE], ['landscape', SIDEWAYS]] as const) {
@@ -30,11 +29,7 @@ test.describe('Community on a phone (local Supabase)', () => {
       test.setTimeout(90_000);
       const ctx = await browser.newContext(device);
       const page = await ctx.newPage();
-      await page.goto('/auth');
-      await page.fill('input[name="email"]', email);
-      await page.fill('input[name="password"]', PASSWORD);
-      await page.locator('button[type="submit"]').click();
-      await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+      await signInAs(page, { email: email, password: PASSWORD });
       await page.goto('/community');
       await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible({ timeout: 30_000 });
       await page.waitForTimeout(1500);

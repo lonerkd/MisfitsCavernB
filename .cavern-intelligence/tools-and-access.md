@@ -213,8 +213,10 @@ refused login also shows in the Supabase logs (`supavisor_logs`).
   `url` and `dbUrl` (for a spec that must run SQL; on staging
   `E2E_SUPABASE_ANON_KEY` / `E2E_SUPABASE_DB_URL`). No spec reads `supabase status`
   or `E2E_LOCAL_STACK` itself (`scripts/e2e-setup-guard.test.mjs` fails one that does).
-  About 100 specs still make their own users and sign in by hand (BACKLOG 3.37, tier 2);
-  move one when you touch it. `npm run typecheck` also type-checks `e2e/` (`e2e/tsconfig.json`).
+  `signInAs(page, { email, password })` signs in through the form and needs no `stack`
+  (a describe-level helper can call it); `createUser` also takes an explicit
+  `email`, `password` and `username`. `npm run typecheck` also type-checks `e2e/`
+  (`e2e/tsconfig.json`).
 - **Docs-only PRs** (only `*.md` and `.cavern-intelligence/`) skip `database`
   (the `changes` job decides); `checks` still runs. Pushes to `main` run
   `checks` and `database`.

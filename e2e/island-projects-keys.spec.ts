@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -21,24 +21,19 @@ test.describe('Choosing a project with the keys (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner.id = (await admin.auth.admin.createUser({ email: owner.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `pk${TAG}` } })).data.user!.id;
+    owner.id = (await stack.createUser({ email: owner.email, password: PASSWORD, username: `pk${TAG}` })).id;
     for (const title of titles) await admin.from('projects').insert({ title, creator_id: owner.id, status: 'production' });
   });
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('projects').delete().eq('creator_id', owner.id);
-    await admin.auth.admin.deleteUser(owner.id);
   });
 
   test('arrows and Enter, and a number, choose a project; Escape closes the list', async ({ browser }) => {
     test.setTimeout(90_000);
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
     const page = await ctx.newPage();
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', owner.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: owner.email, password: PASSWORD });
     await page.goto('/community');
     const list = page.getByRole('listbox', { name: 'Projects' });
     const options = list.getByRole('option');

@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs, type Stack } from './support/stack';
 import type { Page, Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -12,19 +12,14 @@ const PASSWORD = randomUUID();
 const SCRIPT = 'INT. CAVE - NIGHT\n\nSam lights a match. The flame shakes.\n\nSAM\nHello?\n\nEXT. ROAD - DAY\n\nA truck passes.\n';
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
-async function makeUser(admin: SupabaseClient, label: string) {
+async function makeUser(stack: Stack, label: string) {
   const email = `${label}.${Date.now()}.${Math.floor(Math.random() * 1e4)}@journey.test`;
-  const { data, error } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${label}${Date.now().toString(36)}` } });
-  if (error || !data.user) throw error ?? new Error('createUser failed');
-  return { id: data.user.id, email };
+  const user = await stack.createUser({ email, password: PASSWORD, username: `${label}${Date.now().toString(36)}` });
+  return { id: user.id, email };
 }
 
 async function signIn(page: Page, email: string) {
-  await page.goto('/auth');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', PASSWORD);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+  await signInAs(page, { email: email, password: PASSWORD });
 }
 
 async function openStudio(page: Page, projectId: string, tab: string) {
@@ -46,8 +41,8 @@ test.describe('Studio journey (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    sam = await makeUser(admin, 'sam');
-    jordan = await makeUser(admin, 'jordan');
+    sam = await makeUser(stack, 'sam');
+    jordan = await makeUser(stack, 'jordan');
     const project = await admin.from('projects').insert({ title: 'The Cave', creator_id: sam.id, description: 'A flame in the dark.' }).select('id').single();
     projectId = project.data!.id;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: jordan.id, craft: 'Production designer', status: 'confirmed' });

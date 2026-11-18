@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page, Browser } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -32,10 +32,10 @@ test.describe('Credits (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    owner = (await admin.auth.admin.createUser({ email: `cro.${TAG}@journey.test`, password: PASSWORD, email_confirm: true, user_metadata: { username: `owner${TAG}` } })).data.user!.id;
+    owner = (await stack.createUser({ email: `cro.${TAG}@journey.test`, password: PASSWORD, username: `owner${TAG}` })).id;
     crewEmail = `crc.${TAG}@journey.test`;
     crewName = `gaffer${TAG}`;
-    crew = (await admin.auth.admin.createUser({ email: crewEmail, password: PASSWORD, email_confirm: true, user_metadata: { username: crewName } })).data.user!.id;
+    crew = (await stack.createUser({ email: crewEmail, password: PASSWORD, username: crewName })).id;
     const p = (await admin.from('projects').insert({ title: `Salt ${TAG}`, creator_id: owner, visibility: 'link', festival_submissions: [{ id: 'f1', name: 'Sundance', status: 'accepted' }] }).select('id, share_token').single()).data!;
     projectId = p.id; token = p.share_token;
     await admin.from('project_crew').insert({ project_id: projectId, user_id: crew, craft: 'Gaffer', status: 'confirmed' });
@@ -46,16 +46,10 @@ test.describe('Credits (local Supabase)', () => {
     if (!admin) return;
     await admin.from('portfolio_projects').delete().eq('user_id', crew);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(crew);
-    await admin.auth.admin.deleteUser(owner);
   });
 
   test('credits on the profile, into the portfolio, and on the press kit', async ({ page, browser }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', crewEmail);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: crewEmail, password: PASSWORD });
 
     await page.goto(`/crew/${crew}`);
     const credits = page.getByRole('region', { name: /^Credits/ });

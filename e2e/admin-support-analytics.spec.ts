@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
@@ -27,7 +27,7 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
     apiUrl = stack.url; anonKey = stack.anonKey;
     admin = stack.admin;
     for (const [who, name] of [[boss, 'snboss'], [member, 'snmem']] as const) {
-      who.id = (await admin.auth.admin.createUser({ email: who.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `${name}${TAG}` } })).data.user!.id;
+      who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `${name}${TAG}` })).id;
     }
     await admin.from('profiles').update({ is_admin: true }).eq('id', boss.id);
   });
@@ -39,11 +39,7 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
   });
 
   const signIn = async (page: Page, who: { email: string }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', who.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: who.email, password: PASSWORD });
   };
 
   test('a member opens a case, the admin answers and resolves it, and the member reads the answer', async ({ browser }) => {

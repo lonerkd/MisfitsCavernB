@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,8 +31,8 @@ test.describe('On set (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `os.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `os${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `os${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Shoot', creator_id: userId, status: 'production' }).select('id').single()).data!.id;
     await admin.from('scripts').insert({ title: 'Shoot', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId });
     await admin.from('call_sheets').insert({ project_id: projectId, shoot_day: 1, shoot_date: TODAY, general_call: '07:00', estimated_wrap: '19:00', location_address: 'Quarry Rd' });
@@ -42,15 +42,10 @@ test.describe('On set (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
     await admin.from('projects').delete().eq('id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('the day on set: clock, shots, wrap, continuity', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     // Open the Studio so the scene index is built, then schedule scene 1 on day 1 with a shot.
     await page.goto('/studio?tab=production&view=onset');

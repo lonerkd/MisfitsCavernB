@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -32,8 +32,8 @@ test.describe('Split screen (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `sp.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sp${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `sp${Date.now().toString(36)}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: 'Two Panes', creator_id: userId, status: 'pre-production' }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Two Panes', content: SCRIPT, project_id: projectId, created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
@@ -41,7 +41,6 @@ test.describe('Split screen (local Supabase)', () => {
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('project_id', projectId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('only this site may frame its pages; public share pages stay embeddable', async ({ request }) => {
@@ -53,11 +52,7 @@ test.describe('Split screen (local Supabase)', () => {
   });
 
   test('script beside the Studio, linked both ways; any surface; keyboard resize', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto('/studio?tab=scenes');
     const picker = page.getByLabel('Active project');
@@ -135,11 +130,7 @@ test.describe('Split screen (local Supabase)', () => {
   });
 
   test('the project in two panes: the button, a tile opening beside it, and the picker naming this project', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
     // A wide window, so the one-time offer is made too; declining it must not come back.
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/projects/${projectId}`);

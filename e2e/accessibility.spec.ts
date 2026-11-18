@@ -36,8 +36,8 @@ test.describe('Accessibility (WCAG 2.2 AA, local Supabase)', () => {
     const admin = stack.admin;
     const password = randomUUID();
     const email = `a11y.${Date.now()}@journey.test`;
-    const { data: u } = await admin.auth.admin.createUser({ email, password, email_confirm: true, user_metadata: { username: `a11y${Date.now().toString(36)}` } });
-    const uid = u.user!.id;
+    const u = await stack.createUser({ email, password, username: `a11y${Date.now().toString(36)}` });
+    const uid = u.id;
     await admin.from('profiles').update({ is_admin: true, bio: 'Director' }).eq('id', uid);
     const { data: p } = await admin.from('projects').insert({ title: 'Night Shift', creator_id: uid, visibility: 'link' }).select('id, share_token').single();
     await admin.from('scripts').insert({ title: 'Night Shift', content: 'INT. CORRIDOR - NIGHT\n\nMaya pushes a cart.\n\nMAYA\nRoom 12.\n', project_id: p!.id, created_by: uid, last_edited_by: uid });

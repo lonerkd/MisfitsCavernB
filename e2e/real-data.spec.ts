@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -31,8 +31,8 @@ test.describe('Real data, not presets (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `rd.${TAG}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `rd${TAG}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `rd${TAG}` });
+    userId = data.id;
     projectId = (await admin.from('projects').insert({ title: `Release ${TAG}`, creator_id: userId, status: 'completed' }).select('id').single()).data!.id;
     otherProjectId = (await admin.from('projects').insert({ title: `Earlier ${TAG}`, creator_id: userId, status: 'completed' }).select('id').single()).data!.id;
     await admin.from('campaigns').insert({ project_id: otherProjectId, title: 'Old run', platform: `Drive-in ${TAG}`, created_by: userId });
@@ -45,7 +45,6 @@ test.describe('Real data, not presets (local Supabase)', () => {
     await admin.from('jobs').delete().eq('created_by', userId);
     await admin.from('portfolio_projects').delete().eq('user_id', userId);
     await admin.from('projects').delete().in('id', [projectId, otherProjectId]);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('home: live activity, and nothing invented', async ({ page }) => {
@@ -60,11 +59,7 @@ test.describe('Real data, not presets (local Supabase)', () => {
   });
 
   test('promos: the platforms you’ve used, stages and spend', async ({ page }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto('/studio?tab=promos');
     const picker = page.getByLabel('Active project');

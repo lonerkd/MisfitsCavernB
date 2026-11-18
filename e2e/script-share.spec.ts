@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Sharing a script by link, against a local stack: the writer turns the link
@@ -19,23 +19,18 @@ test.describe('Script share links (local Supabase)', () => {
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
     email = `share.${Date.now()}@journey.test`;
-    const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: `sh${Date.now().toString(36)}` } });
-    userId = data.user!.id;
+    const data = await stack.createUser({ email, password: PASSWORD, username: `sh${Date.now().toString(36)}` });
+    userId = data.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Moonlit Ridge', content: 'EXT. RUNDLE - NIGHT\n\nSAM\nRead every word.\n', created_by: userId, last_edited_by: userId }).select('id').single()).data!.id;
   });
 
   test.afterAll(async () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('id', scriptId);
-    await admin.auth.admin.deleteUser(userId);
   });
 
   test('on, read signed out, new link closes the old, off closes it', async ({ page, browser }) => {
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: email, password: PASSWORD });
 
     await page.goto(`/editor?script=${scriptId}`);
     await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });

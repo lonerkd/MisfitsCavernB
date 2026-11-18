@@ -21,8 +21,8 @@ test.describe.serial('Suspending an account (local Supabase)', () => {
     for (const k of ['boss', 'member'] as const) {
       const email = `su${k}.${TAG}@journey.test`;
       const name = `su${k}${TAG}`;
-      const { data } = await admin.auth.admin.createUser({ email, password: PASSWORD, email_confirm: true, user_metadata: { username: name } });
-      users[k] = { id: data.user!.id, email, name };
+      const data = await stack.createUser({ email, password: PASSWORD, username: name });
+      users[k] = { id: data.id, email, name };
     }
     await admin.from('profiles').update({ is_admin: true }).eq('id', users.boss.id);
   });

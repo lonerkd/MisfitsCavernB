@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
+import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The film graph reaches the editor: each scene heading has its story day and
@@ -20,7 +20,7 @@ test.describe('Editor gutter (local Supabase)', () => {
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    me.id = (await admin.auth.admin.createUser({ email: me.email, password: PASSWORD, email_confirm: true, user_metadata: { username: `gut${TAG}` } })).data.user!.id;
+    me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `gut${TAG}` })).id;
     projectId = (await admin.from('projects').insert({ title: `Gutter ${TAG}`, creator_id: me.id }).select('id').single()).data!.id;
     scriptId = (await admin.from('scripts').insert({ title: 'Kitchen', content: SCRIPT, project_id: projectId, created_by: me.id, last_edited_by: me.id }).select('id').single()).data!.id;
   });
@@ -28,17 +28,12 @@ test.describe('Editor gutter (local Supabase)', () => {
     if (!admin) return;
     await admin.from('scripts').delete().eq('created_by', me.id);
     await admin.from('projects').delete().eq('id', projectId);
-    if (me.id) await admin.auth.admin.deleteUser(me.id);
   });
 
   test('story time and shoot day sit beside the headings, and the script is untouched', async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1600, height: 900 });
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();
@@ -81,11 +76,7 @@ test.describe('Editor gutter (local Supabase)', () => {
   test('the cue card shows who plays the character and their look, only while the caret is on the cue', async ({ page }) => {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1600, height: 900 });
-    await page.goto('/auth');
-    await page.fill('input[name="email"]', me.email);
-    await page.fill('input[name="password"]', PASSWORD);
-    await page.locator('button[type="submit"]').click();
-    await page.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 30_000 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/studio');
     const picker = page.getByLabel('Active project');
     await picker.waitFor();
