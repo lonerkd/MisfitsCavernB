@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React, { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import dynamic from 'next/dynamic';
-import { AlertTriangle, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ChevronRight, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
+import { AlertTriangle, AudioWaveform, Music2, BookOpen, Calendar, CalendarDays, Camera, Car, ChefHat, ChevronRight, ClipboardList, Clapperboard, ClipboardCheck, Cloud, DollarSign, Eye, FileCheck, FileCheck2, FileText, HardDrive, Images, Lock, Send, ShieldAlert, UsersRound, MapPin, MessageCircle, Mic, Palette, Receipt, Shield, Shirt, Sparkles, Star, Tags, Users, Wrench } from 'lucide-react';
 import { recentServerSnapshot, recentSnapshot, recordRecent, subscribeRecent } from '@/lib/studio/recent-tools';
 import { useMyCapabilities, useMyRole } from '@/lib/roles/capabilities';
 import { YourWorkflow } from '../production/YourWorkflow';
@@ -48,6 +48,8 @@ const ExtrasView = dynamic(() => import('../production/ExtrasView').then((m) => 
 const PrintRecordsButton = dynamic(() => import('../production/PrintRecordsButton').then((m) => m.PrintRecordsButton), { loading: () => null });
 const StillsView = dynamic(() => import('../production/StillsView').then((m) => m.StillsView), { loading: viewLoading });
 const MakeupView = dynamic(() => import('../production/MakeupView').then((m) => m.MakeupView), { loading: viewLoading });
+const CuesView = dynamic(() => import('../production/CuesView').then((m) => m.CuesView), { loading: viewLoading });
+const SpottingView = dynamic(() => import('../production/SpottingView').then((m) => m.SpottingView), { loading: viewLoading });
 const MediaOffloadView = dynamic(() => import('../production/MediaOffloadView').then((m) => m.MediaOffloadView), { loading: viewLoading });
 const PoView = dynamic(() => import('../production/PoView').then((m) => m.PoView), { loading: viewLoading });
 const ScriptSupView = dynamic(() => import('../production/ScriptSupView').then((m) => m.ScriptSupView), { loading: viewLoading });
@@ -90,6 +92,8 @@ export const VIEWS: Array<{ id: View; label: string; icon: React.ReactNode; grou
   { id: 'makeup', label: PRODUCTION_VIEW_LABELS.makeup, icon: <Palette size={12} />, group: 'Departments' },
   { id: 'editorial', label: PRODUCTION_VIEW_LABELS.editorial, icon: <Send size={12} />, group: 'Reports & logs' },
   { id: 'claims', label: PRODUCTION_VIEW_LABELS.claims, icon: <ShieldAlert size={12} />, group: 'Budget & docs' },
+  { id: 'cues', label: PRODUCTION_VIEW_LABELS.cues, icon: <Music2 size={12} />, group: 'Departments' },
+  { id: 'spotting', label: PRODUCTION_VIEW_LABELS.spotting, icon: <AudioWaveform size={12} />, group: 'Departments' },
   { id: 'extras', label: PRODUCTION_VIEW_LABELS.extras, icon: <UsersRound size={12} />, group: 'Departments' },
   { id: 'stills', label: PRODUCTION_VIEW_LABELS.stills, icon: <Images size={12} />, group: 'Reports & logs' },
   { id: 'mediaoffload', label: PRODUCTION_VIEW_LABELS.mediaoffload, icon: <HardDrive size={12} />, group: 'Reports & logs' },
@@ -153,6 +157,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   // The full list stays shut until asked for (the open tool, "Your tools" and "Recently used" are always in reach); a search opens it.
   const [showAll, setShowAll] = useState(false);
   const listOpen = showAll || !!q;
+  // Choosing a tool from the list closes it (and clears the search that opened it), so the tool is in view, not a scroll away.
+  const pickFromList = (v: View) => { setShowAll(false); setFind(''); onView(v); };
   const toggleGroup =(g: string) => setFolded((prev) => { const n = new Set(prev); if (n.has(g)) n.delete(g); else n.add(g); return n; });
   // The last six tools opened, on this device only.
   const recent = useSyncExternalStore(subscribeRecent, () => recentSnapshot(VIEW_IDS), recentServerSnapshot);
@@ -225,7 +231,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                   </button>
                   {open && <div className={s.chips} role="tablist" aria-label={`${group} views`} style={{ marginBottom: 0 }}>
                     {VIEWS.filter((v) => v.group === group && shown(v)).map((v) => (
-                      <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => onView(v.id)}>
+                      <button key={v.id} type="button" role="tab" aria-selected={view === v.id} className={cx(s.chip, view === v.id && s.chipOn)} onClick={() => pickFromList(v.id)}>
                         {v.icon} {v.label}
                         {lockOf(v.id) && <><Lock size={9} aria-hidden style={{ opacity: 0.7 }} /><span className="sr-only">(opens in {lockOf(v.id)!.phaseLabel})</span></>}
                       </button>
@@ -264,6 +270,8 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       {!lock && view === 'extras' && <ExtrasView />}
       {!lock && view === 'editorial' && <EditorialView />}
       {!lock && view === 'claims' && <ClaimsView />}
+      {!lock && view === 'cues' && <CuesView />}
+      {!lock && view === 'spotting' && <SpottingView />}
       {!lock && view === 'mediaoffload' && <MediaOffloadView />}
       {!lock && view === 'po' && <PoView />}
       {!lock && view === 'scriptsup' && <ScriptSupView />}

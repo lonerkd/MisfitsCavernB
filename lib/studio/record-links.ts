@@ -34,7 +34,7 @@ export function characterName(record: { character_id?: string | null; character?
 export const RECORD_KIND_LABEL: Record<string, string> = {
   cameraReports: 'Camera reports', soundReports: 'Sound reports', scriptNotes: 'Script notes', directorNotes: 'Director notes',
   vfxShots: 'VFX shots', costumes: 'Costumes', makeup: 'Makeup', stills: 'Stills', extras: 'Extras', editorial: 'Editorial handoff', rehearsals: 'Rehearsals', safety: 'Safety',
-  risks: 'Risk register',
+  risks: 'Risk register', cues: 'Music cues', spotting: 'Sound spotting',
 };
 
 export interface RecordLink { kind: string; scene_ids: string[] }
