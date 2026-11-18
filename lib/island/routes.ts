@@ -38,7 +38,7 @@ function backTarget(pathname: string): IslandRoute['back'] {
       return third ? project : { label: 'Projects', href: '/projects' };
     case 'studio': case 'editor': case 'lounge': case 'soundtrack':
       return project ?? { label: 'Projects', href: '/projects' };
-    case 'hub': return second ? { label: 'Community', href: '/community' } : null;
+    case 'hub': return second ? { label: 'Home', href: '/' } : null;
     case 'crew': return second ? { label: 'Crew', href: '/crew' } : null;
     case 'jobs': return second ? { label: 'Jobs board', href: '/jobs' } : null;
     case 'portfolio': return second ? { label: 'Portfolio', href: '/portfolio' } : null;
@@ -53,11 +53,11 @@ function describe(pathname: string, hasProject = false): Omit<IslandRoute, 'back
 
   switch (first) {
     case '':
-      return { title: 'Community', app: 'home', links: [COMMUNITY, PROJECTS] };
+      return { title: 'Home', app: 'home', links: [PROJECTS, ...tools] };
     case 'community':
-      return { title: 'Community', app: 'home', links: [PROJECTS, ...tools] };
+      return { title: 'Home', app: 'home', links: [PROJECTS, ...tools] };
     case 'hub':
-      return { title: second ? 'Hub post' : 'Community', app: 'home', links: [COMMUNITY, PROJECTS] };
+      return { title: second ? 'Hub post' : 'Home', app: 'home', links: [COMMUNITY, PROJECTS] };
     case 'projects':
       if (!second) return { title: 'Projects', app: 'home', links: [COMMUNITY] };
       if (third === 'pitch') return { title: 'Pitch', app: 'home', links: [projectLink(second), STUDIO] };
