@@ -271,3 +271,40 @@ export function categoryKey(label: string, taken: Set<string>): string {
   for (let i = 2; taken.has(key); i++) key = `${base}-${i}`;
   return key;
 }
+
+export interface CostLine { amount: number; elements: number; unpriced: number }
+
+const priceOf = (e: BreakdownElement, unitCostOf: Map<string, number>) => (e.cost != null ? Number(e.cost) : unitCostOf.get(e.category_id) ?? 0);
+
+/**
+ * What each scene needs, in money: the elements tagged in it, each at its own price or its category's unit cost. An element that
+ * several scenes use counts in each of them (it is what that scene needs), so scene costs do not add up to the project total.
+ */
+export function costByScene(sceneIds: string[], tags: SceneElementTag[], elements: BreakdownElement[], categories: BreakdownCategory[]): Map<string, CostLine> {
+  return costOfScenes(sceneIds.map((id) => [id, [id]] as const), tags, elements, categories);
+}
+
+/**
+ * What each group of scenes (a shoot day) needs: an element used by two scenes in the same group is counted once, because it is
+ * bought or hired once for that day. The same element on two days counts on both (it is needed on both).
+ */
+export function costOfScenes(groups: ReadonlyArray<readonly [string, string[]]>, tags: SceneElementTag[], elements: BreakdownElement[], categories: BreakdownCategory[]): Map<string, CostLine> {
+  const unitCostOf = new Map(categories.map((c) => [c.id, Number(c.unit_cost) || 0]));
+  const byId = new Map(elements.map((e) => [e.id, e]));
+  const out = new Map<string, CostLine>();
+  for (const [key, sceneIds] of groups) {
+    const scenes = new Set(sceneIds);
+    const ids = new Set(tags.filter((t) => scenes.has(t.scene_id)).map((t) => t.element_id));
+    const line: CostLine = { amount: 0, elements: 0, unpriced: 0 };
+    for (const id of ids) {
+      const e = byId.get(id);
+      if (!e) continue;
+      const price = priceOf(e, unitCostOf);
+      line.elements += 1;
+      line.amount += price;
+      if (e.cost == null && price === 0) line.unpriced += 1;
+    }
+    out.set(key, line);
+  }
+  return out;
+}

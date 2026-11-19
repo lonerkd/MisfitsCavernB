@@ -8,7 +8,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
 import { catStyle } from '@/components/breakdown/CategoryChips';
-import { breakdown, costByCategory, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
+import { breakdown, costByCategory, costByScene, costOfScenes, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
 import { useProject } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { eighthsOf } from '@/lib/studio/shoot-days';
@@ -35,7 +35,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const bd = useBreakdown(project.id);
-  const [mode, setMode] = useState<'category' | 'scene'>('category');
+  const [mode, setMode] = useState<'category' | 'scene' | 'day'>('category');
   const [status, setStatus] = useState<ElementStatus | 'all'>('all');
   const [q, setQ] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -48,6 +48,16 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   const total = costs.reduce((n, c) => n + c.amount, 0);
   const unpriced = costs.reduce((n, c) => n + c.unpriced, 0);
   const ready = elements.filter((e) => e.status === 'ready').length;
+
+  const sceneCost = useMemo(() => costByScene(scenes.rows.map((sc) => sc.id), bd.tags.rows, elements, categories), [scenes.rows, bd.tags.rows, elements, categories]);
+  // The days as the schedule has them (a scene with no shoot day is on day 1, as everywhere else in the Studio).
+  const dayCost = useMemo(() => {
+    const days = new Map<number, string[]>();
+    for (const sc of scenes.rows) days.set(sc.shoot_day ?? 1, [...(days.get(sc.shoot_day ?? 1) ?? []), sc.id]);
+    const order = Array.from(days.keys()).sort((x, y) => x - y);
+    const cost = costOfScenes(order.map((d) => [String(d), days.get(d)!] as const), bd.tags.rows, elements, categories);
+    return order.map((d) => ({ day: d, sceneIds: days.get(d)!, line: cost.get(String(d))! }));
+  }, [scenes.rows, bd.tags.rows, elements, categories]);
 
   const sceneById = useMemo(() => new Map(scenes.rows.map((sc) => [sc.id, sc])), [scenes.rows]);
   const scenesOf = useMemo(() => {
@@ -134,6 +144,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
             <div className={s.chips} role="tablist" aria-label="Group by">
               <button type="button" role="tab" aria-selected={mode === 'category'} className={cx(s.chip, mode === 'category' && s.chipOn)} onClick={() => setMode('category')}>By category</button>
               <button type="button" role="tab" aria-selected={mode === 'scene'} className={cx(s.chip, mode === 'scene' && s.chipOn)} onClick={() => setMode('scene')}>By scene</button>
+              <button type="button" role="tab" aria-selected={mode === 'day'} className={cx(s.chip, mode === 'day' && s.chipOn)} onClick={() => setMode('day')}>Cost by day</button>
             </div>
             <div className={s.chips} role="group" aria-label="Status">
               {(['all', ...ELEMENT_STATUSES] as const).map((st) => (
@@ -187,6 +198,26 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
                   );
                 })}
               </div>
+            ) : mode === 'day' ? (
+              <div className={v.sheets}>
+                <p className={s.hint} style={{ marginTop: 0 }}>What each shoot day needs, at each element’s price or its category’s unit cost. An element used by two scenes on one day counts once; day costs can add up to more than the total when an element is needed on several days.</p>
+                {dayCost.map(({ day, sceneIds, line }) => (
+                  <section key={day} className={v.sheet} aria-label={`Day ${day} cost`}>
+                    <div className={v.sheetHead}>
+                      <span className={v.sheetNum}>{day}</span>
+                      <span className={v.sheetHeading}>Day {day} · {sceneIds.length} {sceneIds.length === 1 ? 'scene' : 'scenes'}</span>
+                      <span className={v.sheetMeta}>{money(line.amount)}{line.unpriced > 0 ? ` · ${line.unpriced} unpriced` : ''}</span>
+                    </div>
+                    <ul className={v.rows}>
+                      {sceneIds.map((id) => {
+                        const sc = sceneById.get(id)!;
+                        const c = sceneCost.get(id);
+                        return <li key={id} className={v.rowSub} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}><span>{sc.scene_number}. {sc.heading ?? sc.title}</span><span>{money(c?.amount ?? 0)}</span></li>;
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
             ) : (
               <div className={v.sheets}>
                 {scenes.rows.map((sc) => {
@@ -201,7 +232,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
                       <div className={v.sheetHead}>
                         <span className={v.sheetNum}>{sc.scene_number}</span>
                         <span className={v.sheetHeading}>{sc.heading ?? sc.title}</span>
-                        <span className={v.sheetMeta}>{STRIP_LABEL[stripKind(sc)]} · {pages(eighthsOf(sc.est_duration))} pp · Day {sc.shoot_day ?? 1}</span>
+                        <span className={v.sheetMeta}>{STRIP_LABEL[stripKind(sc)]} · {pages(eighthsOf(sc.est_duration))} pp · Day {sc.shoot_day ?? 1} · {money(sceneCost.get(sc.id)?.amount ?? 0)}</span>
                       </div>
                       {boxes.length === 0 ? <p className={v.empty}>Nothing tagged in this scene.</p> : (
                         <div className={v.boxes}>
