@@ -5,6 +5,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import { Camera, Check, Clapperboard, CloudOff, FileText, MapPin, Minus, Plus, RefreshCw, RotateCcw, Trash2, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
+import { coverage } from '@/lib/studio/coverage';
 import { studio, useCallSheetCalls, useCallSheets, useSetLog, useSignedUrls, type CallSheet, type CallSheetCall, type SceneRow, type SetLogEntry, type SetLogRow, type Shot } from '@/lib/studio';
 import { changes, draftLogRow, loadSnapshot, saveSnapshot, type DaySnapshot } from '@/lib/studio/onset-offline';
 import { useOnSetSync, type OnSetSync } from '@/lib/studio/useOnSetSync';
@@ -106,6 +107,7 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
     [scenes.rows, sheet],
   );
   const progress = dayProgress(dayScenes, shots.rows);
+  const cover = useMemo(() => coverage({ now, clock, toWrapMinutes: status.toWrapMinutes, scenes: dayScenes, shots: shots.rows }), [now, clock, status.toWrapMinutes, dayScenes, shots.rows]);
 
   if (sheets.status === 'ready' && !days.length) {
     return (
@@ -171,6 +173,14 @@ export function OnSetView({ onNavigate }: { onNavigate: (place: Place) => boolea
           {status.overtimeMinutes > 0 && <span className={o.over}> · {formatMinutes(status.overtimeMinutes)} past the planned wrap</span>}
           {status.toWrapMinutes != null && status.phase !== 'before' && <> · {formatMinutes(status.toWrapMinutes)} to wrap</>}
         </p>
+
+        {(cover.state === 'behind' || cover.state === 'on-pace' || cover.state === 'forecasting-soon') && (
+          <p className={s.hint} role="status" aria-label="Coverage" style={{ margin: '4px 0 8px', color: cover.state === 'behind' ? 'var(--warn)' : undefined }}>
+            {cover.state === 'forecasting-soon' && 'Coverage: too early to forecast (needs two shots and half an hour of shooting).'}
+            {cover.state === 'on-pace' && `Coverage: on pace at ${cover.perHour} shots an hour; about ${cover.canGet} more before wrap, ${cover.remaining} left.`}
+            {cover.state === 'behind' && `Coverage: behind. At ${cover.perHour} shots an hour the day gets about ${cover.canGet} more before wrap and ${cover.remaining} are left: ${cover.short} short. ${cover.protect.length ? `Protect ${cover.protect.length === 1 ? 'scene' : 'scenes'} ${cover.protect.join(', ')}. ` : ''}At risk: ${cover.atRisk.length ? `${cover.atRisk.length === 1 ? 'scene' : 'scenes'} ${cover.atRisk.join(', ')}` : 'part of scene ' + (dayScenes.find((x) => x.status !== 'wrapped')?.scene_number ?? '')}.`}
+          </p>
+        )}
 
         <div className={o.progress} aria-label="The day’s progress">
           <Meter label="Scenes" done={progress.scenesDone} total={progress.scenes} />
