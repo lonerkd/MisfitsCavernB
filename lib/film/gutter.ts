@@ -23,6 +23,8 @@ export interface GutterItem {
   shoot: number | null;
   /** True when the story day/time is read from the script rather than set by a person. */
   guessed: boolean;
+  /** What the scene's tagged elements cost (breakdown prices), when there is anything to show. */
+  cost: number | null;
 }
 
 /**
@@ -31,7 +33,7 @@ export interface GutterItem {
  * only when its day is dated, because every scene starts on day 1 and that
  * alone doesn't mean it has been scheduled.
  */
-export function sceneGutter(scenes: GutterScene[], rows: (GutterRow | null)[], datedDays: ReadonlySet<number> = new Set()): GutterItem[] {
+export function sceneGutter(scenes: GutterScene[], rows: (GutterRow | null)[], datedDays: ReadonlySet<number> = new Set(), costs: ReadonlyArray<number | null> = []): GutterItem[] {
   const story: StoryScene[] = scenes.map((sc, i) => ({
     id: String(i),
     heading: sc.heading,
@@ -44,8 +46,9 @@ export function sceneGutter(scenes: GutterScene[], rows: (GutterRow | null)[], d
   inferStory(story).forEach((g, i) => {
     const row = rows[i];
     const shoot = row?.shoot_day != null && datedDays.has(row.shoot_day) ? row.shoot_day : null;
-    if (g.story_day == null && !g.story_time && shoot == null) return;
-    items.push({ line: scenes[i].startIndex, day: g.story_day, time: g.story_time, shoot, guessed: !row?.story_confirmed });
+    const cost = (costs[i] ?? 0) > 0 ? (costs[i] as number) : null;
+    if (g.story_day == null && !g.story_time && shoot == null && cost == null) return;
+    items.push({ line: scenes[i].startIndex, day: g.story_day, time: g.story_time, shoot, guessed: !row?.story_confirmed, cost });
   });
   return items;
 }
@@ -56,6 +59,7 @@ export function gutterLabel(item: GutterItem): string {
     item.day != null ? `story day ${item.day}` : '',
     item.time ?? '',
     item.shoot != null ? `shoot day ${item.shoot}` : '',
+    item.cost != null ? `needs ${Math.round(item.cost).toLocaleString('en-US')} dollars` : '',
   ].filter(Boolean);
   return `${parts.join(', ')}${item.guessed && (item.day != null || item.time) ? ' (read from the script)' : ''}`;
 }

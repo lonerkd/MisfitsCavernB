@@ -107,4 +107,28 @@ test.describe('Editor gutter (local Supabase)', () => {
     await expect(page.getByRole('note', { name: /^MAYA, played by/ })).toHaveCount(0);
     await expect(script).toHaveValue(SCRIPT);
   });
+
+  test('what a scene needs, in money, sits beside its story time once something is priced', async ({ page }) => {
+    test.setTimeout(120_000);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await signInAs(page, { email: me.email, password: PASSWORD });
+    await page.goto('/studio');
+    const picker = page.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await page.goto(`/editor?script=${scriptId}`);
+    const script = page.getByRole('textbox', { name: 'Script', exact: true });
+    await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
+    await expect.poll(async () => (await admin.from('scenes').select('id').eq('script_id', scriptId)).data?.length ?? 0, { timeout: 30_000 }).toBe(2);
+    const first = (await admin.from('scenes').select('id').eq('script_id', scriptId).order('ordinal')).data![0];
+
+    // A priced prop in the first scene: its cost shows in the margin (the second scene has none, so it shows no cost).
+    const props = (await admin.from('breakdown_categories').select('id').eq('project_id', projectId).eq('key', 'props').single()).data!.id;
+    const lantern = (await admin.from('breakdown_elements').insert({ project_id: projectId, category_id: props, name: 'Lantern', cost: 140 }).select('id').single()).data!.id;
+    await admin.from('scene_elements').insert({ project_id: projectId, scene_id: first.id, element_id: lantern });
+    await expect(page.getByRole('note', { name: /needs 140 dollars/ })).toHaveCount(1, { timeout: 30_000 });
+    await expect(page.getByRole('note', { name: /needs 140 dollars/ })).toContainText('$140');
+    // Read only: nothing it shows ended up in the script.
+    expect((await admin.from('scripts').select('content').eq('id', scriptId).single()).data!.content).toBe(SCRIPT);
+  });
 });

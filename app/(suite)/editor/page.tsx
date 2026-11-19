@@ -90,6 +90,7 @@ import { useCanShareScript } from '@/components/editor/ShareScriptButton';
 import { useLineCutNotes } from '@/components/editor/useLineCutNotes';
 import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
+import { costByScene } from '@/lib/breakdown';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
@@ -954,7 +955,13 @@ export default function EditorPage() {
       }),
     };
   }, [lines, cursorLine, sceneIndex.rows, currentSceneIdx, castings, charStats, projectCharacters.rows, sceneStates.rows]);
-  const gutter = useMemo(() => sceneGutter(parsedScenes, sceneIndex.rows, datedDays), [parsedScenes, sceneIndex.rows, datedDays]);
+  // What each scene's tagged elements cost, in the margin beside its story time (the breakdown's prices, read only).
+  const sceneCosts = useMemo(() => {
+    const ids = sceneIds.filter((x): x is string => !!x);
+    const byScene = costByScene(ids, bd.state.tags.rows, bd.state.elements.rows, bd.state.categories.rows);
+    return sceneIds.map((id) => (id ? byScene.get(id)?.amount ?? null : null));
+  }, [sceneIds, bd.state.tags.rows, bd.state.elements.rows, bd.state.categories.rows]);
+  const gutter = useMemo(() => sceneGutter(parsedScenes, sceneIndex.rows, datedDays, sceneCosts), [parsedScenes, sceneIndex.rows, datedDays, sceneCosts]);
   const [cutNoteLine, setCutNoteLine] = useState<number | null>(null);
   const { setResolved: setCutNoteResolved } = lineCutNotes;
   const cutNoteUserId = sessionUser?.id;
