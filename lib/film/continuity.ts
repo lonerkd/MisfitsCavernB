@@ -59,3 +59,9 @@ export function byStoryDay<T extends { story_day: number | null; scene_number: n
     .sort(([a], [b]) => (a === null ? 1 : b === null ? -1 : a - b))
     .map(([day, list]) => ({ day, scenes: list.sort((a, b) => a.scene_number - b.scene_number) }));
 }
+
+/** The look changes a shoot day touches: either scene of the change is shot that day (the call sheet warns wardrobe and make-up). */
+export function lookChangesOnDay(changes: LookChange[], dayScenes: { scene_number: number }[]): LookChange[] {
+  const today = new Set(dayScenes.map((s) => s.scene_number));
+  return changes.filter((c) => today.has(c.from.scene) || today.has(c.to.scene));
+}

@@ -87,4 +87,17 @@ test.describe.serial('Continuity (local Supabase)', () => {
     await expect(page.getByRole('region', { name: 'Story day 2' }).getByPlaceholder('Look, wardrobe, make-up').nth(1)).toHaveValue('Blue coat');
     expect(await axeViolations(page)).toEqual([]);
   });
+
+  test('the call sheet warns wardrobe of a look change on its day', async ({ page }) => {
+    test.setTimeout(120_000);
+    await signInAs(page, { email, password: PASSWORD });
+    await page.goto('/studio?tab=production&view=schedule');
+    const picker = page.getByLabel('Active project');
+    await picker.waitFor();
+    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await page.getByRole('button', { name: /^Day 1/ }).click({ timeout: 30_000 });
+    // The previous test left MAYA in a red coat in scene 2 and a blue one in scene 3, both on story day 2; every scene is on shoot day 1.
+    await expect(page.getByText('Look changes', { exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/MAYA: scene 2 “Red coat” then scene 3 “Blue coat”, both on day 2\./)).toBeVisible();
+  });
 });

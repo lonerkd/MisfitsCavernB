@@ -14,6 +14,8 @@ import {
 import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
 import { lightNoteBrief } from '@/lib/film/sky';
 import { buildSides } from '@/lib/film/sides';
+import { lookChangeText, lookChanges, lookChangesOnDay } from '@/lib/film/continuity';
+import { useCharacters, useSceneStates } from '@/lib/studio';
 import { sidesHtml } from '@/lib/film/sides-print';
 import { callSheetDoc } from '@/lib/studio/call-sheet-print';
 import { printDocument, printHtmlString } from '@/lib/print/print';
@@ -72,6 +74,15 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const conflicts = useMemo(() => dayConflicts(sheets.rows, away), [sheets.rows, away]);
   const nameOf = (userId: string) => (userId === me ? 'You' : crew.find((m) => m.user_id === userId)?.username || 'The owner');
 
+  // Continuity: a look that changes inside one story day, where one of its scenes is shot on that day (wardrobe and make-up read this).
+  const sceneStates = useSceneStates(project.id);
+  const people = useCharacters(project.id);
+  const looksFor = (day: number): string[] => {
+    const nameOf = new Map(people.rows.map((p) => [p.id, p.name]));
+    const dayRows = scenes.filter((sc) => (sc.shoot_day ?? 1) === day);
+    return lookChangesOnDay(lookChanges(scenes, sceneStates.rows), dayRows).map((ch) => lookChangeText(nameOf.get(ch.character_id) ?? 'A character', ch));
+  };
+
   const print = (day: number) => {
     const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
     const sheet = sheetFor(day);
@@ -84,7 +95,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       date: sheet?.shoot_date ? new Date(sheet.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : null,
       generalCall: hhmm(sheet?.general_call), shootingCall: hhmm(sheet?.shooting_call), wrap: hhmm(sheet?.estimated_wrap),
       location: sheet?.location_address ?? null, weather: sheet?.weather ?? null, light: lightLine(film.get(day)?.light) ?? '',
-      planNotes: (film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => lightNoteText(n)),
+      planNotes: [...(film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => lightNoteText(n)), ...looksFor(day).map((l) => `Look change: ${l}`)],
       notes: sheet?.notes ?? null,
       scenes: d.dayScenes.map((sc) => ({ number: sc.scene_number, heading: sc.heading ?? sc.title ?? '' })),
       pages: d.pages, locations: d.locations,
@@ -129,6 +140,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
             <div key={day} className={c.card}>
               {open ? (
                 <DayEditor
+                  looksToday={looksFor(day)}
                   day={day} sheet={sheet} facts={d} crew={crew} state={state} film={film.get(day)}
                   addresses={d.locations.map((name) => ({ name, address: addressOf.get(locationKey(name)) })).filter((x): x is { name: string; address: string } => !!x.address)}
                   acks={acks.rows.filter((a) => a.call_sheet_id === sheet?.id)}
@@ -241,9 +253,11 @@ const STRIP_COLOR: Record<StripKind, string> = {
   'int-day': 'var(--strip-int-day)', 'ext-day': 'var(--strip-ext-day)', 'int-night': 'var(--strip-int-night)', 'ext-night': 'var(--strip-ext-night)',
 };
 
-function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onPrintSides, onClose }: {
+function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onPrintSides, onClose }: {
   /** The day as the film graph has it: its light and what in the plan fights it. */
   film: FilmDay | undefined;
+  /** Look changes the day touches (Continuity), worded for the sheet. */
+  looksToday: string[];
   day: number; sheet: CallSheet | undefined; facts: ReturnType<typeof dayFacts>; crew: CrewMember[]; calls: CallSheetCall[];
   /** The day's locations that have an address on record (Production › Locations). */
   addresses: { name: string; address: string }[];
@@ -383,6 +397,13 @@ function DayEditor({ day, sheet, facts, crew, calls, state, acks, addresses, fil
             {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span style={{ color: 'var(--warn)', fontSize: '0.75rem', marginLeft: 4 }}>⚠ review</span>}
           </div>
         ))}
+
+        {looksToday.length > 0 && (
+          <>
+            <PaperHead>Look changes</PaperHead>
+            {looksToday.map((line) => <div key={line} className={c.where}>⚠ {line}</div>)}
+          </>
+        )}
 
         {facts.locations.length > 0 && (
           <>
