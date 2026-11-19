@@ -8,6 +8,13 @@ import { daysUntil } from './core';
 export const DIRECTION_CRAFTS = ['Director', 'First assistant director', 'Second assistant director'] as const;
 export const isDirectionCraft = (craft: string | null | undefined): boolean => (DIRECTION_CRAFTS as readonly string[]).includes(craft ?? '');
 
+/** The camera department's day is the same page: the scenes, their places and times of day, the shots planned, what is still missing. */
+export const CAMERA_CRAFTS = ['Director of photography', 'Cinematographer', 'Camera operator', 'First assistant camera', 'Second assistant camera', 'Steadicam operator', 'DIT'] as const;
+export const isCameraCraft = (craft: string | null | undefined): boolean => (CAMERA_CRAFTS as readonly string[]).includes(craft ?? '');
+
+/** Whose Your day carries "the day at a glance": direction and camera. */
+export const seesDayAtAGlance = (craft: string | null | undefined): boolean => isDirectionCraft(craft) || isCameraCraft(craft);
+
 export interface GlanceScene {
   id: string; scene_number: number; title: string; time_of_day: string | null; location: string | null; cast: string[]; status: string | null;
 }

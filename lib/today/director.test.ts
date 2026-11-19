@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { dayGlance, isDirectionCraft, type GlanceInput, type GlanceScene } from './director';
+import { dayGlance, isCameraCraft, isDirectionCraft, seesDayAtAGlance, type GlanceInput, type GlanceScene } from './director';
 
 const scene = (n: number, extra: Partial<GlanceScene> = {}): GlanceScene => ({ id: `s${n}`, scene_number: n, title: `INT. ROOM ${n} - DAY`, time_of_day: 'DAY', location: 'Room', cast: ['MAYA', 'BEN'], status: 'planned', ...extra });
 const base = (extra: Partial<GlanceInput> = {}): GlanceInput => ({
@@ -47,5 +47,13 @@ describe('dayGlance', () => {
     const g = dayGlance(base({ scenes: [], shotsByScene: {}, day: { day_number: 5, shoot_date: null } }));
     expect(g.inDays).toBeNull();
     expect(g.attention).toContain('Nothing is scheduled on this day yet');
+  });
+});
+
+describe('who sees the day at a glance', () => {
+  it('direction and the camera department, not the other crafts', () => {
+    for (const c of ['Director', 'First assistant director', 'Director of photography', 'Camera operator', 'First assistant camera', 'DIT']) expect(seesDayAtAGlance(c)).toBe(true);
+    for (const c of ['Gaffer', 'Key grip', 'Costume designer', null, undefined, '']) expect(seesDayAtAGlance(c)).toBe(false);
+    expect(isCameraCraft('Director')).toBe(false);
   });
 });

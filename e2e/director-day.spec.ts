@@ -28,18 +28,20 @@ test.describe('The director\'s day at a glance (local Supabase)', () => {
   const owner = { id: '', email: `dd-owner.${TAG}@journey.test` };
   const director = { id: '', email: `dd-dir.${TAG}@journey.test` };
   const gaffer = { id: '', email: `dd-gaf.${TAG}@journey.test` };
+  const dp = { id: '', email: `dd-dp.${TAG}@journey.test` };
   const outsider = { id: '', email: `dd-out.${TAG}@journey.test` };
   let projectId = '';
 
   test.beforeAll(async ({ stack }) => {
     admin = stack.admin;
-    for (const [who, name] of [[owner, 'ddowner'], [director, 'dddir'], [gaffer, 'ddgaf'], [outsider, 'ddout']] as const) {
+    for (const [who, name] of [[owner, 'ddowner'], [director, 'dddir'], [gaffer, 'ddgaf'], [dp, 'dddp'], [outsider, 'ddout']] as const) {
       who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `${name}${TAG}` })).id;
     }
     projectId = (await admin.from('projects').insert({ title: `Glance ${TAG}`, creator_id: owner.id, status: 'production' }).select('id').single()).data!.id;
     await admin.from('project_crew').insert([
       { project_id: projectId, user_id: director.id, role: 'contributor', craft: 'Director', status: 'confirmed' },
       { project_id: projectId, user_id: gaffer.id, role: 'contributor', craft: 'Gaffer', status: 'confirmed' },
+      { project_id: projectId, user_id: dp.id, role: 'contributor', craft: 'Director of photography', status: 'confirmed' },
     ]);
     const scriptId = (await admin.from('scripts').insert({ title: 'Glance', content: 'INT. KITCHEN - DAY\n', project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
     const date = new Date(); date.setDate(date.getDate() + 3);
@@ -80,6 +82,18 @@ test.describe('The director\'s day at a glance (local Supabase)', () => {
     await expect(scenes.getByRole('listitem').nth(0)).toContainText('INT. KITCHEN - DAY');
     await expect(scenes.getByRole('listitem').nth(1)).toContainText('No shots planned');
     expect(await axeViolations(page)).toEqual([]);
+  });
+
+  test('the director of photography sees the day too: the scenes, their shots, what is missing', async ({ page }) => {
+    test.setTimeout(120_000);
+    await signIn(page, dp);
+    await page.goto('/community');
+    const card = page.getByRole('region', { name: 'The day at a glance' });
+    await expect(card).toBeVisible({ timeout: 30_000 });
+    const day = card.getByRole('article', { name: new RegExp(`Glance ${TAG}, day 1 at a glance`) });
+    await expect(day).toContainText('2 scenes');
+    await expect(day).toContainText('1 shot planned');
+    await expect(day).toContainText('1 of 2 scenes has no shots planned');
   });
 
   for (const [name, who] of [['a gaffer', gaffer], ['an outsider', outsider]] as const) {
