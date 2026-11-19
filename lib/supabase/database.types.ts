@@ -4131,12 +4131,60 @@ export type Database = {
           },
         ];
       };
+      scene_state_elements: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          element_id: string;
+          project_id: string;
+          state_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id: string;
+          project_id: string;
+          state_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          element_id?: string;
+          project_id?: string;
+          state_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "scene_state_elements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "scene_state_elements_element_fkey";
+            columns: ["element_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "breakdown_elements";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "scene_state_elements_state_fkey";
+            columns: ["state_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "scene_states";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       scene_states: {
         Row: {
           character_id: string;
           created_at: string;
           id: string;
           look: string;
+          media_id: string | null;
           notes: string;
           project_id: string;
           scene_id: string;
@@ -4148,6 +4196,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           look?: string;
+          media_id?: string | null;
           notes?: string;
           project_id: string;
           scene_id: string;
@@ -4158,6 +4207,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           look?: string;
+          media_id?: string | null;
           notes?: string;
           project_id?: string;
           scene_id?: string;
@@ -4169,6 +4219,13 @@ export type Database = {
             columns: ["character_id", "project_id"];
             isOneToOne: false;
             referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "scene_states_media_fkey";
+            columns: ["media_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "media";
             referencedColumns: ["id", "project_id"];
           },
           {
