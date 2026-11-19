@@ -306,7 +306,7 @@ export function YourDay() {
               <div className={t.dayBody}>
                 <h3 className={t.dayTitle}>{projectById.get(project_id)?.title ?? 'A project'} · Day {d.day}{d.date ? ` · ${dayLabel(d.date, today)}` : ''}</h3>
                 {d.attention.length > 0
-                  ? <ul aria-label="Needs wardrobe and make-up before the day">{d.attention.map((a) => <li key={a} className={t.draft}>{a}</li>)}</ul>
+                  ? <ul aria-label="Needs wardrobe and make-up before the day">{d.attention.map((a, k) => <li key={`${k}${a}`} className={t.draft}>{a}</li>)}</ul>
                   : <p className={t.empty}>Every look for this day is written down.</p>}
                 <ol aria-label="Looks by scene">
                   {d.scenes.map((sc) => (

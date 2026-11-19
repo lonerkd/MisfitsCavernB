@@ -33,7 +33,7 @@ export interface LookDay {
 export function lookDay(i: LookDayInput): LookDay {
   const nameOf = new Map(i.characters.map((c) => [c.id, c.name]));
   const looks = new Map(i.states.map((s) => [`${s.scene_id}:${s.character_id}`, s.look.trim()]));
-  const dayScenes = i.scenes.filter((s) => s.shoot_day === i.day.day_number).sort((a, b) => a.scene_number - b.scene_number);
+  const dayScenes = i.scenes.filter((s) => (s.shoot_day ?? 1) === i.day.day_number).sort((a, b) => a.scene_number - b.scene_number);
   const scenes: LookDayScene[] = dayScenes.map((s) => ({
     id: s.id, scene_number: s.scene_number, title: s.title,
     looks: i.sceneCharacters.filter((l) => l.scene_id === s.id).map((l) => ({ character: nameOf.get(l.character_id) ?? 'Someone', look: looks.get(`${s.id}:${l.character_id}`) ?? '' }))

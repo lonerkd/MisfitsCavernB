@@ -33,6 +33,10 @@ describe('lookDay', () => {
     const full = lookDay({ ...base, states: [{ scene_id: 'a', character_id: 'maya', look: 'Red coat' }, { scene_id: 'b', character_id: 'maya', look: 'Red coat' }, { scene_id: 'b', character_id: 'ben', look: 'Grey hoodie' }, { scene_id: 'c', character_id: 'ben', look: 'Grey hoodie' }] });
     expect(full.attention).toEqual([]);
   });
+  it('files a scene with no shoot day under day 1, as the rest of the Studio does', () => {
+    const d = lookDay({ ...base, day: { day_number: 1, shoot_date: '2026-11-20' }, scenes: base.scenes.map((x) => (x.id === 'a' ? { ...x, shoot_day: null } : x)) });
+    expect(d.scenes.map((x) => x.scene_number)).toEqual([1]);
+  });
   it('knows the looks crafts', () => {
     expect(['Costume designer', 'Makeup artist', 'Hair stylist', 'Wardrobe assistant'].every(isLookCraft)).toBe(true);
     expect(isLookCraft('Gaffer')).toBe(false);
