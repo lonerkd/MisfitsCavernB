@@ -1126,7 +1126,7 @@ constraint discord_integrations.discord_integrations_channel_id_fkey FOREIGN KEY
 constraint discord_integrations.discord_integrations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint discord_integrations.discord_integrations_pkey PRIMARY KEY (channel_id)
 constraint entities.entities_id_project_id_key UNIQUE (id, project_id)
-constraint entities.entities_kind_check CHECK ((kind = ANY (ARRAY['scene'::text, 'character'::text, 'location'::text, 'shoot_day'::text, 'task'::text, 'document'::text, 'media'::text, 'deliverable'::text, 'ad_reference'::text, 'brand_rule'::text])))
+constraint entities.entities_kind_check CHECK ((kind = ANY (ARRAY['scene'::text, 'character'::text, 'location'::text, 'shoot_day'::text, 'task'::text, 'document'::text, 'media'::text, 'deliverable'::text, 'ad_reference'::text, 'brand_rule'::text, 'note'::text])))
 constraint entities.entities_pkey PRIMARY KEY (id)
 constraint entities.entities_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint expenses.expenses_amount_check CHECK (((amount >= (0)::numeric) AND (amount < (100000000)::numeric)))
@@ -1634,7 +1634,7 @@ function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae2813624527
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
 function internal.characters_rename() body=421698b6b036bb12456237c0c3ea4daa
-function internal.entity_sync() body=354f1ed051d9e4903eaafc16ecd84c5d
+function internal.entity_sync() body=d5958886ae64cde4b4fdf27f37750e8b
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
 function internal.has_capability(pid uuid, cap text) body=bf3d934ac7d4f15fd5023ef8e6dfeedb
@@ -2851,6 +2851,7 @@ trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF day_number ON publi
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.characters FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF scene_number, heading, title ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF text ON public.script_annotations FOR EACH ROW WHEN ((new.type = ANY (ARRAY['note'::text, 'revision'::text, 'reference'::text]))) EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.media FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF title ON public.project_tasks FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
@@ -2860,6 +2861,7 @@ trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_documen
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_locations FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_tasks FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.script_annotations FOR EACH ROW WHEN ((old.type = ANY (ARRAY['note'::text, 'revision'::text, 'reference'::text]))) EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()

@@ -1,4 +1,5 @@
 import { supabase } from './client';
+import { attach } from '@/lib/film/links';
 
 export type AnnotationType = 'shot' | 'beat' | 'note' | 'revision' | 'reference' | 'todo';
 
@@ -51,7 +52,16 @@ export async function addAnnotation(input: {
     p_scene_heading: input.scene?.heading,
   });
   if (error) throw error;
-  return data as ScriptAnnotation;
+  const note = data as ScriptAnnotation;
+  // A plain note is a thing in the film graph (an entity under its own id): tie it to the scene it is written in, by id, so it follows the
+  // scene through rewrites and shows on the scene's card. A failure here never loses the note.
+  if (input.scene && (note.type === 'note' || note.type === 'revision' || note.type === 'reference')) {
+    try {
+      const { data: scene } = await supabase.from('scenes').select('id').eq('script_id', input.scriptId).eq('ordinal', input.scene.ordinal).is('removed_at', null).maybeSingle();
+      if (scene) await attach(note.project_id, note.id, scene.id);
+    } catch { /* the note stands without the link */ }
+  }
+  return note;
 }
 
 export async function deleteAnnotation(id: string): Promise<void> {
