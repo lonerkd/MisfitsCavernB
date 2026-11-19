@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { useLiveRows } from '@/lib/studio/live';
 import { MENTION_KIND, diffMentions, mentionedIds } from './mentions';
 
-export const ENTITY_KINDS = ['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media'] as const;
+export const ENTITY_KINDS = ['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media', 'note'] as const;
 export type EntityKind = (typeof ENTITY_KINDS)[number];
 
 export type Entity = { id: string; project_id: string; kind: EntityKind; label: string };

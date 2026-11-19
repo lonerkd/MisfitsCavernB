@@ -48,9 +48,9 @@ export interface Card {
 
 const GROUP_TITLE: Record<EntityKind, string> = {
   scene: 'Scenes', character: 'Characters', location: 'Locations', shoot_day: 'Days',
-  task: 'Tasks', document: 'Documents', media: 'Media',
+  task: 'Tasks', document: 'Documents', media: 'Media', note: 'Notes',
 };
-const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'scene', 'character', 'location', 'shoot_day'];
+const KIND_ORDER: EntityKind[] = ['task', 'document', 'media', 'note', 'scene', 'character', 'location', 'shoot_day'];
 
 const key = (s: string | null | undefined) => (s ?? '').trim().toUpperCase();
 const sceneLabel = (s: CardScene) => `${s.scene_number}. ${s.heading?.trim() || s.title}`;

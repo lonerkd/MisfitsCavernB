@@ -17,10 +17,10 @@ import { useToast } from '@/components/ui/Toast';
 
 const KIND_NAME: Record<EntityKind, string> = {
   scene: 'Scene', character: 'Character', location: 'Location', shoot_day: 'Shoot day',
-  task: 'Task', document: 'Document', media: 'Media',
+  task: 'Task', document: 'Document', media: 'Media', note: 'Note',
 };
 // Only these have a card of their own with connections; the rest show what they're attached to.
-const OPENS = new Set<EntityKind>(['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media']);
+const OPENS = new Set<EntityKind>(['scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media', 'note']);
 
 export function EntityCardHost() {
   const { project, scenes, castOf, cardId, closeCard, recordsByScene } = useStudio();

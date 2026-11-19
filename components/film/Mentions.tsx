@@ -11,7 +11,7 @@ import { activeQuery, insertMention, plain, segments, tokenize } from '@/lib/fil
 import type { Entity, EntityKind } from '@/lib/film/links';
 
 const KIND_NAME: Record<EntityKind, string> = {
-  scene: 'Scene', character: 'Character', location: 'Location', shoot_day: 'Day', task: 'Task', document: 'Document', media: 'Media',
+  scene: 'Scene', character: 'Character', location: 'Location', shoot_day: 'Day', task: 'Task', document: 'Document', media: 'Media', note: 'Note',
 };
 
 export function MentionText({ text, projectId, entities }: { text: string; projectId: string; entities: Entity[] }) {
