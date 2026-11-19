@@ -20,7 +20,7 @@ import { PRODUCTION_VIEW_LABELS } from '@/lib/os/progress';
 import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
 import { getTodayWork, getOwnerData, getDirectorDay, getLookDay, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
-import { dayGlance, isDirectionCraft, type DayGlance } from '@/lib/today/director';
+import { dayGlance, isDirectionCraft, seesDayAtAGlance, type DayGlance } from '@/lib/today/director';
 import { isLookCraft, lookDay, type LookDay } from '@/lib/today/looks';
 import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES, osAdoptSession } from '@/lib/os';
@@ -119,7 +119,7 @@ export function YourDay() {
       // The director's day at a glance: the productions this person directs (a Direction craft on the crew, or their own profile's
       // craft on a production they run). A nicety: a project that does not load shows no card.
       const directing = Array.from(new Set([
-        ...myRoles.filter((r) => isDirectionCraft(r.craft)).map((r) => r.project_id),
+        ...myRoles.filter((r) => seesDayAtAGlance(r.craft)).map((r) => r.project_id),
         ...(isDirectionCraft(profileCraft) ? ownedIds : []),
       ]));
       const glances = (await Promise.all(directing.map(async (id) => {
