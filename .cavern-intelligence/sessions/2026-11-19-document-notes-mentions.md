@@ -1,0 +1,6 @@
+# Session - 2026-11-19: mentions in a document's notes (BACKLOG 3.18 c); no Lounge mentions
+
+- **Document notes:** Paperwork › Edit now has a **Notes** field where `@` offers the project's scenes, characters, places, days, tasks, documents and media (the same picker and token as tasks). The note shows chips that open the card; saving keeps the `mentions` links in step (`syncMentions`), clearing the note removes them. `MentionInput` gained an edit mode (`initial`, `keep`, a name) so one component serves both the add-a-task box and the editor.
+- **Decision (mine, the owner handed 3.18 over):** the Lounge gets no mentions. A chat message is not an entity and should not become one; the cost (a row and a trigger per message) is out of proportion. People can paste a card link; the search already opens cards.
+
+**Verified:** typecheck, lint, and `e2e/document-card.spec.ts` (new case: a note mentions a second document, the link row exists, the chip's address is that card, clearing the note removes the link) plus `e2e/documents.spec.ts` and `e2e/task-card.spec.ts` on a production build on the local stack. Not verified: a phone; the note is one line (long notes are not wrapped specially). **Left:** the same on scene notes and call-sheet notes.
