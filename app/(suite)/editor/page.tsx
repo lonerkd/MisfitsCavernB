@@ -8,6 +8,8 @@ import { Users, Minimize, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
+import { renameCharacterInText, validCharacterName } from '@/lib/scriptos/rename';
+import { renameCharacterRow } from '@/lib/film/rename-character';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
@@ -515,6 +517,25 @@ export default function EditorPage() {
     }, 0);
   };
 
+  // Rename a character: the graph row first (castings and calls follow by id), then every cue in the text as one edit through the shared
+  // text, so a co-writer's typing merges with it and the next scene sync keeps the new name.
+  const renameCharacter = async (from: string, to: string): Promise<string | null> => {
+    const invalid = validCharacterName(to);
+    if (invalid) return invalid;
+    const next = to.trim().replace(/\s+/g, ' ').toUpperCase();
+    if (next === from.trim().toUpperCase()) return null;
+    if (charStats.some((c) => c.name.toUpperCase() === next)) return `${next} is already a character in this script. Merging two characters is not supported: choose another name.`;
+    if (currentScript?.project_id) {
+      const problem = await renameCharacterRow(currentScript.project_id, from, next);
+      if (problem) return problem;
+    }
+    const out = renameCharacterInText(content, lines, from, next);
+    if (out.changed === 0) return `No cue for ${from} was found to rename.`;
+    setContent(out.text);
+    toast(`${from} is now ${next} (${out.changed} ${out.changed === 1 ? 'cue' : 'cues'})`, 'success');
+    return null;
+  };
+
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
@@ -1017,6 +1038,7 @@ export default function EditorPage() {
       try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
     }}>
       <EditorRightPanels
+        onRenameCharacter={renameCharacter}
         showBreakdown={tools.breakdown}
         currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
         rightPanel={rightPanel} setRightPanel={setRightPanel}
