@@ -831,6 +831,15 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** The record for a character in a scene, made empty when there is none and left exactly as it is when there is (so a look written by someone else is never blanked). */
+  async function ensureSceneState(projectId: string, sceneId: string, characterId: string): Promise<SceneState> {
+    const made = await db.from('scene_states').upsert({ project_id: projectId, scene_id: sceneId, character_id: characterId }, { onConflict: 'scene_id,character_id', ignoreDuplicates: true });
+    if (made.error) fail(made.error, 'Could not save the look');
+    const { data, error } = await db.from('scene_states').select('*').eq('scene_id', sceneId).eq('character_id', characterId).single();
+    if (error) fail(error, 'Could not save the look');
+    return data;
+  }
+
   /** The elements (wardrobe, make-up, props) each look is made of: one row per look and element. */
   async function listStateElements(projectId: string): Promise<Array<{ state_id: string; element_id: string }>> {
     const { data, error } = await db.from('scene_state_elements').select('state_id, element_id').eq('project_id', projectId);
@@ -1211,7 +1220,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, ensureSceneState, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

@@ -90,14 +90,15 @@ export function ContinuityView() {
 
   const setPhoto = async (sc: SceneRow, characterId: string, prev: SceneState | undefined, mediaId: string) => {
     try {
-      states.upsertLocal(await studio.saveSceneState(project.id, sc.id, characterId, { media_id: mediaId || null, ...(prev ? {} : { look: '' }) }));
+      if (!prev) await studio.ensureSceneState(project.id, sc.id, characterId);
+      states.upsertLocal(await studio.saveSceneState(project.id, sc.id, characterId, { media_id: mediaId || null }));
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save the photo', 'error');
     }
   };
   const toggleElement = async (sc: SceneRow, characterId: string, prev: SceneState | undefined, elementId: string, on: boolean) => {
     try {
-      const state = prev ?? await studio.saveSceneState(project.id, sc.id, characterId, { look: '' });
+      const state = prev ?? await studio.ensureSceneState(project.id, sc.id, characterId);
       if (!prev) states.upsertLocal(state);
       await studio.setStateElement(project.id, state.id, elementId, on);
       setStateElements((rows) => on ? [...rows, { state_id: state.id, element_id: elementId }] : rows.filter((r) => !(r.state_id === state.id && r.element_id === elementId)));
