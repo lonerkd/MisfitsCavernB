@@ -2447,7 +2447,7 @@ policy public.deliverables "deliverables update" PERMISSIVE UPDATE to authentica
 policy public.discord_integrations "discord webhook removed by channel managers" PERMISSIVE DELETE to authenticated using can_manage_channel(channel_id) check -
 policy public.discord_integrations "discord webhook set by channel managers" PERMISSIVE INSERT to authenticated using - check (can_manage_channel(channel_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.discord_integrations "discord webhook updated by channel managers" PERMISSIVE UPDATE to authenticated using can_manage_channel(channel_id) check can_manage_channel(channel_id)
-policy public.entities "entities read" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND ((kind <> 'brand_rule'::text) OR internal.can_shape_project(project_id))) check -
+policy public.entities "entities read" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND ((kind <> 'brand_rule'::text) OR internal.can_shape_project(project_id)) AND ((kind <> 'note'::text) OR internal.is_project_creator(project_id) OR internal.is_project_member(project_id))) check -
 policy public.expenses "expenses add" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'budget.write'::text)
 policy public.expenses "expenses change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
 policy public.expenses "expenses read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -

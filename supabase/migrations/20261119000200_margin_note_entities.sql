@@ -1,12 +1,18 @@
 -- A margin note becomes a thing in the film graph (BACKLOG 3.18, editor rung E5): an entity of kind `note` under the annotation's own id,
 -- so it has a card, can be attached to scenes, characters, places, tasks, documents and media, and a note about a scene is linked to the
 -- scene by id (it follows the scene through rewrites, which a line number does not). Plain notes only (note, revision, reference): a shot,
--- a beat and a to-do already become their own things. Same visibility as the note itself: the annotation's readers are the project's
--- creator and members, who are exactly who reads entities.
+-- a beat and a to-do already become their own things. Same visibility as the note itself, stated in the read rule (not left to two rules
+-- happening to agree): a note entity is read by the project's creator and members, as the annotation is.
 
 ALTER TABLE public.entities DROP CONSTRAINT entities_kind_check;
 ALTER TABLE public.entities ADD CONSTRAINT entities_kind_check
   CHECK (kind IN ('scene', 'character', 'location', 'shoot_day', 'task', 'document', 'media', 'deliverable', 'ad_reference', 'brand_rule', 'note'));
+
+DROP POLICY "entities read" ON public.entities;
+CREATE POLICY "entities read" ON public.entities FOR SELECT TO authenticated
+  USING (internal.can_access_project(project_id)
+    AND (kind <> 'brand_rule' OR internal.can_shape_project(project_id))
+    AND (kind <> 'note' OR internal.is_project_creator(project_id) OR internal.is_project_member(project_id)));
 
 CREATE OR REPLACE FUNCTION internal.entity_sync()
  RETURNS trigger
