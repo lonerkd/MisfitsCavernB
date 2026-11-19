@@ -12,7 +12,7 @@ import { storyChanges, storyLabel, type StoryScene } from '@/lib/film/story';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
-import { continuityDoc } from '@/lib/studio/continuity-print';
+import { continuityDoc, wardrobeDoc } from '@/lib/studio/continuity-print';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
@@ -102,6 +102,17 @@ export function ContinuityView() {
           })),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
         })} />
+        <PrintButton label="the wardrobe and make-up sheet" build={() => wardrobeDoc({
+          project: project.title, accent: project.accent_color, logo: project.logo_url,
+          characters: characters.rows.map((ch) => ({
+            name: ch.name,
+            rows: ordered.filter((sc) => castOf(sc).includes(ch.name)).map((sc) => ({
+              number: sc.scene_number, heading: sc.heading ?? sc.title ?? '', storyDay: sc.story_day, shootDay: sc.shoot_day ?? null,
+              look: stateOf.get(`${sc.id}:${ch.id}`)?.look ?? '',
+            })),
+          })),
+          generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+        })} />
         {guesses.length > 0 && (
           <button type="button" className={s.btnPrimary} disabled={busy} onClick={() => void applyGuesses()}>
             <Wand2 size={12} aria-hidden /> Read story time from the script ({guesses.length})
@@ -125,6 +136,7 @@ export function ContinuityView() {
               <div className={s.row}>
                 <strong>{sc.scene_number}. {sc.heading ?? sc.title}</strong>
                                 <span className={s.hint}>{storyLabel(sc.story_day, sc.story_time)}{sc.story_confirmed ? '' : sc.story_day != null ? ' (read from the script)' : ''}</span>
+                                <span className={s.hint}>{sc.shoot_day != null ? `Shoots day ${sc.shoot_day}` : 'Not scheduled'}</span>
                                 {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span className={s.hint} style={{ color: 'var(--warn)' }}>⚠ review</span>}
               </div>
               <div className={s.row}>
