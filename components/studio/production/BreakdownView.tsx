@@ -8,6 +8,8 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
 import { catStyle } from '@/components/breakdown/CategoryChips';
+import { useShootDays, useTimesheets } from '@/lib/studio';
+import { labourByDay, money as formatMoney } from '@/lib/studio/money';
 import { breakdown, costByCategory, costByScene, costOfScenes, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
 import { useProject } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
@@ -49,6 +51,14 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   const unpriced = costs.reduce((n, c) => n + c.unpriced, 0);
   const ready = elements.filter((e) => e.status === 'ready').length;
 
+  // Labour logged on each dated shoot day (what the person can see: the owner and the money tool's readers see everyone's hours).
+  const shootDays = useShootDays(project.id);
+  const timesheets = useTimesheets(project.id);
+  const labour = useMemo(() => {
+    const dated = new Map<number, string>();
+    for (const d of shootDays.rows) if (d.shoot_date) dated.set(d.day_number, d.shoot_date);
+    return labourByDay(timesheets.rows, dated);
+  }, [shootDays.rows, timesheets.rows]);
   const sceneCost = useMemo(() => costByScene(scenes.rows.map((sc) => sc.id), bd.tags.rows, elements, categories), [scenes.rows, bd.tags.rows, elements, categories]);
   // The days as the schedule has them (a scene with no shoot day is on day 1, as everywhere else in the Studio).
   const dayCost = useMemo(() => {
@@ -208,6 +218,13 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
                       <span className={v.sheetHeading}>Day {day} · {sceneIds.length} {sceneIds.length === 1 ? 'scene' : 'scenes'}</span>
                       <span className={v.sheetMeta}>{money(line.amount)}{line.unpriced > 0 ? ` · ${line.unpriced} unpriced` : ''}</span>
                     </div>
+                    {labour.get(day) && (
+                      <p className={s.hint} style={{ margin: '6px 0 0' }}>
+                        Labour logged: {formatMoney(labour.get(day)!.paid)} approved ({labour.get(day)!.hours} h)
+                        {labour.get(day)!.pendingHours > 0 ? ` · ${labour.get(day)!.pendingHours} h waiting for approval` : ''}
+                        {labour.get(day)!.unratedHours > 0 ? ` · ${labour.get(day)!.unratedHours} h with no rate` : ''}
+                      </p>
+                    )}
                     <ul className={v.rows}>
                       {sceneIds.map((id) => {
                         const sc = sceneById.get(id)!;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { money, moneySummary } from './money';
+import { labourByDay, money, moneySummary } from './money';
 
 describe('money, summed', () => {
   const lines = [
@@ -37,5 +37,18 @@ describe('money, summed', () => {
     expect(money(1500)).toBe('$1,500');
     expect(money(250.5)).toBe('$250.50');
     expect(money(-100)).toBe('−$100');
+  });
+});
+
+describe('labour by shoot day', () => {
+  const days = new Map([[1, '2026-12-01'], [2, '2026-12-02']]);
+  const h = (work_date: string, hours: number, rate: number | null, status: string) => ({ user_id: 'u', work_date, hours, rate, status });
+  it('puts approved hours at their rate on the day they were worked, and keeps pending and unrated apart', () => {
+    const out = labourByDay([h('2026-12-01', 10, 25, 'approved'), h('2026-12-01', 8, 30, 'approved'), h('2026-12-01', 4, 20, 'submitted'), h('2026-12-02', 6, null, 'approved'), h('2026-12-02', 3, 50, 'rejected')], days);
+    expect(out.get(1)).toEqual({ paid: 490, hours: 18, pendingHours: 4, unratedHours: 0 });
+    expect(out.get(2)).toEqual({ paid: 0, hours: 6, pendingHours: 0, unratedHours: 6 });
+  });
+  it('ignores hours on a date that is no shoot day', () => {
+    expect(labourByDay([h('2026-12-09', 8, 25, 'approved')], days).size).toBe(0);
   });
 });

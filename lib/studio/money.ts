@@ -70,3 +70,31 @@ export function moneySummary(lines: BudgetLine[], spend: SpendLine[], hours: Hou
 
 export const money = (v: number) =>
   (v < 0 ? '−' : '') + '$' + Math.abs(v).toLocaleString('en-US', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 });
+
+export interface DayLabour { paid: number; hours: number; pendingHours: number; unratedHours: number }
+
+/**
+ * Labour on each shoot day, from the hours people logged on the day's date (the same rules as the money summary: approved hours at
+ * their rate are labour, submitted hours are pending, approved hours with no rate are unrated). Days with no date have no labour here.
+ * `days` maps a shoot day number to its date (YYYY-MM-DD). Pure.
+ */
+export function labourByDay(hours: Array<HoursLine & { work_date: string }>, days: ReadonlyMap<number, string>): Map<number, DayLabour> {
+  const dayOf = new Map<string, number>();
+  for (const [day, date] of days) dayOf.set(date, day);
+  const out = new Map<number, DayLabour>();
+  for (const t of hours) {
+    const day = dayOf.get(t.work_date);
+    if (day == null) continue;
+    const row = out.get(day) ?? { paid: 0, hours: 0, pendingHours: 0, unratedHours: 0 };
+    if (t.status === 'approved') {
+      row.hours += n(t.hours);
+      if (t.rate == null) row.unratedHours += n(t.hours);
+      else row.paid += n(t.hours) * n(t.rate);
+    } else if (t.status === 'submitted') {
+      row.pendingHours += n(t.hours);
+    }
+    out.set(day, row);
+  }
+  for (const row of out.values()) row.paid = cents(row.paid);
+  return out;
+}
