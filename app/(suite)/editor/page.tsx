@@ -8,7 +8,8 @@ import { Users, Minimize, X } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
-import { renameCharacterInText, validCharacterName } from '@/lib/scriptos/rename';
+import { renameCharacterInText, renamePlaceInText, validCharacterName, validPlaceName } from '@/lib/scriptos/rename';
+import { renameLocationRecord } from '@/lib/film/rename-location';
 import { renameCharacterRow } from '@/lib/film/rename-character';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
@@ -537,6 +538,23 @@ export default function EditorPage() {
     return null;
   };
 
+  // The same for a place: the location record first (scenes, the stripboard and the call sheet follow), then every heading naming it.
+  const renamePlace = async (from: string, to: string): Promise<string | null> => {
+    const invalid = validPlaceName(to);
+    if (invalid) return invalid;
+    const next = to.trim().replace(/\s+/g, ' ').toUpperCase();
+    if (next === from.trim().toUpperCase()) return null;
+    const out = renamePlaceInText(content, lines, from, next);
+    if (out.changed === 0) return `No scene heading for ${from} was found to rename.`;
+    if (currentScript?.project_id) {
+      const problem = await renameLocationRecord(currentScript.project_id, from, next);
+      if (problem) return problem;
+    }
+    setContent(out.text);
+    toast(`${from} is now ${next} (${out.changed} ${out.changed === 1 ? 'heading' : 'headings'})`, 'success');
+    return null;
+  };
+
   const insertElement = (type: string) => {
     const editor = textareaRef.current;
     if (!editor) return;
@@ -1040,6 +1058,7 @@ export default function EditorPage() {
     }}>
       <EditorRightPanels
         onRenameCharacter={renameCharacter}
+        onRenamePlace={renamePlace}
         showBreakdown={tools.breakdown}
         currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
         rightPanel={rightPanel} setRightPanel={setRightPanel}
