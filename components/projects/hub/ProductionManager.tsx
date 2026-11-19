@@ -214,6 +214,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             <Row>
               <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
               <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{mentionsOn ? <MentionText text={t.title} projectId={projectId} entities={entities.rows} /> : t.title}</span>
+              {mentionsOn && <Link href={`/studio?project=${projectId}&card=${t.id}`} aria-label={`Open the card for ${plain(t.title)}`} style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--violet)', textDecoration: 'underline', flexShrink: 0 }}>Card</Link>}
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
             <div style={{ display: 'flex', gap: 6, paddingLeft: 23 }}>

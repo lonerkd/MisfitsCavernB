@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { byStoryDay, lookChangeText, lookChanges } from './continuity';
+import { byStoryDay, lookChangeText, lookChanges, lookChangesOnDay } from './continuity';
 
 const scenes = [
   { id: 'a', scene_number: 1, story_day: 1 },
@@ -32,6 +32,15 @@ describe('lookChanges', () => {
   it('reads as a sentence', () => {
     const [c] = lookChanges(scenes, [st('a', 'maya', 'Red coat'), st('b', 'maya', 'Blue coat')]);
     expect(lookChangeText('MAYA', c)).toBe('MAYA: scene 1 “Red coat” then scene 2 “Blue coat”, both on day 1.');
+  });
+});
+
+describe('lookChangesOnDay', () => {
+  it('keeps the changes where either scene is shot that day', () => {
+    const all = lookChanges(scenes, [st('a', 'maya', 'Red coat'), st('b', 'maya', 'Blue coat'), st('e', 'maya', 'Green coat')]);
+    expect(lookChangesOnDay(all, [{ scene_number: 2 }]).map((c) => c.to.scene)).toEqual([2, 5]);
+    expect(lookChangesOnDay(all, [{ scene_number: 5 }]).map((c) => c.to.scene)).toEqual([5]);
+    expect(lookChangesOnDay(all, [{ scene_number: 3 }])).toEqual([]);
   });
 });
 
