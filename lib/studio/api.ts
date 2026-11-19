@@ -823,12 +823,26 @@ export function createStudioApi(db: Client) {
   }
 
   /** One record per character per scene; the first save makes it. */
-  async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes'>>): Promise<SceneState> {
+  async function saveSceneState(projectId: string, sceneId: string, characterId: string, patch: Partial<Pick<SceneState, 'look' | 'notes' | 'media_id'>>): Promise<SceneState> {
     const { data, error } = await db.from('scene_states')
       .upsert({ project_id: projectId, scene_id: sceneId, character_id: characterId, ...patch }, { onConflict: 'scene_id,character_id' })
       .select('*').single();
     if (error) fail(error, 'Could not save the look');
     return data;
+  }
+
+  /** The elements (wardrobe, make-up, props) each look is made of: one row per look and element. */
+  async function listStateElements(projectId: string): Promise<Array<{ state_id: string; element_id: string }>> {
+    const { data, error } = await db.from('scene_state_elements').select('state_id, element_id').eq('project_id', projectId);
+    if (error) fail(error, 'Could not load the looks’ elements');
+    return data;
+  }
+
+  async function setStateElement(projectId: string, stateId: string, elementId: string, on: boolean): Promise<void> {
+    const { error } = on
+      ? await db.from('scene_state_elements').upsert({ project_id: projectId, state_id: stateId, element_id: elementId }, { onConflict: 'state_id,element_id', ignoreDuplicates: true })
+      : await db.from('scene_state_elements').delete().eq('state_id', stateId).eq('element_id', elementId);
+    if (error) fail(error, on ? 'Could not add the element to the look' : 'Could not remove the element from the look');
   }
 
   /** Sets when in the story a scene happens. A person's change is confirmed (a later guess leaves it); a guess applied from the script is not. */
@@ -1197,7 +1211,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

@@ -19,12 +19,12 @@ describe('the printed continuity sheet', () => {
 
 describe('the wardrobe and make-up sheet', () => {
   const chars = [
-    { name: 'MAYA', rows: [{ number: 1, heading: 'INT. KITCHEN - NIGHT', storyDay: 1, shootDay: 2, look: 'Red coat' }, { number: 4, heading: 'EXT. PIER - DAY', storyDay: 2, shootDay: 1, look: '' }] },
+    { name: 'MAYA', rows: [{ number: 1, heading: 'INT. KITCHEN - NIGHT', storyDay: 1, shootDay: 2, look: 'Red coat', elements: ['Red coat (hero)', 'Scarf'] }, { number: 4, heading: 'EXT. PIER - DAY', storyDay: 2, shootDay: 1, look: '' }] },
     { name: 'LUIS', rows: [] },
   ];
   it('prints one table per character with story day beside shoot day, and shows a missing look', () => {
     const html = printHtml(wardrobeDoc({ project: 'The Pier', generated: 'd', characters: chars }));
-    for (const s of ['Wardrobe and make-up', 'MAYA', 'Story day', 'Shoot day', 'Red coat', '(no look noted)', 'Looks missing']) expect(html).toContain(s);
+    for (const s of ['Wardrobe and make-up', 'MAYA', 'Story day', 'Shoot day', 'Red coat', 'Items: Red coat (hero), Scarf', '(no look noted)', 'Looks missing']) expect(html).toContain(s);
     expect(html).not.toContain('LUIS');
   });
   it('says so when no character is in a scene', () => {

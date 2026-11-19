@@ -50,7 +50,7 @@ export function continuityDoc(i: ContinuityPrintInput): PrintDoc {
   };
 }
 
-export interface WardrobeRow { number: number; heading: string; storyDay: number | null; shootDay: number | null; look: string }
+export interface WardrobeRow { number: number; heading: string; storyDay: number | null; shootDay: number | null; look: string; /** Wardrobe, make-up and prop elements the look is made of. */ elements?: string[] }
 export interface WardrobeCharacter { name: string; rows: WardrobeRow[] }
 
 /**
@@ -65,7 +65,7 @@ export function wardrobeDoc(i: { project: string; accent?: string | null; logo?:
     blocks: [{
       type: 'table' as const,
       columns: [{ key: 'n', label: 'Sc', width: '7%' }, { key: 'h', label: 'Scene', width: '32%' }, { key: 's', label: 'Story day', width: '11%' }, { key: 'd', label: 'Shoot day', width: '11%' }, { key: 'l', label: 'Look, wardrobe, make-up' }],
-      rows: c.rows.map((r) => ({ n: r.number, h: r.heading, s: r.storyDay, d: r.shootDay, l: r.look || '(no look noted)' })),
+      rows: c.rows.map((r) => ({ n: r.number, h: r.heading, s: r.storyDay, d: r.shootDay, l: [r.look || '(no look noted)', r.elements?.length ? `Items: ${r.elements.join(', ')}` : ''].filter(Boolean).join('\n') })),
     }],
   }));
   if (blocks.length === 0) blocks.push({ type: 'note', text: 'No character is in a scene yet.' });

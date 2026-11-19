@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { Eye, PenLine, Wand2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { castByScene, castOfScene } from '@/lib/film/cast';
-import { studio, useCharacters, useSceneCharacters, useSceneStates, type SceneRow, type SceneState } from '@/lib/studio';
+import { studio, useCharacters, useProjectMedia, useSceneCharacters, useSceneStates, useSignedUrls, type SceneRow, type SceneState } from '@/lib/studio';
+import { useBreakdown } from '@/lib/breakdown';
 import { byStoryDay, lookChangeText, lookChanges } from '@/lib/film/continuity';
 import { storyChanges, storyLabel, type StoryScene } from '@/lib/film/story';
 import { useStudio } from '../StudioContext';
@@ -33,6 +34,21 @@ export function ContinuityView() {
   const castOf = (sc: SceneRow) => castOfScene(sc, castByScn);
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
+  const library = useProjectMedia(project.id);
+  const bd = useBreakdown(project.id);
+  const photos = useMemo(() => library.rows.filter((m) => m.kind === 'image'), [library.rows]);
+  const photoUrls = useSignedUrls(photos.map((m) => m.storage_path));
+  // The elements each look is made of (wardrobe, make-up, props): loaded once, kept in step by this view's own changes.
+  const [stateElements, setStateElements] = useState<Array<{ state_id: string; element_id: string }>>([]);
+  useEffect(() => {
+    let alive = true;
+    studio.listStateElements(project.id).then((rows) => { if (alive) setStateElements(rows); }, () => undefined);
+    return () => { alive = false; };
+  }, [project.id]);
+  const lookElements = useMemo(() => {
+    const keep = new Set(bd.categories.rows.filter((c) => ['wardrobe', 'makeup', 'props'].includes(c.key)).map((c) => c.id));
+    return bd.elements.rows.filter((e) => keep.has(e.category_id));
+  }, [bd.categories.rows, bd.elements.rows]);
 
   const idOf = useMemo(() => new Map(characters.rows.map((c) => [c.name, c.id])), [characters.rows]);
   const nameOf = useMemo(() => new Map(characters.rows.map((c) => [c.id, c.name])), [characters.rows]);
@@ -69,6 +85,24 @@ export function ContinuityView() {
       states.upsertLocal(await studio.saveSceneState(project.id, sc.id, characterId, { look: look.trim() }));
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Could not save the look', 'error');
+    }
+  };
+
+  const setPhoto = async (sc: SceneRow, characterId: string, prev: SceneState | undefined, mediaId: string) => {
+    try {
+      states.upsertLocal(await studio.saveSceneState(project.id, sc.id, characterId, { media_id: mediaId || null, ...(prev ? {} : { look: '' }) }));
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not save the photo', 'error');
+    }
+  };
+  const toggleElement = async (sc: SceneRow, characterId: string, prev: SceneState | undefined, elementId: string, on: boolean) => {
+    try {
+      const state = prev ?? await studio.saveSceneState(project.id, sc.id, characterId, { look: '' });
+      if (!prev) states.upsertLocal(state);
+      await studio.setStateElement(project.id, state.id, elementId, on);
+      setStateElements((rows) => on ? [...rows, { state_id: state.id, element_id: elementId }] : rows.filter((r) => !(r.state_id === state.id && r.element_id === elementId)));
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not change the look’s elements', 'error');
     }
   };
 
@@ -109,6 +143,7 @@ export function ContinuityView() {
             rows: ordered.filter((sc) => castOf(sc).includes(ch.name)).map((sc) => ({
               number: sc.scene_number, heading: sc.heading ?? sc.title ?? '', storyDay: sc.story_day, shootDay: sc.shoot_day ?? null,
               look: stateOf.get(`${sc.id}:${ch.id}`)?.look ?? '',
+              elements: stateElements.filter((r) => r.state_id === stateOf.get(`${sc.id}:${ch.id}`)?.id).map((r) => lookElements.find((e) => e.id === r.element_id)?.name).filter((n): n is string => !!n),
             })),
           })),
           generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -157,12 +192,40 @@ export function ContinuityView() {
                 const id = idOf.get(name);
                 if (!id) return null;
                 const prev = stateOf.get(`${sc.id}:${id}`);
+                const mine = prev ? stateElements.filter((r) => r.state_id === prev.id).map((r) => lookElements.find((e) => e.id === r.element_id)).filter((e): e is NonNullable<typeof e> => !!e) : [];
+                const photo = prev?.media_id ? photos.find((m) => m.id === prev.media_id) : undefined;
+                const photoSrc = photo?.storage_path ? photoUrls[photo.storage_path] : photo?.external_url ?? undefined;
                 return (
-                  <label key={name} className={s.stack}>
-                    <span className={s.hint}>{name}</span>
-                    <input className={s.input} placeholder="Look, wardrobe, make-up" maxLength={500} defaultValue={prev?.look ?? ''} key={`${sc.id}${id}${prev?.look ?? ''}`}
-                      onBlur={(e) => void saveLook(sc, id, e.target.value, prev)} />
-                  </label>
+                  <div key={name} className={s.stack}>
+                    <label className={s.stack}>
+                      <span className={s.hint}>{name}</span>
+                      <input className={s.input} placeholder="Look, wardrobe, make-up" maxLength={500} defaultValue={prev?.look ?? ''} key={`${sc.id}${id}${prev?.look ?? ''}`}
+                        onBlur={(e) => void saveLook(sc, id, e.target.value, prev)} />
+                    </label>
+                    <div className={s.row} style={{ alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                      {photoSrc && <img src={photoSrc} alt={`Reference for ${name}: ${photo?.title ?? 'photo'}`} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} />}
+                      <label className={s.stack}>
+                        <span className="sr-only">Photo for {name} in scene {sc.scene_number}</span>
+                        <select className={s.select} value={prev?.media_id ?? ''} onChange={(e) => void setPhoto(sc, id, prev, e.target.value)}>
+                          <option value="">No photo</option>
+                          {photos.map((m) => <option key={m.id} value={m.id}>{m.title || 'Untitled photo'}</option>)}
+                        </select>
+                      </label>
+                      {mine.map((e) => (
+                        <span key={e.id} className={s.chip}>
+                          {e.name}
+                          <button type="button" aria-label={`Remove ${e.name} from ${name}’s look`} className={s.btnGhost} onClick={() => void toggleElement(sc, id, prev, e.id, false)}>×</button>
+                        </span>
+                      ))}
+                      <label className={s.stack}>
+                        <span className="sr-only">Add an element to {name}’s look in scene {sc.scene_number}</span>
+                        <select className={s.select} value="" onChange={(e) => { if (e.target.value) void toggleElement(sc, id, prev, e.target.value, true); }}>
+                          <option value="">Add wardrobe, make-up or prop…</option>
+                          {lookElements.filter((e) => !mine.some((m) => m.id === e.id)).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                  </div>
                 );
               })}
             </div>

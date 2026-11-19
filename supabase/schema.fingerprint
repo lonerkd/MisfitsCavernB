@@ -720,10 +720,16 @@ column scene_media.note text
 column scene_media.position integer default 0 not null
 column scene_media.project_id uuid not null
 column scene_media.scene_id uuid not null
+column scene_state_elements.created_at timestamp with time zone default now() not null
+column scene_state_elements.created_by uuid default auth.uid()
+column scene_state_elements.element_id uuid not null
+column scene_state_elements.project_id uuid not null
+column scene_state_elements.state_id uuid not null
 column scene_states.character_id uuid not null
 column scene_states.created_at timestamp with time zone default now() not null
 column scene_states.id uuid default gen_random_uuid() not null
 column scene_states.look text default ''::text not null
+column scene_states.media_id uuid
 column scene_states.notes text default ''::text not null
 column scene_states.project_id uuid not null
 column scene_states.scene_id uuid not null
@@ -1453,8 +1459,14 @@ constraint scene_media.scene_media_media_fkey FOREIGN KEY (media_id, project_id)
 constraint scene_media.scene_media_note_check CHECK ((char_length(note) <= 1000))
 constraint scene_media.scene_media_pkey PRIMARY KEY (scene_id, media_id)
 constraint scene_media.scene_media_scene_fkey FOREIGN KEY (scene_id, project_id) REFERENCES scenes(id, project_id) ON DELETE CASCADE
+constraint scene_state_elements.scene_state_elements_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint scene_state_elements.scene_state_elements_element_fkey FOREIGN KEY (element_id, project_id) REFERENCES breakdown_elements(id, project_id) ON DELETE CASCADE
+constraint scene_state_elements.scene_state_elements_pkey PRIMARY KEY (state_id, element_id)
+constraint scene_state_elements.scene_state_elements_state_fkey FOREIGN KEY (state_id, project_id) REFERENCES scene_states(id, project_id) ON DELETE CASCADE
 constraint scene_states.scene_states_character_fkey FOREIGN KEY (character_id, project_id) REFERENCES characters(id, project_id) ON DELETE CASCADE
+constraint scene_states.scene_states_id_project_key UNIQUE (id, project_id)
 constraint scene_states.scene_states_look_check CHECK ((char_length(look) <= 500))
+constraint scene_states.scene_states_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE SET NULL (media_id)
 constraint scene_states.scene_states_notes_check CHECK ((char_length(notes) <= 2000))
 constraint scene_states.scene_states_pkey PRIMARY KEY (id)
 constraint scene_states.scene_states_scene_character_key UNIQUE (scene_id, character_id)
@@ -2140,7 +2152,11 @@ index CREATE INDEX scene_media_created_by_fkey_idx ON public.scene_media USING b
 index CREATE INDEX scene_media_media_fkey_idx ON public.scene_media USING btree (media_id, project_id)
 index CREATE INDEX scene_media_project_idx ON public.scene_media USING btree (project_id)
 index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree (scene_id, project_id)
+index CREATE INDEX scene_state_elements_created_by_idx ON public.scene_state_elements USING btree (created_by)
+index CREATE INDEX scene_state_elements_element_fkey_idx ON public.scene_state_elements USING btree (element_id, project_id)
+index CREATE INDEX scene_state_elements_project_idx ON public.scene_state_elements USING btree (project_id)
 index CREATE INDEX scene_states_character_fkey_idx ON public.scene_states USING btree (character_id, project_id)
+index CREATE INDEX scene_states_media_fkey_idx ON public.scene_states USING btree (media_id, project_id)
 index CREATE INDEX scene_states_project_idx ON public.scene_states USING btree (project_id)
 index CREATE INDEX scene_states_scene_fkey_idx ON public.scene_states USING btree (scene_id, project_id)
 index CREATE INDEX scenes_location_fkey_idx ON public.scenes USING btree (location_id, project_id)
@@ -2307,6 +2323,8 @@ index CREATE UNIQUE INDEX review_links_token_key ON public.review_links USING bt
 index CREATE UNIQUE INDEX scene_characters_pkey ON public.scene_characters USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scene_elements_pkey ON public.scene_elements USING btree (scene_id, element_id)
 index CREATE UNIQUE INDEX scene_media_pkey ON public.scene_media USING btree (scene_id, media_id)
+index CREATE UNIQUE INDEX scene_state_elements_pkey ON public.scene_state_elements USING btree (state_id, element_id)
+index CREATE UNIQUE INDEX scene_states_id_project_key ON public.scene_states USING btree (id, project_id)
 index CREATE UNIQUE INDEX scene_states_pkey ON public.scene_states USING btree (id)
 index CREATE UNIQUE INDEX scene_states_scene_character_key ON public.scene_states USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
@@ -2573,6 +2591,7 @@ policy public.scene_media "scene_media delete" PERMISSIVE DELETE to authenticate
 policy public.scene_media "scene_media insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.scene_media "scene_media update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_media "scene_media view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.scene_state_elements "scene_state_elements access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scene_states "scene_states access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scenes "scenes delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
 policy public.scenes "scenes insert" PERMISSIVE INSERT to authenticated using - check internal.can_access_project(project_id)
@@ -2777,6 +2796,7 @@ rls review_links enabled=true forced=false
 rls scene_characters enabled=true forced=false
 rls scene_elements enabled=true forced=false
 rls scene_media enabled=true forced=false
+rls scene_state_elements enabled=true forced=false
 rls scene_states enabled=true forced=false
 rls scenes enabled=true forced=false
 rls script_annotations enabled=true forced=false

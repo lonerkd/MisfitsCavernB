@@ -109,4 +109,30 @@ test.describe.serial('Continuity (local Supabase)', () => {
     // Every scene says when it is shot (the script has three scenes; none is scheduled in this project).
     await expect(page.getByText(/^(Shoots day \d+|Not scheduled)$/)).toHaveCount(3);
   });
+
+  test('a look takes a photo and the elements it is made of, saved for real', async ({ page }) => {
+    test.setTimeout(120_000);
+    // A library photo and a wardrobe element to choose from.
+    const photo = (await admin.from('media').insert({ project_id: projectId, kind: 'image', title: 'Coat reference', external_url: 'https://example.com/coat.jpg' }).select('id').single()).data!.id;
+    const wardrobe = (await admin.from('breakdown_categories').select('id').eq('project_id', projectId).eq('key', 'wardrobe').single()).data!.id;
+    await admin.from('breakdown_elements').insert({ project_id: projectId, category_id: wardrobe, name: 'Blue wool coat' });
+    await open(page);
+
+    const day2 = page.getByRole('region', { name: 'Story day 2' });
+    await expect(day2).toBeVisible({ timeout: 30_000 });
+    await day2.getByLabel(/^Photo for MAYA in scene 3/).selectOption(photo);
+    await day2.getByLabel(/^Add an element to MAYA’s look in scene 3/).selectOption({ label: 'Blue wool coat' });
+    await expect(day2.getByRole('button', { name: 'Remove Blue wool coat from MAYA’s look' })).toBeVisible();
+
+    const state = async () => (await admin.from('scene_states').select('id, media_id').eq('project_id', projectId).eq('look', 'Blue coat').single()).data!;
+    await expect.poll(async () => (await state()).media_id).toBe(photo);
+    await expect.poll(async () => (await admin.from('scene_state_elements').select('element_id').eq('state_id', (await state()).id)).data?.length).toBe(1);
+
+    // It survives a reload, and removing the element removes the link.
+    await page.reload();
+    const again = page.getByRole('region', { name: 'Story day 2' });
+    await expect(again.getByRole('button', { name: 'Remove Blue wool coat from MAYA’s look' })).toBeVisible({ timeout: 30_000 });
+    await again.getByRole('button', { name: 'Remove Blue wool coat from MAYA’s look' }).click();
+    await expect.poll(async () => (await admin.from('scene_state_elements').select('element_id').eq('state_id', (await state()).id)).data?.length).toBe(0);
+  });
 });
