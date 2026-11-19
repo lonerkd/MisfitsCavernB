@@ -49,7 +49,7 @@ export function SceneGutter({ items, highlightRef, textareaRef, content }: {
 
   if (!items.length || (size.width && size.width < MIN_WIDTH)) return null;
   return (
-    <div aria-label="Story time and shoot day by scene" role="group" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 5 }}>
+    <div aria-label="Story time, shoot day and cost by scene" role="group" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 5 }}>
       {items.map((it) => {
         const top = (tops.get(it.line) ?? -1000) - scroll;
         if (top < -60 || (size.height && top > size.height)) return null;
@@ -63,6 +63,7 @@ export function SceneGutter({ items, highlightRef, textareaRef, content }: {
             {it.day != null && <div>Day {it.day}</div>}
             {it.time && <div>{it.time}</div>}
             {it.shoot != null && <div style={{ fontStyle: 'normal', color: 'var(--fg-dim)' }}>Shoot {it.shoot}</div>}
+            {it.cost != null && <div style={{ fontStyle: 'normal', color: 'var(--fg-dim)' }}>${Math.round(it.cost).toLocaleString('en-US')}</div>}
           </div>
         );
       })}
