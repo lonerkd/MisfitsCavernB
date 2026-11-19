@@ -36,6 +36,21 @@ test.describe('Cost by scene and by day (local Supabase)', () => {
       { project_id: project.id, scene_id: scenes[1].id, element_id: rope },
     ]);
 
+    // Day 1 is dated, and two people logged hours on it: one approved at a rate, one still waiting.
+    const dated = await admin.from('shoot_days').upsert({ project_id: project.id, day_number: 1, shoot_date: '2026-12-01' }, { onConflict: 'project_id,day_number' });
+    expect(dated.error).toBeNull();
+    // Hours are approved by the owner (a database rule), so log and approve them as the owner.
+    const asOwner = stack.anonClient();
+    expect((await asOwner.auth.signInWithPassword({ email: owner.email, password: owner.password })).error).toBeNull();
+    const crew = await stack.createUser({ label: 'costcrew' });
+    await admin.from('project_crew').insert({ project_id: project.id, user_id: crew.id, role: 'contributor', craft: 'Gaffer', status: 'confirmed' });
+    const crewClient = stack.anonClient();
+    expect((await crewClient.auth.signInWithPassword({ email: crew.email, password: crew.password })).error).toBeNull();
+    const mine = await asOwner.from('timesheets').insert({ project_id: project.id, user_id: owner.id, work_date: '2026-12-01', hours: 10, rate: 25, status: 'submitted' }).select('id').single();
+    expect(mine.error).toBeNull();
+    const theirs = await crewClient.from('timesheets').insert({ project_id: project.id, user_id: crew.id, work_date: '2026-12-01', hours: 4, rate: 25, status: 'submitted' });
+    expect(theirs.error).toBeNull();
+    expect((await asOwner.from('timesheets').update({ status: 'approved' }).eq('id', mine.data!.id)).error).toBeNull();
     await page.reload();
     await page.getByRole('tab', { name: 'Cost by day' }).click();
     const day1 = page.getByRole('region', { name: 'Day 1 cost' });
@@ -43,6 +58,8 @@ test.describe('Cost by scene and by day (local Supabase)', () => {
     await expect(day1.getByText('$100', { exact: true })).toBeVisible({ timeout: 30_000 });
     // The day's header and the second scene's row both read $140.
     await expect(day1.getByText('$140', { exact: true })).toHaveCount(2);
+
+    await expect(day1.getByText(/Labour logged: \$250 approved \(10 h\) · 4 h waiting for approval/)).toBeVisible();
 
     await page.getByRole('tab', { name: 'By scene' }).click();
     await expect(page.getByRole('region', { name: 'Scene 2' }).getByText(/\$140/)).toBeVisible();
