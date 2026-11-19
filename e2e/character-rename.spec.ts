@@ -96,4 +96,38 @@ test.describe('Renaming a character in the editor (local Supabase)', () => {
       await ctx.close();
     }
   });
+
+  test('a place is renamed from the scene card: the headings, the location record and the scenes that point at it', async ({ page, stack }) => {
+    test.setTimeout(150_000);
+    const admin = stack.admin;
+    const owner = await stack.createUser({ label: 'renameplace' });
+    const project = await stack.createProject(owner, { title: `Rename place ${stack.tag}`, status: 'pre-production' });
+    const text = ['INT. KITCHEN - NIGHT', '', 'MAYA', 'Still up.', '', 'EXT. PIER - DAY', '', 'BEN', 'Boats.', '', 'INT. KITCHEN - NEXT MORNING', '', 'MAYA', 'Coffee.', ''].join('\n');
+    const script = (await stack.insert('scripts', { title: 'Kitchen', content: text, project_id: project.id, created_by: owner.id, last_edited_by: owner.id })).id;
+
+    await signInAs(page, owner);
+    await page.setViewportSize({ width: 1600, height: 900 });
+    await page.goto(`/editor?script=${script}`);
+    const editor = page.getByRole('textbox', { name: 'Script', exact: true });
+    await expect(editor).toHaveValue(text, { timeout: 30_000 });
+
+    const record = async () => (await admin.from('project_locations').select('id, name').eq('project_id', project.id).order('name')).data ?? [];
+    await expect.poll(async () => (await record()).map((r) => r.name), { timeout: 30_000 }).toEqual(['KITCHEN', 'PIER']);
+    const kitchenId = (await record()).find((r) => r.name === 'KITCHEN')!.id;
+
+    // The caret is in the first scene (KITCHEN): its card offers the rename.
+    await editor.click();
+    await editor.press('Control+Home');
+    await page.getByRole('button', { name: 'Rename the place KITCHEN' }).click();
+    await page.getByLabel('New name for KITCHEN').fill('Diner');
+    await page.getByRole('button', { name: 'Rename place', exact: true }).click();
+
+    await expect(editor).toHaveValue(text.split('INT. KITCHEN').join('INT. DINER'), { timeout: 30_000 });
+    await expect.poll(async () => (await admin.from('project_locations').select('name').eq('id', kitchenId).single()).data?.name, { timeout: 30_000 }).toBe('DINER');
+    // Saved and re-synced: still two places, the same record, both kitchen scenes pointing at it.
+    await expect.poll(async () => (await admin.from('scripts').select('content').eq('id', script).single()).data?.content, { timeout: 30_000 }).toContain('INT. DINER - NEXT MORNING');
+    await page.waitForTimeout(3000);
+    expect((await record()).map((r) => r.name)).toEqual(['DINER', 'PIER']);
+    expect((await admin.from('scenes').select('location_id').eq('script_id', script).eq('location_id', kitchenId)).data).toHaveLength(2);
+  });
 });

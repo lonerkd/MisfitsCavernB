@@ -8,6 +8,7 @@ import { Wand2, History, AlertCircle, Bookmark, ClipboardList, Settings, Tags, B
 import type { ScriptLine } from '@/lib/scriptos/types';
 import { REVISION_COLORS, type Revision } from '@/lib/scriptos/revisions';
 import type { CharacterStats } from '@/lib/scriptos/characters';
+import { slugPlace } from '@/lib/scriptos/rename';
 import type { GutterItem } from '@/lib/film/gutter';
 
 const CHARACTER_COLOR = '#ffaa00';
@@ -43,6 +44,8 @@ export interface EditorRightPanelsProps {
   charStats: CharacterStats[];
   /** Rename a character everywhere: its cues in the text and its row in the production. Resolves to a sentence when it cannot. */
   onRenameCharacter?: (from: string, to: string) => Promise<string | null>;
+  /** Rename a place everywhere: its scene headings in the text and its location record. Resolves to a sentence when it cannot. */
+  onRenamePlace?: (from: string, to: string) => Promise<string | null>;
   handleLockRevision: () => void;
   revisions: Revision[];
   onViewRevision: (revisionId: string) => void;
@@ -118,13 +121,14 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null, onRenameCharacter,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null, onRenameCharacter, onRenamePlace,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
+  const [placeRename, setPlaceRename] = useState<{ value: string; error: string | null; busy: boolean } | null>(null);
   const [renaming, setRenaming] = useState<{ name: string; value: string; error: string | null; busy: boolean } | null>(null);
   const [lintOpen, setLintOpen] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(true);
@@ -192,6 +196,30 @@ export function EditorRightPanels({
                           }}>
                             {scene.text.replace(/^(INT\.|EXT\.|INT\/EXT\.)\s*/i, '')}
                           </div>
+                          {onRenamePlace && slugPlace(scene.text) && (placeRename ? (
+                            <form
+                              style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}
+                              onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (placeRename.busy) return;
+                                setPlaceRename({ ...placeRename, busy: true, error: null });
+                                const problem = await onRenamePlace(slugPlace(scene.text)!, placeRename.value);
+                                setPlaceRename(problem ? { ...placeRename, busy: false, error: problem } : null);
+                              }}
+                            >
+                              <label style={{ flex: 1, minWidth: 120 }}>
+                                <span className="sr-only">New name for {slugPlace(scene.text)}</span>
+                                <input autoFocus value={placeRename.value} maxLength={80} onChange={(e) => setPlaceRename({ ...placeRename, value: e.target.value, error: null })}
+                                  style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12 }} />
+                              </label>
+                              <button type="submit" disabled={placeRename.busy} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12, cursor: 'pointer' }}>{placeRename.busy ? 'Renaming…' : 'Rename place'}</button>
+                              <button type="button" onClick={() => setPlaceRename(null)} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg-muted)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                              {placeRename.error && <div role="alert" style={{ flexBasis: '100%', fontSize: 11, color: 'var(--danger)' }}>{placeRename.error}</div>}
+                            </form>
+                          ) : (
+                            <button type="button" aria-label={`Rename the place ${slugPlace(scene.text)}`} onClick={() => setPlaceRename({ value: slugPlace(scene.text)!, error: null, busy: false })}
+                              style={{ marginBottom: 10, padding: 0, border: 'none', background: 'transparent', color: 'var(--violet)', fontSize: 11, textDecoration: 'underline', cursor: 'pointer' }}>Rename place…</button>
+                          ))}
                           <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(color), background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>{wc}w · {estTime}</span>

@@ -43,3 +43,46 @@ export function renameCharacterInText(text: string, lines: ScriptLine[], from: s
   }
   return { text: rows.join('\n'), changed };
 }
+
+// ── Locations ────────────────────────────────────────────────────────────────────────────────────────
+
+/** A scene heading's pieces: the INT./EXT. prefix, the place, and what follows it (" - NIGHT"). */
+const SLUG = /^(\s*\.?\s*(?:INT\.?\s*\/\s*EXT\.?|EXT\.?\s*\/\s*INT\.?|I\s*\/\s*E\.?|INT\.?|EXT\.?)\s+)(.+?)(\s+-\s+.*|\s*)$/i;
+
+/** The place a scene heading names ("KITCHEN" for "INT. KITCHEN - NIGHT"), or null when the line is not a heading of this shape. */
+export function slugPlace(raw: string): string | null {
+  const m = SLUG.exec(raw);
+  return m ? m[2].trim() : null;
+}
+
+/** The heading with its place replaced, or null when it does not name `from`. */
+export function renameSlug(raw: string, from: string, to: string): string | null {
+  const m = SLUG.exec(raw);
+  if (!m) return null;
+  if (m[2].trim().toUpperCase() !== from.trim().toUpperCase()) return null;
+  return `${m[1]}${to}${m[3]}`;
+}
+
+/** What a place may be renamed to: short, single line, no dash separators that would read as the time of day. */
+export function validPlaceName(name: string): string | null {
+  const n = name.trim().replace(/\s+/g, ' ');
+  if (!n) return 'Give the place a name.';
+  if (n.length > 80) return 'A place name can be at most 80 characters.';
+  if (/\s-\s/.test(n)) return 'A place name cannot contain " - " (it separates the time of day).';
+  return null;
+}
+
+/** Every scene heading naming `from` rewritten to `to`, upper-cased. Only headings (the parse's `slug` and `scene` lines) change. */
+export function renamePlaceInText(text: string, lines: ScriptLine[], from: string, to: string): RenameResult {
+  const rows = text.split('\n');
+  const name = to.trim().replace(/\s+/g, ' ').toUpperCase();
+  let changed = 0;
+  for (const line of lines) {
+    if (line.type !== 'slug' && line.type !== 'scene') continue;
+    const raw = rows[line.index];
+    if (raw === undefined) continue;
+    const next = renameSlug(raw, from, name);
+    if (next !== null && next !== raw) { rows[line.index] = next; changed += 1; }
+  }
+  return { text: rows.join('\n'), changed };
+}
