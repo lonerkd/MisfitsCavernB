@@ -7,7 +7,7 @@
 
 import React, { useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { activeQuery, insertMention, segments, tokenize } from '@/lib/film/mentions';
+import { activeQuery, insertMention, plain, segments, tokenize } from '@/lib/film/mentions';
 import type { Entity, EntityKind } from '@/lib/film/links';
 
 const KIND_NAME: Record<EntityKind, string> = {
@@ -36,16 +36,22 @@ export function MentionText({ text, projectId, entities }: { text: string; proje
 type Picked = { id: string; label: string };
 
 /** A one-line field with an `@` picker. `onSubmit` gets the text with mentions as stored tokens. */
-export function MentionInput({ entities, placeholder, onSubmit, style, buttonStyle }: {
+export function MentionInput({ entities, placeholder, onSubmit, style, buttonStyle, initial, keep, label, submitLabel = 'add' }: {
   entities: Entity[];
   placeholder: string;
   onSubmit: (tokenised: string) => void;
   style?: React.CSSProperties;
   buttonStyle?: React.CSSProperties;
+  /** Stored text to edit (mentions as tokens); with `keep` the field is an editor for existing text and is not cleared on submit, and may be saved empty. */
+  initial?: string;
+  keep?: boolean;
+  /** An accessible name for the field. */
+  label?: string;
+  submitLabel?: string;
 }) {
-  const [text, setText] = useState('');
+  const [text, setText] = useState(() => plain(initial ?? ''));
   const [caret, setCaret] = useState(0);
-  const [picked, setPicked] = useState<Picked[]>([]);
+  const [picked, setPicked] = useState<Picked[]>(() => segments(initial ?? '').flatMap((x) => (x.type === 'mention' ? [{ id: x.id, label: x.label }] : [])));
   const [highlight, setHighlight] = useState(0);
   const input = useRef<HTMLInputElement>(null);
 
@@ -71,9 +77,9 @@ export function MentionInput({ entities, placeholder, onSubmit, style, buttonSty
 
   const submit = () => {
     const out = tokenize(text, picked).trim();
-    if (!out) return;
+    if (!out && !keep) return;
     onSubmit(out);
-    setText(''); setPicked([]); setCaret(0);
+    if (!keep) { setText(''); setPicked([]); setCaret(0); }
   };
 
   return (
@@ -82,6 +88,7 @@ export function MentionInput({ entities, placeholder, onSubmit, style, buttonSty
         ref={input}
         value={text}
         placeholder={placeholder}
+        aria-label={label}
         role="combobox"
         aria-autocomplete="list"
         aria-expanded={open}
@@ -98,7 +105,7 @@ export function MentionInput({ entities, placeholder, onSubmit, style, buttonSty
         }}
         style={{ flex: 1, minWidth: 0, ...style }}
       />
-      <button type="button" aria-label="add" onClick={submit} style={buttonStyle}>+</button>
+      <button type="button" aria-label={submitLabel} onClick={submit} style={buttonStyle}>+</button>
       {open && (
         <ul id="mention-options" role="listbox" aria-label="Mention" style={{ position: 'absolute', left: 0, right: 0, top: '100%', zIndex: 20, margin: '4px 0 0', padding: 4, listStyle: 'none', background: 'var(--bg-2)', border: '1px solid var(--border-2)', borderRadius: 8, display: 'grid', gap: 2 }}>
           {options.map((o, i) => (

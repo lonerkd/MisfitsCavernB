@@ -12,6 +12,9 @@ import {
 } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { useDraft } from '@/lib/hooks/useDraft';
+import { MentionInput, MentionText } from '@/components/film/Mentions';
+import { syncMentions, useEntities } from '@/lib/film/links';
+import { plain } from '@/lib/film/mentions';
 import { listSigningRequests, type SigningRequest } from '@/lib/supabase/signing';
 import { SendForSignature, SigningStatus } from './SendForSignature';
 import { cx } from '../ui';
@@ -163,6 +166,7 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
   const [open, setOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const { project, userId, cardsOn, openCard } = useStudio();
+  const entities = useEntities(cardsOn ? project.id : null);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const kind = doc.kind as DocKind;
@@ -177,6 +181,16 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
   const save = async (patch: Parameters<typeof studio.updateDocument>[1]) => {
     try { onChange(await studio.updateDocument(doc.id, patch)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not save', 'error'); }
+  };
+  // Notes can point at scenes, people, places, days, tasks, documents and media; what they mention becomes links on this document's card.
+  const saveNotes = async (tokenised: string) => {
+    try {
+      onChange(await studio.updateDocument(doc.id, { notes: tokenised || null }));
+      if (cardsOn) {
+        const problem = await syncMentions(project.id, doc.id, tokenised);
+        if (problem) toast(`The note was saved, but its mentions weren’t: ${problem}`, 'error');
+      }
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not save the note', 'error'); }
   };
   const attach = async (file: File | undefined) => {
     if (!file) return;
@@ -202,6 +216,7 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
         <span style={{ flex: '1 1 240px', minWidth: 0 }}>
           <span style={{ display: 'block', fontSize: 13 }}>{doc.title}</span>
           <span className={s.hint}>{who || 'Not linked to anyone yet'}{doc.expires_on ? ` · until ${doc.expires_on}` : ''}</span>
+          {doc.notes && <span className={s.hint} style={{ display: 'block' }}>{cardsOn ? <MentionText text={doc.notes} projectId={project.id} entities={entities.rows} /> : plain(doc.notes)}</span>}
         </span>
         <span className={s.hint} style={{ color: TONE[st.tone] }}>{st.label}</span>
         {doc.storage_path
@@ -226,6 +241,13 @@ function DocItem({ doc, canShape, today, crew, vendors, requests, onRequest, loc
               <button key={x} type="button" role="radio" aria-checked={doc.status === x} className={cx(s.chip, doc.status === x && s.chipOn)}
                 onClick={() => void save({ status: x })}>{STATUS_LABEL[kind]?.[x] ?? x}</button>
             ))}
+          </div>
+          <div className={s.stack} style={{ gridColumn: '1 / -1', gap: 4 }}>
+            <span className={s.hint}>Notes{cardsOn ? ' (type @ to mention a scene, person, place or file)' : ''}</span>
+            {cardsOn
+              ? <MentionInput key={`n:${doc.notes ?? ''}`} entities={entities.rows} initial={doc.notes ?? ''} keep label={`Notes for ${doc.title}`} submitLabel={`Save notes for ${doc.title}`} placeholder="Notes" onSubmit={(t) => void saveNotes(t)} style={{ padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)' }} buttonStyle={{ minHeight: 36, padding: '0 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', cursor: 'pointer' }} />
+              : <input className={s.input} defaultValue={doc.notes ?? ''} key={`n:${doc.notes ?? ''}`} maxLength={1000} aria-label={`Notes for ${doc.title}`}
+                  onBlur={(e) => { const v = e.target.value.trim() || null; if (v !== doc.notes) void save({ notes: v }); }} />}
           </div>
           <label className={s.stack} style={{ gap: 4 }}><span className={s.hint}>Person (on the crew)</span>
             <select className={s.select} value={doc.person_id ?? ''} onChange={(e) => void save({ person_id: e.target.value || null })}>
