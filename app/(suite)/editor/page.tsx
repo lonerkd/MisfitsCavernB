@@ -525,12 +525,13 @@ export default function EditorPage() {
     const next = to.trim().replace(/\s+/g, ' ').toUpperCase();
     if (next === from.trim().toUpperCase()) return null;
     if (charStats.some((c) => c.name.toUpperCase() === next)) return `${next} is already a character in this script. Merging two characters is not supported: choose another name.`;
+    // Work out the text edit first: if it finds nothing to rename, the graph is left alone too.
+    const out = renameCharacterInText(content, lines, from, next);
+    if (out.changed === 0) return `No cue for ${from} was found to rename.`;
     if (currentScript?.project_id) {
       const problem = await renameCharacterRow(currentScript.project_id, from, next);
       if (problem) return problem;
     }
-    const out = renameCharacterInText(content, lines, from, next);
-    if (out.changed === 0) return `No cue for ${from} was found to rename.`;
     setContent(out.text);
     toast(`${from} is now ${next} (${out.changed} ${out.changed === 1 ? 'cue' : 'cues'})`, 'success');
     return null;
