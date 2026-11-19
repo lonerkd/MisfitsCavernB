@@ -100,4 +100,13 @@ test.describe.serial('Continuity (local Supabase)', () => {
     await expect(page.getByText('Look changes', { exact: true })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText(/MAYA: scene 2 “Red coat” then scene 3 “Blue coat”, both on day 2\./)).toBeVisible();
   });
+
+  test('shoot order sits beside story order, and the wardrobe sheet can be printed', async ({ page }) => {
+    test.setTimeout(120_000);
+    await open(page);
+    await expect(page.getByRole('button', { name: /Print \/ PDF: the wardrobe and make-up sheet/ })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: /CSV: the wardrobe and make-up sheet/ })).toBeVisible();
+    // Every scene says when it is shot (the script has three scenes; none is scheduled in this project).
+    await expect(page.getByText(/^(Shoots day \d+|Not scheduled)$/)).toHaveCount(3);
+  });
 });

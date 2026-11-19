@@ -49,3 +49,34 @@ export function continuityDoc(i: ContinuityPrintInput): PrintDoc {
     generated: i.generated,
   };
 }
+
+export interface WardrobeRow { number: number; heading: string; storyDay: number | null; shootDay: number | null; look: string }
+export interface WardrobeCharacter { name: string; rows: WardrobeRow[] }
+
+/**
+ * The wardrobe and make-up sheet: one table per character, scene by scene in script order, with the look noted, the story day it
+ * plays on and the shoot day it is filmed (story order beside shoot order, so the costume department sees both). Characters with
+ * nothing noted still print, with "(no look noted)", so a gap is visible. Pure.
+ */
+export function wardrobeDoc(i: { project: string; accent?: string | null; logo?: string | null; characters: WardrobeCharacter[]; generated: string }): PrintDoc {
+  const blocks: PrintBlock[] = i.characters.filter((c) => c.rows.length).map((c) => ({
+    type: 'section' as const,
+    title: c.name,
+    blocks: [{
+      type: 'table' as const,
+      columns: [{ key: 'n', label: 'Sc', width: '7%' }, { key: 'h', label: 'Scene', width: '32%' }, { key: 's', label: 'Story day', width: '11%' }, { key: 'd', label: 'Shoot day', width: '11%' }, { key: 'l', label: 'Look, wardrobe, make-up' }],
+      rows: c.rows.map((r) => ({ n: r.number, h: r.heading, s: r.storyDay, d: r.shootDay, l: r.look || '(no look noted)' })),
+    }],
+  }));
+  if (blocks.length === 0) blocks.push({ type: 'note', text: 'No character is in a scene yet.' });
+  const gaps = i.characters.reduce((n, c) => n + c.rows.filter((r) => !r.look).length, 0);
+  return {
+    title: 'Wardrobe and make-up',
+    kind: i.project,
+    accent: i.accent, logo: i.logo,
+    meta: [['Characters', i.characters.filter((c) => c.rows.length).length || null], ['Looks missing', gaps || null]],
+    blocks,
+    footer: i.project,
+    generated: i.generated,
+  };
+}
