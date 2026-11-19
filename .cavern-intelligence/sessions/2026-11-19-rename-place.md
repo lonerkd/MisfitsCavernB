@@ -1,0 +1,7 @@
+# Session - 2026-11-19: rename a place from the scene card (BACKLOG 3.18 d, rung E4)
+
+The second text-rewriting operation, the same pattern as the character rename (`2026-11-19-rename-character.md`). The editor's **Now Writing** card gets **Rename place…** for the scene under the caret: the `project_locations` record is renamed first (every scene linked to it, the stripboard and the call sheet follow), then every scene heading naming the place is rewritten as one edit through the shared text (`renamePlaceInText`, `renameLocationRecord`). A name another place already uses is refused by the existing rule. Only headings change; a place named in action text is prose. A text edit that finds no heading changes nothing, in the text or the graph.
+
+**Verified:** typecheck, lint, unit tests (`renameSlug`, `slugPlace`, `renamePlaceInText`, `validPlaceName` in `lib/scriptos/rename.test.ts`: the prefix and the time kept, `KITCHEN` does not match `KITCHEN SINK`, the parse reads the new heading back), and `e2e/character-rename.spec.ts` (new place case: the headings, the same location record id, both scenes still pointing at it after the sync) with `e2e/location-rename.spec.ts` on a production build on the local stack. **Not verified:** a rename made offline (the record write is online-only); a phone.
+
+**Left in E4:** choosing a location for a scene from the text, and the offline queue for the row writes.
