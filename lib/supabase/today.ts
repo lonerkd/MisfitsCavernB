@@ -131,3 +131,25 @@ export async function getDirectorDay(projectId: string, today: string): Promise<
     crew: confirmed.size, acked,
   };
 }
+
+/** The wardrobe and make-up person's input: the next shoot day, and the story's scenes, characters and looks (all through RLS). */
+export async function getLookDay(projectId: string, today: string): Promise<import('@/lib/today/looks').LookDayInput | null> {
+  const days = await supabase.from('shoot_days').select('day_number, shoot_date').eq('project_id', projectId).gte('shoot_date', today).order('shoot_date').limit(1);
+  if (days.error) throw days.error;
+  const day = (days.data ?? [])[0] as { day_number: number; shoot_date: string | null } | undefined;
+  if (!day) return null;
+  const [scenes, characters, links, states] = await Promise.all([
+    supabase.from('scenes').select('id, scene_number, title, story_day, shoot_day').eq('project_id', projectId),
+    supabase.from('characters').select('id, name').eq('project_id', projectId),
+    supabase.from('scene_characters').select('scene_id, character_id').eq('project_id', projectId),
+    supabase.from('scene_states').select('scene_id, character_id, look').eq('project_id', projectId),
+  ]);
+  for (const r of [scenes, characters, links, states]) if (r.error) throw r.error;
+  return {
+    today, day,
+    scenes: (scenes.data ?? []) as import('@/lib/today/looks').LookScene[],
+    characters: (characters.data ?? []) as Array<{ id: string; name: string }>,
+    sceneCharacters: (links.data ?? []) as Array<{ scene_id: string; character_id: string }>,
+    states: (states.data ?? []) as Array<{ scene_id: string; character_id: string; look: string }>,
+  };
+}
