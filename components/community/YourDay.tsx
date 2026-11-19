@@ -18,9 +18,10 @@ import { openableViews, toolkitFor } from '@/lib/roles/toolkit';
 import { loadCrafts } from '@/lib/crafts/crafts';
 import { PRODUCTION_VIEW_LABELS } from '@/lib/os/progress';
 import { getMyInvitations, respondToInvitation, type CrewInvitation } from '@/lib/supabase/crew-management';
-import { getTodayWork, getOwnerData, getDirectorDay, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
+import { getTodayWork, getOwnerData, getDirectorDay, getLookDay, nameUnread, type TodaySheet, type TodayTask } from '@/lib/supabase/today';
 import { ownerRows, type OwnerData } from '@/lib/today/owner';
 import { dayGlance, isDirectionCraft, type DayGlance } from '@/lib/today/director';
+import { isLookCraft, lookDay, type LookDay } from '@/lib/today/looks';
 import { updateTask } from '@/lib/supabase/project-hub';
 import { useCurrentUser, useOSGate, useProject, mapStatusToPhase, PHASES, osAdoptSession } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
@@ -70,6 +71,7 @@ export function YourDay() {
   const [invites, setInvites] = useState<CrewInvitation[]>([]);
   const [roles, setRoles] = useState<Array<{ project_id: string; craft: string | null; tier: string; text: string; tools: Array<{ label: string; view: string }> }>>([]);
   const [glances, setGlances] = useState<Array<{ project_id: string; glance: DayGlance }>>([]);
+  const [lookDays, setLookDays] = useState<Array<{ project_id: string; day: LookDay }>>([]);
   const [answering, setAnswering] = useState<string | null>(null);
   const profileCraft = (profile as { role?: string | null } | null)?.role ?? null;
 
@@ -124,9 +126,16 @@ export function YourDay() {
         const input = await getDirectorDay(id, today).catch(() => null);
         return input ? { project_id: id, glance: dayGlance(input) } : null;
       }))).filter((g): g is { project_id: string; glance: DayGlance } => !!g).sort((a, b) => (a.glance.date ?? '9') < (b.glance.date ?? '9') ? -1 : 1);
-      return { work, notes, rows, owner, invs, myRoles, glances };
-    })().then(({ work, notes, rows, owner, invs, myRoles, glances }) => {
+      // The looks person's day: the productions where they are on the wardrobe, hair or make-up crew.
+      const dressing = Array.from(new Set(myRoles.filter((r) => isLookCraft(r.craft)).map((r) => r.project_id)));
+      const lookDays = (await Promise.all(dressing.map(async (id) => {
+        const input = await getLookDay(id, today).catch(() => null);
+        return input ? { project_id: id, day: lookDay(input) } : null;
+      }))).filter((g): g is { project_id: string; day: LookDay } => !!g).sort((a, b) => (a.day.date ?? '9') < (b.day.date ?? '9') ? -1 : 1);
+      return { work, notes, rows, owner, invs, myRoles, glances, lookDays };
+    })().then(({ work, notes, rows, owner, invs, myRoles, glances, lookDays }) => {
       setGlances(glances);
+      setLookDays(lookDays);
       setOwnerData(owner);
       setInvites(invs);
       setRoles(myRoles);
@@ -282,6 +291,33 @@ export function YourDay() {
                 <div className={t.actions}>
                   <button type="button" className={t.btn} onClick={() => void goTo(project_id, '/studio?tab=production&view=shots')}>Shot list</button>
                   <button type="button" className={t.btn} onClick={() => void goTo(project_id, '/studio?tab=production&view=schedule')}>Schedule</button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
+
+      {lookDays.length > 0 && (
+        <section className={`${t.card} ${t.wide}`} aria-labelledby="today-looks">
+          <div className={t.cardHead}><h2 id="today-looks" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> Looks for the next shoot day</h2></div>
+          {lookDays.map(({ project_id, day: d }) => (
+            <article key={project_id} className={t.day} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${d.day} looks`}>
+              <div className={t.dayBody}>
+                <h3 className={t.dayTitle}>{projectById.get(project_id)?.title ?? 'A project'} · Day {d.day}{d.date ? ` · ${dayLabel(d.date, today)}` : ''}</h3>
+                {d.attention.length > 0
+                  ? <ul aria-label="Needs wardrobe and make-up before the day">{d.attention.map((a, k) => <li key={`${k}${a}`} className={t.draft}>{a}</li>)}</ul>
+                  : <p className={t.empty}>Every look for this day is written down.</p>}
+                <ol aria-label="Looks by scene">
+                  {d.scenes.map((sc) => (
+                    <li key={sc.id}>
+                      <strong>{sc.scene_number}. {sc.title}</strong>
+                      <span className={t.fact}> {sc.looks.map((l) => `${l.character}: ${l.look || '(no look noted)'}`).join(' · ') || 'No cast in this scene'}</span>
+                    </li>
+                  ))}
+                </ol>
+                <div className={t.actions}>
+                  <button type="button" className={t.btn} onClick={() => void goTo(project_id, '/studio?tab=production&view=continuity')}>Continuity</button>
                 </div>
               </div>
             </article>
