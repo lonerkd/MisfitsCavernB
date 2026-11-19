@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  categoryKey, costByCategory, findMentions, groupForScene, indexMemory, nameKey, suggestForScene, titleCase,
+  categoryKey, costByCategory, costByScene, costOfScenes, findMentions, groupForScene, indexMemory, nameKey, suggestForScene, titleCase,
   type BreakdownCategory, type BreakdownElement, type SceneElementTag,
 } from './core';
 
@@ -101,6 +101,22 @@ describe('costByCategory', () => {
     expect(props.amount).toBe(120 + 2 * 50);
     expect(props.estimated).toBe(100);
     expect(costs.find((c) => c.category.key === 'wardrobe')!.estimated).toBe(0);
+  });
+});
+
+describe('costByScene and costOfScenes', () => {
+  const els = [el('1', 'Revolver', 'c-props', 120), el('2', 'Lantern', 'c-props'), el('3', 'Jacket', 'c-ward')];
+  const tags = [tag('s1', '1'), tag('s1', '2'), tag('s2', '1'), tag('s2', '3')];
+  it('prices what each scene needs, an element in two scenes counting in both', () => {
+    const m = costByScene(['s1', 's2', 's3'], tags, els, CATS);
+    expect(m.get('s1')).toEqual({ amount: 170, elements: 2, unpriced: 0 });
+    expect(m.get('s2')).toEqual({ amount: 120, elements: 2, unpriced: 1 });
+    expect(m.get('s3')).toEqual({ amount: 0, elements: 0, unpriced: 0 });
+  });
+  it('counts an element once on a day that shoots two scenes using it', () => {
+    const m = costOfScenes([['day1', ['s1', 's2']], ['day2', ['s2']]], tags, els, CATS);
+    expect(m.get('day1')).toEqual({ amount: 170, elements: 3, unpriced: 1 });
+    expect(m.get('day2')).toEqual({ amount: 120, elements: 2, unpriced: 1 });
   });
 });
 
