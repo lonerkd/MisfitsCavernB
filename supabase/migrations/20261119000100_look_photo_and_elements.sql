@@ -22,6 +22,7 @@ CREATE TABLE public.scene_state_elements (
   CONSTRAINT scene_state_elements_element_fkey FOREIGN KEY (element_id, project_id)
     REFERENCES public.breakdown_elements(id, project_id) ON DELETE CASCADE
 );
+CREATE INDEX scene_state_elements_state_fkey_idx ON public.scene_state_elements USING btree (state_id, project_id);
 CREATE INDEX scene_state_elements_element_fkey_idx ON public.scene_state_elements USING btree (element_id, project_id);
 CREATE INDEX scene_state_elements_project_idx ON public.scene_state_elements USING btree (project_id);
 CREATE INDEX scene_state_elements_created_by_idx ON public.scene_state_elements USING btree (created_by);

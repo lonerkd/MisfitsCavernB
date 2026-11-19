@@ -2155,6 +2155,7 @@ index CREATE INDEX scene_media_scene_fkey_idx ON public.scene_media USING btree 
 index CREATE INDEX scene_state_elements_created_by_idx ON public.scene_state_elements USING btree (created_by)
 index CREATE INDEX scene_state_elements_element_fkey_idx ON public.scene_state_elements USING btree (element_id, project_id)
 index CREATE INDEX scene_state_elements_project_idx ON public.scene_state_elements USING btree (project_id)
+index CREATE INDEX scene_state_elements_state_fkey_idx ON public.scene_state_elements USING btree (state_id, project_id)
 index CREATE INDEX scene_states_character_fkey_idx ON public.scene_states USING btree (character_id, project_id)
 index CREATE INDEX scene_states_media_fkey_idx ON public.scene_states USING btree (media_id, project_id)
 index CREATE INDEX scene_states_project_idx ON public.scene_states USING btree (project_id)
