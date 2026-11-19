@@ -41,6 +41,8 @@ export interface EditorRightPanelsProps {
   setNightModePreview: (v: boolean) => void;
   chars: string[];
   charStats: CharacterStats[];
+  /** Rename a character everywhere: its cues in the text and its row in the production. Resolves to a sentence when it cannot. */
+  onRenameCharacter?: (from: string, to: string) => Promise<string | null>;
   handleLockRevision: () => void;
   revisions: Revision[];
   onViewRevision: (revisionId: string) => void;
@@ -116,13 +118,14 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null, onRenameCharacter,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
+  const [renaming, setRenaming] = useState<{ name: string; value: string; error: string | null; busy: boolean } | null>(null);
   const [lintOpen, setLintOpen] = useState(false);
   const [revisionsOpen, setRevisionsOpen] = useState(true);
   const [stashOpen, setStashOpen] = useState(false);
@@ -290,6 +293,30 @@ export function EditorRightPanels({
                                 <span style={{ fontSize: 13, fontWeight: 700, color: TYPE_COLORS.character }}>{cs.name}</span>
                                 <span style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{cs.dialoguePercentage}%</span>
                               </div>
+                              {onRenameCharacter && (renaming?.name === cs.name ? (
+                                <form
+                                  style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}
+                                  onSubmit={async (e) => {
+                                    e.preventDefault();
+                                    if (!renaming || renaming.busy) return;
+                                    setRenaming({ ...renaming, busy: true, error: null });
+                                    const problem = await onRenameCharacter(cs.name, renaming.value);
+                                    setRenaming(problem ? { ...renaming, busy: false, error: problem } : null);
+                                  }}
+                                >
+                                  <label style={{ flex: 1, minWidth: 120 }}>
+                                    <span className="sr-only">New name for {cs.name}</span>
+                                    <input autoFocus value={renaming.value} maxLength={60} onChange={(e) => setRenaming({ ...renaming, value: e.target.value, error: null })}
+                                      style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12 }} />
+                                  </label>
+                                  <button type="submit" disabled={renaming.busy} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12, cursor: 'pointer' }}>{renaming.busy ? 'Renaming…' : 'Rename'}</button>
+                                  <button type="button" onClick={() => setRenaming(null)} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg-muted)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+                                  {renaming.error && <div role="alert" style={{ flexBasis: '100%', fontSize: 11, color: 'var(--danger)' }}>{renaming.error}</div>}
+                                </form>
+                              ) : (
+                                <button type="button" aria-label={`Rename ${cs.name}`} onClick={() => setRenaming({ name: cs.name, value: cs.name, error: null, busy: false })}
+                                  style={{ marginBottom: 8, padding: 0, border: 'none', background: 'transparent', color: 'var(--violet)', fontSize: 11, textDecoration: 'underline', cursor: 'pointer' }}>Rename…</button>
+                              ))}
                               <div style={{ height: 3, background: 'rgba(var(--ink-rgb), 0.1)', borderRadius: 4, marginBottom: 8 }}>
                                 <div style={{ height: '100%', width: `${cs.dialoguePercentage}%`, background: 'var(--violet)', borderRadius: 4 }} />
                               </div>
