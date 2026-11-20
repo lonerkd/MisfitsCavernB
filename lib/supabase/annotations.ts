@@ -56,7 +56,7 @@ export async function addAnnotation(input: {
   // A plain note is a thing in the film graph (an entity under its own id): tie it to the scene it is written in, by id, so it follows the
   // scene through rewrites and shows on the scene's card. A failure here never loses the note.
   if (input.scene && (note.type === 'note' || note.type === 'revision' || note.type === 'reference')) {
-    await linkNoteToScene(note, input.scriptId, input.scene.ordinal);
+    void linkNoteToScene(note, input.scriptId, input.scene.ordinal); // not awaited: a miss retries for a few seconds, and the note box must not wait
   }
   return note;
 }
