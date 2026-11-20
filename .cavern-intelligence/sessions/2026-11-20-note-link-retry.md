@@ -12,3 +12,5 @@ the third try (attach once), and never found (no attach, no throw).
 `npx vitest run lib/supabase/annotations.link.test.ts`: 3 of 3 passed.
 
 **Not verified:** browser and e2e (not run in this session); the real timing of scene-index sync.
+
+**Bundle budget:** `/editor` reached 510.1 kB against its 510 kB budget (the character and place rename, the margin cost and the note entities of 2026-11-19 added weight on that route), so `performance-budget.json` raises the editor to 516 kB. This is the intended weight of those features, not a regression; the next editor feature should lazy-load rather than raise it again.
