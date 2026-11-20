@@ -56,12 +56,37 @@ export async function addAnnotation(input: {
   // A plain note is a thing in the film graph (an entity under its own id): tie it to the scene it is written in, by id, so it follows the
   // scene through rewrites and shows on the scene's card. A failure here never loses the note.
   if (input.scene && (note.type === 'note' || note.type === 'revision' || note.type === 'reference')) {
-    try {
-      const { data: scene } = await supabase.from('scenes').select('id').eq('script_id', input.scriptId).eq('ordinal', input.scene.ordinal).is('removed_at', null).maybeSingle();
-      if (scene) await attach(note.project_id, note.id, scene.id);
-    } catch { /* the note stands without the link */ }
+    await linkNoteToScene(note, input.scriptId, input.scene.ordinal);
   }
   return note;
+}
+
+export const SCENE_LINK_RETRIES = 3;
+export const SCENE_LINK_DELAY_MS = 1500;
+
+/**
+ * Ties a note to the scene at `ordinal` in `scriptId`. The scene index may not be synced yet, so a
+ * miss is retried (`retries` more times, `delayMs` apart). Never throws: a failure leaves the note unlinked.
+ */
+export async function linkNoteToScene(
+  note: { id: string; project_id: string },
+  scriptId: string,
+  ordinal: number,
+  opts: { retries?: number; delayMs?: number; wait?: (ms: number) => Promise<void> } = {},
+): Promise<void> {
+  const retries = opts.retries ?? SCENE_LINK_RETRIES;
+  const delayMs = opts.delayMs ?? SCENE_LINK_DELAY_MS;
+  const wait = opts.wait ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  try {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const { data: scene } = await supabase.from('scenes').select('id').eq('script_id', scriptId).eq('ordinal', ordinal).is('removed_at', null).maybeSingle();
+      if (scene) {
+        await attach(note.project_id, note.id, (scene as { id: string }).id);
+        return;
+      }
+      if (attempt < retries) await wait(delayMs);
+    }
+  } catch { /* the note stands without the link */ }
 }
 
 export async function deleteAnnotation(id: string): Promise<void> {
