@@ -118,7 +118,7 @@ test.describe('Renaming a character in the editor (local Supabase)', () => {
     // The caret is in the first scene (KITCHEN): its card offers the rename.
     await editor.click();
     await editor.press('Control+Home');
-    await page.getByRole('button', { name: 'Rename the place KITCHEN' }).click();
+    await page.getByRole('button', { name: 'Rename place… KITCHEN' }).click();
     await page.getByLabel('New name for KITCHEN').fill('Diner');
     await page.getByRole('button', { name: 'Rename place', exact: true }).click();
 

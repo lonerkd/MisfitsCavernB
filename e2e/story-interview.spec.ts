@@ -67,7 +67,7 @@ test.describe('Story interview (local Supabase)', () => {
     await page.getByRole('button', { name: 'Outline' }).first().click();
     await page.getByRole('button', { name: 'Interview' }).click();
     await page.getByRole('button', { name: /Add 6 scenes to the script/ }).click();
-    await expect(page.getByText('already in the script')).toBeVisible();
+    await expect(page.getByText('Every beat of this skeleton is already in the script.')).toBeVisible();
     await page.getByRole('button', { name: 'Write', exact: true }).first().click();
     expect((await script.inputValue()).match(/INT. TBD - DAY/g)).toHaveLength(6);
   });

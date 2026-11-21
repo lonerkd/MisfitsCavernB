@@ -85,7 +85,8 @@ test.describe('Breakdown in the script (local Supabase)', () => {
     await card.getByLabel('Cost').fill('85');
     await card.getByLabel('Cost').blur();
     await expect.poll(async () => (await admin.from('breakdown_elements').select('status, cost').eq('name', 'old revolver').single()).data).toEqual({ status: 'sourcing', cost: 85 });
-    await expect(page.getByText('$85')).toBeVisible();
+    // The panel's Est. cost total (the story-day strip also shows $85, so scope to the total).
+    await expect(page.getByText('Est. cost', { exact: true }).first().locator('..').getByText('$85', { exact: true })).toBeVisible();
 
     // The breakdown UI (panel, element card, highlights, tag bar) passes WCAG 2.2 AA.
     await selectInScript(page, 'checks');

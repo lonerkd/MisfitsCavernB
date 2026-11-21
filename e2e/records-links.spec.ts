@@ -67,7 +67,8 @@ test.describe('Records linked to the film graph (local Supabase)', () => {
     await page.getByLabel('Shot', { exact: true }).fill('A1');
     // The island's pill floats over the bottom of the form: click without a pointer, as a keyboard press would.
     await page.getByRole('button', { name: /^(add|log)$/i }).dispatchEvent('click');
-    await expect(page.getByText('Sc 1', { exact: true })).toBeVisible();
+    // The saved record's chip is in a list item; the form's own scene chip also reads "Sc 1".
+    await expect(page.getByRole('listitem').getByText('Sc 1', { exact: true })).toBeVisible();
 
     // The page shows the record from its own state at once; the row lands a moment later, so wait for it rather than read it straight away.
     const stored = () => admin.from('production_records').select('scene_ids, data').eq('project_id', projectId).eq('kind', 'cameraReports').maybeSingle();
