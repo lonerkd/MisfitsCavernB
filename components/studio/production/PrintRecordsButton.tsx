@@ -16,7 +16,7 @@ import s from '../studio.module.css';
 
 /** Prints (or saves as a PDF) one role tool's records. Reads the list fresh when pressed, so the page is what is saved, not what was loaded. */
 export function PrintRecordsButton({ kind }: { kind: RecordKind }) {
-  const { project } = useStudio();
+  const { project, media } = useStudio();
   const { toast } = useToast();
   const t = useRecordTargets();
   const [busy, setBusy] = useState(false);
@@ -31,6 +31,7 @@ export function PrintRecordsButton({ kind }: { kind: RecordKind }) {
         rows,
         sceneOf: (r) => sceneChip(r as never, t.sceneById),
         characterOf: (r) => characterName(r as never, t.characterById),
+        mediaTitle: (id) => media.rows.find((m) => m.id === id)?.title || null,
         generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
       });
       if (!act(doc)) toast(failed, 'error');

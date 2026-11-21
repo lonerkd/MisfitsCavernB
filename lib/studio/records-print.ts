@@ -30,7 +30,7 @@ export const RECORD_PRINT: Record<RecordKind, RecordPrintSpec> = {
   vfxShots: { view: 'vfx', title: 'VFX shots', columns: [C('shot', 'Shot', '10%'), C('scene', 'Scene', '10%'), C('vendor', 'Vendor', '22%'), C('plateReq', 'Plate requirements'), C('status', 'Status', '13%')] },
   costumes: { view: 'costume', title: 'Costumes', columns: [C('character', 'Character', '18%'), C('scene', 'Scene', '10%'), C('change', 'Costume / change'), C('status', 'Status', '13%')] },
   permits: { view: 'permit', title: 'Permits and insurance', columns: [C('location', 'Location'), C('permitType', 'Type', '18%'), C('issuedBy', 'Issued by', '20%'), C('expiry', 'Expires', '13%'), C('status', 'Status', '12%')] },
-  scriptNotes: { view: 'scriptsup', title: 'Script supervisor notes', columns: [C('scene', 'Scene', '8%'), C('take', 'Take', '7%'), C('slate', 'Slate', '8%'), C('lens', 'Lens', '8%'), C('lines', 'Lines', '9%'), C('notes', 'Notes'), C('circle', 'Circled', '8%')] },
+  scriptNotes: { view: 'scriptsup', title: 'Script supervisor notes', columns: [C('scene', 'Scene', '8%'), C('take', 'Take', '7%'), C('slate', 'Slate', '8%'), C('lens', 'Lens', '8%'), C('lines', 'Lines', '9%'), C('photo', 'Photo', '12%'), C('notes', 'Notes'), C('circle', 'Circled', '8%')] },
   purchaseOrders: { view: 'po', title: 'Purchase orders', columns: [C('poNumber', 'PO', '12%'), C('vendor', 'Vendor'), C('department', 'Department', '20%'), C('amount', 'Amount', '13%'), C('status', 'Status', '12%')] },
   mediaOffloads: { view: 'mediaoffload', title: 'Media offload log', columns: [C('card', 'Card', '10%'), C('camera', 'Camera', '12%'), C('size', 'GB', '8%'), C('checksum', 'Checksum'), C('destination', 'Destination', '16%'), C('status', 'Status', '11%')], landscape: true },
   makeup: { view: 'makeup', title: 'Makeup and hair', columns: [C('character', 'Character', '16%'), C('scene', 'Scene', '9%'), C('look', 'Look'), C('artist', 'Artist', '16%'), C('notes', 'Notes')] },
@@ -65,6 +65,8 @@ export interface RecordsPrintInput {
   /** Resolves a record's scene and character from its links; falls back to the record's own text. */
   sceneOf?: (r: PrintableRecord) => string;
   characterOf?: (r: PrintableRecord) => string;
+  /** Resolves a record's continuity photo (`media_id`) to the photo's title; null when unknown. Nothing is fetched: the caller passes the lookup. */
+  mediaTitle?: (id: string) => string | null;
   generated: string;
 }
 
@@ -81,6 +83,11 @@ export function recordsDoc(i: RecordsPrintInput): PrintDoc {
       const a = Number(r.from_line);
       const b = r.to_line == null ? a : Number(r.to_line);
       out.lines = Number.isFinite(a) && a >= 1 ? `${a === b || !Number.isFinite(b) ? a : `${Math.min(a, b)}–${Math.max(a, b)}`}${r.off_camera ? ' off camera' : ''}` : null;
+    }
+    // A take's continuity photo, by its title. A take with no photo, or one the library no longer has, prints nothing.
+    if (i.mediaTitle && spec.columns.some((c) => c.key === 'photo')) {
+      const id = r.media_id == null ? '' : String(r.media_id);
+      out.photo = (id && i.mediaTitle(id)) || null;
     }
     return out;
   });
