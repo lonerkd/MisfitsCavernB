@@ -8,7 +8,9 @@ import type { LineType } from '@/lib/scriptos/types';
 
 const LINE_TYPES: LineType[] = ['slug', 'action', 'character', 'dialogue', 'parenthetical', 'transition', 'shot', 'text', 'title', 'centered', 'section', 'synopsis', 'lyric', 'scene', 'note', 'dual', 'pagebreak', 'boneyard', 'empty'];
 
-export function LineOverrideButton({ projectId, scriptId, lineIndex, currentType, onSaved }: {
+export function LineOverrideButton({ projectId, scriptId, lineIndex, lineText, currentType, onSaved }: {
+  /** The line's own text, saved with the override so it follows the line when lines above change. */
+  lineText?: string;
   projectId: string | null;
   scriptId: string | null;
   lineIndex: number;
@@ -24,7 +26,7 @@ export function LineOverrideButton({ projectId, scriptId, lineIndex, currentType
   const setOverride = async (type: LineType) => {
     setBusy(true);
     try {
-      await studio.setLineOverride(projectId, scriptId, lineIndex, type);
+      await studio.setLineOverride(projectId, scriptId, lineIndex, type, lineText);
       toast(`Line ${lineIndex + 1} forced to ${type}`, 'success');
       onSaved();
     } catch (e) {

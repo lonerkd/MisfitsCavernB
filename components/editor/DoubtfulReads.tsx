@@ -34,7 +34,7 @@ export function DoubtfulReads({ doubts, projectId, scriptId = null, onSaved, onO
   const readAs = async (d: Doubt) => {
     if (!projectId || !scriptId || !d.alternative) return;
     try {
-      await studio.setLineOverride(projectId, scriptId, d.index, d.alternative);
+      await studio.setLineOverride(projectId, scriptId, d.index, d.alternative, d.text);
       setGone((g) => new Set(g).add(d.index));
       toast(`Line ${d.index + 1} is read as ${d.alternative}`, 'success');
       onOverridden?.();

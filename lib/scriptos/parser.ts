@@ -1,5 +1,6 @@
 
 
+import { anchorOverrides } from './override-anchor';
 import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { headingParts, readHeading } from './heading';
@@ -130,7 +131,7 @@ export interface ParseContext {
   /** Per-writer private memory (L6): confirmed names, rejected names, learned patterns. */
   writerMemory?: WriterMemory;
   /** Per-project line overrides (L6): a person's correction on specific lines. */
-  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
+  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }>;
 }
 
 /** Per-writer private memory (L6 of the deep-brain plan). */
@@ -221,7 +222,7 @@ export class ScriptParser {
     this.rawLines = text ? text.split(/\r?\n/) : [];
     this.format = format;
     this.writerMemory = options.context?.writerMemory;
-    this.lineOverrides = options.context?.lineOverrides;
+    this.lineOverrides = anchorOverrides(this.rawLines, options.context?.lineOverrides);
     this.previousDraftCues = options.context?.previousDraftCues;
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
