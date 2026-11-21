@@ -228,6 +228,9 @@ export default function StudioPage() {
                   <LockedTool
                     tool={tabLock}
                     accent={activeProject.accent_color}
+                    projectId={activeProject.id}
+                    isOwner={activeProject.creator_id === user.id}
+                    onNavigate={navigate}
                     onOpen={() => setPeeked((prev) => new Set(prev).add(tab))}
                     onShowPhase={() => setTab('overview')}
                   />
