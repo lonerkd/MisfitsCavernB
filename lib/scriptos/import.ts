@@ -30,6 +30,8 @@ function decodeXml(s: string): string {
 
 export function parseFdx(xml: string): string {
   const blocks: Block[] = [];
+  // The exported TitlePage repeats the title as paragraphs; it is not body text.
+  xml = xml.replace(/<TitlePage\b[\s\S]*?<\/TitlePage>/g, '');
   const paraRe = /<Paragraph\b([^>]*)>([\s\S]*?)<\/Paragraph>/g;
   let m: RegExpExecArray | null;
   while ((m = paraRe.exec(xml))) {
@@ -40,7 +42,7 @@ export function parseFdx(xml: string): string {
     const texts = [...inner.matchAll(/<Text\b[^>]*>([\s\S]*?)<\/Text>/g)]
       .map((t) => decodeXml(t[1]))
       .join('');
-    const text = texts.replace(/\s+/g, ' ').trim();
+    const text = texts.replace(/[\r\n\t]+/g, ' ').trim();
     if (!text) continue;
     blocks.push({ id: newBlockId(), type, text });
   }

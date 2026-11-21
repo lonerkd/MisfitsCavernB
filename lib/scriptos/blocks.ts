@@ -31,11 +31,18 @@ export function renderBlockText(b: Block): string {
   switch (b.type) {
     case 'scene': {
 
+      // A forced heading (.Rooftop) is the writer's own text: its case stays.
+      if (t.startsWith('.') && !t.startsWith('..')) return t.replace(/\s{2,}/g, ' ').trim();
       let s = t.toUpperCase().replace(/\s*(--|—|–)\s*/g, ' - ').replace(/\s{2,}/g, ' ').trim();
       return s;
     }
-    case 'character':
-      return t.toUpperCase().replace(/\s{2,}/g, ' ').trim();
+    case 'character': {
+      // The name is upper-cased; an extension in parentheses keeps the writer's case.
+      const flat = t.replace(/\s{2,}/g, ' ').trim();
+      const paren = flat.indexOf('(');
+      if (paren <= 0) return flat.toUpperCase();
+      return flat.slice(0, paren).toUpperCase() + flat.slice(paren);
+    }
     case 'transition': {
       let s = t.toUpperCase().trim();
 

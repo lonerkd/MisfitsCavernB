@@ -43,7 +43,7 @@ function signature(text: string): string[] {
 
 /**
  * The importer reads every <Paragraph> in the file, including the TitlePage
- * header and content, as body text (pinned in the last block below). The
+ * header and content, as body text (fixed: parseFdx skips it). The
  * per-script cases therefore drop the TitlePage element before importing, so
  * that each case measures the body. The title page itself is still exported
  * as body paragraphs and is still compared.
@@ -193,11 +193,9 @@ describe('FDX round trip keeps the type and text of every line', () => {
   }
 });
 
-// Pinned losses. Each `it.fails` asserts the value a correct round trip keeps; it
-// passes while the exporter or importer loses it. When a loss is fixed, the test
-// reports as unexpectedly passing: delete its `.fails` and it becomes a guard.
-describe('FDX round trip: pinned losses (not fixed here)', () => {
-  it.fails('loses the case of a character extension typed in lower case: blocks.ts renderBlockText upper-cases the whole cue', async () => {
+// Former losses, fixed 2026-11-21; each is now a guard.
+describe('FDX round trip: losses that stay fixed', () => {
+  it('loses the case of a character extension typed in lower case: blocks.ts renderBlockText upper-cases the whole cue', async () => {
     const { after } = await roundTrip(`INT. A - DAY
 
 STEEL (beer raised)
@@ -206,7 +204,7 @@ To retirement.
     expect(after).toContain('character|STEEL (beer raised)');
   });
 
-  it.fails('loses the case of a forced scene heading (.Rooftop): blocks.ts renderBlockText upper-cases every scene', async () => {
+  it('loses the case of a forced scene heading (.Rooftop): blocks.ts renderBlockText upper-cases every scene', async () => {
     const { after } = await roundTrip(`INT. A - DAY
 
 .Rooftop at dusk
@@ -216,7 +214,7 @@ Body.
     expect(after).toContain('slug|.Rooftop at dusk');
   });
 
-  it.fails('loses runs of inner spaces in action: import.ts parseFdx collapses every whitespace run to one space', async () => {
+  it('loses runs of inner spaces in action: import.ts parseFdx collapses every whitespace run to one space', async () => {
     const { after } = await roundTrip(`INT. A - DAY
 
 A   room  with   gaps.
@@ -224,7 +222,7 @@ A   room  with   gaps.
     expect(after).toContain('action|A   room  with   gaps.');
   });
 
-  it.fails('adds two action lines that repeat the title on every full import: import.ts parseFdx reads the export.ts TitlePage paragraphs as body', async () => {
+  it('adds two action lines that repeat the title on every full import: import.ts parseFdx reads the export.ts TitlePage paragraphs as body', async () => {
     const fountain = `Title: My Film
 
 INT. A - DAY
