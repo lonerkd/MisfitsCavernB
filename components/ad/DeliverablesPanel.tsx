@@ -7,7 +7,9 @@ import { DELIVERABLE_KINDS, isDeliverableKind } from '@/lib/ad/kinds';
 import { listBrandRules, listDeliverables, updateDeliverable, type Deliverable } from '@/lib/ad/api';
 import { checkBrandRules, type BrandRule, type BrandRuleKind, type BrandRuleSeverity } from '@/lib/ad/brand-rules';
 import { copyText, parseCopy } from '@/lib/ad/copy';
-import { describePiece, exportFileName, needsPdfFallback, pdfSourceText, pieceToText, setToText, type ExportPiece } from '@/lib/ad/export';
+import { describePiece, exportFileName, pieceToText, setToText, type ExportPiece } from '@/lib/ad/export';
+import { campaignDoc } from '@/lib/ad/campaign-print';
+import { printDocument } from '@/lib/print/print';
 import { getScript } from '@/lib/scriptos/storage';
 import { fetchScriptContent } from '@/lib/studio';
 import { sendDraftsForReview, listVersions, reviewUrl, STATE_LABEL, versionState } from '@/lib/review/versions';
@@ -113,10 +115,8 @@ export function DeliverablesPanel() {
         const text = only ? pieceToText(views[0]) : setToText(project.title, views, new Date().toISOString().slice(0, 10));
         download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name);
       } else {
-        const { buildPdf } = await import('@/lib/ad/exportPdf');
-        const doc = await buildPdf(project.title, views);
-        download(doc.output('blob'), name);
-        if (needsPdfFallback(pdfSourceText(project.title, views))) toast('Some characters this PDF font cannot print are shown as “?”. The plain-text export keeps every character.', 'info');
+        // Through the print kit: the project's colour and logo, any language, one piece per page. "Save as PDF" is in the print dialog.
+        if (!printDocument(campaignDoc({ campaign: project.title, views, accent: project.accent_color, logo: project.logo_url, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }))) toast('Could not open the print dialog here.', 'error');
       }
     } catch (error) {
       toast(`Could not export: ${error instanceof Error ? error.message : 'try again'}`, 'error');
@@ -161,7 +161,7 @@ export function DeliverablesPanel() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }} role="group" aria-label={`Export ${item.title}`}>
                         <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'txt')}>Text</button>
-                        <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'pdf')}>PDF</button>
+                        <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'pdf')}>Print / PDF</button>
                       </div>
                       <label className={s.hint}>Piece type
                         <select aria-label={`Piece type for ${item.title}`} className={s.input} value={item.kind} disabled={!canShape || busy}
@@ -207,7 +207,7 @@ export function DeliverablesPanel() {
             <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }} role="group" aria-label="Export the whole campaign">
               <span className={s.hint}>Export all {deliverables.data.length} pieces</span>
               <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(null, 'txt')}>Text</button>
-              <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(null, 'pdf')}>PDF</button>
+              <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(null, 'pdf')}>Print / PDF</button>
             </div>
           )}
           {canShape && (

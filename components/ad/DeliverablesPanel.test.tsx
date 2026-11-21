@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 const toast = vi.fn();
+const printDocument = vi.fn(() => true);
+vi.mock('@/lib/print/print', () => ({ printDocument: (...a: unknown[]) => (printDocument as unknown as (...x: unknown[]) => boolean)(...a) }));
 const { api } = vi.hoisted(() => ({
   api: {
     versions: [{ script_id: 's1', number: 1, status: 'sent' }] as Array<{ script_id: string; number: number; status: string }>,
@@ -88,13 +90,16 @@ describe('DeliverablesPanel — export', () => {
     expect(text).toContain('世界');
   });
 
-  it('exports a PDF, and says when some characters could not be printed', async () => {
+  it('Print / PDF hands the print kit the piece, with every character as written (no "?")', async () => {
     await open();
-    fireEvent.click(screen.getAllByRole('button', { name: 'PDF' })[1]); // the poster, which has non-Latin text
-    await waitFor(() => expect(saved).toHaveLength(1));
-    expect(saved[0].name).toBe('spring-campaign-poster.pdf');
-    expect((await saved[0].text).startsWith('%PDF')).toBe(true);
-    expect(toast).toHaveBeenCalledWith(expect.stringContaining('shown as “?”'), 'info');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Print / PDF' })[1]); // the poster, which has non-Latin text
+    await waitFor(() => expect(printDocument).toHaveBeenCalledTimes(1));
+    const doc = (printDocument.mock.calls[0] as unknown as [{ title: string; kind: string; blocks: unknown[] }])[0];
+    expect(doc.title).toBe('Poster');
+    expect(doc.kind).toBe('Spring campaign');
+    expect(JSON.stringify(doc.blocks)).toContain('Big sale 世界');
+    expect(saved).toHaveLength(0); // nothing is downloaded: the print dialog saves the PDF
+    expect(toast).not.toHaveBeenCalledWith(expect.stringContaining('“?”'), 'info');
   });
 
   it('tells the person when an export fails, instead of doing nothing', async () => {
@@ -132,11 +137,10 @@ describe('DeliverablesPanel — export', () => {
     expect(text).not.toContain('Fresh start');
   });
 
-  it('tells the person about unprintable characters in the campaign name too', async () => {
-    api.title = '世界 campaign';
+  it('says so when the print dialog cannot open', async () => {
+    printDocument.mockReturnValueOnce(false);
     await open();
-    fireEvent.click(screen.getAllByRole('button', { name: 'PDF' })[0]); // the radio piece itself is plain Latin text
-    await waitFor(() => expect(saved).toHaveLength(1));
-    expect(toast).toHaveBeenCalledWith(expect.stringContaining('shown as “?”'), 'info');
+    fireEvent.click(screen.getAllByRole('button', { name: 'Print / PDF' })[0]);
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('Could not open the print dialog here.', 'error'));
   });
 });

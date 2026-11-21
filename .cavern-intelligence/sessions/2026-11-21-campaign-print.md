@@ -1,0 +1,6 @@
+# Session - 2026-11-21: campaign deliverables print through the kit (BACKLOG 3.32)
+
+The campaign's PDF was its own jsPDF builder: plain, unbranded, and printing anything beyond Western European text as "?" (with a toast to say so). It is now `lib/ad/campaign-print.ts` on the print kit like every other tool: the project's accent and logo (set on the project page), one piece per page with its format, status, limits, sections and notes, and any language prints as written because the browser prints with the system's fonts. The button reads *Print / PDF* (the dialog saves the file). Removed: the jsPDF campaign builder, `pdfSafe` and the "?" fallback and their tests. The plain-text export is unchanged.
+
+**Looked at:** the printed page (two pieces, teal accent, Japanese and Arabic text) rendered to an image: one piece per page, the text as written. Spacing between a piece's limits and its first section is tight (left).
+**Verified:** typecheck, eslint, 34 unit tests (the print builder: pages, limits, colour, logo, non-Latin; the panel: it hands the kit the piece and nothing is downloaded; it says so when the dialog cannot open). **Not verified:** a physical printer; an end-to-end browser run of the panel button.
