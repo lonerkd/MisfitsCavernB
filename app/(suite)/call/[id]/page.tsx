@@ -14,7 +14,7 @@ import { Check, MapPin, Printer } from 'lucide-react';
 import { useOSGate, useProject } from '@/lib/os';
 import { useToast } from '@/components/ui/Toast';
 import { useCanShape } from '@/lib/brief';
-import type { Sides } from '@/lib/film/sides';
+import { isSpokenLine, lineHint, type Sides } from '@/lib/film/sides';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { withTimeout } from '@/lib/supabase/withTimeout';
 import {
@@ -35,6 +35,9 @@ export default function CallSheetPage() {
   const { projects, setActiveProject } = useProject();
 
   const [sheet, setSheet] = useState<CallSheet | null>(null);
+  // Learn-my-lines mode: the performer's own speeches are hidden behind a hint until tapped.
+  const [learn, setLearn] = useState(false);
+  const [shown, setShown] = useState<Set<string>>(new Set());
   const [calls, setCalls] = useState<CallSheetCall[]>([]);
   const [project, setProject] = useState<{ id: string; title: string; creator_id: string } | null>(null);
   const [scenes, setScenes] = useState<SceneLite[]>([]);
@@ -248,14 +251,30 @@ export default function CallSheetPage() {
             {sides.status === 'loading' && <p className={c.dim} role="status">Reading the script…</p>}
             {sides.status === 'error' && <p className={c.dim} role="alert">Couldn’t read the script. <button type="button" className={c.secondary} onClick={() => void loadSides()}>Try again</button></p>}
             {sides.status === 'ready' && sides.rows.length === 0 && <p className={c.dim}>You have no lines in the scenes scheduled for this day.</p>}
+            {sides.status === 'ready' && sides.rows.length > 0 && (
+              <div className={c.confirmRow} style={{ marginTop: 0 }}>
+                <label className={c.dim} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minHeight: 44 }}>
+                  <input type="checkbox" checked={learn} onChange={(e) => { setLearn(e.target.checked); setShown(new Set()); }} />
+                  Learn my lines: hide them, tap to check
+                </label>
+              </div>
+            )}
             {sides.status === 'ready' && sides.rows.map((side) => (
               <div key={side.character} className={c.sides}>
                 <p className={c.mineHint}><strong>{side.character}</strong> · {side.lineCount} {side.lineCount === 1 ? 'speech' : 'speeches'}</p>
                 {side.scenes.map((sc) => (
                   <div key={`${side.character}:${sc.sceneNumber}:${sc.heading}`} className={c.sideScene}>
-                    {sc.lines.map((l, i) => (
-                      <p key={i} className={`${c.sideLine} ${l.type === 'slug' || l.type === 'scene' ? c.sideHeading : ''} ${l.mine ? c.sideMine : ''}`}>{l.text}</p>
-                    ))}
+                    {sc.lines.map((l, i) => {
+                      const key = `${side.character}:${sc.sceneNumber}:${i}`;
+                      if (learn && isSpokenLine(l) && !shown.has(key)) {
+                        return (
+                          <p key={i} className={`${c.sideLine} ${c.sideMine}`}>
+                            <button type="button" className={c.secondary} onClick={() => setShown((prev) => new Set(prev).add(key))}>Your line: {lineHint(l.text)} (tap to show)</button>
+                          </p>
+                        );
+                      }
+                      return <p key={i} className={`${c.sideLine} ${l.type === 'slug' || l.type === 'scene' ? c.sideHeading : ''} ${l.mine ? c.sideMine : ''}`}>{l.text}</p>;
+                    })}
                   </div>
                 ))}
               </div>

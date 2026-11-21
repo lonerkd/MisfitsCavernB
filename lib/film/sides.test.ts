@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { parseScript } from '@/lib/scriptos/parser';
-import { buildSides, cueName, type DayScriptScene } from './sides';
+import { buildSides, cueName, isSpokenLine, lineHint, type DayScriptScene } from './sides';
 import { sidesHtml } from './sides-print';
 
 const SCRIPT = `INT. KITCHEN - DAY
@@ -89,5 +89,20 @@ describe('sidesHtml', () => {
   });
   it('says so when no one is called with lines', () => {
     expect(sidesHtml([], { title: 'X', day: 1 })).toContain('No called cast speaks');
+  });
+});
+
+describe('learning lines', () => {
+  it('hints the first words and hides the rest', () => {
+    expect(lineHint('You’re late, again, Maya.')).toBe('You’re late,…');
+    expect(lineHint('Traffic.')).toBe('Traffic.…');
+    expect(lineHint('  ')).toBe('…');
+    expect(lineHint('One two three four five', 3)).toBe('One two three…');
+  });
+  it('knows which marked lines are spoken', () => {
+    expect(isSpokenLine({ type: 'dialogue', mine: true })).toBe(true);
+    expect(isSpokenLine({ type: 'parenthetical', mine: true })).toBe(true);
+    expect(isSpokenLine({ type: 'character', mine: true })).toBe(false);
+    expect(isSpokenLine({ type: 'dialogue', mine: false })).toBe(false);
   });
 });
