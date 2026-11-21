@@ -6,6 +6,8 @@ import { formatRuntime, type CharacterTiming, type ScriptTiming } from '@/lib/sc
 import type { ScriptLine } from '@/lib/scriptos/types';
 import type { CharacterStats } from '@/lib/scriptos/characters';
 import type { LintIssue } from '@/lib/scriptos/validator';
+import { ScriptKnowledgePanel } from './ScriptKnowledgePanel';
+import type { ScriptKnowledge } from '@/lib/scriptos/knowledge';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 
 /**
@@ -17,8 +19,10 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 export function ScriptAnalytics({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
-  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref,
+  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref, knowledge,
 }: {
+  /** What the reader has learned about the script: languages, years, layers, places. */
+  knowledge?: ScriptKnowledge;
   timing: ScriptTiming;
   targetMinutes?: number | null;
   briefHref?: string;
@@ -61,6 +65,8 @@ export function ScriptAnalytics({
           </div>
         ))}
       </div>
+
+      {knowledge && <ScriptKnowledgePanel knowledge={knowledge} />}
 
       <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} targetMinutes={targetMinutes} briefHref={briefHref} />
 

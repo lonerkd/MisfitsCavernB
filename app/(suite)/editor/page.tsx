@@ -49,6 +49,7 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView } from '@/components/editor/EditorCenterViews';
 import { ScriptAnalytics } from '@/components/editor/ScriptAnalytics';
+import { scriptKnowledge } from '@/lib/scriptos/knowledge';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
@@ -211,6 +212,7 @@ export default function EditorPage() {
     };
   }, [parseSource, readContext, scriptFormat]);
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
+  const knowledge = useMemo(() => scriptKnowledge({ lines, scenes: parsedScenes }), [lines, parsedScenes]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -1094,7 +1096,7 @@ export default function EditorPage() {
             scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
             dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
             sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
-            timing={timing} characterTiming={characterTiming}
+            timing={timing} characterTiming={characterTiming} knowledge={knowledge}
             onJumpToScene={jumpToScene}
             onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
             targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}
