@@ -26,6 +26,10 @@ export function editorPackageDoc(pkg: EditorPackage, a: { project: string; accen
           { key: 'shot', label: 'Shot', width: '10%' }, { key: 'take', label: 'Use take', width: '11%' }, { key: 'slate', label: 'Slate', width: '11%' },
           { key: 'lens', label: 'Lens', width: '10%' }, { key: 'lines', label: 'Lines', width: '12%' }, { key: 'notes', label: 'Notes' },
         ], rows: sc.shots.map((s) => ({ shot: s.shot, take: s.selected?.take ?? '— none selected —', slate: s.selected?.slate ?? null, lens: s.selected?.lens ?? null, lines: s.selected ? lines(s.selected) : null, notes: s.selected?.notes ?? null })) },
+        ...(sc.supervisor.length ? [{ type: 'table', columns: [
+          { key: 'take', label: 'Supervisor’s take', width: '14%' }, { key: 'slate', label: 'Slate', width: '11%' }, { key: 'shot', label: 'Shot', width: '9%' },
+          { key: 'lens', label: 'Lens', width: '10%' }, { key: 'lines', label: 'Lines', width: '14%' }, { key: 'dur', label: 'Duration', width: '12%' },
+        ], rows: sc.supervisor.map((t) => ({ take: t.take, slate: t.slate || null, shot: t.shot || null, lens: t.lens || null, lines: lines(t), dur: t.duration_s ? `${t.duration_s} s` : null })) } as PrintBlock] : []),
         { type: 'facts', items: [
           ['Takes logged', sc.takes], ['Camera reports', sc.cameraReports], ['Sound reports', sc.soundReports],
           ['Room tone', sc.soundReports ? (sc.roomTone ? 'Yes' : 'No') : '—'], ['Wild track', sc.soundReports ? (sc.wildTrack ? 'Yes' : 'No') : '—'],

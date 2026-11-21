@@ -12,6 +12,7 @@ const pkg = editorPackage({
     { id: '2', take: 'T1', circle: false, scene_ids: ['s1'], shot_id: 'b', notes: '<b>evil</b>' },
   ],
   camera: [], sound: [{ scene_ids: ['s1'], roomTone: 'yes' }], offloads: [{ card: 'A001', status: 'pending' }],
+  scriptNotes: [{ id: '1', take: 'T2', circle: true, scene_ids: ['s1'], shot_id: 'a', slate: 'A-2', lens: '35mm', from_line: 3, to_line: 5, ...({ duration_s: 37 } as object) }],
 });
 
 describe('the editor package sheet', () => {
@@ -23,6 +24,11 @@ describe('the editor package sheet', () => {
     expect(html).toContain('35mm');
     expect(html).toContain('3–5');
     expect(html).toContain('none selected');
+  });
+  it('has the supervisor\'s selected takes section with the duration', () => {
+    expect(html).toContain('Supervisor’s take');
+    expect(html).toContain('37 s');
+    expect(docToCsv(editorPackageDoc(pkg, { project: 'P', generated: 'd' }))).toContain('37 s');
   });
   it('says what is not ready, and lists the card that is not verified', () => {
     expect(html).toContain('Not ready yet');
