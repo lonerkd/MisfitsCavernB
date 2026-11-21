@@ -13,6 +13,7 @@ import { GrantRequestBar } from './GrantRequestBar';
 import { useCanShape } from '@/lib/brief';
 import { describeRange, localToday, upcoming, useProjectAvailability } from '@/lib/availability';
 import { CrewMemberCard, RecruitModal } from '../CrewBoards';
+import { CreditRequests } from '../CreditRequests';
 import { CastingBoard } from '../CastingBoard';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
@@ -72,6 +73,7 @@ export function CrewView({ crew, onChanged }: { crew: CrewRow[]; onChanged: () =
             })} />}{isOwner && <button type="button" className={cx(s.btn, s.small)} onClick={() => setRecruiting(true)}><UserPlus size={11} /> Recruit</button>}</>} />
         <div style={{ height: 14 }} />
         {isOwner && <GrantRequestBar projectId={project.id} ownerId={userId} crew={crew} overrides={rights.overrides} onGranted={() => setRightsTick((t) => t + 1)} />}
+        {isOwner && <CreditRequests projectId={project.id} ownerId={userId} onChanged={onChanged} />}
         {crew.length ? (
           <div className={s.stack} style={{ gap: 10 }}>
             {crew.map((m, i) => (
