@@ -1103,7 +1103,7 @@ export default function EditorPage() {
         }
         readingPanel={
           <>
-            <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} onSaved={corrections.upsertLocal} />
+            <DoubtfulReads doubts={doubts} projectId={currentScript?.project_id ?? null} scriptId={currentScript?.id ?? null} onSaved={corrections.upsertLocal} onOverridden={() => { lineOverrides.reload(); }} />
             <LineOverrideButton
               projectId={currentScript?.project_id ?? null}
               scriptId={currentScript?.id ?? null}

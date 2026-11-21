@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Check, UserCheck, UserX } from 'lucide-react';
+import { Check, Lock, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { studio, type ReadingCorrection } from '@/lib/studio';
 import type { Doubt } from '@/lib/scriptos/review';
@@ -13,7 +13,7 @@ const btn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center',
  * The lines the reader is least sure of, with what it read them as and one tap
  * to settle a name for the whole project. Nothing is written to the script.
  */
-export function DoubtfulReads({ doubts, projectId, onSaved }: { doubts: Doubt[]; projectId: string | null; onSaved: (row: ReadingCorrection) => void }) {
+export function DoubtfulReads({ doubts, projectId, scriptId = null, onSaved, onOverridden }: { doubts: Doubt[]; projectId: string | null; scriptId?: string | null; onSaved: (row: ReadingCorrection) => void; onOverridden?: () => void }) {
   const { toast } = useToast();
   const [gone, setGone] = React.useState<Set<number>>(new Set());
   const shown = doubts.filter((d) => !gone.has(d.index));
@@ -24,6 +24,20 @@ export function DoubtfulReads({ doubts, projectId, onSaved }: { doubts: Doubt[];
     try {
       onSaved(await studio.setReadingCorrection(projectId, d.name, kind));
       toast(kind === 'character' ? `${d.name} is read as a character` : `${d.name} is not read as a character any more`, 'success');
+    } catch (e) {
+      toast(messageOf(e), 'error');
+    }
+  };
+
+  // Settle one line, in this script only: the line is read as what the reader thought it might be (the same "force type" a person can set
+  // by hand). Lines that shift later are the override's known limit.
+  const readAs = async (d: Doubt) => {
+    if (!projectId || !scriptId || !d.alternative) return;
+    try {
+      await studio.setLineOverride(projectId, scriptId, d.index, d.alternative);
+      setGone((g) => new Set(g).add(d.index));
+      toast(`Line ${d.index + 1} is read as ${d.alternative}`, 'success');
+      onOverridden?.();
     } catch (e) {
       toast(messageOf(e), 'error');
     }
@@ -40,6 +54,9 @@ export function DoubtfulReads({ doubts, projectId, onSaved }: { doubts: Doubt[];
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {projectId && d.name && d.type === 'character' && <button type="button" style={btn} onClick={() => void say(d, 'not_character')}><UserX size={12} aria-hidden /> Not a character</button>}
               {projectId && d.name && d.type !== 'character' && d.alternative === 'character' && <button type="button" style={btn} onClick={() => void say(d, 'character')}><UserCheck size={12} aria-hidden /> It’s a character</button>}
+              {projectId && scriptId && d.alternative && !(d.name && d.alternative === 'character') && (
+                <button type="button" style={btn} onClick={() => void readAs(d)} title="Reads this line as that in this script, as Force type does"><Lock size={12} aria-hidden /> Read as {d.alternative}</button>
+              )}
               <button type="button" style={btn} onClick={() => setGone((g) => new Set(g).add(d.index))} title="Hide this for now"><Check size={12} aria-hidden /> Looks right</button>
             </div>
           </li>
