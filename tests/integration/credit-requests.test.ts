@@ -82,3 +82,24 @@ describe('who sees and who decides', () => {
     expect((await adminClient().from('credit_requests').select('id').eq('id', r.data!.id)).data).toEqual([]);
   });
 });
+
+describe('an approved request is a credit and never access', () => {
+  it('Riley is credited on the film and on their page, and still cannot read the project', async () => {
+    const r = await cast.riley.client.from('credit_requests').insert({ project_id: projectId, requester_id: cast.riley.id, craft: 'Colourist' }).select('id').single();
+    expect(r.error).toBeNull();
+    const ok = await cast.sam.client.from('credit_requests').update({ status: 'approved' }).eq('id', r.data!.id).select('status').single();
+    expect(ok.data).toMatchObject({ status: 'approved' });
+
+    const token = (await adminClient().from('projects').select('share_token').eq('id', projectId).single()).data!.share_token as string;
+    const kit = (await anonClient().rpc('get_press_kit', { p_token: token })).data as { credits: Array<{ user_id: string; credit: string }> };
+    expect(kit.credits).toEqual(expect.arrayContaining([expect.objectContaining({ user_id: cast.riley.id, credit: 'Colourist' })]));
+    const mine = (await cast.riley.client.rpc('get_person_credits', { p_user: cast.riley.id })).data as Array<{ project_id: string; credit: string }>;
+    expect(mine.some((c) => c.project_id === projectId && c.credit === 'Colourist')).toBe(false); // the project is not public, only link: the person's own list shows public films
+
+    // No crew row, so no access to the project's own rows.
+    expect((await adminClient().from('project_crew').select('user_id').eq('project_id', projectId).eq('user_id', cast.riley.id)).data).toEqual([]);
+    expect((await cast.riley.client.from('projects').select('id').eq('id', projectId)).data).toEqual([]);
+    expect((await cast.riley.client.from('scripts').select('id').eq('project_id', projectId)).data).toEqual([]);
+    await adminClient().from('credit_requests').delete().eq('id', r.data!.id);
+  });
+});

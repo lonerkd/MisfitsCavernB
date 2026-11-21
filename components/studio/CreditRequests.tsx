@@ -7,7 +7,7 @@ import { cx } from './ui';
 import s from './studio.module.css';
 
 /**
- * The owner's pending "put me in the credits" asks. Approve adds the person to the crew as a viewer with the craft they named;
+ * The owner's pending "put me in the credits" asks. Approve records the credit they asked for (no access to the project);
  * Decline just closes the ask. Renders nothing when no one is waiting. The caller shows it to the project's owner only.
  */
 export function CreditRequests({ projectId, ownerId, onChanged }: { projectId: string; ownerId: string; onChanged?: () => void }) {
@@ -34,7 +34,7 @@ export function CreditRequests({ projectId, ownerId, onChanged }: { projectId: s
     const who = req.username || 'They';
     try {
       await answerCreditRequest(req, approve, ownerId);
-      toast(approve ? `Added ${who} as ${req.craft}` : `Declined ${who}’s request`, 'success');
+      toast(approve ? `Credited ${who} as ${req.craft}` : `Declined ${who}’s request`, 'success');
       await reload();
       onChanged?.();
     } catch (e) {
@@ -56,7 +56,7 @@ export function CreditRequests({ projectId, ownerId, onChanged }: { projectId: s
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className={cx(s.btn, s.small)} style={{ minHeight: 44, minWidth: 44 }} disabled={busyId !== null}
-                title="Adds them to the crew as a viewer with this craft" onClick={() => void answer(r, true)}>Approve</button>
+                title="Adds this credit to the film and to their page; it does not give them access to the project" onClick={() => void answer(r, true)}>Approve</button>
               <button type="button" className={cx(s.btn, s.small)} style={{ minHeight: 44, minWidth: 44 }} disabled={busyId !== null}
                 title="Closes the request; they are not added" onClick={() => void answer(r, false)}>Decline</button>
             </div>

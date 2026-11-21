@@ -1,7 +1,6 @@
 import { supabase } from './client';
 import { notify } from './notifications';
 import { logActivity } from './activity';
-import { assignCrewMember, setCrewCraft } from './crew-management';
 
 export type CreditRequestStatus = 'pending' | 'approved' | 'declined';
 export interface CreditRequest {
@@ -57,25 +56,18 @@ export async function listCreditRequests(projectId: string): Promise<CreditReque
 }
 
 /**
- * The owner answers. Approving puts the person on the crew with the craft they named (a viewer's access, nothing more: a credit is
- * not a permission); someone already on the crew keeps their access and only gains the craft. The crew is changed first and the
- * answer saved second, so a failure never leaves an "approved" request that credits nobody (the worst case is a person credited
- * whose request still shows pending; answering again is harmless).
+ * The owner answers. Approving records the credit and nothing else: the person is NOT added to the crew (a crew row, even a viewer's,
+ * opens the project's script, budget and channels to them). The credit shows on the film's page and on the person's page, read from
+ * the approved request. The answer is one guarded update, so a request withdrawn or already answered changes nothing.
  */
 export async function answerCreditRequest(req: CreditRequest, approve: boolean, ownerId: string): Promise<void> {
-  if (approve) {
-    const { data: existing, error: lookErr } = await supabase.from('project_crew').select('user_id').eq('project_id', req.project_id).eq('user_id', req.requester_id).maybeSingle();
-    if (lookErr) throw lookErr;
-    if (existing) await setCrewCraft(req.project_id, req.requester_id, req.craft, ownerId);
-    else await assignCrewMember(req.project_id, req.requester_id, 'viewer', ownerId, req.craft);
-  }
   const { data, error } = await supabase.from('credit_requests').update({ status: approve ? 'approved' : 'declined' }).eq('id', req.id).eq('status', 'pending').select('id');
   if (error) throw error;
-  if (!data?.length) throw new Error('That request was already answered, or you cannot answer it.');
+  if (!data?.length) throw new Error('That request was withdrawn or already answered.');
   void logActivity(approve ? 'added a person to the credits' : 'declined a credit request', 'project', req.project_id);
   await notify(
     req.requester_id,
-    { type: 'crew', title: approve ? `You are credited as ${req.craft}` : 'Your credit request was declined', body: approve ? 'The project owner added you to the film.' : 'The project owner did not add the credit.', link: `/projects/${req.project_id}` },
+    { type: 'crew', title: approve ? `You are credited as ${req.craft}` : 'Your credit request was declined', body: approve ? 'The project owner added your credit to the film.' : 'The project owner did not add the credit.', link: `/projects/${req.project_id}` },
     ownerId,
   );
 }

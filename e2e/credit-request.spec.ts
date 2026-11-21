@@ -23,7 +23,7 @@ test.describe('Asking to be credited (local Supabase)', () => {
   });
   test.afterAll(async () => { if (admin) await admin.from('projects').delete().eq('id', projectId); });
 
-  test('the asker sends a request, the owner approves it, the asker is on the crew', async ({ page, browser }) => {
+  test('the asker sends a request, the owner approves it, the asker is credited, with no access', async ({ page, browser }) => {
     test.setTimeout(120_000);
     await signInAs(page, { email: asker.email, password: PASSWORD });
     await page.goto(`/shared/${token}`);
@@ -41,9 +41,13 @@ test.describe('Asking to be credited (local Supabase)', () => {
     const panel = ownerPage.getByRole('region', { name: 'Credit requests' });
     await expect(panel).toContainText('Gaffer');
     await panel.getByRole('button', { name: 'Approve' }).click();
-    await expect(ownerPage.getByText(/Added .* as Gaffer/)).toBeVisible();
-    await expect.poll(async () => (await admin.from('project_crew').select('craft, role').eq('project_id', projectId).eq('user_id', asker.id)).data?.[0]).toEqual({ craft: 'Gaffer', role: 'viewer' });
-    expect((await admin.from('credit_requests').select('status').eq('project_id', projectId)).data).toEqual([{ status: 'approved' }]);
+    await expect(ownerPage.getByText(/Credited .* as Gaffer/)).toBeVisible();
+    await expect.poll(async () => (await admin.from('credit_requests').select('status').eq('project_id', projectId)).data).toEqual([{ status: 'approved' }]);
+    // A credit is not access: no crew row.
+    expect((await admin.from('project_crew').select('user_id').eq('project_id', projectId).eq('user_id', asker.id)).data).toEqual([]);
+    // The film's page now credits the asker.
+    await page.goto(`/shared/${token}`);
+    await expect(page.getByText('Gaffer').first()).toBeVisible();
     await ctx.close();
   });
 

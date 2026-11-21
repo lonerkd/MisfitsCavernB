@@ -39,7 +39,7 @@ describe('CreditRequests', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Approve' }));
     await waitFor(() => expect(answer).toHaveBeenCalledWith(req, true, 'o1'));
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
-    expect(toast).toHaveBeenCalledWith('Added Maya as Gaffer', 'success');
+    expect(toast).toHaveBeenCalledWith('Credited Maya as Gaffer', 'success');
     expect(list).toHaveBeenCalledTimes(2);
   });
 
