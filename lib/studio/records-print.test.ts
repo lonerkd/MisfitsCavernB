@@ -55,6 +55,22 @@ describe('script supervisor notes print the lined run of each take', () => {
     expect(html).toContain('Lines');
   });
 
+  it('prints a take’s continuity photo by title, and nothing for a take with no photo or an unknown one', () => {
+    const titles = new Map([['m1', 'Maya, coat, take 2']]);
+    const doc = recordsDoc({ kind: 'scriptNotes', project: 'P', generated: 'd', mediaTitle: (id) => titles.get(id) ?? null, rows: [
+      { id: '1', scene: '3', take: '2', media_id: 'm1' },
+      { id: '2', scene: '3', take: '3', media_id: 'gone' },
+      { id: '3', scene: '3', take: '4', media_id: null },
+    ] });
+    const table = doc.blocks[0] as { columns: Array<{ key: string }>; rows: Array<Record<string, unknown>> };
+    expect(table.columns.map((c) => c.key)).toContain('photo');
+    expect(table.rows.map((r) => r.photo)).toEqual(['Maya, coat, take 2', null, null]);
+    const html = printHtml(doc);
+    expect(html).toContain('Maya, coat, take 2');
+    expect(html).toContain('>Photo<');
+    expect(html).not.toContain('gone');
+  });
+
   it('prints the music cue sheet in cue-number order with running times, not as typed', () => {
     const doc = recordsDoc({ kind: 'cues', project: 'Harbour', accent: null, logo: null, generated: '18 Nov 2026', rows: [
       { id: 'b', cue: '1M10', title: 'Chase', tcIn: '1:00', tcOut: '2:30' },
