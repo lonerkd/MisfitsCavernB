@@ -10,7 +10,7 @@ vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/lib/print/print', () => ({ printDocument: (...a: unknown[]) => print(...a) }));
 vi.mock('@/lib/print/download', () => ({ downloadCsv: () => true }));
 vi.mock('@/lib/supabase/productionRecords', () => ({ listRecords: (...a: unknown[]) => list(...a) }));
-vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', title: 'The Pier', accent_color: '#0f766e' } }) }));
+vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', title: 'The Pier', accent_color: '#0f766e' }, media: { rows: [{ id: 'm1', title: 'Coat, take 2 still' }] } }) }));
 vi.mock('./RecordLinks', () => ({ useRecordTargets: () => ({ sceneById: new Map([['s1', { id: 's1', scene_number: 12, heading: 'EXT. PIER', title: '' }]]), characterById: new Map() }) }));
 import { PrintRecordsButton } from './PrintRecordsButton';
 
@@ -27,6 +27,15 @@ describe('PrintRecordsButton', () => {
     const doc = print.mock.calls[0][0] as { title: string; kind: string; blocks: Array<{ rows: Array<Record<string, unknown>> }> };
     expect(doc).toMatchObject({ title: 'Costumes', kind: 'The Pier' });
     expect(doc.blocks[0].rows[0].scene).toBe('12');
+  });
+  it('prints a take’s continuity photo by its title from the studio’s media', async () => {
+    list.mockResolvedValue([{ id: '1', scene_ids: ['s1'], take: '2', media_id: 'm1', lines: null }]);
+    print.mockReturnValue(true);
+    render(<PrintRecordsButton kind="scriptNotes" />);
+    fireEvent.click(screen.getByRole('button', { name: /^Print \/ PDF: script/i }));
+    await waitFor(() => expect(print).toHaveBeenCalledTimes(1));
+    const doc = print.mock.calls[0][0] as { blocks: Array<{ rows: Array<Record<string, unknown>> }> };
+    expect(doc.blocks[0].rows[0].photo).toBe('Coat, take 2 still');
   });
   it('says so when the list cannot be read or the print dialog cannot open', async () => {
     list.mockRejectedValueOnce(new Error('nope'));

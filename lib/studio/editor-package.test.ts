@@ -57,4 +57,28 @@ describe('editorPackage', () => {
     expect(p.attention).toEqual([]);
     expect(p.ready).toBe(false);
   });
+
+  it('lists the supervisor\'s selected takes per scene, with duration read defensively', () => {
+    const notes = [
+      take('1', { shot_id: 'a', circle: true, slate: 'A-1', lens: '35mm', from_line: 2, to_line: 4, off_camera: true, ...({ duration_s: 42 } as object) }),
+      take('2', { shot_id: 'a' }),
+      take('3', { shot_id: 'b', circle: true }),
+    ];
+    const p = editorPackage(base({ scriptNotes: notes }));
+    expect(p.scenes[0].supervisor).toEqual([
+      { id: '1', take: '1', slate: 'A-1', shot: '1A', lens: '35mm', from_line: 2, to_line: 4, off_camera: true, duration_s: 42 },
+      { id: '3', take: '3', slate: '', shot: '1B', lens: '', from_line: null, to_line: null, off_camera: false, duration_s: null },
+    ]);
+  });
+
+  it('reports a shot with supervisor takes and none circled, once, and leaves a scene with no takes alone', () => {
+    const notes = [take('1', { shot_id: 'a' }), take('2', { shot_id: 'b', circle: true })];
+    const p = editorPackage(base({ takes: [], scriptNotes: notes }));
+    expect(p.attention).toContain("Scene 1, shot 1A has takes and none circled in the script supervisor's log.");
+    expect(p.attention.filter((a) => a.includes('1B'))).toEqual([]);
+    expect(p.scenes.map((s) => s.scene_number)).toEqual([1]);
+    const same = editorPackage(base({ takes: notes, scriptNotes: notes }));
+    expect(same.attention.filter((a) => a.includes('shot 1A'))).toHaveLength(1);
+    expect(editorPackage(base({ takes: [], camera: [], sound: [], scriptNotes: [] })).scenes).toEqual([]);
+  });
 });

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { circleTake, coverage, selectedTakes, takeSpan, type ScriptTake } from './lined-script';
+import { circleTake, coverage, formatDuration, selectedTakes, shotRunTime, takeSpan, type ScriptTake } from './lined-script';
 
 const take = (id: string, extra: Partial<ScriptTake> = {}): ScriptTake => ({ id, take: id, circle: false, scene_ids: ['sc1'], ...extra });
 
@@ -63,5 +63,34 @@ describe('selectedTakes', () => {
     expect(g.map((x) => x.scene)).toEqual(['1', '3', '9']);
     expect(g[1].shots.map((s) => [s.shot, s.takes.map((t) => t.id)])).toEqual([['3A', ['1']], ['3B', []]]);
     expect(g[0].shots[0]).toMatchObject({ shot: 'No shot linked' });
+  });
+});
+
+describe('formatDuration', () => {
+  it('is empty for no duration, zero, or a value that is not a number', () => {
+    expect(formatDuration(null)).toBe('');
+    expect(formatDuration(undefined)).toBe('');
+    expect(formatDuration(0)).toBe('');
+    expect(formatDuration(Number.NaN)).toBe('');
+  });
+  it('is m:ss under an hour and h:mm:ss from an hour', () => {
+    expect(formatDuration(42)).toBe('0:42');
+    expect(formatDuration(62)).toBe('1:02');
+    expect(formatDuration(3725)).toBe('1:02:05');
+  });
+});
+
+describe('shotRunTime', () => {
+  it('sums the durations of the selected (circled) takes only', () => {
+    expect(shotRunTime([
+      take('a', { circle: true, duration_s: 42 }),
+      take('b', { circle: false, duration_s: 90 }),
+      take('c', { circle: true, duration_s: 30 }),
+      take('d', { circle: true }),
+    ])).toBe(72);
+  });
+  it('is zero with no selected take, or none with a duration', () => {
+    expect(shotRunTime([])).toBe(0);
+    expect(shotRunTime([take('a', { circle: false, duration_s: 40 }), take('b', { circle: true, duration_s: null })])).toBe(0);
   });
 });

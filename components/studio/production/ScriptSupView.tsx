@@ -8,7 +8,7 @@ import { FileText, Plus, Trash2, Star } from 'lucide-react';
 import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
-import { circleTake, coverage, selectedTakes, takeSpan, type ScriptTake } from '@/lib/studio/lined-script';
+import { circleTake, coverage, formatDuration, selectedTakes, shotRunTime, takeSpan, type ScriptTake } from '@/lib/studio/lined-script';
 import { liningLines, type LiningLine } from '@/lib/film/lining-lines';
 import { linesByScene } from '@/lib/film/my-sides';
 import { fetchScriptForReading } from '@/lib/studio';
@@ -20,7 +20,7 @@ import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type Draft = Omit<ScriptTake, 'id'> & { slate: string; lens: string; notes: string; scene: string };
-const EMPTY: Draft = { scene: '', take: '', slate: '', lens: '', notes: '', circle: false, shot_id: null, from_line: null, to_line: null, off_camera: false, media_id: null };
+const EMPTY: Draft = { scene: '', take: '', slate: '', lens: '', notes: '', circle: false, shot_id: null, from_line: null, to_line: null, off_camera: false, media_id: null, duration_s: null };
 const num = (v: string): number | null => { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : null; };
 
 /** The lines of one scene as the supervisor numbers them (blank lines and the heading are not numbered). */
@@ -107,6 +107,10 @@ export function ScriptSupView() {
             <span className={s.label}>Lens</span>
             <input className={s.input} value={draft.lens} onChange={(e) => setDraft({ ...draft, lens: e.target.value })} placeholder="35mm" />
           </label>
+          <label className={s.field} style={{ flex: '0 0 110px' }}>
+            <span className={s.label}>Duration (seconds)</span>
+            <input className={s.input} inputMode="numeric" value={draft.duration_s ?? ''} onChange={(e) => setDraft({ ...draft, duration_s: num(e.target.value) })} placeholder="42" />
+          </label>
           <label className={s.field} style={{ flex: '0 0 80px' }}>
             <span className={s.label}>From line</span>
             <input className={s.input} inputMode="numeric" value={draft.from_line ?? ''} onChange={(e) => setDraft({ ...draft, from_line: num(e.target.value) })} placeholder="1" />
@@ -151,6 +155,7 @@ export function ScriptSupView() {
                 <span style={{ fontWeight: 600 }}>{n.take}</span>
                 {n.slate && <span className={s.hint}>{n.slate}</span>}
                 {n.lens && <span className={s.hint}>{n.lens}</span>}
+                {formatDuration(n.duration_s) && <span className={s.hint}>{formatDuration(n.duration_s)}</span>}
                 {span && <span className={s.hint}>{span.from === span.to ? `line ${span.from}` : `lines ${span.from}–${span.to}`}{n.off_camera ? ' · off camera' : ''}</span>}
                 <button className={s.btn} onClick={() => toggleCircle(n.id)} aria-pressed={n.circle} title={n.circle ? 'Uncircle' : 'Circle (print this take)'} aria-label={n.circle ? `Uncircle take ${n.take}` : `Circle take ${n.take}`} style={n.circle ? { color: 'var(--warn)' } : {}}>
                   <Star size={12} fill={n.circle ? 'currentColor' : 'none'} />
@@ -227,6 +232,7 @@ export function ScriptSupView() {
             {picks.map((g) => (
               <li key={g.scene_id ?? g.scene}>
                 <strong>Scene {g.scene || '—'}</strong>
+                {shotRunTime(g.shots.flatMap((sh) => sh.takes)) > 0 && <span className={s.hint}> · Run time {formatDuration(shotRunTime(g.shots.flatMap((sh) => sh.takes)))}</span>}
                 <ul style={{ listStyle: 'none', margin: '2px 0 0', padding: 0 }}>
                   {g.shots.map((sh) => (
                     <li key={sh.shot_id ?? 'none'} className={s.hint}>

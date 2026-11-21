@@ -119,7 +119,10 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
     await picker.waitFor({ timeout: 30_000 });
     await expect(page.getByLabel(/Continuity photo/).locator('option', { hasText: 'Slate photo' })).toHaveCount(1, { timeout: 30_000 });
     await page.getByLabel(/Continuity photo/).selectOption({ label: 'Slate photo' });
+    await page.getByLabel('Duration (seconds)').fill('42');
     await log(page, 'T4', '1', '2', { circle: false });
+    // The take's duration shows on its row as m:ss.
+    await expect(page.getByRole('list', { name: 'Takes' }).getByText('0:42', { exact: true })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('img', { name: 'Continuity photo for take T4: Slate photo' })).toBeVisible({ timeout: 15_000 });
 
     // It survives a reload (the takes are real records).
