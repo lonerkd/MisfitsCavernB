@@ -34,7 +34,7 @@ beforeEach(() => { cleanup(); hub.unread = 0; people.find.mockReset(); try { loc
 describe('the rail: three areas', () => {
   it('shows Productions, Community and People in order, with the hub link pinned above them', () => {
     const { container } = render(<ChannelRail l={lounge()} />);
-    const hubLink = screen.getByRole('link', { name: /Learn and What.s new/ });
+    const hubLink = screen.getByRole('link', { name: /Learn \/ What.s new/ });
     expect(hubLink.getAttribute('href')).toBe('/hub');
     const sections = [...container.querySelectorAll('section.mc-lounge-section')].map((s) => s.getAttribute('data-area'));
     expect(sections).toEqual(['productions', 'community', 'people']);
@@ -59,7 +59,7 @@ describe('the rail: three areas', () => {
     expect(screen.getByRole('button', { name: 'Community, 2 unread' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'People, 1 unread' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Jordan, 1 unread' })).toBeTruthy();
-    expect(screen.getByRole('link', { name: "Learn and What's new, 3 unread" })).toBeTruthy();
+    expect(screen.getByRole('link', { name: /Learn \/ What’s new.*3 unread/ })).toBeTruthy();
   });
 
   it('collapses an area, keeps it that way on this device, and still shows its unread count', () => {

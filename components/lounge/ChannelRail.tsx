@@ -143,11 +143,12 @@ export function ChannelRail({ l }: { l: Lounge }) {
   return (
     <div className="mc-lounge-channels" style={{ width: 220, background: 'var(--bg-2)', borderRight: '1px solid rgba(var(--ink-rgb), 0.04)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
       {/* Pinned above the areas: the hub is where What's new and Learn live, and it is one tap from anywhere in the rail. */}
-      <Link href="/hub" className="mc-lounge-row mc-lounge-hublink" aria-label={hubUnread > 0 ? `Learn and What's new, ${unreadLabel(hubUnread)} unread` : "Learn and What's new"}
+      <Link href="/hub" className="mc-lounge-row mc-lounge-hublink"
         style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '12px 12px 0', padding: '8px 10px', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(var(--ink-rgb), 0.08)', color: 'var(--fg-strong)', textDecoration: 'none', fontFamily: 'var(--mono)', fontSize: 11, flexShrink: 0 }}>
         <BookOpen size={13} aria-hidden color="var(--accent)" style={{ flexShrink: 0 }} />
         <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Learn / What’s new</span>
         <Count n={hubUnread} />
+        {hubUnread > 0 && <span className="sr-only">, {unreadLabel(hubUnread)} unread</span>}
       </Link>
 
       <div className="mc-lounge-rail-scroll" style={{ padding: '12px', overflowY: 'auto', flex: 1 }}>
