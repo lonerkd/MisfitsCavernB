@@ -102,6 +102,15 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
     skill (fresh reviewers) on the diff, fix what is real, and put what it found
     in the description. Writing "reviewed" about your own work is not a review.
 
+## Working without being asked (owner, 2026-11-21)
+
+The owner wants this run semi-automated and affordable: **do not end a turn with a question the repository can answer.** The backlog, `STATE.md`, `wishlist-ranking.md`, the bible and the plans are the context; use them to decide.
+
+1. **Pick the work yourself**, in this order: an open `nightly-review` or `e2e-red` issue; the owner's newest instruction; the launch gates (moderation 3.14, the email sender is owner-side); then `wishlist-ranking.md` order and the buildable slices in `backlog-detail.md`. A backlog entry that the code already contradicts is stale: fix the entry (in the same PR) and move on.
+2. **Delegate by size, cheapest that can do it.** **Haiku** for a narrow, fully specified job (one to three files, a sweep, a test file, a fixture, a render): the prompt names the files, the done-when and what to report. **Sonnet** for work that needs judgment (a migration with RLS, a redesign, a cross-cutting change). **You** for the migration apply, the merge, the browser look and any decision. Every agent works in its own worktree, commits locally, never pushes.
+3. **Review every diff yourself**, merge the agents' commits onto one branch, build and run the specs **once**, push **one PR per batch** (the Vercel deploy budget), merge it when the required checks are green, apply migrations to production then staging, run the drift check. A migration or a high-risk PR gets an independent reviewer (a fresh agent), not your own say-so.
+4. **Ask only for what is the owner's alone**: an outside service and its cost or keys, a change to auth settings or live data, a product call the owner has not made and the documents do not settle, a real-device check. Everything else: decide, say what you decided in the session note, move on. Report in a few lines (what shipped, what is not verified, what needs the owner).
+
 ## The change cycle
 
 1. **Explore** — the files involved; the owning doc (see *Where to look*);
