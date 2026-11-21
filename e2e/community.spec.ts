@@ -44,7 +44,8 @@ test.describe('Community Lounge (local Supabase)', () => {
     const member = await signIn(browser, users.member.email);
     await expect(member.page.getByRole('button', { name: 'craft-talk' })).toBeVisible({ timeout: 20_000 });
     await expect(member.page.getByRole('button', { name: 'the-lounge' })).toBeVisible();
-    await expect(member.page.getByRole('button', { name: 'start-here' })).toBeVisible();
+    // Guides live in the hub's Learn now: the Lounge has no guide channels (L6).
+    for (const g of ['start-here', 'faq', 'tutorials']) await expect(member.page.getByRole('button', { name: g, exact: true })).toHaveCount(0);
     await expect(member.page.getByRole('button', { name: 'admins', exact: true })).toHaveCount(0);
     await expect(member.page.getByRole('button', { name: 'New community channel' })).toHaveCount(0);
     await member.ctx.close();
@@ -64,32 +65,12 @@ test.describe('Community Lounge (local Supabase)', () => {
     await boss.ctx.close();
   });
 
-  test('a guide reads as sections: whoever runs it writes, everyone else only reads', async ({ browser }) => {
+  test('the Lounge holds no guide channels (guides live in Learn)', async ({ browser }) => {
     test.setTimeout(120_000);
-    const heading = `How do I start a project? ${TAG}`;
-    const boss = await signIn(browser, users.boss.email);
-    await boss.page.getByRole('button', { name: 'faq' }).click({ timeout: 20_000 });
-    await expect(boss.page.getByText('GUIDE', { exact: true })).toBeVisible();
-    const box = boss.page.getByPlaceholder(/Add a section to faq/);
-    await box.fill(`${heading}\nOpen Projects, pick a format and the suite unlocks its tools phase by phase.`);
-    await boss.page.getByRole('button', { name: 'Add', exact: true }).click();
-    await expect(boss.page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 10_000 });
-    await boss.ctx.close();
-
     const member = await signIn(browser, users.member.email);
-    await member.page.getByRole('button', { name: 'faq' }).click({ timeout: 20_000 });
-    await expect(member.page.getByRole('heading', { name: heading })).toBeVisible({ timeout: 10_000 });
-    await expect(member.page.getByText('the suite unlocks its tools phase by phase')).toBeVisible();
-    await expect(member.page.getByRole('textbox')).toHaveCount(0);
-    await expect(member.page.getByRole('button', { name: /^Remove section/ })).toHaveCount(0);
+    await expect(member.page.getByRole('button', { name: 'craft-talk' })).toBeVisible({ timeout: 20_000 });
+    for (const g of ['start-here', 'faq', 'tutorials']) await expect(member.page.getByRole('button', { name: g, exact: true })).toHaveCount(0);
+    expect((await admin.from('channels').select('id').eq('type', 'guide')).data).toEqual([]);
     await member.ctx.close();
-
-    const again = await signIn(browser, users.boss.email);
-    await again.page.getByRole('button', { name: 'faq' }).click({ timeout: 20_000 });
-    await again.page.getByRole('button', { name: `Remove section: ${heading}` }).click();
-    await again.page.getByRole('button', { name: 'Remove', exact: true }).click();
-    await expect(again.page.getByRole('heading', { name: heading })).toHaveCount(0);
-    await expect.poll(async () => (await admin.from('messages').select('id').eq('content', `${heading}\nOpen Projects, pick a format and the suite unlocks its tools phase by phase.`)).data?.length).toBe(0);
-    await again.ctx.close();
   });
 });
