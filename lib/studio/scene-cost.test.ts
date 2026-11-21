@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sceneCosts, type CostCategory, type CostElement, type CostScene, type CostTag } from './scene-cost';
+import { costNote, sceneCosts, sceneCostFact, type CostCategory, type CostElement, type CostScene, type CostTag } from './scene-cost';
 
 const cats: CostCategory[] = [{ id: 'props', unit_cost: 0 }, { id: 'wardrobe', unit_cost: 40 }];
 const scenes: CostScene[] = [
@@ -74,5 +74,28 @@ describe('sceneCosts', () => {
   it('a tag listed twice counts once', () => {
     const r = sceneCosts({ scenes, categories: cats, elements: [{ id: 'a', category_id: 'props', cost: 9 }], tags: [tag('s1', 'a'), tag('s1', 'a')] });
     expect(r.byScene.get('s1')).toMatchObject({ own: 9, elements: 1 });
+  });
+});
+
+describe('costNote and sceneCostFact (the wording the Money table and the scene cards share)', () => {
+  const base = { sceneId: 's1', own: 0, shared: 0, total: 0, estimated: 0, unpriced: 0, elements: 0 };
+
+  it('says how much rests on a default estimate, and counts the elements with no price', () => {
+    expect(costNote(0, 0)).toBe('');
+    expect(costNote(50, 0)).toBe('$50 is a default estimate');
+    expect(costNote(0, 1)).toBe('1 element with no price');
+    expect(costNote(1234.5, 3)).toBe('$1,234.50 is a default estimate · 3 elements with no price');
+  });
+
+  it('formats a scene as the card shows it: the total, and what it rests on', () => {
+    expect(sceneCostFact({ ...base, elements: 2, total: 1200, own: 1200 })).toEqual({ value: '$1,200', detail: '' });
+    expect(sceneCostFact({ ...base, elements: 2, total: 1050, own: 1050, estimated: 50, unpriced: 1 }))
+      .toEqual({ value: '$1,050', detail: '$50 is a default estimate · 1 element with no price' });
+  });
+
+  it('adds the shared share, and says so when nothing is tagged', () => {
+    expect(sceneCostFact({ ...base, elements: 2, total: 60, shared: 10, own: 50 }))
+      .toEqual({ value: '$60', detail: 'incl. $10 shared' });
+    expect(sceneCostFact({ ...base, elements: 0 })).toEqual({ value: '—', detail: 'nothing tagged' });
   });
 });
