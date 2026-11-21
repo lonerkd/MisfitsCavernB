@@ -211,7 +211,7 @@ describe('computeProgress edge cases', () => {
     });
 
     it('per-phase and total counts add up to the done milestones', () => {
-      const p = computeProgress(signals({ logline: true, scripts: 1, crew: 2, budget_lines: 1, visibility: 'public' }));
+      const p = computeProgress(signals({ logline: true, scripts: 1, crew: 2, crew_confirmed: 2, budget_lines: 1, visibility: 'public' }));
       const done = p.phases.flatMap((ph) => ph.milestones).filter((m) => m.done).map((m) => m.id);
       expect([...done].sort()).toEqual(['budget', 'crew', 'logline', 'script', 'share']);
       expect(p.totals.done).toBe(done.length);
