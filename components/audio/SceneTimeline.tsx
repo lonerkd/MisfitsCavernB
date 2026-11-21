@@ -27,6 +27,7 @@ const SOURCE_NOTE: Record<LengthSource, string> = {
 };
 const PX_PER_MIN = 16;
 const LANE_H = 36;
+const PHONE_TARGET = 44;
 const LANE_H_PHONE = 56; // a bar is a thumb target on a phone: 44 pt tall
 // Tracks that share a song share a colour; the hue is spread so neighbours differ.
 const swatch = (n: number) => `hsl(${(n * 67) % 360} 50% 52%)`;
@@ -90,7 +91,10 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
   const refOf = (id: string) => ready?.refs.find((r) => r.id === id);
   const tracksIn = (sceneId: string) => timeline?.lanes.flatMap((l) => l.bars.filter((b) => b.sceneId === sceneId)) ?? [];
   const laneH = phone.phone ? LANE_H_PHONE : LANE_H;
-  const px = PX_PER_MIN * zoom;
+  // On a phone every scene block is a 44 pt thumb target (the buttons carry that minimum width), so the scale is widened until the
+  // shortest scene is that wide, or blocks pile onto each other and a tap lands on the wrong scene. The strip scrolls sideways.
+  const shortest = timeline && timeline.scenes.length ? Math.max(0.25, Math.min(...timeline.scenes.map((s) => s.minutes))) : 1;
+  const px = Math.max(PX_PER_MIN * zoom, phone.phone ? (PHONE_TARGET + 2) / shortest : 0);
   const width = timeline ? Math.max(timeline.totalMinutes * px, 320) : 320;
   const scene = timeline?.scenes.find((s) => s.id === selected) ?? null;
 

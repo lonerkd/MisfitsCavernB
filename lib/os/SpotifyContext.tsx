@@ -220,7 +220,7 @@ export function SpotifyProvider({ children }: { children: React.ReactNode }) {
     const target = elsewhere?.id ?? deviceId;
     if (!target) return;
     const token = await getValidToken();
-    if (!token) return;
+    if (!token) { toast('Connect Spotify to play this: use Connect Spotify on the Find tab.', 'error'); return; }
 
     try {
       await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${target}`, {
