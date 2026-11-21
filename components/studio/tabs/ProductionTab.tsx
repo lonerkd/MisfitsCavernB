@@ -133,7 +133,8 @@ export const GROUPS = ['Story & planning', 'Departments', 'Budget & docs', 'Shoo
 /** Story, schedule and people. The view is the Studio's (?view=), so milestones can link straight to it. */
 export function ProductionTab({ view, onView, onNavigate }: { view: View; onView: (view: View) => void; onNavigate?: (place: Place) => boolean }) {
   const { project, userId } = useStudio();
-  const progress = useProgressContext()?.progress ?? null;
+  const progressCtx = useProgressContext();
+  const progress = progressCtx?.progress ?? null;
   // A person's own tools come first (their craft's working suite), without hiding anyone else's: the groups below stay whole.
   const me = useMyRole(project.id, userId);
   const myCaps = useMyCapabilities(project.id);
@@ -202,7 +203,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
                 </div>
               )}
               {kit && !q && (
-                <YourWorkflow craft={me.craft} department={me.craft ? craftsByName.get(me.craft)?.department : null} openable={myViews} onView={onView} />
+                <YourWorkflow craft={me.craft} department={me.craft ? craftsByName.get(me.craft)?.department : null} openable={myViews} onView={onView} projectId={project.id} signals={progressCtx?.signals ?? null} />
               )}
               {kit && me.previewing && !q && kit.gaps.length > 0 && (
                 <div role="note" aria-label={`What ${me.craft ?? 'this role'} still lacks`} style={{ fontSize: 12, color: 'var(--fg-dim)', lineHeight: 1.5 }}>

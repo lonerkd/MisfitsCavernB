@@ -44,7 +44,7 @@ export function LockedTool({ tool, accent, projectId, isOwner, onOpen, onShowPha
           <h3 className={p.needsHead}>{left.length ? `Before ${needs.phaseLabel}: ${left.length} to finish` : `Before ${needs.phaseLabel}: everything is done`}</h3>
           {left.length > 0 && (
             <ul className={p.needsList}>
-              {left.slice(0, 6).map((m) => (
+              {left.slice(0, 3).map((m) => (
                 <li key={m.id} className={p.needsItem}>
                   <div style={{ minWidth: 0 }}>
                     <div className={p.mLabel}>{m.label}</div>
@@ -55,7 +55,7 @@ export function LockedTool({ tool, accent, projectId, isOwner, onOpen, onShowPha
                   {projectId && <PlaceLink place={m.place} projectId={projectId} onNavigate={onNavigate} className={p.go} label={`Go: ${m.label}`}>Go</PlaceLink>}
                 </li>
               ))}
-              {left.length > 6 && <li className={p.mHint}>and {left.length - 6} more in the phase panel</li>}
+              {left.length > 3 && <li className={p.mHint}>and {left.length - 3} more in the phase panel</li>}
             </ul>
           )}
           {needs.ready && <p className={p.mHint}>{isOwner ? `Every milestone is done: move the project to ${needs.phaseLabel} from the Overview.` : `Every milestone is done: the project’s owner can move it to ${needs.phaseLabel}.`}</p>}

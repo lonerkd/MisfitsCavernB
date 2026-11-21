@@ -26,9 +26,17 @@ export interface ProjectSignals {
   media: number;
   media_shared: number;
   crew: number;
+  /** Crew who have confirmed (an invitation is not a crew member). */
+  crew_confirmed: number;
   castings: number;
   shots: number;
   call_sheets: number;
+  /** Call sheets actually issued (not only dated). */
+  call_sheets_issued: number;
+  locations: number;
+  locations_confirmed: number;
+  /** Locations whose permit is still needed or applied for. */
+  permits_open: number;
   /** The first and last dated shoot day (YYYY-MM-DD), if any. */
   shoot_start: string | null;
   shoot_end: string | null;
@@ -54,7 +62,7 @@ export interface ProjectSignals {
 export const EMPTY_SIGNALS: ProjectSignals = {
   status: null, project_type: null, format: null, visibility: null, unlock_all: false, logline: false,
   scripts: 0, characters: 0, scenes: 0, scenes_wrapped: 0, beats: 0, media: 0, media_shared: 0,
-  crew: 0, castings: 0, shots: 0, call_sheets: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
+  crew: 0, crew_confirmed: 0, castings: 0, shots: 0, call_sheets: 0, call_sheets_issued: 0, locations: 0, locations_confirmed: 0, permits_open: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
   cuts: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
   campaigns: 0, festivals_submitted: 0, portfolio: 0,
 };
@@ -151,8 +159,17 @@ export const MILESTONES: MilestoneDef[] = [
     progress: (s) => ({ value: Math.min(s.media, 5), of: 5 }) },
 
   // Pre-production — plan the shoot.
-  { id: 'crew', phase: 'pre-production', label: 'Bring in your crew', hint: 'Invite collaborators, or post roles to the Jobs board.',
-    place: { kind: 'hub', anchor: 'production' }, done: (s) => s.crew > 0 },
+  { id: 'crew', phase: 'pre-production', label: 'Bring in your crew', hint: 'Invite collaborators, or post roles to the Jobs board; they count once they have accepted.',
+    place: { kind: 'hub', anchor: 'production' }, done: (s) => s.crew_confirmed > 0 },
+  { id: 'breakdown', phase: 'pre-production', label: 'Break the script down', hint: 'Tag what each scene needs: props, wardrobe, vehicles, cast.',
+    place: { kind: 'studio', tab: 'production', view: 'breakdown' }, done: (s) => s.breakdown_elements > 0 },
+  { id: 'lock-script', phase: 'pre-production', label: 'Lock the shooting script', hint: 'Lock a draft: changes after it become coloured revision pages.',
+    place: { kind: 'studio', tab: 'production', view: 'revisions' }, done: (s) => s.revisions > 0 },
+  { id: 'locations', phase: 'pre-production', label: 'Confirm your locations', hint: 'Every location marked confirmed, with an address and a contact.',
+    place: { kind: 'studio', tab: 'production', view: 'locations' }, done: (s) => s.locations > 0 && s.locations_confirmed >= s.locations,
+    progress: (s) => ({ value: s.locations_confirmed, of: s.locations }) },
+  { id: 'permits', phase: 'pre-production', label: 'Clear the permits', hint: 'No location left needing or waiting on a permit.',
+    place: { kind: 'studio', tab: 'production', view: 'paperwork' }, done: (s) => s.locations > 0 && s.permits_open === 0 },
   { id: 'casting', phase: 'pre-production', label: 'Cast a role', hint: 'Match characters to people on the crew.',
     place: { kind: 'studio', tab: 'production', view: 'crew' }, done: (s) => s.castings > 0 },
   { id: 'shots', phase: 'pre-production', label: 'Plan your shots', hint: 'A shot list for each scene.',
@@ -161,6 +178,8 @@ export const MILESTONES: MilestoneDef[] = [
     place: { kind: 'studio', tab: 'production', view: 'money' }, done: (s) => s.budget_lines > 0 },
   { id: 'schedule', phase: 'pre-production', label: 'Date your first shoot day', hint: 'Schedule → call sheet with a date.',
     place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets > 0 },
+  { id: 'call-sheet', phase: 'pre-production', label: 'Issue the first call sheet', hint: 'Issuing sends it to the crew and records who has seen it.',
+    place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets_issued > 0 },
 
   // Production — shoot it.
   { id: 'wrap-first', phase: 'production', label: 'Wrap your first scene', hint: 'Mark scenes wrapped as you shoot them.',

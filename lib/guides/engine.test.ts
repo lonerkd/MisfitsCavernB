@@ -125,7 +125,7 @@ describe('progress', () => {
     expect(wrapped.next?.id).toBe('crew');
     // With pre-production all done, what development left behind comes next.
     const pre = WORKFLOW_BY_ID.short.steps.filter((id) => STEPS[id].phase === 'pre-production');
-    const done = guide({ signals: sig({ status: 'pre-production', crew: 1, castings: 1, shots: 1, budget_lines: 1, call_sheets: 1, breakdown_elements: 1 }), ticked: pre });
+    const done = guide({ signals: sig({ status: 'pre-production', crew: 1, crew_confirmed: 1, castings: 1, shots: 1, budget_lines: 1, call_sheets: 1, call_sheets_issued: 1, breakdown_elements: 1, revisions: 1, locations: 1, locations_confirmed: 1, permits_open: 0 }), ticked: pre });
     expect(done.next?.phase).toBe('development');
   });
 });

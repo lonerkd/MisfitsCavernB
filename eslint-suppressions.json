@@ -360,11 +360,6 @@
       "count": 3
     }
   },
-  "components/lounge/ChannelRail.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/lounge/ChatHeader.tsx": {
     "no-restricted-syntax": {
       "count": 3
