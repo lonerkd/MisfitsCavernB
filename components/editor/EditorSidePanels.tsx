@@ -233,8 +233,8 @@ export function EditorRightPanels({
                               {placeRename.error && <div role="alert" style={{ flexBasis: '100%', fontSize: 11, color: 'var(--danger)' }}>{placeRename.error}</div>}
                             </form>
                           ) : (
-                            <button type="button" aria-label={`Rename the place ${slugPlace(scene.text)}`} onClick={() => setPlaceRename({ value: slugPlace(scene.text)!, error: null, busy: false })}
-                              style={{ marginBottom: 10, padding: 0, border: 'none', background: 'transparent', color: 'var(--violet)', fontSize: 11, textDecoration: 'underline', cursor: 'pointer' }}>Rename place…</button>
+                            <button type="button" onClick={() => setPlaceRename({ value: slugPlace(scene.text)!, error: null, busy: false })}
+                              style={{ marginBottom: 10, padding: 0, border: 'none', background: 'transparent', color: 'var(--violet)', fontSize: 11, textDecoration: 'underline', cursor: 'pointer' }}>Rename place… <span className="sr-only">{slugPlace(scene.text)}</span></button>
                           ))}
                           <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
                             <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: readable(color), background: `${color}18`, padding: '2px 8px', borderRadius: 4 }}>{typeTag}</span>
