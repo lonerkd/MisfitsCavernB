@@ -29,7 +29,7 @@ export function EditorPackagePanel() {
 
   const pkg = useMemo(() => editorPackage({
     scenes: t.scenes, shots: shots.rows.map((x) => ({ id: x.id, scene_id: x.scene_id, shot_number: x.shot_number, description: x.description })),
-    takes, camera, sound, offloads,
+    takes, camera, sound, offloads, scriptNotes: takes,
   }), [t.scenes, shots.rows, takes, camera, sound, offloads]);
 
   const doc = () => editorPackageDoc(pkg, { project: project.title, accent: project.accent_color, logo: project.logo_url, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });

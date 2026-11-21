@@ -18,6 +18,14 @@ export interface PackageInput {
   camera: PkgCamera[];
   sound: PkgSound[];
   offloads: PkgOffload[];
+  /** The script supervisor's log (scriptNotes records); optional, so a caller without it gets a package without that section. */
+  scriptNotes?: ScriptTake[];
+}
+
+/** One take the script supervisor selected (circled), as the editor needs it. `duration_s` is read defensively: it may not exist on every record. */
+export interface SupervisorTake {
+  id: string; take: string; slate: string; shot: string; lens: string;
+  from_line: number | null; to_line: number | null; off_camera: boolean; duration_s: number | null;
 }
 
 export interface PackageShot { shot_id: string | null; shot: string; description: string; takes: number; selected: ScriptTake | null }
@@ -30,6 +38,8 @@ export interface PackageScene {
   roomTone: boolean;
   wildTrack: boolean;
   soundNotes: string[];
+  /** The supervisor's selected takes for this scene, in the log's order. */
+  supervisor: SupervisorTake[];
 }
 export interface EditorPackage {
   scenes: PackageScene[];
@@ -55,7 +65,7 @@ export function editorPackage(i: PackageInput): EditorPackage {
     const takes = i.takes.filter((t) => inScene(t, sc));
     const camera = i.camera.filter((r) => inScene(r, sc));
     const sound = i.sound.filter((r) => inScene(r, sc));
-    if (takes.length + camera.length + sound.length === 0) continue; // not shot (or not recorded): not in the package
+    if (takes.length + camera.length + sound.length + (i.scriptNotes ?? []).filter((t) => inScene(t, sc)).length === 0) continue; // not shot (or not recorded): not in the package
 
     const planned = i.shots.filter((x) => x.scene_id === sc.id);
     const shots: PackageShot[] = [];
@@ -68,8 +78,25 @@ export function editorPackage(i: PackageInput): EditorPackage {
     if (loose.length) shots.push({ shot_id: null, shot: 'No shot linked', description: '', takes: loose.length, selected: loose.find((t) => t.circle) ?? null });
 
     const label = `Scene ${sc.scene_number}`;
+    const logged = (i.scriptNotes ?? []).filter((t) => inScene(t, sc));
+    const shotName = (id?: string | null) => planned.find((x) => x.id === id)?.shot_number ?? '';
+    const supervisor: SupervisorTake[] = logged.filter((t) => t.circle).map((t) => {
+      const d = Number((t as { duration_s?: unknown }).duration_s);
+      return {
+        id: t.id, take: t.take, slate: t.slate ?? '', shot: shotName(t.shot_id), lens: t.lens ?? '',
+        from_line: t.from_line ?? null, to_line: t.to_line ?? null, off_camera: !!t.off_camera,
+        duration_s: Number.isFinite(d) && d > 0 ? d : null,
+      };
+    });
     for (const sh of shots) {
       if (!sh.selected) attention.push(`${label}, ${sh.shot_id ? `shot ${sh.shot}` : 'takes with no shot'}: ${sh.takes} take${sh.takes === 1 ? '' : 's'} logged, none selected.`);
+    }
+    // The supervisor's own log: a planned shot with takes and none circled (said once, even where the takes above already named it).
+    for (const sh of planned) {
+      const mine = logged.filter((t) => t.shot_id === sh.id);
+      if (mine.length === 0 || mine.some((t) => t.circle)) continue;
+      if (attention.some((a) => a.startsWith(`${label}, shot ${sh.shot_number}:`))) continue;
+      attention.push(`${label}, shot ${sh.shot_number} has takes and none circled in the script supervisor's log.`);
     }
     if (takes.length > 0 && sound.length === 0) attention.push(`${label}: takes are logged but there is no sound report.`);
 
@@ -78,6 +105,7 @@ export function editorPackage(i: PackageInput): EditorPackage {
       shots, takes: takes.length, cameraReports: camera.length, soundReports: sound.length,
       roomTone: sound.some((s) => yes(s.roomTone)), wildTrack: sound.some((s) => yes(s.wildTrack)),
       soundNotes: sound.map((s) => (s.notes ?? '').trim()).filter(Boolean),
+      supervisor,
     });
   }
   const pending = i.offloads.filter((o) => o.status === 'pending').map((o) => o.card).filter(Boolean);
