@@ -23,6 +23,7 @@ exports[`print kit branding > output with no accent and no logo is unchanged 1`]
   thead{display:table-header-group}tfoot{display:table-footer-group}
   th{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:left;border-bottom:1.25pt solid var(--ink);padding:4pt 6pt}
   td{padding:4.5pt 6pt;border-bottom:.5pt solid var(--rule);vertical-align:top;overflow-wrap:anywhere}
+  table.dense th,table.dense td{padding-left:2pt;padding-right:2pt}table.dense td{font-size:8.5pt}
   tr{break-inside:avoid}tbody tr:nth-child(even) td{background:var(--wash)}
   tfoot td{font-weight:700;border-top:1.25pt solid var(--ink);border-bottom:none}
   .right{text-align:right}.center{text-align:center}

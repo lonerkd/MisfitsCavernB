@@ -28,7 +28,7 @@ export function paperworkDoc(i: PaperworkPrintInput): PrintDoc {
       type: 'section', title: `${g.label} · ${g.rows.length}`,
       blocks: [{
         type: 'table',
-        columns: [{ key: 'title', label: 'Document' }, { key: 'with', label: 'With', width: '22%' }, { key: 'status', label: 'Status', width: '24%' }, { key: 'expires', label: 'Expires', width: '13%' }, { key: 'file', label: 'File', width: '8%' }],
+        columns: [{ key: 'title', label: 'Document' }, { key: 'with', label: 'With', width: '22%' }, { key: 'status', label: 'Status', width: '22%' }, { key: 'expires', label: 'Expires', width: '17%' }, { key: 'file', label: 'File', width: '8%' }],
         rows: g.rows.map((r) => ({ title: r.title, with: r.with, status: r.status, expires: r.expires, file: r.hasFile ? 'Yes' : 'No' })),
       }],
     });

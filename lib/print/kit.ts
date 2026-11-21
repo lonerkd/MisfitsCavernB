@@ -92,7 +92,8 @@ function block(b: PrintBlock): string {
       const head = b.columns.map((c) => `<th class="${c.align ?? 'left'}"${c.width ? ` style="width:${esc(c.width)}"` : ''}>${esc(c.label)}</th>`).join('');
       const body = b.rows.map((r) => `<tr>${b.columns.map((c) => `<td class="${c.align ?? 'left'}">${shown(r[c.key])}</td>`).join('')}</tr>`).join('');
       const foot = b.totals ? `<tfoot><tr>${b.columns.map((c) => `<td class="${c.align ?? 'left'}">${shown(b.totals![c.key])}</td>`).join('')}</tr></tfoot>` : '';
-      return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`;
+      // A wide table (the day out of days across a long shoot) gets tight cells, or the cell padding alone takes the room the names need.
+      return `<table${b.columns.length > 14 ? ' class="dense"' : ''}><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`;
     }
     case 'list': {
       const tag = b.ordered ? 'ol' : 'ul';
@@ -147,6 +148,7 @@ export function printHtml(doc: PrintDoc): string {
   thead{display:table-header-group}tfoot{display:table-footer-group}
   th{font-size:7.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--soft);text-align:left;border-bottom:1.25pt solid var(--${rule});padding:4pt 6pt}
   td{padding:4.5pt 6pt;border-bottom:.5pt solid var(--rule);vertical-align:top;overflow-wrap:anywhere}
+  table.dense th,table.dense td{padding-left:2pt;padding-right:2pt}table.dense td{font-size:8.5pt}
   tr{break-inside:avoid}tbody tr:nth-child(even) td{background:var(--wash)}
   tfoot td{font-weight:700;border-top:1.25pt solid var(--${rule});border-bottom:none}
   .right{text-align:right}.center{text-align:center}

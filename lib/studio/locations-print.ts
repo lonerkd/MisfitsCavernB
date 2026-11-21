@@ -35,7 +35,7 @@ export function locationsDoc(i: LocationsPrintInput): PrintDoc {
     meta: [['Locations', i.rows.length], ['Confirmed', i.rows.length ? `${confirmed} of ${i.rows.length}` : null], ['Cost', total ? i.format(total) : null]],
     blocks: [{
       type: 'table',
-      columns: [{ key: 'name', label: 'Location', width: '16%' }, { key: 'address', label: 'Address and contact' }, { key: 'status', label: 'Status', width: '10%' }, { key: 'permit', label: 'Permit', width: '13%' }, { key: 'cost', label: 'Cost', align: 'right', width: '8%' }, { key: 'when', label: 'Scenes · days', width: '14%' }, { key: 'notes', label: 'Notes', width: '16%' }],
+      columns: [{ key: 'name', label: 'Location', width: '14%' }, { key: 'address', label: 'Address and contact' }, { key: 'status', label: 'Status', width: '9%' }, { key: 'permit', label: 'Permit', width: '11%' }, { key: 'cost', label: 'Cost', align: 'right', width: '8%' }, { key: 'when', label: 'Scenes · days', width: '12%' }, { key: 'notes', label: 'Notes', width: '26%' }],
       rows: i.rows.map((r) => ({
         name: r.name,
         address: [r.address, r.contact].filter(Boolean).join('\n'),
