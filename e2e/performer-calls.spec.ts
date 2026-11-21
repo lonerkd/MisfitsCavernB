@@ -85,6 +85,17 @@ test.describe('Performer calls and pages (local Supabase)', () => {
     await expect(page.getByText('Traffic.')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Print my pages' })).toBeVisible();
 
+    // Learn my lines: their speech is hidden behind its first words, the cue stays, tapping shows it, switching off shows all.
+    await page.getByLabel(/Learn my lines/).check();
+    await expect(page.getByText('You’re late.', { exact: true })).toHaveCount(0);
+    await expect(page.locator('p[class*="sideMine"]').getByText('MAYA', { exact: true })).toBeVisible(); // the cue stays
+    const hint = page.getByRole('button', { name: /^Your line: You’re…/ });
+    await expect(hint).toBeVisible();
+    await hint.click();
+    await expect(page.getByText('You’re late.', { exact: true })).toBeVisible();
+    await page.getByLabel(/Learn my lines/).uncheck();
+    await expect(page.getByText('You’re late.', { exact: true })).toBeVisible();
+
     await page.getByRole('button', { name: 'Got it' }).click();
     await expect(page.getByText('You confirmed v1')).toBeVisible();
     await page.goto('/call');

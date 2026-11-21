@@ -49,3 +49,14 @@ export function buildSides(dayScenes: DayScriptScene[], who: SidesWho[]): Sides[
   }
   return out;
 }
+
+/** The first words of a line with the rest hidden, so a performer can test themselves: "You’re late, again." → "You’re late…". Short lines show one word. */
+export function lineHint(text: string, words = 2): string {
+  const parts = text.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '…';
+  const keep = parts.length <= 3 ? 1 : words;
+  return `${parts.slice(0, keep).join(' ')}…`;
+}
+
+/** Whether a marked line is one the performer speaks (their dialogue, parentheticals and lyrics), as opposed to their cue name or a heading. */
+export const isSpokenLine = (l: { type: string; mine: boolean }): boolean => l.mine && SPEECH.has(l.type);
