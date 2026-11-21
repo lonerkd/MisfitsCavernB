@@ -84,8 +84,7 @@ fetch.
 - **Who sees what**: signed in — published posts; admins — drafts too; anon —
   nothing. Each person's reads are their own. Persona test:
   `tests/integration/hub.test.ts`.
-- **Status** (L2, behind flag `hub_status`: on locally and on previews, admins
-  only in production): an incident is a hub post of kind `incident` with a
+- **Status** (L2, on for everyone; its flag was retired 2026-11-21): an incident is a hub post of kind `incident` with a
   severity (minor / major / critical) and `resolved_at`; admins create it at
   `/admin/hub`, post running updates and resolve or reopen it on its page
   (`components/hub/IncidentDetail.tsx`, table `hub_incident_updates`,
@@ -94,8 +93,7 @@ fetch.
   (`components/hub/IncidentBanner.tsx`) shows the most severe, dismissible per
   incident for the session; it rechecks every 60 s. The Status tab lists open
   incidents first (most severe), then resolved ones.
-- **Help** (L3, behind flag `hub_help`: on locally and on previews, admins only
-  in production): `/hub/help` — a person opens a support case (subject,
+- **Help** (L3, on for everyone; its flag was retired 2026-11-21): `/hub/help` — a person opens a support case (subject,
   message, the page they came from via `?from=`) and follows it at
   `/hub/help/<id>`; admins work the queue at `/admin/support` (needs an answer
   / waiting on them / resolved). Tables `support_cases` and
@@ -105,8 +103,7 @@ fetch.
   waiting and notifies the opener (so a push); the opener's message moves it
   back to open and notifies the admins. Persona test:
   `tests/integration/hub-support.test.ts`.
-- **Case studies** (L4, behind flag `hub_case_studies`: on locally and on
-  previews, admins only in production): a hub post of kind `case_study`, which
+- **Case studies** (L4, on for everyone; its flag was retired 2026-11-21): a hub post of kind `case_study`, which
   an admin may link to one production — **only if its owner opted in**. The
   owner flips "Allow a case study about this production" in Studio › Share
   (`projects.case_study_ok`, default off, creator-only); the post then shows

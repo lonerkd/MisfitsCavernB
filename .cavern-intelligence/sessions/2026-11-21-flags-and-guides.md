@@ -1,0 +1,6 @@
+# Session - 2026-11-21: seven flags retired, guide channels retired (BACKLOG 3.28 L6)
+
+- **Flags (a time bomb defused):** `flags.test.ts` fails any flag fully on for more than 30 days (ADR 0007), and seven went on 2026-10-26/27 (`hub_status`, `hub_help`, `hub_case_studies`, `ad_copywriting`, `phase_gates`, `guest_review`, `entity_cards`): CI would have gone red around 2026-11-25. Each flag and every use is removed (a Sonnet agent, reviewed by me: 19 files, behaviour with the flag on is unchanged). Only `island_v2` and `discord_signin_preview` remain.
+- **L6:** the Lounge's read-only "guide" channels (start-here, faq, tutorials) were superseded by the hub's Learn and were empty in production (I checked: 0 messages). Migration `20261121000400` refuses to run if any guide channel holds a message, removes them and the `guide` type from the channel check; the Lounge's guide branches are removed (a second agent, reviewed); the empty-state button now opens Learn on `/hub`. Persona test: none left, the type refused, the other channels still there.
+
+**Verified:** typecheck, eslint, unit tests across lib, components and app (agents: 3240 and 361), the migration test, and the Lounge e2e specs on a production build on the local stack (see the PR). **Not verified:** a phone. **After merge:** apply the migration to production then staging, then the drift check.
