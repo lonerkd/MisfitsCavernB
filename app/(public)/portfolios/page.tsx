@@ -10,6 +10,47 @@ import { DIRECTORY_PAGE_SIZE, directoryHref, parsePage, parseQuery } from '@/lib
 import { pagePath } from '@/lib/portfolio/page-setting';
 import { headerOf } from '@/lib/portfolio/header';
 
+const VISIBLE_CRAFTS = 12;
+
+// Phone: one "Craft" select (a plain GET form, works without script). Desktop: the first chips, the rest behind "More".
+function CraftFilter({ crafts, q }: { crafts: string[]; q: string }) {
+  const selected = crafts.find((c) => c.toLowerCase() === q.toLowerCase());
+  const ordered = selected ? [selected, ...crafts.filter((c) => c !== selected)] : crafts;
+  const chip = (c: string) => {
+    const on = c === selected;
+    return (
+      <Link key={c} href={on ? '/portfolios' : directoryHref(c, 1)} aria-current={on ? 'true' : undefined}
+        style={{ padding: '4px 10px', borderRadius: 9999, border: '1px solid var(--border-2)', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none', color: on ? 'var(--on-accent)' : 'var(--fg-dim)', background: on ? 'var(--accent)' : 'transparent' }}>
+        {c}
+      </Link>
+    );
+  };
+  return (
+    <div className="craft-filter">
+      <form action="/portfolios" method="get" className="craft-filter-select" aria-label="Filter by craft">
+        <label htmlFor="craft-select" className="sr-only">Craft</label>
+        <select id="craft-select" name="q" defaultValue={selected ?? ''}
+          style={{ flex: 1, minWidth: 0, padding: '10px 12px', background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid var(--border-2)', borderRadius: 4 }}>
+          <option value="">All crafts</option>
+          {ordered.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <button type="submit" style={{ padding: '10px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11 }}>FILTER</button>
+      </form>
+      <nav aria-label="Filter by craft" className="craft-filter-chips">
+        {ordered.slice(0, VISIBLE_CRAFTS).map(chip)}
+        {ordered.length > VISIBLE_CRAFTS && (
+          <details className="craft-filter-more">
+            <summary style={{ cursor: 'pointer', padding: '4px 10px', borderRadius: 9999, border: '1px dashed var(--border-2)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>
+              More ({ordered.length - VISIBLE_CRAFTS})
+            </summary>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>{ordered.slice(VISIBLE_CRAFTS).map(chip)}</div>
+          </details>
+        )}
+      </nav>
+    </div>
+  );
+}
+
 export const dynamic = 'force-dynamic';
 
 type Props = { searchParams: Promise<{ q?: string | string[]; page?: string | string[] }> };
@@ -48,19 +89,7 @@ export default async function PortfoliosPage({ searchParams }: Props) {
           <button type="submit" style={{ padding: '10px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>SEARCH</button>
         </form>
 
-        {crafts.length > 0 && (
-          <nav aria-label="Filter by craft" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '-16px 0 28px' }}>
-            {crafts.map((c) => {
-              const on = c.toLowerCase() === q.toLowerCase();
-              return (
-                <Link key={c} href={on ? '/portfolios' : directoryHref(c, 1)} aria-current={on ? 'true' : undefined}
-                  style={{ padding: '4px 10px', borderRadius: 9999, border: '1px solid var(--border-2)', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none', color: on ? 'var(--on-accent)' : 'var(--fg-dim)', background: on ? 'var(--accent)' : 'transparent' }}>
-                  {c}
-                </Link>
-              );
-            })}
-          </nav>
-        )}
+        {crafts.length > 0 && <CraftFilter crafts={crafts} q={q} />}
 
         {shown.length === 0 ? (
           <p style={{ color: 'var(--fg-dim)' }}>{q ? `No portfolio matches “${q}”.` : 'No one has published a portfolio yet.'}</p>
