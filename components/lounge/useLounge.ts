@@ -72,7 +72,12 @@ export function useLounge() {
   const [paneChoice, setPane] = useState<'list' | 'chat' | null>(null);
   const pane = paneChoice ?? (linkedChannel || linkedDm ? 'chat' : 'list');
   const openChannel = (ch: Channel) => { setActiveChannel(ch); setDmTarget(null); setPane('chat'); };
-  const openDM = (t: { id: string; name: string }) => { setDmTarget(t); setPane('chat'); };
+  // People I have opened a conversation with on this visit, newest first (the rail's People area).
+  const [dmRecent, setDmRecent] = useState<{ id: string; name: string }[]>([]);
+  const openDM = (t: { id: string; name: string }) => {
+    setDmTarget(t); setPane('chat');
+    setDmRecent((r) => [t, ...r.filter((x) => x.id !== t.id)].slice(0, 12));
+  };
 
   // A link straight into a conversation: /lounge?channel=<id> or ?dm=<person>.
   useEffect(() => {
@@ -144,6 +149,32 @@ export function useLounge() {
   const unreadFrom = (personId: string) => (dmTarget?.id === personId ? 0 : unread.people[personId] ?? 0);
   const unreadTotal = Object.keys(unread.channels).filter((id) => channels.some((c) => c.id === id)).reduce((n, id) => n + unreadOf(id), 0)
     + Object.keys(unread.people).reduce((n, id) => n + unreadFrom(id), 0);
+  // The People area: the open conversation, whoever has written to me, and whoever I opened this visit. A name comes from the
+  // crew or an earlier open; someone who wrote from outside this crew is looked up once.
+  const [lookedUp, setLookedUp] = useState<Record<string, string>>({});
+  const unreadPartnerIds = Object.keys(unread.people).filter((id) => (unread.people[id] ?? 0) > 0);
+  const unknownKey = unreadPartnerIds.filter((id) => !crewList.some((c) => c.id === id) && !dmRecent.some((r) => r.id === id) && !(id in lookedUp)).sort().join(',');
+  useEffect(() => {
+    if (!unknownKey) return;
+    let alive = true;
+    for (const id of unknownKey.split(',')) {
+      getProfile(id).then((p) => { if (alive) setLookedUp((m) => ({ ...m, [id]: p?.username || 'Someone' })); }).catch(() => { if (alive) setLookedUp((m) => ({ ...m, [id]: 'Someone' })); });
+    }
+    return () => { alive = false; };
+  }, [unknownKey]);
+  const dmPeople = useMemo(() => {
+    const nameOf = (id: string) => (crewList.find((c) => c.id === id)?.name as string | undefined) ?? dmRecent.find((r) => r.id === id)?.name ?? lookedUp[id] ?? 'Someone';
+    const seen = new Set<string>();
+    const out: { id: string; name: string }[] = [];
+    for (const p of [...(dmTarget ? [dmTarget] : []), ...unreadPartnerIds.map((id) => ({ id, name: nameOf(id) })), ...dmRecent]) {
+      if (seen.has(p.id) || p.id === currentUser?.id) continue;
+      seen.add(p.id); out.push(p);
+    }
+    return out;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- unreadPartnerIds is derived from unread.people
+  }, [dmTarget, unread.people, dmRecent, crewList, lookedUp, currentUser?.id]);
+  const unreadPeopleTotal = Object.keys(unread.people).reduce((n, id) => n + unreadFrom(id), 0);
+
   usePillStage(
     {
       module: 'lounge',
@@ -449,7 +480,7 @@ export function useLounge() {
     }
   };
 
-  return { isLoading, toast, activeProject, projects, setActiveProject, channels, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, isAdmin, showManage, setShowManage, dmTarget, setDmTarget, replyCounts, threadParent, setThreadParent, threadInput, setThreadInput, messages, input, setInput, currentUser, myProfile, crewList, showEmoji, setShowEmoji, typingUsers, onlineIds, bottomRef, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, highlightId, setPane, pane, openChannel, openDM, reloadChannels, ownsActive, suggested, addPreset, onlineCrew, unreadOf, unreadFrom, canPost, canManageActive, threadReplies, broadcastTyping, handleReact, handleEdit, handlePin, unpinById, jumpTo, handleThreadSend, handleSend };
+  return { isLoading, toast, activeProject, projects, setActiveProject, channels, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, isAdmin, showManage, setShowManage, dmTarget, setDmTarget, replyCounts, threadParent, setThreadParent, threadInput, setThreadInput, messages, input, setInput, currentUser, myProfile, crewList, showEmoji, setShowEmoji, typingUsers, onlineIds, bottomRef, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, highlightId, setPane, pane, openChannel, openDM, dmPeople, unreadPeopleTotal, reloadChannels, ownsActive, suggested, addPreset, onlineCrew, unreadOf, unreadFrom, canPost, canManageActive, threadReplies, broadcastTyping, handleReact, handleEdit, handlePin, unpinById, jumpTo, handleThreadSend, handleSend };
 }
 
 export type Lounge = ReturnType<typeof useLounge>;

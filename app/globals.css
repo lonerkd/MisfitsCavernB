@@ -282,6 +282,15 @@ body.custom-cursor-active * {
   .mc-lounge-body[data-pane='chat'] .mc-lounge-channels,
   .mc-lounge-body[data-pane='chat'] .mc-lounge-crew { display: none !important; }
   .mc-lounge-channels button, .mc-lounge-crew > div[title] { min-height: 44px; font-size: 14px !important; }
+  .mc-lounge-sechead > button { font-size: 12px !important; }
+  /* Held sideways with 700 px or more left after the insets (the page sets data-split), the rail and the conversation share the
+     screen; the crew column steps aside (the rail's People area has the same people) and the back button has nothing to go back to.
+     Less room than that keeps the push: the rail is the home screen and a conversation opens over it. */
+  .mc-lounge-body[data-split='true'] { flex-direction: row !important; overflow: hidden !important; }
+  .mc-lounge-body[data-split='true'][data-pane] .mc-lounge-chat { display: flex !important; }
+  .mc-lounge-body[data-split='true'][data-pane] .mc-lounge-channels { display: flex !important; width: 232px !important; border-right: 1px solid rgba(var(--ink-rgb), 0.04) !important; }
+  .mc-lounge-body[data-split='true'] .mc-lounge-crew { display: none !important; }
+  .mc-lounge-body[data-split='true'] .mc-lounge-back { display: none !important; }
   .mc-lounge-chathead { padding: 8px 10px !important; gap: 8px; }
   .mc-lounge-chathead button { min-height: 40px; min-width: 40px; justify-content: center; }
   .mc-lounge-topic { display: none; }
@@ -295,7 +304,7 @@ body.custom-cursor-active * {
   html[data-typing='true'] .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   /* The thread panel is fixed to the layout viewport, which iOS leaves behind the keyboard: lift it by --kb so its reply field sits on
      top of the keyboard like the composer, and keep the home indicator clear when the keyboard is down. */
-  .mc-lounge-thread-panel { width: 100vw !important; max-width: 100vw; padding-top: env(safe-area-inset-top); }
+  .mc-lounge-thread-panel { left: max(env(safe-area-inset-left), var(--mc-rail)) !important; right: env(safe-area-inset-right) !important; width: auto !important; max-width: none; border-left: 0 !important; padding-top: var(--mc-safe-top); }
   .mc-lounge-thread-reply { padding-bottom: calc(14px + env(safe-area-inset-bottom)) !important; }
   html[data-typing='true'] .mc-lounge-thread-panel { bottom: var(--kb, 0px) !important; }
   html[data-typing='true'] .mc-lounge-thread-reply { padding-bottom: 14px !important; }
@@ -311,6 +320,11 @@ body.custom-cursor-active * {
      window scroll, and scrolling the latest message into view then took the chat header off the top. */
   .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   .mc-lounge-body[data-pane='list']::after { content: ''; flex: none; height: 72px; }
+  .mc-lounge-body[data-split='true']::after { content: none; }
+  /* Side by side, the rail scrolls on its own and keeps the island's room at its end. */
+  .mc-lounge-body[data-split='true'] .mc-lounge-rail-scroll { padding-bottom: 84px !important; }
+  /* The room above already ends at the home indicator (it takes env(safe-area-inset-bottom) off its height), so the composer adds none. */
+  .mc-lounge-composer { padding-bottom: 8px !important; }
   /* Typing sideways, the keyboard takes about half of a 393 px screen: the top bar and the chat header would take most of what is left
      (the message list was down to a line or two), so both step aside until the keyboard goes; the composer and the messages stay. */
   html[data-typing='true'] .mc-lounge-top, html[data-typing='true'] .mc-lounge-chathead { display: none !important; }
@@ -320,6 +334,17 @@ body.custom-cursor-active * {
   /* The chat header's buttons keep their icons and lose their words sideways (their names stay in aria-label), and the header is slimmer. */
   .mc-lounge-label { display: none; }
   .mc-lounge-chathead { padding-top: 4px !important; padding-bottom: 4px !important; }
+}
+/* The rail's rows (channels, people, the hub link): a hover and a focus ring on every pointer; 44 pt targets wherever a finger is the pointer. */
+.mc-lounge-row { min-height: 32px; box-sizing: border-box; }
+.mc-lounge-row:not([data-active]):hover { background: rgba(var(--ink-rgb), 0.05) !important; }
+.mc-lounge-row:focus-visible, .mc-lounge-sechead > button:focus-visible, .mc-lounge-add:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@media (pointer: coarse), (max-width: 760px) {
+  .mc-lounge-row, .mc-lounge-sechead > button { min-height: 44px; }
+  .mc-lounge-add { min-width: 44px; min-height: 44px; }
+  .mc-lounge-iconlink { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; }
+  /* 16 px keeps iOS from zooming the page when the finder is focused. */
+  .mc-lounge-channels input { font-size: 16px !important; }
 }
 /* A touch screen has no hover to reveal a message's actions: show them. */
 @media (hover: none) {

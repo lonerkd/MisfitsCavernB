@@ -15,15 +15,25 @@ and for the film. Engineering detail:
 ## `/lounge`
 
 `app/(suite)/lounge/page.tsx` (layout only), `components/lounge/useLounge.ts` (state, data, Realtime, handlers), `LoungeTopBar`, `ChannelRail`, `ChatHeader`, `MessagePane`, `Composer`, `CrewList`, `ThreadPanel`, `components/lounge/LoungePanels.tsx`,
-`lib/lounge/audience.ts`, `lib/webrtc/voice.ts`.
+`LoungeEmpty` (empty states, welcome), `lib/lounge/audience.ts`, `lib/lounge/rail.ts`, `lib/webrtc/voice.ts`.
 
-- **Left**: the active project's channels grouped by audience, community
-  channels, DMs (crew list with presence and unread badges); suggested
-  channels from the brief (`suggestChannels`, presets by phase).
+- **Left (the rail, three areas)**: a pinned *Learn / What's new* link to the
+  hub, then **Productions** (the active production's text channels, then its
+  voice room; suggested channels from the brief; other productions' public
+  channels), **Community** (site-wide channels) and **People** (a find-someone
+  box that starts a direct message, then the conversations: open, unread, opened
+  this visit). Each area is collapsible (remembered on the device) and shows its
+  unread count; rows show unread, private, announce-only, and "N in" for the
+  voice room you are in. The crew list with presence stays on the right (desk).
+  No production: Productions explains itself and links to Projects.
+- **Phone**: the rail is the home screen; a channel pushes the conversation
+  full screen with a back button; the thread panel is a full-screen sheet.
+  Sideways, rail and conversation sit side by side only with 700 px of usable
+  width after the safe areas (`loungeSplit`, `data-split` on `.mc-lounge-body`).
+- **First visit**: a banner points to What's new and Learn (dismissed per device).
 - **Centre**: the conversation — messages, threads (`parent_message_id`),
   reactions (`toggle_message_reaction`), edit own (`edit_message`, "(edited)"),
   pin (`pin_message`), delete (sender or channel manager), typing presence.
-  Guides (`type = 'guide'`) render as read-only sections.
 - **Header**: topic, Pinned panel, search (`search_lounge`: word starts,
   newest 40, jumps to the message — switching project if needed), manage
   (audience, post policy, private roster, Discord webhook).
@@ -36,8 +46,8 @@ and for the film. Engineering detail:
 - **Unread**: `lounge_reads` + `lounge_unread()`; badges on channels, DMs, the
   tab bar and the island.
 - Deep links: `?channel=<id>`, `?dm=<user>` (notifications use them).
-- States: no project (community + DMs only) · empty channel · read-only
-  (post policy / guide) · private (roster) · offline (send fails, toast) ·
+- States: no project (community + DMs only) · no conversation chosen · empty channel
+  (managers get Manage) · read-only (post policy) · private (roster) · offline (send fails, toast) ·
   voice connecting / connected / failed.
 
 ### Who sees what

@@ -4,11 +4,11 @@ import { Users, Lock, Settings as SettingsIcon, Pin, Search, ChevronLeft } from 
 import type { Lounge } from '@/components/lounge/useLounge';
 
 export function ChatHeader({ l }: { l: Lounge }) {
-  const { activeChannel, setShowManage, dmTarget, setDmTarget, messages, crewList, onlineIds, setShowSearch, setShowPinned, setPane, canManageActive } = l;
+  const { activeChannel, setShowManage, dmTarget, setDmTarget, messages, crewList, onlineIds, setShowSearch, setShowPinned, setPane, setThreadParent, canManageActive } = l;
   return (
     <div className="mc-lounge-chathead" style={{ padding: '12px 32px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(var(--ink-rgb), 0.01)' }}>
        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-         <button type="button" className="mc-phone-only mc-lounge-back" onClick={() => setPane('list')} aria-label="Back to channels and people"><ChevronLeft size={20} aria-hidden /></button>
+         <button type="button" className="mc-phone-only mc-lounge-back" onClick={() => { setThreadParent(null); setPane('list'); }} aria-label="Back to channels and people"><ChevronLeft size={20} aria-hidden /></button>
          {dmTarget ? (
            <>
              <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>

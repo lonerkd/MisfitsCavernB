@@ -39,7 +39,7 @@ export function VoiceRoom({ channel, me }: { channel: Channel; me: { id: string;
           ))}
         </div>
       ) : (
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? (live ? 'Waiting for others to join…' : 'Connecting…') : 'No one here yet'}</div>
+        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>{joined ? (live ? 'Waiting for others to join…' : 'Connecting…') : `Nobody is in ${channel.name} yet. Join and anyone who opens this room can drop in.`}</div>
       )}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
         <button onClick={() => { if (joined) call.leave(); else if (me) call.join({ id: channel.id, name: channel.name }, me); }} style={{ padding: '12px 28px', borderRadius: 9999, border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', fontWeight: 600, background: joined ? 'rgba(232, 67, 26,0.15)' : 'var(--ok)', color: joined ? '#ff7a4d' : '#031a12', display: 'flex', alignItems: 'center', gap: 8 }}>

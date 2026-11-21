@@ -1,7 +1,11 @@
 'use client';
 
 import { ViewAsBanner } from '@/components/projects/ViewAs';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
+import { usePhoneLayout } from '@/lib/os/usePhone';
+import { loungeSplit } from '@/lib/lounge/rail';
+import { LoungeWelcome } from '@/components/lounge/LoungeEmpty';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import { LoungeSearch, PinnedPanel } from '@/components/lounge/LoungePanels';
 import { createChannel, canManageChannel } from '@/lib/supabase/channels';
@@ -18,20 +22,37 @@ import { ThreadPanel } from '@/components/lounge/ThreadPanel';
 
 export default function LoungePage() {
   const l = useLounge();
+  // The Lounge's own width is the room it has: the page's safe-area padding has already narrowed it, so a phone held sideways
+  // shows the rail beside the conversation only when 700 px are really left (iPhone 15 Pro: about 734).
+  const { phone, landscape } = usePhoneLayout();
+  const root = useRef<HTMLDivElement>(null);
+  const [usable, setUsable] = useState(0);
+  const mounted = !l.isLoading;
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const read = () => setUsable(el.clientWidth);
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mounted]);
+  const split = phone && loungeSplit(phone, landscape, usable);
   const { isLoading, toast, activeProject, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, showManage, setShowManage, dmTarget, threadParent, messages, currentUser, myProfile, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, pane, reloadChannels, canManageActive, unpinById, jumpTo } = l;
   if (isLoading) return null;
 
   // Exactly one screen tall: each pane scrolls on its own, so a long channel
   // list never pushes the composer down under the island.
   return (
-    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: 'calc(100dvh - var(--mc-safe-top))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+    <div ref={root} className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: 'calc(100dvh - var(--mc-safe-top))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
       {activeProject && <ViewAsBanner projectId={activeProject.id} />}
 
       <LoungeTopBar l={l} />
+      <LoungeWelcome />
 
-      <div className="mc-lounge-body" data-pane={pane} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="mc-lounge-body" data-pane={pane} data-split={split || undefined} style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
         <ChannelRail l={l} />
 
@@ -45,7 +66,7 @@ export default function LoungePage() {
           <>
           <MessagePane l={l} />
 
-          <Composer l={l} />
+          {(activeChannel || dmTarget) && <Composer l={l} />}
           </>
           )}
         </div>
