@@ -209,3 +209,92 @@ describe('dismissing', () => {
     expect((await rpc(casey.client, 'admin_moderate_report', { p_report: rid, p_action: 'dismiss' })).error?.message).toMatch(/already settled/i);
   });
 });
+
+// The wider guard (20261121000700): a suspended account is refused on the other
+// places a person writes what they make, on the session they already hold.
+describe('a suspended account across the other write paths', () => {
+  const SUSPENDED = /account is suspended/i;
+  const loose = (c: Client, table: string) => c.from(table as 'projects') as unknown as { insert(v: Row): Promise<Result>; update(v: Row): { eq(k: string, v: string): Promise<Result> } };
+  let projectId = '';
+  let scriptId = '';
+  let pieceId = '';
+
+  beforeAll(async () => {
+    const db = adminClient();
+    const p = await db.from('projects').insert({ title: 'Riley project', creator_id: cast.riley.id }).select('id').single();
+    if (p.error) throw p.error;
+    projectId = p.data.id;
+    const s = await db.from('scripts').insert({ title: 'Riley script', created_by: cast.riley.id }).select('id').single();
+    if (s.error) throw s.error;
+    scriptId = s.data.id;
+    const pc = await db.from('portfolio_projects').insert({ user_id: cast.riley.id, title: 'Riley piece' }).select('id').single();
+    if (pc.error) throw pc.error;
+    pieceId = pc.data.id;
+    expect((await rpc(casey.client, 'admin_set_suspended', { p_user: cast.riley.id, p_suspended: true })).error).toBeNull();
+  });
+  afterAll(async () => {
+    const db = adminClient();
+    await rpc(casey.client, 'admin_set_suspended', { p_user: cast.riley.id, p_suspended: false });
+    await db.from('audit_logs').delete().eq('resource_id', cast.riley.id);
+    await db.from('support_cases').delete().eq('opened_by', cast.riley.id);
+    await db.from('project_tasks').delete().eq('project_id', projectId);
+    await db.from('portfolio_projects').delete().eq('id', pieceId);
+    await db.from('scripts').delete().eq('id', scriptId);
+    await db.from('projects').delete().eq('id', projectId);
+  });
+
+  it('refuses inserts on projects, scripts, notes, media, tasks, documents, the portfolio and support', async () => {
+    const c = cast.riley.client;
+    const inserts: Array<[string, Row]> = [
+      ['projects', { title: 'New', creator_id: cast.riley.id }],
+      ['scripts', { title: 'New', created_by: cast.riley.id }],
+      ['notes', { scope: 'personal', body: 'x', created_by: cast.riley.id }],
+      ['media', { project_id: projectId, kind: 'image', created_by: cast.riley.id }],
+      ['project_tasks', { project_id: projectId, title: 'x' }],
+      ['project_documents', { project_id: projectId, kind: 'note', title: 'x' }],
+      ['portfolio_projects', { user_id: cast.riley.id, title: 'x' }],
+      ['support_cases', { subject: 'help', opened_by: cast.riley.id }],
+    ];
+    for (const [table, row] of inserts) {
+      const r = await loose(c, table).insert(row);
+      expect(r.error?.message, table).toMatch(SUSPENDED);
+    }
+  });
+
+  it('refuses edits to their own project, script, portfolio piece and profile; the rows are unchanged', async () => {
+    const c = cast.riley.client;
+    expect((await loose(c, 'projects').update({ title: 'Renamed' }).eq('id', projectId)).error?.message).toMatch(SUSPENDED);
+    expect((await loose(c, 'scripts').update({ title: 'Renamed' }).eq('id', scriptId)).error?.message).toMatch(SUSPENDED);
+    expect((await loose(c, 'portfolio_projects').update({ title: 'Renamed' }).eq('id', pieceId)).error?.message).toMatch(SUSPENDED);
+    expect((await loose(c, 'profiles').update({ bio: 'still here' }).eq('id', cast.riley.id)).error?.message).toMatch(SUSPENDED);
+    const db = adminClient();
+    expect((await db.from('projects').select('title').eq('id', projectId).single()).data?.title).toBe('Riley project');
+    expect((await db.from('scripts').select('title').eq('id', scriptId).single()).data?.title).toBe('Riley script');
+  });
+
+  it('the server (no JWT) and an admin are unaffected', async () => {
+    const db = adminClient();
+    expect((await db.from('projects').update({ title: 'Server edit' }).eq('id', projectId)).error).toBeNull();
+    expect((await db.from('projects').update({ title: 'Riley project' }).eq('id', projectId)).error).toBeNull();
+    expect((await loose(casey.client, 'projects').insert({ title: 'Admin project', creator_id: casey.id })).error).toBeNull();
+    await db.from('projects').delete().eq('creator_id', casey.id);
+  });
+
+  it('an unsuspended account writes as before, and Jordan was never affected', async () => {
+    expect((await loose(cast.jordan.client, 'projects').insert({ title: 'Jordan project', creator_id: cast.jordan.id })).error).toBeNull();
+    await adminClient().from('projects').delete().eq('creator_id', cast.jordan.id);
+    expect((await rpc(casey.client, 'admin_set_suspended', { p_user: cast.riley.id, p_suspended: false })).error).toBeNull();
+    const fresh = anonClient();
+    expect((await fresh.auth.signInWithPassword({ email: cast.riley.email, password: PASSWORD })).error).toBeNull();
+    expect((await loose(fresh, 'projects').update({ title: 'Back' }).eq('id', projectId)).error).toBeNull();
+    expect((await loose(fresh, 'profiles').update({ bio: 'back' }).eq('id', cast.riley.id)).error).toBeNull();
+  });
+
+  it('a hidden job leaves the public job total', async () => {
+    const before = (await anonClient().rpc('get_platform_stats')).data as unknown as Array<{ jobs: number }>;
+    expect((await rpc(casey.client, 'admin_hide_content', { p_kind: 'job', p_target: jobId, p_hidden: true, p_reason: 'x' })).error).toBeNull();
+    const after = (await anonClient().rpc('get_platform_stats')).data as unknown as Array<{ jobs: number }>;
+    expect(Number(after[0].jobs)).toBe(Number(before[0].jobs) - 1);
+    await rpc(casey.client, 'admin_hide_content', { p_kind: 'job', p_target: jobId, p_hidden: false });
+  });
+});
