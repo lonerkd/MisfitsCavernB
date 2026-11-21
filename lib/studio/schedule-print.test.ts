@@ -15,6 +15,11 @@ describe('the printed shooting schedule', () => {
     expect(html).toContain('size:Letter landscape');
     expect(html).toContain('<dt>Days</dt><dd>2</dd>');
   });
+  it('puts each day\'s banner in its table header, so a day that runs onto the next page repeats it', () => {
+    const html = printHtml(scheduleDoc({ project: 'The Pier', days: [day(1)], totalScenes: 1, totalPages: '2.0', generated: 'd' }));
+    expect(html).toContain('<section class="sec"><table><thead><tr><th colspan="6" style="border-bottom:0;padding:0 0 2pt"><h2>Day 1 · 2.0 pp</h2></th></tr>');
+    expect(html).toContain('<th class="left">Scene</th>');
+  });
   it('shows a dash for a scene with no cast, and says so when nothing is scheduled', () => {
     expect(printHtml(scheduleDoc({ project: 'P', days: [day(1, { scenes: [{ number: 1, heading: 'INT. X', kind: 'INT · NIGHT', cast: [], pages: '0.5', status: 'planned' }] })], totalScenes: 1, totalPages: '0.5', generated: 'd' }))).toContain('<td class="left">—</td>');
     expect(printHtml(scheduleDoc({ project: 'P', days: [], totalScenes: 0, totalPages: '0.0', generated: 'd' }))).toContain('Nothing is scheduled yet.');

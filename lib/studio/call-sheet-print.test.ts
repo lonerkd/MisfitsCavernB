@@ -20,6 +20,14 @@ describe('the printed call sheet', () => {
     expect(html.indexOf('>Cast<')).toBeLessThan(html.indexOf('>Crew<'));
   });
 
+  it('puts the Cast, Crew and Scenes headings in their tables\' headers, so each repeats on a continuation page', () => {
+    const html = printHtml(callSheetDoc(input()));
+    // Scenes has 2 columns, Cast 3, Crew 4: each title spans its own table.
+    expect(html).toContain('<th colspan="2" style="border-bottom:0;padding:0 0 2pt"><h2>Scenes (2 · 2.5 pg)</h2></th>');
+    expect(html).toContain('<th colspan="3" style="border-bottom:0;padding:0 0 2pt"><h2>Cast</h2></th>');
+    expect(html).toContain('<th colspan="4" style="border-bottom:0;padding:0 0 2pt"><h2>Crew</h2></th>');
+  });
+
   it('shows a dash for an actor with no call yet, and says so on an empty day', () => {
     const html = printHtml(callSheetDoc(input({ scenes: [], cast: [{ name: 'LUIS', call: '', remarks: null }], crew: [], locations: [], notes: null, planNotes: [], pages: null })));
     expect(html).toContain('<td class="left">LUIS</td><td class="left">—</td>');

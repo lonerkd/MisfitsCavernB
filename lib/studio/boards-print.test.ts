@@ -25,4 +25,10 @@ describe('boardPrintHtml', () => {
     expect(html).toContain('background:#aabbcc');
     expect(html).not.toContain('red;x');
   });
+  it('fits the board on one A4 landscape page: 16:10, never wider than 250mm (so never taller than the page)', () => {
+    const html = boardPrintHtml({ name: 'B' }, [item({ note: 'n' })], { titleOf: () => '', srcOf: () => null });
+    expect(html).toContain('@page{size:A4 landscape;margin:12mm}');
+    expect(html).toContain('.board{position:relative;width:min(100%,250mm);aspect-ratio:16/10;');
+    expect(html).toContain('break-inside:avoid');
+  });
 });

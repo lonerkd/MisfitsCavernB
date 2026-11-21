@@ -23,7 +23,9 @@ export function boardPrintHtml(board: Pick<MoodBoard, 'name'>, items: readonly M
 body{margin:0;font-family:system-ui,sans-serif;color:#111}
 h1{font-size:18px;margin:0 0 8px}
 .sw{display:inline-block;width:18px;height:18px;border-radius:4px;margin-right:4px;border:1px solid #ccc}
-.board{position:relative;width:100%;aspect-ratio:16/10;border:1px solid #bbb;border-radius:6px;margin-top:8px;overflow:hidden}
+/* 16:10, capped at 250mm wide: on A4 landscape (273mm x 186mm of printable area, under the title) that is 156mm tall, so the board
+   and its title always fit one page. Cards are placed in percentages of the box, so they keep their places at any size. */
+.board{position:relative;width:min(100%,250mm);aspect-ratio:16/10;border:1px solid #bbb;border-radius:6px;margin-top:8px;overflow:hidden;break-inside:avoid}
 .card{position:absolute;background:#fff;border:1px solid #ccc;border-radius:4px;padding:2px;box-sizing:border-box}
 .card img{width:100%;display:block;border-radius:3px}
 .cap{font-size:9px;color:#555;padding:2px}
