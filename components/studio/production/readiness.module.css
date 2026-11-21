@@ -68,7 +68,7 @@
 @media (max-width: 640px) { .rowBtn { grid-template-columns: 28px minmax(0, 1fr) 36px 16px; } .pips { display: none; } }
 
 .pip { width: 16px; height: 16px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.pipDone { background: rgba(52, 199, 123, 0.2); color: #5fd99a; }
+.pipDone { background: rgba(52, 199, 123, 0.2); color: var(--ok); }
 .pipTodo { background: rgba(245, 165, 36, 0.2); box-shadow: inset 0 0 0 1.5px #f5a524; }
 .pipSoft { box-shadow: inset 0 0 0 1.5px rgba(var(--fg-rgb), 0.3); }
 .pipNone { background: rgba(var(--fg-rgb), 0.05); color: var(--fg-dim); }

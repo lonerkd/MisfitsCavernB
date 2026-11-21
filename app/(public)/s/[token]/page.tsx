@@ -130,7 +130,7 @@ export default async function PublicScriptPage({ params }: { params: Promise<{ t
         padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       }}>
         <div>
-          <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: '-0.02em', color: '#fff' }}>{script.title}</div>
+          <div style={{ fontFamily: 'var(--display)', fontSize: '1.1rem', letterSpacing: '-0.02em', color: 'var(--fg-strong)' }}>{script.title}</div>
           {script.author_username && (
             <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginTop: 2 }}>
               by {script.author_username}{script.author_role ? ` · ${script.author_role}` : ''}

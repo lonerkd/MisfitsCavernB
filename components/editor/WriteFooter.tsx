@@ -95,7 +95,7 @@ export function WriteFooter({ ctx }: { ctx: EditorCtx }) {
                 const act2Share = act2Words / totalWords;
                 if (act2Share < 0.55) return null;
                 return (
-                  <div className="mc-hide-phone" style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: '#eab308', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
+                  <div className="mc-hide-phone" style={{ position: 'absolute', top: '50%', left: 10, transform: 'translateY(-50%)', fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--warn)', background: 'rgba(234,179,8,0.1)', border: '1px solid rgba(234,179,8,0.25)', borderRadius: 4, padding: '3px 6px', whiteSpace: 'nowrap' }}>
                     Act II lagging · {Math.round(act2Share * 100)}% of words
                   </div>
                 );

@@ -35,14 +35,14 @@
 .pillText { min-width: 0; display: flex; align-items: baseline; gap: 8px; font-size: var(--text-base); }
 .pillText b { font-weight: 800; letter-spacing: -0.01em; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; min-width: 0; }
 .pillText span { font-weight: 500; color: var(--fg-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 100 auto; min-width: 0; }
-.pillUnread { margin-left: auto; flex: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--limit); color: #fff; font: 800 var(--text-xs)/22px var(--ui); text-align: center; }
+.pillUnread { margin-left: auto; flex: none; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--limit); color: var(--on-accent); font: 800 var(--text-xs)/22px var(--ui); text-align: center; }
 .pillCapture {
   position: relative; flex: none; width: 48px; height: 48px; border: 0; border-radius: 50%; cursor: pointer;
   display: grid; place-items: center; background: var(--fg); color: var(--bg); -webkit-tap-highlight-color: transparent;
 }
 .pillCapture:active { transform: scale(0.95); }
-.pillWaiting { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: #fff; font: 800 var(--text-xs)/20px var(--ui); text-align: center; border: 2px solid var(--bg); }
-.tileBadge { position: absolute; top: 8px; right: 8px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: #fff; font: 800 var(--text-xs)/20px var(--ui); text-align: center; }
+.pillWaiting { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: var(--on-accent); font: 800 var(--text-xs)/20px var(--ui); text-align: center; border: 2px solid var(--bg); }
+.tileBadge { position: absolute; top: 8px; right: 8px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: var(--on-accent); font: 800 var(--text-xs)/20px var(--ui); text-align: center; }
 
 /* ── The More sheet ───────────────────────────── */
 .scrim { position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, 0.45); }

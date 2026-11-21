@@ -41,7 +41,7 @@ export class EditorErrorBoundary extends React.Component<Props, State> {
             <p style={{ color: 'var(--fg-muted)', fontSize: 12, marginBottom: 16 }}>Your script content was not affected. You can keep writing.</p>
             <button
               onClick={() => this.setState({ hasError: false })}
-              style={{ background: 'var(--accent)', color: '#040710', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
+              style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 18px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}
             >
               Dismiss
             </button>

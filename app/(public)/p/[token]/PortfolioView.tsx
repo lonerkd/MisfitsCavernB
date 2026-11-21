@@ -471,7 +471,7 @@ export function PortfolioView({ token }: { token: string }) {
                   title={playingMedia.title}
                 />
               ) : (
-                <a href={playingMedia.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>
+                <a href={playingMedia.url} target="_blank" rel="noopener noreferrer" style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--media-fg)', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)' }}>
                   OPEN MEDIA ↗
                 </a>
               )}

@@ -106,7 +106,7 @@ export function CutNoteMarkers({ byLine, highlightRef, textareaRef, content, ope
                     <li key={n.id} style={{ opacity: n.resolved_at ? 0.55 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <a href={cutNoteHref(n)} title="Watch this moment in Studio › Post"
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 8, background: 'rgba(129,140,248,0.14)', color: '#c7c9ff', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none' }}>
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 7px', borderRadius: 8, background: 'rgba(129,140,248,0.14)', color: 'var(--violet)', fontFamily: 'var(--mono)', fontSize: 11, textDecoration: 'none' }}>
                           <Play size={9} aria-hidden /> {formatTimecode(Number(n.at_seconds))}
                         </a>
                         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: POST_DEPT_COLOR[n.department as PostDepartment] ?? '#9ca3af' }}>{POST_DEPT_LABEL[n.department as PostDepartment] ?? n.department}</span>

@@ -18,7 +18,7 @@ export default function NotFound() {
       <Link
         href="/"
         style={{
-          padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
+          padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: 'var(--on-accent)',
           border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
           textTransform: 'var(--caps)', fontWeight: 600, textDecoration: 'none', marginTop: 8,
         }}

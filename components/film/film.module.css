@@ -45,7 +45,7 @@
 }
 .stampSky { color: #ff7a4d; }
 .stampInk { color: var(--on-paper); }
-.stampOk { color: #1f7a52; }
+.stampOk { color: var(--ok); }
 .stampQuiet { color: var(--fg-muted); }
 
 /* ── Paper ─────────────────────────────────────────────────────────────── */
@@ -75,9 +75,9 @@
 }
 .box input:focus { outline: none; }
 .box input:invalid, .box input:not(:valid) { color: inherit; }
-.boxLate { background: var(--limit); color: #fff; }
+.boxLate { background: var(--limit); color: var(--on-accent); }
 .boxLate .label { color: rgba(255, 255, 255, 0.86); }
-.boxLate input { color: #fff; color-scheme: dark; }
+.boxLate input { color: var(--on-accent); color-scheme: dark; }
 .boxLate:focus-within { outline-color: #fff; }
 .boxEmpty input { color: rgba(20, 22, 27, 0.4); }
 

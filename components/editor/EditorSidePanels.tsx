@@ -396,8 +396,8 @@ export function EditorRightPanels({
                           </div>
                           <div style={{ display: 'flex', gap: 8 }}>
                             <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(239,68,68,0.1)', color: 'var(--danger)' }}>{errorCount} errors</span>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(234,179,8,0.1)', color: '#eab308' }}>{warnCount} warnings</span>
-                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#3b82f6' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(234,179,8,0.1)', color: 'var(--warn)' }}>{warnCount} warnings</span>
+                            <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: 'var(--info)' }}>{lintIssues.filter(i => i.type === 'info').length} info</span>
                           </div>
                           {lintIssues.length === 0 ? (
                             <div style={{ fontSize: 12, color: 'var(--ok)', fontStyle: 'italic', textAlign: 'center', padding: 16 }}>✓ No issues found. Script formatting looks great!</div>
