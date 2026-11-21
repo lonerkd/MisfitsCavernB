@@ -16,7 +16,7 @@ vi.mock('@/lib/roles/capabilities', () => ({
   useCapabilityLabel: (k: string) => ({ 'budget.read': 'See the budget', 'budget.write': 'Edit the budget' } as Record<string, string>)[k] ?? null,
   requestCapability: vi.fn(),
 }));
-vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings: null }, shots: { rows: [] }, scenes: { rows: [] }, sceneLines: new Map() }) }));
+vi.mock('../StudioContext', () => ({ useStudio: () => ({ project: { id: 'p1', settings: null }, shots: { rows: [] }, media: { rows: [] }, scenes: { rows: [] }, sceneLines: new Map() }) }));
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
 vi.mock('@/components/ui/Confirm', () => ({ useConfirm: () => confirm }));
 // The views read the project's scenes and characters through Realtime-backed hooks; no test here opens a real socket.
