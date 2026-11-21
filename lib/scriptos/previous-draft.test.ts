@@ -195,3 +195,16 @@ describe('what it costs', () => {
     expect(withDraft).toBeLessThan(plain * 2.5 + 400);
   });
 });
+
+describe('alignPreviousDraft cost', () => {
+  it('a draft where no line survived aligns in well under a second (no quadratic scan on a keystroke)', () => {
+    const n = 1250;
+    const later = Array.from({ length: n }, (_, i) => `Marta crosses the courtyard and counts ${i} red doors twice before the bell rings`);
+    const previous: PreviousDraft = { lines: Array.from({ length: n }, (_, i) => ({ text: `Completely other words entirely: harbour lanterns drift ${i} past sleeping gulls`, type: 'action' as const })) };
+    const t0 = performance.now();
+    const out = alignPreviousDraft(later, previous);
+    const ms = performance.now() - t0;
+    expect(out).toHaveLength(n);
+    expect(ms).toBeLessThan(400);
+  });
+});

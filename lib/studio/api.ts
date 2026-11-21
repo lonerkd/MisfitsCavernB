@@ -15,6 +15,7 @@ import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import type { SharedBoard } from './boards';
 import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
+import { forgetReadingContext } from './reading-cache';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -668,12 +669,14 @@ export function createStudioApi(db: Client) {
       .upsert({ project_id: projectId, name: name.trim().toUpperCase(), kind }, { onConflict: 'project_id,name' })
       .select('*').single();
     if (error) fail(error, 'Could not save that');
+    forgetReadingContext();
     return data;
   }
 
   async function removeReadingCorrection(id: string): Promise<void> {
     const { error } = await db.from('reading_corrections').delete().eq('id', id);
     if (error) fail(error, 'Could not take that back');
+    forgetReadingContext();
   }
 
 
@@ -810,11 +813,13 @@ export function createStudioApi(db: Client) {
     const { error } = await (db as any).from('reading_line_overrides')
       .upsert({ project_id: projectId, script_id: scriptId, line_index: lineIndex, forced_type: forcedType, line_text: lineText?.trim() ? lineText.trim().slice(0, 2000) : null }, { onConflict: 'project_id,script_id,line_index' });
     if (error) fail(error, 'Could not save the line override');
+    forgetReadingContext(scriptId);
   }
 
   async function removeLineOverride(projectId: string, scriptId: string, lineIndex: number): Promise<void> {
     const { error } = await (db as any).from('reading_line_overrides').delete().eq('project_id', projectId).eq('script_id', scriptId).eq('line_index', lineIndex);
     if (error) fail(error, 'Could not remove the line override');
+    forgetReadingContext(scriptId);
   }
 
   async function getReadingMemory(userId: string, format: string = 'screenplay'): Promise<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]> {

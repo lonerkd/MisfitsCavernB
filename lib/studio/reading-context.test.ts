@@ -67,4 +67,14 @@ describe('loadReadingContext: the context the editor reads with, for the surface
     scriptRow = null;
     expect(await loadReadingContext('s1')).toEqual({});
   });
+
+  it('does not remember a failed load: the next surface to ask tries again', async () => {
+    scriptRow = null;
+    expect(await loadReadingContext('s1')).toEqual({});
+    const reads = calls.length;
+    scriptRow = { project_id: 'p1', format: 'screenplay' };
+    const ctx = await loadReadingContext('s1');
+    expect(calls.length).toBeGreaterThan(reads);
+    expect(ctx.characters).toEqual(['MAYA']);
+  });
 });

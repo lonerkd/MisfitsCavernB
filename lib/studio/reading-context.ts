@@ -9,9 +9,11 @@
 import { supabase } from '@/lib/supabase/client';
 import type { ParseContext } from '@/lib/scriptos/parser';
 import { studio } from './index';
+import { readingContextLoads as loads, forgetReadingContext } from './reading-cache';
+
+export { forgetReadingContext };
 
 const TTL_MS = 30_000;
-const loads = new Map<string, { at: number; promise: Promise<ParseContext> }>();
 
 /** The script's latest locked revision text, or null (none, or none this person can open). Only the newest row is fetched. */
 export async function fetchLatestRevisionSnapshot(scriptId: string): Promise<string | null> {
@@ -22,7 +24,7 @@ export async function fetchLatestRevisionSnapshot(scriptId: string): Promise<str
 
 async function load(scriptId: string): Promise<ParseContext> {
   const { data: script, error } = await supabase.from('scripts').select('project_id, format').eq('id', scriptId).single();
-  if (error || !script?.project_id) return {};
+  if (error || !script?.project_id) throw new Error('script not readable'); // loadReadingContext reads with no context and does not remember it
   const projectId = script.project_id;
   // Each part of the context is optional: a failed read leaves that part out rather than the surface without its script.
   const [castings, corrections, overrides, places, snapshot] = await Promise.all([
@@ -42,12 +44,8 @@ async function load(scriptId: string): Promise<ParseContext> {
 export function loadReadingContext(scriptId: string): Promise<ParseContext> {
   const hit = loads.get(scriptId);
   if (hit && Date.now() - hit.at < TTL_MS) return hit.promise;
-  const promise = load(scriptId).catch(() => ({} as ParseContext));
+  // A failed load reads with no context this once, but is not remembered: the next surface to ask tries again.
+  const promise = load(scriptId).catch(() => { loads.delete(scriptId); return {} as ParseContext; });
   loads.set(scriptId, { at: Date.now(), promise });
   return promise;
-}
-
-/** Forget what was loaded (after a person changes a verdict or an override), so the next read sees it. */
-export function forgetReadingContext(scriptId?: string): void {
-  if (scriptId) loads.delete(scriptId); else loads.clear();
 }

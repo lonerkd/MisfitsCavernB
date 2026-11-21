@@ -53,6 +53,9 @@ export async function osSignOut() {
     throw error;
   }
   if (loggedOutUserId) logAuditAction(loggedOutUserId, 'user_logout', 'auth', loggedOutUserId);
+  // What the readers built for this person (a previous draft, their overrides) must not outlive them in this tab.
+  const { forgetReadingContext } = await import('@/lib/studio/reading-cache');
+  forgetReadingContext();
   resetOS();
 }
 

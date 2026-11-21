@@ -32,14 +32,19 @@ const norm = (s: string) => s.replace(/\s+/g, ' ').trim();
 const tokens = (s: string) => new Set(s.toLowerCase().split(/[^\p{L}\p{N}']+/u).filter(Boolean));
 
 /** How alike two lines are (0–1): the share of words they have in common. */
-export function lineSimilarity(a: string, b: string): number {
-  const x = tokens(a);
-  const y = tokens(b);
+function setSimilarity(x: ReadonlySet<string>, y: ReadonlySet<string>, a: string, b: string): number {
   if (!x.size || !y.size) return a === b ? 1 : 0;
   let common = 0;
   for (const t of x) if (y.has(t)) common++;
   return common / (x.size + y.size - common);
 }
+
+export function lineSimilarity(a: string, b: string): number {
+  return setSimilarity(tokens(a), tokens(b), a, b);
+}
+
+/** A reword stays near where it was: look this many removed lines ahead of the last pairing, no further (a whole-draft rewrite stays linear). */
+const PAIR_WINDOW = 48;
 
 /** An edited line is "the same line" when this much of it is unchanged. */
 export const NEAR_IDENTICAL = 0.7;
@@ -82,9 +87,14 @@ export function alignPreviousDraft(rawLines: readonly string[], previous: Previo
       if (next?.added) {
         // A reword: pair the removed lines with the added ones, in order, while they still read as the same line.
         let from = w;
+        const wasTokens = new Map<number, Set<string>>(); // each line is taken apart once per stretch, not once per comparison
+        const tokensOfWas = (j: number) => { let t = wasTokens.get(j); if (!t) { t = tokens(was[j].text); wasTokens.set(j, t); } return t; };
         for (let i = 0; i < next.value.length; i++) {
-          for (let j = from; j < w + count; j++) {
-            if (lineSimilarity(was[j].text, now[n + i].text) >= NEAR_IDENTICAL) { out[now[n + i].at] = was[j].type; from = j + 1; break; }
+          const mine = now[n + i].text;
+          const mineTokens = tokens(mine);
+          const stop = Math.min(w + count, from + PAIR_WINDOW);
+          for (let j = from; j < stop; j++) {
+            if (setSimilarity(tokensOfWas(j), mineTokens, was[j].text, mine) >= NEAR_IDENTICAL) { out[now[n + i].at] = was[j].type; from = j + 1; break; }
           }
         }
         n += next.value.length;
