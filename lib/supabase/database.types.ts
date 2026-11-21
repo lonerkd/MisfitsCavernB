@@ -875,6 +875,36 @@ export type Database = {
           },
         ];
       };
+      change_acknowledgements: {
+        Row: {
+          created_at: string;
+          note_id: string;
+          project_id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          note_id: string;
+          project_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          note_id?: string;
+          project_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "change_acknowledgements_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       change_reviews: {
         Row: {
           change_key: string;
