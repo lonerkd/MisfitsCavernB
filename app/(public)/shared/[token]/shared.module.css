@@ -149,3 +149,17 @@
 .creditRow { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.06); padding-bottom: 6px; }
 .creditRow dt { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); text-transform: var(--caps); letter-spacing: var(--caps-track); }
 .creditRow dd { margin: 0; font-family: var(--serif); font-size: 15px; color: var(--fg); }
+
+.ask { margin-bottom: 28px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; font-family: var(--serif); font-size: 15px; color: var(--fg-muted); }
+.askLink, .askBtn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 18px; border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--share-accent) 45%, transparent); background: transparent; color: var(--fg);
+  font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); text-decoration: none; cursor: pointer;
+}
+.askForm { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 420px; }
+.askLabel { display: flex; flex-direction: column; gap: 4px; font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }
+.askField {
+  min-height: 44px; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(var(--ink-rgb), 0.2);
+  background: transparent; color: var(--fg); font-family: var(--serif); font-size: 15px;
+}
+.askRow { display: flex; gap: 10px; }

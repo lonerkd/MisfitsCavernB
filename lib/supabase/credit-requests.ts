@@ -78,3 +78,10 @@ export async function answerCreditRequest(req: CreditRequest, approve: boolean, 
     ownerId,
   );
 }
+
+/** The project behind a share token, for a signed-in person (null when the link is not open). */
+export async function sharedProjectId(token: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('get_shared_project_id', { p_token: token });
+  if (error) throw error;
+  return data ?? null;
+}

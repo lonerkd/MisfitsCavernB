@@ -15,6 +15,7 @@ import { publicClient } from '@/lib/supabase/public';
 import { createStudioApi, type Lookbook, type LookbookMedia } from '@/lib/studio/api';
 import { videoEmbed } from '@/lib/studio/media-kind';
 import { pressKitSections, type KitCredit } from '@/lib/credits/core';
+import AskToBeCredited from './AskToBeCredited';
 import s from './shared.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -171,9 +172,10 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
         </section>
       )}
 
-      {credits.length > 0 && (
-        <section className={s.section} aria-labelledby="credits-title">
-          <h2 id="credits-title" className={s.sectionTitle}>Cast &amp; crew</h2>
+      <section className={s.section} aria-labelledby="credits-title">
+        <h2 id="credits-title" className={s.sectionTitle}>Cast &amp; crew</h2>
+        <AskToBeCredited token={token} />
+        {credits.length > 0 && (
           <div className={s.credits}>
             {credits.map((sec) => (
               <div key={sec.heading} className={s.creditGroup}>
@@ -189,8 +191,8 @@ export default async function SharedProjectPage({ params }: { params: Promise<{ 
               </div>
             ))}
           </div>
-        </section>
-      )}
+        )}
+      </section>
 
       <footer className={s.footer}>
         <span>Made in The Cavern — the production suite for indie filmmakers, by Misfits Cavern.</span>
