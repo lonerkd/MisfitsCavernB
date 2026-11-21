@@ -14,12 +14,13 @@ import { linesByScene } from '@/lib/film/my-sides';
 import { fetchScriptForReading } from '@/lib/studio';
 import { parseScript } from '@/lib/scriptos/parser';
 import { readingFormat } from '@/lib/scriptos/reading-format';
+import { useSignedUrls } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
 
 type Draft = Omit<ScriptTake, 'id'> & { slate: string; lens: string; notes: string; scene: string };
-const EMPTY: Draft = { scene: '', take: '', slate: '', lens: '', notes: '', circle: false, shot_id: null, from_line: null, to_line: null, off_camera: false };
+const EMPTY: Draft = { scene: '', take: '', slate: '', lens: '', notes: '', circle: false, shot_id: null, from_line: null, to_line: null, off_camera: false, media_id: null };
 const num = (v: string): number | null => { const n = parseInt(v, 10); return Number.isFinite(n) && n > 0 ? n : null; };
 
 /** The lines of one scene as the supervisor numbers them (blank lines and the heading are not numbered). */
@@ -46,7 +47,7 @@ function useSceneLines(scene: { id: string; script_id: string | null; heading: s
 }
 
 export function ScriptSupView() {
-  const { project, shots } = useStudio();
+  const { project, shots, media } = useStudio();
   const { items, shown, save, remove } = useSettingsList('scriptNotes');
   const t = useRecordTargets();
   const [draft, setDraft] = useState<Draft>(EMPTY);
@@ -57,6 +58,10 @@ export function ScriptSupView() {
   const shotsOf = (sceneId: string | undefined) => (sceneId ? shots.rows.filter((x) => x.scene_id === sceneId) : []);
   const shotName = (id: string) => shots.rows.find((x) => x.id === id)?.shot_number ?? null;
   const draftScene = draft.scene_ids?.[0];
+  // Continuity photos come from the project's library (images only), and show on the take that carries one.
+  const images = useMemo(() => media.rows.filter((m) => m.kind === 'image'), [media.rows]);
+  const photoOf = (id: string | null | undefined) => (id ? images.find((m) => m.id === id) : undefined);
+  const signed = useSignedUrls(shownTakes.map((n) => photoOf(n.media_id)?.storage_path));
 
   const add = async () => {
     if (!draft.take.trim()) return;
@@ -123,6 +128,13 @@ export function ScriptSupView() {
           </button>
         </div>
         <label className={s.field} style={{ marginTop: 8 }}>
+          <span className={s.label}>Continuity photo (from the library)</span>
+          <select className={s.select} value={draft.media_id ?? ''} onChange={(e) => setDraft({ ...draft, media_id: e.target.value || null })}>
+            <option value="">No photo</option>
+            {images.map((m) => <option key={m.id} value={m.id}>{m.title || 'Untitled photo'}</option>)}
+          </select>
+        </label>
+        <label className={s.field} style={{ marginTop: 8 }}>
           <span className={s.label}>Notes</span>
           <textarea className={s.textarea} value={draft.notes} onChange={(e) => setDraft({ ...draft, notes: e.target.value })} rows={2} />
         </label>
@@ -148,6 +160,12 @@ export function ScriptSupView() {
                 </button>
               </div>
               {n.notes && <p className={s.hint} style={{ marginTop: 4, whiteSpace: 'pre-wrap' }}>{n.notes}</p>}
+              {(() => {
+                const m = photoOf(n.media_id);
+                const src = m ? (m.storage_path ? signed[m.storage_path] : m.external_url ?? undefined) : undefined;
+                // eslint-disable-next-line @next/next/no-img-element
+                return src ? <img src={src} alt={`Continuity photo for take ${n.take}: ${m?.title ?? 'photo'}`} style={{ marginTop: 6, width: 96, height: 64, objectFit: 'cover', borderRadius: 8 }} /> : null;
+              })()}
             </li>
           );
         })}
