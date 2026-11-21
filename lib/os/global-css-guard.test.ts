@@ -14,4 +14,11 @@ describe('globals.css', () => {
       expect(readFileSync(join(process.cwd(), f), 'utf8')).not.toMatch(/#00ff00|rgba\(0,\s*255,\s*0/);
     }
   });
+  it('keeps every page below the status bar and clear of the Dynamic Island rail', () => {
+    expect(css).toMatch(/--mc-safe-top:\s*env\(safe-area-inset-top/);
+    expect(css).toMatch(/^body \{\s*padding-top:\s*var\(--mc-safe-top\)/m);
+    expect(css).toMatch(/body \{ padding-left: max\(env\(safe-area-inset-left\), var\(--mc-rail\)\)/);
+    expect(css).toMatch(/--mc-rail: 56px/);
+    expect(css).not.toMatch(/var\(--mc-safe-top\) - var\(--mc-safe-top\)/);
+  });
 });

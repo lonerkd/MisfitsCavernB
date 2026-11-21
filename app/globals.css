@@ -180,9 +180,17 @@
 
 html {
   scroll-behavior: smooth;
+  /* The status bar / Dynamic Island: the installed app runs under it (viewport-fit=cover, black-translucent), so nothing may start
+     above this line. 0 on a desk. Full-height pages subtract it from their 100dvh. */
+  --mc-safe-top: env(safe-area-inset-top, 0px);
+  /* On a phone held sideways the Dynamic Island (and its live activity, e.g. the music one) sits in a rail down the left edge, about
+     49 pt wide. env(safe-area-inset-left) normally covers it; this is the floor for when the installed app reports less. */
+  --mc-rail: 0px;
 }
+@media (display-mode: standalone) and (pointer: coarse) and (max-height: 500px) and (orientation: landscape) { html { --mc-rail: 56px; } }
 
 body {
+  padding-top: var(--mc-safe-top);
   overflow-x: hidden;
   background: var(--bg);
   color: var(--fg);
@@ -266,7 +274,7 @@ body.custom-cursor-active * {
   .mc-lounge { padding-bottom: 0 !important; min-height: 0 !important; height: auto !important; }
   .mc-lounge-top { padding: 0 12px !important; gap: 8px; }
   .mc-lounge-online { display: none !important; }
-  .mc-lounge-body { height: calc(100dvh - 62px - 76px - env(safe-area-inset-bottom)); flex: none !important; }
+  .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 62px - 76px - env(safe-area-inset-bottom)); flex: none !important; }
   .mc-lounge-body[data-pane='list'] { flex-direction: column; overflow-y: auto !important; }
   .mc-lounge-body[data-pane='list'] .mc-lounge-chat { display: none !important; }
   .mc-lounge-body[data-pane='list'] .mc-lounge-channels { width: 100% !important; border-right: 0 !important; flex-shrink: 0; }
@@ -282,7 +290,7 @@ body.custom-cursor-active * {
   .mc-lounge-composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important; }
   /* The keyboard is up (PhoneKeyboard publishes its height as --kb): the room ends where the keyboard starts, so the composer sits on
      top of it instead of under it, and the pill's 76 px and the home indicator are not reserved (the keyboard covers both). */
-  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - 62px - var(--kb, 0px)); }
+  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 62px - var(--kb, 0px)); }
   html[data-typing='true'] .mc-lounge-composer { padding-bottom: 8px !important; }
   html[data-typing='true'] .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   /* The thread panel is fixed to the layout viewport, which iOS leaves behind the keyboard: lift it by --kb so its reply field sits on
@@ -298,7 +306,7 @@ body.custom-cursor-active * {
 @media (pointer: coarse) and (max-height: 500px) {
   /* The chat column already pads itself by the island's own height (--taskbar-height), so only the top bar comes off here; the list
      pane scrolls under the island, so it gets that room as scroll space at its end. */
-  .mc-lounge-body { height: calc(100dvh - 44px - env(safe-area-inset-bottom)); }
+  .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 44px - env(safe-area-inset-bottom)); }
   /* The room is exactly one screen tall, so the page's own 76 px foot (every other page's room for the island) would only make the
      window scroll, and scrolling the latest message into view then took the chat header off the top. */
   .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
@@ -306,7 +314,7 @@ body.custom-cursor-active * {
   /* Typing sideways, the keyboard takes about half of a 393 px screen: the top bar and the chat header would take most of what is left
      (the message list was down to a line or two), so both step aside until the keyboard goes; the composer and the messages stay. */
   html[data-typing='true'] .mc-lounge-top, html[data-typing='true'] .mc-lounge-chathead { display: none !important; }
-  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--kb, 0px)); }
+  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - var(--kb, 0px)); }
   /* The island makes way for the keyboard, so the chat column no longer leaves its height empty under the composer. */
   html[data-typing='true'] .mc-lounge-chat { padding-bottom: 0 !important; }
   /* The chat header's buttons keep their icons and lose their words sideways (their names stay in aria-label), and the header is slimmer. */
@@ -1107,7 +1115,7 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
    clear of both, and leaves room for the island at the foot, which on a screen under 500 px tall would otherwise sit on the last
    lines of every page. (Under 760 px wide the tab pill and its own padding apply; this is the wider-than-760 landscape phone.) */
 @media (pointer: coarse) and (max-height: 500px) {
-  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+  body { padding-left: max(env(safe-area-inset-left), var(--mc-rail)); padding-right: env(safe-area-inset-right); }
   .main-content-container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 }
 

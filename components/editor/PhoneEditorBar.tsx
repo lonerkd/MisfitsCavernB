@@ -18,8 +18,8 @@ export function PhoneEditorBar({ ctx, slim, onScripts, onViews, onTools, onMore 
   return (
     <header style={{
       position: 'sticky', top: 0, zIndex: 100, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 2,
-      height: slim ? 40 : 52, boxSizing: 'content-box',
-      paddingTop: 'env(safe-area-inset-top)', paddingLeft: 'max(4px, env(safe-area-inset-left))', paddingRight: 'max(4px, env(safe-area-inset-right))',
+      height: slim ? 40 : 52, boxSizing: 'content-box', /* the page already sits below the status bar (body padding) */
+      paddingLeft: 'max(4px, env(safe-area-inset-left))', paddingRight: 'max(4px, env(safe-area-inset-right))',
       background: 'var(--surface)', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)',
     }}>
       <Link href="/projects" aria-label="Back to projects" style={{ ...tap, color: 'var(--fg-muted)' }}><ArrowLeft size={20} /></Link>
