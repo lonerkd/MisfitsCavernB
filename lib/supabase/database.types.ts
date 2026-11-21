@@ -383,6 +383,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      budget_alerts: {
+        Row: {
+          alerted: boolean;
+          alerted_at: string | null;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          alerted?: boolean;
+          alerted_at?: string | null;
+          project_id: string;
+        };
+        Update: {
+          alerted?: boolean;
+          alerted_at?: string | null;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_alerts_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: true;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       budget_items: {
         Row: {
           above_the_line: boolean;
