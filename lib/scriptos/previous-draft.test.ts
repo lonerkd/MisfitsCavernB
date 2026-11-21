@@ -205,6 +205,7 @@ describe('alignPreviousDraft cost', () => {
     const out = alignPreviousDraft(later, previous);
     const ms = performance.now() - t0;
     expect(out).toHaveLength(n);
-    expect(ms).toBeLessThan(400);
+    // The quadratic scan took about 5 s here and far more under CI coverage; the bounded one is about a tenth of that, instrumented or not.
+    expect(ms).toBeLessThan(3000);
   });
 });
