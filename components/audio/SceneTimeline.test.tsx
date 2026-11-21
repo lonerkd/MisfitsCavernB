@@ -112,12 +112,14 @@ describe('SceneTimeline', () => {
     render(<SceneTimeline projectId="p" projectTitle="Undertow" canTag onFind={vi.fn()} />);
     expect(await screen.findByText(/This script has no scenes yet/)).toBeTruthy();
   });
-  it('draws the whole script as a strip with a block per scene, filled when it has music', async () => {
+  it('draws the whole script as a strip with a block per scene, every one filled, paler when it has no music', async () => {
     await open();
     const strip = within(screen.getByRole('group', { name: 'Whole script' }));
     expect(strip.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Scene 1', 'Scene 2']);
-    expect(strip.getByRole('button', { name: 'Scene 1' }).style.background).not.toBe('transparent');
-    expect(strip.getByRole('button', { name: 'Scene 2' }).style.background).toBe('transparent');
+    const [one, two] = [strip.getByRole('button', { name: 'Scene 1' }), strip.getByRole('button', { name: 'Scene 2' })];
+    // Every segment has a colour and a width, so a script with no music still reads as a strip of scenes (not an empty outline).
+    for (const b of [one, two]) { expect(b.style.background).not.toBe('transparent'); expect(parseFloat(b.style.width)).toBeGreaterThan(0); }
+    expect(Number(one.style.opacity)).toBeGreaterThan(Number(two.style.opacity));
   });
 
   it('a click on the strip scrolls the timeline so the pressed point is centred', async () => {

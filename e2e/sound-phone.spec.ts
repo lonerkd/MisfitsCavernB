@@ -17,6 +17,8 @@ const SCRIPT = [
   'EXT. PIER - DUSK', '', 'Maya walks the planks.', '',
   'INT. CABIN - NIGHT', '', 'A lamp, a map, a cold cup.', '',
 ].join('\n');
+const MANY = 32;
+const LONG_SCRIPT = Array.from({ length: MANY }, (_, i) => [`INT. ROOM ${i + 1} - DAY`, '', `Beat number ${i + 1} plays out here.`, ''].join('\n')).join('\n');
 const ORIENTATIONS = [
   { name: 'portrait', viewport: { width: 393, height: 852 } },
   { name: 'landscape', viewport: { width: 852, height: 393 } },
@@ -92,6 +94,37 @@ test.describe('The Sound page on a phone (local Supabase)', () => {
           const box = await blocks.nth(i).boundingBox();
           expect(box, `scene block ${i + 1}`).not.toBeNull();
           expect(box!.height, `scene block ${i + 1} height`).toBeGreaterThanOrEqual(44);
+        }
+      });
+
+      test('a 32-scene script: the minimap shows a segment per scene and ArrowRight moves focus to the next scene', async ({ page }) => {
+        test.skip(name !== 'portrait', 'measured in portrait');
+        test.setTimeout(150_000);
+        const longId = (await admin.from('scripts').insert({ title: 'Long', content: LONG_SCRIPT, project_id: projectId, created_by: owner.id, last_edited_by: owner.id }).select('id').single()).data!.id;
+        try {
+          await signInAs(page, { email: owner.email, password: PASSWORD });
+          await page.goto(`/editor?script=${longId}`);
+          await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
+          await expect.poll(async () => (await admin.from('scenes').select('id').eq('script_id', longId).is('removed_at', null)).data?.length, { timeout: 30_000 }).toBe(MANY);
+          await page.goto('/soundtrack?tab=scenes');
+          await expect(page.getByRole('group', { name: 'Scenes timeline' })).toBeVisible({ timeout: 30_000 });
+          // The page opens the project's first script; pick the long one when there is a chooser.
+          const chooser = page.getByRole('combobox', { name: 'Script' });
+          if (await chooser.count()) await chooser.selectOption(longId);
+
+          const segments = page.getByRole('group', { name: 'Whole script' }).getByRole('button');
+          await expect(segments).toHaveCount(MANY);
+          const painted = await segments.evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0 && getComputedStyle(e).backgroundColor !== 'rgba(0, 0, 0, 0)').length);
+          expect(painted).toBe(MANY);
+
+          const blocks = page.getByRole('group', { name: 'Scenes timeline' }).locator('button[aria-pressed]');
+          await expect(blocks).toHaveCount(MANY);
+          await blocks.first().focus();
+          await expect(blocks.first()).toBeFocused();
+          await page.keyboard.press('ArrowRight');
+          await expect(blocks.nth(1)).toBeFocused();
+        } finally {
+          await admin.from('scripts').delete().eq('id', longId);
         }
       });
     });
