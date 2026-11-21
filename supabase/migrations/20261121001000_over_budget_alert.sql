@@ -6,6 +6,9 @@
 -- project; the flag is set by the crossing and re-armed when spend drops back to or under the plan (or the plan is removed), so the
 -- next crossing notifies again. Labour from timesheets is not in this figure (it is in the Money view's cash flow).
 --
+-- The text carries no amounts (an override can grant budget.write without budget.read); the figures are in Money. A failed
+-- notification is swallowed: the expense or budget line being written always succeeds.
+--
 -- Cheap by construction: row-level triggers on expenses (insert, delete, or an update that touches amount, status or project) and on
 -- budget_items (insert, delete, or an update of amount or project) each run two indexed sums for one project.
 --
@@ -45,10 +48,11 @@ begin
     update public.budget_alerts set alerted = true, alerted_at = now() where project_id = p_project and not alerted;
     if not found then return; end if;
     select p.title into titled from public.projects p where p.id = p_project;
+    begin
     insert into public.notifications (user_id, type, title, body, link, created_by)
     select distinct r.uid, 'budget',
            'Over budget: ' || left(coalesce(titled, 'a project'), 120),
-           'Committed and paid spend is $' || to_char(spent, 'FM999,999,999,990.00') || ', against a planned budget of $' || to_char(planned, 'FM999,999,999,990.00') || '.',
+           'Committed and paid spend has passed the planned budget. Open Money for the figures.',
            '/studio?project=' || p_project::text || '&tab=production&view=money',
            null::uuid
     from (
@@ -76,6 +80,10 @@ begin
               )
             )
     ) r;
+    exception when others then
+      -- An alert must never block the money write that caused it.
+      null;
+    end;
   else
     -- Back at or under the plan (or no plan): re-arm, so the next crossing notifies again.
     update public.budget_alerts set alerted = false, alerted_at = null where project_id = p_project and alerted;

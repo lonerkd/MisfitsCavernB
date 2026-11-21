@@ -41,8 +41,7 @@ describe('over-budget alert', () => {
       const rows = await told(who);
       expect(rows).toHaveLength(1);
       expect(rows[0].title).toMatch(/^Over budget: Over budget/);
-      expect(rows[0].body).toContain('$1,050.00');
-      expect(rows[0].body).toContain('$1,000.00');
+      expect(rows[0].body).not.toMatch(/\$\d/);
       expect(rows[0].link).toBe(`/studio?project=${projectId}&tab=production&view=money`);
     }
     for (const who of [dana, cast.riley]) expect(await told(who)).toEqual([]);
