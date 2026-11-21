@@ -1,6 +1,6 @@
 'use client';
 
-// Review (flag `guest_review`): save a script as a numbered version, send it to
+// Review: save a script as a numbered version, send it to
 // a client by a link they open without an account, and see what they say. Anyone
 // on the project can save a version; people who shape the project send, make
 // links and confirm. A sent version never changes.
@@ -10,7 +10,6 @@ import { Check, Copy, Link2, Send, Trash2 } from 'lucide-react';
 import { audienceOf, REVIEW_AUDIENCES, REVIEW_LAYERS, type ReviewLayer } from '@/lib/review/audiences';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { useFlag } from '@/components/Flag';
 import { useLoad } from '@/lib/hooks/useLoad';
 import { useCanShape } from '@/lib/brief';
 import {
@@ -21,12 +20,11 @@ import { useStudio } from '../StudioContext';
 import s from '../studio.module.css';
 
 export function ReviewPanel() {
-  const on = useFlag('guest_review');
   const { project, isOwner, scripts } = useStudio();
   const { toast } = useToast();
   const confirm = useConfirm();
   const canShape = useCanShape(project.id, isOwner);
-  const key = on ? `review:${project.id}` : null;
+  const key = `review:${project.id}`;
   const versions = useLoad(key, () => listVersions(project.id));
   const links = useLoad(key && canShape ? `${key}:links` : null, () => listLinks(project.id));
   const comments = useLoad(key && versions.data ? `${key}:comments:${versions.data.map((v) => v.id).join(',')}` : null, () => listComments((versions.data ?? []).map((v) => v.id)));
@@ -41,7 +39,6 @@ export function ReviewPanel() {
 
   const titleOf = useMemo(() => new Map(scripts.map((x) => [x.id, x.title])), [scripts]);
   const chosen = scriptId || scripts[0]?.id || '';
-  if (!on) return null;
 
   const reloadAll = () => { versions.reload(); links.reload(); comments.reload(); };
   const run = async (work: () => Promise<string | null>, ok: string, fail: string) => {

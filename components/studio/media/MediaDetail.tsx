@@ -8,7 +8,6 @@ import { studio, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
 import { Modal, Toggle, cx } from '../ui';
 import { useCanShape } from '@/lib/brief';
-import { useFlag } from '@/components/Flag';
 import { MediaViewer } from './MediaViewer';
 import { TranscriptPanel } from './TranscriptPanel';
 import { kindLabel } from './MediaThumb';
@@ -25,9 +24,7 @@ type Field = 'title' | 'board' | 'notes';
 /** Everything about one library item: preview, details, scene links, publishing. */
 export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: () => void }) {
   const { project, userId, isOwner, media, links, scenes, mediaById, scenesByMedia, openCard } = useStudio();
-  const cardsOn = useFlag('entity_cards');
   const canShape = useCanShape(project.id, isOwner);
-  const gatesOn = useFlag('phase_gates');
   const { toast } = useToast();
   const confirm = useConfirm();
   const item = mediaById.get(mediaId);
@@ -124,11 +121,9 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
       actions={
         <>
           {saving && <span className={cx(s.hint)} aria-live="polite">Saving…</span>}
-          {cardsOn && (
-            <button type="button" className={cx(s.btn, s.small)} onClick={() => { onClose(); openCard(item.id); }}>
-              Card
-            </button>
-          )}
+          <button type="button" className={cx(s.btn, s.small)} onClick={() => { onClose(); openCard(item.id); }}>
+            Card
+          </button>
           {src && (
             <a className={cx(s.btn, s.small)} href={src} target="_blank" rel="noopener noreferrer">
               <ExternalLink size={12} /> Open original
@@ -198,7 +193,7 @@ export function MediaDetail({ mediaId, onClose }: { mediaId: string; onClose: ()
             </>
           )}
 
-          {canShape && (gatesOn || item.lifecycle === 'archived') && (
+          {canShape && (
             <>
               <div className={s.divider} />
               <div className={s.row} style={{ justifyContent: 'space-between' }}>

@@ -15,7 +15,6 @@ import {
 } from '@/lib/hub/posts';
 import { plainText } from '@/lib/hub/markdown';
 import { isOpen, sortIncidents, SEVERITY_LABEL } from '@/lib/hub/status';
-import { useFlag } from '@/components/Flag';
 
 const pill = (on: boolean): React.CSSProperties => ({
   padding: '6px 12px', borderRadius: 9999, fontSize: 13, cursor: 'pointer',
@@ -47,10 +46,7 @@ export function HubFeed() {
     const qs = q.toString();
     window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
   };
-  const statusOn = useFlag('hub_status');
-  const helpOn = useFlag('hub_help');
-  const studiesOn = useFlag('hub_case_studies');
-  const kinds: HubKind[] = ['update', 'guide', ...(statusOn ? (['incident'] as const) : []), ...(studiesOn ? (['case_study'] as const) : [])];
+  const kinds: HubKind[] = ['update', 'guide', 'incident', 'case_study'];
 
   const shown = useMemo(() => {
     const posts = loaded.data?.posts ?? [];
@@ -70,7 +66,7 @@ export function HubFeed() {
               <button key={k} type="button" role="tab" aria-selected={kind === k} onClick={() => choose(k, audience)} style={pill(kind === k)}>{KIND_LABEL[k]}</button>
             ))}
           </div>
-          {helpOn && <Link href="/hub/help" style={{ ...pill(false), textDecoration: 'none' }}>Help</Link>}
+          <Link href="/hub/help" style={{ ...pill(false), textDecoration: 'none' }}>Help</Link>
         </div>
         {kind !== 'incident' && <div role="group" aria-label="Audience" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
           {HUB_AUDIENCES.map((a) => (

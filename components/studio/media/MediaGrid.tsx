@@ -2,7 +2,6 @@
 
 import React, { useMemo, useState } from 'react';
 import { Archive, Check, Globe, Link2, Search } from 'lucide-react';
-import { useFlag } from '@/components/Flag';
 import { useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { MediaThumbVisual, kindLabel } from './MediaThumb';
 import { cx } from '../ui';
@@ -98,7 +97,6 @@ export function MediaGrid({
   selected?: Set<string>;
   sceneCounts?: Map<string, string[]>;
 }) {
-  const gatesOn = useFlag('phase_gates');
   const signed = useSignedUrls(items.map((m) => (m.kind === 'image' || m.kind === 'video' ? m.storage_path : null)));
   return (
     <div className={s.grid}>
@@ -124,7 +122,7 @@ export function MediaGrid({
                 {m.board && <span className={s.tag}>{m.board}</span>}
                 {scenes > 0 && <span className={cx(s.tag, s.tagStudio)}><Link2 size={9} /> {scenes} scene{scenes === 1 ? '' : 's'}</span>}
                 {m.shared && <span className={cx(s.tag, s.tagShared)}><Globe size={9} /> Shared</span>}
-                {gatesOn && m.lifecycle === 'archived' && <span className={cx(s.tag, s.tagArchived)}><Archive size={9} /> Archived</span>}
+                {m.lifecycle === 'archived' && <span className={cx(s.tag, s.tagArchived)}><Archive size={9} /> Archived</span>}
               </div>
             </div>
           </button>

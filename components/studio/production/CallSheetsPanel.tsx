@@ -264,7 +264,7 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
   state: IssueState; acks: CallSheetAck[]; onIssued: (row: CallSheet) => void;
   onSheet: (row: CallSheet) => void; onCall: (row: CallSheetCall | null, removedId?: string) => void; onPrint: () => void; onPrintSides: () => void; onClose: () => void;
 }) {
-  const { project, cardsOn, openCard, doubtfulSceneOrdinals } = useStudio();
+  const { project, openCard, doubtfulSceneOrdinals } = useStudio();
   const { toast } = useToast();
 
   const saveSheet = async (patch: CallSheetPatch): Promise<CallSheet | null> => {
@@ -390,9 +390,7 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
           <div key={sc.id} className={c.scene} style={{ ['--k' as string]: STRIP_COLOR[stripKind(sc)] }}>
             <u aria-hidden />
             <i>{sc.scene_number}</i>
-            {cardsOn
-              ? <span><button type="button" onClick={() => openCard(sc.id)} title="Open the card" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', textDecoration: 'underline dotted' }}>{sc.heading ?? sc.title}</button></span>
-              : <span>{sc.heading ?? sc.title}</span>}
+            <span><button type="button" onClick={() => openCard(sc.id)} title="Open the card" style={{ background: 'none', border: 'none', padding: 0, color: 'inherit', font: 'inherit', textAlign: 'left', cursor: 'pointer', textDecoration: 'underline dotted' }}>{sc.heading ?? sc.title}</button></span>
             <em>{String(sc.est_duration || '').match(/\d+\s*\/\s*8/)?.[0]?.replace(/\s/g, '') ?? ''}</em>
             {doubtfulSceneOrdinals.has(sc.ordinal ?? -1) && <span style={{ color: 'var(--warn)', fontSize: '0.75rem', marginLeft: 4 }}>⚠ review</span>}
           </div>

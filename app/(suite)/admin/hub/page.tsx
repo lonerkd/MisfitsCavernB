@@ -17,7 +17,6 @@ import { HubMarkdown } from '@/components/hub/HubMarkdown';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import { useFlag } from '@/components/Flag';
 import { SEVERITY_LABEL } from '@/lib/hub/status';
 import { listConsentingProjects } from '@/lib/hub/caseStudies';
 
@@ -36,9 +35,7 @@ export default function AdminHubPage() {
   const [draft, setDraft] = useState<HubPostInput>(EMPTY);
   const [preview, setPreview] = useState(false);
   const [busy, setBusy] = useState(false);
-  const statusOn = useFlag('hub_status');
-  const studiesOn = useFlag('hub_case_studies');
-  const productions = useLoad(studiesOn ? 'admin-hub-productions' : null, listConsentingProjects);
+  const productions = useLoad('admin-hub-productions', listConsentingProjects);
 
   const open = (p: HubPost | null) => {
     setEditing(p ? p.id : 'new');
@@ -109,7 +106,7 @@ export default function AdminHubPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
               <label style={{ ...label, flex: '1 1 160px' }}>Section
                 <select value={draft.kind} onChange={(e) => { const kind = e.target.value as HubPostInput['kind']; setDraft({ ...draft, kind, severity: kind === 'incident' ? draft.severity ?? 'minor' : null, project_id: kind === 'case_study' ? draft.project_id ?? null : null }); }} style={field}>
-                  {HUB_KINDS.filter((k) => (k !== 'incident' || statusOn || draft.kind === 'incident') && (k !== 'case_study' || studiesOn || draft.kind === 'case_study')).map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
+                  {HUB_KINDS.map((k) => <option key={k} value={k}>{KIND_LABEL[k]}</option>)}
                 </select>
               </label>
               {draft.kind === 'incident' && (

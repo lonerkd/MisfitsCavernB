@@ -41,7 +41,7 @@ type Status = (typeof STATUS_ORDER)[number];
  * company moves and who's called; cycle a scene planned → shot → wrapped.
  */
 export function StripboardView({ elementCounts, costs }: { elementCounts: Map<string, number>; costs: SceneCosts | null }) {
-  const { project, scenes, isOwner, castOf: castOfScene, cardsOn, openCard, doubtfulSceneOrdinals } = useStudio();
+  const { project, scenes, isOwner, castOf: castOfScene, openCard, doubtfulSceneOrdinals } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -332,11 +332,9 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
                             {els > 0 && <span>{els} element{els === 1 ? '' : 's'}</span>}
                             {costed && <span title={costed.unpriced > 0 ? `${costed.unpriced} element${costed.unpriced === 1 ? '' : 's'} with no price, so this is low` : costed.estimated > 0 ? `${money(costed.estimated)} of it is a default estimate` : undefined}>{money(costed.total)}</span>}
                           </span>
-                          {cardsOn && (
-                            <button type="button" aria-label={`Open the card for scene ${sc.scene_number}`} title="Open the card" onClick={() => openCard(sc.id)} draggable={false} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 4, minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
-                              <PanelRightOpen size={14} aria-hidden />
-                            </button>
-                          )}
+                          <button type="button" aria-label={`Open the card for scene ${sc.scene_number}`} title="Open the card" onClick={() => openCard(sc.id)} draggable={false} style={{ display: 'inline-flex', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: 4, minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
+                            <PanelRightOpen size={14} aria-hidden />
+                          </button>
                           <button type="button" className={b.statusBtn} aria-label={`Scene ${sc.scene_number} is ${status} — mark ${STATUS_ORDER[(STATUS_ORDER.indexOf(status) + 1) % 3]}`} title={`${status} — click for ${STATUS_ORDER[(STATUS_ORDER.indexOf(status) + 1) % 3]}`} onClick={() => void cycleStatus(row)} draggable={false}>
                             <span className={cx(b.dot, b[`dot_${status}`])} aria-hidden />
                           </button>

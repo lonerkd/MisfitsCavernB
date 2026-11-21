@@ -2,8 +2,8 @@
 
 // The card: opens any scene, character, location or shoot day from anywhere in
 // the Studio and shows its facts, what the film graph connects it to, and what
-// has been attached to it. Open it with `useStudio().openCard(id)`. Behind flag
-// `entity_cards`. What it shows is `lib/film/card.ts`; this only draws it.
+// has been attached to it. Open it with `useStudio().openCard(id)`.
+// What it shows is `lib/film/card.ts`; this only draws it.
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';

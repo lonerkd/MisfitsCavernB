@@ -3,7 +3,7 @@
 // The gate: leaving a phase, the owner decides what the library carries
 // forward and what is archived. Nothing here deletes — an archived item is
 // kept, hidden from the library by default, and taken off the public share
-// link; it can be restored. Behind flag `phase_gates`.
+// link; it can be restored.
 
 import React, { useMemo, useState } from 'react';
 import { Modal } from '@/components/studio/ui';
