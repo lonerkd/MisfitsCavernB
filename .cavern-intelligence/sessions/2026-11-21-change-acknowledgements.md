@@ -1,0 +1,7 @@
+# Session - 2026-11-21: each person acknowledges a director's change (BACKLOG 3.51, X2)
+
+The change-impact feature tells the departments a director's change touches; the audit's left item was "each person's acknowledgement". Built: a small table (`20261121000200_change_acknowledgements.sql`, persona test) and a "I have seen this" button under a note that was sent (`ChangeAckBar`, in the Director's notebook, which any crew member can open from the notification's link); the people who shape the project see "Seen by A, B (n of N told)". No notification when someone acknowledges (the director sees it on the note).
+
+**Design notes:** it is its own table because the note lives in a per-project records blob, not a row to hang a column on; a contributor (Jordan in the tests) shapes the project and so reads everyone's acknowledgements, a plain viewer reads only their own. An independent review of the RLS was run (RULES 11).
+
+**Verified:** persona test (4), typecheck, eslint, and `e2e/change-impact.spec.ts` (extended: the costume designer opens the note from the link, taps *I have seen this*, the row exists, and the director sees "Seen by" after a reload) on a production build on the local stack (the first run hit the known scene-pick flake of 3.37; the rerun passed). **Not verified:** a phone; by eye. **After merge:** apply the migration to production then staging, then the drift check.

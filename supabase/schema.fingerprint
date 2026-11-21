@@ -160,6 +160,10 @@ column casting_notes.created_by uuid
 column casting_notes.id uuid default gen_random_uuid() not null
 column casting_notes.note text not null
 column casting_notes.project_id uuid not null
+column change_acknowledgements.created_at timestamp with time zone default now() not null
+column change_acknowledgements.note_id text not null
+column change_acknowledgements.project_id uuid not null
+column change_acknowledgements.user_id uuid not null
 column change_reviews.change_key text not null
 column change_reviews.created_at timestamp with time zone default now() not null
 column change_reviews.created_by uuid
@@ -1064,6 +1068,10 @@ constraint casting_history.casting_history_project_id_fkey FOREIGN KEY (project_
 constraint casting_notes.casting_notes_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 constraint casting_notes.casting_notes_pkey PRIMARY KEY (id)
 constraint casting_notes.casting_notes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint change_acknowledgements.change_acknowledgements_note_id_check CHECK (((char_length(note_id) >= 1) AND (char_length(note_id) <= 80)))
+constraint change_acknowledgements.change_acknowledgements_pkey PRIMARY KEY (project_id, note_id, user_id)
+constraint change_acknowledgements.change_acknowledgements_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint change_acknowledgements.change_acknowledgements_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 constraint change_reviews.change_reviews_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id)
 constraint change_reviews.change_reviews_pkey PRIMARY KEY (id)
 constraint change_reviews.change_reviews_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -1988,6 +1996,7 @@ index CREATE INDEX casting_history_actor_id_idx ON public.casting_history USING 
 index CREATE INDEX casting_history_project_id_idx ON public.casting_history USING btree (project_id)
 index CREATE INDEX casting_notes_created_by_idx ON public.casting_notes USING btree (created_by)
 index CREATE INDEX casting_notes_project_id_idx ON public.casting_notes USING btree (project_id)
+index CREATE INDEX change_acknowledgements_user_idx ON public.change_acknowledgements USING btree (user_id)
 index CREATE INDEX change_reviews_created_by_idx ON public.change_reviews USING btree (created_by)
 index CREATE INDEX change_reviews_project_id_idx ON public.change_reviews USING btree (project_id)
 index CREATE INDEX change_reviews_script_id_idx ON public.change_reviews USING btree (script_id)
@@ -2251,6 +2260,7 @@ index CREATE UNIQUE INDEX capabilities_pkey ON public.capabilities USING btree (
 index CREATE UNIQUE INDEX casting_auditions_pkey ON public.casting_auditions USING btree (id)
 index CREATE UNIQUE INDEX casting_history_pkey ON public.casting_history USING btree (id)
 index CREATE UNIQUE INDEX casting_notes_pkey ON public.casting_notes USING btree (id)
+index CREATE UNIQUE INDEX change_acknowledgements_pkey ON public.change_acknowledgements USING btree (project_id, note_id, user_id)
 index CREATE UNIQUE INDEX change_reviews_pkey ON public.change_reviews USING btree (id)
 index CREATE UNIQUE INDEX change_reviews_project_id_script_id_change_key_key ON public.change_reviews USING btree (project_id, script_id, change_key)
 index CREATE UNIQUE INDEX channel_members_channel_id_user_id_key ON public.channel_members USING btree (channel_id, user_id)
@@ -2427,6 +2437,9 @@ policy public.casting_history "casting_history_select" PERMISSIVE SELECT to publ
 policy public.casting_notes "casting_notes_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
 policy public.casting_notes "casting_notes_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_notes "casting_notes_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.change_acknowledgements "change acks add" PERMISSIVE INSERT to authenticated using - check ((user_id = ( SELECT auth.uid() AS uid)) AND internal.can_access_project(project_id))
+policy public.change_acknowledgements "change acks view" PERMISSIVE SELECT to authenticated using ((user_id = ( SELECT auth.uid() AS uid)) OR internal.can_shape_project(project_id)) check -
+policy public.change_acknowledgements "change acks withdraw" PERMISSIVE DELETE to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check -
 policy public.change_reviews "change_reviews_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
 policy public.change_reviews "change_reviews_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.change_reviews "change_reviews_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
@@ -2763,6 +2776,7 @@ rls capabilities enabled=true forced=false
 rls casting_auditions enabled=true forced=false
 rls casting_history enabled=true forced=false
 rls casting_notes enabled=true forced=false
+rls change_acknowledgements enabled=true forced=false
 rls change_reviews enabled=true forced=false
 rls channel_members enabled=true forced=false
 rls channel_presets enabled=true forced=false

@@ -101,5 +101,18 @@ test.describe('A director\'s change reaches the departments (local Supabase)', (
     const cos = (told.data ?? []).find((n: { user_id: string }) => n.user_id === people.costume.id)!;
     expect(cos.title).toContain('(scene 1)');
     expect(cos.body).toContain('Trench coat');
+
+    // Someone it reached says "seen"; the director sees who has.
+    const ctx = await page.context().browser()!.newContext();
+    const costume = await ctx.newPage();
+    await signInAs(costume, { email: people.costume.email, password: PASSWORD });
+    await costume.goto(`/studio?project=${projectId}&tab=production&view=director`);
+    await expect(costume.getByText(TITLE)).toBeVisible({ timeout: 30_000 });
+    await costume.getByRole('button', { name: 'I have seen this' }).click();
+    await expect(costume.getByRole('button', { name: 'Seen (undo)' })).toBeVisible();
+    expect((await admin.from('change_acknowledgements').select('user_id').eq('project_id', projectId)).data).toEqual([{ user_id: people.costume.id }]);
+    await ctx.close();
+    await page.reload();
+    await expect(page.getByText(new RegExp(`Seen by ci${'costume'}${TAG}`))).toBeVisible({ timeout: 30_000 });
   });
 });

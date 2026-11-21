@@ -6,6 +6,7 @@ import { useSettingsList } from './useSettingsList';
 import { SceneLinkField, useRecordTargets } from './RecordLinks';
 import { sceneChip } from '@/lib/studio/record-links';
 import { useStudio } from '../StudioContext';
+import { ChangeAckBar } from './ChangeAckBar';
 import { ChangeImpactPanel } from './ChangeImpactPanel';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
@@ -92,6 +93,7 @@ export function DirectorNotebookView() {
                 onSent={async (count) => { await save(items.map((i) => (i.id === n.id ? { ...i, notified_at: new Date().toISOString(), notified_count: count } : i))); }}
               />
             )}
+            {n.change && n.notified_at && <ChangeAckBar noteId={n.id} told={n.notified_count} />}
             {n.change && (n.scene_ids?.length ?? 0) === 0 && <p className={s.hint} style={{ marginTop: 4 }}>This note changes the plan. Link it to a scene to see who it touches.</p>}
             {n.reference && (
               <p className={s.hint} style={{ marginTop: 4, fontSize: 11 }}>
