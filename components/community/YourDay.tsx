@@ -221,7 +221,7 @@ export function YourDay() {
         <section className={`${t.card} ${t.wide}`} aria-labelledby="today-invites">
           <div className={t.cardHead}><h2 id="today-invites" className={t.cardTitle}><UserPlus size={14} aria-hidden /> Invitations</h2></div>
           {invites.map((inv) => (
-            <article key={inv.project_id} className={t.day} aria-label={`Invitation to ${inv.title}`}>
+            <article key={inv.project_id} className={`${t.day} ${t.dayOnly}`} aria-label={`Invitation to ${inv.title}`}>
               <div className={t.dayBody}>
                 <h3 className={t.dayTitle}>{inv.title}</h3>
                 <div className={t.facts}>
@@ -246,7 +246,7 @@ export function YourDay() {
         <section className={`${t.card} ${t.wide}`} aria-labelledby="today-roles">
           <div className={t.cardHead}><h2 id="today-roles" className={t.cardTitle}><BadgeCheck size={14} aria-hidden /> Your role</h2></div>
           {roles.map((r) => (
-            <article key={r.project_id} className={t.day} aria-label={`Your role on ${projectById.get(r.project_id)?.title ?? 'a project'}`}>
+            <article key={r.project_id} className={`${t.day} ${t.dayOnly}`} aria-label={`Your role on ${projectById.get(r.project_id)?.title ?? 'a project'}`}>
               <div className={t.dayBody}>
                 <h3 className={t.dayTitle}>{projectById.get(r.project_id)?.title ?? 'A project'}</h3>
                 <p className={t.empty} style={{ margin: '4px 0 0' }}>{r.text}</p>
@@ -267,7 +267,7 @@ export function YourDay() {
         <section className={`${t.card} ${t.wide}`} aria-labelledby="today-director">
           <div className={t.cardHead}><h2 id="today-director" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> The day at a glance</h2></div>
           {glances.map(({ project_id, glance: g }) => (
-            <article key={project_id} className={t.day} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${g.day} at a glance`}>
+            <article key={project_id} className={`${t.day} ${t.dayOnly}`} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${g.day} at a glance`}>
               <div className={t.dayBody}>
                 <h3 className={t.dayTitle}>{projectById.get(project_id)?.title ?? 'A project'} · Day {g.day}{g.date ? ` · ${dayLabel(g.date, today)}` : ''}</h3>
                 <div className={t.facts}>
@@ -302,7 +302,7 @@ export function YourDay() {
         <section className={`${t.card} ${t.wide}`} aria-labelledby="today-looks">
           <div className={t.cardHead}><h2 id="today-looks" className={t.cardTitle}><Clapperboard size={14} aria-hidden /> Looks for the next shoot day</h2></div>
           {lookDays.map(({ project_id, day: d }) => (
-            <article key={project_id} className={t.day} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${d.day} looks`}>
+            <article key={project_id} className={`${t.day} ${t.dayOnly}`} aria-label={`${projectById.get(project_id)?.title ?? 'Project'}, day ${d.day} looks`}>
               <div className={t.dayBody}>
                 <h3 className={t.dayTitle}>{projectById.get(project_id)?.title ?? 'A project'} · Day {d.day}{d.date ? ` · ${dayLabel(d.date, today)}` : ''}</h3>
                 {d.attention.length > 0

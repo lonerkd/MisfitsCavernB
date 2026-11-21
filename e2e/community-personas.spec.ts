@@ -64,6 +64,10 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     await expect(page.locator('[aria-labelledby="today-updates"]')).toContainText(`Announcement · ${title}`);
     await expect(page.locator('[aria-labelledby="today-projects"]')).toContainText(title);
     await expect(page.locator('[aria-labelledby="today-roles"]').getByRole('article', { name: `Your role on ${title}` })).toBeVisible();
+    // The card is one wide column (it once reused the 64px time column of a day on set and wrapped one word a line).
+    const roleCard = page.locator('[aria-labelledby="today-roles"]').getByRole('article', { name: `Your role on ${title}` });
+    const [cardW, textW] = await roleCard.evaluate((el) => [el.getBoundingClientRect().width, (el.querySelector('p') as HTMLElement).getBoundingClientRect().width]);
+    expect(textW).toBeGreaterThan(cardW * 0.6);
     // The public newsletter is there too.
     await expect(page.locator('[aria-labelledby="community-hub"]')).toContainText(hubTitle);
 

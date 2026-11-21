@@ -28,6 +28,7 @@
 
 /* Days on set */
 .day { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; padding: 12px; border-radius: 14px; background: var(--sunken); border: 1px solid var(--border); }
+.dayOnly { grid-template-columns: minmax(0, 1fr); } /* a card with no time block (Your role): its one column is the card, not the 64px time column */
 .dayNow { border-color: var(--accent); background: var(--accent-dim); }
 .when { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 14px; background: rgba(var(--ink-rgb), 0.05); padding: 8px 4px; text-align: center; }
 .whenLabel { font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-muted); }
