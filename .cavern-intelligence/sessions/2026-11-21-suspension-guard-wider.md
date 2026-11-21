@@ -1,0 +1,9 @@
+# Session - 2026-11-21: the suspension guard on more write paths (BACKLOG 3.14)
+
+Migration `20261121000700_suspension_guard_wider.sql` reuses `internal.moderation_write_guard` (unchanged: it reads only `auth.uid()`, the suspended flag and, for `job_applications`, `new.job_id`) as a trigger on `projects`, `scripts`, `script_annotations`, `notes`, `media`, `project_tasks`, `project_documents`, `review_comments`, `portfolio_projects`, `support_cases` (INSERT and UPDATE), `support_case_messages` (INSERT) and `profiles` (UPDATE only: a person's own edits; an admin's suspend writes as the admin, and a server call with no JWT passes). DELETE is not guarded, so a suspended person can still take their own work down. `get_platform_stats` now leaves hidden jobs out of the jobs total (full body of `20261103100000` plus `hidden_at is null`). No new function, so nothing to add to the §2.D allowlist.
+
+Skipped on purpose: `script_notes` and `asset_comments` (no such tables in the schema today), hub posts (admin-authored), reactions, crew invites and the per-record production tables (left in 3.14 as a follow-up).
+
+Apply to production then staging from the file exactly as written, then the drift check (`schema.fingerprint` is updated here). `database.types.ts` did not change (no new functions or columns).
+
+**Verified:** `npm run db:reset` on the local stack; `tests/integration/moderation-actions.test.ts` 19 passed (new: a suspended Riley refused with the plain sentence on 8 insert paths and 4 edit paths with rows unchanged; the server and an admin unaffected; Jordan and a reinstated Riley write; a hidden job lowers the public total by one); the whole integration suite 833 passed, 1 expected fail; `tsc --noEmit` and eslint on the test file clean. **Not verified:** production (not applied by design); a browser pass (no UI changed).

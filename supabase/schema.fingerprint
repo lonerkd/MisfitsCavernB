@@ -1765,7 +1765,7 @@ function public.get_my_portfolio_page() body=11a8dfbdb07374e7d9a54e1ab5abbb1d
 function public.get_my_ui_prefs() body=3e3ed4dda074f3d52b03774bed341871
 function public.get_my_writing_prefs() body=540ce1a5f88dcb0acdd91fbd18480161
 function public.get_person_credits(p_user uuid) body=961ca42c9e17c3153039993079c7dc8b
-function public.get_platform_stats() body=39a42ba00421b8d21eea0b8685b47ff7
+function public.get_platform_stats() body=8e738289cc2c3d97baf954fa7a1197d2
 function public.get_portfolio_page(p_handle text) body=f5cd7d701a779817460421645176c22e
 function public.get_press_kit(p_token text) body=1b8aa2b16d608e23c55abae6bc4cdb37
 function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98f5fa910a4b
@@ -2949,6 +2949,18 @@ trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT ON public.job_applic
 trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT ON public.jobs FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
 trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT ON public.messages FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
 trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT ON public.reports FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT ON public.support_case_messages FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.media FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.portfolio_projects FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.project_documents FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.project_tasks FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.review_comments FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.script_annotations FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.support_cases FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
+trigger CREATE TRIGGER moderation_write_guard BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
 trigger CREATE TRIGGER mood_board_items_touch BEFORE UPDATE ON public.mood_board_items FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER mood_boards_touch BEFORE UPDATE ON public.mood_boards FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_guard()
