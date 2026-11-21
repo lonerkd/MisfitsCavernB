@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 107 tables · 81 database functions · 137 e2e specs**
+**55 pages · 9 API routes · 107 tables · 84 database functions · 137 e2e specs**
 
 ## Routes
 
@@ -27,7 +27,7 @@
 | `/admin/formats` | admin | `app/(suite)/admin/formats/page.tsx` (118) | 36 files · components: formats, ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-formats, admin-sweep |
 | `/admin/hub` | admin | `app/(suite)/admin/hub/page.tsx` (182) | 36 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-actions, admin-sweep |
 | `/admin` | admin | `app/(suite)/admin/page.tsx` (298) | 30 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-support-analytics, admin-sweep, keyboard-audit |
-| `/admin/reports` | admin | `app/(suite)/admin/reports/page.tsx` (126) | 32 files · components: ui · lib: auth, formats, hooks, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, hide-message, reports |
+| `/admin/reports` | admin | `app/(suite)/admin/reports/page.tsx` (168) | 33 files · components: ui · lib: auth, formats, hooks, moderation, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, hide-message, reports |
 | `/admin/support` | admin | `app/(suite)/admin/support/page.tsx` (93) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-actions, admin-support-analytics, admin-sweep |
 | `/admin/users` | admin | `app/(suite)/admin/users/page.tsx` (280) | 29 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | accessibility, admin-actions, admin-sweep, suspend-user |
 | `/auth/callback` | public | `app/(suite)/auth/callback/page.tsx` (74) | 30 files · components: ui · lib: auth, formats, os, push, supabase, types, validation | **none** |
@@ -38,16 +38,16 @@
 | `/call` | signed in | `app/(suite)/call/page.tsx` (88) | 49 files · components: ui · lib: auth, formats, island, os, push, scriptos, studio, supabase, today, types, validation | performer-calls |
 | `/cavern` | signed in | `app/(suite)/cavern/page.tsx` (22) | 2 files · components: — · lib: cavern | **none** |
 | `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: community, home, landing, mobile, roles, ui · lib: auth, crafts, film, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-personas, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, home-routing, install, island-compact-dock, island-projects-keys, island, layout, looks-day, mobile, page-errors, script-formats, shortcut-search, today-owner |
-| `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 45 files · components: ui · lib: auth, credits, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
+| `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 46 files · components: ui · lib: auth, credits, formats, hooks, moderation, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 42 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, page-errors, route-smoke, your-data |
 | `/editor` | signed in | `app/(suite)/editor/page.tsx` (1592) | 230 files · components: ad, audio, breakdown, characters, editor, notes, phone, story, studio, ui · lib: ad, audio, auth, breakdown, brief, characters, errors, film, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, push, scriptos, split, spotify, storage, story, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, character-rename, cut-notes, doubt-override, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, margin-note-card, mobile, notes, onboarding, page-errors, phases, phone-editor, production-from-script, production-tools-open, reading-corrections, route-smoke, script-knowledge, script-share, sound-phone, split, story-interview, studio-journey, table-read, writing-loop |
 | `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (68) | 38 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
 | `/hub/help/[id]` | signed in | `app/(suite)/hub/help/[id]/page.tsx` (44) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
 | `/hub/help` | signed in | `app/(suite)/hub/help/page.tsx` (86) | 31 files · components: ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
 | `/hub` | signed in | `app/(suite)/hub/page.tsx` (11) | 1 files · components: — · lib: — | auth-journey, community-page |
-| `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (553) | 35 files · components: ui · lib: auth, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
-| `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (447) | 54 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, page-errors, reports, route-smoke |
-| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (131) | 97 files · components: crafts, hub, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, hub, island, lounge, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, page-errors, phone-keyboard, route-smoke, voice-full-room, voice-two-people |
+| `/jobs/[id]` | signed in | `app/(suite)/jobs/[id]/page.tsx` (560) | 36 files · components: ui · lib: auth, formats, hooks, moderation, notifications, os, push, supabase, types, util, validation | accessibility, hiring, keyboard-audit, reports |
+| `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (447) | 55 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, moderation, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, page-errors, reports, route-smoke |
+| `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (131) | 98 files · components: crafts, hub, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, hub, island, lounge, moderation, notifications, os, push, roles, scriptos, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-page, community-personas, community, hide-message, island-call, island, keyboard-audit, layout, lounge, mobile, page-errors, phone-keyboard, route-smoke, voice-full-room, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
 | `/` | public | `app/(suite)/page.tsx` (444) | 52 files · components: brand, landing, shell, ui · lib: auth, brand, community, formats, home, hooks, notifications, os, push, supabase, types, util, validation | accessibility, account-deletion, home-page-crash, home-routing, keyboard-audit, legal, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 43 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, supabase, types, validation | accessibility, portfolio-page |
@@ -184,7 +184,7 @@
 ### `/admin/reports`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`
+- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`
 - **Realtime:** `project`, `projects:list`
 
 ### `/admin/support`
@@ -247,7 +247,7 @@
 ### `/crew/[id]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `media`, `notifications`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_portfolio_page`, `get_shared_portfolio`
 - **Realtime:** `lounge-presence`, `project`, `projects:list`
 
 ### `/crew`
@@ -293,13 +293,13 @@
 ### `/jobs`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `crafts`, `job_applications`, `jobs`, `notifications`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `respond_to_application`
+- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `respond_to_application`
 - **Realtime:** `project`, `projects:list`
 
 ### `/lounge`
 
 - **Tables:** `activity_feed`, `audit_logs`, `brief_questions`, `budget_items`, `campaigns`, `capabilities`, `channel_members`, `channel_presets`, `channels`, `craft_capabilities`, `crafts`, `crew_capability_overrides`, `discord_integrations`, `hub_posts`, `hub_reads`, `jobs`, `media`, `messages`, `notifications`, `portfolio_projects`, `profiles`, `project_beats`, `project_brief`, `project_crew`, `project_crew_crafts`, `project_formats`, `project_tasks`, `projects`, `push_subscriptions`, `reports`, `scenes`, `script_annotations`, `scripts`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_hide_message`, `admin_reported_message`, `admin_set_suspended`, `can_manage_channel`, `can_post_channel`, `edit_message`, `get_my_account`, `has_discord_webhook`, `lounge_unread`, `mark_lounge_read`, `my_capabilities`, `my_crew_invitations`, `pin_message`, `project_context`, `request_capability`, `respond_to_crew_invitation`, `search_lounge`, `toggle_message_reaction`
+- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `can_manage_channel`, `can_post_channel`, `edit_message`, `get_my_account`, `has_discord_webhook`, `lounge_unread`, `mark_lounge_read`, `my_capabilities`, `my_crew_invitations`, `pin_message`, `project_context`, `request_capability`, `respond_to_crew_invitation`, `search_lounge`, `toggle_message_reaction`
 - **Realtime:** `chan`, `dm`, `lounge-presence`, `lounge-unread`, `project`, `projects:list`, `thread`, `typing`, `voice`
 
 ### `/m/[id]`
@@ -547,12 +547,15 @@
 | `admin_case_study_projects` | called from a route |
 | `admin_close_job` | called from a route |
 | `admin_count_brief_answers` | called from a route |
-| `admin_hide_message` | called from a route |
+| `admin_hide_content` | internal (policies, triggers, other functions) |
+| `admin_hide_message` | internal (policies, triggers, other functions) |
 | `admin_list_users` | called from a route |
+| `admin_moderate_report` | internal (policies, triggers, other functions) |
 | `admin_move_brief_question` | called from a route |
 | `admin_platform_analytics` | called from a route |
 | `admin_remove_brief_option` | called from a route |
 | `admin_remove_brief_question` | called from a route |
+| `admin_report_target` | internal (policies, triggers, other functions) |
 | `admin_reported_message` | called from a route |
 | `admin_set_suspended` | called from a route |
 | `advance_phase` | called from a route |
