@@ -245,7 +245,7 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
       <ToolHereContext.Provider value={`production:${view}`}>
       <ToolFindProvider key={view}>
       {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
-      {lock && <LockedTool tool={lock} accent={project.accent_color} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
+      {lock && <LockedTool tool={lock} accent={project.accent_color} projectId={project.id} isOwner={project.creator_id === userId} onNavigate={onNavigate} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
       <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
       {!lock && TAB_HEADED[view] && (() => {
         const v = VIEWS.find((x) => x.id === view)!;

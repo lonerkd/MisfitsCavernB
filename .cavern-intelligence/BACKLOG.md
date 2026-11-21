@@ -71,6 +71,9 @@ Plan: [plans/2026-11-13-role-model.md](plans/2026-11-13-role-model.md) (designed
 ### 3.51 Role suites: close the gaps the audit found — L (owner, 2026-11-15: "each role's full suite built, well made and interconnected")
 The audit [plans/2026-11-15-role-suites-audit.md](plans/2026-11-15-role-suites-audit.md) (code-evidenced; nobody has run the practitioner protocol) found a working suite for every craft, ten roles that held a permission without its tool (fixed), and these… _(full text: `backlog-detail.md`, 3.51)_
 
+### 3.52 Phase requirements, by role and for the project — M/L (owner, 2026-11-21: "what each role and the project need to actually and accurately advance, with real assets")
+**Built 2026-11-21 (the lock and the lists):** a tool before its phase (`LockedTool`) says what is left before its phase (the project's milestones from the current phase on, each with its hint, progress and a *Go* to where it is done,… _(full text: `backlog-detail.md`, 3.52)_
+
 ### 3.46 UX audit findings, not yet fixed — S each (Hermes audit, 2026-11-08)
 Colours fixed 2026-11-08: the editor's checkboxes, the Insert link, the revision caret and the writing-goal bar used a hard-coded blue (`#0099ff`) and now use the theme's accent (`var(--accent)`). _(full text: `backlog-detail.md`, 3.46)_
 

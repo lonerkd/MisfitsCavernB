@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic';
 const PhaseGate = dynamic(() => import('./PhaseGate').then((m) => m.PhaseGate));
 import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
+import { MILESTONE_ROLES } from '@/lib/os/phase-needs';
 import { UnlockReveal } from './UnlockReveal';
 import p from './progress.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
@@ -349,6 +350,7 @@ function MilestoneList({ progress, phaseIndex, projectId, onNavigate }: {
               <span className="sr-only">{m.done ? ' — done' : ' — to do'}</span>
             </div>
             {m.id === next && <div className={p.mHint}>{m.hint}</div>}
+            {m.id === next && MILESTONE_ROLES[m.id]?.length > 0 && <div className={p.mWho}>Usually: {MILESTONE_ROLES[m.id].join(', ')}</div>}
             {!m.done && m.progress && (
               <div className={p.bar} role="progressbar" aria-label={`${m.label} progress`} aria-valuemin={0} aria-valuemax={m.progress.of} aria-valuenow={m.progress.value}>
                 <div className={p.barFill} style={{ width: `${Math.round((m.progress.value / m.progress.of) * 100)}%` }} />
