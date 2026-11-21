@@ -25,11 +25,17 @@ const user = (await admin.auth.admin.createUser({ email: EMAIL, password: PASSWO
 const project = (await admin.from('projects').insert({ title: `Phone ${TAG}`, creator_id: user.id }).select('id').single()).data;
 const script = (await admin.from('scripts').insert({ title: 'Kitchen', content: 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. STREET - DAY\n\nJO\nGo.\n', project_id: project.id, created_by: user.id, last_edited_by: user.id }).select('id').single()).data;
 
+const shareToken = `ph${TAG}${randomUUID().replace(/-/g, '').slice(0, 10)}`;
+await admin.from('projects').update({ visibility: 'link', share_token: shareToken }).eq('id', project.id);
+
 const ROUTES = [
   '/community', '/call', '/projects', `/projects/${project.id}`, `/studio?project=${project.id}`,
   `/studio?project=${project.id}&tab=scenes`, `/studio?project=${project.id}&tab=production`, `/studio?project=${project.id}&tab=library`,
   `/studio?project=${project.id}&tab=post`, `/studio?project=${project.id}&tab=share`,
   `/editor?script=${script.id}`, '/lounge', '/crew', '/jobs', '/profile', '/settings', '/soundtrack', '/portfolio', '/welcome',
+  // Added 2026-11-21: the phone-critical surfaces the audit skipped.
+  '/hub', '/today', '/cavern', '/split', '/showcase', '/portfolios', '/auth', `/shared/${shareToken}`,
+  `/studio?project=${project.id}&tab=production&view=onset`, `/studio?project=${project.id}&tab=production&view=callsheets`,
 ];
 
 // A dark device: the audit's baseline was taken on Misfit, and with no saved choice the app follows the device (headless is light).
