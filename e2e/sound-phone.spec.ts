@@ -8,11 +8,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 // portrait, and the scenes timeline shows the project's scenes and a tap on a
 // scene presses it. Opt-in: E2E_LOCAL_STACK=1.
 //
-// The page shows only "Connect Spotify" until the account has a Spotify
-// connection, and this spec never touches Spotify. So it runs only when the
-// account it signs in with is already connected: E2E_SPOTIFY_CONNECTED=1.
-const spotifyConnected = process.env.E2E_SPOTIFY_CONNECTED === '1';
-const SPOTIFY_SKIP = 'the Sound page needs a connected Spotify account (set E2E_SPOTIFY_CONNECTED=1); this spec does not touch Spotify';
+// The page shows only "Connect Spotify" until the browser holds a Spotify token, so the spec puts a made-up one in localStorage (the
+// same keys lib/spotify/auth.ts reads). It is never valid: any call the page makes to Spotify with it is refused, and nothing here
+// depends on Spotify answering. (Whether the timeline should need a Spotify connection at all is an open question for the owner.)
 const PASSWORD = randomUUID();
 const TAG = Date.now().toString(36);
 const SCRIPT = [
@@ -29,7 +27,6 @@ const ROOM_TABS = ['search', 'scenes', 'library'] as const;
 
 test.describe('The Sound page on a phone (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
-  test.skip(!spotifyConnected, SPOTIFY_SKIP);
 
   for (const { name, viewport } of ORIENTATIONS) {
     test.describe(name, () => {
@@ -59,6 +56,11 @@ test.describe('The Sound page on a phone (local Supabase)', () => {
         await page.goto(`/editor?script=${scriptId}`);
         await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveCount(1, { timeout: 20_000 });
         await expect.poll(async () => (await admin.from('scenes').select('id').eq('script_id', scriptId).is('removed_at', null)).data?.length, { timeout: 20_000 }).toBe(3);
+        await page.evaluate((uid) => {
+          window.localStorage.setItem('spotify_access_token', 'e2e-not-a-real-token');
+          window.localStorage.setItem('spotify_token_expires_at', String(Date.now() + 3_600_000));
+          window.localStorage.setItem('spotify_owner', uid);
+        }, owner.id);
         await page.goto('/soundtrack?tab=scenes');
         await expect(page.getByRole('group', { name: 'Scenes timeline' })).toBeVisible({ timeout: 30_000 });
       }
