@@ -14,6 +14,22 @@ import type { GutterItem } from '@/lib/film/gutter';
 const CHARACTER_COLOR = '#ffaa00';
 
 /** The rail's four sections: the scene (card, tools, breakdown, references), sound, the script (insights, history), notes. */
+/** A labelled on/off switch: a real button with state (role="switch"), 44 pt tall, the state drawn as well as announced. */
+export function ViewToggle({ label, hint, on, set }: { label: string; hint?: string; on: boolean; set: (v: boolean) => void }) {
+  return (
+    <button type="button" role="switch" aria-checked={on} onClick={() => set(!on)}
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44, width: '100%', padding: '0 4px', background: 'transparent', border: 'none', textAlign: 'left', color: 'var(--fg)', cursor: 'pointer' }}>
+      <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+        <span style={{ fontSize: 13 }}>{label}</span>
+        {hint && <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{hint}</span>}
+      </span>
+      <span aria-hidden style={{ flex: '0 0 auto', width: 44, height: 28, borderRadius: 14, position: 'relative', background: on ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.18)', transition: 'background 0.15s' }}>
+        <span style={{ position: 'absolute', top: 4, left: on ? 20 : 4, width: 20, height: 20, borderRadius: '50%', background: on ? 'var(--on-accent)' : 'var(--fg)', transition: 'left 0.15s' }} />
+      </span>
+    </button>
+  );
+}
+
 export type RightPanelTab = 'scene' | 'audio' | 'script' | 'notes';
 
 export interface EditorRightPanelsProps {
@@ -256,14 +272,8 @@ export function EditorRightPanels({
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--fg-strong)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}><Settings size={14} /> View Options</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                          <span>Typewriter Mode</span>
-                          <input type="checkbox" checked={typewriterMode} onChange={e => setTypewriterMode(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
-                        </label>
-                        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: 'var(--fg-muted)', cursor: 'pointer' }}>
-                          <span>Dark Mode (Preview)</span>
-                          <input type="checkbox" checked={nightModePreview} onChange={e => setNightModePreview(e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
-                        </label>
+                        <ViewToggle label="Typewriter mode" hint="Keeps the line you are writing in the middle of the screen" on={typewriterMode} set={setTypewriterMode} />
+                        <ViewToggle label="Dark page in Preview" hint="Only the Preview view; the app theme is in Settings" on={nightModePreview} set={setNightModePreview} />
                       </div>
                     </div>
                   </>

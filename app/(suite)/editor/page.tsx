@@ -1179,7 +1179,7 @@ export default function EditorPage() {
   );
 
   return (
-    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 50 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: 'calc(100dvh - var(--mc-safe-top))', ...(isMobile && phone.landscape ? { paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 42 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh', ...(isMobile && phone.landscape ? { paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
@@ -1536,7 +1536,7 @@ export default function EditorPage() {
         </div>
       </div>
 
-      {isMobile && !focusMode && activeView === 'write' && phone.typing && <PhoneSyncLine bottom={phone.keyboard + (phone.landscape ? 48 : 60)} />}
+      {isMobile && !focusMode && activeView === 'write' && phone.typing && !phone.landscape && <PhoneSyncLine bottom={phone.keyboard + (phone.landscape ? 48 : 60)} />}
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
         <PhoneToolStrip
           bottom={phone.keyboard} compact={phone.landscape}
