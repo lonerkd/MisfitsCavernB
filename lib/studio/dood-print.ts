@@ -14,8 +14,10 @@ export interface DoodPrintInput {
 
 export function doodDoc(i: DoodPrintInput): PrintDoc {
   const columns: PrintColumn[] = [
-    { key: 'name', label: 'Cast' },
-    ...i.days.map((d) => ({ key: `d${d}`, label: `D${d}`, align: 'center' as const, width: '5%' })),
+    // The name column keeps a fifth of the page however many shoot days there are; the days share the rest (a fixed 5% each pushed the
+    // names to a few letters a line once a shoot passed about 14 days).
+    { key: 'name', label: 'Cast', width: '22%' },
+    ...i.days.map((d) => ({ key: `d${d}`, label: `D${d}`, align: 'center' as const, width: `${Math.min(5, Math.floor((66 / Math.max(1, i.days.length)) * 10) / 10)}%` })),
     { key: 'worked', label: 'Days', align: 'right', width: '7%' },
   ];
   return {
