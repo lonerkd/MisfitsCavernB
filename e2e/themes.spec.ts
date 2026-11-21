@@ -74,7 +74,7 @@ test.describe('Themes (local Supabase)', () => {
     await other.close();
   });
 
-  test('System follows the device between Cavern and Paper', async ({ page }) => {
+  test('System follows the device between Misfit and Paper', async ({ page }) => {
     test.setTimeout(90_000);
     await signIn(page, owner.email);
     await page.goto('/settings');
@@ -82,8 +82,8 @@ test.describe('Themes (local Supabase)', () => {
     await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: /^System/ }).click({ timeout: 30_000 });
     await expect.poll(() => theme(page)).toBe('paper');
     await page.emulateMedia({ colorScheme: 'dark' });
-    await expect.poll(() => theme(page)).toBe('default');
+    await expect.poll(() => theme(page)).toBe('misfit');
     await page.reload();
-    await expect.poll(() => theme(page)).toBe('default');
+    await expect.poll(() => theme(page)).toBe('misfit');
   });
 });

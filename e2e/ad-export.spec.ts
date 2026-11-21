@@ -36,7 +36,7 @@ test.describe('Ad export (local Supabase)', () => {
     await admin.from('projects').delete().eq('id', projectId);
   });
 
-  test('a piece as text, the whole set as text, and a PDF each download with the real copy in them', async ({ browser }) => {
+  test('a piece and the whole set download as text, and a piece prints (Print / PDF) with the real copy in them', async ({ browser }) => {
     test.setTimeout(120_000);
     const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 }, acceptDownloads: true });
     const page = await ctx.newPage();
@@ -67,11 +67,17 @@ test.describe('Ad export (local Supabase)', () => {
     expect(text).toContain('Fresh start for spring');
 
     // A piece as a PDF.
-    [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('group', { name: 'Export Poster A' }).getByRole('button', { name: 'PDF' }).click()]);
-    expect(download.suggestedFilename()).toBe(`spring-${TAG}-poster-a.pdf`);
-    const pdf = readFileSync((await download.path())!);
-    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect(pdf.toString('latin1')).toContain('Big spring sale');
+    // It goes through the print kit (the project's colour and logo; "Save as PDF" is in the print dialog): a hidden
+    // frame holds the printable document and opens the dialog, so there is no file download to wait for.
+    await page.evaluate(() => {
+      const w = window as unknown as { __printed: string[] };
+      w.__printed = [];
+      new MutationObserver((records) => {
+        for (const r of records) for (const n of Array.from(r.addedNodes)) if (n instanceof HTMLIFrameElement && n.srcdoc) w.__printed.push(n.srcdoc);
+      }).observe(document.body, { childList: true });
+    });
+    await page.getByRole('group', { name: 'Export Poster A' }).getByRole('button', { name: 'Print / PDF' }).click();
+    await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: string[] }).__printed.join('\n'))).toContain('Big spring sale');
     } finally { await ctx.close(); }
   });
 });
