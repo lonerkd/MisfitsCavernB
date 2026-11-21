@@ -84,30 +84,8 @@ const slug = (text: string, fallback: string) => {
   return cleaned || fallback;
 };
 
-/** A safe file name: `campaign.txt` for a set, `campaign-piece.pdf` for one piece. */
+/** A safe file name: `campaign.txt` for a set, `campaign-piece.txt` for one piece. */
 export function exportFileName(campaign: string, pieceTitle: string | null, extension: 'txt' | 'pdf'): string {
   const base = slug(campaign, 'campaign');
   return pieceTitle == null ? `${base}.${extension}` : `${base}-${slug(pieceTitle, 'piece')}.${extension}`;
-}
-
-// jsPDF's built-in fonts hold Western European text (Windows-1252) only. Anything else would print as
-// garbage, so it becomes "?" and the plain-text export, which keeps every character, is the way out.
-const WIN_ANSI_EXTRA = new Set('€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ');
-
-export function pdfSafe(text: string): string {
-  let out = '';
-  for (const char of text.replace(/\r\n?/g, '\n').replace(/\t/g, '    ')) {
-    const code = char.codePointAt(0)!;
-    const ok = char === '\n' || (code >= 0x20 && code <= 0x7e) || (code >= 0xa0 && code <= 0xff) || WIN_ANSI_EXTRA.has(char);
-    out += ok ? char : '?';
-  }
-  return out;
-}
-
-/** True when pdfSafe would have to replace something, so the panel can say so. */
-export const needsPdfFallback = (text: string): boolean => pdfSafe(text) !== text.replace(/\r\n?/g, '\n').replace(/\t/g, '    ');
-
-/** Everything a PDF of these pieces would print, so the panel can tell whether any of it needs the fallback. */
-export function pdfSourceText(campaign: string, views: PieceView[]): string {
-  return [campaign, ...views.flatMap((view) => [view.title, view.kindLabel, view.status, ...view.limits, ...view.sections.flatMap((section) => [section.label, section.text]), view.notes])].join('\n');
 }
