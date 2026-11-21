@@ -5,6 +5,7 @@ import { addScriptCharacter, listScriptCharacters, updateScriptCharacter } from 
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
+import { loadReadingContext } from '@/lib/studio/reading-context';
 import type { Tables } from '@/lib/supabase/database.types';
 
 export const CHARACTER_PALETTE = ['#e8431a', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
@@ -35,9 +36,10 @@ export function useScriptCharacters(scriptId: string | null, userId: string, for
     return Promise.all([
       fetchScriptContent(scriptId),
       listScriptCharacters(scriptId),
-    ]).then(([text, saved]) => {
+      loadReadingContext(scriptId), // the cast, the "not a character" verdicts, the places and the previous draft: read as the editor reads
+    ]).then(([text, saved, context]) => {
       const byName = new Map(saved.map((r) => [r.name, r]));
-      const parsed = parseScript(text, readingFormat(format)).characters.map((c) => c.name).filter(Boolean);
+      const parsed = parseScript(text, readingFormat(format), undefined, { context }).characters.map((c) => c.name).filter(Boolean);
       const names = Array.from(new Set([...parsed, ...saved.map((r) => r.name)]));
       setChars(names.map((name, i) => {
         const row = byName.get(name) ?? null;

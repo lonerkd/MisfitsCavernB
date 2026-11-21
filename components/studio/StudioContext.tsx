@@ -13,6 +13,8 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { withPreviousDraft } from '@/lib/scriptos/reading-context';
+import { fetchLatestRevisionSnapshot } from '@/lib/studio/reading-context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { listRecordLinks, type RecordLinkRow } from '@/lib/supabase/productionRecords';
 import { recordsByScene, type KindCount } from '@/lib/studio/record-links';
@@ -160,9 +162,12 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   // The script's own reading rules (the same ones the editor uses), kept in a ref so the sync callback stays steady.
   const formatsRef = useRef<Record<string, string | null>>({});
   useLayoutEffect(() => { formatsRef.current = Object.fromEntries(scripts.map((sc) => [sc.id, sc.format])); });
-  const syncScenes = useCallback((id: string) => fetchScriptContent(id)
-    .then(async (text) => {
-      const parsed = parseScript(text, readingFormat(formatsRef.current[id]), undefined, { context: readContextRef.current });
+  const syncScenes = useCallback((id: string) => Promise.all([fetchScriptContent(id), fetchLatestRevisionSnapshot(id).catch(() => null)])
+    .then(async ([text, earlier]) => {
+      // The script's latest locked revision is the previous draft: a line it read the same way is likelier read that way again.
+      // It is read once and kept (reading-context.ts), and it is project data (not a writer's memory), as the shared scene index needs.
+      const context = withPreviousDraft(readContextRef.current, earlier, formatsRef.current[id]);
+      const parsed = parseScript(text, readingFormat(formatsRef.current[id]), undefined, { context });
       setParsedScenes({
         scriptId: id,
         scenes: parsed.scenes.map((sc) => parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l, i) => ({ type: l.type, text: l.text, confidence: l.confidence, reasoning: l.reasoning, index: l.index ?? i }))),

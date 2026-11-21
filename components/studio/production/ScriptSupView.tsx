@@ -12,6 +12,7 @@ import { circleTake, coverage, formatDuration, selectedTakes, shotRunTime, takeS
 import { liningLines, type LiningLine } from '@/lib/film/lining-lines';
 import { linesByScene } from '@/lib/film/my-sides';
 import { fetchScriptForReading } from '@/lib/studio';
+import { loadReadingContext } from '@/lib/studio/reading-context';
 import { parseScript } from '@/lib/scriptos/parser';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { useSignedUrls } from '@/lib/studio';
@@ -30,9 +31,9 @@ function useSceneLines(scene: { id: string; script_id: string | null; heading: s
   useEffect(() => {
     if (!scene?.script_id || !key) return;
     let live = true;
-    fetchScriptForReading(scene.script_id).then(({ content, format }) => {
+    Promise.all([fetchScriptForReading(scene.script_id), loadReadingContext(scene.script_id)]).then(([{ content, format }, context]) => {
       if (!live) return;
-      const parsed = parseScript(content, readingFormat(format));
+      const parsed = parseScript(content, readingFormat(format), undefined, { context });
       const sceneLines = parsed.scenes.map((sc) => ({ heading: sc.heading, lines: parsed.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text })) }));
       const found = linesByScene([{ id: scene.id, heading: scene.heading, title: scene.title, scene_number: scene.scene_number, ordinal: scene.ordinal }], sceneLines);
       setRead({ key, lines: liningLines(found.get(scene.id) ?? []), error: false });

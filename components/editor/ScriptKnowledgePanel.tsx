@@ -18,13 +18,22 @@ export const hasKnowledge = (k: ScriptKnowledge): boolean =>
  * the layers of a story told in layers, the places it keeps returning to, and what it wrote that the reader did not recognise (so a person
  * can see what was set aside). Shown only where the script has something to show. Nothing here is written anywhere.
  */
-export function ScriptKnowledgePanel({ knowledge: k }: { knowledge: ScriptKnowledge }) {
-  if (!hasKnowledge(k) && k.places.length === 0) return null;
+export function ScriptKnowledgePanel({ knowledge: k, previousDraft }: { knowledge: ScriptKnowledge; previousDraft?: { same: number; differs: number } }) {
+  const earlier = previousDraft && previousDraft.same + previousDraft.differs > 0 ? previousDraft : null;
+  if (!hasKnowledge(k) && k.places.length === 0 && !earlier) return null;
   const places = k.places.slice(0, 8);
   return (
     <details aria-label="What the reader knows" style={{ margin: '0 0 24px' }}>
       <summary style={{ ...label, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>What the reader knows</summary>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 6 }}>
+        {earlier && (
+          <section aria-label="Previous draft">
+            <h4 style={label}>The previous draft</h4>
+            <div style={row}><span>Lines read the same way as in the previous draft</span><span style={dim}>{earlier.same}</span></div>
+            {earlier.differs > 0 && <div style={row}><span>Lines the previous draft read as something else</span><span style={dim}>{earlier.differs}</span></div>}
+            <div style={{ ...row, ...dim }}>A line it was sure of is the better guess when this one is not.</div>
+          </section>
+        )}
         {k.languages.length > 0 && (
           <section aria-label="Languages">
             <h4 style={label}>Languages</h4>

@@ -17,6 +17,7 @@ import { useCanShape } from '@/lib/brief';
 import { isSpokenLine, lineHint, type Sides } from '@/lib/film/sides';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { withTimeout } from '@/lib/supabase/withTimeout';
+import { loadReadingContext } from '@/lib/studio/reading-context';
 import {
   callFor, fetchScriptForReading, hhmm, issueState, snapshotOf, studio, toSnapshot,
   type CallSheet, type CallSheetCall, type CallSheetPerson, type CallSheetScene, type CallSheetSnapshot,
@@ -109,8 +110,8 @@ export default function CallSheetPage() {
       for (const scriptId of scenes.map((sc) => sc.script_id).filter((x): x is string => !!x)) {
         if (seen.has(scriptId)) continue;
         seen.add(scriptId);
-        const { content, format } = await fetchScriptForReading(scriptId);
-        const p = parseScript(content, readingFormat(format));
+        const [{ content, format }, context] = await Promise.all([fetchScriptForReading(scriptId), loadReadingContext(scriptId)]);
+        const p = parseScript(content, readingFormat(format), undefined, { context });
         for (const sc of p.scenes) parsed.push({ heading: sc.heading, lines: p.lines.slice(sc.startIndex, sc.endIndex + 1).map((l) => ({ type: l.type, text: l.text })) });
       }
       const rows = mySides({

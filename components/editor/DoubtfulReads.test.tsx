@@ -2,7 +2,8 @@
 import React from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
-import type { Doubt } from '@/lib/scriptos/review';
+import { doubtfulReads, type Doubt } from '@/lib/scriptos/review';
+import { parseScript } from '@/lib/scriptos/parser';
 
 const toast = vi.fn();
 const setLineOverride = vi.fn();
@@ -40,5 +41,22 @@ describe('DoubtfulReads: settle a doubtful line in one tap', () => {
     rerender(<DoubtfulReads doubts={[{ ...action, type: 'action', alternative: 'character', name: 'MAYA' }]} projectId="p1" scriptId="s1" onSaved={vi.fn()} />);
     expect(screen.queryByRole('button', { name: /Read as character/ })).toBeNull();
     expect(screen.getByRole('button', { name: /It’s a character/ })).toBeTruthy();
+  });
+});
+
+describe('DoubtfulReads: the previous draft in the explanation', () => {
+  // A cue that speaks once is in doubt by itself; the earlier draft having read it as a cue too is part of why, and a person sees it.
+  const SRC = 'INT. ROOM - DAY\nMAYA\nHi.\nLEO\nHello.\nMAYA\nBye.\nLEO\nOk.\nDARKNESS\nMaya waits.\nMAYA\nGo.\nLEO\nNo.';
+  const doubtsWith = (previous: Array<{ text: string; type: 'character' | 'dialogue' | 'action' }>) =>
+    doubtfulReads(parseScript(SRC, 'screenplay', undefined, { context: { previousDraft: { lines: previous } } }).lines);
+
+  it('says "same as in the previous draft" for a line the earlier draft read the same way', () => {
+    render(<DoubtfulReads doubts={doubtsWith([{ text: 'DARKNESS', type: 'character' }, { text: 'Maya waits.', type: 'dialogue' }])} projectId="p1" scriptId="s1" onSaved={vi.fn()} />);
+    expect(screen.getByText(/Line 10 · .*same as in the previous draft/)).toBeTruthy();
+  });
+
+  it('says what the earlier draft read it as when that differs', () => {
+    render(<DoubtfulReads doubts={doubtsWith([{ text: 'DARKNESS', type: 'action' }])} projectId="p1" scriptId="s1" onSaved={vi.fn()} />);
+    expect(screen.getByText(/the previous draft read it as action/)).toBeTruthy();
   });
 });

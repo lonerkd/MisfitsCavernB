@@ -14,6 +14,7 @@
 // specific line. Both feed the decoder as priors.
 
 import type { ParseContext, WriterMemory } from './parser';
+import type { PreviousDraft } from './previous-draft';
 
 /** The characters people have cast (`character_castings.character_name`). */
 export function contextFromCastings(castings: ReadonlyArray<{ character_name: string }>, rejectedNames: readonly string[] = []): ParseContext {
@@ -33,10 +34,11 @@ export function contextFromProject(
   lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }>,
   places?: ReadonlyArray<{ name: string }>,
   previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>,
+  previousDraft?: PreviousDraft,
 ): ParseContext {
   const confirmed = corrections.filter((c) => c.kind === 'character').map((c) => ({ character_name: c.name }));
   const projectContext = contextFromCastings([...castings, ...confirmed], corrections.filter((c) => c.kind === 'not_character').map((c) => c.name));
-  return contextWithMemory(projectContext, writerMemory, lineOverrides, places, previousDraftCues);
+  return contextWithMemory(projectContext, writerMemory, lineOverrides, places, previousDraftCues, previousDraft);
 }
 
 /** Places known to the project (`project_locations.name`). */
@@ -55,6 +57,7 @@ export function contextWithMemory(
   lineOverrides: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }> | undefined,
   places: ReadonlyArray<{ name: string }> | undefined,
   previousDraftCues: ReadonlyArray<{ line_index: number; name: string }> | undefined,
+  previousDraft?: PreviousDraft,
 ): ParseContext {
   const characters = new Set([...(projectContext.characters ?? []), ...(writerMemory?.confirmedNames ?? [])]);
   const rejectedNames = new Set([...(projectContext.rejectedNames ?? []), ...(writerMemory?.rejectedNames ?? [])]);
@@ -64,6 +67,7 @@ export function contextWithMemory(
     rejectedNames: Array.from(rejectedNames),
     places: placeNames,
     previousDraftCues: previousDraftCues ?? projectContext.previousDraftCues,
+    previousDraft: previousDraft ?? projectContext.previousDraft,
     writerMemory,
     lineOverrides,
   };
@@ -76,5 +80,15 @@ export function contextKey(context: ParseContext | undefined): string {
     ? JSON.stringify(context.writerMemory)
     : '';
   const overrideKey = (context.lineOverrides ?? []).map((o) => `${o.line_index}:${o.forced_type}`).join(',');
-  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}`;
+  // The previous draft and the places add to the key only when there are any, so a context without them keys as it always did.
+  const draftKey = context.previousDraft ? `#d${context.previousDraft.lines.length}:${digest(context.previousDraft.lines.map((l) => `${l.type[0]}${l.text}`).join('\n'))}` : '';
+  const placeKey = context.places?.length ? `#p${context.places.join('|')}` : '';
+  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}${draftKey}${placeKey}`;
+}
+
+/** A short fingerprint of some text (FNV-1a), for keys that only need to notice a change. */
+export function digest(text: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(36);
 }
