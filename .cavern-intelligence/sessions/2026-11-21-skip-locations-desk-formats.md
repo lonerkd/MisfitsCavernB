@@ -1,0 +1,5 @@
+# 2026-11-21 — Advertising and YouTube skip Locations and Permits (3.52)
+
+Product call, decided from the documents (no owner question needed): a desk or studio format can never finish "Confirm your locations" or "Clear the permits", so those two milestones are skipped (hidden, not deleted) for **Advertising** and **YouTube**. **Commercial** keeps them (it shoots on location). Migration `20261121000800_skip_locations_permits_desk_formats.sql` is a data-only update of `project_formats.skip_milestones` (no schema, no policy, no function; `schema.fingerprint` unchanged).
+
+**Verified:** `npm run db:reset` on the local stack, then `npm run test:integration -- tests/integration/phase-signals.test.ts`: 4 passed (the format-skips test now also asserts Advertising and YouTube skip locations and permits and Commercial keeps locations). Not reviewed by a second agent: two rows of data, no access change. Not verified: the Production tab for an Advertising project in a browser. Apply to production then staging from the file as written, then the drift check.

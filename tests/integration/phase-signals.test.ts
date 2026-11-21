@@ -51,11 +51,13 @@ describe('project_progress: the new signals', () => {
   });
 
   it('formats without a shoot skip the new pre-production milestones', async () => {
-    const rows = (await adminClient().from('project_formats').select('name, skip_milestones').in('name', ['Podcast', 'Copywriting', 'Blog / Newsletter', 'Video Game', 'Documentary', 'Short Film'])).data ?? [];
+    const rows = (await adminClient().from('project_formats').select('name, skip_milestones').in('name', ['Podcast', 'Copywriting', 'Blog / Newsletter', 'Video Game', 'Documentary', 'Short Film', 'Advertising', 'YouTube', 'Commercial'])).data ?? [];
     const skips = new Map(rows.map((r: { name: string; skip_milestones: string[] }) => [r.name, r.skip_milestones]));
     for (const f of ['Podcast', 'Copywriting', 'Blog / Newsletter', 'Video Game']) for (const m of ['breakdown', 'lock-script', 'locations', 'permits', 'call-sheet']) expect(skips.get(f), `${f} skips ${m}`).toContain(m);
     expect(skips.get('Documentary')).toEqual(expect.arrayContaining(['breakdown', 'lock-script']));
     expect(skips.get('Documentary')).not.toContain('call-sheet');
     expect(skips.get('Short Film')).toEqual([]);
+    for (const f of ['Advertising', 'YouTube']) for (const m of ['locations', 'permits']) expect(skips.get(f), `${f} skips ${m}`).toContain(m);
+    expect(skips.get('Commercial')).not.toContain('locations');
   });
 });
