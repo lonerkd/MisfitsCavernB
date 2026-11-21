@@ -228,6 +228,14 @@ column crafts.created_at timestamp with time zone default now() not null
 column crafts.department text not null
 column crafts.name text not null
 column crafts.position integer default 0 not null
+column credit_requests.craft text not null
+column credit_requests.created_at timestamp with time zone default now() not null
+column credit_requests.decided_at timestamp with time zone
+column credit_requests.id uuid default gen_random_uuid() not null
+column credit_requests.note text
+column credit_requests.project_id uuid not null
+column credit_requests.requester_id uuid not null
+column credit_requests.status text default 'pending'::text not null
 column crew_capability_overrides.capability text not null
 column crew_capability_overrides.created_at timestamp with time zone default now() not null
 column crew_capability_overrides.granted boolean not null
@@ -1109,6 +1117,12 @@ constraint crafts.crafts_color_check CHECK ((color ~ '^#[0-9a-fA-F]{6}$'::text))
 constraint crafts.crafts_department_len CHECK (((char_length(btrim(department)) >= 1) AND (char_length(btrim(department)) <= 40)))
 constraint crafts.crafts_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 60)))
 constraint crafts.crafts_pkey PRIMARY KEY (name)
+constraint credit_requests.credit_requests_craft_check CHECK (((char_length(btrim(craft)) >= 1) AND (char_length(btrim(craft)) <= 60)))
+constraint credit_requests.credit_requests_note_check CHECK (((note IS NULL) OR (char_length(note) <= 500)))
+constraint credit_requests.credit_requests_pkey PRIMARY KEY (id)
+constraint credit_requests.credit_requests_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint credit_requests.credit_requests_requester_id_fkey FOREIGN KEY (requester_id) REFERENCES auth.users(id) ON DELETE CASCADE
+constraint credit_requests.credit_requests_status_check CHECK ((status = ANY (ARRAY['pending'::text, 'approved'::text, 'declined'::text])))
 constraint crew_capability_overrides.crew_capability_overrides_capability_fkey FOREIGN KEY (capability) REFERENCES capabilities(key) ON UPDATE CASCADE ON DELETE CASCADE
 constraint crew_capability_overrides.crew_capability_overrides_pkey PRIMARY KEY (project_id, user_id, capability)
 constraint crew_capability_overrides.crew_capability_overrides_project_id_user_id_fkey FOREIGN KEY (project_id, user_id) REFERENCES project_crew(project_id, user_id) ON DELETE CASCADE
@@ -1634,6 +1648,7 @@ function internal.can_view_channel(cid uuid) body=cbd4f321ab3a9a63cdae2813624527
 function internal.castings_link_character() body=0f7629e2d449496c2a27abf57413b0ec
 function internal.channels_default_audience() body=39feae12a06fec029f038df7f31d6dc2
 function internal.characters_rename() body=421698b6b036bb12456237c0c3ea4daa
+function internal.credit_requests_guard() body=894d92e12c4c9d39898b073abdb61567
 function internal.entity_sync() body=d5958886ae64cde4b4fdf27f37750e8b
 function internal.expenses_guard() body=80ee6a3a8d25aa09ace84054008b7d38
 function internal.expenses_sync_actuals() body=b08cb6e5ac9531c9ded321dc943b13ac
@@ -1691,6 +1706,7 @@ function internal.support_cases_touch() body=158b70a96b36cb267200eea958e42823
 function internal.support_messages_route() body=80bdbf1b14705cbcf694731f79062017
 function internal.support_messages_stamp() body=a7aa6cc02189b9eb6a6cbf130828cfba
 function internal.sync_budget_actual(p_line uuid) body=f84f664d31888f41683568535853fb16
+function internal.takes_credit_requests(pid uuid) body=dfe504875d7d37a13a386400df90593b
 function internal.timesheets_guard() body=120e37b024775f62f4ba26fc34af9a54
 function internal.transcript_lines_touch() body=3d8fc285ad822ebeb99819705d0dfb7a
 function public.account_deletion_plan() body=96ef76bf7981c235068953050ac518e3
@@ -1801,6 +1817,7 @@ grant function internal.can_view_channel(cid uuid) authenticated,postgres,servic
 grant function internal.castings_link_character() postgres
 grant function internal.channels_default_audience() postgres
 grant function internal.characters_rename() postgres
+grant function internal.credit_requests_guard() postgres
 grant function internal.entity_sync() postgres
 grant function internal.expenses_guard() postgres
 grant function internal.expenses_sync_actuals() postgres
@@ -1858,6 +1875,7 @@ grant function internal.support_cases_touch() postgres
 grant function internal.support_messages_route() postgres
 grant function internal.support_messages_stamp() postgres
 grant function internal.sync_budget_actual(p_line uuid) postgres
+grant function internal.takes_credit_requests(pid uuid) authenticated,postgres
 grant function internal.timesheets_guard() postgres
 grant function internal.transcript_lines_touch() postgres
 grant function public.account_deletion_plan() authenticated,postgres,service_role
@@ -1982,6 +2000,8 @@ index CREATE INDEX client_errors_created_idx ON public.client_errors USING btree
 index CREATE INDEX client_errors_user_idx ON public.client_errors USING btree (user_id)
 index CREATE INDEX craft_capabilities_capability_idx ON public.craft_capabilities USING btree (capability)
 index CREATE INDEX crafts_department_idx ON public.crafts USING btree (department, "position")
+index CREATE INDEX credit_requests_project_idx ON public.credit_requests USING btree (project_id, status)
+index CREATE INDEX credit_requests_requester_idx ON public.credit_requests USING btree (requester_id)
 index CREATE INDEX crew_capability_overrides_capability_idx ON public.crew_capability_overrides USING btree (capability)
 index CREATE INDEX deliverables_project_idx ON public.deliverables USING btree (project_id)
 index CREATE INDEX discord_integrations_created_by_fkey_idx ON public.discord_integrations USING btree (created_by)
@@ -2244,6 +2264,8 @@ index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
 index CREATE UNIQUE INDEX craft_capabilities_pkey ON public.craft_capabilities USING btree (craft, capability)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
+index CREATE UNIQUE INDEX credit_requests_one_pending_idx ON public.credit_requests USING btree (project_id, requester_id) WHERE (status = 'pending'::text)
+index CREATE UNIQUE INDEX credit_requests_pkey ON public.credit_requests USING btree (id)
 index CREATE UNIQUE INDEX crew_capability_overrides_pkey ON public.crew_capability_overrides USING btree (project_id, user_id, capability)
 index CREATE UNIQUE INDEX deliverables_pkey ON public.deliverables USING btree (script_id)
 index CREATE UNIQUE INDEX deliverables_script_id_project_id_key ON public.deliverables USING btree (script_id, project_id)
@@ -2437,6 +2459,10 @@ policy public.crafts "crafts admin delete" PERMISSIVE DELETE to authenticated us
 policy public.crafts "crafts admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.crafts "crafts admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.crafts "crafts view" PERMISSIVE SELECT to anon,authenticated using true check -
+policy public.credit_requests "credit requests ask" PERMISSIVE INSERT to authenticated using - check ((requester_id = ( SELECT auth.uid() AS uid)) AND (status = 'pending'::text) AND (decided_at IS NULL) AND internal.takes_credit_requests(project_id) AND (NOT internal.is_project_creator(project_id)) AND (NOT internal.is_project_member(project_id)))
+policy public.credit_requests "credit requests decide" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check internal.is_project_creator(project_id)
+policy public.credit_requests "credit requests delete" PERMISSIVE DELETE to authenticated using (((requester_id = ( SELECT auth.uid() AS uid)) AND (status = 'pending'::text)) OR internal.is_project_creator(project_id)) check -
+policy public.credit_requests "credit requests view" PERMISSIVE SELECT to authenticated using ((requester_id = ( SELECT auth.uid() AS uid)) OR internal.is_project_creator(project_id)) check -
 policy public.crew_capability_overrides "capability overrides add" PERMISSIVE INSERT to authenticated using - check internal.is_project_creator(project_id)
 policy public.crew_capability_overrides "capability overrides change" PERMISSIVE UPDATE to authenticated using internal.is_project_creator(project_id) check internal.is_project_creator(project_id)
 policy public.crew_capability_overrides "capability overrides remove" PERMISSIVE DELETE to authenticated using internal.is_project_creator(project_id) check -
@@ -2745,6 +2771,7 @@ rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
 rls craft_capabilities enabled=true forced=false
 rls crafts enabled=true forced=false
+rls credit_requests enabled=true forced=false
 rls crew_capability_overrides enabled=true forced=false
 rls deliverables enabled=true forced=false
 rls discord_integrations enabled=true forced=false
@@ -2846,6 +2873,7 @@ trigger CREATE TRIGGER calls_link_character BEFORE INSERT OR UPDATE OF character
 trigger CREATE TRIGGER castings_link_character BEFORE INSERT OR UPDATE OF character_name ON public.character_castings FOR EACH ROW EXECUTE FUNCTION internal.castings_link_character()
 trigger CREATE TRIGGER channels_default_audience BEFORE INSERT ON public.channels FOR EACH ROW EXECUTE FUNCTION internal.channels_default_audience()
 trigger CREATE TRIGGER characters_rename AFTER UPDATE OF name ON public.characters FOR EACH ROW WHEN ((old.name IS DISTINCT FROM new.name)) EXECUTE FUNCTION internal.characters_rename()
+trigger CREATE TRIGGER credit_requests_guard BEFORE UPDATE ON public.credit_requests FOR EACH ROW EXECUTE FUNCTION internal.credit_requests_guard()
 trigger CREATE TRIGGER deliverables_touch_updated_at BEFORE UPDATE ON public.deliverables FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF day_number ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync AFTER INSERT OR UPDATE OF name ON public.characters FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
