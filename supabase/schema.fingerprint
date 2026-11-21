@@ -679,6 +679,7 @@ column reading_line_overrides.forced_by uuid default auth.uid()
 column reading_line_overrides.forced_type text not null
 column reading_line_overrides.id uuid default gen_random_uuid() not null
 column reading_line_overrides.line_index integer not null
+column reading_line_overrides.line_text text
 column reading_line_overrides.project_id uuid not null
 column reading_line_overrides.script_id uuid not null
 column reading_memory.count integer default 1 not null
@@ -1436,6 +1437,7 @@ constraint reading_corrections.reading_corrections_project_id_fkey FOREIGN KEY (
 constraint reading_corrections.reading_corrections_project_name_key UNIQUE (project_id, name)
 constraint reading_line_overrides.reading_line_overrides_forced_by_fkey FOREIGN KEY (forced_by) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint reading_line_overrides.reading_line_overrides_line_check CHECK ((line_index >= 0))
+constraint reading_line_overrides.reading_line_overrides_line_text_check CHECK (((line_text IS NULL) OR (char_length(line_text) <= 2000)))
 constraint reading_line_overrides.reading_line_overrides_pkey PRIMARY KEY (id)
 constraint reading_line_overrides.reading_line_overrides_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint reading_line_overrides.reading_line_overrides_project_script_line_key UNIQUE (project_id, script_id, line_index)

@@ -196,7 +196,7 @@ export default function EditorPage() {
     Object.values(castings),
     corrections.rows,
     writerMemory,
-    lineOverrides.rows.map((r: { line_index: number; forced_type: string }) => ({ line_index: r.line_index, forced_type: r.forced_type })),
+    lineOverrides.rows.map((r: { line_index: number; forced_type: string; line_text?: string | null }) => ({ line_index: r.line_index, forced_type: r.forced_type, line_text: r.line_text })),
     locations.rows.map((l: { name: string }) => ({ name: l.name })),
     undefined, // previousDraftCues
   ), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows]);
@@ -1108,6 +1108,7 @@ export default function EditorPage() {
               projectId={currentScript?.project_id ?? null}
               scriptId={currentScript?.id ?? null}
               lineIndex={cursorLine}
+              lineText={lines[cursorLine]?.text}
               currentType={lines[cursorLine]?.type ?? 'action'}
               onSaved={() => { lineOverrides.reload(); }}
             />

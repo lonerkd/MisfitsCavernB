@@ -55,5 +55,13 @@ test.describe.serial('Settling a doubtful line (local Supabase)', () => {
     await expect(script).toHaveValue(SCRIPT, { timeout: 30_000 });
     await page.getByRole('button', { name: 'Script', exact: true }).click();
     await expect(page.getByRole('region', { name: 'Doubtful reads' }).getByRole('button', { name: /Read as action/ })).toHaveCount(0, { timeout: 30_000 });
+
+    // The override remembers its line's text, so it follows the line when lines are added above (it used to be by number alone).
+    expect((await admin.from('reading_line_overrides').select('line_text').eq('script_id', scriptId)).data).toEqual([{ line_text: 'BEN' }]);
+    await admin.from('scripts').update({ content: `A new opening line\n\n${SCRIPT}` }).eq('id', scriptId);
+    await page.reload();
+    await expect(script).toHaveValue(`A new opening line\n\n${SCRIPT}`, { timeout: 30_000 });
+    await page.getByRole('button', { name: 'Script', exact: true }).click();
+    await expect(page.getByRole('region', { name: 'Doubtful reads' }).getByRole('button', { name: /Read as action/ })).toHaveCount(0, { timeout: 30_000 });
   });
 });

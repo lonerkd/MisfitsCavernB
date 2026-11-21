@@ -30,7 +30,7 @@ export function contextFromProject(
   castings: ReadonlyArray<{ character_name: string }>,
   corrections: ReadonlyArray<{ kind: string; name: string }>,
   writerMemory?: WriterMemory,
-  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>,
+  lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }>,
   places?: ReadonlyArray<{ name: string }>,
   previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>,
 ): ParseContext {
@@ -52,7 +52,7 @@ export function contextFromPlaces(places: ReadonlyArray<{ name: string }>): Pars
 export function contextWithMemory(
   projectContext: ParseContext,
   writerMemory: WriterMemory | undefined,
-  lineOverrides: ReadonlyArray<{ line_index: number; forced_type: string }> | undefined,
+  lineOverrides: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }> | undefined,
   places: ReadonlyArray<{ name: string }> | undefined,
   previousDraftCues: ReadonlyArray<{ line_index: number; name: string }> | undefined,
 ): ParseContext {

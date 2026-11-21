@@ -1,0 +1,7 @@
+# Session - 2026-11-21: a line override follows its line (BACKLOG 3.21, B8)
+
+The known limit of a line override (Force type, and today's *Read as ...*): it was saved by line number, so adding or removing a line above it moved the correction onto the wrong line. It now also saves the line's own text (`reading_line_overrides.line_text`, one nullable column, migration `20261121000300`); `anchorOverrides` (pure, `lib/scriptos/override-anchor.ts`) puts it back on the nearest line (within 400) that still reads the same, lets go of one whose line is gone, and never puts two overrides on one line. The parser applies it where it reads the overrides, so the editor and the Studio agree. Overrides saved before have no text and stay by number.
+
+**Scope decision:** this is the useful half of "the previous draft as evidence" (the evidence that matters is the person's own earlier correction; a prior draft's reading adds nothing the same engine would not say). The rest of B7/B8 (per-writer memory across projects, the reading context for the importers) still needs the owner's call on memory scope (plan section 8, question 2).
+
+**Verified:** unit tests (6: still on its line, follows an insert and a cut, lets go, nearest of two, the parser uses it), typecheck, and `e2e/doubt-override.spec.ts` (extended: a line is added above after the override; the override still holds) and `e2e/reading-corrections.spec.ts` on a production build on the local stack. **Not verified:** a phone. **After merge:** apply the migration to production then staging, then the drift check.

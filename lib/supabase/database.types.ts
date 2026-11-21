@@ -3844,6 +3844,7 @@ export type Database = {
           forced_type: string;
           id: string;
           line_index: number;
+          line_text: string | null;
           project_id: string;
           script_id: string;
         };
@@ -3854,6 +3855,7 @@ export type Database = {
           forced_type: string;
           id?: string;
           line_index: number;
+          line_text?: string | null;
           project_id: string;
           script_id: string;
         };
@@ -3863,6 +3865,7 @@ export type Database = {
           forced_type?: string;
           id?: string;
           line_index?: number;
+          line_text?: string | null;
           project_id?: string;
           script_id?: string;
         };

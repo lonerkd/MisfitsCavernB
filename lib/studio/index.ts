@@ -178,7 +178,7 @@ export function useSceneStates(projectId: string | null) {
 }
 
 export function useLineOverrides(scriptId: string | null) {
-  return useLiveRows<{ line_index: number; forced_type: string }>({
+  return useLiveRows<{ line_index: number; forced_type: string; line_text?: string | null }>({
     scope: scriptId,
     table: 'reading_line_overrides',
     filter: `script_id=eq.${scriptId}`,

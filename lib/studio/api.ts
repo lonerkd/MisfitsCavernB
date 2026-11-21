@@ -799,15 +799,16 @@ export function createStudioApi(db: Client) {
     if (error) fail(error, 'Could not take that off the board');
   }
 
-  async function listLineOverrides(scriptId: string): Promise<{ line_index: number; forced_type: string }[]> {
-    const { data, error } = await (db as any).from('reading_line_overrides').select('line_index, forced_type').eq('script_id', scriptId).order('line_index');
+  async function listLineOverrides(scriptId: string): Promise<{ line_index: number; forced_type: string; line_text?: string | null }[]> {
+    const { data, error } = await (db as any).from('reading_line_overrides').select('line_index, forced_type, line_text').eq('script_id', scriptId).order('line_index');
     if (error) fail(error, 'Could not load line overrides');
     return data ?? [];
   }
 
-  async function setLineOverride(projectId: string, scriptId: string, lineIndex: number, forcedType: string): Promise<void> {
+  /** `lineText` is the line's own text: it lets the override follow the line when lines are added or removed above it. */
+  async function setLineOverride(projectId: string, scriptId: string, lineIndex: number, forcedType: string, lineText?: string | null): Promise<void> {
     const { error } = await (db as any).from('reading_line_overrides')
-      .upsert({ project_id: projectId, script_id: scriptId, line_index: lineIndex, forced_type: forcedType }, { onConflict: 'project_id,script_id,line_index' });
+      .upsert({ project_id: projectId, script_id: scriptId, line_index: lineIndex, forced_type: forcedType, line_text: lineText?.trim() ? lineText.trim().slice(0, 2000) : null }, { onConflict: 'project_id,script_id,line_index' });
     if (error) fail(error, 'Could not save the line override');
   }
 

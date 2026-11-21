@@ -20,7 +20,7 @@ describe('DoubtfulReads: settle a doubtful line in one tap', () => {
     const overridden = vi.fn();
     render(<DoubtfulReads doubts={[action]} projectId="p1" scriptId="s1" onSaved={vi.fn()} onOverridden={overridden} />);
     fireEvent.click(screen.getByRole('button', { name: /Read as action/ }));
-    await waitFor(() => expect(setLineOverride).toHaveBeenCalledWith('p1', 's1', 4, 'action'));
+    await waitFor(() => expect(setLineOverride).toHaveBeenCalledWith('p1', 's1', 4, 'action', 'She waits by the door'));
     await waitFor(() => expect(overridden).toHaveBeenCalled());
     expect(screen.queryByText(/She waits by the door/)).toBeNull();
     expect(toast).toHaveBeenCalledWith('Line 5 is read as action', 'success');
