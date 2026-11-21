@@ -20,6 +20,8 @@ export interface ScriptTake {
   to_line?: number | null;
   /** The covered lines are heard but not seen. */
   off_camera?: boolean;
+  /** A continuity photo of this take: an image in the project's library. */
+  media_id?: string | null;
 }
 
 export interface TakeSpan { from: number; to: number }

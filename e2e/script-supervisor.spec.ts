@@ -112,6 +112,16 @@ test.describe('Script supervisor: lined script and selected takes (local Supabas
     await expect(picks).toContainText('No shot linked: take T3');
     await expect(picks).not.toContainText('take T1');
 
+    // A continuity photo from the library rides on a take: chosen in the form, shown on the take, and kept after a reload.
+    const photo = await admin.from('media').insert({ project_id: projectId, kind: 'image', title: 'Slate photo', external_url: 'https://example.com/slate.jpg' });
+    expect(photo.error).toBeNull();
+    await page.reload();
+    await picker.waitFor({ timeout: 30_000 });
+    await expect(page.getByLabel(/Continuity photo/).locator('option', { hasText: 'Slate photo' })).toHaveCount(1, { timeout: 30_000 });
+    await page.getByLabel(/Continuity photo/).selectOption({ label: 'Slate photo' });
+    await log(page, 'T4', '1', '2', { circle: false });
+    await expect(page.getByRole('img', { name: 'Continuity photo for take T4: Slate photo' })).toBeVisible({ timeout: 15_000 });
+
     // It survives a reload (the takes are real records).
     await page.reload();
     await picker.waitFor({ timeout: 30_000 });

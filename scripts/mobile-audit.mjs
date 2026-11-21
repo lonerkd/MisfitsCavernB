@@ -26,7 +26,7 @@ const project = (await admin.from('projects').insert({ title: `Phone ${TAG}`, cr
 const script = (await admin.from('scripts').insert({ title: 'Kitchen', content: 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n\nEXT. STREET - DAY\n\nJO\nGo.\n', project_id: project.id, created_by: user.id, last_edited_by: user.id }).select('id').single()).data;
 
 const ROUTES = [
-  '/community', '/projects', `/projects/${project.id}`, `/studio?project=${project.id}`,
+  '/community', '/call', '/projects', `/projects/${project.id}`, `/studio?project=${project.id}`,
   `/studio?project=${project.id}&tab=scenes`, `/studio?project=${project.id}&tab=production`, `/studio?project=${project.id}&tab=library`,
   `/studio?project=${project.id}&tab=post`, `/studio?project=${project.id}&tab=share`,
   `/editor?script=${script.id}`, '/lounge', '/crew', '/jobs', '/profile', '/settings', '/soundtrack', '/portfolio', '/welcome',
