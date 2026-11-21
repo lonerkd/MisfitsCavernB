@@ -10,6 +10,9 @@ describe('describeAction', () => {
     expect(describeAction('admin_remove_brief_question')).toBe('Removed a brief question (admin)');
     expect(describeAction('admin_remove_brief_option')).toBe('Removed an option of a brief question (admin)');
     expect(describeAction('admin_hide_message')).toBe('Hid a reported message (admin)');
+    expect(describeAction('admin_hide_job')).toBe('Hid a reported job (admin)');
+    expect(describeAction('admin_moderate_report')).toBe('Settled a report (admin)');
+    expect(actionTone('admin_unhide_job')).toBe('#10b981');
   });
   it('reads an unknown action as itself, with what it was about', () => {
     expect(describeAction('portfolio_published', 'portfolio')).toBe('portfolio published');

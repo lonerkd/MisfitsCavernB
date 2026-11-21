@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { applyToJob, getJob, hasApplied, listApplications, respondToApplication, type JobApplication as Application, type JobWithRelations as Job } from '@/lib/supabase/jobs';
 import Avatar from '@/components/ui/Avatar';
 import { awaitOSUser } from '@/lib/os';
+import { removedNote } from '@/lib/moderation/moderation';
 
 const statusBadgeStyle = (status: string): React.CSSProperties => {
   const base: React.CSSProperties = {
@@ -205,6 +206,12 @@ export default function JobDetailPage() {
       </header>
 
       <div style={{ maxWidth: 'var(--w-reading)', margin: '0 auto', padding: '48px 24px 100px' }}>
+
+        {job.hidden_at && (
+          <p role="status" style={{ margin: '0 0 24px', padding: '12px 14px', border: '1px solid var(--danger)', borderRadius: 8, color: 'var(--danger)', fontSize: 14 }}>
+            {isCreator ? removedNote('job', job.hidden_reason) : `Hidden by moderators.${job.hidden_reason ? ` Reason: ${job.hidden_reason}` : ''}`}
+          </p>
+        )}
 
         <div style={{ marginBottom: 40 }}>
           <div style={{ marginBottom: 14 }}>
