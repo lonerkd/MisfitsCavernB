@@ -53,7 +53,7 @@ export interface ProjectSettings {
   /** Location permits & insurance. */
   permits?: Array<{ id: string; location: string; permitType: string; issuedBy: string; expiry: string; status: 'pending' | 'approved' | 'expired' }>;
   /** Script supervisor notes (per-take). */
-  scriptNotes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean; shot_id?: string | null; from_line?: number | null; to_line?: number | null; off_camera?: boolean; media_id?: string | null }>;
+  scriptNotes?: Array<{ id: string; scene_ids?: string[]; character_id?: string | null; scene: string; take: string; slate: string; lens: string; notes: string; circle: boolean; shot_id?: string | null; from_line?: number | null; to_line?: number | null; off_camera?: boolean; media_id?: string | null; duration_s?: number | null }>;
   /** Purchase orders / petty cash. */
   purchaseOrders?: Array<{ id: string; poNumber: string; vendor: string; department: string; amount: string; status: 'draft' | 'approved' | 'paid' }>;
   /** Media offload log (DIT). */

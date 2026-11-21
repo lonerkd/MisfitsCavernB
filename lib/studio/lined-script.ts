@@ -22,6 +22,26 @@ export interface ScriptTake {
   off_camera?: boolean;
   /** A continuity photo of this take: an image in the project's library. */
   media_id?: string | null;
+  /** The take's length in whole seconds, as logged on the set; null or absent when not logged. */
+  duration_s?: number | null;
+}
+
+/** A take's length as m:ss, or h:mm:ss from an hour; '' when it is not a positive number of seconds. */
+export function formatDuration(s: number | null | undefined): string {
+  if (s == null || !Number.isFinite(s) || s <= 0) return '';
+  const total = Math.round(s);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const sec = String(total % 60).padStart(2, '0');
+  return h > 0 ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+
+/** The run time of the selected (circled) takes: their durations summed, in seconds. */
+export function shotRunTime(takes: ScriptTake[]): number {
+  return takes.reduce((sum, t) => {
+    const d = Number(t.duration_s);
+    return t.circle && Number.isFinite(d) && d > 0 ? sum + d : sum;
+  }, 0);
 }
 
 export interface TakeSpan { from: number; to: number }
