@@ -6,6 +6,8 @@
 // and the scenes add up to the project's total with nothing counted twice. A day is the sum of the scenes
 // scheduled on it. All arithmetic is in whole cents so the split never leaves a stray fraction.
 
+import { money as formatMoney } from './money';
+
 export interface CostCategory { id: string; unit_cost: number | string | null }
 export interface CostElement { id: string; category_id: string; cost: number | string | null }
 export interface CostTag { scene_id: string; element_id: string }
@@ -114,4 +116,31 @@ export function sceneCosts(input: { scenes: CostScene[]; categories: CostCategor
 
   const placedCents = projectCents - unplacedCents - elsewhereCents;
   return { byScene, byDay, placed: money(placedCents), elsewhere: money(elsewhereCents), unplaced: money(unplacedCents), projectTotal: money(projectCents) };
+}
+
+export interface SceneCostFact {
+  /** The total as the Money table shows it, e.g. "$1,200"; "—" when nothing is tagged in the scene. */
+  value: string;
+  /** What the total rests on (the shared share, default estimates, unpriced elements), or 'nothing tagged'. "" when there is nothing to add. */
+  detail: string;
+}
+
+/**
+ * What a scene's cost rests on beyond the figures entered: how much is a category's default estimate and how many elements have
+ * no price at all. The Money table and the scene cards both say it this way. Pure.
+ */
+export function costNote(estimated: number, unpriced: number): string {
+  return [
+    estimated > 0 ? `${formatMoney(estimated)} is a default estimate` : '',
+    unpriced > 0 ? `${unpriced} element${unpriced === 1 ? '' : 's'} with no price` : '',
+  ].filter(Boolean).join(' · ');
+}
+
+/** A scene's cost as its card shows it, in the Money table's wording. Pure. */
+export function sceneCostFact(c: SceneCost): SceneCostFact {
+  if (c.elements === 0) return { value: '—', detail: 'nothing tagged' };
+  return {
+    value: formatMoney(c.total),
+    detail: [c.shared > 0 ? `incl. ${formatMoney(c.shared)} shared` : '', costNote(c.estimated, c.unpriced)].filter(Boolean).join(' · '),
+  };
 }

@@ -12,6 +12,9 @@ export interface DBJob {
   created_at: string;
   updated_at: string;
   budget_item_id?: string | null;
+  /** Set when a moderator hid the posting: only its poster and admins can read it then (migration 20261121000600). */
+  hidden_at?: string | null;
+  hidden_reason?: string | null;
   /** A casting call: the character in the project this posting casts. */
   character_name?: string | null;
 }

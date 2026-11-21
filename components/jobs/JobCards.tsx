@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { Textarea } from '@/components/ui/Textarea';
 import { type JobWithRelations as Job } from '@/lib/supabase/jobs';
 import { readable } from '@/lib/util/color';
+import { removedNote } from '@/lib/moderation/moderation';
 import { useCrafts } from '@/lib/crafts/crafts';
 import { craftColor } from '@/components/jobs/craftColor';
 
@@ -192,9 +193,10 @@ export function MyJobCard({ job, onClose, index }: { job: Job; onClose: (id: str
             )}
           </div>
           <div style={{ fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{job.title}</div>
+          {job.hidden_at && <p role="status" style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--danger)' }}>{removedNote('job', job.hidden_reason)}</p>}
         </div>
 
-        {job.status === 'open' && (
+        {job.status === 'open' && !job.hidden_at && (
           <button
             onClick={async () => {
               setClosing(true);

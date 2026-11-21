@@ -167,7 +167,7 @@ function SceneBoardCard({
         onClick={e => e.stopPropagation()}
         onBlur={e => onSetNote(e.target.value)}
         placeholder="Beat / summary — what has to happen here?"
-        style={{ width: '100%', minHeight: 44, resize: 'none', background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '6px 8px', color: '#ddd', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
+        style={{ width: '100%', minHeight: 44, resize: 'none', background: 'var(--sunken)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontSize: 11, lineHeight: 1.5, fontFamily: 'inherit', outline: 'none', marginBottom: 8 }}
       />
       <div style={{ flex: 1, fontSize: 11, color: 'var(--fg-dim)', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
         {lines.slice(startIdx + 1, startIdx + 5).filter(l => l.type === 'action').map(l => l.text).join(' ')}

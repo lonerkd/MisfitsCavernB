@@ -103,7 +103,7 @@ export default function NotificationBell() {
       >
         <Bell size={19} strokeWidth={1.5} />
         {unread > 0 && (
-          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 9999, background: 'var(--accent)', color: '#fff', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
+          <span style={{ position: 'absolute', top: 8, right: 8, minWidth: 15, height: 15, padding: '0 4px', borderRadius: 9999, background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--mono)', boxShadow: '0 0 8px rgba(232, 67, 26,0.6)' }}>
             {unread > 9 ? '9+' : unread}
           </span>
         )}

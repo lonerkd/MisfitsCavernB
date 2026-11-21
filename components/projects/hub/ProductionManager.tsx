@@ -202,7 +202,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   return (
     <div style={{ marginTop: 40 }}>
       <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', marginBottom: 14 }}>Production Management</div>
-      {err && <div style={{ color: '#ff5555', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}>⚠ {err}</div>}
+      {err && <div style={{ color: 'var(--danger)', fontFamily: 'var(--mono)', fontSize: 11, marginBottom: 12 }}>⚠ {err}</div>}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
 
         <Panel title="Tasks" accent={accent}>

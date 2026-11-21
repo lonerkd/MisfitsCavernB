@@ -8,7 +8,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { NeedsCapability } from '@/components/roles/NeedsCapability';
 import { useBreakdown } from '@/lib/breakdown';
-import { sceneCosts } from '@/lib/studio/scene-cost';
+import { costNote, sceneCosts } from '@/lib/studio/scene-cost';
 import {
   money, moneySummary, studio, useExpenses, useTimesheets,
   type BudgetItem, type Expense, type Timesheet, type Vendor,
@@ -143,7 +143,6 @@ function SceneCostSection() {
 
   if (bd.status === 'loading') return null;
   const label = (d: number | null) => (d === null ? 'Not scheduled' : `Day ${d}`);
-  const note = (e: number, u: number) => [e > 0 ? `${money(e)} is a default estimate` : '', u > 0 ? `${u} element${u === 1 ? '' : 's'} with no price` : ''].filter(Boolean).join(' · ');
   const anyTagged = scenes.rows.some((r) => (costs.byScene.get(r.id)?.elements ?? 0) > 0);
 
   return (
@@ -170,7 +169,7 @@ function SceneCostSection() {
                   <tr style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.12)' }}>
                     <th scope="rowgroup" style={{ padding: 6, textAlign: 'left' }}>{label(d.day)} · {d.scenes} scene{d.scenes === 1 ? '' : 's'}</th>
                     <td style={{ padding: 6, textAlign: 'right', fontWeight: 600 }}>{money(d.total)}</td>
-                    <td style={{ padding: 6 }} className={s.hint}>{note(d.estimated, d.unpriced)}</td>
+                    <td style={{ padding: 6 }} className={s.hint}>{costNote(d.estimated, d.unpriced)}</td>
                   </tr>
                   {scenes.rows.filter((r) => (r.shoot_day ?? null) === d.day).map((r) => {
                     const c = costs.byScene.get(r.id)!;
@@ -178,7 +177,7 @@ function SceneCostSection() {
                       <tr key={r.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
                         <td style={{ padding: '6px 6px 6px 18px' }}>{r.scene_number != null ? `${r.scene_number}. ` : ''}{r.heading ?? 'Scene'}</td>
                         <td style={{ padding: 6, textAlign: 'right' }} title={c.shared > 0 ? `${money(c.own)} its own, ${money(c.shared)} its share of things used in other scenes too` : undefined}>{c.elements > 0 ? money(c.total) : '—'}</td>
-                        <td style={{ padding: 6 }} className={s.hint}>{c.elements === 0 ? 'nothing tagged' : [c.shared > 0 ? `incl. ${money(c.shared)} shared` : '', note(c.estimated, c.unpriced)].filter(Boolean).join(' · ')}</td>
+                        <td style={{ padding: 6 }} className={s.hint}>{c.elements === 0 ? 'nothing tagged' : [c.shared > 0 ? `incl. ${money(c.shared)} shared` : '', costNote(c.estimated, c.unpriced)].filter(Boolean).join(' · ')}</td>
                       </tr>
                     );
                   })}

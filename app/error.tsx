@@ -25,7 +25,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
       <p style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)', maxWidth: 440 }}>
         Nothing else on the site is affected. Try again, or head back home.
       </p>
-      <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.2)', padding: '12px', borderRadius: '8px', color: '#ff6666', fontFamily: 'var(--mono)', fontSize: 11, maxWidth: 600, wordBreak: 'break-all', textAlign: 'left' }}>
+      <div style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.2)', padding: '12px', borderRadius: '8px', color: 'var(--danger)', fontFamily: 'var(--mono)', fontSize: 11, maxWidth: 600, wordBreak: 'break-all', textAlign: 'left' }}>
         <strong>Error Details:</strong> {error?.message || 'Unknown Error'} <br/>
         {error?.digest && <span style={{opacity: 0.7}}>Digest: {error.digest}</span>}
       </div>
@@ -33,7 +33,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
         <button
           onClick={() => window.location.reload()}
           style={{
-            padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: '#040710',
+            padding: '10px 22px', borderRadius: 9999, background: 'var(--accent)', color: 'var(--on-accent)',
             border: 'none', fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
             textTransform: 'var(--caps)', fontWeight: 600, cursor: 'pointer',
           }}

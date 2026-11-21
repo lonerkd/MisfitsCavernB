@@ -21,6 +21,11 @@ export type AuditAction =
   | 'admin_close_job'
   | 'admin_hide_message'
   | 'admin_unhide_message'
+  | 'admin_hide_job'
+  | 'admin_unhide_job'
+  | 'admin_hide_profile'
+  | 'admin_unhide_profile'
+  | 'admin_moderate_report'
   | 'admin_suspend_user'
   | 'admin_unsuspend_user';
 

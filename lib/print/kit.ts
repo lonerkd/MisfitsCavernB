@@ -11,7 +11,8 @@ export type PrintBlock =
   | { type: 'section'; title: string; blocks: PrintBlock[] }
   | { type: 'text'; text: string; lead?: boolean }
   | { type: 'facts'; items: Array<[label: string, value: string | number | null | undefined]> }
-  | { type: 'table'; columns: PrintColumn[]; rows: Array<Record<string, string | number | null | undefined>>; empty?: string; totals?: Record<string, string | number | null | undefined> }
+  /** `title` is a heading that sits in the table's header, so it repeats on every page the table continues onto (a day's banner, a crew list). */
+  | { type: 'table'; title?: string; columns: PrintColumn[]; rows: Array<Record<string, string | number | null | undefined>>; empty?: string; totals?: Record<string, string | number | null | undefined> }
   | { type: 'list'; items: string[]; ordered?: boolean }
   | { type: 'tags'; items: string[] }
   | { type: 'note'; text: string; tone?: 'info' | 'warn' }
@@ -88,12 +89,17 @@ function block(b: PrintBlock): string {
       return items.length ? `<dl class="facts">${items.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>` : '';
     }
     case 'table': {
-      if (!b.rows.length) return `<p class="empty">${esc(b.empty ?? 'Nothing to list.')}</p>`;
+      // A titled table is wrapped in a section (the same spacing as a heading over a table) and its title row goes first in <thead>,
+      // so a browser repeats the title with the column names on every page the table continues onto. Inline styles keep the title's
+      // look here and leave the shared stylesheet, and every other table, exactly as it was.
+      const title = b.title ? `<tr><th colspan="${b.columns.length}" style="border-bottom:0;padding:0 0 2pt"><h2>${esc(b.title)}</h2></th></tr>` : '';
+      const wrap = (html: string) => (b.title ? `<section class="sec">${html}</section>` : html);
+      if (!b.rows.length) return wrap(`${b.title ? `<h2>${esc(b.title)}</h2>` : ''}<p class="empty">${esc(b.empty ?? 'Nothing to list.')}</p>`);
       const head = b.columns.map((c) => `<th class="${c.align ?? 'left'}"${c.width ? ` style="width:${esc(c.width)}"` : ''}>${esc(c.label)}</th>`).join('');
       const body = b.rows.map((r) => `<tr>${b.columns.map((c) => `<td class="${c.align ?? 'left'}">${shown(r[c.key])}</td>`).join('')}</tr>`).join('');
       const foot = b.totals ? `<tfoot><tr>${b.columns.map((c) => `<td class="${c.align ?? 'left'}">${shown(b.totals![c.key])}</td>`).join('')}</tr></tfoot>` : '';
       // A wide table (the day out of days across a long shoot) gets tight cells, or the cell padding alone takes the room the names need.
-      return `<table${b.columns.length > 14 ? ' class="dense"' : ''}><thead><tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`;
+      return wrap(`<table${b.columns.length > 14 ? ' class="dense"' : ''}><thead>${title}<tr>${head}</tr></thead><tbody>${body}</tbody>${foot}</table>`);
     }
     case 'list': {
       const tag = b.ordered ? 'ol' : 'ul';

@@ -37,6 +37,24 @@ describe('the print kit', () => {
     expect(html).toContain('<p class="empty">No scenes.</p>');
   });
 
+  it('a titled table puts its title in the thead, so it repeats on every page the table continues onto', () => {
+    const html = printHtml({ ...base, blocks: [
+      { type: 'table', title: 'Day 2 · Thu <12>', columns: [{ key: 'n', label: 'Sc' }, { key: 'h', label: 'Scene' }], rows: [{ n: 1, h: 'INT. KITCHEN' }] },
+      { type: 'table', title: 'Crew', columns: [{ key: 'n', label: 'Name' }], rows: [], empty: 'No crew.' },
+    ] });
+    const first = html.indexOf('<section class="sec"><table><thead>');
+    expect(first).toBeGreaterThan(-1);
+    expect(html).toContain('<thead><tr><th colspan="2" style="border-bottom:0;padding:0 0 2pt"><h2>Day 2 · Thu &lt;12&gt;</h2></th></tr><tr><th class="left">Sc</th><th class="left">Scene</th></tr></thead>');
+    // A titled table that is empty keeps its heading and says so, with no empty table.
+    expect(html).toContain('<section class="sec"><h2>Crew</h2><p class="empty">No crew.</p></section>');
+  });
+
+  it('an untitled table is exactly as it was: no section wrapper, no title row', () => {
+    const html = printHtml({ ...base, blocks: [{ type: 'table', columns: [{ key: 'n', label: 'Sc' }], rows: [{ n: 1 }] }] });
+    expect(html).toContain('<table><thead><tr><th class="left">Sc</th></tr></thead>');
+    expect(html).not.toContain('colspan');
+  });
+
   it('only a #rrggbb accent reaches the stylesheet', () => {
     expect(safeAccent('#12ab9f')).toBe('#12ab9f');
     for (const bad of ['red', 'url(javascript:1)', '#12345', '#12ab9f;}body{display:none', null, undefined]) expect(safeAccent(bad as string | null)).toBe('#b8320f');

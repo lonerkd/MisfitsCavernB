@@ -33,12 +33,13 @@ export function callSheetDoc(i: CallSheetPrintInput): PrintDoc {
   for (const n of i.planNotes) blocks.push({ type: 'note', text: n });
   if (i.notes?.trim()) blocks.push({ type: 'section', title: 'Notes', blocks: [{ type: 'text', text: i.notes.trim() }] });
 
+  // Each list's heading is its table's title, so it repeats on every page the list continues onto (the crew list, the cast).
   blocks.push({
     type: 'columns',
     columns: [
       [{
-        type: 'section', title: `Scenes (${i.scenes.length}${i.pages ? ` · ${i.pages} pg` : ''})`,
-        blocks: [{ type: 'table', columns: [{ key: 'n', label: 'Sc', width: '14%' }, { key: 'h', label: 'Heading' }], rows: i.scenes.map((s) => ({ n: s.number, h: s.heading })), empty: 'Nothing scheduled this day.' }],
+        type: 'table', title: `Scenes (${i.scenes.length}${i.pages ? ` · ${i.pages} pg` : ''})`,
+        columns: [{ key: 'n', label: 'Sc', width: '14%' }, { key: 'h', label: 'Heading' }], rows: i.scenes.map((s) => ({ n: s.number, h: s.heading })), empty: 'Nothing scheduled this day.',
       }],
       [{
         type: 'section', title: 'Locations',
@@ -48,12 +49,12 @@ export function callSheetDoc(i: CallSheetPrintInput): PrintDoc {
   });
 
   blocks.push({
-    type: 'section', title: 'Cast',
-    blocks: [{ type: 'table', columns: [{ key: 'name', label: 'Character' }, { key: 'call', label: 'Call', width: '14%' }, { key: 'remarks', label: 'Remarks' }], rows: i.cast.map((c) => ({ name: c.name, call: c.call || '—', remarks: c.remarks })), empty: 'No cast in the scenes scheduled this day.' }],
+    type: 'table', title: 'Cast',
+    columns: [{ key: 'name', label: 'Character' }, { key: 'call', label: 'Call', width: '14%' }, { key: 'remarks', label: 'Remarks' }], rows: i.cast.map((c) => ({ name: c.name, call: c.call || '—', remarks: c.remarks })), empty: 'No cast in the scenes scheduled this day.',
   });
   blocks.push({
-    type: 'section', title: 'Crew',
-    blocks: [{ type: 'table', columns: [{ key: 'name', label: 'Name' }, { key: 'role', label: 'Role' }, { key: 'call', label: 'Call', width: '14%' }, { key: 'remarks', label: 'Remarks' }], rows: i.crew.map((c) => ({ name: c.name, role: c.role, call: c.call || '—', remarks: c.remarks })), empty: 'No crew on the project yet.' }],
+    type: 'table', title: 'Crew',
+    columns: [{ key: 'name', label: 'Name' }, { key: 'role', label: 'Role' }, { key: 'call', label: 'Call', width: '14%' }, { key: 'remarks', label: 'Remarks' }], rows: i.crew.map((c) => ({ name: c.name, role: c.role, call: c.call || '—', remarks: c.remarks })), empty: 'No crew on the project yet.',
   });
 
   return {

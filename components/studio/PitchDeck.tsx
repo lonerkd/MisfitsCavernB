@@ -70,7 +70,7 @@ export function ProjectPitchDeck({ project, concepts, beats, scriptId }: { proje
       <>
         <h3 style={{ fontFamily: 'var(--display)', fontSize: big ? '4rem' : '1.6rem', letterSpacing: '-0.02em', margin: '14px 0' }}>STORY ENGINE</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 600, margin: '0 auto' }}>
-          {beats.length > 0 ? beats.slice(0, 5).map((b) => <div key={b.id} style={{ fontFamily: 'var(--mono)', fontSize: big ? 13 : 10, color: '#ddd' }}>{b.title}</div>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Add story beats in Production → Story.</span>}
+          {beats.length > 0 ? beats.slice(0, 5).map((b) => <div key={b.id} style={{ fontFamily: 'var(--mono)', fontSize: big ? 13 : 10, color: 'var(--fg)' }}>{b.title}</div>) : <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Add story beats in Production → Story.</span>}
         </div>
       </>
     ) },

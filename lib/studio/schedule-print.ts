@@ -23,14 +23,12 @@ export interface SchedulePrintInput {
 
 export function scheduleDoc(i: SchedulePrintInput): PrintDoc {
   const days = i.days.filter((d) => d.scenes.length > 0);
-  const blocks: PrintBlock[] = days.map((d) => ({
-    type: 'section',
+  // The day's banner is the table's own title, so it repeats on every page a long day continues onto.
+  const blocks: PrintBlock[] = days.map((d): PrintBlock => ({
+    type: 'table',
     title: `Day ${d.day}${d.date ? ` · ${d.date}` : ''} · ${d.pages} pp${d.locations > 1 ? ` · ${d.locations} locations` : ''}`,
-    blocks: [{
-      type: 'table',
-      columns: [{ key: 'n', label: 'Sc', width: '8%' }, { key: 'h', label: 'Scene' }, { key: 'k', label: 'I/E · D/N', width: '14%' }, { key: 'c', label: 'Cast', width: '24%' }, { key: 'p', label: 'Pages', align: 'right', width: '9%' }, { key: 's', label: 'Status', width: '12%' }],
-      rows: d.scenes.map((s) => ({ n: s.number, h: s.heading, k: s.kind, c: s.cast.join(', ') || '—', p: s.pages, s: s.status })),
-    }],
+    columns: [{ key: 'n', label: 'Sc', width: '8%' }, { key: 'h', label: 'Scene' }, { key: 'k', label: 'I/E · D/N', width: '14%' }, { key: 'c', label: 'Cast', width: '24%' }, { key: 'p', label: 'Pages', align: 'right', width: '9%' }, { key: 's', label: 'Status', width: '12%' }],
+    rows: d.scenes.map((s) => ({ n: s.number, h: s.heading, k: s.kind, c: s.cast.join(', ') || '—', p: s.pages, s: s.status })),
   }));
   if (blocks.length === 0) blocks.push({ type: 'note', text: 'Nothing is scheduled yet.' });
   return {

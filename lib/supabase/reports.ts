@@ -3,6 +3,7 @@
 // records what someone said — it hides nothing by itself.
 
 import { supabase } from './client';
+import { isSuspendedError, SUSPENDED_NOTICE, type ModerationAction } from '@/lib/moderation/moderation';
 
 export type ReportKind = 'message' | 'job' | 'profile';
 export type ReportStatus = 'open' | 'resolved' | 'dismissed';
@@ -14,10 +15,18 @@ export interface ReportRow {
   target_id: string;
   reason: string;
   status: ReportStatus;
+  outcome: string | null;
   created_at: string;
   resolved_at: string | null;
   reporter: { username: string } | null;
 }
+
+// The moderation functions of migration 20261121000600 are not in database.types.ts until `npm run db:types` is run
+// against a database that has the migration; until then they are called through this narrow, untyped wrapper.
+// Delete it (and call supabase.rpc directly) once the generated types carry them.
+type RpcResult = Promise<{ data: unknown; error: { message: string } | null }>;
+const rpc = (fn: string, args: Record<string, unknown>): RpcResult =>
+  (supabase.rpc as unknown as (fn: string, args: Record<string, unknown>) => RpcResult).call(supabase, fn, args);
 
 /** Report something. Returns what to tell the person, or null on success; a repeat report is thanked, not refused. */
 export async function reportItem(kind: ReportKind, targetId: string, reason: string): Promise<{ error: string | null; again: boolean }> {
@@ -27,6 +36,7 @@ export async function reportItem(kind: ReportKind, targetId: string, reason: str
   const { error } = await supabase.from('reports').insert({ kind, target_id: targetId, reason: text });
   if (!error) return { error: null, again: false };
   if (error.code === '23505') return { error: null, again: true }; // already reported by this person
+  if (isSuspendedError(error)) return { error: SUSPENDED_NOTICE, again: false };
   return { error: 'Could not send the report. Try again.', again: false };
 }
 
@@ -34,7 +44,7 @@ export async function reportItem(kind: ReportKind, targetId: string, reason: str
 export async function listReports(status: ReportStatus | 'all' = 'open'): Promise<ReportRow[]> {
   let q = supabase
     .from('reports')
-    .select('id, kind, target_id, reason, status, created_at, resolved_at, reporter:profiles!reports_reporter_id_fkey(username)')
+    .select('id, kind, target_id, reason, status, outcome, created_at, resolved_at, reporter:profiles!reports_reporter_id_fkey(username)')
     .order('created_at', { ascending: false })
     .limit(200);
   if (status !== 'all') q = q.eq('status', status);
@@ -62,10 +72,31 @@ export async function closeReportedJob(jobId: string): Promise<string | null> {
   return error ? error.message : null;
 }
 
-/** Suspend the reported person's account (admin only; the database refuses yourself and other admins; audit-logged). Returns an error message, or null. */
-export async function suspendReportedUser(userId: string): Promise<string | null> {
-  const { error } = await supabase.rpc('admin_set_suspended', { p_user: userId, p_suspended: true });
+/** Lift a suspension (admin only; audit-logged; the person can sign in and write again). Returns an error message, or null. */
+export async function reinstateUser(userId: string): Promise<string | null> {
+  const { error } = await supabase.rpc('admin_set_suspended', { p_user: userId, p_suspended: false });
   return error ? error.message : null;
+}
+
+/** Act on a report: hide the thing, suspend its author (both need a reason), or dismiss it. Settles the report with the outcome. Returns an error message, or null. */
+export async function moderateReport(reportId: string, action: ModerationAction, reason: string): Promise<string | null> {
+  const { error } = await rpc('admin_moderate_report', { p_report: reportId, p_action: action, p_reason: reason || null });
+  return error ? error.message : null;
+}
+
+/** Bring a hidden message, job or public-page takedown back (the report keeps its outcome). Returns an error message, or null. */
+export async function restoreContent(kind: ReportKind, targetId: string): Promise<string | null> {
+  const { error } = await rpc('admin_hide_content', { p_kind: kind, p_target: targetId, p_hidden: false });
+  return error ? error.message : null;
+}
+
+export interface ReportTarget { author_id: string; author_name: string; hidden: boolean; suspended: boolean; suspended_reason: string | null }
+
+/** Who wrote the reported thing, whether it is hidden, whether they are suspended (admins only). Throws a readable message. */
+export async function getReportTarget(reportId: string): Promise<ReportTarget | null> {
+  const { data, error } = await rpc('admin_report_target', { p_report: reportId });
+  if (error) throw new Error(error.message);
+  return ((data as ReportTarget[] | null)?.[0]) ?? null;
 }
 
 export interface ReportedMessage { content: string; sender_id: string; channel_uuid: string | null; created_at: string; hidden: boolean }
@@ -75,10 +106,4 @@ export async function readReportedMessage(reportId: string): Promise<ReportedMes
   const { data, error } = await supabase.rpc('admin_reported_message', { p_report: reportId });
   if (error) throw new Error(error.message);
   return (data?.[0] as ReportedMessage | undefined) ?? null;
-}
-
-/** Hide a message (everyone then reads a notice) or bring it back. Returns an error message, or null. */
-export async function hideMessage(messageId: string, hidden: boolean): Promise<string | null> {
-  const { error } = await supabase.rpc('admin_hide_message', { p_message: messageId, p_hidden: hidden });
-  return error ? error.message : null;
 }

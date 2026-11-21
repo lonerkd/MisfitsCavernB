@@ -6,12 +6,12 @@
   },
   "app/(public)/p/[token]/PortfolioView.tsx": {
     "no-restricted-syntax": {
-      "count": 6
+      "count": 5
     }
   },
   "app/(public)/s/[token]/page.tsx": {
     "no-restricted-syntax": {
-      "count": 4
+      "count": 3
     }
   },
   "app/(suite)/admin/analytics/page.tsx": {
@@ -203,17 +203,12 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 3
+      "count": 1
     }
   },
   "app/global-error.tsx": {
     "no-restricted-syntax": {
       "count": 5
-    }
-  },
-  "app/not-found.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "components/breakdown/ElementCard.tsx": {
@@ -233,20 +228,17 @@
   },
   "components/editor/CutNoteMarkers.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/editor/EditorCenterViews.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "components/editor/EditorErrorBoundary.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/editor/EditorHeader.tsx": {
@@ -267,7 +259,7 @@
       "count": 1
     },
     "no-restricted-syntax": {
-      "count": 5
+      "count": 3
     }
   },
   "components/editor/PreviewView.tsx": {
@@ -304,7 +296,7 @@
       "count": 121
     },
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/editor/WriteView.tsx": {
@@ -412,7 +404,7 @@
   },
   "components/projects/hub/ProductionManager.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "components/shell/CommandPalette.tsx": {
@@ -436,11 +428,6 @@
       "count": 1
     }
   },
-  "components/shell/NotificationBell.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "components/shell/ShortcutsOverlay.tsx": {
     "no-restricted-syntax": {
       "count": 1
@@ -456,7 +443,7 @@
   },
   "components/studio/PitchDeck.tsx": {
     "no-restricted-syntax": {
-      "count": 5
+      "count": 4
     }
   },
   "components/studio/ScenePassport.tsx": {

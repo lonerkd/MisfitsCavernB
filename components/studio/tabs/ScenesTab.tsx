@@ -8,6 +8,9 @@ import { useToast } from '@/components/ui/Toast';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { CARD_COLORS } from '@/lib/scriptos/sceneVisuals';
 import { studio, useSignedUrls, mediaSrc, type Media, type SceneRow, type ShotNote } from '@/lib/studio';
+import { sceneCosts, sceneCostFact, type SceneCost } from '@/lib/studio/scene-cost';
+import { useBreakdown } from '@/lib/breakdown';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { useStudio } from '../StudioContext';
 import { StatusPill, ErrorBar, cx } from '../ui';
 import { TabHeader } from '../TabHeader';
@@ -47,6 +50,16 @@ export function ScenesTab() {
     return () => { alive = false; };
   }, [project.id, shotCount]);
   const [openId, setOpenId] = useState<string | null>(null);
+
+  // What each scene costs, shown only to people who can read the budget (as in Money). Crew without it load no breakdown at all:
+  // a null project id keeps useBreakdown idle. The costs are worked out once here, and each card reads its own.
+  const caps = useMyCapabilities(project.id);
+  const seesBudget = caps.can('budget.read');
+  const bd = useBreakdown(seesBudget ? project.id : null);
+  const costs = useMemo(() => (seesBudget && bd.status === 'ready' ? sceneCosts({
+    scenes: scenes.rows.map((r) => ({ id: r.id, shoot_day: r.shoot_day ?? null })),
+    categories: bd.categories.rows, elements: bd.elements.rows, tags: bd.tags.rows,
+  }) : null), [seesBudget, bd.status, scenes.rows, bd.categories.rows, bd.elements.rows, bd.tags.rows]);
 
   const referenced = useMemo(() => {
     const ids = new Set<string>();
@@ -132,6 +145,7 @@ export function ScenesTab() {
               onOpen={setOpenId}
               onAdd={() => setPickFor(sc)}
               shotNotes={shotNotes}
+              cost={costs?.byScene.get(sc.id) ?? null}
             />
           ))}
         </div>
@@ -155,7 +169,9 @@ export function ScenesTab() {
   );
 }
 
-function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote> }) {
+/** `cost` is null when the card must not show a cost (no budget read, the breakdown still loading or failed). */
+function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes, cost }: { scene: SceneRow; refs: Media[]; signed: Record<string, string>; onOpen: (id: string) => void; onAdd: () => void; shotNotes: Map<string, ShotNote>; cost: SceneCost | null }) {
+  const fact = cost ? sceneCostFact(cost) : null;
   const { project, userId, scenes, links, postNotes, followScene, openInScript, castOf, doubtfulSceneOrdinals } = useStudio();
   const following = followScene?.sceneId === scene.id;
   const openPostNotes = postNotes.rows.filter((n) => n.scene_id === scene.id && !n.resolved_at).length;
@@ -213,6 +229,12 @@ function SceneCard({ scene, refs, signed, onOpen, onAdd, shotNotes }: { scene: S
           <div style={{ minWidth: 0 }}>
             <div className={s.sceneHeading}>{scene.heading ?? scene.title}</div>
             {meta && <div className={s.sceneMeta}>{meta}</div>}
+            {fact && (
+              <div className={s.sceneMeta} title={fact.detail || undefined}>
+                <span>Cost {fact.value}</span>
+                {fact.detail && <span className={s.srOnly}>. {fact.detail}</span>}
+              </div>
+            )}
             {openPostNotes > 0 && <div className={s.sceneMeta} style={{ color: 'var(--warn)' }}>{openPostNotes} open post note{openPostNotes === 1 ? '' : 's'} — see Post</div>}
             <ScenePassport sceneId={scene.id} compact />
           </div>
