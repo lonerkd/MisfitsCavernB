@@ -385,6 +385,7 @@ export type Database = {
       };
       budget_items: {
         Row: {
+          above_the_line: boolean;
           actual_cost: number | null;
           amount: number;
           category: string;
@@ -398,6 +399,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          above_the_line?: boolean;
           actual_cost?: number | null;
           amount?: number;
           category: string;
@@ -410,6 +412,7 @@ export type Database = {
           updated_at?: string | null;
         };
         Update: {
+          above_the_line?: boolean;
           actual_cost?: number | null;
           amount?: number;
           category?: string;
@@ -444,6 +447,34 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      budget_templates: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          lines: NonNullable<Json>;
+          name: string;
+          sort_order: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          lines?: NonNullable<Json>;
+          name: string;
+          sort_order?: number;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          lines?: NonNullable<Json>;
+          name?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
       };
       calendar_feeds: {
         Row: {

@@ -74,6 +74,7 @@ column brief_questions.options jsonb default '[]'::jsonb not null
 column brief_questions.phase text not null
 column brief_questions.position integer default 0 not null
 column brief_questions.unit text
+column budget_items.above_the_line boolean default false not null
 column budget_items.actual_cost numeric(12,2)
 column budget_items.amount numeric(12,2) default 0 not null
 column budget_items.category text not null
@@ -84,6 +85,12 @@ column budget_items.id uuid default uuid_generate_v4() not null
 column budget_items.job_id uuid
 column budget_items.project_id uuid not null
 column budget_items.updated_at timestamp with time zone default now()
+column budget_templates.created_at timestamp with time zone default now() not null
+column budget_templates.description text default ''::text not null
+column budget_templates.id uuid default gen_random_uuid() not null
+column budget_templates.lines jsonb default '[]'::jsonb not null
+column budget_templates.name text not null
+column budget_templates.sort_order integer default 0 not null
 column calendar_feeds.created_at timestamp with time zone default now() not null
 column calendar_feeds.token uuid default gen_random_uuid() not null
 column calendar_feeds.user_id uuid not null
@@ -1033,6 +1040,11 @@ constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint budget_templates.budget_templates_description_len CHECK ((char_length(description) <= 200))
+constraint budget_templates.budget_templates_lines_check CHECK (((jsonb_typeof(lines) = 'array'::text) AND (jsonb_array_length(lines) <= 60)))
+constraint budget_templates.budget_templates_name_key UNIQUE (name)
+constraint budget_templates.budget_templates_name_len CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 40)))
+constraint budget_templates.budget_templates_pkey PRIMARY KEY (id)
 constraint calendar_feeds.calendar_feeds_pkey PRIMARY KEY (user_id)
 constraint calendar_feeds.calendar_feeds_token_key UNIQUE (token)
 constraint calendar_feeds.calendar_feeds_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
@@ -2270,6 +2282,8 @@ index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdow
 index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
 index CREATE UNIQUE INDEX budget_items_id_project_key ON public.budget_items USING btree (id, project_id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
+index CREATE UNIQUE INDEX budget_templates_name_key ON public.budget_templates USING btree (name)
+index CREATE UNIQUE INDEX budget_templates_pkey ON public.budget_templates USING btree (id)
 index CREATE UNIQUE INDEX calendar_feeds_pkey ON public.calendar_feeds USING btree (user_id)
 index CREATE UNIQUE INDEX calendar_feeds_token_key ON public.calendar_feeds USING btree (token)
 index CREATE UNIQUE INDEX call_sheet_acks_pkey ON public.call_sheet_acks USING btree (call_sheet_id, user_id)
@@ -2447,6 +2461,10 @@ policy public.budget_items "budget items add" PERMISSIVE INSERT to authenticated
 policy public.budget_items "budget items change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
 policy public.budget_items "budget items read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
 policy public.budget_items "budget items remove" PERMISSIVE DELETE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check -
+policy public.budget_templates "budget templates admin add" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
+policy public.budget_templates "budget templates admin change" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check internal.caller_is_admin()
+policy public.budget_templates "budget templates admin remove" PERMISSIVE DELETE to authenticated using internal.caller_is_admin() check -
+policy public.budget_templates "budget templates view" PERMISSIVE SELECT to authenticated using true check -
 policy public.calendar_feeds "calendar_feeds_owner" PERMISSIVE ALL to authenticated using (user_id = ( SELECT auth.uid() AS uid)) check (user_id = ( SELECT auth.uid() AS uid))
 policy public.call_sheet_acks "call_sheet_acks read" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
 policy public.call_sheet_calls "call_sheet_calls access" PERMISSIVE ALL to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
@@ -2792,6 +2810,7 @@ rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
 rls brief_questions enabled=true forced=false
 rls budget_items enabled=true forced=false
+rls budget_templates enabled=true forced=false
 rls calendar_feeds enabled=true forced=false
 rls call_sheet_acks enabled=true forced=false
 rls call_sheet_calls enabled=true forced=false

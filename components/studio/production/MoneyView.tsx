@@ -13,6 +13,7 @@ import {
   money, moneySummary, studio, useExpenses, useTimesheets,
   type BudgetItem, type Expense, type Timesheet, type Vendor,
 } from '@/lib/studio';
+import { groupAboveBelow } from '@/lib/studio/budget-templates';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
@@ -52,6 +53,8 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
   }, [project.id, runsBudget, seesBudget]);
 
   const summary = useMemo(() => moneySummary(lines, expenses.rows, timesheets.rows), [lines, expenses.rows, timesheets.rows]);
+  const aboveIds = useMemo(() => new Set(lines.filter((l) => l.above_the_line).map((l) => l.id)), [lines]);
+  const groups = useMemo(() => groupAboveBelow(summary.lines, aboveIds), [summary.lines, aboveIds]);
   const nameOf = useMemo(() => new Map(crew.map((c) => [c.user_id, c.username])), [crew]);
 
   return (
@@ -63,9 +66,9 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
         <>
           <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
             <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
-              next={lines.length === 0 ? { text: runsBudget ? 'Add the first budget line below, or let the breakdown write them.' : 'No budget lines yet.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
+              next={lines.length === 0 ? { text: runsBudget ? 'Start from a template below, add the first budget line, or let the breakdown write them.' : 'No budget lines yet.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
               actions={<PrintButton label="the budget" build={() => budgetDoc({
-                project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
+                project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines.map((l) => ({ ...l, above: aboveIds.has(l.id) })), totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
               })} />} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
@@ -82,7 +85,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
               ))}
             </div>
             {lines.length === 0 ? (
-              <p className={s.hint}>{runsBudget ? 'No budget lines yet. Add one below, or update from the breakdown.' : 'No budget lines yet.'}</p>
+              <p className={s.hint}>{runsBudget ? 'No budget lines yet. Start from a template below, add a line, or update from the breakdown.' : 'No budget lines yet.'}</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                 <caption className="sr-only">Each budget line: planned, committed, paid, left</caption>
@@ -92,17 +95,29 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
                     {['Planned', 'Committed', 'Paid', 'Left'].map((h) => <th key={h} scope="col" style={{ padding: 6, fontWeight: 400, textAlign: 'right' }}>{h}</th>)}
                   </tr>
                 </thead>
-                <tbody>
-                  {summary.lines.map((l) => (
-                    <tr key={l.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
-                      <td style={{ padding: 6 }}>{l.label}</td>
-                      <td style={{ padding: 6, textAlign: 'right' }}>{money(l.planned)}</td>
-                      <td style={{ padding: 6, textAlign: 'right' }}>{l.committed ? money(l.committed) : '—'}</td>
-                      <td style={{ padding: 6, textAlign: 'right' }}>{l.paid ? money(l.paid) : '—'}</td>
-                      <td style={{ padding: 6, textAlign: 'right', color: l.left < 0 ? 'var(--danger)' : undefined }}>{l.left < 0 ? `${money(-l.left)} over` : money(l.left)}</td>
+                {groups.map((g) => (
+                  <tbody key={g.key} aria-label={g.label}>
+                    <tr style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+                      <th scope="colgroup" colSpan={5} style={{ padding: '10px 6px 4px', textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--fg-muted)' }}>{g.label}</th>
                     </tr>
-                  ))}
-                </tbody>
+                    {g.lines.map((l) => (
+                      <tr key={l.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
+                        <td style={{ padding: 6 }}>{l.label}</td>
+                        <td style={{ padding: 6, textAlign: 'right' }}>{money(l.planned)}</td>
+                        <td style={{ padding: 6, textAlign: 'right' }}>{l.committed ? money(l.committed) : '—'}</td>
+                        <td style={{ padding: 6, textAlign: 'right' }}>{l.paid ? money(l.paid) : '—'}</td>
+                        <td style={{ padding: 6, textAlign: 'right', color: l.left < 0 ? 'var(--danger)' : undefined }}>{l.left < 0 ? `${money(-l.left)} over` : money(l.left)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.12)', fontWeight: 600 }}>
+                      <th scope="row" style={{ padding: 6, textAlign: 'left', fontWeight: 600 }}>{g.label} subtotal</th>
+                      <td style={{ padding: 6, textAlign: 'right' }}>{money(g.subtotal.planned)}</td>
+                      <td style={{ padding: 6, textAlign: 'right' }}>{g.subtotal.committed ? money(g.subtotal.committed) : '—'}</td>
+                      <td style={{ padding: 6, textAlign: 'right' }}>{g.subtotal.paid ? money(g.subtotal.paid) : '—'}</td>
+                      <td style={{ padding: 6, textAlign: 'right', color: g.subtotal.left < 0 ? 'var(--danger)' : undefined }}>{g.subtotal.left < 0 ? `${money(-g.subtotal.left)} over` : money(g.subtotal.left)}</td>
+                    </tr>
+                  </tbody>
+                ))}
               </table>
             )}
           </section>
