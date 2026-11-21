@@ -251,17 +251,18 @@ export function CompareVersions({
   const items = useMemo(() => (comparison ? groupScenes(comparison, filter) : []), [comparison, filter]);
   const resetView = () => { setCursor(-1); setAnnounce(''); setGaps(new Set()); setClosed(new Set()); };
 
+  const at = cursor < refs.length ? cursor : -1;
   const go = useCallback((delta: 1 | -1) => {
     if (!refs.length) return;
-    const next = cursor < 0 ? (delta === 1 ? 0 : refs.length - 1) : (cursor + delta + refs.length) % refs.length;
+    const next = at < 0 ? (delta === 1 ? 0 : refs.length - 1) : (at + delta + refs.length) % refs.length;
     const ref = refs[next];
     setClosed((c) => { if (!c.has(ref.sceneId)) return c; const n = new Set(c); n.delete(ref.sceneId); return n; });
     setCursor(next);
     setAnnounce(`Change ${next + 1} of ${refs.length}: ${ref.label}`);
-  }, [cursor, refs]);
+  }, [at, refs]);
 
   // Once the change is on screen: bring it to the middle and put focus on it.
-  const currentId = cursor >= 0 && refs[cursor] ? refs[cursor].id : null;
+  const currentId = at >= 0 ? refs[at].id : null;
   useEffect(() => {
     if (!currentId) return;
     const frame = requestAnimationFrame(() => {
@@ -348,7 +349,7 @@ export function CompareVersions({
                 <button onClick={() => go(-1)} disabled={!refs.length} aria-keyshortcuts="P" style={{ ...BTN, opacity: refs.length ? 1 : 0.5 }}><span aria-hidden>↑ </span>Previous change</button>
                 <button onClick={() => go(1)} disabled={!refs.length} aria-keyshortcuts="N" style={{ ...BTN, opacity: refs.length ? 1 : 0.5 }}>Next change<span aria-hidden> ↓</span></button>
                 <span style={{ fontSize: 12, fontFamily: 'var(--mono)', color: 'var(--fg-muted)', minWidth: 90 }}>
-                  {refs.length ? (cursor >= 0 ? `${cursor + 1} of ${refs.length}` : `${refs.length} change${refs.length === 1 ? '' : 's'}`) : 'No changes'}
+                  {refs.length ? (at >= 0 ? `${at + 1} of ${refs.length}` : `${refs.length} change${refs.length === 1 ? '' : 's'}`) : 'No changes'}
                 </span>
                 {!stacked && <span style={{ fontSize: 11, color: 'var(--fg-dim)' }}><kbd>N</kbd> next · <kbd>P</kbd> previous</span>}
                 {comparison && (

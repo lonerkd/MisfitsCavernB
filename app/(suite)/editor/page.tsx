@@ -398,13 +398,14 @@ export default function EditorPage() {
     if (!currentScript) return;
     let active = true;
     (async () => {
-      const remote = await fetchRevisionsDB(currentScript.id);
+      // A failed fetch must not leave Compare on "Reading the versions…" forever: fall back to this device's copies and say so.
+      const remote = await fetchRevisionsDB(currentScript.id).catch(() => { if (active) toast('Could not load the saved versions from the server; showing this device’s copies.', 'error'); return [] as Awaited<ReturnType<typeof fetchRevisionsDB>>; });
       if (!active) return;
       setRevisions(remote.length > 0 ? remote : await getRevisions(currentScript.id));
       if (active) setRevisionsFor(currentScript.id);
     })();
     return () => { active = false; };
-  }, [currentScript]);
+  }, [currentScript, toast]);
 
   useEffect(() => {
     if (typewriterMode && activeView === 'write' && textareaRef.current) {
