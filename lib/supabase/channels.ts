@@ -6,8 +6,7 @@ export interface Channel {
   id: string;
   project_id: string | null;
   name: string;
-  /** 'guide': read-only articles (FAQ, start here, tutorials). */
-  type: 'text' | 'voice' | 'guide';
+  type: 'text' | 'voice';
   /** Who can see it (lib/lounge/audience). */
   audience: ChannelAudience;
   topic: string | null;
@@ -40,7 +39,7 @@ export async function listChannels(projectId?: string | null): Promise<Channel[]
 export async function createChannel(input: {
   project_id: string | null;
   name: string;
-  type?: 'text' | 'voice' | 'guide';
+  type?: 'text' | 'voice';
   audience?: ChannelAudience;
   is_private?: boolean;
   post_policy?: 'viewers' | 'members' | 'managers';

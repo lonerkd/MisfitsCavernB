@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useEffectEvent, useCallback, useMemo } fro
 import { audienceLabel } from '@/lib/lounge/audience';
 import { supabase } from '@/lib/supabase/client';
 import { getProjectTeam } from '@/lib/supabase/crew-management';
-import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, deleteMessage, editMessage, pinMessage, markLoungeRead, getLoungeUnread, type LoungeHit, type LoungeUnread } from '@/lib/supabase/messages';
+import { getDMThread, sendDirectMessage, toggleReaction, getThreadReplies, getReplyCounts, sendChannelMessage, getChannelMessagesByUuid, subscribeToChannelUuid, editMessage, pinMessage, markLoungeRead, getLoungeUnread, type LoungeHit, type LoungeUnread } from '@/lib/supabase/messages';
 import { getMyAccount, getProfile } from '@/lib/supabase/profiles';
 import { listChannels, createChannel, canPostChannel, canManageChannel, type Channel } from '@/lib/supabase/channels';
 import { useProject } from '@/lib/os';
@@ -13,7 +13,6 @@ import { usePillStage } from '@/lib/os/PillContext';
 import { useOSGate } from '@/lib/os';
 import { notify } from '@/lib/supabase/notifications';
 import { useToast } from '@/components/ui/Toast';
-import { useConfirm } from '@/components/ui/Confirm';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { awaitOSUser } from '@/lib/os';
 import { useProjectBrief, loadChannelPresets, suggestChannels, type ChannelPreset } from '@/lib/brief';
@@ -28,7 +27,6 @@ export function useLounge() {
   const { isLoading } = useOSGate();
   const { toast } = useToast();
   const reportError = useEffectEvent((message: string) => toast(message, 'error'));
-  const confirm = useConfirm();
   const { activeProject, projects, setActiveProject } = useProject();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
@@ -328,21 +326,11 @@ export function useLounge() {
 
   const threadReplies = thread && thread.parentId === threadParent?.id ? thread.replies : NO_REPLIES;
 
-  const isGuide = !dmTarget && activeChannel?.type === 'guide';
-
   const broadcastTyping = () => {
     const now = Date.now();
     if (now - lastBroadcast.current < 1200) return;
     lastBroadcast.current = now;
     typingChannelRef.current?.ch?.send({ type: 'broadcast', event: 'typing', payload: { username: typingChannelRef.current.uname } });
-  };
-
-  const handleDeleteGuideSection = async (m: Message) => {
-    if (!(await confirm({ title: 'Remove this section?', message: `“${m.text.split('\n')[0].slice(0, 80)}” will be removed from the guide.`, confirmLabel: 'Remove', danger: true }))) return;
-    try {
-      await deleteMessage(m.id);
-      setMessages((prev) => prev.filter((x) => x.id !== m.id));
-    } catch (e) { toast(e instanceof Error ? e.message : 'Could not remove it', 'error'); }
   };
 
   const handleReact = async (messageId: string, emoji: string) => {
@@ -461,7 +449,7 @@ export function useLounge() {
     }
   };
 
-  return { isLoading, toast, activeProject, projects, setActiveProject, channels, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, isAdmin, showManage, setShowManage, dmTarget, setDmTarget, replyCounts, threadParent, setThreadParent, threadInput, setThreadInput, messages, input, setInput, currentUser, myProfile, crewList, showEmoji, setShowEmoji, typingUsers, onlineIds, bottomRef, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, highlightId, setPane, pane, openChannel, openDM, reloadChannels, ownsActive, suggested, addPreset, onlineCrew, unreadOf, unreadFrom, canPost, canManageActive, threadReplies, isGuide, broadcastTyping, handleDeleteGuideSection, handleReact, handleEdit, handlePin, unpinById, jumpTo, handleThreadSend, handleSend };
+  return { isLoading, toast, activeProject, projects, setActiveProject, channels, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, isAdmin, showManage, setShowManage, dmTarget, setDmTarget, replyCounts, threadParent, setThreadParent, threadInput, setThreadInput, messages, input, setInput, currentUser, myProfile, crewList, showEmoji, setShowEmoji, typingUsers, onlineIds, bottomRef, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, highlightId, setPane, pane, openChannel, openDM, reloadChannels, ownsActive, suggested, addPreset, onlineCrew, unreadOf, unreadFrom, canPost, canManageActive, threadReplies, broadcastTyping, handleReact, handleEdit, handlePin, unpinById, jumpTo, handleThreadSend, handleSend };
 }
 
 export type Lounge = ReturnType<typeof useLounge>;

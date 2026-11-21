@@ -1,6 +1,6 @@
 'use client';
 
-import { Hash, Lock, Settings as SettingsIcon, Volume2, BookOpen, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck } from 'lucide-react';
+import { Hash, Lock, Settings as SettingsIcon, Volume2, Globe, Shield, Crown, ArrowUp, ArrowDown, UserCheck } from 'lucide-react';
 import { audienceLabel, groupChannels } from '@/lib/lounge/audience';
 import Link from 'next/link';
 import { type Channel } from '@/lib/supabase/channels';
@@ -33,7 +33,7 @@ export function ChannelRail({ l }: { l: Lounge }) {
                  {list.map(ch => {
                    const isActive = activeChannel?.id === ch.id && !dmTarget;
                    const AUD_ICON: Record<string, typeof Hash> = { public: Globe, admins: Shield, owners: Crown, above: ArrowUp, below: ArrowDown, guests: UserCheck };
-                   const Icon = ch.type === 'guide' ? BookOpen : ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : AUD_ICON[ch.audience] ?? Hash;
+                   const Icon = ch.type === 'voice' ? Volume2 : ch.is_private ? Lock : AUD_ICON[ch.audience] ?? Hash;
                    const who = ch.audience === 'users' || ch.audience === 'team' ? undefined : audienceLabel(ch.audience);
                    const n = unreadOf(ch.id);
                    return (
@@ -51,7 +51,6 @@ export function ChannelRail({ l }: { l: Lounge }) {
            );
            return (
              <>
-               {groups.guides.length > 0 && renderGroup('Guides', groups.guides, false, 'community')}
                {activeProject && renderGroup(activeProject.title, groups.project, isOwner, 'project')}
                {suggested.length > 0 && (
                  <div style={{ margin: '-8px 0 18px' }} aria-label="Suggested channels" role="group">

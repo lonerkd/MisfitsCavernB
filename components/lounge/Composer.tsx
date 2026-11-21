@@ -6,7 +6,7 @@ import type { Lounge } from '@/components/lounge/useLounge';
 import { usePhoneLayout } from '@/lib/os/usePhone';
 
 export function Composer({ l }: { l: Lounge }) {
-  const { activeChannel, dmTarget, input, setInput, showEmoji, setShowEmoji, typingUsers, canPost, isGuide, broadcastTyping, handleSend } = l;
+  const { activeChannel, dmTarget, input, setInput, showEmoji, setShowEmoji, typingUsers, canPost, broadcastTyping, handleSend } = l;
   const { phone, landscape } = usePhoneLayout();
   // A phone held sideways has about 390 px of height: the composer is one slim row there.
   const compact = phone && landscape;
@@ -59,7 +59,7 @@ export function Composer({ l }: { l: Lounge }) {
           disabled={!dmTarget && !canPost}
           onChange={e => { setInput(e.target.value); if (e.target.value.trim()) broadcastTyping(); }}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-          placeholder={dmTarget ? `Message @${dmTarget.name}...` : isGuide ? `Add a section to ${activeChannel?.name || 'the guide'} — the first line is its heading` : !canPost ? `You don't have permission to post in #${activeChannel?.name || ''}` : `Message #${activeChannel?.name || ''}...`}
+          placeholder={dmTarget ? `Message @${dmTarget.name}...` : !canPost ? `You don't have permission to post in #${activeChannel?.name || ''}` : `Message #${activeChannel?.name || ''}...`}
           rows={1}
           style={{
             flex: 1,
@@ -96,7 +96,7 @@ export function Composer({ l }: { l: Lounge }) {
             alignSelf: 'flex-end',
           }}
         >
-          <Send size={12} /> {isGuide ? 'Add' : 'Send'}
+          <Send size={12} /> Send
         </motion.button>
       </div>
     </div>

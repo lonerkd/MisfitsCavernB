@@ -367,7 +367,7 @@
   },
   "components/lounge/ChatHeader.tsx": {
     "no-restricted-syntax": {
-      "count": 4
+      "count": 3
     }
   },
   "components/lounge/CrewList.tsx": {

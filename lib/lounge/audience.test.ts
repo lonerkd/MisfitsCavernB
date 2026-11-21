@@ -10,15 +10,14 @@ describe('channel audiences', () => {
     expect(defaultPostPolicy('team')).toBe('viewers');
   });
 
-  it('groups the sidebar: guides, this project, community, other productions’ public channels', () => {
+  it('groups the sidebar: this project, community, other productions’ public channels', () => {
     const ch = (id: string, project_id: string | null, type = 'text', audience = 'team', position = 0) => ({ id, name: id, project_id, type, audience, position });
     const g = groupChannels([
-      ch('general', null, 'text', 'users', 2), ch('faq', null, 'guide', 'users', 1), ch('start', null, 'guide', 'users', 0),
+      ch('general', null, 'text', 'users', 2), ch('faq', null, 'text', 'users', 1), ch('start', null, 'voice', 'users', 0),
       ch('crew', 'p1'), ch('updates', 'p2', 'text', 'public'), ch('secret', 'p2', 'text', 'owners'),
     ], 'p1');
-    expect(g.guides.map((c) => c.id)).toEqual(['start', 'faq']);
     expect(g.project.map((c) => c.id)).toEqual(['crew']);
-    expect(g.community.map((c) => c.id)).toEqual(['general']);
+    expect(g.community.map((c) => c.id)).toEqual(['start', 'faq', 'general']);
     expect(g.open.map((c) => c.id)).toEqual(['updates']);
   });
 });

@@ -2,7 +2,7 @@
 
 import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Hash, Lock, X, Volume2, BookOpen, Search } from 'lucide-react';
+import { Hash, Lock, X, Volume2, Search } from 'lucide-react';
 import { audienceOptions, defaultPostPolicy, type ChannelAudience } from '@/lib/lounge/audience';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -14,16 +14,16 @@ import { useConfirm } from '@/components/ui/Confirm';
 
 export function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
   projectTitle: string; scope: 'project' | 'community'; onClose: () => void;
-  onCreate: (v: { name: string; type: 'text' | 'voice' | 'guide'; audience: ChannelAudience; is_private: boolean; post_policy: 'viewers' | 'members' | 'managers' }) => Promise<void>;
+  onCreate: (v: { name: string; type: 'text' | 'voice'; audience: ChannelAudience; is_private: boolean; post_policy: 'viewers' | 'members' | 'managers' }) => Promise<void>;
 }) {
   const [name, setName] = useState('');
-  const [type, setType] = useState<'text' | 'voice' | 'guide'>('text');
+  const [type, setType] = useState<'text' | 'voice'>('text');
   const [audience, setAudience] = useState<ChannelAudience>(scope === 'community' ? 'users' : 'team');
   const [isPrivate, setIsPrivate] = useState(false);
   const [postPolicy, setPostPolicy] = useState<'viewers' | 'members' | 'managers'>('viewers');
   const [busy, setBusy] = useState(false);
   useEffect(() => { const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); }; window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h); }, [onClose]);
-  const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, audience, is_private: isPrivate, post_policy: type === 'guide' ? 'managers' : postPolicy }); } finally { setBusy(false); } };
+  const submit = async () => { if (!name.trim() || busy) return; setBusy(true); try { await onCreate({ name, type, audience, is_private: isPrivate, post_policy: postPolicy }); } finally { setBusy(false); } };
   const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)', display: 'block', marginBottom: 8 };
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={onClose}
@@ -36,9 +36,9 @@ export function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
         <div style={{ marginBottom: 16 }}>
           <label style={label}>Type</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            {(['text', 'voice', 'guide'] as const).map(t => (
+            {(['text', 'voice'] as const).map(t => (
               <button key={t} aria-pressed={type === t} onClick={() => setType(t)} style={{ flex: 1, padding: 10, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: type === t ? 'rgba(232, 67, 26,0.12)' : 'rgba(var(--ink-rgb), 0.04)', border: `1px solid ${type === t ? 'rgba(232, 67, 26,0.4)' : 'rgba(var(--ink-rgb), 0.1)'}`, color: type === t ? 'var(--accent)' : 'var(--fg-muted)', fontFamily: 'var(--mono)', fontSize: 11 }}>
-                {t === 'text' ? <Hash size={13} /> : t === 'voice' ? <Volume2 size={13} /> : <BookOpen size={13} />} {t}
+                {t === 'text' ? <Hash size={13} /> : <Volume2 size={13} />} {t}
               </button>
             ))}
           </div>
@@ -52,8 +52,6 @@ export function NewChannelModal({ projectTitle, scope, onClose, onCreate }: {
           onKeyDown={e => e.key === 'Enter' && submit()}
           placeholder="e.g. writers-room"
         />
-
-        {type === 'guide' && <p style={{ fontSize: 11, color: 'var(--fg-muted)', margin: '-6px 0 14px', lineHeight: 1.5 }}>A guide is read-only: FAQ, a start-here tour, tutorials. Only whoever runs it can post.</p>}
 
         <div style={{ marginBottom: 16 }} role="radiogroup" aria-label="Who it’s for">
           <span style={label}>Who it’s for</span>

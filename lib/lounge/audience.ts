@@ -38,15 +38,14 @@ export function defaultPostPolicy(a: ChannelAudience): 'viewers' | 'managers' {
 export interface GroupableChannel { id: string; project_id: string | null; type: string; audience: string; position: number | null; name: string }
 
 /**
- * The sidebar: guides first, then the active project's channels, the
- * community, and other productions' public channels.
+ * The sidebar: the active project's channels, the community, and other
+ * productions' public channels.
  */
 export function groupChannels<T extends GroupableChannel>(channels: T[], activeProjectId: string | null) {
   const by = (a: T, b: T) => (a.position ?? 0) - (b.position ?? 0) || a.name.localeCompare(b.name);
   return {
-    guides: channels.filter((c) => !c.project_id && c.type === 'guide').sort(by),
     project: channels.filter((c) => !!activeProjectId && c.project_id === activeProjectId).sort(by),
-    community: channels.filter((c) => !c.project_id && c.type !== 'guide').sort(by),
+    community: channels.filter((c) => !c.project_id).sort(by),
     open: channels.filter((c) => c.project_id && c.project_id !== activeProjectId && c.audience === 'public').sort(by),
   };
 }
