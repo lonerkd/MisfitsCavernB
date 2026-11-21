@@ -13,6 +13,8 @@ import { castDoc } from './cast-print';
 import { breakdownDoc } from './breakdown-print';
 import { pitchDoc } from './pitch-print';
 import { revisionsDoc } from './revisions-print';
+import { compareDoc } from './compare-print';
+import { compareScripts } from '@/lib/scriptos/compare';
 import { continuityDoc, wardrobeDoc } from './continuity-print';
 import { paperworkDoc } from './paperwork-print';
 import { doodDoc } from './dood-print';
@@ -47,6 +49,12 @@ const docs: Record<string, () => string> = {
     concepts: range(9).map((i) => ({ url: `https://example.invalid/concept-${i}.jpg`, title: `Concept ${i + 1}` })),
     characters: range(12).map((i) => `CHARACTER ${i + 1}`), beats: range(14).map((i) => `Beat ${i + 1}: ${LONG}`) })),
   revisions: () => printHtml(revisionsDoc({ ...base, script: 'Pilot', revisions: range(N).map((i) => ({ colour: ['White', 'Blue', 'Pink', 'Yellow'][i % 4], label: `Revision ${i + 1} — production draft with scheduling changes`, date: `${i % 28 + 1} Mar 2026` })) })),
+  compare: () => {
+    const scene = (i: number, w: string) => `INT. ROOM ${i} - DAY\n\nMaya looks at the ${w} for a while. ${LONG}\n\nMAYA\nI do not know about the ${w}.\n`;
+    const before = range(30).map((i) => scene(i, 'door')).join('\n');
+    const after = range(30).map((i) => scene(i, i % 3 ? 'door' : 'window')).join('\n').replace(/MAYA/g, 'MIA');
+    return printHtml(compareDoc({ ...base, script: 'Pilot', fromLabel: 'Blue Revision — production draft', toLabel: 'Current draft', comparison: compareScripts(before, after) }));
+  },
   continuity: () => printHtml(continuityDoc({ ...base, warnings: range(6).map((i) => `MAYA changes coat between scenes ${i + 4} and ${i + 6}. ${LONG}`),
     days: range(4).map((d) => ({ label: `Story day ${d + 1}`, scenes: range(10).map((i) => ({ number: d * 10 + i + 1, heading: 'EXT. THE OLD FERRY TERMINAL - DAY', time: 'Early morning', looks: [{ character: 'MAYA', look: LONG }, { character: 'LUIS', look: '' }] })) })) })),
   wardrobe: () => printHtml(wardrobeDoc({ ...base, characters: range(3).map((c) => ({ name: `CHARACTER ${c + 1}`, rows: range(14).map((i) => ({ number: i + 1, heading: 'INT. KITCHEN - NIGHT', storyDay: i % 4 + 1, shootDay: i % 6 + 1, look: i % 5 ? LONG : '', elements: ['Red coat (hero)', 'Scarf', 'Boots', 'Pocket watch'] })) })) })),

@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 109 tables · 84 database functions · 139 e2e specs**
+**55 pages · 9 API routes · 109 tables · 84 database functions · 140 e2e specs**
 
 ## Routes
 
@@ -40,7 +40,7 @@
 | `/community` | signed in | `app/(suite)/community/page.tsx` (50) | 79 files · components: community, home, landing, mobile, roles, ui · lib: auth, crafts, film, formats, guides, hooks, hub, island, notifications, os, pocket, push, pwa, roles, spotify, supabase, themes, today, types, util, validation | admin-actions, auth-journey, community-page, community-personas, community-phone, crew-invitations, director-day, editor-offline-merge, errors, global-chords, home-music, home-routing, install, island-compact-dock, island-projects-keys, island, layout, looks-day, mobile, page-errors, script-formats, shortcut-search, today-owner |
 | `/crew/[id]` | signed in | `app/(suite)/crew/[id]/page.tsx` (370) | 46 files · components: ui · lib: auth, credits, formats, hooks, moderation, os, portfolio, push, studio, supabase, types, util, validation | accessibility, credits, portfolio-page, suspend-user |
 | `/crew` | signed in | `app/(suite)/crew/page.tsx` (277) | 42 files · components: crafts, ui · lib: auth, crafts, formats, hooks, notifications, os, push, supabase, types, util, validation | accessibility, auth-journey, keyboard-audit, layout, mobile, page-errors, route-smoke, your-data |
-| `/editor` | signed in | `app/(suite)/editor/page.tsx` (1592) | 230 files · components: ad, audio, breakdown, characters, editor, notes, phone, story, studio, ui · lib: ad, audio, auth, breakdown, brief, characters, errors, film, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, push, scriptos, split, spotify, storage, story, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, character-rename, cut-notes, doubt-override, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, margin-note-card, mobile, notes, onboarding, page-errors, phases, phone-editor, production-from-script, production-tools-open, reading-corrections, route-smoke, script-knowledge, script-share, sound-phone, split, story-interview, studio-journey, table-read, writing-loop |
+| `/editor` | signed in | `app/(suite)/editor/page.tsx` (1600) | 237 files · components: ad, audio, breakdown, characters, editor, notes, phone, story, studio, ui · lib: ad, audio, auth, breakdown, brief, characters, errors, film, formats, guides, hooks, integrations, island, notes, notifications, os, pocket, print, push, scriptos, split, spotify, storage, story, studio, supabase, themes, types, util, validation, writing | accessibility, auth-journey, beat-to-script, breakdown, character-rename, compare-versions, cut-notes, doubt-override, editor-caret-after-edit, editor-cowriting, editor-find-cast, editor-gutter, editor-keyboard-reorder, editor-offline-merge, editor-project-script, editor-safety-net, editor-undo, emphasis, global-chords, island-activity, keyboard-audit, layout, margin-note-card, mobile, notes, onboarding, page-errors, phases, phone-editor, production-from-script, production-tools-open, reading-corrections, route-smoke, script-knowledge, script-share, sound-phone, split, story-interview, studio-journey, table-read, writing-loop |
 | `/hub/[id]` | signed in | `app/(suite)/hub/[id]/page.tsx` (68) | 38 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
 | `/hub/help/[id]` | signed in | `app/(suite)/hub/help/[id]/page.tsx` (44) | 32 files · components: hub, ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
 | `/hub/help` | signed in | `app/(suite)/hub/help/page.tsx` (86) | 31 files · components: ui · lib: auth, formats, hooks, hub, os, push, supabase, types, validation | admin-support-analytics |
@@ -659,6 +659,7 @@
 | `community-personas.spec.ts` | `/community`, `/lounge` |
 | `community-phone.spec.ts` | `/community` |
 | `community.spec.ts` | `/lounge` |
+| `compare-versions.spec.ts` | `/editor` |
 | `continuity.spec.ts` | `/studio` |
 | `coverage.spec.ts` | `/studio` |
 | `credit-request.spec.ts` | `/shared/*`, `/studio` |

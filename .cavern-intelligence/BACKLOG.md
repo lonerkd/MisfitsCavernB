@@ -173,7 +173,7 @@ Nothing built. Translate a script into 50+ languages (a translation service), si
 **Built**: Locations (status, permit, address, contact, cost, notes; scenes link by name); scene references. _(full text: `backlog-detail.md`, 4.11)_
 
 ### 4.12 Comparing versions
-**Built**: locked revisions with coloured changed pages and a diff view (`lib/scriptos/revisions.ts`). _(full text: `backlog-detail.md`, 4.12)_
+**Built**: locked revisions with coloured changed pages and a diff view (`lib/scriptos/revisions.ts`); **2026-11-21 (slice 1)**: Compare for any two versions (the locked revisions and the draft; A and B, swap), side by side and aligned by scene (stacked A… _(full text: `backlog-detail.md`, 4.12)_
 
 ### 4.13 Offline and installable
 **Built**: the editor saves to IndexedDB first and syncs (retry, on reconnect, tombstones for offline deletes), a conflict prompt (keep mine / take theirs), sync state in its header, and (2026-10-18) a status-bar chip for the script queue — pending scripts… _(full text: `backlog-detail.md`, 4.13)_

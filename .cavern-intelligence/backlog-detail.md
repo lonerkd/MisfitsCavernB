@@ -370,13 +370,27 @@ database.
 
 ### 4.12 Comparing versions
 **Built**: locked revisions with coloured changed pages and a diff view
-(`lib/scriptos/revisions.ts`).
-**To add**: side by side for any two versions or an imported script; inline
-diff colours; change statistics and filters (dialogue / action / scenes);
-next/previous change; scene-reorder and character-rename detection;
-page-number change tracking; accept/reject per change in a review mode; a
-change-report PDF; three-way merge and branches (with the CRDT idea in the
-bible's ScriptOS known gaps).
+(`lib/scriptos/revisions.ts`); **2026-11-21 (slice 1)**: Compare for any two
+versions (the locked revisions and the draft; A and B, swap), side by side and
+aligned by scene (stacked A over B on a phone), inline word marks with `+` / `−`
+and strike / underline (not colour alone), unchanged scenes and lines folded,
+change statistics (scenes added / cut / changed / moved, dialogue, action and
+heading lines, words, pages), the filter (All / Dialogue / Action / Scene
+headings), scene-reorder detection (moved, not cut and added), character-rename
+detection (one rename, not N dialogue edits), next / previous change with N / P
+and a screen-reader announcement, and the change report through the print kit
+(Print / PDF and CSV). Logic: `lib/scriptos/compare.ts`; view:
+`components/editor/CompareVersions.tsx`; report: `lib/studio/compare-print.ts`;
+spec: `e2e/compare-versions.spec.ts`.
+**To add**: compare against an imported script or another script of the
+project (the view takes two texts, so it needs a source picker, S); a version
+history of its own (autosaved versions: `script_versions` exists and nothing
+writes it, so it needs a decision and a migration to be used, M); page-number
+change tracking (how the page of each scene moved, S); accept/reject per change
+in a review mode (the diff modal has one against a revision; Compare does not,
+M); three-way merge and branches (with the CRDT idea in the bible's ScriptOS
+known gaps, L); a line-level move (a paragraph moved inside a scene reads as a
+cut and an add, S).
 
 ### 4.13 Offline and installable
 **Built**: the editor saves to IndexedDB first and syncs (retry, on

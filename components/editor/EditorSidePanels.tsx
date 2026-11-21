@@ -432,7 +432,7 @@ export function EditorRightPanels({
                         onToggle={() => setRevisionsOpen(o => !o)}
                         right={(
                           <div style={{ display: 'flex', gap: 4 }}>
-                            {revisions.length > 0 && onCompare && (
+                            {onCompare && (
                               <button onClick={(e) => { e.stopPropagation(); onCompare(); }} title="Compare two versions" style={{ fontSize: 11, background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-muted)', cursor: 'pointer' }}>Compare</button>
                             )}
                             <button onClick={(e) => { e.stopPropagation(); handleLockRevision(); }} style={{ fontSize: 11, background: 'rgba(var(--ink-rgb), 0.05)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 4, padding: '4px 8px', color: 'var(--fg-strong)', cursor: 'pointer' }}>Lock Current</button>
