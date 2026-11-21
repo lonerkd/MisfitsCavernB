@@ -35,7 +35,10 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       if (onChange) onChange(e);
     };
 
-    const isActive = isFocused || hasValue;
+    // A controlled value (typed, or set by the page: a prefilled search) is the truth; the typed-state is only for uncontrolled fields.
+    const controlled = props.value !== undefined;
+    const filled = controlled ? String(props.value ?? '').length > 0 : hasValue;
+    const isActive = isFocused || filled;
 
     return (
       <div className={`relative mb-6 ${className}`}>

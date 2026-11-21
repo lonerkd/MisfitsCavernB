@@ -34,3 +34,13 @@ describe('the Sound library', () => {
     expect(allTags(items)).toEqual(['Tense', 'strings']);
   });
 });
+
+describe("a library item always has a title", () => {
+  it("falls back for a blank saved song, a blank file and a nameless sound effect", () => {
+    const items = buildLibrary(
+      [ref({ title: "   " }), ref({ id: "f", reference_type: "custom_upload", uri: "https://x/y/rain%20loop.mp3?t=1", title: undefined })],
+      [sfx({ title: "", audio_url: "https://x/z/door.wav" })],
+    );
+    expect(items.map((i) => i.title)).toEqual(["Untitled song", "rain loop.mp3", "door.wav"]);
+  });
+});

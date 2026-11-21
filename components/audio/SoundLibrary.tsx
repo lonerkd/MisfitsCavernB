@@ -146,15 +146,15 @@ export function SoundLibrary({ projectId, projectTitle, userId, canTag }: { proj
       ) : (
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {shown.map((i) => (
-            <li key={i.key} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)]">
+            <li key={i.key} className="p-4 rounded-xl border border-[rgba(var(--ink-rgb),0.06)] bg-[var(--sunken)] text-[var(--fg)]">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-4 overflow-hidden">
                   <button type="button" aria-label={`Play ${i.title}`} onClick={() => play(i)}
-                    className="w-11 h-11 shrink-0 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center hover:bg-[rgba(var(--ink-rgb),0.1)] transition-colors">
+                    className="w-11 h-11 shrink-0 rounded-full bg-[rgba(var(--ink-rgb),0.05)] flex items-center justify-center text-[var(--fg)] hover:bg-[rgba(var(--ink-rgb),0.1)] transition-colors">
                     <Play size={16} />
                   </button>
                   <div className="min-w-0">
-                    <h4 className="mc-title text-sm truncate">{i.title}</h4>
+                    <h4 className="mc-title text-sm truncate text-[var(--fg-strong)]">{i.title || 'Untitled'}</h4>
                     <p className="mc-text text-xs text-[var(--fg-dim)] truncate flex items-center gap-1">
                       {i.kind === 'song' ? <Disc size={10} aria-hidden /> : <Volume2 size={10} aria-hidden />}
                       {i.subtitle || (i.kind === 'song' ? 'Spotify' : 'Sound file')}
