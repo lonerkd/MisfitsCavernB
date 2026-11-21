@@ -46,36 +46,38 @@ export function PhoneToolStrip(p: PhoneToolStripProps) {
     h.el.focus({ preventScroll: true });
     try { h.el.setSelectionRange(h.start, h.end); } catch { /* not a text field */ }
   };
-  const h = p.compact ? 40 : 44;
+  // Compact (landscape, keyboard up): about 190 pt is visible above the keyboard, so the strip is ONE short row.
+  const h = p.compact ? 34 : 44;
+  const ic = p.compact ? 16 : 18;
   const btn = (key: string, label: string, run: () => void, icon?: ReactNode, text = true) => (
     <button key={key} type="button" aria-label={label} onPointerDown={(e) => e.preventDefault()} onMouseDown={(e) => e.preventDefault()} onClick={() => { run(); if (key !== 'hide') restore(); else held.current = null; }}
-      style={{ flex: '0 0 auto', minHeight: h, minWidth: h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: text && !icon ? '0 14px' : icon && text ? '0 12px' : 0, borderRadius: 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'var(--bg)', color: 'var(--fg)', fontSize: 14, cursor: 'pointer' }}>
+      style={{ flex: '0 0 auto', minHeight: h, minWidth: h, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: text && !icon ? (p.compact ? '0 10px' : '0 14px') : icon && text ? '0 12px' : 0, borderRadius: p.compact ? 10 : 14, border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'var(--bg)', color: 'var(--fg)', fontSize: p.compact ? 13 : 14, cursor: 'pointer' }}>
       {icon}{text && icon ? <span>{label}</span> : !icon ? label : null}
     </button>
   );
-  const sep = (k: string) => <span key={k} aria-hidden style={{ flex: '0 0 1px', alignSelf: 'stretch', margin: '6px 2px', background: 'var(--border)' }} />;
+  const sep = (k: string) => <span key={k} aria-hidden style={{ flex: '0 0 1px', alignSelf: 'stretch', margin: p.compact ? '4px 1px' : '6px 2px', background: 'var(--border)' }} />;
   return (
     <div role="toolbar" onTouchStartCapture={remember} onPointerDownCapture={() => { if (!held.current) remember(); }} aria-label="Writing tools" style={{
-      position: 'fixed', left: 0, right: 0, bottom: p.bottom, zIndex: 150, display: 'flex', alignItems: 'center', gap: 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-      padding: p.compact ? '4px 12px' : '8px 12px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.08)',
+      position: 'fixed', left: 0, right: 0, bottom: p.bottom, zIndex: 150, display: 'flex', alignItems: 'center', gap: p.compact ? 6 : 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+      padding: p.compact ? '3px 12px' : '8px 12px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.08)',
       paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))',
     }}>
-      {btn('hide', 'Put the keyboard away', p.hideKeyboard, <ChevronDown size={20} />, false)}
-      {btn('undo', 'Undo', p.undo, <Undo2 size={18} />, false)}
-      {btn('redo', 'Redo', p.redo, <Redo2 size={18} />, false)}
+      {btn('hide', 'Put the keyboard away', p.hideKeyboard, <ChevronDown size={ic} />, false)}
+      {btn('undo', 'Undo', p.undo, <Undo2 size={ic} />, false)}
+      {btn('redo', 'Redo', p.redo, <Redo2 size={ic} />, false)}
       {sep('s1')}
-      {btn('type', 'Change element type', () => p.cycle(false), <ArrowRightToLine size={18} />, false)}
-      {btn('prev', 'Previous scene', p.prevScene, <ChevronsUp size={18} />, false)}
-      {btn('next', 'Next scene', p.nextScene, <ChevronsDown size={18} />, false)}
-      {btn('up', 'Line up', p.lineUp, <ChevronUp size={18} />, false)}
-      {btn('down', 'Line down', p.lineDown, <ChevronDown size={18} />, false)}
+      {btn('type', 'Change element type', () => p.cycle(false), <ArrowRightToLine size={ic} />, false)}
+      {btn('prev', 'Previous scene', p.prevScene, <ChevronsUp size={ic} />, false)}
+      {btn('next', 'Next scene', p.nextScene, <ChevronsDown size={ic} />, false)}
+      {btn('up', 'Line up', p.lineUp, <ChevronUp size={ic} />, false)}
+      {btn('down', 'Line down', p.lineDown, <ChevronDown size={ic} />, false)}
       {sep('s2')}
       {ELEMENTS.map(([type, label]) => btn(type, label, () => p.insert(type)))}
       {sep('s3')}
-      {btn('find', 'Find and replace', p.find, <Search size={18} />, false)}
-      {btn('notes', 'Notes', p.notes, <StickyNote size={18} />, false)}
-      {btn('tools', 'Tools', p.tools, <PanelRight size={18} />, false)}
-      {btn('more', 'More', p.more, <MoreHorizontal size={18} />, false)}
+      {btn('find', 'Find and replace', p.find, <Search size={ic} />, false)}
+      {btn('notes', 'Notes', p.notes, <StickyNote size={ic} />, false)}
+      {btn('tools', 'Tools', p.tools, <PanelRight size={ic} />, false)}
+      {btn('more', 'More', p.more, <MoreHorizontal size={ic} />, false)}
     </div>
   );
 }

@@ -114,7 +114,8 @@ export default function NotificationBell() {
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', background: 'var(--surface)', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14, boxShadow: '0 28px 70px rgba(0,0,0,0.7)', overflow: 'hidden', zIndex: 20 }}
+            className="notif-panel"
+            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>
@@ -127,7 +128,7 @@ export default function NotificationBell() {
               )}
             </div>
 
-            <div style={{ maxHeight: 380, overflowY: 'auto' }}>
+            <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', overscrollBehavior: 'contain' }}>
               {items.length === 0 ? (
                 <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--fg-dim)', fontSize: 12, fontFamily: 'var(--mono)' }}>
                   <Bell size={22} style={{ opacity: 0.3, marginBottom: 8 }} /><br />You&apos;re all caught up.

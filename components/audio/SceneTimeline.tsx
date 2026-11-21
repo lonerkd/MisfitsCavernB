@@ -12,7 +12,7 @@ import { BottomSheet } from '@/components/phone/BottomSheet';
 import { pushUndo, undoOrigin, UndoRefused } from '@/lib/os/undo';
 import { TrackTagger } from '@/components/audio/TrackTagger';
 import {
-  axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, sceneSummary, stripToScrollLeft, viewWindow,
+  axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, sceneSummary, stripToScrollLeft, timelineScale, viewWindow,
   type LengthSource, type TimelineBar,
 } from '@/lib/audio/timeline';
 import { parseScript } from '@/lib/scriptos/parser';
@@ -28,9 +28,7 @@ const SOURCE_NOTE: Record<LengthSource, string> = {
   lines: 'Length estimated from the number of lines.',
   floor: 'Length not known yet: drawn at the smallest size.',
 };
-const PX_PER_MIN = 16;
 const LANE_H = 36;
-const PHONE_TARGET = 44;
 const LANE_H_PHONE = 56; // a bar is a thumb target on a phone: 44 pt tall
 // Tracks that share a song share a colour; the hue is spread so neighbours differ.
 const swatch = (n: number) => `hsl(${(n * 67) % 360} 50% 52%)`;
@@ -105,7 +103,7 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
   // On a phone every scene block is a 44 pt thumb target (the buttons carry that minimum width), so the scale is widened until the
   // shortest scene is that wide, or blocks pile onto each other and a tap lands on the wrong scene. The strip scrolls sideways.
   const shortest = timeline && timeline.scenes.length ? Math.max(0.25, Math.min(...timeline.scenes.map((s) => s.minutes))) : 1;
-  const px = Math.max(PX_PER_MIN * zoom, phone.phone ? (PHONE_TARGET + 2) / shortest : 0);
+  const px = timelineScale(zoom, phone.phone, shortest);
   const width = timeline ? axisWidth(timeline.totalMinutes, px) : 320;
   const scene = timeline?.scenes.find((s) => s.id === selected) ?? null;
   const hasScenes = (timeline?.scenes.length ?? 0) > 0;

@@ -10,7 +10,7 @@
 |---|---|---|---|---|
 | `/b/[token]` | open (page checks) | `app/(public)/b/[token]/page.tsx` (108) | 43 files · components: ui · lib: auth, formats, island, os, push, scriptos, studio, supabase, types, validation | **none** |
 | `/p/[token]` | open (page checks) | `app/(public)/p/[token]/page.tsx` (49) | 41 files · components: ui · lib: auth, formats, hooks, os, portfolio, push, studio, supabase, types, util, validation | accessibility, portfolio-page, share-pages, split |
-| `/portfolios` | open (page checks) | `app/(public)/portfolios/page.tsx` (102) | 6 files · components: — · lib: portfolio, supabase | portfolio-page |
+| `/portfolios` | open (page checks) | `app/(public)/portfolios/page.tsx` (131) | 6 files · components: — · lib: portfolio, supabase | portfolio-page |
 | `/privacy` | open (page checks) | `app/(public)/privacy/page.tsx` (138) | 3 files · components: legal · lib: legal | legal |
 | `/review/[token]` | open (page checks) | `app/(public)/review/[token]/page.tsx` (40) | 8 files · components: — · lib: ad, review, supabase | review-audiences |
 | `/s/[token]` | open (page checks) | `app/(public)/s/[token]/page.tsx` (175) | 13 files · components: — · lib: formats, scriptos, supabase | **none** |

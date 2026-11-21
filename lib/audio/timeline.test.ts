@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, MIN_AXIS_PX, MIN_SCENE_MINUTES, sceneLength, sceneSummary, stripToScrollLeft, viewWindow, type TimelineSceneInput, type TimelineTrackInput } from './timeline';
+import { timelineScale, axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, MIN_AXIS_PX, MIN_SCENE_MINUTES, sceneLength, sceneSummary, stripToScrollLeft, viewWindow, type TimelineSceneInput, type TimelineTrackInput } from './timeline';
 
 const sc = (n: number, o: Partial<TimelineSceneInput> = {}): TimelineSceneInput => ({ id: `s${n}`, scene_number: n, heading: `INT. ROOM ${n} - DAY`, time_of_day: 'DAY', est_duration: null, read_seconds: null, ...o });
 const tr = (id: string, scene: string | null, o: Partial<TimelineTrackInput> = {}): TimelineTrackInput => ({ id, title: id, uri: `spotify:track:${id}`, for_scene: scene, role: null, tags: [], ...o });
@@ -108,5 +108,22 @@ describe('the minimap and the scroll position', () => {
     expect(viewWindow(950, 100, 1000)).toEqual({ leftPct: 90, widthPct: 10 }); // never past the end
     expect(viewWindow(0, 2000, 1000)).toEqual({ leftPct: 0, widthPct: 100 }); // the whole script fits
     expect(viewWindow(0, 0, 0)).toEqual({ leftPct: 0, widthPct: 100 });
+  });
+});
+
+describe('timelineScale', () => {
+  it('is the zoom scale on a desktop', () => {
+    expect(timelineScale(0.5, false, 0.4)).toBe(8);
+    expect(timelineScale(2, false, 0.4)).toBe(32);
+  });
+  it('never lets the shortest scene fall under 44 pt on a phone, whatever the zoom', () => {
+    for (const z of [0.5, 0.75, 1, 2, 4]) {
+      const px = timelineScale(z, true, 0.4);
+      expect(0.4 * px - 2).toBeGreaterThanOrEqual(44);
+    }
+  });
+  it('lets zoom widen it beyond the minimum, and survives bad input', () => {
+    expect(timelineScale(4, true, 10)).toBe(64);
+    expect(timelineScale(NaN, true, 0)).toBeGreaterThan(0);
   });
 });

@@ -1,0 +1,14 @@
+# Session - 2026-11-21: what the owner's iPhone showed (eleven screenshots, twelve defects)
+
+Real screenshots from the installed app on an iPhone 15 Pro, the first real-device evidence in this project. Four agents fixed their clusters in separate worktrees, I merged and checked once.
+
+- **The "left pill" in landscape is not ours:** it is the iPhone's own Dynamic Island, rotated to the left edge, showing the now-playing activity. The page ran under it and under the status bar (the app sets `viewport-fit=cover` and a translucent status bar). Fix: the body sits below `env(safe-area-inset-top)` in both orientations, and in landscape clear of the left inset with a 56 px floor (`--mc-rail`) for an installed app that reports less; the full-height pages (Lounge, editor) subtract the inset. **Not verified on a device** (desktop and Playwright report 0 for safe areas): if the island still covers content, read what `env(safe-area-inset-left)` returns there.
+- **Editor, landscape with the keyboard:** the tool strip is one compact row (34 pt buttons, the sync line is not drawn above it), the writing line keeps its room. The second bar (`^ v ✓`) is iOS's own form-accessory bar, which a page cannot remove. The volume pill at the top is also iOS's.
+- **Tools sheet:** the two black squares were bare native checkboxes (View Options); they are real switches now. "Dark Mode (Preview)" only darkened the Preview page and was misleading: renamed "Dark page in Preview" with a hint that the app theme is in Settings.
+- **Corner mini player on a phone:** the title was squeezed to a letter by three buttons; the card is two rows (title on top, 44 px buttons under).
+- **Sound page:** a blank Library item (title fallbacks and explicit text colour; the exact cause was not reproducible, a screenshot after this will tell), the timeline's scale can never drop below a 44 pt scene however far Zoom is pulled (`timelineScale`), and the shared Input's floating label floats whenever the field has a value (the prefilled search overlapped it).
+- **Portfolios:** the 55 craft chips were a screen of chips; a phone gets one Craft select, a desktop twelve chips and a "More".
+- **Notifications panel:** it was see-through; it is opaque (frosted themes get a strong blur) and fits a landscape screen.
+- **Your role (and the invitation, director's day and looks cards):** reused the "day on set" grid whose first column is a 64 px time block, so the text wrapped one word a line; they are one column now.
+
+**Verified:** typecheck, eslint, unit tests, and on a production build on the local stack 15 specs (sound-phone, community-phone, community-personas with a layout assertion for the role card, onset-phone, phone-editor, phone-keyboard). **Not verified:** any of it on a real phone, in either orientation; the interrupted full audit run (`--check`) was not repeated.

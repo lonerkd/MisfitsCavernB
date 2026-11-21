@@ -24,7 +24,7 @@ export default function LoungePage() {
   // Exactly one screen tall: each pane scrolls on its own, so a long channel
   // list never pushes the composer down under the island.
   return (
-    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: '100dvh', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
+    <div className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: 'calc(100dvh - var(--mc-safe-top))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
       {activeProject && <ViewAsBanner projectId={activeProject.id} />}

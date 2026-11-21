@@ -166,3 +166,18 @@ export function viewWindow(scrollLeft: number, viewportPx: number, axisPx: numbe
   const leftPct = Math.min(100 - widthPct, Math.max(0, (scrollLeft / axisPx) * 100));
   return { leftPct, widthPct };
 }
+
+export const PX_PER_MINUTE = 16;
+export const PHONE_TARGET_PX = 44;
+
+/**
+ * Pixels per minute for the Scenes timeline. The Zoom slider can only widen the strip on a phone: the scale never drops below the one
+ * that makes the shortest scene a 44 pt thumb target (plus a 2 px gutter), so scene blocks cannot shrink under that or overlap.
+ */
+export function timelineScale(zoom: number, phone: boolean, shortestMinutes: number): number {
+  const z = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+  const base = PX_PER_MINUTE * z;
+  if (!phone) return base;
+  const shortest = Math.max(0.25, Number.isFinite(shortestMinutes) && shortestMinutes > 0 ? shortestMinutes : 1);
+  return Math.max(base, (PHONE_TARGET_PX + 2) / shortest);
+}
