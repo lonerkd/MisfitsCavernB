@@ -45,14 +45,15 @@ export async function withdrawCreditRequest(id: string): Promise<void> {
 export async function listCreditRequests(projectId: string): Promise<CreditRequest[]> {
   const { data, error } = await supabase
     .from('credit_requests')
-    .select('id, project_id, requester_id, craft, note, status, created_at, decided_at, profiles:requester_id(username)')
+    .select('id, project_id, requester_id, craft, note, status, created_at, decided_at')
     .eq('project_id', projectId).eq('status', 'pending').order('created_at');
   if (error) throw error;
-  return (data ?? []).map((r) => {
-    const p = (r as { profiles?: { username?: string } | Array<{ username?: string }> | null }).profiles;
-    const username = Array.isArray(p) ? p[0]?.username : p?.username;
-    return { ...(r as unknown as CreditRequest), username };
-  });
+  const rows = (data ?? []) as CreditRequest[];
+  if (!rows.length) return rows;
+  const { data: people, error: pErr } = await supabase.from('profiles').select('id, username').in('id', rows.map((r) => r.requester_id));
+  if (pErr) throw pErr;
+  const names = new Map((people ?? []).map((p) => [p.id as string, p.username as string | null]));
+  return rows.map((r) => ({ ...r, username: names.get(r.requester_id) ?? undefined }));
 }
 
 /**
@@ -84,4 +85,11 @@ export async function sharedProjectId(token: string): Promise<string | null> {
   const { data, error } = await supabase.rpc('get_shared_project_id', { p_token: token });
   if (error) throw error;
   return data ?? null;
+}
+
+/** Whether the project's row is readable by this person: only the owner and the crew can read it, so it means "already on the film". */
+export async function isOnTheFilm(projectId: string): Promise<boolean> {
+  const { data, error } = await supabase.from('projects').select('id').eq('id', projectId).maybeSingle();
+  if (error) throw error;
+  return !!data;
 }

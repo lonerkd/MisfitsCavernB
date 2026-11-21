@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { askToBeCredited, myCreditRequest, sharedProjectId, withdrawCreditRequest, type CreditRequest } from '@/lib/supabase/credit-requests';
+import { askToBeCredited, isOnTheFilm, myCreditRequest, sharedProjectId, withdrawCreditRequest, type CreditRequest } from '@/lib/supabase/credit-requests';
 import { useToast } from '@/components/ui/Toast';
 import s from './shared.module.css';
 
@@ -33,6 +33,8 @@ export default function AskToBeCredited({ token }: { token: string }) {
         if (uid) {
           const pid = await sharedProjectId(token);
           if (!pid) return;
+          // The owner and the crew can read the project row; they are already on the film, so the ask is not for them.
+          if (await isOnTheFilm(pid)) return;
           const latest = await myCreditRequest(pid, uid);
           if (!live) return;
           setProjectId(pid);
@@ -80,7 +82,7 @@ export default function AskToBeCredited({ token }: { token: string }) {
   if (!ready) return null;
   if (!userId) {
     const next = typeof window !== 'undefined' ? window.location.pathname : `/shared/${token}`;
-    return <div className={s.ask}><a className={s.askLink} href={`/auth?next=${encodeURIComponent(next)}`}>Sign in to ask to be credited</a></div>;
+    return <div className={s.ask}><a className={s.askLink} href={`/auth?redirect=${encodeURIComponent(next)}`}>Sign in to ask to be credited</a></div>;
   }
   if (!projectId) return null;
   if (req?.status === 'approved') return null;

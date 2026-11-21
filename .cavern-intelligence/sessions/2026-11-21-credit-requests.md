@@ -1,0 +1,10 @@
+# Session - 2026-11-21: ask to be credited (BACKLOG 3.44, portfolio decision 4)
+
+The owner's answer to "who gets credit": a person left off can ask to be added and the project's owner decides. Built end to end.
+
+- **Database** (`20261121000100_credit_requests.sql`, mine, with a persona test): `credit_requests` (craft, note, pending/approved/declined). Only a signed-in person who is not the owner or crew may ask, on a project with a public page, one pending ask each; the requester and the owner read it; only the owner answers and only the answer changes (a guard trigger stamps it, an answer is final). `internal.takes_credit_requests` (an outsider cannot read `projects`) and `public.get_shared_project_id(token)` (signed in only, exact share token) are the two helpers; the second is on the definer allowlist.
+- **The share page** (Sonnet agent): "Missing from the credits? Ask to be added", a small form, "asked" with Withdraw, "declined" said once. Hidden for the owner and crew. I fixed the agent's sign-in link (`/auth` takes `redirect`, not `next`).
+- **The owner's panel** (Sonnet agent): Credit requests with Approve / Decline at the top of Cast & crew. Approve adds a viewer with the craft (a credit is not a permission); someone already on the crew keeps their access and gains the craft. The crew is changed first, the answer saved second, so nothing says approved that credits nobody.
+- **Caught on the run, not in review:** the owner's list embedded `profiles` through a foreign key that does not exist (the list silently showed nothing); usernames are now a second query.
+
+**Verified:** persona test (7: private project takes none, one ask, no forging, crew/owner/anon refused, owner-only answer, final, withdraw), 9 unit tests, typecheck, and `e2e/credit-request.spec.ts` (asker sends, owner approves, asker is on the crew as a viewer with the craft; the owner sees no ask button) on a production build on the local stack. **Not verified:** a phone; the pages by eye. **To do after merge:** apply the migration to production then staging, then the drift check.

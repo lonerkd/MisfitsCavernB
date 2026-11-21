@@ -10,12 +10,13 @@ const ask = vi.fn();
 const mine = vi.fn();
 const withdraw = vi.fn();
 vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast }) }));
-vi.mock('@/lib/supabase/client', () => ({ supabase: { auth: { getSession: () => getSession() } } }));
+vi.mock('@/lib/supabase/client', () => ({ supabase: { auth: { getSession: () => getSession() }, from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }) } }));
 vi.mock('@/lib/supabase/credit-requests', () => ({
   askToBeCredited: (...a: unknown[]) => ask(...a),
   myCreditRequest: (...a: unknown[]) => mine(...a),
   withdrawCreditRequest: (...a: unknown[]) => withdraw(...a),
   sharedProjectId: (...a: unknown[]) => rpc(...a),
+  isOnTheFilm: async () => false,
 }));
 import AskToBeCredited from './AskToBeCredited';
 
@@ -27,7 +28,7 @@ describe('AskToBeCredited', () => {
     getSession.mockResolvedValue({ data: { session: null } });
     render(<AskToBeCredited token="tok" />);
     const a = await screen.findByRole('link', { name: 'Sign in to ask to be credited' });
-    expect(a.getAttribute('href')).toMatch(/^\/auth\?next=/);
+    expect(a.getAttribute('href')).toMatch(/^\/auth\?redirect=/);
   });
   it('sends the trimmed ask', async () => {
     signedIn(); mine.mockResolvedValueOnce(null).mockResolvedValueOnce({ id: 'r1', craft: 'Gaffer', status: 'pending' });
