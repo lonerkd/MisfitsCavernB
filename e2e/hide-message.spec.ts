@@ -45,11 +45,15 @@ test.describe.serial('Hiding a reported message (local Supabase)', () => {
     const boss = await signIn(stack, browser, users.boss);
     await boss.page.goto('/admin/reports');
     await expect(boss.page.getByText(WORDS)).toBeVisible({ timeout: 30_000 });
+    // Hiding needs a reason (kept in the audit log), then a confirm; the report is resolved and leaves the Open tab.
+    await boss.page.getByLabel(/^Reason/).fill('A scam');
     await boss.page.getByRole('button', { name: 'Hide the message' }).click();
     await boss.page.getByRole('button', { name: 'Hide it', exact: true }).click();
-    await expect(boss.page.getByText('Hidden from everyone.')).toBeVisible({ timeout: 20_000 });
+    await expect(boss.page.getByText('Hidden, and the report is resolved')).toBeVisible({ timeout: 20_000 });
     expect((await stack.admin.from('messages').select('content').eq('id', messageId).single()).data?.content).toBe('[Removed by an admin]');
-    await expect(boss.page.getByText(WORDS)).toBeVisible(); // the admin still reads the original
+    await boss.page.getByRole('tab', { name: 'Resolved' }).click();
+    await expect(boss.page.getByText(WORDS)).toBeVisible({ timeout: 20_000 }); // the admin still reads the original
+    await expect(boss.page.getByText('The message is hidden.')).toBeVisible();
 
     const member = await signIn(stack, browser, users.member);
     await member.page.goto('/lounge');
@@ -64,8 +68,10 @@ test.describe.serial('Hiding a reported message (local Supabase)', () => {
     test.setTimeout(120_000);
     const boss = await signIn(stack, browser, users.boss);
     await boss.page.goto('/admin/reports');
+    await boss.page.getByRole('tab', { name: 'Resolved' }).click();
     await boss.page.getByRole('button', { name: 'Bring it back' }).click({ timeout: 30_000 });
-    await expect(boss.page.getByText('Visible to the channel.')).toBeVisible({ timeout: 20_000 });
+    await boss.page.getByRole('button', { name: 'Bring it back' }).last().click(); // the confirm's button
+    await expect(boss.page.getByText('Brought back', { exact: true })).toBeVisible({ timeout: 20_000 });
     expect((await stack.admin.from('messages').select('content, hidden_at').eq('id', messageId).single()).data).toEqual({ content: WORDS, hidden_at: null });
     await boss.ctx.close();
   });

@@ -13,7 +13,10 @@ test.describe('The keyboard on a phone (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
   const me = { id: '', email: `phonekb.${TAG}@journey.test` };
 
+  const channelName = `kb-${TAG}`;
+
   test.beforeAll(async ({ stack }) => {
+    await stack.insert('channels', { name: channelName, project_id: null, type: 'text', audience: 'users', post_policy: 'viewers' });
     me.id = (await stack.createUser({ email: me.email, password: PASSWORD, username: `pkb${TAG}` })).id;
   });
 
@@ -60,15 +63,12 @@ test.describe('The keyboard on a phone (local Supabase)', () => {
     const page = await ctx.newPage();
     await signInAs(page, { email: me.email, password: PASSWORD });
     await page.goto('/lounge');
-    // The first channels are read-only guides: open channels until one has a composer.
-    const channels = page.locator('.mc-lounge-channels button');
-    await expect(channels.first()).toBeVisible({ timeout: 30_000 });
+    // Open the channel made for this test (a community channel anyone who can see it may post in); the rail's own buttons also
+    // include its section headers, which fold and unfold, so the channel is found by name, not by position.
+    const channel = page.locator('.mc-lounge-channels').getByRole('button', { name: channelName, exact: true });
+    await expect(channel).toBeVisible({ timeout: 30_000 });
+    await channel.click();
     const box = page.locator('.mc-lounge-composer textarea').first();
-    for (let i = 0; i < await channels.count() && !(await box.isVisible()); i++) {
-      if (!(await page.locator('.mc-lounge-channels').first().isVisible())) await page.locator('.mc-lounge-back').first().click();
-      await channels.nth(i).click();
-      await page.waitForTimeout(400);
-    }
     await expect(box).toBeVisible({ timeout: 20_000 });
     await box.focus();
     await page.evaluate((n) => (window as unknown as { __setKb: (n: number) => void }).__setKb(n), 336);
