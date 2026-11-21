@@ -66,3 +66,17 @@ end;
 $function$;
 REVOKE ALL ON FUNCTION internal.credit_requests_guard() FROM PUBLIC, anon, authenticated;
 CREATE TRIGGER credit_requests_guard BEFORE UPDATE ON public.credit_requests FOR EACH ROW EXECUTE FUNCTION internal.credit_requests_guard();
+
+-- The share page needs the project's id to send a request, and an outsider cannot read `projects`. This gives it to a SIGNED-IN person
+-- who holds the exact share token of a link/public project (nothing else, no anon).
+CREATE FUNCTION public.get_shared_project_id(p_token text)
+ RETURNS uuid
+ LANGUAGE sql
+ STABLE SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+  SELECT p.id FROM public.projects p
+   WHERE auth.uid() IS NOT NULL AND coalesce(btrim(p_token), '') <> '' AND p.share_token = p_token AND p.visibility IN ('link', 'public');
+$function$;
+REVOKE ALL ON FUNCTION public.get_shared_project_id(text) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.get_shared_project_id(text) TO authenticated;

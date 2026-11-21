@@ -1750,6 +1750,7 @@ function public.get_shared_board(p_token text) body=525fbd11adb4d9b8a5829f9f2974
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
+function public.get_shared_project_id(p_token text) body=2901bb65cd311ce1cb675dac1bc78ae3
 function public.get_shared_script(p_token text) body=b10410cba5e1a9adbd998eb246df4b6d
 function public.get_signing(p_token text) body=dffc57e2d7fdade6dbd6f339721d353c
 function public.handle_new_user() body=efc4fb36fb50105493aa11938debfd4f
@@ -1919,6 +1920,7 @@ grant function public.get_shared_board(p_token text) anon,authenticated,postgres
 grant function public.get_shared_lookbook(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_portfolio(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_shared_project(p_token text) anon,authenticated,postgres,service_role
+grant function public.get_shared_project_id(p_token text) authenticated,postgres,service_role
 grant function public.get_shared_script(p_token text) anon,authenticated,postgres,service_role
 grant function public.get_signing(p_token text) anon,authenticated,postgres,service_role
 grant function public.handle_new_user() postgres,service_role

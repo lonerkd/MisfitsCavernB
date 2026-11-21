@@ -5822,6 +5822,7 @@ export type Database = {
           visibility: string;
         }[];
       };
+      get_shared_project_id: { Args: { p_token: string }; Returns: string };
       get_shared_script: {
         Args: { p_token: string };
         Returns: {

@@ -41,6 +41,15 @@ describe('asking to be credited', () => {
   });
 });
 
+describe('finding the project from its share token', () => {
+  it('a signed-in person with the token gets the id; a wrong token, a private project and anon get nothing', async () => {
+    const token = (await adminClient().from('projects').select('share_token').eq('id', projectId).single()).data!.share_token as string;
+    expect((await cast.riley.client.rpc('get_shared_project_id', { p_token: token })).data).toBe(projectId);
+    expect((await cast.riley.client.rpc('get_shared_project_id', { p_token: 'nope' })).data).toBeNull();
+    expect((await anonClient().rpc('get_shared_project_id', { p_token: token })).error).not.toBeNull();
+  });
+});
+
 describe('who sees and who decides', () => {
   it('the owner and the requester see it; crew, others and anon do not', async () => {
     expect((await cast.sam.client.from('credit_requests').select('id').eq('id', requestId)).data).toHaveLength(1);

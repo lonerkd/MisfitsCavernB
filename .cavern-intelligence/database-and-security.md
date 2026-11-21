@@ -136,6 +136,7 @@ Callable by **anyone** (anon + signed in) — public pages:
 | Function | Gate |
 |---|---|
 | `get_shared_project(token)` / `get_shared_lookbook(token)` / `get_press_kit(token)` | exact `share_token` and `visibility in ('link','public')`; lookbook returns only `shared` media |
+| `get_shared_project_id(token)` | signed-in only (`auth.uid()` not null), exact `share_token`, `visibility in ('link','public')`; returns only the project id, for a credit request from the share page |
 | `get_shared_board(token)` | exact `mood_board_shares.token`; returns the board's name, type, its project's title and its cards (position, note, and for a library item only its kind, title, source and size); **anon-callable** (`20261117000200`) |
 | `get_shared_script(token)` | exact `scripts.share_token`, non-empty, while `shared`; returns the words, the format and the author's public profile only |
 | `get_review(token)` | exact `review_links.token`, not revoked or expired (`internal.live_review_link`); returns only the link's sent versions (snapshot, comments, decision) — null for an unknown, revoked or expired token alike; **anon-callable** (`20261030000000`) |
