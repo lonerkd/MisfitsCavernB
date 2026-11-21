@@ -77,6 +77,7 @@ function SoundtrackContent() {
     setFindSceneId(sceneId);
     setActiveTab('search');
     setSearchQuery(query);
+    if (!isAuthenticated) return; // the Find tab asks to connect Spotify
     setIsSearching(true);
     try {
       setSearchResults(await searchSpotify(query, 'track'));
@@ -145,18 +146,15 @@ function SoundtrackContent() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className={`mc-page ${pad} flex flex-col items-center justify-center text-center`}>
-        <Disc size={48} className="mb-6 opacity-20" />
-        <h1 className="mc-title text-3xl md:text-4xl mb-4">Sound</h1>
-        <p className="mc-text mb-8 max-w-md text-[var(--fg-dim)]">Connect your Spotify account to unlock the global background player and cinematic mood library.</p>
-        <Button variant="solid" onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }} className="gap-2 px-8">
-          <Disc size={16} /> Connect Spotify
-        </Button>
-      </div>
-    );
-  }
+  const connectSpotify = (
+    <div className="flex items-center gap-4 flex-wrap p-4 mb-6 rounded-xl border border-dashed border-[rgba(var(--ink-rgb),0.1)]">
+      <Disc size={20} className="opacity-40 shrink-0" />
+      <p className="mc-text text-sm text-[var(--fg-dim)] flex-1 min-w-[12rem]">Connect Spotify to search and play music. Your scenes, tags and library work without it.</p>
+      <Button variant="solid" onClick={async () => { const problem = await redirectToSpotifyAuth(); if (problem) toast(problem, 'error'); }} className="gap-2 px-6 min-h-[44px]">
+        <Disc size={16} /> Connect Spotify
+      </Button>
+    </div>
+  );
 
   return (
     <div className={`mc-page ${pad} overflow-x-hidden`}>
@@ -168,8 +166,7 @@ function SoundtrackContent() {
         </div>
       </header>
 
-      <SoundDeck />
-      <ListenWithoutPremium />
+      {isAuthenticated ? (<><SoundDeck /><ListenWithoutPremium /></>) : null}
 
       <div role="tablist" aria-label="Sound rooms" className={`flex ${phone ? 'gap-2 mb-4 overflow-x-auto' : 'gap-4 mb-8'} border-b border-[rgba(var(--ink-rgb),0.06)] pb-2`}>
         {SOUND_TABS.map(tab => (
@@ -215,7 +212,8 @@ function SoundtrackContent() {
             )
           )}
 
-          {activeTab === 'search' && (
+          {activeTab === 'search' && !isAuthenticated && connectSpotify}
+          {activeTab === 'search' && isAuthenticated && (
             <div className="max-w-4xl">
               <form className={`flex ${phone ? 'flex-col items-stretch gap-3 mb-4' : 'gap-4 items-end mb-8'}`} onSubmit={handleSearch}>
                 <div className="flex-1">
