@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useToast } from '@/components/ui/Toast';
-import { useFlag } from '@/components/Flag';
 import { getConsent, setConsent } from '@/lib/hub/caseStudies';
 import { Toggle } from '../ui';
 import s from '../studio.module.css';
@@ -13,19 +12,17 @@ import s from '../studio.module.css';
  * pulls any case study about it back to draft.
  */
 export function CaseStudyConsent({ projectId, isOwner }: { projectId: string; isOwner: boolean }) {
-  const on = useFlag('hub_case_studies');
   const { toast } = useToast();
   const [ok, setOk] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!on) return;
     let live = true;
     getConsent(projectId).then((v) => { if (live) setOk(v); }).catch(() => { if (live) toast('Could not load the case-study setting', 'error'); });
     return () => { live = false; };
-  }, [on, projectId, toast]);
+  }, [projectId, toast]);
 
-  if (!on || ok === null) return null;
+  if (ok === null) return null;
 
   const change = async (next: boolean) => {
     setBusy(true);

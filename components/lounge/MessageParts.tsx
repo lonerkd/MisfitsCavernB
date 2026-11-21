@@ -2,40 +2,12 @@
 
 import { ReportButton } from '@/components/ui/ReportButton';
 import React, { useState } from 'react';
-import { Smile, MessageSquare, Trash2, Pin, PinOff, Pencil } from 'lucide-react';
+import { Smile, MessageSquare, Pin, PinOff, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Avatar from '@/components/ui/Avatar';
 import type { Message } from '@/components/lounge/types';
 
 export const REACTION_CHOICES = ['👍', '❤️', '🔥', '🎬', '😂', '🎉', '👀', '🙏'];
-
-/**
- * A guide channel reads as a document: each post is a section, its first line
- * the heading. Whoever runs the guide can remove a section.
- */
-export function GuideSections({ messages, canEdit, onDelete }: { messages: Message[]; canEdit: boolean; onDelete: (m: Message) => void }) {
-  return (
-    <article style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {messages.map((m) => {
-        const [head, ...rest] = m.text.split('\n');
-        const body = rest.join('\n').trim();
-        return (
-          <section key={m.id} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '16px 20px' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 15, color: 'var(--fg-strong)', fontWeight: 600, lineHeight: 1.4 }}>{head}</h3>
-              {canEdit && (
-                <button type="button" onClick={() => onDelete(m)} aria-label={`Remove section: ${head.slice(0, 60)}`}
-                  style={{ background: 'none', border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 8, color: 'var(--fg-muted)', cursor: 'pointer', padding: 4, display: 'inline-flex', flexShrink: 0 }}><Trash2 size={12} /></button>
-              )}
-            </div>
-            {body && <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.65, color: 'var(--fg)', whiteSpace: 'pre-wrap', fontFamily: 'var(--serif)' }}>{body}</p>}
-            <div style={{ marginTop: 10, fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{m.user} · {m.timestamp.toLocaleDateString()}</div>
-          </section>
-        );
-      })}
-    </article>
-  );
-}
 
 export function MessageBubble({ msg, currentUserId, onReact, onOpenThread, replyCount = 0, canPin = false, onPin, onEdit, highlight = false }: {
   msg: Message, currentUserId?: string, onReact: (id: string, emoji: string) => void, onOpenThread?: (m: Message) => void, replyCount?: number,

@@ -1,7 +1,7 @@
 // Checks a channel suggestion (public.channel_presets, admin-written) before it
 // is saved. The database enforces the same rules; this says them in words. Pure.
 
-export const PRESET_TYPES = ['text', 'voice', 'guide'] as const;
+export const PRESET_TYPES = ['text', 'voice'] as const;
 export const PRESET_AUDIENCES = ['team', 'owners', 'above', 'below', 'guests', 'public'] as const;
 export const PRESET_POLICIES = ['viewers', 'members', 'managers'] as const;
 export const PRESET_PHASES = ['development', 'pre-production', 'production', 'post-production', 'delivery'] as const;

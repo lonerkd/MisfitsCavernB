@@ -11,7 +11,6 @@ import type { ProjectProgressState } from '@/lib/hooks/useProjectProgress';
 import { listVersions, approvalBlocker } from '@/lib/review/versions';
 import { findFormat, useFormats } from '@/lib/formats/formats';
 import { advancePhase, listWorkingMedia, setProjectFormat, setProjectPhase, setUnlockAllTools } from '@/lib/supabase/progress';
-import { useFlag } from '@/components/Flag';
 import { gateItems, toBulk, type GateDecision, type GateItem } from '@/lib/studio/gate';
 import dynamic from 'next/dynamic';
 
@@ -65,7 +64,6 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
   const [busy, setBusy] = useState(false);
   const [reveal, setReveal] = useState<{ label: string; tools: ToolState[] } | null>(null);
   const [formatDraft, setFormatDraft] = useState<string | null>(null);
-  const gatesOn = useFlag('phase_gates');
   const [gate, setGate] = useState<{ index: number; items: GateItem[] } | null>(null);
   const style = accentVars(accent);
   const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
@@ -138,7 +136,7 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
       danger: false,
     })) return;
     // Leaving a phase for the next one: the owner decides what the library carries on.
-    if (forward && gatesOn && isOwner) {
+    if (forward && isOwner) {
       setBusy(true);
       let items: GateItem[] = [];
       try { items = gateItems(await listWorkingMedia(projectId)); }

@@ -18,7 +18,7 @@ import { ThreadPanel } from '@/components/lounge/ThreadPanel';
 
 export default function LoungePage() {
   const l = useLounge();
-  const { isLoading, toast, activeProject, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, showManage, setShowManage, dmTarget, threadParent, messages, currentUser, myProfile, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, pane, reloadChannels, canPost, canManageActive, isGuide, unpinById, jumpTo } = l;
+  const { isLoading, toast, activeProject, activeChannel, setActiveChannel, setPerms, showNewChannel, setShowNewChannel, showManage, setShowManage, dmTarget, threadParent, messages, currentUser, myProfile, showSearch, setShowSearch, showPinned, setShowPinned, setFocusId, pane, reloadChannels, canManageActive, unpinById, jumpTo } = l;
   if (isLoading) return null;
 
   // Exactly one screen tall: each pane scrolls on its own, so a long channel
@@ -45,7 +45,7 @@ export default function LoungePage() {
           <>
           <MessagePane l={l} />
 
-          {(!isGuide || canPost) && <Composer l={l} />}
+          <Composer l={l} />
           </>
           )}
         </div>

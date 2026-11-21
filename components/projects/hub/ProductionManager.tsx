@@ -18,7 +18,6 @@ import { CraftPicker } from '@/components/crafts/CraftPicker';
 import { setCrewCraft } from '@/lib/supabase/crew-management';
 import { useMyCapabilities } from '@/lib/roles/capabilities';
 import { NeedsCapability } from '@/components/roles/NeedsCapability';
-import { useFlag } from '@/components/Flag';
 import { useEntities, syncMentions } from '@/lib/film/links';
 import { MentionInput, MentionText } from '@/components/film/Mentions';
 import { plain } from '@/lib/film/mentions';
@@ -37,8 +36,7 @@ async function fetchProjectPage(projectId: string) {
 
 export function ProductionManager({ projectId, projectTitle, accent, isOwner }: { projectId: string; projectTitle: string; accent: string; isOwner: boolean }) {
   const { toast } = useToast();
-  const mentionsOn = useFlag('entity_cards');
-  const entities = useEntities(mentionsOn ? projectId : null);
+  const entities = useEntities(projectId);
   const [userId, setUserId] = useState<string | null>(null);
   // The budget is held by the roles that run the money: seeing it and changing it are separate (the database decides).
   const caps = useMyCapabilities(projectId);
@@ -98,7 +96,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
     if (await attempt(async () => { row = await hub.addTask(projectId, title); })) {
       setTasks(p => [...p, row!]);
       // A task is its own entity (written by a trigger); what it mentions becomes links.
-      if (mentionsOn && title.includes('@[')) {
+      if (title.includes('@[')) {
         const problem = await syncMentions(projectId, row!.id, title);
         if (problem) toast(`The task was added, but its mentions weren’t saved: ${problem}`, 'error');
       }
@@ -213,8 +211,8 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
               <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}>{mentionsOn ? <MentionText text={t.title} projectId={projectId} entities={entities.rows} /> : t.title}</span>
-              {mentionsOn && <Link href={`/studio?project=${projectId}&card=${t.id}`} aria-label={`Open the card for ${plain(t.title)}`} style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--violet)', textDecoration: 'underline', flexShrink: 0 }}>Card</Link>}
+              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}><MentionText text={t.title} projectId={projectId} entities={entities.rows} /></span>
+              <Link href={`/studio?project=${projectId}&card=${t.id}`} aria-label={`Open the card for ${plain(t.title)}`} style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--violet)', textDecoration: 'underline', flexShrink: 0 }}>Card</Link>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>
             <div style={{ display: 'flex', gap: 6, paddingLeft: 23 }}>
@@ -238,17 +236,13 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             </div>
             </div>
           ))}
-          {mentionsOn ? (
-            <MentionInput
-              entities={entities.rows}
-              placeholder="Add a task… (type @ to mention a scene, person or file)"
-              onSubmit={(v) => void addTask(v)}
-              style={{ background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' }}
-              buttonStyle={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
-            />
-          ) : (
-            <AddForm placeholder="Add a task…" fields={['text']} onSubmit={(v) => v[0] && addTask(v[0])} accent={accent} />
-          )}
+          <MentionInput
+            entities={entities.rows}
+            placeholder="Add a task… (type @ to mention a scene, person or file)"
+            onSubmit={(v) => void addTask(v)}
+            style={{ background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' }}
+            buttonStyle={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
+          />
         </Panel>
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>

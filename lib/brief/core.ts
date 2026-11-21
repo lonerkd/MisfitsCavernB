@@ -368,7 +368,7 @@ export function nextMoves({ questions, answers, format, phase, context: c, scrip
 export interface ChannelPreset {
   key: string;
   name: string;
-  type: 'text' | 'voice' | 'guide';
+  type: 'text' | 'voice';
   audience: 'team' | 'owners' | 'above' | 'below' | 'guests' | 'public';
   post_policy: 'viewers' | 'members' | 'managers';
   topic: string;

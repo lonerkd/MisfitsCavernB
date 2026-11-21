@@ -16,7 +16,6 @@ import { contextFromProject } from '@/lib/scriptos/context';
 import { castByScene, castOfScene } from '@/lib/film/cast';
 import { listRecordLinks, type RecordLinkRow } from '@/lib/supabase/productionRecords';
 import { recordsByScene, type KindCount } from '@/lib/studio/record-links';
-import { useFlag } from '@/components/Flag';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { EntityCardHost } from '@/components/film/EntityCard';
@@ -86,8 +85,7 @@ export interface StudioData {
   castOf: (scene: Pick<SceneRow, 'id'>) => string[];
   /** scene id → how many role-tool records (camera reports, costumes, …) are linked to it, by tool. */
   recordsByScene: Map<string, KindCount[]>;
-  /** The card (flag `entity_cards`): which entity is open, how to open and close it. `cardsOn` is false where the flag is off. */
-  cardsOn: boolean;
+  /** The card: which entity is open, how to open and close it. */
   cardId: string | null;
   openCard: (entityId: string) => void;
   closeCard: () => void;
@@ -240,13 +238,12 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
   const castOf = useCallback((scene: Pick<SceneRow, 'id'>) => castOfScene(scene, castByScn), [castByScn]);
 
-  const cardsOn = useFlag('entity_cards');
   const wantedCard = new URLSearchParams(useLocationSearch()).get('card');
   const asCardId = (v: string | null) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v.toLowerCase() : null);
   // Arriving on /studio?card=<id> (a mention's chip) opens that card at once; a later change opens the new one.
-  const wanted = cardsOn ? asCardId(wantedCard) : null;
+  const wanted = asCardId(wantedCard);
   const [cardId, setCardId] = useState<string | null>(() => wanted);
-  const openCard = useCallback((entityId: string) => { if (cardsOn) setCardId(entityId); }, [cardsOn]);
+  const openCard = useCallback((entityId: string) => { setCardId(entityId); }, []);
   useOnChange(wanted, () => { if (wanted) setCardId(wanted); });
   const closeCard = useCallback(() => setCardId(null), []);
 
@@ -277,10 +274,9 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     goTo: onNavigate,
     castOf,
     recordsByScene: recordsByScn,
-    cardsOn,
     cardId,
     openCard,
     closeCard,
   };
-  return <Ctx.Provider value={value}>{children}{cardsOn && <EntityCardHost />}</Ctx.Provider>;
+  return <Ctx.Provider value={value}>{children}<EntityCardHost /></Ctx.Provider>;
 }

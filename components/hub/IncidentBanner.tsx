@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { useCurrentUser } from '@/lib/os';
-import { useFlag } from '@/components/Flag';
 import { bannerIncident, listOpenIncidents, SEVERITY_LABEL } from '@/lib/hub/status';
 import type { HubPost } from '@/lib/hub/posts';
 
@@ -20,13 +19,12 @@ function dismissed(): string[] {
 
 export function IncidentBanner() {
   const { user } = useCurrentUser();
-  const on = useFlag('hub_status');
   const userId = user?.id ?? null;
   const [incident, setIncident] = useState<HubPost | null>(null);
   const [hidden, setHidden] = useState<string[]>(() => (typeof window === 'undefined' ? [] : dismissed()));
 
   useEffect(() => {
-    if (!on || !userId) return;
+    if (!userId) return;
     let live = true;
     const load = () => {
       listOpenIncidents()
@@ -36,9 +34,9 @@ export function IncidentBanner() {
     load();
     const t = window.setInterval(load, 60_000);
     return () => { live = false; window.clearInterval(t); };
-  }, [on, userId]);
+  }, [userId]);
 
-  if (!on || !userId || !incident || hidden.includes(incident.id)) return null;
+  if (!userId || !incident || hidden.includes(incident.id)) return null;
   const sev = incident.severity ?? 'minor';
   const close = () => {
     const next = [...hidden, incident.id];
