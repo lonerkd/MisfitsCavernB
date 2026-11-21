@@ -20,6 +20,7 @@ import { PrintButton } from '@/components/ui/PrintButton';
 import { ToolHeader } from '../ToolHeader';
 import { budgetDoc } from '@/lib/studio/budget-print';
 import { BudgetLines } from './BudgetLines';
+import { CashFlowSection } from './CashFlowSection';
 import s from '../studio.module.css';
 
 type CrewName = { user_id: string; username: string };
@@ -123,6 +124,8 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
           </section>
 
           {runsBudget && <BudgetLines projectId={project.id} userId={userId} lines={lines} onChange={() => { studio.listBudgetLines(project.id).then(setLines).catch(() => undefined); }} />}
+
+          <CashFlowSection lines={lines} expenses={expenses.rows} timesheets={timesheets.rows} />
 
           <SceneCostSection />
 

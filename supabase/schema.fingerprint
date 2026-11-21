@@ -74,6 +74,9 @@ column brief_questions.options jsonb default '[]'::jsonb not null
 column brief_questions.phase text not null
 column brief_questions.position integer default 0 not null
 column brief_questions.unit text
+column budget_alerts.alerted boolean default false not null
+column budget_alerts.alerted_at timestamp with time zone
+column budget_alerts.project_id uuid not null
 column budget_items.above_the_line boolean default false not null
 column budget_items.actual_cost numeric(12,2)
 column budget_items.amount numeric(12,2) default 0 not null
@@ -1035,6 +1038,8 @@ constraint brief_questions.brief_questions_options_check CHECK ((jsonb_typeof(op
 constraint brief_questions.brief_questions_phase_check CHECK ((phase = ANY (ARRAY['development'::text, 'pre-production'::text, 'production'::text, 'post-production'::text, 'delivery'::text])))
 constraint brief_questions.brief_questions_pkey PRIMARY KEY (key)
 constraint brief_questions.brief_questions_shape_check CHECK ((((kind = 'number'::text) AND (min_value IS NOT NULL) AND (max_value IS NOT NULL) AND (min_value <= max_value)) OR ((kind <> 'number'::text) AND (jsonb_array_length(options) > 0))))
+constraint budget_alerts.budget_alerts_pkey PRIMARY KEY (project_id)
+constraint budget_alerts.budget_alerts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
@@ -1663,6 +1668,8 @@ function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
 function internal.approval_pending(p_project uuid) body=e710b529b87414a1e3c455cc490486ee
 function internal.audio_refs_guard() body=ef569694d0c3833691dde513cf4baecd
 function internal.brief_question_guard() body=b1fe0fda5aa5f679ae8c969ec4f29a72
+function internal.budget_check_over(p_project uuid) body=dd47b85a6f67bd5cabe20120ebe0adbb
+function internal.budget_over_trigger() body=cb81de6c847e99f199209a141a113676
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=0a058f62bac52de09f6420f02f8e54a2
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
@@ -1839,6 +1846,8 @@ grant function internal.applied_to(p_job uuid) anon,authenticated,postgres
 grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.audio_refs_guard() postgres
 grant function internal.brief_question_guard() postgres
+grant function internal.budget_check_over(p_project uuid) postgres
+grant function internal.budget_over_trigger() postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
 grant function internal.call_sheet_recipients(p_project uuid) postgres
@@ -2280,6 +2289,7 @@ index CREATE UNIQUE INDEX breakdown_elements_id_project_key ON public.breakdown_
 index CREATE UNIQUE INDEX breakdown_elements_pkey ON public.breakdown_elements USING btree (id)
 index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdown_elements USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
+index CREATE UNIQUE INDEX budget_alerts_pkey ON public.budget_alerts USING btree (project_id)
 index CREATE UNIQUE INDEX budget_items_id_project_key ON public.budget_items USING btree (id, project_id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
 index CREATE UNIQUE INDEX budget_templates_name_key ON public.budget_templates USING btree (name)
@@ -2809,6 +2819,7 @@ rls breakdown_categories enabled=true forced=false
 rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
 rls brief_questions enabled=true forced=false
+rls budget_alerts enabled=true forced=false
 rls budget_items enabled=true forced=false
 rls budget_templates enabled=true forced=false
 rls calendar_feeds enabled=true forced=false
@@ -2925,6 +2936,8 @@ trigger CREATE TRIGGER brand_rule_entity_sync AFTER INSERT OR UPDATE OF project_
 trigger CREATE TRIGGER brand_rules_touch_updated_at BEFORE UPDATE ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER brief_question_guard BEFORE UPDATE OF kind, options ON public.brief_questions FOR EACH ROW EXECUTE FUNCTION internal.brief_question_guard()
+trigger CREATE TRIGGER budget_items_over AFTER INSERT OR DELETE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
+trigger CREATE TRIGGER budget_items_over_upd AFTER UPDATE OF amount, project_id ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
@@ -2951,6 +2964,8 @@ trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.project_tasks F
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.script_annotations FOR EACH ROW WHEN ((old.type = ANY (ARRAY['note'::text, 'revision'::text, 'reference'::text]))) EXECUTE FUNCTION internal.entity_sync()
 trigger CREATE TRIGGER entity_sync_delete AFTER DELETE ON public.shoot_days FOR EACH ROW EXECUTE FUNCTION internal.entity_sync()
+trigger CREATE TRIGGER expenses_budget_over AFTER INSERT OR DELETE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
+trigger CREATE TRIGGER expenses_budget_over_upd AFTER UPDATE OF amount, status, project_id ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
 trigger CREATE TRIGGER expenses_guard BEFORE INSERT OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_guard()
 trigger CREATE TRIGGER expenses_sync_actuals AFTER INSERT OR DELETE OR UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION internal.expenses_sync_actuals()
 trigger CREATE TRIGGER guide_progress_updated_at BEFORE UPDATE ON public.guide_progress FOR EACH ROW EXECUTE FUNCTION update_updated_at()
