@@ -300,8 +300,8 @@ expenses committed/paid with receipts from the library, timesheets,
 breakdown costs and per-category rates → "Push to budget" (`Breakdown · …`
 lines).
 **Built 2026-11-02 (slice 1):** cost by scene and by shoot day in Studio › Production › Money, read from the breakdown (`lib/studio/scene-cost.ts`: an element's cost, or its category's default; something used in several scenes is paid once, so it is split between them and the scenes add up to the total; the table says how much rests on a default and how many elements have no price at all). **Stripboard (2026-11-02):** each strip and each day shows the same figure (a strip's accessible name says what it costs; the tooltip says how much is a default estimate or that an element has no price). **Scene cards (2026-11-21):** each Studio scene card shows its cost ("Cost $1,050", with the default-estimate and no-price note as its tooltip and screen-reader text), from the same figures and wording as Money, and only to people who can read the budget (`budget.read`); crew without it load no breakdown. Slice 1 is complete. Still open for 4.6: the Stripboard's tooltip wording is its own copy, not yet the shared `costNote`.
-**To add**: budget templates (micro, low, indie, studio) and above/below the
-line; cast and crew
+**Built 2026-11-21 (slice 3):** budget templates (`budget_templates`: Micro, Low, Indie, Studio, 15 to 19 lines each, admin-editable) and above/below the line (`budget_items.above_the_line`). An empty budget in Studio › Money offers the four with their totals; choosing one inserts its lines through the ordinary budget write path (no new function, so `budget.write` decides). The budget table groups under Above the line and Below the line with subtotals, each line has an above-the-line checkbox, and the printed budget groups the same way. Still to add: an admin screen for templates (edit them in the database today).
+**To add**: cast and crew
 day rates × days (Day out of days exists); location costs from Locations;
 equipment rental; invoices; cash-flow projection; currencies (none today —
 every amount is plain dollars) and tax jurisdictions; cost alerts; financial

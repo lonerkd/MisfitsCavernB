@@ -1,12 +1,13 @@
 // The printed budget: planned against committed, paid and left, line by line, with the totals. Built on the print kit. Pure: the view
 // hands over the numbers it already shows (`moneySummary`), so the page and the screen cannot disagree.
-import type { PrintDoc } from '@/lib/print/kit';
+import type { PrintBlock, PrintColumn, PrintDoc } from '@/lib/print/kit';
 
 export interface BudgetPrintInput {
   project: string;
   accent?: string | null;
   logo?: string | null;
-  lines: Array<{ label: string; planned: number; committed: number; paid: number; left: number }>;
+  /** `above` marks a line above the line; when any line is, the budget prints in two groups with subtotals. */
+  lines: Array<{ label: string; planned: number; committed: number; paid: number; left: number; above?: boolean }>;
   totals: { planned: number; committed: number; paid: number; left: number };
   /** Approved labour already counted in "paid", when there is some. */
   labourPaid: number;
@@ -29,17 +30,31 @@ export function budgetDoc(i: BudgetPrintInput): PrintDoc {
     meta: [['Planned', f(i.totals.planned)], ['Committed', f(i.totals.committed)], ['Paid', f(i.totals.paid)], [over ? 'Over by' : 'Left', over ? f(-i.totals.left) : f(i.totals.left)]],
     blocks: [
       ...(over ? [{ type: 'note' as const, tone: 'warn' as const, text: `The project is ${f(-i.totals.left)} over its planned budget.` }] : []),
-      {
-        type: 'table',
-        columns: [{ key: 'label', label: 'Line' }, { key: 'planned', label: 'Planned', align: 'right', width: '14%' }, { key: 'committed', label: 'Committed', align: 'right', width: '14%' }, { key: 'paid', label: 'Paid', align: 'right', width: '14%' }, { key: 'left', label: 'Left', align: 'right', width: '16%' }],
-        rows: i.lines.map((l) => ({ label: l.label, planned: f(l.planned), committed: dash(l.committed), paid: dash(l.paid), left: left(l.left) })),
-        totals: { label: 'Total', planned: f(i.totals.planned), committed: f(i.totals.committed), paid: f(i.totals.paid), left: left(i.totals.left) },
-        empty: 'No budget lines yet.',
-      },
+      ...tables(i, dash, left),
       ...(i.labourPaid ? [{ type: 'note' as const, text: `Paid includes ${f(i.labourPaid)} of approved labour.` }] : []),
       ...(i.unassigned.committed || i.unassigned.paid ? [{ type: 'note' as const, text: `Not on any budget line: ${f(i.unassigned.committed)} committed, ${f(i.unassigned.paid)} paid.` }] : []),
     ],
     footer: i.project,
     generated: i.generated,
   };
+}
+
+function tables(i: BudgetPrintInput, dash: (n: number) => string, left: (n: number) => string): PrintBlock[] {
+  const f = i.format;
+  const columns: PrintColumn[] = [{ key: 'label', label: 'Line' }, { key: 'planned', label: 'Planned', align: 'right', width: '14%' }, { key: 'committed', label: 'Committed', align: 'right', width: '14%' }, { key: 'paid', label: 'Paid', align: 'right', width: '14%' }, { key: 'left', label: 'Left', align: 'right', width: '16%' }];
+  type L = BudgetPrintInput['lines'][number];
+  const row = (l: L) => ({ label: l.label, planned: f(l.planned), committed: dash(l.committed), paid: dash(l.paid), left: left(l.left) });
+  const sum = (rows: L[], k: 'planned' | 'committed' | 'paid' | 'left') => rows.reduce((n, l) => n + l[k], 0);
+  if (!i.lines.some((l) => l.above)) {
+    return [{
+      type: 'table', columns, rows: i.lines.map(row),
+      totals: { label: 'Total', planned: f(i.totals.planned), committed: f(i.totals.committed), paid: f(i.totals.paid), left: left(i.totals.left) },
+      empty: 'No budget lines yet.',
+    }];
+  }
+  const group = (title: string, rows: L[]): PrintBlock[] => rows.length ? [{
+    type: 'table', title, columns, rows: rows.map(row),
+    totals: { label: 'Subtotal', planned: f(sum(rows, 'planned')), committed: f(sum(rows, 'committed')), paid: f(sum(rows, 'paid')), left: left(sum(rows, 'left')) },
+  }] : [];
+  return [...group('Above the line', i.lines.filter((l) => l.above)), ...group('Below the line', i.lines.filter((l) => !l.above))];
 }

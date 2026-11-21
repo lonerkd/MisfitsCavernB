@@ -26,4 +26,12 @@ describe('the printed budget', () => {
   it('says so when there are no lines', () => {
     expect(printHtml(budgetDoc(input({ lines: [] })))).toContain('No budget lines yet.');
   });
+  it('prints above and below the line as two groups with subtotals when any line is above', () => {
+    const html = printHtml(budgetDoc(input({ lines: [
+      { label: 'Director', planned: 1000, committed: 0, paid: 0, left: 1000, above: true },
+      { label: 'Camera', planned: 400, committed: 0, paid: 100, left: 300, above: false },
+    ] })));
+    for (const s of ['Above the line', 'Below the line', '>Subtotal<', 'USD 1000', 'USD 400']) expect(html).toContain(s);
+    expect(html.indexOf('Above the line')).toBeLessThan(html.indexOf('Below the line'));
+  });
 });

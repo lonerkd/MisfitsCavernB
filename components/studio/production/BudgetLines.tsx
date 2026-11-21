@@ -11,6 +11,8 @@ import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { money, type BudgetItem } from '@/lib/studio';
+import { templateTotal, type BudgetTemplate } from '@/lib/studio/budget-templates';
+import { applyBudgetTemplate, listBudgetTemplates, setBudgetAboveTheLine } from '@/lib/supabase/budget-templates';
 import s from '../studio.module.css';
 
 /**
@@ -32,6 +34,17 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
   const [posted, setPosted] = useState<Set<string>>(new Set());
   const [posting, setPosting] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<BudgetTemplate[] | null>(null);
+  const [starting, setStarting] = useState<string | null>(null);
+  const empty = lines.length === 0;
+
+  // The starting points are only fetched when the budget is empty (that is the only time they are offered).
+  useEffect(() => {
+    if (!empty) return;
+    let live = true;
+    listBudgetTemplates().then((t) => { if (live) setTemplates(t); }, () => { if (live) setTemplates([]); });
+    return () => { live = false; };
+  }, [empty]);
 
   useEffect(() => { getBudgetItemIdsWithJobs(projectId).then(setPosted).catch(() => setPosted(new Set())); }, [projectId]);
 
@@ -45,6 +58,19 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
     try { await addBudgetItem(projectId, userId, name, Number(amount || 0)); setCategory(''); setAmount(''); changed(); }
     catch (err) { toast((err as { message?: string })?.message || 'Could not add the line.', 'error'); }
     finally { setBusy(false); }
+  };
+
+  const startFrom = async (t: BudgetTemplate) => {
+    if (starting) return;
+    setStarting(t.id);
+    try { const n = await applyBudgetTemplate(projectId, userId, t); toast(`Started the budget from ${t.name}: ${n} lines added`, 'success'); changed(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not start the budget from this template.', 'error'); }
+    finally { setStarting(null); }
+  };
+
+  const setAbove = async (line: BudgetItem, above: boolean) => {
+    try { await setBudgetAboveTheLine(line.id, above); changed(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not move the line.', 'error'); }
   };
 
   const remove = async (line: BudgetItem) => {
@@ -85,6 +111,22 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
   return (
     <section aria-label="Budget lines" className={s.stack} style={{ gap: 10 }}>
       <div className={s.cardTitle}>Budget lines</div>
+      {empty && templates && templates.length > 0 && (
+        <div className={s.stack} style={{ gap: 8 }} role="group" aria-label="Start from a template">
+          <div className={s.hint}>Start from a template. You can change every line afterwards.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 8 }}>
+            {templates.map((t) => (
+              <button key={t.id} type="button" className={s.panel} disabled={starting !== null} onClick={() => void startFrom(t)}
+                aria-label={`Start from ${t.name}, ${money(templateTotal(t))}`}
+                style={{ textAlign: 'left', padding: 12, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 4, color: 'inherit' }}>
+                <span style={{ fontWeight: 600 }}>{t.name}</span>
+                <span style={{ fontFamily: 'var(--display)', fontSize: '1.2rem' }}>{money(templateTotal(t))}</span>
+                <span className={s.hint} style={{ margin: 0 }}>{t.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {lines.length > 0 && (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {lines.map((line) => {
@@ -92,6 +134,10 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
             return (
               <li key={line.id} className={s.panel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px' }}>
                 <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>{line.category}</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                  <input type="checkbox" checked={line.above_the_line} onChange={(e) => void setAbove(line, e.target.checked)} aria-label={`${line.category} is above the line`} />
+                  Above the line
+                </label>
                 <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{money(Number(line.amount) || 0)}</span>
                 <button type="button" className={s.iconBtn} disabled={isPosted || posting === line.id} onClick={() => void postJob(line)}
                   aria-label={isPosted ? `${line.category} is already on the Jobs board` : `Post ${line.category} as a job`} title={isPosted ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}>
