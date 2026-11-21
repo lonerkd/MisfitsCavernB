@@ -1954,6 +1954,9 @@ export type Database = {
           created_at: string | null;
           created_by: string;
           description: string | null;
+          hidden_at: string | null;
+          hidden_by: string | null;
+          hidden_reason: string | null;
           id: string;
           project_id: string | null;
           rate: number | null;
@@ -1970,6 +1973,9 @@ export type Database = {
           created_at?: string | null;
           created_by: string;
           description?: string | null;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
           id?: string;
           project_id?: string | null;
           rate?: number | null;
@@ -1985,6 +1991,9 @@ export type Database = {
           created_at?: string | null;
           created_by?: string;
           description?: string | null;
+          hidden_at?: string | null;
+          hidden_by?: string | null;
+          hidden_reason?: string | null;
           id?: string;
           project_id?: string | null;
           rate?: number | null;
@@ -2005,6 +2014,13 @@ export type Database = {
           {
             foreignKeyName: "jobs_created_by_fkey";
             columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jobs_hidden_by_fkey";
+            columns: ["hidden_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
@@ -3074,6 +3090,7 @@ export type Database = {
           discord_avatar: string | null;
           discord_id: string | null;
           discord_username: string | null;
+          hidden_at: string | null;
           id: string;
           is_admin: boolean | null;
           is_sample: boolean;
@@ -3084,6 +3101,7 @@ export type Database = {
           sprint_minutes: number;
           status: string | null;
           suspended_at: string | null;
+          suspended_reason: string | null;
           ui_prefs: NonNullable<Json>;
           updated_at: string | null;
           username: string;
@@ -3097,6 +3115,7 @@ export type Database = {
           discord_avatar?: string | null;
           discord_id?: string | null;
           discord_username?: string | null;
+          hidden_at?: string | null;
           id: string;
           is_admin?: boolean | null;
           is_sample?: boolean;
@@ -3107,6 +3126,7 @@ export type Database = {
           sprint_minutes?: number;
           status?: string | null;
           suspended_at?: string | null;
+          suspended_reason?: string | null;
           ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username: string;
@@ -3119,6 +3139,7 @@ export type Database = {
           discord_avatar?: string | null;
           discord_id?: string | null;
           discord_username?: string | null;
+          hidden_at?: string | null;
           id?: string;
           is_admin?: boolean | null;
           is_sample?: boolean;
@@ -3129,6 +3150,7 @@ export type Database = {
           sprint_minutes?: number;
           status?: string | null;
           suspended_at?: string | null;
+          suspended_reason?: string | null;
           ui_prefs?: NonNullable<Json>;
           updated_at?: string | null;
           username?: string;
@@ -3928,6 +3950,7 @@ export type Database = {
           created_at: string;
           id: string;
           kind: string;
+          outcome: string | null;
           reason: string;
           reporter_id: string;
           resolved_at: string | null;
@@ -3940,6 +3963,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           kind: string;
+          outcome?: string | null;
           reason: string;
           reporter_id?: string;
           resolved_at?: string | null;
@@ -3951,6 +3975,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           kind?: string;
+          outcome?: string | null;
           reason?: string;
           reporter_id?: string;
           resolved_at?: string | null;
@@ -5635,6 +5660,15 @@ export type Database = {
         Args: { p_key: string; p_option: string };
         Returns: number;
       };
+      admin_hide_content: {
+        Args: {
+          p_hidden: boolean;
+          p_kind: string;
+          p_reason?: string;
+          p_target: string;
+        };
+        Returns: undefined;
+      };
       admin_hide_message: {
         Args: { p_hidden: boolean; p_message: string };
         Returns: undefined;
@@ -5651,6 +5685,10 @@ export type Database = {
           suspended: boolean;
           username: string;
         }[];
+      };
+      admin_moderate_report: {
+        Args: { p_action: string; p_reason?: string; p_report: string };
+        Returns: undefined;
       };
       admin_move_brief_question: {
         Args: { p_direction: number; p_key: string };
@@ -5671,6 +5709,16 @@ export type Database = {
       admin_remove_brief_question: {
         Args: { p_key: string };
         Returns: undefined;
+      };
+      admin_report_target: {
+        Args: { p_report: string };
+        Returns: {
+          author_id: string;
+          author_name: string;
+          hidden: boolean;
+          suspended: boolean;
+          suspended_reason: string;
+        }[];
       };
       admin_reported_message: {
         Args: { p_report: string };

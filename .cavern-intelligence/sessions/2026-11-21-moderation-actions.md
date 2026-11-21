@@ -19,3 +19,5 @@ The migration was never applied; `tests/integration/moderation-actions.test.ts` 
 
 ## Owner to do
 Run `npm run db:reset`, `npm run db:types`, the persona test and `e2e/reports.spec.ts`; apply to production then staging; drift check.
+
+**Independent review (a fresh Sonnet reviewer):** no blockers. Fixed: an admin's page cannot be hidden (`admin_hide_content` now refuses it, as `admin_set_suspended` refuses an admin); the `Jobs readable` policy evaluates `(select internal.caller_is_admin())` once per query; the new `jobs.hidden_by` foreign key has its index (the index-hygiene test caught it). **The claim, narrowed on purpose:** a suspended account is refused at the database for the four write paths guarded (messages, jobs, applications, reports, and message edits), not for every write; projects, media, comments and profile edits are not guarded, and the auth ban also stops a refreshed session within the hour. Extending `is_suspended()` to the common write policies is the follow-up (S/M). `get_platform_stats` still counts hidden jobs (a count, no content).

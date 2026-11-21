@@ -69,9 +69,11 @@ begin
   if internal.is_suspended() then
     raise exception 'Your account is suspended: you can read, but not post, apply, create or report.' using errcode = '42501';
   end if;
-  if tg_table_name = 'job_applications'
-     and exists (select 1 from public.jobs j where j.id = new.job_id and j.hidden_at is not null) then
-    raise exception 'This job is not taking applications.' using errcode = '42501';
+  if tg_table_name = 'job_applications' then
+    -- Nested, not `and`: plpgsql plans a whole expression, and the other tables have no job_id.
+    if exists (select 1 from public.jobs j where j.id = new.job_id and j.hidden_at is not null) then
+      raise exception 'This job is not taking applications.' using errcode = '42501';
+    end if;
   end if;
   return new;
 end;
@@ -183,7 +185,7 @@ DROP POLICY "Jobs readable" ON public.jobs;
 CREATE POLICY "Jobs readable" ON public.jobs FOR SELECT TO public
   USING (
     created_by = (SELECT auth.uid())
-    OR internal.caller_is_admin()
+    OR (select internal.caller_is_admin())
     OR (
       hidden_at IS NULL
       AND (
@@ -259,6 +261,9 @@ begin
       hidden_reason = case when p_hidden then coalesce(why, hidden_reason) else null end
     where id = p_target;
   elsif p_kind = 'profile' then
+    if p_hidden and exists (select 1 from public.profiles pr where pr.id = p_target and coalesce(pr.is_admin, false)) then
+      raise exception 'An admin''s page cannot be taken down here' using errcode = '42501';
+    end if;
     update public.profiles set
       hidden_at = case when p_hidden then coalesce(hidden_at, now()) else null end,
       portfolio_page = case when p_hidden then 'off' else portfolio_page end
@@ -379,3 +384,6 @@ REVOKE ALL ON FUNCTION public.admin_moderate_report(uuid, text, text) FROM PUBLI
 GRANT EXECUTE ON FUNCTION public.admin_hide_content(text, uuid, boolean, text) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.admin_report_target(uuid) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.admin_moderate_report(uuid, text, text) TO authenticated, service_role;
+
+-- The new foreign key gets its index (index-hygiene test).
+CREATE INDEX IF NOT EXISTS jobs_hidden_by_idx ON public.jobs USING btree (hidden_by);

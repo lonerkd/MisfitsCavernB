@@ -190,7 +190,7 @@ describe('suspending an author', () => {
     expect((await fresh.auth.signInWithPassword({ email: cast.riley.email, password: PASSWORD })).error).toBeNull();
     const ok = await fresh.from('messages').insert({ sender_id: cast.riley.id, channel_uuid: channelId, content: 'back' }).select('id').single();
     expect(ok.error).toBeNull();
-    expect((await fresh.from('reports').insert({ kind: 'job', target_id: jobId, reason: 'Fair' })).error).toBeNull();
+    expect((await fresh.from('reports').insert({ kind: 'profile', target_id: cast.sam.id, reason: 'Fair' })).error).toBeNull();
   });
 
   it('an admin cannot be suspended through a report either', async () => {
