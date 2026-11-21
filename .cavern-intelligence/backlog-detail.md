@@ -341,7 +341,7 @@ breakdown's wardrobe elements.
 watermark), FDX, Fountain, text; dual dialogue; scene numbers; revision
 colours (blue … cherry, `REVISION_COLORS`) with locked drafts; MORE/CONT'D
 on export; formats by project type.
-**To add**: FDX round-trip fidelity tests; Movie Magic Screenwriter, Celtx
+**FDX round-trip tests built 2026-11-21** (`lib/scriptos/fdx-roundtrip.test.ts`: 8 cases survive text -> FDX -> text with every line's type and text; **4 losses pinned as `it.fails`**: a character extension in lower case is upper-cased (`lib/scriptos/blocks.ts:37`), a forced scene heading loses its case (`blocks.ts:32`), runs of spaces in action collapse (`import.ts:43`), and a full import adds two action lines repeating the title page (`import.ts:33`, the `<TitlePage>` paragraphs read back as body); also found, not pinned because the round trip still matches: the exporter writes dual dialogue, centered text, sections, synopses, notes, forced elements and the title page as plain `Action` paragraphs with their Fountain markers as literal text (`export.ts:36-45`, `93-106`), so Final Draft shows `STEEL ^` or `> THE END <` as text: real FDX elements (`<DualDialogue>`, centered, a title page element) are the fix, M). **To add**: Movie Magic Screenwriter, Celtx
 and Highland import; RTF, ePub and HTML export; intercut, montage, series of
 shots and flashback/dream formatting; subtitled lines in another language;
 A/B pages, locked pages with asterisks, manual scene numbers (the parser
