@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { EMPTY_SIGNALS, PRODUCTION_VIEWS, type ProjectSignals } from '@/lib/os/progress';
 import { DEPARTMENT_WORKFLOWS, STAGES, WORKFLOWS, type Workflow } from './workflows';
-import { readiness, readySummary, recordKindsNeeded, stepEvidence } from './readiness';
+import { readiness, readySummary, recordKindsNeeded, stepDone, stepEvidence } from './readiness';
 
 const all = [...Object.entries(WORKFLOWS), ...Object.entries(DEPARTMENT_WORKFLOWS)];
 const ev = (signals: Partial<ProjectSignals> = {}, recordCounts: Record<string, number> = {}) => ({ signals: { ...EMPTY_SIGNALS, ...signals }, recordCounts });
@@ -42,5 +42,17 @@ describe('readiness', () => {
   });
   it('lists only the record kinds the steps need', () => {
     expect(recordKindsNeeded(w, ['Prep']).sort()).toEqual(['directorNotes', 'scouts']);
+  });
+});
+
+
+describe('issuing a call sheet', () => {
+  it('a dated sheet does not tick a step that is about issuing it; an issued one does', () => {
+    const issue = { text: 'Finish the call sheet and issue it.', tool: 'schedule' as const };
+    const plan = { text: 'Build the schedule.', tool: 'schedule' as const };
+    const dated = { signals: { ...EMPTY_SIGNALS, call_sheets: 1 }, recordCounts: {} };
+    expect(stepDone(issue, dated)).toBe(false);
+    expect(stepDone(plan, dated)).toBe(true);
+    expect(stepDone(issue, { signals: { ...EMPTY_SIGNALS, call_sheets: 1, call_sheets_issued: 1 }, recordCounts: {} })).toBe(true);
   });
 });

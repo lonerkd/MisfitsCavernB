@@ -38,7 +38,9 @@ export function stepDone(step: WorkflowStep, ev: ReadinessEvidence): boolean | n
     return typeof n === 'number' ? n >= 1 : null;
   }
   if (!ev.signals) return null;
-  const v = ev.signals[e.key];
+  // A step about ISSUING a call sheet is not done by a sheet that is only dated: it waits for one that was issued.
+  const key = step.tool === 'schedule' && /\bissue/i.test(step.text) ? 'call_sheets_issued' : e.key;
+  const v = ev.signals[key];
   return typeof v === 'number' ? v >= 1 : null;
 }
 
