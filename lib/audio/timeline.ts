@@ -134,3 +134,35 @@ export function formatMinutes(min: number): string {
 export function sceneSummary(s: TimelineScene, trackCount: number): string {
   return `Scene ${s.number}, ${s.mood}, ${formatMinutes(s.minutes)}${s.source === 'floor' ? ' (length not known)' : ''}, ${trackCount ? `${trackCount} track${trackCount === 1 ? '' : 's'}` : 'no music'}`;
 }
+
+/** The drawn width of the whole axis in px: the length at this zoom, never narrower than the box (so a short script still fills it). */
+export const MIN_AXIS_PX = 320;
+export function axisWidth(totalMinutes: number, pxPerMinute: number): number {
+  return Math.max(totalMinutes * pxPerMinute, MIN_AXIS_PX);
+}
+
+/** The minimap's blocks as percentages of the whole axis: each scene's start and width, on the same scale the timeline draws them. */
+export function minimapSegments<T extends Pick<TimelineScene, 'start' | 'minutes'>>(scenes: T[], pxPerMinute: number, axisPx: number): (T & { leftPct: number; widthPct: number })[] {
+  return scenes.map((s) => ({ ...s, leftPct: (s.start * pxPerMinute / axisPx) * 100, widthPct: (s.minutes * pxPerMinute / axisPx) * 100 }));
+}
+
+/** The scrollLeft that centres a point (px along the axis) in a box of `viewportPx`, kept inside the axis. */
+export function centredScrollLeft(pointPx: number, viewportPx: number, axisPx: number): number {
+  const max = Math.max(0, axisPx - viewportPx);
+  return Math.min(max, Math.max(0, pointPx - viewportPx / 2));
+}
+
+/** A press at `x` px from the strip's left edge -> the scrollLeft that centres that point of the timeline. */
+export function stripToScrollLeft(x: number, stripPx: number, viewportPx: number, axisPx: number): number {
+  if (stripPx <= 0) return 0;
+  const fraction = Math.min(1, Math.max(0, x / stripPx));
+  return centredScrollLeft(fraction * axisPx, viewportPx, axisPx);
+}
+
+/** The part of the axis in view, as percentages of the strip: the minimap's highlight window. */
+export function viewWindow(scrollLeft: number, viewportPx: number, axisPx: number): { leftPct: number; widthPct: number } {
+  if (axisPx <= 0) return { leftPct: 0, widthPct: 100 };
+  const widthPct = Math.min(100, (viewportPx / axisPx) * 100);
+  const leftPct = Math.min(100 - widthPct, Math.max(0, (scrollLeft / axisPx) * 100));
+  return { leftPct, widthPct };
+}

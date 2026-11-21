@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent as KeyEvent, type MouseEvent as ClickEvent } from 'react';
 import Link from 'next/link';
 import { PenLine, Play, Search, Trash } from 'lucide-react';
 import { editorSceneHref } from '@/lib/audio/links';
@@ -11,7 +11,10 @@ import { usePhoneLayout } from '@/lib/os/usePhone';
 import { BottomSheet } from '@/components/phone/BottomSheet';
 import { pushUndo, undoOrigin, UndoRefused } from '@/lib/os/undo';
 import { TrackTagger } from '@/components/audio/TrackTagger';
-import { buildTimeline, formatMinutes, sceneSummary, type LengthSource, type TimelineBar } from '@/lib/audio/timeline';
+import {
+  axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, sceneSummary, stripToScrollLeft, viewWindow,
+  type LengthSource, type TimelineBar,
+} from '@/lib/audio/timeline';
 import { parseScript } from '@/lib/scriptos/parser';
 import { moodQuery, sceneMood } from '@/lib/spotify/moods';
 import {
@@ -49,6 +52,14 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
   const [zoom, setZoom] = useState(1);
   const dragging = useRef<{ trackId: string; from: string } | null>(null);
   const [over, setOver] = useState<string | null>(null);
+  // The scene that holds the Tab stop (roving focus): arrow keys move it between the scene blocks.
+  const [rovingId, setRovingId] = useState<string | null>(null);
+  // The scrolled box's position and width, for the minimap's highlight window.
+  const [view, setView] = useState({ left: 0, viewport: 0 });
+  const box = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
+  const sceneEls = useRef(new Map<string, HTMLButtonElement>());
+  const hintId = useId();
   const key = `${projectId}:${scriptId ?? ''}`;
 
   const load = useCallback(async () => {
@@ -91,8 +102,63 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
   const tracksIn = (sceneId: string) => timeline?.lanes.flatMap((l) => l.bars.filter((b) => b.sceneId === sceneId)) ?? [];
   const laneH = phone.phone ? LANE_H_PHONE : LANE_H;
   const px = PX_PER_MIN * zoom;
-  const width = timeline ? Math.max(timeline.totalMinutes * px, 320) : 320;
+  const width = axisWidth(timeline?.totalMinutes ?? 0, px);
   const scene = timeline?.scenes.find((s) => s.id === selected) ?? null;
+  const hasScenes = (timeline?.scenes.length ?? 0) > 0;
+  const win = viewWindow(view.left, view.viewport, width);
+  // The Tab stop: the focused scene, else the selected one, else the first.
+  const tabStop = timeline?.scenes.find((s) => s.id === rovingId)?.id ?? scene?.id ?? timeline?.scenes[0]?.id;
+
+  const measure = useCallback(() => {
+    const b = box.current;
+    if (b) setView({ left: b.scrollLeft, viewport: b.clientWidth });
+  }, []);
+  // Keep the highlight window right when the box is resized (the browser reports it; jsdom has no ResizeObserver).
+  useEffect(() => {
+    const b = box.current;
+    if (!b || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => measure());
+    ro.observe(b);
+    return () => ro.disconnect();
+  }, [hasScenes, measure]);
+
+  const scrollBoxTo = (left: number) => {
+    const b = box.current;
+    if (!b) return;
+    if (typeof b.scrollTo === 'function') b.scrollTo({ left, behavior: 'smooth' });
+    else b.scrollLeft = left;
+  };
+  // A press on the strip centres that point of the timeline; a keyboard press on a scene's block centres that scene.
+  const jumpAlongScript = (e: ClickEvent<HTMLDivElement>) => {
+    const b = box.current;
+    const st = strip.current;
+    if (!b || !st || !timeline) return;
+    const viewport = b.clientWidth;
+    const id = (e.target as HTMLElement).closest<HTMLElement>('[data-scene-id]')?.dataset.sceneId;
+    const hit = id ? timeline.scenes.find((x) => x.id === id) : undefined;
+    if (hit && e.detail === 0) {
+      scrollBoxTo(centredScrollLeft((hit.start + hit.minutes / 2) * px, viewport, width));
+      return;
+    }
+    const rect = st.getBoundingClientRect();
+    scrollBoxTo(stripToScrollLeft(e.clientX - rect.left, rect.width, viewport, width));
+  };
+  const focusScene = (id: string) => sceneEls.current.get(id)?.focus();
+  // Arrow keys, Home and End move between scene blocks; T finds music for the focused scene (the same flow as the detail's button).
+  const onSceneKey = (e: KeyEvent<HTMLButtonElement>, i: number) => {
+    const list = timeline?.scenes ?? [];
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    const last = list.length - 1;
+    let to: number;
+    if (e.key === 'ArrowRight') to = Math.min(i + 1, last);
+    else if (e.key === 'ArrowLeft') to = Math.max(i - 1, 0);
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = last;
+    else if (e.key === 't' || e.key === 'T') { e.preventDefault(); onFind(moodQuery(list[i].mood), list[i].id); return; }
+    else return;
+    e.preventDefault();
+    focusScene(list[to].id);
+  };
 
   const play = (b: TimelineBar) => {
     const ref = refOf(b.trackId);
@@ -151,12 +217,27 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
         <p className="mc-text text-[var(--fg-dim)]">This script has no scenes yet. Write a scene heading (INT. / EXT.) in the editor and it appears here.</p>
       ) : (
         <>
-          <div className="overflow-x-auto pb-2" role="group" aria-label="Scenes timeline">
+          {/* The whole script in one strip: a block a scene, filled when it has music. The highlight is the part in view. */}
+          <div ref={strip} role="group" aria-label="Whole script" onClick={jumpAlongScript}
+            className="relative mb-2 cursor-pointer rounded-[4px] bg-[rgba(var(--ink-rgb),0.04)]" style={{ height: 14 }}>
+            {minimapSegments(timeline.scenes, px, width).map((m) => (
+              <button key={m.id} type="button" data-scene-id={m.id} aria-label={`Scene ${m.number}`} title={`${m.number}. ${m.heading}`}
+                style={{ position: 'absolute', top: 0, bottom: 0, left: `${m.leftPct}%`, width: `${m.widthPct}%`, minWidth: 2, boxSizing: 'border-box', padding: 0, borderRadius: 4,
+                  background: m.silent ? 'transparent' : m.color, border: `1px solid ${m.silent ? 'var(--border)' : m.color}`,
+                  opacity: selected && selected !== m.id ? 0.55 : 1 }} />
+            ))}
+            <div aria-hidden style={{ position: 'absolute', top: 0, bottom: 0, left: `${win.leftPct}%`, width: `${win.widthPct}%`, minWidth: 2, boxSizing: 'border-box', borderRadius: 4,
+              border: '1px solid var(--fg-strong)', background: 'rgba(var(--ink-rgb),0.08)', pointerEvents: 'none' }} />
+          </div>
+          <p id={hintId} className="sr-only">Use the arrow keys to move between scenes. Press T to find music for the focused scene.</p>
+          <div ref={box} onScroll={measure} className="overflow-x-auto pb-2" role="group" aria-label="Scenes timeline" aria-describedby={hintId}>
             <div style={{ width, minWidth: '100%', position: 'relative' }}>
               {/* The scenes: a block each, width by length, colour by mood. */}
               <div style={{ position: 'relative', height: 44 }}>
-                {timeline.scenes.map((s) => (
-                  <button key={s.id} type="button" aria-label={sceneSummary(s, tracksIn(s.id).length)} aria-pressed={selected === s.id}
+                {timeline.scenes.map((s, i) => (
+                  <button key={s.id} ref={(el) => { if (el) sceneEls.current.set(s.id, el); else sceneEls.current.delete(s.id); }}
+                    type="button" aria-label={sceneSummary(s, tracksIn(s.id).length)} aria-pressed={selected === s.id}
+                    tabIndex={s.id === tabStop ? 0 : -1} onFocus={() => setRovingId(s.id)} onKeyDown={(e) => onSceneKey(e, i)}
                     title={`${s.number}. ${s.heading}`} onClick={() => setSelected(selected === s.id ? null : s.id)}
                     style={{ position: 'absolute', left: s.start * px, width: Math.max(s.minutes * px - 2, 6), top: 0, height: 44, background: s.color, opacity: selected && selected !== s.id ? 0.55 : 1, outline: selected === s.id ? '2px solid var(--fg-strong)' : 'none', borderRadius: 4, borderStyle: s.source === 'floor' ? 'dotted' : 'solid', borderWidth: 1, borderColor: 'var(--border)' }}
                     className="mc-text text-xs text-[var(--on-accent)] overflow-hidden text-left px-1">{s.number}</button>

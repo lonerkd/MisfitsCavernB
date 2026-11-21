@@ -112,4 +112,71 @@ describe('SceneTimeline', () => {
     render(<SceneTimeline projectId="p" projectTitle="Undertow" canTag onFind={vi.fn()} />);
     expect(await screen.findByText(/This script has no scenes yet/)).toBeTruthy();
   });
+  it('draws the whole script as a strip with a block per scene, filled when it has music', async () => {
+    await open();
+    const strip = within(screen.getByRole('group', { name: 'Whole script' }));
+    expect(strip.getAllByRole('button').map((b) => b.getAttribute('aria-label'))).toEqual(['Scene 1', 'Scene 2']);
+    expect(strip.getByRole('button', { name: 'Scene 1' }).style.background).not.toBe('transparent');
+    expect(strip.getByRole('button', { name: 'Scene 2' }).style.background).toBe('transparent');
+  });
+
+  it('a click on the strip scrolls the timeline so the pressed point is centred', async () => {
+    await open();
+    const box = screen.getByRole('group', { name: 'Scenes timeline' });
+    const scrollTo = vi.fn();
+    Object.defineProperty(box, 'clientWidth', { configurable: true, value: 40 });
+    Object.defineProperty(box, 'scrollTo', { configurable: true, value: scrollTo });
+    const strip = screen.getByRole('group', { name: 'Whole script' });
+    vi.spyOn(strip, 'getBoundingClientRect').mockReturnValue({ left: 0, width: 400, top: 0, right: 400, bottom: 14, height: 14, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+    // The axis is 320 px (the floor). A press at 200 px of a 400 px strip is the middle: 160 px, centred in 40 px = 140.
+    fireEvent.click(strip, { clientX: 200, detail: 1 });
+    expect(scrollTo).toHaveBeenLastCalledWith({ left: 140, behavior: 'smooth' });
+  });
+
+  it('activating a scene’s block on the strip (keyboard) centres that scene', async () => {
+    await open();
+    const box = screen.getByRole('group', { name: 'Scenes timeline' });
+    const scrollTo = vi.fn();
+    Object.defineProperty(box, 'clientWidth', { configurable: true, value: 40 });
+    Object.defineProperty(box, 'scrollTo', { configurable: true, value: scrollTo });
+    fireEvent.click(within(screen.getByRole('group', { name: 'Whole script' })).getByRole('button', { name: 'Scene 2' }));
+    // Scene 2 runs from minute 2 for 1 minute: its middle is 2.5 * 16 = 40 px; centred in 40 px = 20.
+    expect(scrollTo).toHaveBeenLastCalledWith({ left: 20, behavior: 'smooth' });
+  });
+
+  it('moves focus between scenes with the arrow keys, Home and End (roving focus)', async () => {
+    await open();
+    const s1 = screen.getByRole('button', { name: /^Scene 1,/ });
+    const s2 = screen.getByRole('button', { name: /^Scene 2,/ });
+    expect(s1.tabIndex).toBe(0);
+    expect(s2.tabIndex).toBe(-1);
+    s1.focus();
+    fireEvent.keyDown(s1, { key: 'ArrowRight' });
+    expect(document.activeElement).toBe(s2);
+    expect(s2.tabIndex).toBe(0);
+    expect(s1.tabIndex).toBe(-1);
+    fireEvent.keyDown(s2, { key: 'ArrowRight' }); // already the last scene: stays put
+    expect(document.activeElement).toBe(s2);
+    fireEvent.keyDown(s2, { key: 'Home' });
+    expect(document.activeElement).toBe(s1);
+    fireEvent.keyDown(s1, { key: 'End' });
+    expect(document.activeElement).toBe(s2);
+    fireEvent.keyDown(s2, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(s1);
+  });
+
+  it('T finds music for the focused scene, through the same flow as the detail’s button', async () => {
+    const onFind = await open();
+    const s2 = screen.getByRole('button', { name: /^Scene 2,/ });
+    fireEvent.keyDown(s2, { key: 't' });
+    expect(onFind).toHaveBeenCalledWith('suspense thriller score', 's2');
+  });
+
+  it('says how to move between scenes, for a screen reader', async () => {
+    await open();
+    const box = screen.getByRole('group', { name: 'Scenes timeline' });
+    const hint = document.getElementById(box.getAttribute('aria-describedby')!);
+    expect(hint?.textContent).toContain('Use the arrow keys to move between scenes');
+    expect(hint?.className).toContain('sr-only');
+  });
 });
