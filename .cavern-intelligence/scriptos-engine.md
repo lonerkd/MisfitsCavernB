@@ -81,7 +81,30 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   (`getCurrentScriptId` / `setCurrentScriptId`).
 - **Revisions** are `script_revisions` (`lib/scriptos/revisions.ts`: lock a
   draft, coloured pages after it — `REVISION_COLORS`, diff view), not an
-  automatic version history.
+  automatic version history. The versions the editor can compare are the
+  locked revisions plus the draft in hand; `script_versions` exists in the
+  schema but nothing writes or reads it.
+- **Comparing versions** (`lib/scriptos/compare.ts`, pure; the view is
+  `components/editor/CompareVersions.tsx`; the report is
+  `lib/studio/compare-print.ts` through the print kit). `compareScripts(a, b)`
+  cuts both texts into scenes and pairs them: the same heading (numbering and a
+  forced `.` ignored; the nth with the nth when a heading repeats), then, for
+  what is left, scenes whose words are at least half the same (an edited
+  heading). Paired scenes out of order (everything off a longest increasing run)
+  are **moved**, not cut and added. Inside a pair the non-blank lines are diffed
+  (blank lines are never a change), a run of removed and added lines is aligned
+  by element type and similarity, and a paired line carries its changed words.
+  A **rename** is a cue that changes the same way throughout: the old name is
+  gone, the new one is new, and the changed cues are at least half the old
+  name's; the rename is applied to the earlier text, so lines that differ only by
+  the name are shown (with a marker) but are not changes. Lines are typed by
+  structure (`typeLines`), not by `parseScript`: the decoder takes ~150 ms a
+  script at 120 pages and a comparison reads two, the budget is 200 ms (a test
+  holds it). It returns the scenes with their rows, the renames and the numbers
+  (scenes added / cut / changed / moved, lines by kind, words, pages changed);
+  `changeRefs`, `groupScenes` and `collapseRows` shape the list the view draws
+  (the filter All / Dialogue / Action / Scene headings, next / previous change,
+  unchanged scenes and runs of lines folded). Read-only and persists nothing.
 
 ## Writing loop
 

@@ -262,6 +262,7 @@ export default function EditorPage() {
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('scene');
   const [revisions, setRevisions] = useState<Revision[]>([]);
+  const [revisionsFor, setRevisionsFor] = useState<string | null>(null);
   const [showWatermark, setShowWatermark] = useState(false);
 
   const [titlePage, setTitlePage] = useState<TitlePage>(getDefaultTitlePage());
@@ -400,6 +401,7 @@ export default function EditorPage() {
       const remote = await fetchRevisionsDB(currentScript.id);
       if (!active) return;
       setRevisions(remote.length > 0 ? remote : await getRevisions(currentScript.id));
+      if (active) setRevisionsFor(currentScript.id);
     })();
     return () => { active = false; };
   }, [currentScript]);
@@ -1295,6 +1297,11 @@ export default function EditorPage() {
           onClose={() => setShowCompare(false)}
           revisions={revisions}
           draft={content}
+          loading={!!currentScript && revisionsFor !== currentScript.id}
+          projectTitle={activeProject?.title ?? 'Project'}
+          scriptTitle={currentScript?.title ?? 'Script'}
+          accent={activeProject?.accent_color ?? null}
+          logo={activeProject?.logo_url ?? null}
         />
       )}
 
