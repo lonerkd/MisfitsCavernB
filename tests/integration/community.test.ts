@@ -38,10 +38,10 @@ afterAll(async () => {
 });
 
 describe('community channels', () => {
-  it('starter channels: guides first, announcements for managers, an admins room only admins see', async () => {
+  it('starter channels: no guide channels (they live in Learn), announcements for managers, an admins room only admins see', async () => {
     const { data } = await cast.sam.client.from('channels').select('name, type, audience, post_policy').is('project_id', null);
     const by = new Map((data ?? []).map((c) => [c.name, c]));
-    for (const n of ['start-here', 'faq', 'tutorials']) expect(by.get(n)).toMatchObject({ type: 'guide' });
+    for (const n of ['start-here', 'faq', 'tutorials']) expect(by.has(n)).toBe(false);
     expect(by.get('announcements')).toMatchObject({ post_policy: 'managers' });
     expect(by.get('admins')).toMatchObject({ audience: 'admins' });
     const jordanSees = new Set(((await cast.jordan.client.from('channels').select('name').is('project_id', null)).data ?? []).map((c) => c.name));
@@ -49,12 +49,13 @@ describe('community channels', () => {
     expect(jordanSees.has('admins')).toBe(false);
   });
 
-  it('only admins create community channels; guides are read-only for everyone else', async () => {
+  it('only admins create community channels; a managers-only channel is read-only for everyone else, and the guide type is gone', async () => {
     expect((await create(cast.riley.client, { name: 'nope', created_by: cast.riley.id })).error).not.toBeNull();
-    const guide = await create(cast.sam.client, { name: 'how-to', type: 'guide', created_by: cast.sam.id });
-    expect(guide.error).toBeNull();
-    expect(await post(cast.riley.client, cast.riley.id, guide.id!)).toBe(false);
-    expect(await post(cast.sam.client, cast.sam.id, guide.id!)).toBe(true);
+    expect((await create(cast.sam.client, { name: 'how-to', type: 'guide', created_by: cast.sam.id })).error).not.toBeNull();
+    const news = await create(cast.sam.client, { name: 'how-to', post_policy: 'managers', created_by: cast.sam.id });
+    expect(news.error).toBeNull();
+    expect(await post(cast.riley.client, cast.riley.id, news.id!)).toBe(false);
+    expect(await post(cast.sam.client, cast.sam.id, news.id!)).toBe(true);
   });
 
   it('a private community channel is members-only (it used to be open to everyone)', async () => {
