@@ -1306,6 +1306,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      credit_requests: {
+        Row: {
+          craft: string;
+          created_at: string;
+          decided_at: string | null;
+          id: string;
+          note: string | null;
+          project_id: string;
+          requester_id: string;
+          status: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          craft: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          note?: string | null;
+          project_id: string;
+          requester_id: string;
+          status?: string;
+        };
+        Update: {
+          craft?: string;
+          created_at?: string;
+          decided_at?: string | null;
+          id?: string;
+          note?: string | null;
+          project_id?: string;
+          requester_id?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "credit_requests_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       crew_capability_overrides: {
         Row: {
           capability: string;
@@ -5780,6 +5822,7 @@ export type Database = {
           visibility: string;
         }[];
       };
+      get_shared_project_id: { Args: { p_token: string }; Returns: string };
       get_shared_script: {
         Args: { p_token: string };
         Returns: {
