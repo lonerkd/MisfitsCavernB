@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 110 tables · 84 database functions · 147 e2e specs**
+**55 pages · 9 API routes · 110 tables · 84 database functions · 148 e2e specs**
 
 ## Routes
 
@@ -57,7 +57,7 @@
 | `/projects/[id]/pitch` | signed in | `app/(suite)/projects/[id]/pitch/page.tsx` (626) | 49 files · components: ui · lib: auth, formats, notifications, os, portfolio, push, scriptos, studio, supabase, types, util, validation | accessibility, project-manager |
 | `/projects/[id]/world` | signed in | `app/(suite)/projects/[id]/world/page.tsx` (17) | 7 files · components: world · lib: supabase, world | **none** |
 | `/projects` | signed in | `app/(suite)/projects/page.tsx` (672) | 65 files · components: brand, formats, ui · lib: auth, brief, formats, hooks, island, lounge, onboarding, os, push, scriptos, studio, supabase, types, util, validation | accessibility, auth-journey, island, keyboard-audit, layout, login-smoke, mobile, onboarding, page-errors, projects-keyboard-phase, route-smoke, search, themes |
-| `/settings` | signed in | `app/(suite)/settings/page.tsx` (342) | 67 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, scriptos, studio, supabase, themes, types, validation | accessibility, account-deletion, admin-actions, auth-journey, island, keyboard-audit, mobile, page-errors, phases, phone-keyboard, route-smoke, themes, your-data |
+| `/settings` | signed in | `app/(suite)/settings/page.tsx` (366) | 67 files · components: guides, settings, ui · lib: account, auth, formats, guides, island, notifications, os, pocket, push, scriptos, studio, supabase, themes, types, validation | accessibility, account-deletion, admin-actions, auth-journey, island, keyboard-audit, mobile, page-errors, phases, phone-keyboard, quiet-hours, route-smoke, themes, your-data |
 | `/showcase` | open (page checks) | `app/(suite)/showcase/page.tsx` (174) | 8 files · components: ui · lib: studio, supabase | accessibility, keyboard-audit, route-smoke |
 | `/soundtrack` | signed in | `app/(suite)/soundtrack/page.tsx` (300) | 94 files · components: audio, phone, studio, ui · lib: audio, auth, brief, cavern, errors, formats, island, os, push, scriptos, spotify, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, sound-phone, spotify-connect |
 | `/split` | signed in | `app/(suite)/split/page.tsx` (257) | 5 files · components: ui · lib: hooks, split | global-chords, page-errors, split |
@@ -68,7 +68,7 @@
 | `/api/discord/notify` (api) | public | `app/api/discord/notify/route.ts` (91) | 5 files · components: — · lib: supabase, util, validation | **none** |
 | `/api/discord/test` (api) | public | `app/api/discord/test/route.ts` (65) | 3 files · components: — · lib: util, validation | **none** |
 | `/api/links` (api) | open (page checks) | `app/api/links/route.ts` (53) | 4 files · components: — · lib: integrations, studio, util | **none** |
-| `/api/push/dispatch` (api) | open (page checks) | `app/api/push/dispatch/route.ts` (53) | 5 files · components: — · lib: notifications, push, validation | push |
+| `/api/push/dispatch` (api) | open (page checks) | `app/api/push/dispatch/route.ts` (53) | 6 files · components: — · lib: notifications, push, validation | push |
 | `/api/references/films` (api) | open (page checks) | `app/api/references/films/route.ts` (41) | 4 files · components: — · lib: references, util, validation | **none** |
 | `/api/references/search` (api) | open (page checks) | `app/api/references/search/route.ts` (61) | 3 files · components: — · lib: util, validation | **none** |
 | `/api/time` (api) | open (page checks) | `app/api/time/route.ts` (10) | 1 files · components: — · lib: — | **none** |
@@ -738,6 +738,7 @@
 | `project-manager.spec.ts` | `/projects/*`, `/projects/*/pitch`, `/studio` |
 | `projects-keyboard-phase.spec.ts` | `/projects` |
 | `push.spec.ts` | `/api/push/dispatch`, `/call/abc` |
+| `quiet-hours.spec.ts` | `/settings` |
 | `readiness-day-date.spec.ts` | `/studio` |
 | `readiness.spec.ts` | `/studio` |
 | `reading-corrections.spec.ts` | `/editor`, `/studio` |

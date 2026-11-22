@@ -457,7 +457,10 @@ column notifications.created_at timestamp with time zone default now()
 column notifications.created_by uuid default auth.uid()
 column notifications.id uuid default uuid_generate_v4() not null
 column notifications.link text
+column notifications.push_skipped text
+column notifications.pushed_at timestamp with time zone
 column notifications.read boolean default false not null
+column notifications.read_at timestamp with time zone
 column notifications.title text not null
 column notifications.type text not null
 column notifications.user_id uuid not null
@@ -1329,6 +1332,7 @@ constraint notifications.notifications_body_len CHECK ((char_length(body) <= 100
 constraint notifications.notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint notifications.notifications_link_internal CHECK (((link IS NULL) OR (link ~ '^/[^/\\]'::text)))
 constraint notifications.notifications_pkey PRIMARY KEY (id)
+constraint notifications.notifications_push_skipped_check CHECK (((push_skipped IS NULL) OR (push_skipped = ANY (ARRAY['switched-off'::text, 'quiet-hours'::text, 'no-devices'::text, 'failed'::text]))))
 constraint notifications.notifications_title_len CHECK (((char_length(title) >= 1) AND (char_length(title) <= 200)))
 constraint notifications.notifications_type_len CHECK ((char_length(type) <= 40))
 constraint notifications.notifications_user_id_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
@@ -1741,6 +1745,7 @@ function internal.moderation_write_guard() body=8e8fdfe96bd4fc8687aa7192a1fe87cb
 function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
 function internal.notes_guard() body=82d05cc6e3308cb72b8594b19c7b1f03
 function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
+function internal.notifications_timing_guard() body=22ad364d5ba92eab613de2b54724b9d6
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
 function internal.notify_signing(p_project uuid, p_title text, p_body text) body=6bf7082aae481bd3ab9a9ecde4f6104a
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
@@ -1922,6 +1927,7 @@ grant function internal.moderation_write_guard() postgres,service_role
 grant function internal.mood_boards_touch() postgres
 grant function internal.notes_guard() postgres
 grant function internal.notes_notify() postgres
+grant function internal.notifications_timing_guard() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
 grant function internal.notify_signing(p_project uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
@@ -3042,6 +3048,7 @@ trigger CREATE TRIGGER mood_boards_touch BEFORE UPDATE ON public.mood_boards FOR
 trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_guard()
 trigger CREATE TRIGGER notes_notify AFTER INSERT ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_notify()
 trigger CREATE TRIGGER notifications_push AFTER INSERT ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.push_notification()
+trigger CREATE TRIGGER notifications_timing_guard BEFORE INSERT OR UPDATE ON public.notifications FOR EACH ROW EXECUTE FUNCTION internal.notifications_timing_guard()
 trigger CREATE TRIGGER on_auth_user_created AFTER INSERT ON auth.users FOR EACH ROW EXECUTE FUNCTION handle_new_user()
 trigger CREATE TRIGGER portfolio_laurels_guard BEFORE INSERT OR UPDATE ON public.portfolio_laurels FOR EACH ROW EXECUTE FUNCTION internal.portfolio_laurels_guard()
 trigger CREATE TRIGGER portfolio_pin_limit BEFORE INSERT OR UPDATE OF pinned ON public.portfolio_projects FOR EACH ROW WHEN (new.pinned) EXECUTE FUNCTION internal.portfolio_pin_limit()
