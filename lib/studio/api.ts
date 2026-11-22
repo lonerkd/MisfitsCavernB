@@ -68,7 +68,7 @@ export type DocumentFields = Partial<Pick<ProjectDocument, 'kind' | 'title' | 's
 export type LocationPatch = Partial<Pick<ProjectLocation, 'address' | 'contact' | 'status' | 'permit' | 'cost' | 'notes' | 'latitude' | 'longitude' | 'timezone'>>;
 /** One row per project and day number: the day the schedule, the call sheet and the set log share. */
 export type ShootDay = Tables<'shoot_days'>;
-export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes'>>;
+export type CallSheetPatch = Partial<Pick<CallSheet, 'shoot_date' | 'general_call' | 'shooting_call' | 'estimated_wrap' | 'location_address' | 'weather' | 'notes' | 'hospital_name' | 'hospital_address' | 'hospital_phone' | 'police_phone' | 'medic'>>;
 export type PostCut = Tables<'post_cuts'>;
 export type PostNote = Tables<'post_notes'>;
 export type PostItem = Tables<'post_items'>;

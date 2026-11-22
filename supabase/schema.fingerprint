@@ -131,12 +131,17 @@ column call_sheet_calls.role_label text
 column call_sheets.created_at timestamp with time zone default now()
 column call_sheets.estimated_wrap time without time zone
 column call_sheets.general_call time without time zone
+column call_sheets.hospital_address text
+column call_sheets.hospital_name text
+column call_sheets.hospital_phone text
 column call_sheets.id uuid default uuid_generate_v4() not null
 column call_sheets.issued jsonb
 column call_sheets.issued_at timestamp with time zone
 column call_sheets.issued_by uuid
 column call_sheets.location_address text
+column call_sheets.medic text
 column call_sheets.notes text
+column call_sheets.police_phone text
 column call_sheets.project_id uuid not null
 column call_sheets.reminded_at timestamp with time zone
 column call_sheets.shoot_date date
@@ -1125,6 +1130,7 @@ constraint call_sheets.call_sheets_issued_by_fkey FOREIGN KEY (issued_by) REFERE
 constraint call_sheets.call_sheets_pkey PRIMARY KEY (id)
 constraint call_sheets.call_sheets_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint call_sheets.call_sheets_project_id_shoot_day_key UNIQUE (project_id, shoot_day)
+constraint call_sheets.call_sheets_safety_len CHECK (((char_length(hospital_name) <= 200) AND (char_length(hospital_address) <= 500) AND (char_length(hospital_phone) <= 60) AND (char_length(police_phone) <= 60) AND (char_length(medic) <= 200)))
 constraint call_sheets.call_sheets_shoot_day_fkey FOREIGN KEY (shoot_day_id, project_id) REFERENCES shoot_days(id, project_id) ON DELETE SET NULL (shoot_day_id)
 constraint call_sheets.call_sheets_text_len CHECK (((char_length(location_address) <= 500) AND (char_length(weather) <= 200) AND (char_length(notes) <= 5000)))
 constraint call_sheets.call_sheets_updated_by_fkey FOREIGN KEY (updated_by) REFERENCES profiles(id) ON DELETE SET NULL
@@ -1745,9 +1751,9 @@ function internal.budget_item_fringes_touch() body=81ecd69ed106c7fc45eaf64fd7c40
 function internal.budget_items_derive() body=fc9f06fb90e1b5b945a2c5821ded8609
 function internal.budget_over_trigger() body=cb81de6c847e99f199209a141a113676
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=0a058f62bac52de09f6420f02f8e54a2
-function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
+function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=855d7596f8931f09827f98bab2ba4533
 function internal.call_sheet_recipients(p_project uuid) body=3f4e888a5cccc2a106cb51ecd68c9201
-function internal.call_sheet_snapshot(p_sheet uuid) body=f70cce45c724ce7731096640782cec37
+function internal.call_sheet_snapshot(p_sheet uuid) body=ee03a6c775267accf1311fcc8acfa99c
 function internal.call_sheets_issue_guard() body=a2d2a9db32f7073a416b9a4a3b946187
 function internal.call_sheets_link_day() body=3c1981592353a6cfe1288e3d9addeeac
 function internal.caller_is_admin() body=5f944de6198508cce77166df09c68ccc

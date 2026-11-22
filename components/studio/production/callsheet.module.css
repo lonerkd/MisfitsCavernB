@@ -64,4 +64,5 @@
 .call input:hover { border-bottom-color: var(--paper-rule); }
 .call input:focus { outline: 2px solid var(--on-paper); outline-offset: 2px; }
 .none { margin: 8px 0 0; font-size: var(--text-sm); color: var(--paper-faint); }
-@media (max-width: 560px) { .call { grid-template-columns: minmax(0, 1fr) 7rem; } .call input:last-child { grid-column: 1 / -1; } }
+@media (max-width: 560px) { .call { grid-template-columns: minmax(0, 1fr) 7rem; } .call input:nth-of-type(2) { grid-column: 1 / -1; } }
+.textIt { grid-column: 1 / -1; display: flex; gap: 8px; }
