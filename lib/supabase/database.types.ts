@@ -4598,6 +4598,52 @@ export type Database = {
           },
         ];
       };
+      schedule_versions: {
+        Row: {
+          auto: boolean;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          label: string;
+          project_id: string;
+          snapshot: NonNullable<Json>;
+        };
+        ComputedFields: never;
+        Insert: {
+          auto?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          label: string;
+          project_id: string;
+          snapshot: NonNullable<Json>;
+        };
+        Update: {
+          auto?: boolean;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          label?: string;
+          project_id?: string;
+          snapshot?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "schedule_versions_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "schedule_versions_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       script_annotations: {
         Row: {
           created_at: string | null;

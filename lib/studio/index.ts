@@ -7,6 +7,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { supabase } from '@/lib/supabase/client';
 import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem } from './api';
 import { useLiveRows } from './live';
+import { createScheduleVersionsApi } from './schedule-versions-api';
 import type { ParsedSceneInput } from './scene-sync';
 
 export * from './api';
@@ -18,10 +19,13 @@ export * from './locations';
 export * from './money';
 export * from './documents';
 export * from './transcript';
+export * from './schedule-versions';
+export * from './schedule-versions-api';
 export { useLiveRows } from './live';
 export type { LiveRows, LiveStatus } from './live';
 
 export const studio = createStudioApi(supabase);
+export const scheduleVersions = createScheduleVersionsApi(supabase);
 
 // ── Media library ──────────────────────────────────────────────────────────
 

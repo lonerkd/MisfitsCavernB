@@ -173,7 +173,7 @@ Nothing built. Translate a script into 50+ languages (a translation service), si
 **Built**: import PDF, FDX, Fountain, text; export PDF (title page, watermark), FDX, Fountain, text; dual dialogue; scene numbers; revision colours (blue … cherry, `REVISION_COLORS`) with locked drafts; MORE/CONT'D on export; formats by project type. _(full text: `backlog-detail.md`, 4.9)_
 
 ### 4.10 Breakdown and scheduling
-**Built**: tagging (with suggestions from past projects), categories and rates, per-scene sheets, page eighths, scene duration, Day/Night and INT/EXT, stripboard with auto-schedule and company moves, Day out of days, call sheets, readiness, printable… _(full text: `backlog-detail.md`, 4.10)_
+**Built 2026-11-22:** named schedule versions with compare and restore (`schedule_versions`; a restore saves the live board first). _(full text: `backlog-detail.md`, 4.10)_
 
 ### 4.11 World building and locations
 **Resumed 2026-11-22 (PR 718):** the WIP is finished: appearances per place with a jump, unlisted places, the cross-place checks and a world bible print, with `e2e/world-locations.spec.ts` passing against the local stack. _(full text: `backlog-detail.md`, 4.11)_
