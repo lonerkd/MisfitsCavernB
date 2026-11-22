@@ -170,7 +170,7 @@ Nothing built. Translate a script into 50+ languages (a translation service), si
 **Built**: tagging (with suggestions from past projects), categories and rates, per-scene sheets, page eighths, scene duration, Day/Night and INT/EXT, stripboard with auto-schedule and company moves, Day out of days, call sheets, readiness, printable… _(full text: `backlog-detail.md`, 4.10)_
 
 ### 4.11 World building and locations
-**Unfinished attempt (2026-11-22):** a stopped agent left partial, never-run, unreviewed work on the branch `claude/world-building-wip` (`lib/studio/world.ts` and test, `WorldInsights.tsx`, `world-print.ts`, a Locations view change,… _(full text: `backlog-detail.md`, 4.11)_
+**Resumed 2026-11-22 (PR 718):** the WIP is finished: appearances per place with a jump, unlisted places, the cross-place checks and a world bible print, with `e2e/world-locations.spec.ts` passing against the local stack. _(full text: `backlog-detail.md`, 4.11)_
 
 ### 4.12 Comparing versions
 **Built**: locked revisions with coloured changed pages and a diff view (`lib/scriptos/revisions.ts`); **2026-11-21 (slice 1)**: Compare for any two versions (the locked revisions and the draft; A and B, swap), side by side and aligned by scene (stacked A… _(full text: `backlog-detail.md`, 4.12)_
