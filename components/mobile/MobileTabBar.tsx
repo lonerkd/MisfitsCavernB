@@ -30,6 +30,7 @@ import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { usePhoneLayout } from '@/lib/os/usePhone';
+import { shouldDismiss } from './sheetDrag';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -71,20 +72,45 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
   const toggles = activeDescriptor?.toggles ?? [];
   const actions = activeDescriptor?.actions ?? [];
 
+  // Swipe down on the handle or the title to put it away (a sheet that a swipe does not close feels stuck). Pointer events, so a finger
+  // and a mouse behave the same; a press on a button inside (Close) is left to the button.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ y: number; t: number } | null>(null);
+  const pull = (e: React.PointerEvent) => Math.max(0, e.clientY - (drag.current?.y ?? e.clientY));
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    drag.current = { y: e.clientY, t: e.timeStamp };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (sheetRef.current) sheetRef.current.style.transition = 'none';
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (drag.current && sheetRef.current) sheetRef.current.style.transform = `translateY(${pull(e)}px)`;
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || !sheetRef.current) return;
+    if (shouldDismiss(Math.max(0, e.clientY - d.y), e.timeStamp - d.t)) { onClose(); return; }
+    sheetRef.current.style.transition = 'transform 0.2s ease';
+    sheetRef.current.style.transform = '';
+  };
+
   return createPortal(
     <>
       <div className={m.scrim} onClick={onClose} aria-hidden />
-      <div className={m.sheet} role="dialog" aria-modal="true" aria-labelledby="mc-more-title">
-        <div className={m.grip} aria-hidden />
-        <div className={m.sheetHead}>
-          <h2 id="mc-more-title" className={m.sheetTitle}>Everything</h2>
-          <button ref={closeRef} type="button" className={m.close} onClick={onClose} aria-label="Close"><X size={18} aria-hidden /></button>
+      <div ref={sheetRef} className={m.sheet} role="dialog" aria-modal="true" aria-labelledby="mc-more-title">
+        <div className={m.dragZone} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} data-testid="sheet-drag">
+          <div className={m.grip} aria-hidden />
+          <div className={m.sheetHead}>
+            <h2 id="mc-more-title" className={m.sheetTitle}>Everything</h2>
+            <button ref={closeRef} type="button" className={m.close} onClick={onClose} aria-label="Close"><X size={18} aria-hidden /></button>
+          </div>
         </div>
 
         {(toggles.length > 0 || actions.length > 0) && (
           <>
             <p className={m.section}>On this page{activeDescriptor?.title ? ` · ${activeDescriptor.title}` : ''}</p>
-            <div className={m.list}>
+            <div className={`${m.list} ${m.pageActions}`}>
               {toggles.map((t) => (
                 <button key={t.id} type="button" className={`${m.row} ${m.pageAction}`} aria-pressed={t.active} onClick={() => t.onToggle()}>
                   <span>{t.label}</span><span className={t.active ? m.toggleOn : m.rowMeta}>{t.active ? 'On' : 'Off'}</span>

@@ -1,3 +1,4 @@
+import type { Json } from './database.types';
 import { supabase } from './client';
 
 export interface Notification {
@@ -24,7 +25,7 @@ export async function getNotificationPrefs(userId: string): Promise<Notification
 export async function saveNotificationPrefs(userId: string, patch: Partial<NotificationPrefs>) {
   const current = await getNotificationPrefs(userId);
   const next = { ...current, ...patch };
-  const { error } = await supabase.from('profiles').update({ notification_prefs: next }).eq('id', userId);
+  const { error } = await supabase.from('profiles').update({ notification_prefs: next as unknown as NonNullable<Json> }).eq('id', userId);
   if (error) throw error;
   return next;
 }
