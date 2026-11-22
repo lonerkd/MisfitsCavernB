@@ -9,7 +9,7 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useProject } from '@/lib/os';
 import { logActivity } from '@/lib/supabase/activity';
 import { patchProjectSettings } from '@/lib/supabase/progress';
-import { money, studio, takeSnapshot, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
+import { money, studio, useCallSheets, useProjectLocations, useShootDays, type SceneRow } from '@/lib/studio';
 import type { SceneCosts } from '@/lib/studio/scene-cost';
 import { lightNoteText } from '@/lib/film/days';
 import { deviceZone, filmDays } from '@/lib/film/studio';
@@ -25,7 +25,11 @@ import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { DoodTable } from './DoodTable';
-import { ScheduleVersions } from './ScheduleVersions';
+import { takeSnapshot } from '@/lib/studio/schedule-versions';
+import dynamic from 'next/dynamic';
+
+// Loaded when the Schedule opens, not with every Studio tab.
+const ScheduleVersions = dynamic(() => import('./ScheduleVersions').then((m) => m.ScheduleVersions), { ssr: false });
 import s from '../studio.module.css';
 import b from './stripboard.module.css';
 

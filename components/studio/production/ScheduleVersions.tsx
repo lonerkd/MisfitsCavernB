@@ -4,14 +4,15 @@ import { useCallback, useMemo, useState } from 'react';
 import { GitCompare, History, RotateCcw, Save, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
-import {
-  autoVersionLabel, describeDiff, diffSchedules, parseSnapshot, restorePlan, scheduleVersions, studio, VERSION_LABEL_MAX,
-  type SceneRow, type ScheduleSnapshot, type ScheduleVersion, type ShootDay,
-} from '@/lib/studio';
+import { supabase } from '@/lib/supabase/client';
+import { studio, type SceneRow, type ShootDay } from '@/lib/studio';
+import { describeDiff, diffSchedules, parseSnapshot, restorePlan, type ScheduleSnapshot } from '@/lib/studio/schedule-versions';
+import { autoVersionLabel, createScheduleVersionsApi, VERSION_LABEL_MAX, type ScheduleVersion } from '@/lib/studio/schedule-versions-api';
 import { cx } from '../ui';
 import s from '../studio.module.css';
 import b from './stripboard.module.css';
 
+const scheduleVersions = createScheduleVersionsApi(supabase);
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 const dateText = (d: string | null) => (d ? new Date(`${d}T00:00`).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'no date');
 

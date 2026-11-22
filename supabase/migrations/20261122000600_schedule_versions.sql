@@ -25,6 +25,7 @@ CREATE TABLE public.schedule_versions (
   created_at timestamp with time zone DEFAULT now() NOT NULL
 );
 CREATE INDEX schedule_versions_project_idx ON public.schedule_versions USING btree (project_id, created_at DESC);
+CREATE INDEX schedule_versions_created_by_idx ON public.schedule_versions USING btree (created_by);
 
 ALTER TABLE public.schedule_versions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "schedule versions view" ON public.schedule_versions FOR SELECT TO authenticated

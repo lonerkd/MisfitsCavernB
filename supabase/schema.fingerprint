@@ -2337,6 +2337,7 @@ index CREATE INDEX scenes_location_fkey_idx ON public.scenes USING btree (locati
 index CREATE INDEX scenes_script_id_fkey_idx ON public.scenes USING btree (script_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX scenes_shoot_day_fkey_idx ON public.scenes USING btree (shoot_day_id, project_id)
+index CREATE INDEX schedule_versions_created_by_idx ON public.schedule_versions USING btree (created_by)
 index CREATE INDEX schedule_versions_project_idx ON public.schedule_versions USING btree (project_id, created_at DESC)
 index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
 index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
