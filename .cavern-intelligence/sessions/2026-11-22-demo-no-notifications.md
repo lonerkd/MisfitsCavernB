@@ -1,0 +1,5 @@
+# 2026-11-22 — `--no-notifications` for the demo builder
+
+Found before applying the demo world to the owner's accounts: `loner` has two devices registered for Web Push, and the `notifications_push` trigger pushes every notification insert, so the seed's own notification inserts (cast notices, job applications) would have buzzed the phone about a dozen times and left demo notices in the real inbox. `scripts/demo/build.ts --no-notifications` drops those inserts from the generated SQL (4 inserts become 0 for the `more` set; nothing else changes). A rehearsal on a local account then leaves only the two notifications the app's own triggers make (an over-budget alert, a call sheet issued to a crew member). `thekid` has no devices.
+
+**Verified:** `tsc`; generated the `more` set for a username with and without the flag and counted: 4 notification inserts, then 0; applied the quiet SQL to a throwaway local account (exit 0) and read its notifications (two, from triggers). No tests needed: a generator flag that only removes lines from generated SQL, checked by that diff and the rehearsal above.
