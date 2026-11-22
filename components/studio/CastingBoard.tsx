@@ -20,6 +20,7 @@ import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { MediaThumbVisual } from './media/MediaThumb';
 import { readable } from '@/lib/util/color';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { CandidateShortlist } from './CandidateShortlist';
 
 type CrewRow = { id: string; user_id: string; role: string; craft?: string | null; profiles?: { username?: string | null; avatar_url?: string | null } | null };
 
@@ -274,6 +275,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                     <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', marginTop: 8 }}>Drag a person onto the role, or click to cast.</div>
                   </div>
                 )}
+
+                <CandidateShortlist projectId={projectId} character={sel.name} userId={userId ?? null} canEdit={decides} crew={crew} onCast={(id) => void assign(id)} />
 
                 {crew.length > 0 && (
                   <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
