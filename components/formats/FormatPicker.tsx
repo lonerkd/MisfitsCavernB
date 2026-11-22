@@ -5,14 +5,14 @@
 // project will go through, not just a name.
 
 import React, { useRef } from 'react';
-import { Clapperboard, Film, Globe, Megaphone, Mic, Music, Sparkles, Tv, Video, type LucideIcon } from 'lucide-react';
+import { Clapperboard, Film, Globe, Megaphone, Mic, Music, NotebookPen, Sparkles, Tv, Video, type LucideIcon } from 'lucide-react';
 import { type ProjectFormat, findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
 import { SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import styles from './formatPicker.module.css';
 
 const ICONS: Record<string, LucideIcon> = {
   film: Film, clapperboard: Clapperboard, tv: Tv, globe: Globe, music: Music,
-  video: Video, megaphone: Megaphone, mic: Mic, sparkles: Sparkles,
+  video: Video, megaphone: Megaphone, mic: Mic, sparkles: Sparkles, 'notebook-pen': NotebookPen,
 };
 
 export function FormatIcon({ icon, size = 16 }: { icon: string | null | undefined; size?: number }) {

@@ -372,3 +372,34 @@ describe('where the toolkit and the milestones send you', () => {
     expect(placeHref(m.place, 'p1')).toBe('/editor?panel=script');
   });
 });
+
+describe('a format with no phases (Notes)', () => {
+  const NOTES: FormatRules = { phase_labels: {}, skip_phases: [], skip_milestones: [], phased: false };
+  const notes = (patch: Partial<ProjectSignals> = {}) => signals({ project_type: 'Notes', format: NOTES, ...patch });
+
+  it('has no milestones and no next steps, whatever the project holds', () => {
+    const p = computeProgress(notes({ scripts: 3, crew_confirmed: 4, budget_lines: 9, cuts: 2 }));
+    expect(p.phased).toBe(false);
+    expect(p.totals).toEqual({ done: 0, total: 0 });
+    expect(p.nextSteps).toEqual([]);
+    expect(p.ready).toBe(false);
+  });
+
+  it('opens every tool, with no lock and no phase to wait for', () => {
+    const p = computeProgress(notes());
+    expect(p.tools.every((t) => t.unlocked)).toBe(true);
+  });
+
+  it('is phased for every other format, including one with no rules at all', () => {
+    expect(computeProgress(signals()).phased).toBe(true);
+    expect(computeProgress(signals({ format: PODCAST })).phased).toBe(true);
+    expect(computeProgress(signals({ format: null })).phased).toBe(true);
+  });
+
+  it('reads phased: false from a database row, and ignores anything else', async () => {
+    const { toFormatRules } = await import('./phases');
+    expect(toFormatRules({ phase_labels: {}, skip_phases: [], skip_milestones: [], phased: false })?.phased).toBe(false);
+    expect(toFormatRules({ phase_labels: {}, skip_phases: [], skip_milestones: [], phased: true })?.phased).toBeUndefined();
+    expect(toFormatRules({ phase_labels: {}, skip_phases: [], skip_milestones: [], phased: 'no' })?.phased).toBeUndefined();
+  });
+});

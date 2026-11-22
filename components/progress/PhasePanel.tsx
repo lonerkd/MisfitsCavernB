@@ -201,6 +201,36 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
     }
   };
 
+  // A format with no phases (Notes): no ring, no milestones; just what it is, and the owner's way to a format that has them.
+  if (!progress.phased) {
+    return (
+      <section className={p.panel} style={style} aria-labelledby={`phase-title-${projectId}`}>
+        <div className={p.head}>
+          <div className={p.headText}>
+            <div className={p.eyebrow}>
+              {signals.project_type}
+              {isOwner && formatDraft == null && (
+                <button type="button" className={p.inlineBtn} onClick={() => setFormatDraft('Feature')}>Change format</button>
+              )}
+            </div>
+            <H id={`phase-title-${projectId}`} className={p.phaseName}>No phases here</H>
+            <div className={p.summary}>Everything is open. Add notes, files, boards, people and music, and turn it into a film or a series later if you want to.</div>
+          </div>
+        </div>
+        {isOwner && formatDraft != null && (
+          <div className={p.formatBox}>
+            <FormatPicker value={formatDraft} onChange={setFormatDraft} label="Project format" disabled={busy} />
+            <p className={p.note}>Work already done stays; nothing is deleted.</p>
+            <div className={p.advance}>
+              <button type="button" className={p.primary} disabled={busy || formatDraft === signals.project_type} onClick={saveFormat}>Make it a {formatDraft}</button>
+              <button type="button" className={p.ghost} disabled={busy} onClick={() => setFormatDraft(null)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
     <section className={p.panel} style={style} aria-labelledby={`phase-title-${projectId}`}>
       <div className={p.head}>
