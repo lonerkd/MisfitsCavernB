@@ -15,10 +15,10 @@ export function approvalState(
   approvedAt: string | null | undefined,
   approvedTotal: number | null | undefined,
   approvedLines: number | null | undefined,
-  lines: readonly Pick<BudgetItem, 'amount'>[],
+  lines: readonly (Pick<BudgetItem, 'amount'> & Partial<Pick<BudgetItem, 'fringe_amount'>>)[],
 ): 'none' | 'approved' | 'changed' {
   if (!approvedAt) return 'none';
-  const total = lines.reduce((n, l) => n + Number(l.amount ?? 0), 0);
+  const total = lines.reduce((n, l) => n + Number(l.amount ?? 0) + Number(l.fringe_amount ?? 0), 0);
   return Math.abs(total - Number(approvedTotal ?? 0)) < 0.005 && lines.length === (approvedLines ?? 0) ? 'approved' : 'changed';
 }
 
@@ -35,7 +35,7 @@ export function BudgetApproval({ projectId, isOwner, lines, approvedAt, approved
   const { refreshProject } = useProject();
   const [busy, setBusy] = useState(false);
   const state = approvalState(approvedAt, approvedTotal, approvedLines, lines);
-  const total = lines.reduce((n, l) => n + Number(l.amount ?? 0), 0);
+  const total = lines.reduce((n, l) => n + Number(l.amount ?? 0) + Number(l.fringe_amount ?? 0), 0);
 
   const save = async (approve: boolean) => {
     if (busy) return;

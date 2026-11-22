@@ -79,3 +79,23 @@ describe('budget spreadsheet', () => {
     expect(budgetSpreadsheetName('???')).toBe('budget-project.xml');
   });
 });
+
+describe('the sheet with fringes', () => {
+  const fringed = (over = {}) => budgetSpreadsheetXml({
+    project: 'P', labourPaid: 0, unassigned: { committed: 0, paid: 0 }, generated: 'd',
+    totals: { planned: 1215, committed: 0, paid: 0, left: 1215 },
+    lines: [{ category: 'Gaffer', planned: 1215, base: 1000, fringe: 215, committed: 0, paid: 0, left: 1215 }],
+    ...over,
+  });
+  it('adds Base and Fringe columns before Planned, and the grand total is the fringed total', () => {
+    const rows = cells(fringed());
+    const head = rows.find((r) => r[0] === 'Account')!;
+    expect(head.slice(3, 6)).toEqual(['Base', 'Fringe', 'Planned']);
+    const grand = rows.find((r) => r[1] === 'GRAND TOTAL')!;
+    expect(grand.slice(3, 6)).toEqual(['1000', '215', '1215']);
+  });
+  it('is the same sheet as before when there are no fringes', () => {
+    const rows = cells(fringed({ lines: [{ category: 'Gaffer', planned: 1000, committed: 0, paid: 0, left: 1000 }], totals: { planned: 1000, committed: 0, paid: 0, left: 1000 } }));
+    expect(rows.find((r) => r[0] === 'Account')).toEqual(['Account', 'Category', 'Description', 'Planned', 'Committed', 'Paid', 'Left (negative is over)']);
+  });
+});

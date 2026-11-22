@@ -7,7 +7,7 @@ export interface BudgetPrintInput {
   accent?: string | null;
   logo?: string | null;
   /** `above` marks a line above the line; when any line is, the budget prints in two groups with subtotals. */
-  lines: Array<{ label: string; planned: number; committed: number; paid: number; left: number; above?: boolean }>;
+  lines: Array<{ label: string; planned: number; base?: number; fringe?: number; committed: number; paid: number; left: number; above?: boolean }>;
   totals: { planned: number; committed: number; paid: number; left: number };
   /** Approved labour already counted in "paid", when there is some. */
   labourPaid: number;
@@ -41,20 +41,24 @@ export function budgetDoc(i: BudgetPrintInput): PrintDoc {
 
 function tables(i: BudgetPrintInput, dash: (n: number) => string, left: (n: number) => string): PrintBlock[] {
   const f = i.format;
-  const columns: PrintColumn[] = [{ key: 'label', label: 'Line' }, { key: 'planned', label: 'Planned', align: 'right', width: '14%' }, { key: 'committed', label: 'Committed', align: 'right', width: '14%' }, { key: 'paid', label: 'Paid', align: 'right', width: '14%' }, { key: 'left', label: 'Left', align: 'right', width: '16%' }];
+  // With fringes, Base and Fringe come before Planned (= base + fringe); with none the table is what it always was.
+  const fringed = i.lines.some((l) => (l.fringe ?? 0) !== 0);
+  const columns: PrintColumn[] = [{ key: 'label', label: 'Line' }, ...(fringed ? [{ key: 'base', label: 'Base', align: 'right' as const, width: '11%' }, { key: 'fringe', label: 'Fringe', align: 'right' as const, width: '10%' }] : []), { key: 'planned', label: 'Planned', align: 'right', width: '14%' }, { key: 'committed', label: 'Committed', align: 'right', width: '14%' }, { key: 'paid', label: 'Paid', align: 'right', width: '14%' }, { key: 'left', label: 'Left', align: 'right', width: '16%' }];
   type L = BudgetPrintInput['lines'][number];
-  const row = (l: L) => ({ label: l.label, planned: f(l.planned), committed: dash(l.committed), paid: dash(l.paid), left: left(l.left) });
+  const baseOf = (l: L) => l.base ?? l.planned - (l.fringe ?? 0);
+  const fr = (rows: L[]) => (fringed ? { base: f(rows.reduce((n, l) => n + baseOf(l), 0)), fringe: dash(rows.reduce((n, l) => n + (l.fringe ?? 0), 0)) } : {});
+  const row = (l: L) => ({ label: l.label, ...(fringed ? { base: f(baseOf(l)), fringe: dash(l.fringe ?? 0) } : {}), planned: f(l.planned), committed: dash(l.committed), paid: dash(l.paid), left: left(l.left) });
   const sum = (rows: L[], k: 'planned' | 'committed' | 'paid' | 'left') => rows.reduce((n, l) => n + l[k], 0);
   if (!i.lines.some((l) => l.above)) {
     return [{
       type: 'table', columns, rows: i.lines.map(row),
-      totals: { label: 'Total', planned: f(i.totals.planned), committed: f(i.totals.committed), paid: f(i.totals.paid), left: left(i.totals.left) },
+      totals: { label: 'Total', ...fr(i.lines), planned: f(i.totals.planned), committed: f(i.totals.committed), paid: f(i.totals.paid), left: left(i.totals.left) },
       empty: 'No budget lines yet.',
     }];
   }
   const group = (title: string, rows: L[]): PrintBlock[] => rows.length ? [{
     type: 'table', title, columns, rows: rows.map(row),
-    totals: { label: 'Subtotal', planned: f(sum(rows, 'planned')), committed: f(sum(rows, 'committed')), paid: f(sum(rows, 'paid')), left: left(sum(rows, 'left')) },
+    totals: { label: 'Subtotal', ...fr(rows), planned: f(sum(rows, 'planned')), committed: f(sum(rows, 'committed')), paid: f(sum(rows, 'paid')), left: left(sum(rows, 'left')) },
   }] : [];
   return [...group('Above the line', i.lines.filter((l) => l.above)), ...group('Below the line', i.lines.filter((l) => !l.above))];
 }

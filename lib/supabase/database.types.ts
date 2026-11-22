@@ -410,6 +410,89 @@ export type Database = {
           },
         ];
       };
+      budget_fringes: {
+        Row: {
+          cap_per_line: number | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          percent: number;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          cap_per_line?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          percent: number;
+          project_id: string;
+        };
+        Update: {
+          cap_per_line?: number | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          percent?: number;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_fringes_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "budget_fringes_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      budget_item_fringes: {
+        Row: {
+          budget_item_id: string;
+          created_at: string;
+          fringe_id: string;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          budget_item_id: string;
+          created_at?: string;
+          fringe_id: string;
+          project_id: string;
+        };
+        Update: {
+          budget_item_id?: string;
+          created_at?: string;
+          fringe_id?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "budget_item_fringes_fringe_fkey";
+            columns: ["fringe_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "budget_fringes";
+            referencedColumns: ["id", "project_id"];
+          },
+          {
+            foreignKeyName: "budget_item_fringes_item_fkey";
+            columns: ["budget_item_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "budget_items";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       budget_items: {
         Row: {
           above_the_line: boolean;
@@ -419,8 +502,13 @@ export type Database = {
           created_at: string | null;
           created_by: string | null;
           description: string | null;
+          fringe_amount: number;
           id: string;
           job_id: string | null;
+          kind: string;
+          pd_days: number | null;
+          pd_people: number | null;
+          pd_rate: number | null;
           project_id: string;
           updated_at: string | null;
         };
@@ -433,8 +521,13 @@ export type Database = {
           created_at?: string | null;
           created_by?: string | null;
           description?: string | null;
+          fringe_amount?: number;
           id?: string;
           job_id?: string | null;
+          kind?: string;
+          pd_days?: number | null;
+          pd_people?: number | null;
+          pd_rate?: number | null;
           project_id: string;
           updated_at?: string | null;
         };
@@ -446,8 +539,13 @@ export type Database = {
           created_at?: string | null;
           created_by?: string | null;
           description?: string | null;
+          fringe_amount?: number;
           id?: string;
           job_id?: string | null;
+          kind?: string;
+          pd_days?: number | null;
+          pd_people?: number | null;
+          pd_rate?: number | null;
           project_id?: string;
           updated_at?: string | null;
         };

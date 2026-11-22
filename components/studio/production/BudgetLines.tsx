@@ -11,6 +11,8 @@ import { createJob, getBudgetItemIdsWithJobs } from '@/lib/supabase/jobs';
 import { loadCrafts, suggestCraft } from '@/lib/crafts/crafts';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { money, type BudgetItem } from '@/lib/studio';
+import { lineCost, perDiemAmount } from '@/lib/studio/fringes';
+import { addFringe, addPerDiem, deleteFringe, listFringeLinks, listFringes, setLineFringe, type BudgetFringe } from '@/lib/supabase/budget-fringes';
 import { templateTotal, type BudgetTemplate } from '@/lib/studio/budget-templates';
 import { applyBudgetTemplate, listBudgetTemplates, setBudgetAboveTheLine } from '@/lib/supabase/budget-templates';
 import s from '../studio.module.css';
@@ -37,6 +39,23 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
   const [templates, setTemplates] = useState<BudgetTemplate[] | null>(null);
   const [starting, setStarting] = useState<string | null>(null);
   const empty = lines.length === 0;
+  // Fringes (a project's own named rates) and which are applied to which line; per diems (days x rate x people).
+  const [fringes, setFringes] = useState<BudgetFringe[]>([]);
+  const [applied, setApplied] = useState<Set<string>>(new Set());   // "lineId:fringeId"
+  const [fName, setFName] = useState('');
+  const [fPercent, setFPercent] = useState('');
+  const [fCap, setFCap] = useState('');
+  const [pdName, setPdName] = useState('');
+  const [pdDays, setPdDays] = useState('');
+  const [pdRate, setPdRate] = useState('');
+  const [pdPeople, setPdPeople] = useState('1');
+
+  const loadFringes = () => Promise.all([listFringes(projectId), listFringeLinks(projectId)]).then(
+    ([f, links]) => { setFringes(f); setApplied(new Set(links.map((l) => `${l.budget_item_id}:${l.fringe_id}`))); },
+    () => { setFringes([]); setApplied(new Set()); },
+  );
+  useEffect(() => { void loadFringes(); // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId]);
 
   // The starting points are only fetched when the budget is empty (that is the only time they are offered).
   useEffect(() => {
@@ -57,6 +76,38 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
     setBusy(true);
     try { await addBudgetItem(projectId, userId, name, Number(amount || 0)); setCategory(''); setAmount(''); changed(); }
     catch (err) { toast((err as { message?: string })?.message || 'Could not add the line.', 'error'); }
+    finally { setBusy(false); }
+  };
+
+  const addFringeRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const percent = Number(fPercent);
+    const cap = fCap.trim() === '' ? null : Number(fCap);
+    if (!fName.trim() || !Number.isFinite(percent) || percent < 0 || percent > 100 || (cap != null && (!Number.isFinite(cap) || cap < 0)) || busy) return;
+    setBusy(true);
+    try { await addFringe(projectId, userId, fName, percent, cap); setFName(''); setFPercent(''); setFCap(''); await loadFringes(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not add the fringe.', 'error'); }
+    finally { setBusy(false); }
+  };
+
+  const removeFringe = async (f: BudgetFringe) => {
+    if (!await confirm(`Delete the fringe "${f.name}"? It comes off every line that carries it.`)) return;
+    try { await deleteFringe(f.id); await loadFringes(); changed(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not delete the fringe.', 'error'); }
+  };
+
+  const toggleFringe = async (line: BudgetItem, f: BudgetFringe, on: boolean) => {
+    try { await setLineFringe(projectId, line.id, f.id, on); await loadFringes(); changed(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not change the fringe.', 'error'); }
+  };
+
+  const addPerDiemLine = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const [days, rate, people] = [Number(pdDays), Number(pdRate), Number(pdPeople)];
+    if (!pdName.trim() || ![days, rate, people].every((x) => Number.isFinite(x) && x >= 0) || busy) return;
+    setBusy(true);
+    try { await addPerDiem(projectId, userId, pdName, days, rate, people); setPdName(''); setPdDays(''); setPdRate(''); setPdPeople('1'); changed(); }
+    catch (err) { toast((err as { message?: string })?.message || 'Could not add the per diem.', 'error'); }
     finally { setBusy(false); }
   };
 
@@ -132,13 +183,17 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
           {lines.map((line) => {
             const isPosted = posted.has(line.id);
             return (
-              <li key={line.id} className={s.panel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px' }}>
-                <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>{line.category}</span>
+              <li key={line.id} className={s.panel} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', flexWrap: 'wrap' }}>
+                <span style={{ flex: 1, minWidth: 0, fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {line.category}
+                  {line.kind === 'per_diem' && <span className={s.hint} style={{ margin: '0 0 0 6px' }}>{Number(line.pd_days)} days × {money(Number(line.pd_rate))} × {Number(line.pd_people)} {Number(line.pd_people) === 1 ? 'person' : 'people'}</span>}
+                </span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
                   <input type="checkbox" checked={line.above_the_line} onChange={(e) => void setAbove(line, e.target.checked)} aria-label={`${line.category} is above the line`} />
                   Above the line
                 </label>
-                <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)' }}>{money(Number(line.amount) || 0)}</span>
+                <span style={{ fontFamily: 'var(--mono)', fontSize: 12, color: 'var(--fg-muted)' }}
+                  title={Number(line.fringe_amount) ? `${money(Number(line.amount) || 0)} + ${money(Number(line.fringe_amount))} fringe` : undefined}>{money(lineCost(line))}</span>
                 <button type="button" className={s.iconBtn} disabled={isPosted || posting === line.id} onClick={() => void postJob(line)}
                   aria-label={isPosted ? `${line.category} is already on the Jobs board` : `Post ${line.category} as a job`} title={isPosted ? 'Already posted to Jobs' : 'Post this line as an open Jobs listing'}>
                   <Briefcase size={14} aria-hidden />
@@ -146,6 +201,17 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
                 <button type="button" className={s.iconBtn} onClick={() => void remove(line)} aria-label={`Delete ${line.category}`} title="Delete this line">
                   <Trash2 size={14} aria-hidden />
                 </button>
+                {fringes.length > 0 && (
+                  <div role="group" aria-label={`Fringes on ${line.category}`} style={{ flexBasis: '100%', display: 'flex', flexWrap: 'wrap', gap: '2px 12px' }}>
+                    {fringes.map((f) => (
+                      <label key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--fg-muted)', whiteSpace: 'nowrap' }}>
+                        <input type="checkbox" checked={applied.has(`${line.id}:${f.id}`)} onChange={(e) => void toggleFringe(line, f, e.target.checked)} aria-label={`Apply ${f.name} to ${line.category}`} />
+                        {f.name} {Number(f.percent)}%
+                      </label>
+                    ))}
+                    {Number(line.fringe_amount) > 0 && <span className={s.hint} style={{ margin: 0, fontSize: 11 }}>{money(Number(line.amount) || 0)} + {money(Number(line.fringe_amount))} fringe</span>}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -158,6 +224,40 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
         <input id="budget-line-amount" className={s.input} style={{ width: 120 }} type="number" min="0" step="any" placeholder="Planned $" value={amount} onChange={(e) => setAmount(e.target.value)} />
         <button type="submit" className={s.btn} disabled={!category.trim() || busy}><Plus size={12} aria-hidden /> Add line</button>
       </form>
+      <form onSubmit={addPerDiemLine} className={s.row} style={{ gap: 8, flexWrap: 'wrap' }} aria-label="Add a per diem">
+        <label className="sr-only" htmlFor="budget-pd-name">Per diem name</label>
+        <input id="budget-pd-name" className={s.input} style={{ flex: '1 1 160px' }} placeholder="Per diem or allowance" value={pdName} onChange={(e) => setPdName(e.target.value)} />
+        <label className="sr-only" htmlFor="budget-pd-days">Days</label>
+        <input id="budget-pd-days" className={s.input} style={{ width: 80 }} type="number" min="0" step="any" placeholder="Days" value={pdDays} onChange={(e) => setPdDays(e.target.value)} />
+        <label className="sr-only" htmlFor="budget-pd-rate">Daily rate</label>
+        <input id="budget-pd-rate" className={s.input} style={{ width: 100 }} type="number" min="0" step="any" placeholder="Daily rate $" value={pdRate} onChange={(e) => setPdRate(e.target.value)} />
+        <label className="sr-only" htmlFor="budget-pd-people">People</label>
+        <input id="budget-pd-people" className={s.input} style={{ width: 80 }} type="number" min="0" step="any" placeholder="People" value={pdPeople} onChange={(e) => setPdPeople(e.target.value)} />
+        <span className={s.hint} style={{ margin: 0 }} aria-live="polite">{pdDays && pdRate ? `= ${money(perDiemAmount(pdDays, pdRate, pdPeople))}` : ''}</span>
+        <button type="submit" className={s.btn} disabled={!pdName.trim() || pdDays === '' || pdRate === '' || busy}><Plus size={12} aria-hidden /> Add per diem</button>
+      </form>
+      <div className={s.stack} style={{ gap: 6 }} role="group" aria-label="Fringes">
+        <div className={s.hint}>Fringes: named rates you apply to lines (payroll tax, pension, vacation, a union rate). A cap limits one fringe on one line. Nothing is preset: type your own.</div>
+        {fringes.length > 0 && (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {fringes.map((f) => (
+              <li key={f.id} className={s.panel} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', fontSize: 12 }}>
+                <span>{f.name} {Number(f.percent)}%{f.cap_per_line != null ? `, cap ${money(Number(f.cap_per_line))} a line` : ''}</span>
+                <button type="button" className={s.iconBtn} onClick={() => void removeFringe(f)} aria-label={`Delete the fringe ${f.name}`} title="Delete this fringe"><Trash2 size={12} aria-hidden /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={addFringeRate} className={s.row} style={{ gap: 8, flexWrap: 'wrap' }} aria-label="Add a fringe">
+          <label className="sr-only" htmlFor="budget-fringe-name">Fringe name</label>
+          <input id="budget-fringe-name" className={s.input} style={{ flex: '1 1 160px' }} placeholder="Fringe name" value={fName} onChange={(e) => setFName(e.target.value)} />
+          <label className="sr-only" htmlFor="budget-fringe-percent">Fringe percent</label>
+          <input id="budget-fringe-percent" className={s.input} style={{ width: 100 }} type="number" min="0" max="100" step="any" placeholder="Percent %" value={fPercent} onChange={(e) => setFPercent(e.target.value)} />
+          <label className="sr-only" htmlFor="budget-fringe-cap">Cap per line</label>
+          <input id="budget-fringe-cap" className={s.input} style={{ width: 120 }} type="number" min="0" step="any" placeholder="Cap per line $ (optional)" value={fCap} onChange={(e) => setFCap(e.target.value)} />
+          <button type="submit" className={s.btn} disabled={!fName.trim() || fPercent === '' || busy}><Plus size={12} aria-hidden /> Add fringe</button>
+        </form>
+      </div>
       <button type="button" className={s.btn} onClick={() => void syncFromBreakdown()} disabled={busy}>Update from the breakdown</button>
       <p className={s.hint} style={{ margin: 0 }}>
         {note ?? 'Writes one “Breakdown · …” line per category from the cost of its elements.'}{' '}
