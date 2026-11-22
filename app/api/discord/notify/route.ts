@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   }
 
   const ip = getClientIp(req);
-  const rateLimit = checkRateLimit(ip, { maxRequests: 30, windowMs: 60_000 });
+  const rateLimit = checkRateLimit(ip, { maxRequests: 30, windowMs: 60_000, scope: 'discord-notify' });
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { ok: false, error: 'Too many requests' },

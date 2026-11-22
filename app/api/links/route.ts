@@ -26,7 +26,7 @@ async function fetchText(url: string, accept: string): Promise<string | null> {
 }
 
 export async function GET(req: NextRequest) {
-  const rateLimit = checkRateLimit(getClientIp(req), { maxRequests: 30, windowMs: 60_000 });
+  const rateLimit = checkRateLimit(getClientIp(req), { maxRequests: 30, windowMs: 60_000, scope: 'links' });
   if (!rateLimit.allowed) {
     return NextResponse.json({ type: 'none' }, { status: 429, headers: { 'X-RateLimit-Reset': rateLimit.resetAt.toString() } });
   }

@@ -5,7 +5,7 @@ import { referenceSearchQuerySchema } from '@/lib/validation';
 export async function GET(req: NextRequest) {
   // Open endpoint that fans out to a third-party API — cap it so it can't be
   // used to hammer Openverse (or us) from one client.
-  const rateLimit = checkRateLimit(getClientIp(req), { maxRequests: 60, windowMs: 60_000 });
+  const rateLimit = checkRateLimit(getClientIp(req), { maxRequests: 60, windowMs: 60_000, scope: 'search' });
   if (!rateLimit.allowed) {
     return NextResponse.json(
       { results: [], totalPages: 0, page: 1 },

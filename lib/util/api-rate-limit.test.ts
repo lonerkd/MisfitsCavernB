@@ -61,10 +61,24 @@ describe('getClientIp', () => {
     expect(getClientIp({ headers })).toBe('192.168.1.1');
   });
 
-  it('extracts first IP from comma-separated x-forwarded-for header', () => {
+  it('takes the last x-forwarded-for entry (the one the nearest proxy saw), not a client-supplied first one', () => {
     const headers = new Headers();
-    headers.set('x-forwarded-for', '192.168.1.1, 10.0.0.1');
+    headers.set('x-forwarded-for', '6.6.6.6, 192.168.1.1');
     expect(getClientIp({ headers })).toBe('192.168.1.1');
+  });
+
+  it('prefers the edge-set x-vercel-forwarded-for', () => {
+    const headers = new Headers();
+    headers.set('x-vercel-forwarded-for', '203.0.113.9');
+    headers.set('x-forwarded-for', '6.6.6.6');
+    expect(getClientIp({ headers })).toBe('203.0.113.9');
+  });
+
+  it('keeps two endpoints\' counters apart for the same caller', () => {
+    const opts = { maxRequests: 1, windowMs: 60_000 };
+    expect(checkRateLimit('same-ip', { ...opts, scope: 'a' }).allowed).toBe(true);
+    expect(checkRateLimit('same-ip', { ...opts, scope: 'b' }).allowed).toBe(true);
+    expect(checkRateLimit('same-ip', { ...opts, scope: 'a' }).allowed).toBe(false);
   });
 
   it('extracts IP from x-real-ip header when x-forwarded-for is missing', () => {
