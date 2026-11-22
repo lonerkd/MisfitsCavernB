@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { groupAboveBelow, parseTemplate, templateLineToItem, templateTotal } from './budget-templates';
 
-const m = (id: string, planned: number, paid = 0) => ({ id, label: id, planned, committed: 0, paid, left: planned - paid });
+const m = (id: string, planned: number, paid = 0) => ({ id, label: id, base: planned, fringe: 0, planned, committed: 0, paid, left: planned - paid });
 
 describe('budget templates', () => {
   it('keeps well-formed lines only and totals them', () => {

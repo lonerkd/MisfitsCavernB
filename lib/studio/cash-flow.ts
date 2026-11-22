@@ -90,7 +90,7 @@ export function cashFlow(lines: BudgetLine[], expenses: CashExpense[], hours: Ca
     }
   }
 
-  const planned = cents(lines.reduce((s, l) => s + n(l.amount), 0));
+  const planned = cents(lines.reduce((s, l) => s + n(l.amount) + n(l.fringe_amount), 0));
   let running = 0;
   let crossingWeek: string | null = null;
   const out: CashFlowWeek[] = [...weeks.keys()].sort((a, b) => a - b).map((key) => {

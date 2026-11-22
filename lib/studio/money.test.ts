@@ -15,8 +15,8 @@ describe('money, summed', () => {
       { id: '4', budget_item_id: null, amount: 40, status: 'paid' },
     ], []);
     expect(s.lines).toEqual([
-      { id: 'cam', label: 'Camera — Lenses', planned: 1000, committed: 400, paid: 250.5, left: 349.5 },
-      { id: 'loc', label: 'Locations', planned: 500, committed: 0, paid: 600, left: -100 },
+      { id: 'cam', label: 'Camera — Lenses', base: 1000, fringe: 0, planned: 1000, committed: 400, paid: 250.5, left: 349.5 },
+      { id: 'loc', label: 'Locations', base: 500, fringe: 0, planned: 500, committed: 0, paid: 600, left: -100 },
     ]);
     expect(s.unassigned).toEqual({ committed: 0, paid: 40 });
     expect(s.totals).toEqual({ planned: 1500, committed: 400, paid: 890.5, left: 209.5 });
@@ -50,5 +50,18 @@ describe('labour by shoot day', () => {
   });
   it('ignores hours on a date that is no shoot day', () => {
     expect(labourByDay([h('2026-12-09', 8, 25, 'approved')], days).size).toBe(0);
+  });
+});
+
+describe('money with fringes', () => {
+  it('plans a line at its base plus its fringe, so left and the totals follow; no fringe changes nothing', () => {
+    const s = moneySummary([
+      { id: 'a', category: 'Gaffer', amount: '1000.00', fringe_amount: '215.00' },
+      { id: 'b', category: 'Grip', amount: 500 },
+    ], [{ id: '1', budget_item_id: 'a', amount: 1200, status: 'paid' }], []);
+    expect(s.lines[0]).toMatchObject({ base: 1000, fringe: 215, planned: 1215, paid: 1200, left: 15 });
+    expect(s.lines[1]).toMatchObject({ base: 500, fringe: 0, planned: 500 });
+    expect(s.totals.planned).toBe(1715);
+    expect(s.totals.left).toBe(515);
   });
 });

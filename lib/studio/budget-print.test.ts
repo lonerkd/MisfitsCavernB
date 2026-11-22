@@ -35,3 +35,15 @@ describe('the printed budget', () => {
     expect(html.indexOf('Above the line')).toBeLessThan(html.indexOf('Below the line'));
   });
 });
+
+describe('the printed budget with fringes', () => {
+  it('prints Base and Fringe beside Planned only when a line carries a fringe', () => {
+    const plain = printHtml(budgetDoc(input()));
+    expect(plain).not.toContain('>Fringe<');
+    const html = printHtml(budgetDoc(input({
+      lines: [{ label: 'Gaffer', planned: 1215, base: 1000, fringe: 215, committed: 0, paid: 0, left: 1215 }],
+      totals: { planned: 1215, committed: 0, paid: 0, left: 1215 },
+    })));
+    for (const s of ['>Base<', '>Fringe<', 'USD 1000', 'USD 215', 'USD 1215']) expect(html).toContain(s);
+  });
+});

@@ -197,7 +197,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
     ...crew.filter(c => c.user_id !== owner?.id).map(c => ({ id: c.user_id, username: c.profiles?.username || 'Crew' })),
   ];
 
-  const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0), 0);
+  const totalBudget = budget.reduce((s, b) => s + Number(b.amount || 0) + Number(b.fringe_amount || 0), 0);
 
   return (
     <div style={{ marginTop: 40 }}>
