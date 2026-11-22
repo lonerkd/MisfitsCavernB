@@ -65,6 +65,9 @@ The owner likes how Slate's surfaces read as glass (the island's translucent bar
 ### 3.49 The Reveal Gate: a stealth launch behind a written checklist — M (owner, 2026-11-12)
 Plan, the eight-line gate and the audience matrix: [plans/2026-11-13-reveal-gate.md](plans/2026-11-13-reveal-gate.md). _(full text: `backlog-detail.md`, 3.49)_
 
+### 3.53 Notifications that know the project — L (owner, 2026-11-22: "design and build around the deep knowledge we can get from these tools and the context")
+Plan and principles: [plans/2026-11-22-notification-system.md](plans/2026-11-22-notification-system.md). _(full text: `backlog-detail.md`, 3.53)_
+
 ### 3.50 The role model: from Sam, Jordan and Riley to every role on a production — L (owner, 2026-11-13)
 Plan: [plans/2026-11-13-role-model.md](plans/2026-11-13-role-model.md) (designed 2026-11-13; step 1 built the same day; the owner's first message was cut off, so confirm the intent). _(full text: `backlog-detail.md`, 3.50)_
 
