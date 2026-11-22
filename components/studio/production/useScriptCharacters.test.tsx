@@ -4,6 +4,7 @@ import { cleanup, renderHook, waitFor } from '@testing-library/react';
 
 const PODCAST = 'COLD OPEN\n\nHOST: Welcome back.\nGUEST: Glad to be here.\n';
 vi.mock('@/lib/studio', () => ({ fetchScriptContent: vi.fn(async () => PODCAST) }));
+vi.mock('@/lib/studio/reading-context', () => ({ loadReadingContext: vi.fn(async () => ({})) }));
 vi.mock('@/lib/supabase/scripts', () => ({
   listScriptCharacters: vi.fn(async () => []),
   addScriptCharacter: vi.fn(),

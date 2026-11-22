@@ -25,6 +25,13 @@ export function nameOf(text: string): string | null {
   return bare.toUpperCase();
 }
 
+/** What the previous draft says about a line, from the reader's reasoning (parser.ts explainFromContext), or ''. */
+export function previousDraftNote(reasoning: string): string {
+  if (/Same as in the previous draft/.test(reasoning)) return 'same as in the previous draft';
+  const was = /The previous draft read this line as (\w+)/.exec(reasoning);
+  return was ? `the previous draft read it as ${was[1]}` : '';
+}
+
 export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit?: number } = {}): Doubt[] {
   const below = opts.below ?? 75;
   const limit = opts.limit ?? 12;
@@ -42,10 +49,14 @@ export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit
     } else if ((alternative === 'character') && (l.type === 'action' || l.type === 'dialogue')) {
       name = nameOf(l.text);
       why = name ? 'Read as action; could be a speaker' : '';
+    } else if (alternative === 'slug' && /Reads like a place the project knows/.test(l.reasoning ?? '')) {
+      why = `Read as ${l.type}; a place the project knows, so it may be a scene heading missing INT./EXT.`;
     } else if (alternative) {
       why = `Read as ${l.type}; could be ${alternative}`;
     }
     if (!why) continue;
+    const history = previousDraftNote(l.reasoning ?? '');
+    if (history) why = `${why} · ${history}`;
     const key = name ? `n:${name}` : `l:${l.index}`;
     if (seen.has(key)) continue;
     seen.add(key);

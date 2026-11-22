@@ -1,6 +1,7 @@
 
 
 import { anchorOverrides } from './override-anchor';
+import { alignPreviousDraft, type PreviousDraft, type PriorType } from './previous-draft';
 import { THRESHOLDS } from './thresholds';
 import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/scriptos/types';
 import { headingParts, readHeading } from './heading';
@@ -124,8 +125,10 @@ export interface ParseContext {
   characters?: readonly string[];
   /** Names a person has said are NOT characters: a line with one of these names is never a cue. */
   rejectedNames?: readonly string[];
-  /** Places known to exist (from project_locations). Not read yet: planned as heading evidence (BACKLOG 3.22b). */
+  /** Places known to exist (project_locations): a heading that names one is surer, and a line that is only one looks like a heading missing INT./EXT. (never changes where scenes begin). */
   places?: readonly string[];
+  /** The previous saved draft of this script, read: a line that was in it is likely read the same way again (lib/scriptos/previous-draft.ts). */
+  previousDraft?: PreviousDraft;
   /** Cues from the previous draft (line indices + names): a line that was a cue last time is likely still one. */
   previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
   /** Per-writer private memory (L6): confirmed names, rejected names, learned patterns. */
@@ -156,6 +159,9 @@ export interface ParseOptions {
   context?: ParseContext;
 }
 export const DECODER_DEFAULT = true;
+
+/** A place's comparable form: capitals, letters and digits, single spaces ("Maya's Apartment" and "MAYAS APARTMENT" are one place). */
+export const placeKey = (name: string): string => name.toUpperCase().replace(/[’']/g, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
 export type { ScriptFormat } from '@/lib/formats/script-formats';
 import type { ScriptFormat } from '@/lib/formats/script-formats';
@@ -216,6 +222,10 @@ export class ScriptParser {
   private writerMemory?: WriterMemory;
   private lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string }>;
   private previousDraftCues?: ReadonlyArray<{ line_index: number; name: string }>;
+  /** For each raw line, what it was read as in the previous draft (undefined: not in it, or no previous draft). */
+  private priorAt: Array<PriorType | undefined> = [];
+  /** The project's known places, as comparable keys. */
+  private placeKeys: Set<string> = new Set();
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
@@ -224,6 +234,8 @@ export class ScriptParser {
     this.writerMemory = options.context?.writerMemory;
     this.lineOverrides = anchorOverrides(this.rawLines, options.context?.lineOverrides);
     this.previousDraftCues = options.context?.previousDraftCues;
+    this.priorAt = alignPreviousDraft(this.rawLines, options.context?.previousDraft);
+    this.placeKeys = new Set((options.context?.places ?? []).map(placeKey).filter(Boolean));
     // Names from the project are matched however they were typed; a cue is read in capitals.
     const upper = (names: readonly string[] | undefined) => (names ?? []).map((n) => n.trim().toUpperCase());
     this.rejectedNames = new Set(upper(options.context?.rejectedNames).map((n) => this.clean(n)).filter(Boolean));
@@ -367,7 +379,10 @@ export class ScriptParser {
           ? this.analyzeLine(trim, context)
           : this.analyzeNonScreenplayLine(trim, context);
         const decided = decoded?.states[i];
-        if (decided) this.applyDecision(analysis, decided, decoded!.confidence[i], trim, decoded!.alternatives[i]);
+        if (decided) {
+          this.applyDecision(analysis, decided, decoded!.confidence[i], trim, decoded!.alternatives[i]);
+          this.explainFromContext(analysis, this.priorAt[i], trim);
+        }
       }
 
       // "Force type": the person's word is the line's type. The decoder already let it steer the lines around it; this is
@@ -765,7 +780,7 @@ export class ScriptParser {
       const forced = this.preClassify(trim);
       if (forced) { obs.push({ ...base, kind: 'fixed', fixed: forced.type }); continue; }
       if (i < THRESHOLDS.titlePageScanLines.value && this.isTitlePageContent(trim)) { obs.push({ ...base, kind: 'fixed', fixed: 'title' }); continue; }
-      obs.push({ ...base, kind: 'free' });
+      obs.push({ ...base, kind: 'free', prior: this.priorAt[i] });
     }
     return decodeLabels(obs, {
       isCaps: (t) => this.isCaps(t),
@@ -788,6 +803,50 @@ export class ScriptParser {
       if (this.characterStats.has(name.toUpperCase()) && /^\p{Ll}/u.test(next) && !/[,?]$/.test(words[n - 1])) return true;
     }
     return false;
+  }
+
+  /**
+   * What the rest of the project adds to a reading, said in the reasoning (and so in "why was this read as ..."):
+   * the previous draft's reading of the same line, and a known place. Places only move the confidence and offer
+   * "scene heading" as the other reading; they never change a label, so they never change where scenes begin.
+   */
+  private explainFromContext(analysis: { type: LineType; confidence: number; reasoning: string[]; meta?: Record<string, unknown> }, prior: PriorType | undefined, trim: string): void {
+    if (prior && prior !== 'slug') {
+      if (prior === analysis.type) {
+        // A line the earlier draft was sure of (or a person settled) and this reading agrees with is not a doubt, but a cue
+        // read once only keeps its own cap: that is about the name, not the line.
+        if (!analysis.reasoning.includes('Seen speaking only once')) analysis.confidence = Math.max(analysis.confidence, THRESHOLDS.previousDraftAgreeConfidence.value);
+        analysis.reasoning = [...analysis.reasoning, `Same as in the previous draft (${prior})`];
+        analysis.meta = { ...analysis.meta, fromPreviousDraft: prior };
+      } else {
+        analysis.reasoning = [...analysis.reasoning, `The previous draft read this line as ${prior}`];
+        analysis.meta = { ...analysis.meta, previousDraftRead: prior };
+      }
+    }
+    if (!this.placeKeys.size) return;
+    if (analysis.type === 'slug') {
+      const place = this.knownPlaceOf(this.stripScenePrefix(trim));
+      if (place) {
+        analysis.confidence = Math.max(analysis.confidence, THRESHOLDS.knownPlaceHeadingConfidence.value);
+        analysis.reasoning = [...analysis.reasoning, `Known place: ${place}`];
+      }
+    } else if (analysis.type === 'action' || analysis.type === 'dialogue') {
+      // "KITCHEN - NIGHT" with no INT./EXT.: a place the project knows, written like a heading. Offered, not decided.
+      const place = this.isCaps(trim) && trim.length <= 60 ? this.knownPlaceOf(trim) : null;
+      if (place && /\s[-–—]\s/.test(trim)) {
+        analysis.confidence = Math.min(analysis.confidence, THRESHOLDS.knownPlaceUnmarkedConfidence.value);
+        analysis.reasoning = [...analysis.reasoning, `Reads like a place the project knows (${place}) written without INT./EXT.`];
+        analysis.meta = { ...analysis.meta, alternative: 'slug' };
+      }
+    }
+  }
+
+  /** The known place a heading body (or a bare "PLACE - TIME" line) is set in, or null. */
+  private knownPlaceOf(body: string): string | null {
+    if (!body.trim()) return null;
+    const h = readHeading(body);
+    const key = placeKey(h.place);
+    return key && this.placeKeys.has(key) ? h.place.toUpperCase() : null;
   }
 
   /** The decoder's label replaces the line's own; the rest of what the line was found to be stays. */

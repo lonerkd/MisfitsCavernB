@@ -19,10 +19,12 @@ import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneV
 export function ScriptAnalytics({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
-  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref, knowledge,
+  currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref, knowledge, previousDraft,
 }: {
   /** What the reader has learned about the script: languages, years, layers, places. */
   knowledge?: ScriptKnowledge;
+  /** How much of the reading came from the previous draft (previousDraftUse). */
+  previousDraft?: { same: number; differs: number };
   timing: ScriptTiming;
   targetMinutes?: number | null;
   briefHref?: string;
@@ -66,7 +68,7 @@ export function ScriptAnalytics({
         ))}
       </div>
 
-      {knowledge && <ScriptKnowledgePanel knowledge={knowledge} />}
+      {knowledge && <ScriptKnowledgePanel knowledge={knowledge} previousDraft={previousDraft} />}
 
       <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} targetMinutes={targetMinutes} briefHref={briefHref} />
 

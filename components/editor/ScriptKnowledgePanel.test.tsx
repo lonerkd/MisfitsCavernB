@@ -31,3 +31,18 @@ describe('ScriptKnowledgePanel', () => {
     expect(container.textContent).toBe('');
   });
 });
+
+describe('ScriptKnowledgePanel: the previous draft', () => {
+  it('says how many lines were read as the previous draft read them, and how many it read differently', () => {
+    const k = scriptKnowledge(parseScript('', 'screenplay'));
+    render(<ScriptKnowledgePanel knowledge={k} previousDraft={{ same: 142, differs: 3 }} />);
+    const s = screen.getByRole('region', { name: 'Previous draft' });
+    expect(s.textContent).toMatch(/read the same way as in the previous draft142/);
+    expect(s.textContent).toMatch(/read as something else3/);
+  });
+  it('shows nothing about it when no line came from one', () => {
+    const k = scriptKnowledge(parseScript('', 'screenplay'));
+    const { container } = render(<ScriptKnowledgePanel knowledge={k} previousDraft={{ same: 0, differs: 0 }} />);
+    expect(container.textContent).toBe('');
+  });
+});

@@ -93,6 +93,8 @@ import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
 import { costByScene } from '@/lib/breakdown';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { previousDraftUse } from '@/lib/scriptos/previous-draft';
+import { latestRevision, withPreviousDraft } from '@/lib/scriptos/reading-context';
 import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
 import { LineOverrideButton } from '@/components/editor/LineOverrideButton';
@@ -193,14 +195,18 @@ export default function EditorPage() {
   const locations = useProjectLocations(activeProject?.id ?? null);
   const lineOverrides = useLineOverrides(currentScript?.id ?? null);
   const { writerMemory, refresh: refreshWriterMemory } = useReadingMemory(sessionUser?.id ?? null);
-  const readContext = useMemo(() => contextFromProject(
+  // The previous draft: the script's latest locked revision. It is read once for this context and kept (reading-context.ts), so a
+  // keystroke re-reads only the text being typed; a line the earlier draft read with confidence is likelier read that way again.
+  const [revisions, setRevisions] = useState<Revision[]>([]);
+  const earlierText = useMemo(() => latestRevision(revisions)?.snapshot ?? null, [revisions]);
+  const readContext = useMemo(() => withPreviousDraft(contextFromProject(
     Object.values(castings),
     corrections.rows,
     writerMemory,
     lineOverrides.rows.map((r: { line_index: number; forced_type: string; line_text?: string | null }) => ({ line_index: r.line_index, forced_type: r.forced_type, line_text: r.line_text })),
     locations.rows.map((l: { name: string }) => ({ name: l.name })),
     undefined, // previousDraftCues
-  ), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows]);
+  ), earlierText, scriptFormat), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows, earlierText, scriptFormat]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
     const result = parseScript(parseSource, readingFormat(scriptFormat), undefined, { context: readContext });
@@ -213,6 +219,7 @@ export default function EditorPage() {
   }, [parseSource, readContext, scriptFormat]);
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
   const knowledge = useMemo(() => scriptKnowledge({ lines, scenes: parsedScenes }), [lines, parsedScenes]);
+  const previousDraftUsed = useMemo(() => previousDraftUse(lines), [lines]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -261,7 +268,6 @@ export default function EditorPage() {
     useFindReplace(content, setContent);
 
   const [rightPanel, setRightPanel] = useState<RightPanelTab>('scene');
-  const [revisions, setRevisions] = useState<Revision[]>([]);
   const [revisionsFor, setRevisionsFor] = useState<string | null>(null);
   const [showWatermark, setShowWatermark] = useState(false);
 
@@ -1099,7 +1105,7 @@ export default function EditorPage() {
             scenesList={scenesList} uniqueLocations={uniqueLocations} chars={chars} charStats={charStats}
             dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
             sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
-            timing={timing} characterTiming={characterTiming} knowledge={knowledge}
+            timing={timing} characterTiming={characterTiming} knowledge={knowledge} previousDraft={previousDraftUsed}
             onJumpToScene={jumpToScene}
             onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
             targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}

@@ -334,6 +334,22 @@ export const THRESHOLDS = {
     value: 100,
     what: 'a line led by "@" is a forced character cue (the syntax spells it out, so it is never in doubt)',
   },
+  previousDraftMinConfidence: {
+    value: 90,
+    what: 'only the lines the previous draft was read at least this sure of (or a person settled) carry over as evidence; a doubtful line is a guess, and carrying a guess forward is the same guess twice',
+  },
+  previousDraftAgreeConfidence: {
+    value: 80,
+    what: 'a line read the same way as the previous draft read it (which was sure, or a person settled) is at least this sure, so the review does not ask about a line the earlier draft already answered',
+  },
+  knownPlaceHeadingConfidence: {
+    value: 97,
+    what: 'a scene heading set in a place the project knows (a Locations record) is at least this sure (the place is evidence; it never changes where scenes begin)',
+  },
+  knownPlaceUnmarkedConfidence: {
+    value: 60,
+    what: 'a caps "PLACE - TIME" line naming a place the project knows, read as action, is capped at this and offered as a scene heading missing INT./EXT. (the review asks; the reading is not changed)',
+  },
   forcedActionConfidence: {
     value: 100,
     what: 'a line led by "!" is forced action (the syntax spells it out, so it is never in doubt)',

@@ -29,6 +29,7 @@ export const PARAM_DOCS: Record<keyof Params, string> = {
   cueAfterSpeechNoBlank: 'a cue straight after speech with no blank line between',
   actionInsideSpeech: 'action in the middle of a speech',
   impossible: 'a sequence the grammar forbids',
+  previousDraft: 'a line read as a given type in the previous saved draft is this much cheaper as that type again (never for a heading, a rejected name or a type the line\'s own evidence rules out)',
   temperature: 'how sharply costs become certainty (lower is more decisive)',
 };
 

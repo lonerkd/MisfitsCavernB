@@ -15,7 +15,8 @@ import {
   axisWidth, buildTimeline, centredScrollLeft, formatMinutes, minimapSegments, sceneSummary, stripToScrollLeft, timelineScale, viewWindow,
   type LengthSource, type TimelineBar,
 } from '@/lib/audio/timeline';
-import { parseScript } from '@/lib/scriptos/parser';
+import { parseScript, type ParseContext } from '@/lib/scriptos/parser';
+import { loadReadingContext } from '@/lib/studio/reading-context';
 import { moodQuery, sceneMood } from '@/lib/spotify/moods';
 import {
   audioRefUrl, deleteAudioRef, listAudioRefs, listProjectScripts, loadScriptForTimeline, moveAudioRefScene, tagAudioRef,
@@ -33,7 +34,7 @@ const LANE_H_PHONE = 56; // a bar is a thumb target on a phone: 44 pt tall
 // Tracks that share a song share a colour; the hue is spread so neighbours differ.
 const swatch = (n: number) => `hsl(${(n * 67) % 360} 50% 52%)`;
 
-type Loaded = { key: string; scenes: Awaited<ReturnType<typeof loadScriptForTimeline>>['scenes']; content: string | null; refs: AudioReference[]; scripts: { id: string; title: string | null }[]; scriptId: string | null };
+type Loaded = { key: string; scenes: Awaited<ReturnType<typeof loadScriptForTimeline>>['scenes']; content: string | null; context: ParseContext; refs: AudioReference[]; scripts: { id: string; title: string | null }[]; scriptId: string | null };
 
 /**
  * The Sound page's Scenes room: the film's scenes left to right (width by length, colour by mood), a lane per role with each
@@ -65,11 +66,11 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
     try {
       const scripts = await listProjectScripts(projectId);
       const id = scriptId && scripts.some((s) => s.id === scriptId) ? scriptId : scripts[0]?.id ?? null;
-      const [refs, script] = await Promise.all([listAudioRefs(projectId), id ? loadScriptForTimeline(id) : Promise.resolve({ content: null, scenes: [] })]);
-      setData({ key: `${projectId}:${scriptId ?? ''}`, scenes: script.scenes, content: script.content, refs, scripts, scriptId: id });
+      const [refs, script, context] = await Promise.all([listAudioRefs(projectId), id ? loadScriptForTimeline(id) : Promise.resolve({ content: null, scenes: [] }), id ? loadReadingContext(id) : Promise.resolve({} as ParseContext)]);
+      setData({ key: `${projectId}:${scriptId ?? ''}`, scenes: script.scenes, content: script.content, context, refs, scripts, scriptId: id });
     } catch {
       toast('Could not load the scenes timeline.', 'error');
-      setData({ key: `${projectId}:${scriptId ?? ''}`, scenes: [], content: null, refs: [], scripts: [], scriptId: null });
+      setData({ key: `${projectId}:${scriptId ?? ''}`, scenes: [], content: null, context: {}, refs: [], scripts: [], scriptId: null });
     }
   }, [projectId, scriptId, toast]);
   // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the project's scenes and tracks when the room opens
@@ -81,7 +82,7 @@ export function SceneTimeline({ projectId, projectTitle, canTag, onFind }: { pro
     const moods = new Map<number, { mood: string; color: string }>();
     const lineCounts = new Map<number, number>();
     if (ready.content) {
-      const parsed = parseScript(ready.content);
+      const parsed = parseScript(ready.content, 'screenplay', undefined, { context: ready.context });
       parsed.scenes.forEach((sc, i) => {
         const body = parsed.lines.slice(sc.startIndex + 1, sc.endIndex + 1).map((l) => l.text).join('\n');
         const m = sceneMood(body, sc.timeOfDay);

@@ -200,6 +200,10 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `forcedTransitionConfidence` | 100 | a line led by ">" is a forced transition (the syntax spells it out, so it is never in doubt) |
 | `forcedHeadingConfidence` | 100 | a line led by a dot and a letter is a forced scene heading (the syntax spells it out, so it is never in doubt) |
 | `forcedCharacterConfidence` | 100 | a line led by "@" is a forced character cue (the syntax spells it out, so it is never in doubt) |
+| `previousDraftMinConfidence` | 90 | only the lines the previous draft was read at least this sure of (or a person settled) carry over as evidence; a doubtful line is a guess, and carrying a guess forward is the same guess twice |
+| `previousDraftAgreeConfidence` | 80 | a line read the same way as the previous draft read it (which was sure, or a person settled) is at least this sure, so the review does not ask about a line the earlier draft already answered |
+| `knownPlaceHeadingConfidence` | 97 | a scene heading set in a place the project knows (a Locations record) is at least this sure (the place is evidence; it never changes where scenes begin) |
+| `knownPlaceUnmarkedConfidence` | 60 | a caps "PLACE - TIME" line naming a place the project knows, read as action, is capped at this and offered as a scene heading missing INT./EXT. (the review asks; the reading is not changed) |
 | `forcedActionConfidence` | 100 | a line led by "!" is forced action (the syntax spells it out, so it is never in doubt) |
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
@@ -228,4 +232,5 @@ Costs: lower is a better fit. Tuned on the corpus (`lib/scriptos/corpus`); chang
 | `cueAfterSpeechNoBlank` | 14 | adds (raising it penalises) | a cue straight after speech with no blank line between |
 | `actionInsideSpeech` | 16 | adds (raising it penalises) | action in the middle of a speech |
 | `impossible` | 80 | adds (raising it penalises) | a sequence the grammar forbids |
+| `previousDraft` | 7 | adds (raising it penalises) | a line read as a given type in the previous saved draft is this much cheaper as that type again (never for a heading, a rejected name or a type the line's own evidence rules out) |
 | `temperature` | 3 | scale | how sharply costs become certainty (lower is more decisive) |

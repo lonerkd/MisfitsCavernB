@@ -159,8 +159,9 @@ describe('contextKey', () => {
 		expect(key).toEqual('ALICE|BOB#CHARLIE#0##');
 	});
 
-	it('ignores places, which the reader does not use (renaming a location re-reads nothing)', () => {
-		expect(contextKey({ characters: ['ALICE'], places: ['ROOM'] })).toEqual(contextKey({ characters: ['ALICE'] }));
+	it('notices places, which are evidence now (a heading in a known place is surer; a bare "PLACE - TIME" line is offered as a heading), and no places keys as before', () => {
+		expect(contextKey({ characters: ['ALICE'], places: ['ROOM'] })).not.toEqual(contextKey({ characters: ['ALICE'] }));
+		expect(contextKey({ characters: ['ALICE'], places: [] })).toEqual(contextKey({ characters: ['ALICE'] }));
 	});
 
 	it('returns empty string for undefined context', () => {

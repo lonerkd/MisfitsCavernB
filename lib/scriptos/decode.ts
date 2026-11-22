@@ -53,6 +53,8 @@ export interface Observation {
   _isRejectedName?: boolean;
   _hasExtension?: boolean;
   _opensWithKnownName?: boolean;
+  /** What the same line was read as in the previous draft (previous-draft.ts); only ever set on a free line. */
+  prior?: State;
 }
 
 /** The weights. Lower cost is a better fit. Tuned on the corpus (lib/scriptos/corpus); change one, re-measure. */
@@ -64,6 +66,8 @@ export interface Params {
   dialogueOutsideSpeech: number; parentheticalOutsideSpeech: number; parentheticalAfterParenthetical: number;
   cueAfterCue: number; cueAfterSpeechNoBlank: number; actionInsideSpeech: number;
   impossible: number;
+  /** The previous draft: how much cheaper a line is as what it was read as last time (a bounded nudge, never a verdict). */
+  previousDraft: number;
   /** How sharply costs become certainty: lower is more decisive. */
   temperature: number;
 }
@@ -75,6 +79,7 @@ export const DEFAULT_PARAMS: Params = {
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
   cueAfterCue: 40, cueAfterSpeechNoBlank: 14, actionInsideSpeech: 16,
   impossible: 80,
+  previousDraft: 7,
   temperature: 3,
 };
 
@@ -127,7 +132,15 @@ export function emission(o: Observation, ev: Evidence, p: Params, tight = false)
   else if (hasLower(t)) action = p.actionProse - ((o._opensWithKnownName ?? ev.opensWithKnownName?.(t)) ? p.actionNamesSomeone : 0);
   else if (o._isCaps ?? ev.isCaps(t)) action = p.actionCaps;
 
-  return { slug, transition, character, parenthetical, dialogue, action };
+  const costs = { slug, transition, character, parenthetical, dialogue, action };
+  // The previous draft read this very line as `prior`: it is a little cheaper as that again. Not for a heading (the
+  // previous draft may never change where scenes begin), not for a name a person rejected, not for a "cue" that reads as a sentence, and a label the line's own
+  // evidence rules out stays ruled out.
+  const prior = o.prior;
+  if (prior && prior !== 'slug' && !heading && !(prior === 'character' && (sentenceEnd || words > 6)) && !(o._isRejectedName ?? ev.isRejectedName?.(namePart)) && costs[prior] < p.impossible) {
+    costs[prior] = Math.max(0, costs[prior] - p.previousDraft);
+  }
+  return costs;
 }
 
 /** What it costs for a line labelled `s` to follow a line of class `prev`. */
