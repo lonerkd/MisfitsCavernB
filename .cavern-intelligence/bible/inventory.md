@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 112 tables · 84 database functions · 156 e2e specs**
+**55 pages · 9 API routes · 112 tables · 84 database functions · 157 e2e specs**
 
 ## Routes
 
