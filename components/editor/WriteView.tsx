@@ -1,4 +1,5 @@
 'use client';
+import { SCRIPT_TEXT_HINTS } from './textHints';
 import { matchChord } from '@/lib/os/chords';
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
@@ -271,7 +272,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 aria-label="Script"
                 aria-describedby={showMarks ? 'tag-mode-help' : undefined}
                 placeholder={PLACEHOLDER}
-                spellCheck={false}
+                {...SCRIPT_TEXT_HINTS}
                 style={{
                   position: 'absolute', inset: 0,
                   padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
