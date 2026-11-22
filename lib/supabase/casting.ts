@@ -154,3 +154,45 @@ export async function cancelAudition(id: string) {
   const { error } = await supabase.from('casting_auditions').delete().eq('id', id);
   if (error) throw error;
 }
+
+export type CandidateStatus = 'shortlisted' | 'callback' | 'passed';
+export const CANDIDATE_STATUSES: CandidateStatus[] = ['shortlisted', 'callback', 'passed'];
+export interface CastingCandidate { id: string; name: string; status: CandidateStatus; reel_url: string | null; note: string | null; user_id: string | null }
+
+/** A reel link must be http(s); the table refuses anything else, so say so before the round trip. */
+export function cleanReelUrl(raw: string): string | null {
+  const v = raw.trim();
+  if (!v) return null;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(v) && !/^https?:\/\//i.test(v)) throw new Error('A reel link must start with http:// or https://');
+  const url = /^https?:\/\//i.test(v) ? v : `https://${v}`;
+  try { return new URL(url).href; } catch { throw new Error('That reel link is not a valid web address'); }
+}
+
+export async function listCandidates(projectId: string, characterName: string): Promise<CastingCandidate[]> {
+  const { data, error } = await supabase
+    .from('casting_candidates').select('id, name, status, reel_url, note, user_id')
+    .eq('project_id', projectId).eq('character_name', characterName.toUpperCase())
+    .order('created_at');
+  if (error) throw error;
+  return (data ?? []) as CastingCandidate[];
+}
+
+export async function addCandidate(projectId: string, characterName: string, input: { name: string; reel_url?: string; note?: string; user_id?: string | null }, userId?: string) {
+  const name = input.name.trim();
+  if (!name) throw new Error('Give the candidate a name');
+  const { error } = await supabase.from('casting_candidates').insert({
+    project_id: projectId, character_name: characterName.toUpperCase(), name,
+    reel_url: cleanReelUrl(input.reel_url ?? ''), note: input.note?.trim() || null, user_id: input.user_id ?? null, created_by: userId ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function updateCandidate(id: string, patch: Partial<Pick<CastingCandidate, 'status' | 'note'>>) {
+  const { error } = await supabase.from('casting_candidates').update(patch).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteCandidate(id: string) {
+  const { error } = await supabase.from('casting_candidates').delete().eq('id', id);
+  if (error) throw error;
+}

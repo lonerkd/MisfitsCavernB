@@ -1,0 +1,45 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { createCast, destroyCast, anonClient, type Cast } from './support/personas';
+import { createCrewedProject } from './support/project';
+
+// Casting candidates (4.15): a shortlist per role. Owner writes, crew reads, outsiders nothing.
+let cast: Cast;
+let projectId: string;
+
+beforeAll(async () => {
+  cast = await createCast();
+  ({ projectId } = await createCrewedProject(cast, 'Casting candidates'));
+});
+afterAll(async () => { await destroyCast(cast); });
+
+const table = (c: any) => c.from('casting_candidates');
+const row = (extra: object = {}) => ({ project_id: projectId, character_name: 'MAYA', name: 'Ana Reyes', ...extra });
+
+describe('casting candidates', () => {
+  it('the owner adds, updates and removes a candidate', async () => {
+    const ins = await table(cast.sam.client).insert(row({ reel_url: 'https://example.com/reel', note: 'Strong tape' })).select().single();
+    expect(ins.error).toBeNull();
+    const up = await table(cast.sam.client).update({ status: 'callback' }).eq('id', ins.data.id).select().single();
+    expect(up.data.status).toBe('callback');
+    expect((await table(cast.sam.client).delete().eq('id', ins.data.id)).error).toBeNull();
+  });
+
+  it('rejects a bad status and a non-http reel link', async () => {
+    expect((await table(cast.sam.client).insert(row({ status: 'hired' }))).error).not.toBeNull();
+    expect((await table(cast.sam.client).insert(row({ reel_url: 'javascript:alert(1)' }))).error).not.toBeNull();
+  });
+
+  it('crew can read but not write', async () => {
+    await table(cast.sam.client).insert(row());
+    expect((await table(cast.jordan.client).select('name').eq('project_id', projectId)).data).toHaveLength(1);
+    expect((await table(cast.jordan.client).insert(row({ name: 'x' }))).error).not.toBeNull();
+    await table(cast.jordan.client).update({ status: 'passed' }).eq('project_id', projectId);
+    expect((await table(cast.sam.client).select('status').eq('project_id', projectId)).data?.[0].status).toBe('shortlisted');
+  });
+
+  it('an outsider sees nothing and writes nothing; anon too', async () => {
+    expect((await table(cast.riley.client).select('*').eq('project_id', projectId)).data).toEqual([]);
+    expect((await table(cast.riley.client).insert(row())).error).not.toBeNull();
+    expect((await table(anonClient()).select('*').eq('project_id', projectId)).data ?? []).toEqual([]);
+  });
+});

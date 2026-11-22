@@ -182,7 +182,7 @@ Nothing built. Translate a script into 50+ languages (a translation service), si
 **Built**: the browser's voices, one per character, the script highlighted as it reads, scene timings saved. _(full text: `backlog-detail.md`, 4.14)_
 
 ### 4.15 Casting
-**Built**: casting per character with its scene footprint (`character_castings`, Studio › Cast & crew); casting calls posted as jobs (accepting an applicant casts them); each character's look-board. _(full text: `backlog-detail.md`, 4.15)_
+**Candidates built 2026-11-22 (PR 719):** a shortlist per role (`casting_candidates`: name, status, reel link, note; `CandidateShortlist` on the Casting Board). _(full text: `backlog-detail.md`, 4.15)_
 
 ### 3.24 Voice rooms beyond eight — an SFU — RETIRED (owner, 2026-11-22: "we don't need rooms bigger than 8, for that we'll use the discord connection")
 **Decision:** a voice room stays at eight people (the mesh, with its "room is full" message); nothing to build, no outside media service to buy. _(full text: `backlog-detail.md`, 3.24)_
