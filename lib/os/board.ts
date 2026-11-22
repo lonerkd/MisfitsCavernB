@@ -20,6 +20,8 @@ export interface Readiness {
 export function readinessOf(s: ProjectSignals | undefined | null, phase?: Phase): Readiness | null {
   if (!s) return null;
   const p = computeProgress(phase ? { ...s, status: PHASE_STATUS[phase] } : s);
+  // No phases (a Notes project): nothing to measure.
+  if (!p.phased) return null;
   return {
     phaseLabel: p.current.label,
     done: p.current.done,

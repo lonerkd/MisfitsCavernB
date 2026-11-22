@@ -3684,6 +3684,7 @@ export type Database = {
           icon: string;
           name: string;
           phase_labels: NonNullable<Json>;
+          phased: boolean;
           position: number;
           script_format: string;
           skip_milestones: string[];
@@ -3697,6 +3698,7 @@ export type Database = {
           icon?: string;
           name: string;
           phase_labels?: NonNullable<Json>;
+          phased?: boolean;
           position?: number;
           script_format?: string;
           skip_milestones?: string[];
@@ -3709,6 +3711,7 @@ export type Database = {
           icon?: string;
           name?: string;
           phase_labels?: NonNullable<Json>;
+          phased?: boolean;
           position?: number;
           script_format?: string;
           skip_milestones?: string[];

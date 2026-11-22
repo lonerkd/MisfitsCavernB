@@ -16,7 +16,7 @@ export interface ProjectFormat {
 /** A database row → a format, with anything malformed read as the default. */
 export function toProjectFormat(row: {
   name: string; blurb: string; icon: string; script_format: string;
-  phase_labels: unknown; skip_phases: string[]; skip_milestones: string[]; approval_gates?: string[]; position: number;
+  phase_labels: unknown; skip_phases: string[]; skip_milestones: string[]; approval_gates?: string[]; phased?: boolean; position: number;
 }): ProjectFormat {
   return {
     name: row.name,

@@ -644,6 +644,7 @@ column project_formats.created_at timestamp with time zone default now() not nul
 column project_formats.icon text default 'film'::text not null
 column project_formats.name text not null
 column project_formats.phase_labels jsonb default '{}'::jsonb not null
+column project_formats.phased boolean default true not null
 column project_formats.position integer default 0 not null
 column project_formats.script_format text default 'screenplay'::text not null
 column project_formats.skip_milestones text[] default '{}'::text[] not null
@@ -1846,7 +1847,7 @@ function public.patch_project_settings(p_project_id uuid, p_patch jsonb) body=8e
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
-function public.project_progress(p_project uuid) body=ce436949f63207b29bd06519721d8e25
+function public.project_progress(p_project uuid) body=631ee485e15ad578aac757bcbb7ef3f7
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.reading_memory_for_user(p_user_id uuid, p_format text) body=2a66ee1818dfad753f1ee9a348cafd3d
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=17a56ee9bd9512a893269fc1968c990a

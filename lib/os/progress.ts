@@ -321,6 +321,8 @@ export interface ToolState {
 }
 
 export interface ProjectProgress {
+  /** False for a format with no phases: show no checklist and no phase. */
+  phased: boolean;
   phases: PhaseState[];
   currentIndex: number;
   current: PhaseState;
@@ -335,15 +337,17 @@ export interface ProjectProgress {
 }
 
 export function computeProgress(s: ProjectSignals, opts: { unlockAll?: boolean } = {}): ProjectProgress {
-  const unlockAll = opts.unlockAll ?? s.unlock_all;
   const format = s.format;
+  // A format with no phases (a notes-and-files space) has no checklist, and every tool is open.
+  const phased = format?.phased !== false;
+  const unlockAll = !phased || (opts.unlockAll ?? s.unlock_all);
   const visible = phasesFor(format);
   const currentIndex = phaseIndexIn(format, mapStatusToPhase(s.status ?? undefined));
   const skipped = new Set(format?.skip_milestones ?? []);
 
   const phases: PhaseState[] = visible.map((p, index) => ({ ...p, index, milestones: [], done: 0, total: 0 }));
   for (const m of MILESTONES) {
-    if (skipped.has(m.id)) continue;
+    if (!phased || skipped.has(m.id)) continue;
     const phase = phases[phaseIndexIn(format, m.phase)];
     const done = m.done(s);
     const progress = m.progress ? m.progress(s) : null;
@@ -374,6 +378,7 @@ export function computeProgress(s: ProjectSignals, opts: { unlockAll?: boolean }
   });
 
   return {
+    phased,
     phases,
     currentIndex,
     current,

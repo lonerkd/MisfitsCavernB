@@ -5,14 +5,14 @@
 // project will go through, not just a name.
 
 import React, { useRef } from 'react';
-import { Clapperboard, Film, Globe, Megaphone, Mic, Music, Sparkles, Tv, Video, type LucideIcon } from 'lucide-react';
+import { Clapperboard, Film, Globe, Megaphone, Mic, Music, NotebookPen, Sparkles, Tv, Video, type LucideIcon } from 'lucide-react';
 import { type ProjectFormat, findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
 import { SCRIPT_FORMAT_LABELS } from '@/lib/types/settings';
 import styles from './formatPicker.module.css';
 
 const ICONS: Record<string, LucideIcon> = {
   film: Film, clapperboard: Clapperboard, tv: Tv, globe: Globe, music: Music,
-  video: Video, megaphone: Megaphone, mic: Mic, sparkles: Sparkles,
+  video: Video, megaphone: Megaphone, mic: Mic, sparkles: Sparkles, 'notebook-pen': NotebookPen,
 };
 
 export function FormatIcon({ icon, size = 16 }: { icon: string | null | undefined; size?: number }) {
@@ -87,14 +87,18 @@ export function FormatJourney({ format }: { format: ProjectFormat }) {
   return (
     <div className={styles.journey} aria-live="polite">
       {format.blurb && <p className={styles.blurb}>{format.blurb}</p>}
-      <ol className={styles.phases} aria-label={`${format.name} phases`}>
-        {phases.map((p, i) => (
-          <li key={p.id} className={styles.phase}>
-            <span className={styles.phaseNum}>{i + 1}</span>
-            {p.label}
-          </li>
-        ))}
-      </ol>
+      {format.rules.phased === false ? (
+        <p className={styles.meta}>Everything is open from the start: no phases to work through.</p>
+      ) : (
+        <ol className={styles.phases} aria-label={`${format.name} phases`}>
+          {phases.map((p, i) => (
+            <li key={p.id} className={styles.phase}>
+              <span className={styles.phaseNum}>{i + 1}</span>
+              {p.label}
+            </li>
+          ))}
+        </ol>
+      )}
       <p className={styles.meta}>Scripts start as a {SCRIPT_FORMAT_LABELS[format.script_format].toLowerCase()}.</p>
     </div>
   );
