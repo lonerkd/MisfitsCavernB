@@ -9,7 +9,10 @@
 export interface BudgetSheetLine {
   category: string;
   description?: string | null;
+  /** Planned is the base plus the fringe. `base` and `fringe` are given when the budget has fringes: the sheet then shows them as columns. */
   planned: number;
+  base?: number;
+  fringe?: number;
   committed: number;
   paid: number;
   left: number;
@@ -45,17 +48,24 @@ const row = (cells: string[]) => `<Row>${cells.join('')}</Row>`;
 const cents = (v: number) => Math.round(v * 100) / 100;
 
 const HEAD = ['Account', 'Category', 'Description', 'Planned', 'Committed', 'Paid', 'Left (negative is over)'];
+const HEAD_FRINGED = ['Account', 'Category', 'Description', 'Base', 'Fringe', 'Planned', 'Committed', 'Paid', 'Left (negative is over)'];
 
 export function budgetSpreadsheetXml(i: BudgetSheetInput): string {
   const rows: string[] = [];
   rows.push(row([str(i.project, 'title')]));
   rows.push(row([str(`Budget vs spend, ${i.generated}`, 'muted')]));
   rows.push(row([]));
-  rows.push(row(HEAD.map((h, k) => str(h, k >= 3 ? 'headr' : 'head'))));
+  // A budget with no fringes keeps the sheet exactly as it was; with fringes, Base and Fringe columns come before Planned (= base + fringe).
+  const fringed = i.lines.some((l) => (l.fringe ?? 0) !== 0);
+  const cols = fringed ? 9 : 7;
+  rows.push(row((fringed ? HEAD_FRINGED : HEAD).map((h, k) => str(h, k >= 3 ? 'headr' : 'head'))));
 
   const sum = (ls: BudgetSheetLine[], k: 'planned' | 'committed' | 'paid' | 'left') => cents(ls.reduce((n, l) => n + l[k], 0));
+  const baseOf = (l: BudgetSheetLine) => l.base ?? l.planned - (l.fringe ?? 0);
+  const baseSum = (ls: BudgetSheetLine[]) => cents(ls.reduce((n, l) => n + baseOf(l), 0));
+  const fringeSum = (ls: BudgetSheetLine[]) => cents(ls.reduce((n, l) => n + (l.fringe ?? 0), 0));
   const totalRow = (label: string, ls: BudgetSheetLine[], style: string) =>
-    row([blank(style), str(label, style), blank(style), num(sum(ls, 'planned'), `${style}n`), num(sum(ls, 'committed'), `${style}n`), num(sum(ls, 'paid'), `${style}n`), num(sum(ls, 'left'), `${style}n`)]);
+    row([blank(style), str(label, style), blank(style), ...(fringed ? [num(baseSum(ls), `${style}n`), num(fringeSum(ls), `${style}n`)] : []), num(sum(ls, 'planned'), `${style}n`), num(sum(ls, 'committed'), `${style}n`), num(sum(ls, 'paid'), `${style}n`), num(sum(ls, 'left'), `${style}n`)]);
 
   const anyAbove = i.lines.some((l) => l.above);
   const groups: Array<{ title: string; base: number; lines: BudgetSheetLine[] }> = anyAbove
@@ -64,7 +74,7 @@ export function budgetSpreadsheetXml(i: BudgetSheetInput): string {
 
   for (const g of groups) {
     if (!g.lines.length) continue;
-    rows.push(row([str(g.title.toUpperCase(), 'group'), blank('group'), blank('group'), blank('group'), blank('group'), blank('group'), blank('group')]));
+    rows.push(row([str(g.title.toUpperCase(), 'group'), ...Array.from({ length: cols - 1 }, () => blank('group'))]));
     const cats: string[] = [];
     for (const l of g.lines) if (!cats.includes(l.category)) cats.push(l.category);
     cats.forEach((cat, ci) => {
@@ -72,6 +82,7 @@ export function budgetSpreadsheetXml(i: BudgetSheetInput): string {
       const account = String(g.base + (ci + 1) * 100);
       ls.forEach((l, li) => rows.push(row([
         str(String(Number(account) + li + 1)), str(cat), str(l.description ?? ''),
+        ...(fringed ? [num(baseOf(l)), num(l.fringe ?? 0)] : []),
         num(l.planned), num(l.committed), num(l.paid), num(l.left),
       ])));
       rows.push(totalRow(`Total ${cat}`, ls, 'sub'));
@@ -80,12 +91,12 @@ export function budgetSpreadsheetXml(i: BudgetSheetInput): string {
   }
 
   if (i.unassigned.committed || i.unassigned.paid) {
-    rows.push(row([blank(), str('Not on a budget line'), str('Committed and paid money charged to no line'), num(0), num(i.unassigned.committed), num(i.unassigned.paid), num(cents(-i.unassigned.committed - i.unassigned.paid))]));
+    rows.push(row([blank(), str('Not on a budget line'), str('Committed and paid money charged to no line'), ...(fringed ? [num(0), num(0)] : []), num(0), num(i.unassigned.committed), num(i.unassigned.paid), num(cents(-i.unassigned.committed - i.unassigned.paid))]));
   }
   if (i.labourPaid) {
-    rows.push(row([blank(), str('Approved labour'), str('Approved timesheet hours at their rates'), num(0), num(0), num(i.labourPaid), num(cents(-i.labourPaid))]));
+    rows.push(row([blank(), str('Approved labour'), str('Approved timesheet hours at their rates'), ...(fringed ? [num(0), num(0)] : []), num(0), num(0), num(i.labourPaid), num(cents(-i.labourPaid))]));
   }
-  rows.push(row([blank('grand'), str('GRAND TOTAL', 'grand'), blank('grand'), num(i.totals.planned, 'grandn'), num(i.totals.committed, 'grandn'), num(i.totals.paid, 'grandn'), num(i.totals.left, 'grandn')]));
+  rows.push(row([blank('grand'), str('GRAND TOTAL', 'grand'), blank('grand'), ...(fringed ? [num(baseSum(i.lines), 'grandn'), num(fringeSum(i.lines), 'grandn')] : []), num(i.totals.planned, 'grandn'), num(i.totals.committed, 'grandn'), num(i.totals.paid, 'grandn'), num(i.totals.left, 'grandn')]));
 
   const numStyle = (id: string, bold: boolean, fill?: string) => `<Style ss:ID="${id}"><Alignment ss:Horizontal="Right"/>${fill ? `<Interior ss:Color="${fill}" ss:Pattern="Solid"/>` : ''}<Font ss:FontName="Calibri" ss:Size="11"${bold ? ' ss:Bold="1"' : ''}/><NumberFormat ss:Format="#,##0.00;[Red]\\-#,##0.00"/></Style>`;
   const fillStyle = (id: string, fill: string) => `<Style ss:ID="${id}"><Interior ss:Color="${fill}" ss:Pattern="Solid"/><Font ss:FontName="Calibri" ss:Size="11" ss:Bold="1"/></Style>`;
@@ -104,7 +115,7 @@ export function budgetSpreadsheetXml(i: BudgetSheetInput): string {
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 <Styles>${styles.join('')}</Styles>
 <Worksheet ss:Name="Budget"><Table>
-<Column ss:Width="70"/><Column ss:Width="160"/><Column ss:Width="260"/><Column ss:Width="90"/><Column ss:Width="90"/><Column ss:Width="90"/><Column ss:Width="140"/>
+<Column ss:Width="70"/><Column ss:Width="160"/><Column ss:Width="260"/>${fringed ? '<Column ss:Width="90"/><Column ss:Width="90"/>' : ''}<Column ss:Width="90"/><Column ss:Width="90"/><Column ss:Width="90"/><Column ss:Width="140"/>
 ${rows.join('\n')}
 </Table></Worksheet>
 </Workbook>

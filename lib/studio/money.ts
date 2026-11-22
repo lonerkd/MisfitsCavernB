@@ -1,7 +1,7 @@
 // Money, summed: each budget line's plan against what's committed (purchase
 // orders out) and paid, plus approved labour from timesheets. Pure.
 
-export interface BudgetLine { id: string; category: string; description?: string | null; amount: number | string | null }
+export interface BudgetLine { id: string; category: string; description?: string | null; amount: number | string | null; /** The fringe the database keeps on this line; the line costs `amount + fringe_amount`. */ fringe_amount?: number | string | null }
 export interface SpendLine { id: string; budget_item_id: string | null; amount: number | string; status: string }
 export interface HoursLine { user_id: string | null; hours: number | string; rate: number | string | null; status: string }
 
@@ -11,6 +11,9 @@ export interface LineMoney {
   planned: number;
   committed: number;
   paid: number;
+  /** The base the line was written with, and the fringe on it; `planned` is their sum. */
+  base: number;
+  fringe: number;
   /** Planned less committed and paid; negative is over. */
   left: number;
 }
@@ -36,10 +39,11 @@ export function moneySummary(lines: BudgetLine[], spend: SpendLine[], hours: Hou
   }
   const out = lines.map((l) => {
     const m = byLine.get(l.id) ?? { committed: 0, paid: 0 };
-    const planned = n(l.amount);
+    const planned = n(l.amount) + n(l.fringe_amount);
     return {
       id: l.id,
       label: l.description ? `${l.category} — ${l.description}` : l.category,
+      base: cents(n(l.amount)), fringe: cents(n(l.fringe_amount)),
       planned: cents(planned), committed: cents(m.committed), paid: cents(m.paid),
       left: cents(planned - m.committed - m.paid),
     };

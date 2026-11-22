@@ -77,6 +77,17 @@ column brief_questions.unit text
 column budget_alerts.alerted boolean default false not null
 column budget_alerts.alerted_at timestamp with time zone
 column budget_alerts.project_id uuid not null
+column budget_fringes.cap_per_line numeric(12,2)
+column budget_fringes.created_at timestamp with time zone default now() not null
+column budget_fringes.created_by uuid
+column budget_fringes.id uuid default gen_random_uuid() not null
+column budget_fringes.name text not null
+column budget_fringes.percent numeric(7,3) not null
+column budget_fringes.project_id uuid not null
+column budget_item_fringes.budget_item_id uuid not null
+column budget_item_fringes.created_at timestamp with time zone default now() not null
+column budget_item_fringes.fringe_id uuid not null
+column budget_item_fringes.project_id uuid not null
 column budget_items.above_the_line boolean default false not null
 column budget_items.actual_cost numeric(12,2)
 column budget_items.amount numeric(12,2) default 0 not null
@@ -84,8 +95,13 @@ column budget_items.category text not null
 column budget_items.created_at timestamp with time zone default now()
 column budget_items.created_by uuid
 column budget_items.description text default ''::text
+column budget_items.fringe_amount numeric(12,2) default 0 not null
 column budget_items.id uuid default uuid_generate_v4() not null
 column budget_items.job_id uuid
+column budget_items.kind text default 'line'::text not null
+column budget_items.pd_days numeric(8,2)
+column budget_items.pd_people numeric(8,2)
+column budget_items.pd_rate numeric(12,2)
 column budget_items.project_id uuid not null
 column budget_items.updated_at timestamp with time zone default now()
 column budget_templates.created_at timestamp with time zone default now() not null
@@ -1060,9 +1076,21 @@ constraint brief_questions.brief_questions_pkey PRIMARY KEY (key)
 constraint brief_questions.brief_questions_shape_check CHECK ((((kind = 'number'::text) AND (min_value IS NOT NULL) AND (max_value IS NOT NULL) AND (min_value <= max_value)) OR ((kind <> 'number'::text) AND (jsonb_array_length(options) > 0))))
 constraint budget_alerts.budget_alerts_pkey PRIMARY KEY (project_id)
 constraint budget_alerts.budget_alerts_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint budget_fringes.budget_fringes_cap_check CHECK (((cap_per_line IS NULL) OR (cap_per_line >= (0)::numeric)))
+constraint budget_fringes.budget_fringes_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint budget_fringes.budget_fringes_id_project_key UNIQUE (id, project_id)
+constraint budget_fringes.budget_fringes_name_check CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 80)))
+constraint budget_fringes.budget_fringes_percent_check CHECK (((percent >= (0)::numeric) AND (percent <= (100)::numeric)))
+constraint budget_fringes.budget_fringes_pkey PRIMARY KEY (id)
+constraint budget_fringes.budget_fringes_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint budget_item_fringes.budget_item_fringes_fringe_fkey FOREIGN KEY (fringe_id, project_id) REFERENCES budget_fringes(id, project_id) ON DELETE CASCADE
+constraint budget_item_fringes.budget_item_fringes_item_fkey FOREIGN KEY (budget_item_id, project_id) REFERENCES budget_items(id, project_id) ON DELETE CASCADE
+constraint budget_item_fringes.budget_item_fringes_pkey PRIMARY KEY (budget_item_id, fringe_id)
 constraint budget_items.budget_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint budget_items.budget_items_id_project_key UNIQUE (id, project_id)
 constraint budget_items.budget_items_job_id_fkey FOREIGN KEY (job_id) REFERENCES jobs(id) ON DELETE SET NULL
+constraint budget_items.budget_items_kind_check CHECK ((kind = ANY (ARRAY['line'::text, 'per_diem'::text])))
+constraint budget_items.budget_items_per_diem_check CHECK (((kind = 'line'::text) OR ((pd_days IS NOT NULL) AND (pd_rate IS NOT NULL) AND (pd_people IS NOT NULL) AND (pd_days >= (0)::numeric) AND (pd_rate >= (0)::numeric) AND (pd_people >= (0)::numeric))))
 constraint budget_items.budget_items_pkey PRIMARY KEY (id)
 constraint budget_items.budget_items_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint budget_templates.budget_templates_description_len CHECK ((char_length(description) <= 200))
@@ -1698,7 +1726,11 @@ function internal.applied_to(p_job uuid) body=b4ca926169d1b362a9b523b649931545
 function internal.approval_pending(p_project uuid) body=e710b529b87414a1e3c455cc490486ee
 function internal.audio_refs_guard() body=ef569694d0c3833691dde513cf4baecd
 function internal.brief_question_guard() body=b1fe0fda5aa5f679ae8c969ec4f29a72
-function internal.budget_check_over(p_project uuid) body=eba7a39d8c25c29cd8c8c3e53bf13473
+function internal.budget_check_over(p_project uuid) body=5bd4407b51cdfe2463b80ef09fe9130f
+function internal.budget_fringe_for(p_item uuid, p_amount numeric) body=a2564ab440c7ad47b5f9fca1342b2cd9
+function internal.budget_fringes_retouch() body=11d6a98925cfd11438c52bc6758f376a
+function internal.budget_item_fringes_touch() body=81ecd69ed106c7fc45eaf64fd7c40821
+function internal.budget_items_derive() body=fc9f06fb90e1b5b945a2c5821ded8609
 function internal.budget_over_trigger() body=cb81de6c847e99f199209a141a113676
 function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) body=0a058f62bac52de09f6420f02f8e54a2
 function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) body=2510c56cc37516022402d7ef06e74e6e
@@ -1766,7 +1798,7 @@ function internal.project_documents_touch() body=edc00bfccf2d67d29293659e88c48d9
 function internal.project_locations_link_scenes() body=186aef8f6705ead04c78162099d57672
 function internal.project_locations_touch() body=a646052b252d8724a465c8bc3567d1e3
 function internal.projects_approval_gate() body=879a88653621a3ea731c1a21a2dc18cf
-function internal.projects_budget_approval() body=53e6e7baa508f4748f4bf964ad2dd0d0
+function internal.projects_budget_approval() body=f40ed6c5b95f6ab30c3456cb772a7f2a
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
@@ -1881,6 +1913,10 @@ grant function internal.approval_pending(p_project uuid) postgres
 grant function internal.audio_refs_guard() postgres
 grant function internal.brief_question_guard() postgres
 grant function internal.budget_check_over(p_project uuid) postgres
+grant function internal.budget_fringe_for(p_item uuid, p_amount numeric) postgres
+grant function internal.budget_fringes_retouch() postgres
+grant function internal.budget_item_fringes_touch() postgres
+grant function internal.budget_items_derive() postgres
 grant function internal.budget_over_trigger() postgres
 grant function internal.call_sheet_call_for(snap jsonb, p_project uuid, p_user uuid) postgres
 grant function internal.call_sheet_message(snap jsonb, prev jsonb, p_project uuid, p_user uuid, p_note text) postgres
@@ -2062,6 +2098,9 @@ index CREATE INDEX breakdown_dismissals_created_by_idx ON public.breakdown_dismi
 index CREATE INDEX breakdown_elements_assigned_to_idx ON public.breakdown_elements USING btree (assigned_to)
 index CREATE INDEX breakdown_elements_category_fkey_idx ON public.breakdown_elements USING btree (category_id, project_id)
 index CREATE INDEX breakdown_elements_created_by_idx ON public.breakdown_elements USING btree (created_by)
+index CREATE INDEX budget_fringes_created_by_idx ON public.budget_fringes USING btree (created_by)
+index CREATE INDEX budget_item_fringes_fringe_idx ON public.budget_item_fringes USING btree (fringe_id, project_id)
+index CREATE INDEX budget_item_fringes_item_idx ON public.budget_item_fringes USING btree (budget_item_id, project_id)
 index CREATE INDEX call_sheet_acks_project_idx ON public.call_sheet_acks USING btree (project_id)
 index CREATE INDEX call_sheet_acks_sheet_fkey_idx ON public.call_sheet_acks USING btree (call_sheet_id, project_id)
 index CREATE INDEX call_sheet_acks_user_id_fkey_idx ON public.call_sheet_acks USING btree (user_id)
@@ -2333,6 +2372,10 @@ index CREATE UNIQUE INDEX breakdown_elements_pkey ON public.breakdown_elements U
 index CREATE UNIQUE INDEX breakdown_elements_project_name_key ON public.breakdown_elements USING btree (project_id, lower(btrim(name)))
 index CREATE UNIQUE INDEX brief_questions_pkey ON public.brief_questions USING btree (key)
 index CREATE UNIQUE INDEX budget_alerts_pkey ON public.budget_alerts USING btree (project_id)
+index CREATE UNIQUE INDEX budget_fringes_id_project_key ON public.budget_fringes USING btree (id, project_id)
+index CREATE UNIQUE INDEX budget_fringes_name_key ON public.budget_fringes USING btree (project_id, lower(btrim(name)))
+index CREATE UNIQUE INDEX budget_fringes_pkey ON public.budget_fringes USING btree (id)
+index CREATE UNIQUE INDEX budget_item_fringes_pkey ON public.budget_item_fringes USING btree (budget_item_id, fringe_id)
 index CREATE UNIQUE INDEX budget_items_id_project_key ON public.budget_items USING btree (id, project_id)
 index CREATE UNIQUE INDEX budget_items_pkey ON public.budget_items USING btree (id)
 index CREATE UNIQUE INDEX budget_templates_name_key ON public.budget_templates USING btree (name)
@@ -2511,6 +2554,13 @@ policy public.brief_questions "brief_questions admin delete" PERMISSIVE DELETE t
 policy public.brief_questions "brief_questions admin insert" PERMISSIVE INSERT to authenticated using - check internal.caller_is_admin()
 policy public.brief_questions "brief_questions admin update" PERMISSIVE UPDATE to authenticated using internal.caller_is_admin() check -
 policy public.brief_questions "brief_questions read" PERMISSIVE SELECT to anon,authenticated using true check -
+policy public.budget_fringes "budget fringes add" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text))
+policy public.budget_fringes "budget fringes change" PERMISSIVE UPDATE to authenticated using (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text)) check (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text))
+policy public.budget_fringes "budget fringes read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
+policy public.budget_fringes "budget fringes remove" PERMISSIVE DELETE to authenticated using (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text)) check -
+policy public.budget_item_fringes "budget item fringes add" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text))
+policy public.budget_item_fringes "budget item fringes read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
+policy public.budget_item_fringes "budget item fringes remove" PERMISSIVE DELETE to authenticated using (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'::text)) check -
 policy public.budget_items "budget items add" PERMISSIVE INSERT to authenticated using - check internal.has_capability(project_id, 'budget.write'::text)
 policy public.budget_items "budget items change" PERMISSIVE UPDATE to authenticated using internal.has_capability(project_id, 'budget.write'::text) check internal.has_capability(project_id, 'budget.write'::text)
 policy public.budget_items "budget items read" PERMISSIVE SELECT to authenticated using internal.has_capability(project_id, 'budget.read'::text) check -
@@ -2868,6 +2918,8 @@ rls breakdown_dismissals enabled=true forced=false
 rls breakdown_elements enabled=true forced=false
 rls brief_questions enabled=true forced=false
 rls budget_alerts enabled=true forced=false
+rls budget_fringes enabled=true forced=false
+rls budget_item_fringes enabled=true forced=false
 rls budget_items enabled=true forced=false
 rls budget_templates enabled=true forced=false
 rls calendar_feeds enabled=true forced=false
@@ -2985,8 +3037,11 @@ trigger CREATE TRIGGER brand_rule_entity_sync AFTER INSERT OR UPDATE OF project_
 trigger CREATE TRIGGER brand_rules_touch_updated_at BEFORE UPDATE ON public.brand_rules FOR EACH ROW EXECUTE FUNCTION internal.ad_touch_updated_at()
 trigger CREATE TRIGGER breakdown_elements_updated_at BEFORE UPDATE ON public.breakdown_elements FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER brief_question_guard BEFORE UPDATE OF kind, options ON public.brief_questions FOR EACH ROW EXECUTE FUNCTION internal.brief_question_guard()
+trigger CREATE TRIGGER budget_fringes_retouch AFTER UPDATE OF percent, cap_per_line ON public.budget_fringes FOR EACH ROW EXECUTE FUNCTION internal.budget_fringes_retouch()
+trigger CREATE TRIGGER budget_item_fringes_touch AFTER INSERT OR DELETE ON public.budget_item_fringes FOR EACH ROW EXECUTE FUNCTION internal.budget_item_fringes_touch()
+trigger CREATE TRIGGER budget_items_derive BEFORE INSERT OR UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_items_derive()
 trigger CREATE TRIGGER budget_items_over AFTER INSERT OR DELETE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
-trigger CREATE TRIGGER budget_items_over_upd AFTER UPDATE OF amount, project_id ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
+trigger CREATE TRIGGER budget_items_over_upd AFTER UPDATE OF amount, fringe_amount, kind, pd_days, pd_rate, pd_people, project_id ON public.budget_items FOR EACH ROW EXECUTE FUNCTION internal.budget_over_trigger()
 trigger CREATE TRIGGER budget_items_updated_at BEFORE UPDATE ON public.budget_items FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER call_sheets_issue_guard BEFORE INSERT OR UPDATE ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_issue_guard()
 trigger CREATE TRIGGER call_sheets_link_day BEFORE INSERT OR UPDATE OF shoot_day, shoot_date ON public.call_sheets FOR EACH ROW EXECUTE FUNCTION internal.call_sheets_link_day()
