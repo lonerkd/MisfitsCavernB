@@ -861,6 +861,54 @@ export type Database = {
           },
         ];
       };
+      casting_candidates: {
+        Row: {
+          character_name: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          name: string;
+          note: string | null;
+          project_id: string;
+          reel_url: string | null;
+          status: string;
+          user_id: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          character_name: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name: string;
+          note?: string | null;
+          project_id: string;
+          reel_url?: string | null;
+          status?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          character_name?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          name?: string;
+          note?: string | null;
+          project_id?: string;
+          reel_url?: string | null;
+          status?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "casting_candidates_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       casting_history: {
         Row: {
           action: string;
