@@ -9,7 +9,7 @@ const UA = 'MisfitsCavern/1.0 (film reference search; https://misfits-cavern-b.v
 const EMPTY = (by: FilmSearchBy) => ({ films: [], by });
 
 export async function GET(req: NextRequest) {
-  const limit = checkRateLimit(getClientIp(req), { maxRequests: 30, windowMs: 60_000 });
+  const limit = checkRateLimit(getClientIp(req), { maxRequests: 30, windowMs: 60_000, scope: 'films' });
   if (!limit.allowed) return NextResponse.json(EMPTY('title'), { status: 429, headers: { 'X-RateLimit-Reset': limit.resetAt.toString() } });
 
   const { searchParams } = new URL(req.url);
