@@ -19,7 +19,7 @@ vi.mock('@/lib/island/useIslandCondition', () => ({ useIslandCondition: () => ({
 vi.mock('@/lib/island/useIslandSurface', () => ({ useIslandSurface: () => 'pill' }));
 vi.mock('@/lib/supabase/messages', () => ({ getLoungeUnread: () => Promise.resolve({ channels: {}, people: {} }) }));
 vi.mock('@/lib/hooks/useSearchParam', () => ({ useLocationSearch: () => '' }));
-vi.mock('@/lib/os/usePhone', () => ({ usePhoneLayout: () => ({ phone: true, landscape: false, keyboard: phone.typing ? 300 : 0, typing: phone.typing, height: 500, offset: 0 }) }));
+vi.mock('@/lib/os/usePhone', async (orig) => ({ ...(await orig<typeof import('@/lib/os/usePhone')>()), usePhoneLayout: () => ({ phone: true, landscape: false, keyboard: phone.typing ? 300 : 0, typing: phone.typing, height: 500, offset: 0 }) }));
 vi.mock('./Capture', () => ({ CaptureSheet: () => null, fromShare: () => null, useOutbox: () => [] }));
 
 import MobileTabBar from './MobileTabBar';
@@ -27,7 +27,8 @@ import MobileTabBar from './MobileTabBar';
 const bar = (c: HTMLElement) => c.querySelector('[data-mobile-tabbar]') as HTMLElement;
 
 describe('MobileTabBar and the keyboard', () => {
-  beforeEach(() => { cleanup(); phone.typing = false; });
+  const focusField = () => { const i = document.createElement('input'); document.body.appendChild(i); i.focus(); return i; };
+  beforeEach(() => { cleanup(); phone.typing = false; (document.activeElement as HTMLElement | null)?.blur?.(); document.querySelectorAll('input').forEach((i) => i.remove()); });
 
   it('is shown, reachable and announced while the keyboard is down', () => {
     const { container } = render(<MobileTabBar />);
@@ -40,6 +41,7 @@ describe('MobileTabBar and the keyboard', () => {
 
   it('steps aside while the keyboard is up: slid away, inert and hidden from screen readers', () => {
     phone.typing = true;
+    focusField();
     const { container } = render(<MobileTabBar />);
     const nav = bar(container);
     expect(nav.getAttribute('data-keyboard')).toBe('up');
@@ -50,6 +52,7 @@ describe('MobileTabBar and the keyboard', () => {
 
   it('comes back when the keyboard closes', () => {
     phone.typing = true;
+    focusField();
     const { container, rerender } = render(<MobileTabBar />);
     expect(bar(container).hasAttribute('inert')).toBe(true);
     phone.typing = false;

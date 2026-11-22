@@ -90,7 +90,7 @@ export default function GlobalAudioWidget() {
               width: 300, background: 'var(--surface)',
               border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14,
               boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
-              overflow: 'hidden', backdropFilter: 'blur(30px)',
+              overflow: 'hidden auto', maxHeight: 'var(--island-room, 70vh)', backdropFilter: 'blur(30px)',
               zIndex: 9000
             }}
           >

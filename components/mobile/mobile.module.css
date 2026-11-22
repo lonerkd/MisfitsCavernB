@@ -12,11 +12,13 @@
   backdrop-filter: blur(22px) saturate(1.5);
   -webkit-backdrop-filter: blur(22px) saturate(1.5);
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.5);
-  transition: transform 0.22s ease, opacity 0.22s ease;
+  transition: transform 0.22s ease, visibility 0s linear 0s;
 }
 @media (max-width: 760px) { .pill { display: flex; } }
 /* Slides down past the foot by its own height plus the home-indicator inset, so it is fully off screen. */
-.hidden { transform: translate(-50%, calc(160% + env(safe-area-inset-bottom))); opacity: 0; pointer-events: none; }
+/* Either fully there and opaque, or fully gone (off screen and visibility:hidden once it has slid away): never half faded, so a
+   transition caught mid-way by the browser chrome cannot leave a ghost of it over the page. */
+.hidden { transform: translate(-50%, calc(160% + env(safe-area-inset-bottom))); visibility: hidden; pointer-events: none; transition: transform 0.22s ease, visibility 0s linear 0.22s; }
 @media (prefers-reduced-motion: reduce) { .pill { transition: none; } }
 .pillMain {
   flex: 1; min-width: 0; min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 12px 0 10px;

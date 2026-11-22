@@ -29,7 +29,7 @@ import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
-import { usePhoneLayout } from '@/lib/os/usePhone';
+import { keyboardUp, usePhoneLayout } from '@/lib/os/usePhone';
 import { shouldDismiss } from './sheetDrag';
 
 const TOOLS = [
@@ -182,7 +182,21 @@ export default function MobileTabBar() {
   const { status } = useSession();
   // The same word as every other part of the phone layout (PhoneKeyboard measures the real keyboard through visualViewport), not a
   // second guess from which element has focus.
-  const keyboard = usePhoneLayout().typing;
+  // It steps aside only for a field that has focus plus a keyboard-sized gap, with hysteresis (keyboardUp), so scrolling
+  // (the browser chrome resizing the visible area) cannot flip it half-way.
+  const covered = usePhoneLayout().keyboard;
+  const [keyboard, setKeyboard] = useState(false);
+  useEffect(() => {
+    const read = () => {
+      const a = document.activeElement as HTMLElement | null;
+      const editable = !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+      setKeyboard((prev) => keyboardUp(prev, covered, editable));
+    };
+    read();
+    document.addEventListener('focusin', read);
+    document.addEventListener('focusout', read);
+    return () => { document.removeEventListener('focusin', read); document.removeEventListener('focusout', read); };
+  }, [covered]);
   const [more, setMore] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [start, setStart] = useState<CaptureStart | null>(null);
