@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseScript } from './parser';
-import { checkCharacters, warningsFor, editDistance, nameKey, cueName } from './character-checks';
+import { checkCharacters, warningsFor, editDistance, nameKey, cueName, areNumberedRoles } from './character-checks';
 import { relationships, talksToMost, topCharacters } from './relationships';
 
 const run = (text: string, rejectedNames: string[] = []) => {
@@ -368,5 +368,23 @@ Hi.
     expect(talksToMost(pairs, 'maya', 2)[0].name).toBe('LUIS');
     expect(topCharacters(pairs, 2)).toEqual(expect.arrayContaining(['MAYA', 'LUIS']));
     expect(topCharacters([], 5)).toEqual([]);
+  });
+});
+
+describe('numbered and lettered roles are not misspellings', () => {
+  it('areNumberedRoles: COP #1 / COP #2, GUARD A / GUARD B, WAITER 1 / WAITER 2 differ; a real typo or one name does not', () => {
+    expect(areNumberedRoles('COP #1', 'COP #2')).toBe(true);
+    expect(areNumberedRoles('GUARD A', 'GUARD B')).toBe(true);
+    expect(areNumberedRoles('WAITER 1', 'WAITER 2')).toBe(true);
+    expect(areNumberedRoles('COP #1', 'COP 1')).toBe(false); // the same role written two ways
+    expect(areNumberedRoles('JONATHAN', 'JONATHEN')).toBe(false);
+    expect(areNumberedRoles('MARIA', 'MARIE')).toBe(false); // a trailing letter with no separator is a name, not a marker
+  });
+
+  it('COP #1 and COP #2 each speaking once in separate scenes raise no spelling warning; JONATHAN / JONATHEN still does', () => {
+    const script = ['INT. STREET - DAY', '', 'COP #1', 'Move along.', '', 'INT. STATION - NIGHT', '', 'COP #2', 'Sit down.', '', 'INT. ROOM - DAY', '', 'JONATHAN', 'Hello.', '', 'JONATHAN', 'Again.', '', 'JONATHAN', 'Third.', '', 'INT. HALL - DAY', '', 'JONATHEN', 'Hi.', ''].join('\n');
+    const p = parseScript(script);
+    const spelling = checkCharacters(p.lines, p.scenes).filter((w) => w.rule === 'spelling');
+    expect(spelling.map((w) => w.characters.join('/'))).toEqual(['JONATHAN/JONATHEN']);
   });
 });

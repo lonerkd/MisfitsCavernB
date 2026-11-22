@@ -40,6 +40,20 @@ const isVoiceCue = (line: ScriptLine) => /\((?:[^)]*\b)?(?:V\.?O\.?|O\.?S\.?|O\.
 /** A name's comparable form: capitals, letters and digits only ("DR. SMITH" and "DR SMITH" are one). */
 export const nameKey = (n: string) => n.toUpperCase().replace(/[’']/g, '').replace(/[^\p{L}\p{N}]+/gu, '');
 
+/**
+ * Two numbered or lettered roles are different characters, not one misspelled: COP #1 and COP #2, GUARD A and GUARD B, WAITER 1 and WAITER 2.
+ * True when the names are the same apart from a trailing number, or a trailing single letter set off by a space or #, and those differ.
+ */
+export function areNumberedRoles(a: string, b: string): boolean {
+  const split = (n: string) => {
+    const m = /^(.*?)[\s#]*(\d+|(?<=[\s#])[A-Za-z])$/.exec(n.trim());
+    return m ? { stem: nameKey(m[1]), marker: m[2].toUpperCase() } : null;
+  };
+  const x = split(a);
+  const y = split(b);
+  return !!x && !!y && x.stem.length > 0 && x.stem === y.stem && x.marker !== y.marker;
+}
+
 export function editDistance(a: string, b: string): number {
   if (a === b) return 0;
   const prev = Array.from({ length: b.length + 1 }, (_, j) => j);
@@ -90,7 +104,7 @@ export function checkCharacters(lines: ScriptLine[], scenes: Scene[], opts: { re
       const sameLetters = ka === kb;
       const [common, rare] = byName.get(a)!.length >= byName.get(b)!.length ? [a, b] : [b, a];
       let near = false;
-      if (!sameLetters && Math.min(ka.length, kb.length) >= 4 && editDistance(ka, kb) === 1) {
+      if (!sameLetters && !areNumberedRoles(a, b) && Math.min(ka.length, kb.length) >= 4 && editDistance(ka, kb) === 1) {
         const together = byName.get(common)!.some((c) => byName.get(rare)!.some((r) => r.scene !== null && r.scene === c.scene));
         near = byName.get(rare)!.length <= 2 && !together;
       }
