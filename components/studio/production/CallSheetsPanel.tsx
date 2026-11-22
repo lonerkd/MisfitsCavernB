@@ -336,10 +336,6 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
       url: `${window.location.origin}/call/${sheet.id}`,
     });
   };
-  const copyText = async (body: string) => {
-    try { await navigator.clipboard.writeText(body); toast('Copied', 'success'); }
-    catch { toast('Could not copy', 'error'); }
-  };
 
   const callRow = (key: string, target: CallTarget, name: string, role?: string) => {
     const x = calls.find((y) => ('crew_user_id' in target ? y.crew_user_id === target.crew_user_id : y.character_name === target.character_name));
@@ -361,8 +357,8 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
           if (!body) return null;
           return (
             <span className={c.textIt}>
-              <a href={smsHref(body)} aria-label={`Text ${name} their call`} className={c.ghost}>Text it</a>
-              <button type="button" className={c.ghost} aria-label={`Copy the message for ${name}`} onClick={() => void copyText(body)}>Copy</button>
+              {/* A computer has no messaging app to open: the message is copied instead. */}
+              <a href={smsHref(body)} aria-label={`Text ${name} their call`} className={c.ghost} onClick={() => { if (!navigator.maxTouchPoints) void navigator.clipboard?.writeText(body).then(() => toast('Message copied', 'success')); }}>Text it</a>
             </span>
           );
         })()}
