@@ -1,5 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { phoneState } from './usePhone';
+import { keyboardUp, phoneState } from './usePhone';
+
+describe('keyboardUp', () => {
+  it('needs a focused field and a keyboard-sized gap', () => {
+    expect(keyboardUp(false, 300, false)).toBe(false);
+    expect(keyboardUp(false, 80, true)).toBe(false);
+    expect(keyboardUp(false, 300, true)).toBe(true);
+  });
+  it('holds through jitter and releases only well below the opening size', () => {
+    expect(keyboardUp(true, 100, true)).toBe(true);
+    expect(keyboardUp(true, 40, true)).toBe(false);
+    expect(keyboardUp(true, 300, false)).toBe(false);
+  });
+  it('browser chrome alone (scrolling) never hides it', () => {
+    expect(keyboardUp(false, 200, false)).toBe(false);
+  });
+});
 
 describe('phoneState', () => {
   it('portrait iPhone 15 Pro, no keyboard', () => {

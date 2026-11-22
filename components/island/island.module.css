@@ -129,9 +129,13 @@
 
 /* ── Everything else in the suite ────────────────────── */
 /* Always mounted (the audio player lives here and must keep playing); only shown on the deck. */
-.nav { display: none; align-items: center; justify-content: center; flex-wrap: wrap; gap: 2px; padding: calc(7px * var(--island-scale)) 10px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.07); }
+.nav { display: none; align-items: center; justify-content: center; flex-wrap: nowrap; gap: 2px; padding: calc(7px * var(--island-scale)) 10px; border-bottom: 1px solid rgba(var(--ink-rgb), 0.07); }
 .island[data-deck='true'] .nav { display: flex; }
 .strip { display: flex; align-items: center; gap: 2px; }
+/* The icon row never wraps (an orphaned icon on its own line). Where the viewport cannot hold it at full size,
+   the buttons tighten, and below that the least important one (the front page) steps aside. */
+@media (max-width: 1100px) { .nav .btn { width: calc(40px * var(--island-scale)); height: calc(40px * var(--island-scale)); } }
+@media (max-width: 900px) { .nav .slot[data-tip='Front page'] { display: none; } }
 .slot { position: relative; display: inline-flex; }
 
 .btn {

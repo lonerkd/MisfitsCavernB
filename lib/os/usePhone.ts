@@ -59,3 +59,15 @@ export function usePhoneLayout(): PhoneState {
   }, []);
   return state;
 }
+
+const KEYBOARD_GONE = 60;
+
+/**
+ * Pure: should the phone's pill step aside for the keyboard? Only when something editable has focus AND the visible area is
+ * shorter by a keyboard's height; it returns when that stops being true, with a gap between the two (120 / 60 px) so the
+ * browser chrome growing and shrinking while the page scrolls can never flip it on and off.
+ */
+export function keyboardUp(prev: boolean, covered: number, editableFocused: boolean): boolean {
+  if (!editableFocused) return false;
+  return prev ? covered > KEYBOARD_GONE : covered > KEYBOARD_MIN;
+}
