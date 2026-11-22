@@ -424,7 +424,7 @@ languages, listening together live (Lounge voice exists), bookmarks and
 loops, notes during playback, comparing reads, scoring from the Soundtrack.
 
 ### 4.15 Casting
-**Candidates built 2026-11-22 (PR 719):** a shortlist per role (`casting_candidates`: name, status, reel link, note; `CandidateShortlist` on the Casting Board). **For the owner (to look at by eye):** the Casting Board with a few candidates, on a desktop and a phone. **Left:** photos on a candidate, candidates in the casting-sheet export, audition scheduling into the call-sheet machinery.
+**Candidates built 2026-11-22 (PR 719):** a shortlist per role (`casting_candidates`: name, status, reel link, note; `CandidateShortlist` on the Casting Board). **For the owner (to look at by eye):** the Casting Board with a few candidates, on a desktop and a phone. **Casting sheet rebuilt on the print kit 2026-11-22** (`lib/casting/casting-print.ts`: overview, a section per role with who is cast, the shortlist and the notes; Print / PDF and CSV; the old pop-up that wrote note text into HTML unescaped is gone), `e2e/casting-candidates.spec.ts` passes on the local stack. **Left:** photos on a candidate, audition scheduling into the call-sheet machinery.
 **Built**: casting per character with its scene footprint
 (`character_castings`, Studio › Cast & crew); casting calls posted as jobs
 (accepting an applicant casts them); each character's look-board.

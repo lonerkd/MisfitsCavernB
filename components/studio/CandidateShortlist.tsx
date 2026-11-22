@@ -9,10 +9,11 @@ const label = (s: CandidateStatus) => (s === 'shortlisted' ? 'Shortlisted' : s =
 const field = { background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 } as const;
 
 /** The shortlist for one role, side by side: who, their reel, a note and where they stand. Crew read; deciders write. */
-export function CandidateShortlist({ projectId, character, userId, canEdit, crew, onCast }: {
+export function CandidateShortlist({ projectId, character, userId, canEdit, crew, onCast, onChanged }: {
   projectId: string; character: string; userId: string | null; canEdit: boolean;
   crew: Array<{ user_id: string; profiles?: { username?: string | null } | null }>;
   onCast?: (userId: string) => void;
+  onChanged?: () => void;
 }) {
   const { toast } = useToast();
   const confirm = useConfirm();
@@ -33,16 +34,17 @@ export function CandidateShortlist({ projectId, character, userId, canEdit, crew
       await addCandidate(projectId, character, { name, reel_url: reel, note, user_id: match?.user_id ?? null }, userId ?? undefined);
       setName(''); setReel(''); setNote('');
       await load();
+      onChanged?.();
     } catch (e) { toast(e instanceof Error ? e.message : 'Could not add the candidate', 'error'); }
     finally { setBusy(false); }
   };
   const setStatus = async (c: CastingCandidate, status: CandidateStatus) => {
-    try { await updateCandidate(c.id, { status }); setRows((r) => r.map((x) => (x.id === c.id ? { ...x, status } : x))); }
+    try { await updateCandidate(c.id, { status }); setRows((r) => r.map((x) => (x.id === c.id ? { ...x, status } : x))); onChanged?.(); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not update', 'error'); }
   };
   const remove = async (c: CastingCandidate) => {
     if (!await confirm(`Remove ${c.name} from the shortlist?`)) return;
-    try { await deleteCandidate(c.id); setRows((r) => r.filter((x) => x.id !== c.id)); }
+    try { await deleteCandidate(c.id); setRows((r) => r.filter((x) => x.id !== c.id)); onChanged?.(); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not remove', 'error'); }
   };
 

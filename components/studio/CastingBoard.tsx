@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import Avatar from '@/components/ui/Avatar';
-import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, listAllCastingNotes, addCastingNote, deleteCastingNote, listAuditions, scheduleAudition, cancelAudition, listCastingHistory, type Casting, type CastingNote, type CastingAudition, type CastingHistoryEntry } from '@/lib/supabase/casting';
-import { exportCastingSheet } from '@/lib/casting/export';
+import { getCastingsForProject, setCasting, removeCasting, listCastingNotes, listAllCastingNotes, listAllCandidates, addCastingNote, deleteCastingNote, listAuditions, scheduleAudition, cancelAudition, listCastingHistory, type Casting, type CastingNote, type CastingAudition, type CastingHistoryEntry } from '@/lib/supabase/casting';
+import { castingSheetDoc } from '@/lib/casting/casting-print';
+import { PrintButton } from '@/components/ui/PrintButton';
 import { logActivity } from '@/lib/supabase/activity';
 import { useCharacterMedia, useCharacters, useSceneCharacters, useSignedUrls, mediaSrc, type Media } from '@/lib/studio';
 import { castByScene, castOfScene } from '@/lib/film/cast';
@@ -144,11 +145,29 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
     try { await deleteCastingNote(id); setNotes((n) => n.filter((x) => x.id !== id)); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not remove note', 'error'); }
   };
-  const exportSheet = async () => {
-    const all = await listAllCastingNotes(projectId).catch(() => []);
-    const rows = chars.map((c) => ({ character: c.name, cast: castings[c.name.toUpperCase()] ?? null, notes: all.filter((n) => n.character_name === c.name.toUpperCase()) }));
-    exportCastingSheet(project.title, rows);
-  };
+  // What the printed sheet needs beyond the board's own state: every role's notes and shortlist, kept fresh so the button builds at once.
+  const [sheetNotes, setSheetNotes] = useState<Array<CastingNote & { character_name: string }>>([]);
+  const [sheetCands, setSheetCands] = useState<Awaited<ReturnType<typeof listAllCandidates>>>([]);
+  const [sheetTick, setSheetTick] = useState(0);
+  useEffect(() => {
+    let active = true;
+    void listAllCastingNotes(projectId).then((n) => { if (active) setSheetNotes(n); }, () => { if (active) setSheetNotes([]); });
+    void listAllCandidates(projectId).then((c) => { if (active) setSheetCands(c); }, () => { if (active) setSheetCands([]); });
+    return () => { active = false; };
+  }, [projectId, castings, notes, sheetTick]);
+  const sheetDoc = () => castingSheetDoc({
+    project: project.title, accent: project.accent_color, logo: project.logo_url,
+    generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+    roles: chars.map((c) => {
+      const up = c.name.toUpperCase();
+      return {
+        character: c.name,
+        cast: castings[up]?.username ?? (castings[up] ? 'Crew member' : null),
+        candidates: sheetCands.filter((x) => x.character_name === up).map((x) => ({ name: x.name, status: x.status, reel: x.reel_url, note: x.note })),
+        notes: sheetNotes.filter((n) => n.character_name === up).map((n) => n.note),
+      };
+    }),
+  });
   const schedule = async () => {
     if (!selected || !auditionUser || !auditionAt) return;
     try {
@@ -172,7 +191,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18, fontSize: 13, fontWeight: 700, textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)' }}>
         <Users size={16} /> Casting Board
         <span style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)', fontWeight: 400 }}>· {castCount}/{chars.length} cast · from ScriptOS</span>
-        <button type="button" onClick={() => void exportSheet()} style={{ marginLeft: 'auto', padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--fg-muted)', cursor: 'pointer', fontSize: 11, fontFamily: 'var(--mono)' }}>Export sheet</button>
+        <span style={{ marginLeft: 'auto' }}><PrintButton label="the casting sheet" build={sheetDoc} /></span>
       </div>
       {loading && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Loading…</div>}
       {!loading && chars.length === 0 && <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--fg-dim)' }}>Write characters in ScriptOS to populate the casting board.</div>}
@@ -276,7 +295,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   </div>
                 )}
 
-                <CandidateShortlist projectId={projectId} character={sel.name} userId={userId ?? null} canEdit={decides} crew={crew} onCast={(id) => void assign(id)} />
+                <CandidateShortlist projectId={projectId} character={sel.name} userId={userId ?? null} canEdit={decides} crew={crew} onCast={(id) => void assign(id)} onChanged={() => setSheetTick((t) => t + 1)} />
 
                 {crew.length > 0 && (
                   <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
