@@ -330,7 +330,8 @@
   background: var(--glass);
   backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
-  padding: 24px;
+  /* Full-bleed on a phone: keep clear of the notch, the Dynamic Island and the home indicator (landscape puts the camera cut-out on a side). */
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
 }
 .modal {
   width: min(1040px, 100%);
@@ -348,7 +349,15 @@
   padding: 16px 20px; border-bottom: 1px solid var(--border);
   background: var(--bg-2);
 }
-.modalTitle { font-family: var(--display); font-size: 1.35rem; letter-spacing: -0.02em; }
+.modalTitle { font-family: var(--display); font-size: 1.35rem; letter-spacing: -0.02em; min-width: 0; overflow-wrap: anywhere; }
+/* A phone: the title takes its own line(s), the buttons wrap in one row under it, all inside the dialog. */
+@media (max-width: 760px) {
+  .modalHead { flex-wrap: wrap; align-items: flex-start; }
+  .modalHead > .modalTitle { flex: 1 1 100%; }
+  .modalHead > .actions { flex: 1 1 100%; min-width: 0; }
+  .search { max-width: none; flex: 1 1 100%; }
+  .search > .input { flex: 1; min-width: 0; }
+}
 .modalBody { padding: 20px; }
 .detail { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; }
 @media (max-width: 820px) { .detail { grid-template-columns: 1fr; } }
