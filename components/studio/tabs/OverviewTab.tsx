@@ -41,7 +41,9 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
   const crew = project.crew?.length ?? 0;
   const wrapped = scenes.rows.filter((sc) => sc.status === 'wrapped').length;
 
-  const stats: Array<{ label: string; value: string; tab?: TabId }> = [
+  // A notes project (no phases) counts only what a notes space holds: no scenes, crew or budget.
+  const notesOnly = progressState?.progress?.phased === false;
+  const filmStats: Array<{ label: string; value: string; tab?: TabId }> = [
     { label: 'Scenes', value: String(scenes.rows.length), tab: 'scenes' },
     { label: 'With references', value: scenes.rows.length ? `${linkedScenes}/${scenes.rows.length}` : '0', tab: 'scenes' },
     { label: 'Library items', value: String(media.rows.length), tab: 'library' },
@@ -49,6 +51,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
     { label: 'Wrapped', value: scenes.rows.length ? `${wrapped}/${scenes.rows.length}` : '0', tab: 'production' },
     { label: 'Crew', value: String(crew), tab: 'production' },
   ];
+  const stats = notesOnly ? filmStats.filter((st) => st.tab === 'library' || st.tab === 'share') : filmStats;
 
   return (
     <section aria-labelledby="overview-title" className={s.stack} style={{ gap: 28 }}>
@@ -71,8 +74,8 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
         ))}
       </div>
 
-      <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 20 }}>
-        <div className={s.panel}>
+      <div className="mc-collapse" style={{ display: 'grid', gridTemplateColumns: notesOnly ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(0, 1fr)', gap: 20 }}>
+        {!notesOnly && <div className={s.panel}>
           <div className={s.panelTitle}><DollarSign size={14} /> Budget</div>
           {(project.budget_items ?? []).length ? (
             <>
@@ -89,7 +92,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
           ) : (
             <p className={s.hint}>No budget lines yet. Production → Schedule → “Breakdown → Budget” builds one from the script.</p>
           )}
-        </div>
+        </div>}
 
         <div className={s.panel}>
           <div className={s.panelTitle}><ActivityIcon size={14} /> Recent activity</div>
@@ -116,7 +119,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
         <NotesPanel projectId={project.id} userId={userId} isProjectOwner={isOwner} />
       </div>
 
-      {scripts.length === 0 && (
+      {scripts.length === 0 && !notesOnly && (
         <p className={s.hint}>Start the screenplay in ScriptOS and its scenes appear under Scenes automatically.</p>
       )}
     </section>
