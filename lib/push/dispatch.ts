@@ -3,7 +3,8 @@
 // written (internal.push_notification). The send itself is passed in — the
 // route uses web-push; tests use a stand-in.
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { holdPush, readPrefs, typeEnabled } from '@/lib/notifications/prefs';
+import { readPrefs, typeEnabled } from '@/lib/notifications/prefs';
+import { holdPush } from '@/lib/notifications/quiet';
 
 export interface PushTarget { endpoint: string; p256dh: string; auth: string }
 export type PushSend = (target: PushTarget, payload: string) => Promise<{ statusCode: number }>;

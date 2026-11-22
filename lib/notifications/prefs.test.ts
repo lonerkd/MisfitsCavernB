@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_NOTIFICATION_PREFS, holdPush, inQuietHours, readPrefs, typeEnabled } from './prefs';
+import { DEFAULT_NOTIFICATION_PREFS, readPrefs, typeEnabled } from './prefs';
+import { holdPush, inQuietHours } from './quiet';
 
 describe('readPrefs', () => {
   it('merges a stored object over the defaults', () => {
