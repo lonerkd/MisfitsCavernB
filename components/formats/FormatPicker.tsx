@@ -87,14 +87,18 @@ export function FormatJourney({ format }: { format: ProjectFormat }) {
   return (
     <div className={styles.journey} aria-live="polite">
       {format.blurb && <p className={styles.blurb}>{format.blurb}</p>}
-      <ol className={styles.phases} aria-label={`${format.name} phases`}>
-        {phases.map((p, i) => (
-          <li key={p.id} className={styles.phase}>
-            <span className={styles.phaseNum}>{i + 1}</span>
-            {p.label}
-          </li>
-        ))}
-      </ol>
+      {format.rules.phased === false ? (
+        <p className={styles.meta}>Everything is open from the start: no phases to work through.</p>
+      ) : (
+        <ol className={styles.phases} aria-label={`${format.name} phases`}>
+          {phases.map((p, i) => (
+            <li key={p.id} className={styles.phase}>
+              <span className={styles.phaseNum}>{i + 1}</span>
+              {p.label}
+            </li>
+          ))}
+        </ol>
+      )}
       <p className={styles.meta}>Scripts start as a {SCRIPT_FORMAT_LABELS[format.script_format].toLowerCase()}.</p>
     </div>
   );
