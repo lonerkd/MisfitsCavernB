@@ -337,8 +337,8 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
     });
   };
   const copyText = async (body: string) => {
-    try { await navigator.clipboard.writeText(body); toast('Message copied', 'success'); }
-    catch { toast('Could not copy the message', 'error'); }
+    try { await navigator.clipboard.writeText(body); toast('Copied', 'success'); }
+    catch { toast('Could not copy', 'error'); }
   };
 
   const callRow = (key: string, target: CallTarget, name: string, role?: string) => {
@@ -424,12 +424,8 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
         {textField('weather', 'Weather')}
         <PaperHead>Emergency</PaperHead>
         <div className={c.pair}>
-          {textField('hospital_name', 'Nearest hospital')}
-          {textField('hospital_phone', 'Hospital phone', 'tel')}
-        </div>
-        {textField('hospital_address', 'Hospital address')}
-        <div className={c.pair}>
-          {textField('police_phone', 'Police')}
+          {textField('hospital_name', 'Nearest hospital')}{textField('hospital_phone', 'Hospital phone', 'tel')}
+          {textField('hospital_address', 'Hospital address')}{textField('police_phone', 'Police')}
           {textField('medic', 'Set medic')}
         </div>
         {textField('notes', 'Notes', 'text', true, 'Parking, safety, catering')}
