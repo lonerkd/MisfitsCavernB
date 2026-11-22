@@ -162,3 +162,10 @@ export async function guestDecide(token: string, versionId: string, decision: 'a
   const { data, error } = await supabase.rpc('decide_review', { p_token: token, p_version: versionId, p_decision: decision, p_name: name, p_note: note });
   return !error && data === true;
 }
+
+/** The text a version was sent with: the database's snapshot, which never changes after it is taken. */
+export async function getVersionSnapshot(id: string): Promise<string> {
+  const { data, error } = await supabase.from('item_versions').select('snapshot').eq('id', id).single();
+  if (error) throw new Error(error.message);
+  return (data as { snapshot: string } | null)?.snapshot ?? '';
+}

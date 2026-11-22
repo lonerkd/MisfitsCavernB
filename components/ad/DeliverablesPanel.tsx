@@ -12,7 +12,7 @@ import { campaignDoc } from '@/lib/ad/campaign-print';
 import { printDocument } from '@/lib/print/print';
 import { getScript } from '@/lib/scriptos/storage';
 import { fetchScriptContent } from '@/lib/studio';
-import { sendDraftsForReview, listVersions, reviewUrl, STATE_LABEL, versionState } from '@/lib/review/versions';
+import { sendDraftsForReview, listVersions, getVersionSnapshot, reviewUrl, STATE_LABEL, versionState, type VersionRow } from '@/lib/review/versions';
 import { useToast } from '@/components/ui/Toast';
 import { useStudio } from '@/components/studio/StudioContext';
 import s from '@/components/studio/studio.module.css';
@@ -125,6 +125,23 @@ export function DeliverablesPanel() {
     }
   };
 
+  /** Print one piece as it stood in a past review version (its stored snapshot, never today's text). */
+  const printPastVersion = async (item: Deliverable, version: VersionRow) => {
+    setBusy(true);
+    try {
+      const content = await getVersionSnapshot(version.id);
+      const view = describePiece({
+        title: `${titleOf.get(item.script_id) ?? item.title} (v${version.number})`, kind: item.kind, status: STATE_LABEL[versionState(version)], content,
+        maxChars: item.max_chars, maxSeconds: item.max_seconds, wordsPerSecond: item.words_per_second, notes: item.notes ?? '',
+      });
+      if (!printDocument(campaignDoc({ campaign: project.title, views: [view], accent: project.accent_color, logo: project.logo_url, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) }))) toast('Could not open the print dialog here.', 'error');
+    } catch (error) {
+      toast(`Could not print that version: ${error instanceof Error ? error.message : 'try again'}`, 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const sendAll = async () => {
     setBusy(true);
     const result = await sendDraftsForReview(project.id, scriptIds, project.title);
@@ -152,6 +169,7 @@ export function DeliverablesPanel() {
               {deliverables.data.map((item) => {
                 const state = latest.get(item.script_id);
                 const stateLabel = state ? STATE_LABEL[versionState(state)] : 'Draft';
+                const past = (versions.data ?? []).filter((v) => v.script_id === item.script_id && v.status === 'sent').sort((a, b) => b.number - a.number);
                 return (
                   <div key={item.script_id} className={s.publishRow} style={{ alignItems: 'flex-start', flexWrap: 'wrap' }}>
                     <div style={{ minWidth: 180, flex: '1 1 200px' }}>
@@ -162,6 +180,13 @@ export function DeliverablesPanel() {
                       <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }} role="group" aria-label={`Export ${item.title}`}>
                         <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'txt')}>Text</button>
                         <button type="button" className={s.btn} disabled={busy} onClick={() => void exportPieces(item, 'pdf')}>Print / PDF</button>
+                        {past.length > 0 && (
+                          <select aria-label={`Print a past version of ${item.title}`} className={s.input} value="" disabled={busy}
+                            onChange={(event) => { const v = past.find((x) => x.id === event.target.value); if (v) void printPastVersion(item, v); }}>
+                            <option value="">Past version…</option>
+                            {past.map((v) => <option key={v.id} value={v.id}>{`v${v.number}${v.label ? ` · ${v.label}` : ''} · ${STATE_LABEL[versionState(v)]}`}</option>)}
+                          </select>
+                        )}
                       </div>
                       <label className={s.hint}>Piece type
                         <select aria-label={`Piece type for ${item.title}`} className={s.input} value={item.kind} disabled={!canShape || busy}
