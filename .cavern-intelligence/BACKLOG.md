@@ -68,6 +68,9 @@ Plan, the eight-line gate and the audience matrix: [plans/2026-11-13-reveal-gate
 ### 3.53 Notifications that know the project — L (owner, 2026-11-22: "design and build around the deep knowledge we can get from these tools and the context")
 Plan and principles: [plans/2026-11-22-notification-system.md](plans/2026-11-22-notification-system.md). _(full text: `backlog-detail.md`, 3.53)_
 
+### 3.54 Play, and a suite that is not only film — a direction, L (owner, 2026-11-22)
+Plan and the six proposed slices: [plans/2026-11-22-play-and-everything-app.md](plans/2026-11-22-play-and-everything-app.md). _(full text: `backlog-detail.md`, 3.54)_
+
 ### 3.50 The role model: from Sam, Jordan and Riley to every role on a production — L (owner, 2026-11-13)
 Plan: [plans/2026-11-13-role-model.md](plans/2026-11-13-role-model.md) (designed 2026-11-13; step 1 built the same day; the owner's first message was cut off, so confirm the intent). _(full text: `backlog-detail.md`, 3.50)_
 
