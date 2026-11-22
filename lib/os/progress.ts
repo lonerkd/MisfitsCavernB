@@ -46,8 +46,12 @@ export interface ProjectSignals {
   tasks: number;
   tasks_done: number;
   budget_lines: number;
+  /** The owner has approved the budget (the Approve button on Money). */
+  budget_approved: boolean;
   milestones: number;
   cuts: number;
+  /** Cuts the owner has locked (a locked cut is frozen). */
+  cuts_locked: number;
   post_notes: number;
   post_notes_open: number;
   stages: number;
@@ -62,8 +66,8 @@ export interface ProjectSignals {
 export const EMPTY_SIGNALS: ProjectSignals = {
   status: null, project_type: null, format: null, visibility: null, unlock_all: false, logline: false,
   scripts: 0, characters: 0, scenes: 0, scenes_wrapped: 0, beats: 0, media: 0, media_shared: 0,
-  crew: 0, crew_confirmed: 0, castings: 0, shots: 0, call_sheets: 0, call_sheets_issued: 0, locations: 0, locations_confirmed: 0, permits_open: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, milestones: 0,
-  cuts: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
+  crew: 0, crew_confirmed: 0, castings: 0, shots: 0, call_sheets: 0, call_sheets_issued: 0, locations: 0, locations_confirmed: 0, permits_open: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, budget_approved: false, milestones: 0,
+  cuts: 0, cuts_locked: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
   campaigns: 0, festivals_submitted: 0, portfolio: 0,
 };
 
@@ -176,6 +180,8 @@ export const MILESTONES: MilestoneDef[] = [
     place: { kind: 'studio', tab: 'scenes' }, done: (s) => s.shots > 0 },
   { id: 'budget', phase: 'pre-production', label: 'Set a budget', hint: 'Estimate one from the script, then adjust.',
     place: { kind: 'studio', tab: 'production', view: 'money' }, done: (s) => s.budget_lines > 0 },
+  { id: 'budget-approved', phase: 'pre-production', label: 'Approve the budget', hint: 'The owner presses Approve on Money once the lines are right; a later change shows as changed since approved.',
+    place: { kind: 'studio', tab: 'production', view: 'money' }, done: (s) => s.budget_approved },
   { id: 'schedule', phase: 'pre-production', label: 'Date your first shoot day', hint: 'Schedule → call sheet with a date.',
     place: { kind: 'studio', tab: 'production', view: 'schedule' }, done: (s) => s.call_sheets > 0 },
   { id: 'call-sheet', phase: 'pre-production', label: 'Issue the first call sheet', hint: 'Issuing sends it to the crew and records who has seen it.',
@@ -199,6 +205,8 @@ export const MILESTONES: MilestoneDef[] = [
   { id: 'notes-resolved', phase: 'post-production', label: 'Resolve every note', hint: 'Nothing left open on any cut.',
     place: { kind: 'studio', tab: 'post' }, done: (s) => s.post_notes > 0 && s.post_notes_open === 0,
     progress: (s) => ({ value: s.post_notes - s.post_notes_open, of: s.post_notes }) },
+  { id: 'cut-locked', phase: 'post-production', label: 'Lock the cut', hint: 'The owner locks the cut the film is finished on: it freezes, and notes go on the next cut.',
+    place: { kind: 'studio', tab: 'post' }, done: (s) => s.cuts_locked > 0 },
   { id: 'pipeline', phase: 'post-production', label: 'Finish the post pipeline', hint: 'Edit, sound, colour, music, titles.',
     place: { kind: 'studio', tab: 'post' }, done: (s) => s.stages > 0 && s.stages_done >= s.stages,
     progress: (s) => ({ value: s.stages_done, of: s.stages }) },

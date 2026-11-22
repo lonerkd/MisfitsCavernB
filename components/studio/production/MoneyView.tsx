@@ -20,6 +20,7 @@ import { PrintButton } from '@/components/ui/PrintButton';
 import { ToolHeader } from '../ToolHeader';
 import { budgetDoc } from '@/lib/studio/budget-print';
 import { BudgetLines } from './BudgetLines';
+import { BudgetApproval } from './BudgetApproval';
 import { CashFlowSection } from './CashFlowSection';
 import s from '../studio.module.css';
 
@@ -38,7 +39,7 @@ const today = () => {
  * and vendors with `budget.write`; everyone logs their own hours here.
  */
 export function MoneyView({ crew }: { crew: CrewName[] }) {
-  const { project, userId } = useStudio();
+  const { project, userId, isOwner } = useStudio();
   const caps = useMyCapabilities(project.id);
   const seesBudget = caps.can('budget.read');
   const runsBudget = caps.can('budget.write');
@@ -72,6 +73,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
                 project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines.map((l) => ({ ...l, above: aboveIds.has(l.id) })), totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
               })} />} />
+            <BudgetApproval projectId={project.id} isOwner={isOwner} lines={lines} approvedAt={project.budget_approved_at} approvedTotal={project.budget_approved_total} approvedLines={project.budget_approved_lines} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
               {([
                 ['Planned', summary.totals.planned, undefined],
