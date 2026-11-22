@@ -196,3 +196,11 @@ export async function deleteCandidate(id: string) {
   const { error } = await supabase.from('casting_candidates').delete().eq('id', id);
   if (error) throw error;
 }
+
+export async function listAllCandidates(projectId: string): Promise<Array<CastingCandidate & { character_name: string }>> {
+  const { data, error } = await supabase
+    .from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_name')
+    .eq('project_id', projectId).order('created_at');
+  if (error) throw error;
+  return (data ?? []) as Array<CastingCandidate & { character_name: string }>;
+}
