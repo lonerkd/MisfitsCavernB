@@ -12,6 +12,8 @@ import type { ParsedSceneInput } from './scene-sync';
 export * from './api';
 export * from './media-kind';
 export * from './boards';
+export * from './board-search';
+export * from './board-slides';
 export * from './call-sheet';
 export * from './call-sheet-load';
 export * from './locations';

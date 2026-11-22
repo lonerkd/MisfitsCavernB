@@ -6,14 +6,15 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { printHtmlString } from '@/lib/print/print';
-import { ImagePlus, Link2, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ImagePlus, Link2, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid, Search, ChevronUp, ChevronDown, X, Presentation } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { useCanShape } from '@/lib/brief';
 import {
-  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, mediaSrc, studio, useMoodBoardItems, useMoodBoards, useSignedUrls,
+  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, highlightSegments, matchCards, matchLabel, mediaSrc, stepMatch, studio, toSlides, useMoodBoardItems, useMoodBoards, useSignedUrls,
   type BoardTemplate, type MoodBoard, type MoodBoardItem, type MoodBoardShare,
 } from '@/lib/studio';
 import { boardPrintHtml } from '@/lib/studio/boards-print';
@@ -23,6 +24,14 @@ import { MediaThumbVisual } from '../media/MediaThumb';
 import { MediaPicker } from '../media/MediaPicker';
 import s from '../studio.module.css';
 import b from './boards.module.css';
+
+// The presenter is loaded when it is first opened, so the Studio's bundle does not carry it.
+const BoardSlideshow = dynamic(() => import('@/components/boards/BoardSlideshow'), { ssr: false });
+
+/** `text` with the words of the search marked. */
+function Hl({ text, query }: { text: string; query: string }) {
+  return <>{highlightSegments(text, query).map((p, n) => (p.hit ? <mark key={n} className={b.hit}>{p.text}</mark> : <React.Fragment key={n}>{p.text}</React.Fragment>))}</>;
+}
 
 const errMessage = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
 
@@ -66,12 +75,38 @@ export function BoardsPanel() {
   const canvasRef = useRef<HTMLDivElement>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [share, setShare] = useState<{ boardId: string; row: MoodBoardShare | null } | null>(null);
+  const [query, setQuery] = useState('');
+  const [current, setCurrent] = useState(-1);
+  const [presenting, setPresenting] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   const active: MoodBoard | undefined = boards.rows.find((r) => r.id === activeId) ?? boards.rows[0];
   const boardItems = useMemo(() => items.rows.filter((i) => i.board_id === active?.id), [items.rows, active?.id]);
   const mediaById = useMemo(() => new Map(media.rows.map((m) => [m.id, m])), [media.rows]);
   const signed = useSignedUrls(boardItems.map((i) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m && (m.kind === 'image' || m.kind === 'video') ? m.storage_path : null; }));
   const srcOf = useCallback((i: MoodBoardItem) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m ? mediaSrc(m, signed) : null; }, [mediaById, signed]);
+
+  // Search within the board: the cards that match, in reading order; the others are hidden while a search is on.
+  const found = useMemo(() => matchCards(boardItems.map((i) => {
+    const m = i.media_id ? mediaById.get(i.media_id) : undefined;
+    return { id: i.id, x: i.x, y: i.y, note: i.note, media: m ? { title: m.title, kind: m.kind, notes: m.notes, board: m.board, external_url: m.external_url } : null };
+  }), query), [boardItems, mediaById, query]);
+  const matchIds = useMemo(() => found.matches.map((m) => m.id), [found.matches]);
+  const matchById = useMemo(() => new Map(found.matches.map((m) => [m.id, m])), [found.matches]);
+  const goMatch = (dir: 1 | -1) => {
+    const next = stepMatch(current, matchIds.length, dir);
+    setCurrent(next);
+    const el = next >= 0 ? canvasRef.current?.querySelector<HTMLElement>(`[data-card-id="${matchIds[next]}"]`) : null;
+    if (el) {
+      el.scrollIntoView?.({ block: 'center', behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      el.focus({ preventScroll: true });
+    }
+  };
+  const changeQuery = (v: string) => { setQuery(v); setCurrent(-1); };
+  const slides = useMemo(() => toSlides(boardItems.map((i) => {
+    const m = i.media_id ? mediaById.get(i.media_id) : undefined;
+    return { id: i.id, x: i.x, y: i.y, note: i.note, media: m ? { kind: m.kind, title: m.title, notes: m.notes, external_url: m.external_url } : null, src: srcOf(i) };
+  })), [boardItems, mediaById, srcOf]);
 
   // The link belongs to people who shape the project: it is read only when the panel is opened.
   const shareBoardId = canShape && shareOpen ? active?.id ?? null : null;
@@ -225,7 +260,11 @@ export function BoardsPanel() {
   if (boards.status === 'error') return <ErrorBar message={boards.error ?? 'Could not load the mood boards'} onRetry={() => void boards.reload()} />;
 
   return (
-    <section aria-label="Mood boards">
+    <section aria-label="Mood boards" onKeyDown={(e) => {
+      // "/" jumps to the board's search from anywhere in the boards (not while typing, not with a modifier).
+      const t = e.target as HTMLElement;
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey && !e.altKey && !/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !t.isContentEditable && searchRef.current) { e.preventDefault(); searchRef.current.focus(); }
+    }}>
       <div className={b.bar}>
         <input className={`${s.input} ${b.grow}`} aria-label="New board name" placeholder="New board, e.g. Maya: look" value={newName} maxLength={120}
           onChange={(e) => setNewName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void createBoard(); }} />
@@ -242,7 +281,7 @@ export function BoardsPanel() {
         <>
           <div className={b.tabs} role="tablist" aria-label="Boards">
             {boards.rows.map((r) => (
-              <button key={r.id} type="button" role="tab" aria-selected={active?.id === r.id} className={b.tab} onClick={() => { setActiveId(r.id); setSelectedId(null); }}>{r.name}</button>
+              <button key={r.id} type="button" role="tab" aria-selected={active?.id === r.id} className={b.tab} onClick={() => { setActiveId(r.id); setSelectedId(null); changeQuery(''); }}>{r.name}</button>
             ))}
           </div>
           {active && (
@@ -253,6 +292,7 @@ export function BoardsPanel() {
                   : <button type="button" className={s.btn} onClick={() => setRenaming(active.id)}>Rename</button>}
                 <button type="button" className={s.btn} onClick={() => setPicking(true)}><ImagePlus size={12} /> Add from library</button>
                 <button type="button" className={s.btn} aria-expanded={noting} onClick={() => setNoting((v) => !v)}><StickyNote size={12} /> Add note</button>
+                <button type="button" className={s.btn} onClick={() => setPresenting(true)} disabled={!slides.length}><Presentation size={12} /> Slideshow</button>
                 <button type="button" className={s.btn} onClick={print} disabled={!boardItems.length}><Printer size={12} /> Print / PDF</button>
                 {canShape && <button type="button" className={s.btn} aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}><Link2 size={12} /> Share link</button>}
                 <button type="button" className={s.btnDanger} onClick={() => void removeBoard(active)}><Trash2 size={12} /> Delete board</button>
@@ -279,14 +319,32 @@ export function BoardsPanel() {
                 </div>
               )}
 
+              {boardItems.length > 0 && (
+                <div className={b.search} role="search" aria-label="Search this board">
+                  <Search size={14} aria-hidden />
+                  <input ref={searchRef} type="search" className={b.searchInput} aria-label="Search this board" placeholder="Search this board ( / )" value={query} maxLength={80}
+                    onChange={(e) => changeQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); goMatch(e.shiftKey ? -1 : 1); }
+                      else if (e.key === 'Escape') { e.stopPropagation(); if (query) changeQuery(''); else e.currentTarget.blur(); }
+                    }} />
+                  <span className={b.count} role="status" aria-live="polite">{matchLabel(query, matchIds.length, current)}</span>
+                  <button type="button" className={b.searchBtn} onClick={() => goMatch(-1)} disabled={!matchIds.length} aria-label="Previous match"><ChevronUp size={14} aria-hidden /></button>
+                  <button type="button" className={b.searchBtn} onClick={() => goMatch(1)} disabled={!matchIds.length} aria-label="Next match"><ChevronDown size={14} aria-hidden /></button>
+                  <button type="button" className={b.searchBtn} onClick={() => { changeQuery(''); searchRef.current?.focus(); }} disabled={!query} aria-label="Clear search"><X size={14} aria-hidden /></button>
+                </div>
+              )}
               <div ref={canvasRef} className={b.canvas} role="listbox" aria-label={`Board: ${active.name}`} onPointerDown={(e) => { if (e.target === e.currentTarget) setSelectedId(null); }}>
+                {found.active && !matchIds.length && <div className={b.empty} role="status">Nothing on this board matches “{query.trim()}”.</div>}
                 {!boardItems.length && <div className={b.empty}>An empty board. Add items from the library or write a note card, then drag them where they belong.</div>}
                 {boardItems.map((i) => {
                   const m = i.media_id ? mediaById.get(i.media_id) : undefined;
                   const pos = drag?.id === i.id ? drag : i;
+                  const hit = matchById.get(i.id);
+                  const why = hit?.fields.find((f) => f.field === 'notes' || f.field === 'tag' || f.field === 'source');
                   const label = i.note ? `Note: ${i.note.slice(0, 40)}` : `${m?.title || 'Untitled'}`;
                   return (
-                    <div key={i.id} className={b.card} role="option" aria-selected={selectedId === i.id} tabIndex={0} aria-label={`${label}. Arrow keys move it, Delete removes it.`}
+                    <div key={i.id} data-card-id={i.id} className={`${b.card} ${found.active && !hit ? b.filtered : ''} ${hit && matchIds[current] === i.id ? b.current : ''}`} role="option" aria-selected={selectedId === i.id} tabIndex={0} aria-label={`${label}. Arrow keys move it, Delete removes it.`}
                       style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: `${i.w}%`, zIndex: i.z + 1 }}
                       onPointerDown={(e) => startDrag(e, i)} onKeyDown={(e) => onKey(e, i)} onFocus={() => setSelectedId(i.id)}
                       onDoubleClick={() => { if (i.note) setEditing({ id: i.id, text: i.note }); }}>
@@ -296,11 +354,12 @@ export function BoardsPanel() {
                               onChange={(e) => setEditing({ id: i.id, text: e.target.value })} onPointerDown={(e) => e.stopPropagation()}
                               onBlur={() => { const t = editing.text; setEditing(null); if (t.trim() && t !== i.note) void save(i, { note: t }, 'Edited a note'); }}
                               onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Escape') setEditing(null); }} />
-                          : <div className={b.noteText}>{i.note}</div>
+                          : <div className={b.noteText}><Hl text={i.note} query={query} /></div>
                       ) : m ? (
                         <>
                           <div className={b.visual}><MediaThumbVisual media={m} src={srcOf(i)} /></div>
-                          <div className={b.caption}>{m.title || 'Untitled'}</div>
+                          <div className={b.caption}><Hl text={m.title || 'Untitled'} query={query} /></div>
+                          {why && !highlightSegments(m.title, query).some((p) => p.hit) &&<div className={b.why}><Hl text={why.text} query={query} /></div>}
                         </>
                       ) : <div className={b.noteText}>This library item was removed.</div>}
                     </div>
@@ -328,6 +387,9 @@ export function BoardsPanel() {
         </>
       )}
 
+      {presenting && active && slides.length > 0 && (
+        <BoardSlideshow name={active.name} slides={slides} startIndex={Math.max(0, slides.findIndex((x) => x.id === selectedId))} onClose={() => setPresenting(false)} />
+      )}
       {picking && active && (
         <MediaPicker title={`Add to "${active.name}"`} projectId={project.id} userId={userId} media={media}
           excludeIds={new Set(boardItems.map((i) => i.media_id).filter((x): x is string => !!x))} confirmLabel="Add to board"

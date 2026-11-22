@@ -11,6 +11,8 @@ import GrainOverlay from '@/components/ui/GrainOverlay';
 import { publicClient } from '@/lib/supabase/public';
 import { createStudioApi } from '@/lib/studio/api';
 import type { SharedBoard, SharedBoardItem } from '@/lib/studio/boards';
+import { sharedSlides } from '@/lib/studio/board-slides';
+import SharedSlideshow from './SharedSlideshow';
 import s from './board.module.css';
 
 export const dynamic = 'force-dynamic';
@@ -96,8 +98,9 @@ export default async function SharedBoardPage({ params }: { params: Promise<{ to
       <header className={s.hero}>
         <p className={s.eyebrow}>Mood board · {board.project_title}</p>
         <h1 className={s.title}>{board.name}</h1>
+        <SharedSlideshow name={board.name} slides={sharedSlides(board, urls)} />
       </header>
-      <div className={s.canvas} role="img" aria-label={`Mood board: ${board.name}`}>
+      <div className={s.canvas} role="group" aria-label={`Mood board: ${board.name}`}>
         {board.items.length === 0 && <div className={s.empty}>Nothing on this board yet.</div>}
         {board.items.map((i) => <Card key={i.id} item={i} urls={urls} />)}
       </div>
