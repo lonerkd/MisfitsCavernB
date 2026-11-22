@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { collectMyData } from '@/lib/supabase/profiles';
 import { getNotificationPrefs, saveNotificationPrefs, DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@/lib/supabase/notifications';
+import { DEFAULT_QUIET_HOURS, type QuietHours } from '@/lib/notifications/prefs';
 import { checkHibpBreach, checkPasswordComplexity, checkPasswordWeakness, PASSWORD_RULES_HINT } from '@/lib/account/password-strength';
 import { MOTION_PREF_EVENT } from '@/components/ui/MotionPreference';
 import { useUiPrefs } from '@/lib/os/uiPrefs';
@@ -98,6 +99,7 @@ export default function SettingsPage() {
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
   const [leakCheck, setLeakCheck] = useState(true);
+  const [quiet, setQuiet] = useState<QuietHours>(DEFAULT_QUIET_HOURS);
   const { prefs: uiPrefs, save: saveUiPrefs } = useUiPrefs();
   const [editingGuide, setEditingGuide] = useState(false);
   const guide = uiPrefs.guide;
@@ -118,6 +120,9 @@ export default function SettingsPage() {
       setNotifyJobs(prefs.jobs);
       setNotifyProduct(prefs.product);
       setLeakCheck(prefs.leak_check);
+      // A window never saved has no zone yet: use this device's, so "22:00" means the person's own night.
+      const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || prefs.quiet.tz;
+      setQuiet({ ...prefs.quiet, tz: prefs.quiet.on ? prefs.quiet.tz : zone });
     });
   }, [router]);
 
@@ -133,6 +138,15 @@ export default function SettingsPage() {
   const setNotifyPref = (key: 'replies' | 'jobs' | 'product', v: boolean) => {
     const apply = key === 'replies' ? setNotifyReplies : key === 'jobs' ? setNotifyJobs : setNotifyProduct;
     savePrefs({ [key]: v }, apply, v);
+  };
+  // Quiet hours: show the change, put it back if the save fails (the zone is this device's whenever it is changed).
+  const saveQuiet = (patch: Partial<QuietHours>) => {
+    if (!user) return;
+    const before = quiet;
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || quiet.tz;
+    const next = { ...quiet, ...patch, tz: zone };
+    setQuiet(next);
+    saveNotificationPrefs(user.id, { quiet: next }).catch((e: unknown) => { setQuiet(before); flash(e instanceof Error ? e.message : 'Could not save that setting', false); });
   };
   const savePref = (key: string, val: boolean) => { try { localStorage.setItem(key, val ? 'on' : 'off'); } catch (e) { flash('Could not save that setting', false); } };
 
@@ -290,6 +304,16 @@ export default function SettingsPage() {
           <Row label="Comment replies" hint="When someone replies to your notes or reviews." control={<Toggle on={notifyReplies} onChange={v => setNotifyPref('replies', v)} />} />
           <Row label="Job & casting alerts" hint="New roles matching your profile." control={<Toggle on={notifyJobs} onChange={v => setNotifyPref('jobs', v)} />} />
           <Row label="Product updates" hint="Occasional news about new tools and features." control={<Toggle on={notifyProduct} onChange={v => setNotifyPref('product', v)} />} />
+          <Row label="Quiet hours" hint={quiet.on ? `No pushes to your phone from ${quiet.start} to ${quiet.end} (${quiet.tz}). They wait in the bell. A call sheet for a shoot always gets through.` : 'Pause pushes to your phone overnight. They wait in the bell. A call sheet for a shoot always gets through.'} control={<Toggle on={quiet.on} onChange={v => saveQuiet({ on: v })} />} />
+          {quiet.on && (
+            <Row label="Quiet from / until" hint="Your own night, in this device’s time zone." control={
+              <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+                <input type="time" aria-label="Quiet hours start" value={quiet.start} onChange={(e) => e.target.value && saveQuiet({ start: e.target.value })} style={{ background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 }} />
+                <span aria-hidden style={{ color: 'var(--fg-dim)' }}>to</span>
+                <input type="time" aria-label="Quiet hours end" value={quiet.end} onChange={(e) => e.target.value && saveQuiet({ end: e.target.value })} style={{ background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 }} />
+              </span>
+            } />
+          )}
         </Section>
 
         <Section icon={<CalendarDays size={15} />} title="Calendar">

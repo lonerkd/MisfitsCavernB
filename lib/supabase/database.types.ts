@@ -2637,7 +2637,10 @@ export type Database = {
           created_by: string | null;
           id: string;
           link: string | null;
+          push_skipped: string | null;
+          pushed_at: string | null;
           read: boolean;
+          read_at: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -2649,7 +2652,10 @@ export type Database = {
           created_by?: string | null;
           id?: string;
           link?: string | null;
+          push_skipped?: string | null;
+          pushed_at?: string | null;
           read?: boolean;
+          read_at?: string | null;
           title: string;
           type: string;
           user_id: string;
@@ -2660,7 +2666,10 @@ export type Database = {
           created_by?: string | null;
           id?: string;
           link?: string | null;
+          push_skipped?: string | null;
+          pushed_at?: string | null;
           read?: boolean;
+          read_at?: string | null;
           title?: string;
           type?: string;
           user_id?: string;
