@@ -128,7 +128,7 @@ export function LocationsView() {
                     <span style={{ display: 'block', fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{row.name}</span>
                     <span className={s.hint}>{row.scenes.length} scene{row.scenes.length === 1 ? '' : 's'}{w && w.appearances.length ? ` · scene${w.appearances.length === 1 ? '' : 's'} ${w.appearances.map((a) => a.number).join(', ')}` : ''}</span>
                   </span>
-                  <button type="button" className={cx(s.btn, s.small)} disabled={busyAdd === row.name} onClick={() => void addPlace(row.name)} aria-label={`Add ${row.name} as a location`}>
+                  <button type="button" className={cx(s.btn, s.small)} disabled={busyAdd === row.name} onClick={() => void addPlace(row.name)} aria-label={`Add as location: ${row.name}`}>
                     <Plus size={11} aria-hidden /> Add as location
                   </button>
                 </li>
