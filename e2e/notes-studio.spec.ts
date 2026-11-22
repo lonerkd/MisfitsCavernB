@@ -32,8 +32,10 @@ test.describe('The Studio of a Notes project (local Supabase)', () => {
     await expect(page.getByRole('heading', { name: 'No phases here' })).toBeVisible();
 
     // The kept tabs open.
-    await page.getByRole('tab', { name: 'Library' }).click();
-    await expect(page.getByRole('tab', { name: 'Library' })).toHaveAttribute('aria-selected', 'true');
+    // (The Library view has its own "Library" sub-tab, so scope to the Studio's own tab bar.)
+    const studioTabs = page.getByRole('navigation', { name: 'Studio sections' });
+    await studioTabs.getByRole('tab', { name: 'Library' }).click();
+    await expect(studioTabs.getByRole('tab', { name: 'Library' })).toHaveAttribute('aria-selected', 'true');
 
     // A film project in the same session keeps every tab.
     await openStudio('', filmTitle);

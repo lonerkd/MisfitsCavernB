@@ -17,22 +17,26 @@ interface Props extends NoteTarget {
   /** "Scene 12 · INT. KITCHEN - DAY": kept with the note so it still says what it was about. */
   context?: string | null;
   sceneId?: string | null;
+  /** A one-line capture box (Enter saves), project-wide by default, and only the newest `limit` notes with a way to show the rest. */
+  quick?: boolean;
+  limit?: number;
 }
 
 /**
  * Notes in three layers. Private: only you. Project: the people on the project. Writers: the people who can open the script
  * (offered only where a script is in view). Project and writer notes tell the others; private ones never do.
  */
-export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, context, sceneId }: Props) {
+export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, context, sceneId, quick, limit = 6 }: Props) {
   const { toast } = useToast();
   const confirm = useConfirm();
   const [notes, setNotes] = useState<Note[] | null>(null);
-  const [scope, setScope] = useState<NoteScope>('private');
+  const [scope, setScope] = useState<NoteScope>(quick && projectId ? 'project' : 'private');
+  const [showAll, setShowAll] = useState(false);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
-  const box = useRef<HTMLTextAreaElement>(null);
+  const box = useRef<HTMLTextAreaElement & HTMLInputElement>(null);
 
   const scopes: NoteScope[] = ['private', ...(projectId ? (['project'] as const) : []), ...(scriptId ? (['writer'] as const) : [])];
   const [tick, setTick] = useState(0);
@@ -87,8 +91,29 @@ export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, contex
 
   const field = { width: '100%', background: 'var(--bg)', color: 'var(--fg)', border: '1px solid rgba(var(--ink-rgb), 0.12)', borderRadius: 4, padding: 8, fontSize: 13, fontFamily: 'inherit', resize: 'vertical' as const };
 
+  const shown = notes && quick && !showAll ? notes.slice(0, limit) : notes;
+
   return (
     <section aria-label="Notes" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {quick ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <input ref={box} aria-label="Quick note" type="text" value={draft} onChange={(e) => setDraft(e.target.value)} maxLength={4000} placeholder="Jot a note, press Enter…"
+              style={{ ...field, resize: undefined, flex: 1, minWidth: 0, fontSize: 14, padding: '10px 12px' }}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) { e.preventDefault(); if (draft.trim()) void add(); } }} />
+            <button type="button" onClick={() => void add()} disabled={busy || !draft.trim()}
+              style={{ padding: '6px 14px', borderRadius: 4, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, cursor: busy || !draft.trim() ? 'default' : 'pointer', opacity: busy || !draft.trim() ? 0.55 : 1 }}>
+              {busy ? 'Saving…' : 'Add'}
+            </button>
+          </div>
+          {projectId && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--fg-muted)' }}>
+              <input type="checkbox" checked={scope === 'private'} onChange={(e) => setScope(e.target.checked ? 'private' : 'project')} />
+              Only me ({scope === 'private' ? NOTE_SCOPES.private.who : `otherwise ${NOTE_SCOPES.project.who}, and they are told`})
+            </label>
+          )}
+        </div>
+      ) : (<>
       <div role="group" aria-label="Who can read this note" style={{ display: 'flex', gap: 4 }}>
         {scopes.map((s) => {
           const Icon = ICON[s];
@@ -108,12 +133,13 @@ export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, contex
         style={{ alignSelf: 'flex-end', padding: '6px 14px', borderRadius: 4, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 13, cursor: busy || !draft.trim() ? 'default' : 'pointer', opacity: busy || !draft.trim() ? 0.55 : 1 }}>
         {busy ? 'Saving…' : 'Add note'}
       </button>
+      </>)}
 
       {notes === null ? <p style={{ fontSize: 12, color: 'var(--fg-muted)' }}>Loading notes…</p>
         : notes.length === 0 ? <p style={{ fontSize: 12, color: 'var(--fg-muted)' }}>No notes yet.</p>
         : (
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {notes.map((n) => {
+            {(shown ?? notes).map((n) => {
               const mine = n.created_by === userId;
               const Icon = ICON[n.scope];
               return (
@@ -143,6 +169,11 @@ export function NotesPanel({ scriptId, projectId, userId, isProjectOwner, contex
             })}
           </ul>
         )}
+      {quick && notes && notes.length > limit && (
+        <button type="button" onClick={() => setShowAll((v) => !v)} style={{ alignSelf: 'flex-start', background: 'transparent', border: 'none', color: 'var(--accent)', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+          {showAll ? 'Show fewer' : `Show all ${notes.length} notes`}
+        </button>
+      )}
     </section>
   );
 }
