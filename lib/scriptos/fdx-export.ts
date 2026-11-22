@@ -1,5 +1,6 @@
 import { StoredScript } from './storage';
 import { parseScript } from './parser';
+import { formatEighths } from './timing';
 
 /** The Final Draft writer. Kept apart from export.ts, which every editor surface imports: it loads only when an .fdx is asked for. */
 const xmlEscape = (t: string): string => t
@@ -28,7 +29,18 @@ const fdxParagraph = (type: string, text: string, attrs = ''): string =>
  * `.cavern-intelligence/scriptos-engine.md` (FDX).
  */
 export function scriptToFdx(script: StoredScript): string {
-  const lines = parseScript(script.content).lines.filter((l) => l.type !== 'empty');
+  const parsed = parseScript(script.content);
+  const lines = parsed.lines.filter((l) => l.type !== 'empty');
+  // Scene numbers and lengths, for the programs that build a schedule from the file (Movie Magic Scheduling reads
+  // Scene Heading paragraphs). The numbers the writer typed (#12A#) are kept; a script with none gets 1, 2, 3 in order,
+  // marked so a re-import does not turn them into typed numbers.
+  const sceneOf = new Map<object, { number?: string; eighths?: number }>();
+  for (const sc of parsed.scenes) {
+    const head = parsed.lines[sc.startIndex];
+    if (head) sceneOf.set(head, { number: sc.sceneNumber || undefined, eighths: sc.eighths });
+  }
+  const anyNumbered = [...sceneOf.values()].some((v) => v.number);
+  let ordinal = 0;
   const body = lines.filter((l) => l.type !== 'title');
   const isSpeech = (t: string) => t === 'dialogue' || t === 'parenthetical';
 
@@ -61,7 +73,17 @@ export function scriptToFdx(script: StoredScript): string {
         continue;
       }
     }
-    if (line.type === 'centered') {
+    const sc = line.type === 'slug' ? sceneOf.get(line) : undefined;
+    if (sc) {
+      ordinal++;
+      const number = anyNumbered ? sc.number : String(ordinal);
+      const heading = line.text.replace(/\s*#[\w.-]+#\s*$/, '');
+      const length = sc.eighths ? `\n      <SceneProperties Length="${formatEighths(sc.eighths)}" Title=""/>` : '';
+      const numAttr = number ? ` Number="${xmlEscape(number)}"` : '';
+      out.push(`    <Paragraph Type="Scene Heading"${numAttr}>${length}
+      <Text>${xmlEscape(heading)}</Text>
+    </Paragraph>`);
+    } else if (line.type === 'centered') {
       out.push(fdxParagraph('Action', line.text.replace(/^>\s*/, '').replace(/\s*<$/, ''), ' Alignment="Center"'));
     } else if (GENERAL_TYPES.has(line.type)) {
       out.push(fdxParagraph('General', line.text));
@@ -95,8 +117,9 @@ export function scriptToFdx(script: StoredScript): string {
   const titleXml = titleParas.join('\n');
   const headerTitle = xmlEscape(script.title);
 
+  const autoMarker = !anyNumbered && sceneOf.size ? '<!--cavern:autonumbered-->\n' : '';
   const fdxXml = `<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<FinalDraft DocumentType="Script" Template="No" Version="3">
+${autoMarker}<FinalDraft DocumentType="Script" Template="No" Version="3">
   <Content>
 ${paragraphs}
   </Content>

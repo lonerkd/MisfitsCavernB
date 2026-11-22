@@ -127,7 +127,7 @@ Compared 2026-10-11 with the old "Deep Brain 3.0" parser and import modal. The c
   and log themselves when they end.
 
 ## Final Draft (FDX) export and import (`lib/scriptos/export.ts` `scriptToFdx`, `lib/scriptos/import.ts` `parseFdx`)
-
+ **Scene numbers (2026-11-22):** each Scene Heading carries `Number="12A"` (a typed `#12A#` is taken out of the heading; a script with none is numbered 1, 2, 3 and marked `<!--cavern:autonumbered-->` so the importer does not make them typed) and `<SceneProperties Length="1 3/8"/>`, for Movie Magic Scheduling; the importer reads `Number` back. No breakdown tags: Movie Magic reads those from a tagged `.sex`, not an `.fdx`.
 Real elements: dual dialogue is `<DualDialogue>` holding both speakers' paragraphs (the second Character paragraph is the second speaker; the importer writes `NAME ^`); centered text is `Alignment="Center"` on an Action paragraph; the title page is a `<TitlePage>` with one paragraph per Fountain key, each labelled by an XML comment `<!--cavern:key=Title-->` (`+` continues the key above, an empty key is a generated page that is not imported; a file without labels is read by position: title, credit, author, contact); sections and synopses are `General` paragraphs that keep their `#` / `=` marker (Final Draft has no element for them). Notes, forced elements, page breaks and boneyard are still Fountain text in an Action or Transition paragraph. Pinned by `fdx-roundtrip.test.ts` (well-formed XML, `<DualDialogue>` present, no `^` or `> <` in any text). Not checked in Final Draft itself.
 
 ## The reading context, and the previous draft and places as evidence (B7b, 2026-11-21)

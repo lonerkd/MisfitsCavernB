@@ -19,3 +19,18 @@ export function downloadCsv(doc: PrintDoc): boolean {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   return true;
 }
+
+/** Saves text as a file of the given name and type (a spreadsheet's XML, say). Returns false when the browser cannot make the file. */
+export function downloadText(fileName: string, text: string, type: string): boolean {
+  if (typeof document === 'undefined' || typeof URL === 'undefined' || !URL.createObjectURL) return false;
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return true;
+}

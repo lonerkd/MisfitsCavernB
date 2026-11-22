@@ -1,17 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Download, Printer } from 'lucide-react';
+import { Download, Printer, Sheet } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { printDocument } from '@/lib/print/print';
-import { downloadCsv } from '@/lib/print/download';
+import { downloadCsv, downloadText } from '@/lib/print/download';
 import { hasTable } from '@/lib/print/csv';
 import type { PrintDoc } from '@/lib/print/kit';
 import s from '@/components/studio/studio.module.css';
 
 /** Print / PDF for any tool, and a CSV file of its tables when it has any. The document is built when a button is pressed, so the page is what
  *  is on screen now. */
-export function PrintButton({ build, label, csv = true }: { build: () => PrintDoc; label: string; csv?: boolean }) {
+export function PrintButton({ build, label, csv = true, excel }: { build: () => PrintDoc; label: string; csv?: boolean; excel?: () => { fileName: string; xml: string } }) {
   const { toast } = useToast();
   const make = (): PrintDoc | null => {
     try { return build(); } catch (e) { toast(e instanceof Error ? e.message : 'Could not prepare the page to print.', 'error'); return null; }
@@ -26,6 +26,12 @@ export function PrintButton({ build, label, csv = true }: { build: () => PrintDo
     if (!hasTable(doc)) { toast('There is nothing in a table to save yet.', 'info'); return; }
     if (!downloadCsv(doc)) toast('Could not save the file.', 'error');
   };
+  const saveExcel = () => {
+    try {
+      const f = excel!();
+      if (!downloadText(f.fileName, f.xml, 'application/xml')) toast('Could not save the file.', 'error');
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not prepare the spreadsheet.', 'error'); }
+  };
   return (
     <span style={{ display: 'inline-flex', gap: 6 }}>
       <button type="button" className={`${s.btn} ${s.small}`} onClick={print} aria-label={`Print / PDF: ${label}`}>
@@ -34,6 +40,11 @@ export function PrintButton({ build, label, csv = true }: { build: () => PrintDo
       {csv && (
         <button type="button" className={`${s.btn} ${s.small}`} onClick={save} aria-label={`CSV: ${label}`}>
           <Download size={11} aria-hidden /> CSV
+        </button>
+      )}
+      {excel && (
+        <button type="button" className={`${s.btn} ${s.small}`} onClick={saveExcel} aria-label={`Excel: ${label}`}>
+          <Sheet size={11} aria-hidden /> Excel
         </button>
       )}
     </span>
