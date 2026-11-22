@@ -527,7 +527,8 @@ export default function ProjectsPage() {
       <NewProjectModal open={showNew} onClose={() => setShowNew(false)} onCreate={createFromModal} />
 
       {/* The top bar is the island's now: back, place and project live there. What stays is the one action. */}
-      <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-end', padding: '20px 24px 0' }}>
+      {/* On a phone the island's sheet carries New Project (and it is a thumb away); this band is for a desk. */}
+      <div className="mc-desk-only" style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-end', padding: '20px 24px 0' }}>
           <button
             onClick={handleNewProject}
             style={{
