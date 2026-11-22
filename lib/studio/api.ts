@@ -1059,6 +1059,13 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
+  /** Lock a cut (it freezes: no edits, no delete, no new notes) or unlock it. Only the project owner can; the database says so. */
+  async function setCutLocked(id: string, locked: boolean): Promise<PostCut> {
+    const { data, error } = await db.from('post_cuts').update({ locked_at: locked ? new Date().toISOString() : null }).eq('id', id).select('*').single();
+    if (error) fail(error, locked ? 'Could not lock the cut' : 'Could not unlock the cut');
+    return data;
+  }
+
   async function deleteCut(id: string): Promise<void> {
     const { error } = await db.from('post_cuts').delete().eq('id', id);
     if (error) fail(error, 'Could not delete the cut');
@@ -1228,7 +1235,7 @@ export function createStudioApi(db: Client) {
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
     listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, ensureSceneState, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
-    listCuts, addCut, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
+    listCuts, addCut, setCutLocked, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,
     listSceneMedia, linkMedia, unlinkMedia,
     listCharacterMedia, linkCharacterMedia, unlinkCharacterMedia,

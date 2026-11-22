@@ -74,6 +74,10 @@ export interface Project {
   festival_submissions?: FestivalSubmission[];
   /** Shelved by the owner: off the board and the pickers until restored. */
   archived_at?: string | null;
+  /** The owner approved the budget (the database stamps these; BACKLOG 3.52). */
+  budget_approved_at?: string | null;
+  budget_approved_total?: number | null;
+  budget_approved_lines?: number | null;
 }
 
 export type SessionStatus = 'resolving' | 'authed' | 'anon';

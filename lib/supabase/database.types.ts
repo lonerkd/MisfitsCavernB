@@ -2935,6 +2935,8 @@ export type Database = {
           created_at: string;
           created_by: string | null;
           id: string;
+          locked_at: string | null;
+          locked_by: string | null;
           media_id: string | null;
           project_id: string;
           title: string;
@@ -2945,6 +2947,8 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          locked_at?: string | null;
+          locked_by?: string | null;
           media_id?: string | null;
           project_id: string;
           title: string;
@@ -2954,6 +2958,8 @@ export type Database = {
           created_at?: string;
           created_by?: string | null;
           id?: string;
+          locked_at?: string | null;
+          locked_by?: string | null;
           media_id?: string | null;
           project_id?: string;
           title?: string;
@@ -2963,6 +2969,13 @@ export type Database = {
           {
             foreignKeyName: "post_cuts_created_by_fkey";
             columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "post_cuts_locked_by_fkey";
+            columns: ["locked_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
             referencedColumns: ["id"];
@@ -3815,6 +3828,10 @@ export type Database = {
           accent_color: string | null;
           archived_at: string | null;
           budget: number | null;
+          budget_approved_at: string | null;
+          budget_approved_by: string | null;
+          budget_approved_lines: number | null;
+          budget_approved_total: number | null;
           case_study_ok: boolean;
           created_at: string | null;
           creator_id: string;
@@ -3838,6 +3855,10 @@ export type Database = {
           accent_color?: string | null;
           archived_at?: string | null;
           budget?: number | null;
+          budget_approved_at?: string | null;
+          budget_approved_by?: string | null;
+          budget_approved_lines?: number | null;
+          budget_approved_total?: number | null;
           case_study_ok?: boolean;
           created_at?: string | null;
           creator_id: string;
@@ -3860,6 +3881,10 @@ export type Database = {
           accent_color?: string | null;
           archived_at?: string | null;
           budget?: number | null;
+          budget_approved_at?: string | null;
+          budget_approved_by?: string | null;
+          budget_approved_lines?: number | null;
+          budget_approved_total?: number | null;
           case_study_ok?: boolean;
           created_at?: string | null;
           creator_id?: string;
@@ -3879,6 +3904,13 @@ export type Database = {
           visibility?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "projects_budget_approved_by_fkey";
+            columns: ["budget_approved_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "projects_creator_id_fkey";
             columns: ["creator_id"];

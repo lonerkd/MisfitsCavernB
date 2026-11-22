@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, Circle, FileText, Film, ListChecks, Plus, Trash2, X } from 'lucide-react';
+import { CheckCircle2, Circle, FileText, Film, ListChecks, Lock, Plus, Trash2, Unlock, X } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
@@ -118,6 +118,13 @@ function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } 
     catch (e) { toast(e instanceof Error ? e.message : 'Could not delete the cut', 'error'); }
   };
 
+  const toggleLock = async (c: PostCut) => {
+    const locking = !c.locked_at;
+    if (locking && !await confirm({ title: 'Lock this cut?', message: `“${c.title}” will be frozen: no edits, no delete and no new notes on it (notes go on the next cut). You can unlock it later.`, confirmLabel: 'Lock' })) return;
+    try { cuts.upsertLocal(await studio.setCutLocked(c.id, locking)); toast(locking ? `${c.title} is locked` : `${c.title} is unlocked`, 'success'); }
+    catch (e) { toast(e instanceof Error ? e.message : 'Could not change the lock', 'error'); }
+  };
+
   const notes = postNotes.rows.filter((n) => n.cut_id === cut?.id);
 
   return (
@@ -131,10 +138,13 @@ function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } 
             return (
               <div key={c.id} className={cx(s.cutRow, c.id === cut?.id && s.cutRowOn)}>
                 <button type="button" className={s.cutPick} onClick={() => setCutId(c.id)} aria-pressed={c.id === cut?.id}>
-                  <span className={s.cutTitle}>{c.title}</span>
+                  <span className={s.cutTitle}>{c.locked_at && <Lock size={11} aria-label="Locked" style={{ marginRight: 4 }} />}{c.title}</span>
                   <span className={s.hint}>{new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · {open} open note{open === 1 ? '' : 's'}</span>
                 </button>
-                {(c.created_by === userId || isOwner) && (
+                {isOwner && (
+                  <button type="button" className={s.refRemoveInline} onClick={() => void toggleLock(c)} aria-label={c.locked_at ? `Unlock cut ${c.title}` : `Lock cut ${c.title}`}>{c.locked_at ? <Unlock size={12} /> : <Lock size={12} />}</button>
+                )}
+                {!c.locked_at && (c.created_by === userId || isOwner) && (
                   <button type="button" className={s.refRemoveInline} onClick={() => void removeCut(c)} aria-label={`Delete cut ${c.title}`}><Trash2 size={12} /></button>
                 )}
               </div>
@@ -168,7 +178,9 @@ function ReviewView({ deepLink }: { deepLink: { cut: string; t: number | null } 
               <CutScript scenes={scenes.rows} sceneLines={sceneLines} notes={notes} player={player} live={live}
                 picked={picked} onPick={(p) => setPicked((cur) => (cur?.sceneId === p.sceneId && cur.offset === p.offset ? null : p))} onShown={onShown} />
             </div>
-            <NoteComposer cutId={cut.id} live={live} player={player} scenes={scenes.rows} picked={picked} shownScene={shownScene} onAdded={() => setPicked(null)} onUnpick={() => setPicked(null)} />
+            {cut.locked_at
+              ? <p className={s.hint} role="status">This cut is locked, so it takes no new notes. Put them on the next cut.</p>
+              : <NoteComposer cutId={cut.id} live={live} player={player} scenes={scenes.rows} picked={picked} shownScene={shownScene} onAdded={() => setPicked(null)} onUnpick={() => setPicked(null)} />}
             <NoteList notes={notes} player={player} />
           </>
         )}

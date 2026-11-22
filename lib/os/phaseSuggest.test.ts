@@ -39,7 +39,7 @@ describe('suggesting the next phase from the project’s data', () => {
   });
 
   it('merges reasons that point at the same phase', () => {
-    const s = signals({ status: 'pre-production', scenes: 5, crew: 1, crew_confirmed: 1, castings: 1, shots: 1, budget_lines: 1, call_sheets: 1, call_sheets_issued: 1, breakdown_elements: 1, revisions: 1, locations: 1, locations_confirmed: 1, permits_open: 0, shoot_start: '2026-09-01' });
+    const s = signals({ status: 'pre-production', scenes: 5, crew: 1, crew_confirmed: 1, castings: 1, shots: 1, budget_lines: 1, budget_approved: true, call_sheets: 1, call_sheets_issued: 1, breakdown_elements: 1, revisions: 1, locations: 1, locations_confirmed: 1, permits_open: 0, shoot_start: '2026-09-01' });
     expect(suggest(s)?.reasons).toEqual(['your first shoot day has passed', 'every Pre-Production milestone is done']);
   });
 
