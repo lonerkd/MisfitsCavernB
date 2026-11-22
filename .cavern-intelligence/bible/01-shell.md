@@ -74,6 +74,14 @@ script's caret scene drives the Studio pane; "In script" on a cut note jumps
 the other pane. Open with Ctrl/⌘+\\, the island or ⌘K. Framing is
 same-origin only (`frame-ancestors 'self'`).
 
+### Island popovers
+
+Notifications, Sound (the corner player) and the project switcher open above the
+island one at a time: `lib/island/popover.ts` (`useIslandPopover`) announces the
+opening on `window`, the others close, Escape and a press outside close it, and
+Escape returns focus to the button. The Sound button is the island's shared
+`.btn` in a `.slot` (a green dot while something plays).
+
 ### Notifications
 
 `NotificationBell` in the island (and More on phones): unread count, newest
