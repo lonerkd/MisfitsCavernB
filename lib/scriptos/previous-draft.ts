@@ -4,7 +4,7 @@
 // (decode.ts `previousDraft`), never over a person's line override and never over what the line plainly is.
 // Pure: this file only turns "the earlier text, read" into "what each line of the later text was last time".
 
-import * as Diff from 'diff';
+import { diffArrays } from './array-diff';
 import type { State } from './decode';
 import { THRESHOLDS } from './thresholds';
 
@@ -65,7 +65,7 @@ export function alignPreviousDraft(rawLines: readonly string[], previous: Previo
   if (!now.length) return out;
   const was = previous.lines.map((l) => ({ text: norm(l.text), type: l.type }));
 
-  const parts = Diff.diffArrays(was.map((l) => l.text), now.map((l) => l.text), { maxEditLength: MAX_EDITS });
+  const parts = diffArrays(was.map((l) => l.text), now.map((l) => l.text), MAX_EDITS);
   if (!parts) {
     // Too different to align: only a line that was always read the same way, and is the same line, carries over.
     const seen = new Map<string, PriorType | null>();
