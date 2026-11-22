@@ -21,6 +21,7 @@ import { usePillStage } from '@/lib/os/PillContext';
 import { scrollEdges } from '@/lib/studio/scroll-edges';
 import { StudioProvider } from '@/components/studio/StudioContext';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { visibleStudioTabs } from '@/lib/os/studio-tabs';
 import { PRODUCTION_VIEWS, STUDIO_TAB_TOOL, toolState, type Place, type ProductionView } from '@/lib/os/progress';
 import { LockedTool, ProgressContext } from '@/components/progress/LockedTool';
 import { ToolIntro } from '@/components/progress/ToolIntro';
@@ -74,7 +75,11 @@ export default function StudioPage() {
   const { isLoading, user } = useOSGate();
   const { activeProject, projects, setActiveProject, loading } = useProject();
   const modules = getProjectModules(activeProject?.settings);
-  const tabs = ALL_TABS.filter((t) => t.id !== 'promos' || modules.distribution);
+  const progressState = useProjectProgress(activeProject?.id);
+  const { progress, reload: reloadProgress } = progressState;
+  // A project whose format has no phases (Notes) shows only the notes tabs; a link to a hidden tab lands on the Overview.
+  const shown = visibleStudioTabs(progress, { distribution: modules.distribution });
+  const tabs = ALL_TABS.filter((t) => shown.includes(t.id));
   const [tab, view, setTabRaw] = useTab(tabs.map((t) => t.id));
   const tabListRef = useRef<HTMLDivElement>(null);
   // Who is in which tab: Production names its own tool (production:<view>); every other tab names itself.
@@ -103,9 +108,7 @@ export default function StudioPage() {
     // Labels widen once the fonts load; place it again then.
     void document.fonts?.ready.then(reveal);
   }, [tab, activeProject?.id]);
-  const progressState = useProjectProgress(activeProject?.id);
   const viewMode = useViewAs(activeProject?.id);
-  const { progress, reload: reloadProgress } = progressState;
   // Tabs looked at before their phase, this visit ("Open it now").
   const [peeked, setPeeked] = useState<Set<TabId>>(new Set());
   // A link to a cut (?project=&tab=post&cut=, from a note in the script's
@@ -234,6 +237,9 @@ export default function StudioPage() {
                     onOpen={() => setPeeked((prev) => new Set(prev).add(tab))}
                     onShowPhase={() => setTab('overview')}
                   />
+                ) : progressState.loading && !['overview', 'library', 'share'].includes(tab) ? (
+                  // Until the format's rules arrive, a tab a notes project hides is not opened (no flash of Production).
+                  tabLoading()
                 ) : (
                   <>
                     {STUDIO_TAB_TOOL[tab] && <ToolIntro tool={toolState(progress, STUDIO_TAB_TOOL[tab]!)} accent={activeProject.accent_color} />}
