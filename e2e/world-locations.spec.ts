@@ -53,6 +53,8 @@ test.describe('World: where a place appears and the checks across places (local 
     const scenes = (await admin.from('scenes').select('id, scene_number').eq('project_id', project.id).order('scene_number')).data!;
     expect(scenes).toHaveLength(5);
     await admin.from('shoot_days').upsert({ project_id: project.id, day_number: 1, shoot_date: inDays(5) }, { onConflict: 'project_id,day_number' });
+    // A scene's shoot_day column defaults to 1; null is what "not scheduled" means (the readiness view reads it so).
+    await admin.from('scenes').update({ shoot_day: null }).eq('project_id', project.id);
     await admin.from('scenes').update({ shoot_day: 1 }).eq('id', scenes[0].id);
     await admin.from('scenes').update({ story_day: 1 }).in('id', [scenes[2].id, scenes[3].id]);
     await admin.from('project_locations').update({ permit: 'needed', status: 'scouting' }).eq('project_id', project.id).eq('name', 'DOCK OFFICE');
@@ -95,7 +97,7 @@ test.describe('World: where a place appears and the checks across places (local 
     const soon = page.locator('[data-testid="world-warning"][data-rule="shoots-soon"]');
     await expect(soon).toHaveCount(1);
     await expect(soon).toContainText('DOCK OFFICE shoots in 5 days (day 1), and it is not confirmed and its permit is still needed');
-    await expect(page.locator('[data-testid="world-warning"][data-rule="no-cost"]').filter({ hasText: 'DOCK OFFICE has no cost' })).toHaveCount(1);
+    await expect(page.locator('[data-testid="world-warning"][data-rule="no-cost"]').filter({ hasText: /(?<!THE )DOCK OFFICE has no cost/ })).toHaveCount(1);
     await expect(page.locator('[data-testid="world-warning"]').filter({ hasText: 'LIGHTHOUSE' })).toHaveCount(0);
 
     await page.screenshot({ path: '/tmp/pw-out-world/world-1400.png', fullPage: true });
@@ -114,7 +116,7 @@ test.describe('World: where a place appears and the checks across places (local 
     for (const s of ['DOCK OFFICE', 'THE DOCK OFFICE', 'LIGHTHOUSE', 'OLD CANNERY', 'Where it appears', 'INT. LIGHTHOUSE - NIGHT', 'look like one place spelled two ways', 'its permit is still needed', 'not in the script yet']) expect(printed).toContain(s);
 
     // The unlisted place: add it, and it becomes a record in the list.
-    await unlisted.getByRole('button', { name: 'Add FERRY TERMINAL as a location' }).click();
+    await unlisted.getByRole('button', { name: 'Add as location: FERRY TERMINAL' }).click();
     await expect(page.getByTestId('unlisted-places')).toHaveCount(0);
     await expect(page.getByRole('button', { name: /^FERRY TERMINAL/ })).toBeVisible();
     await expect.poll(async () => (await admin.from('project_locations').select('name').eq('project_id', project.id).eq('name', 'FERRY TERMINAL')).data?.length).toBe(1);
