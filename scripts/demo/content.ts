@@ -42,6 +42,8 @@ export interface ShootDay {
   log?: { kind: 'call' | 'rolling' | 'lunch' | 'back' | 'wrap' | 'note'; at: number; scene?: number; body?: string }[];
 }
 export interface DemoProject {
+  /** Which build this project belongs to (`--set`); default 'base'. Re-running a set replaces only its own demo projects. */
+  set?: string;
   key: string;
   owner: Who;
   title: string;
