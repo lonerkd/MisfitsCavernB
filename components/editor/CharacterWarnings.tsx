@@ -36,7 +36,7 @@ export function CharacterWarnings({ lines, scenes, rejectedNames, storageKey, on
   const hidden = all.filter((w) => ids.has(w.id));
   const item = (w: CharacterWarning, dismissed: boolean) => (
     <li key={w.id} data-testid="character-warning" data-rule={w.rule} style={{ padding: '10px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ fontSize: 11, color: w.severity === 'warn' ? 'var(--warn-text, var(--fg))' : 'var(--fg-muted)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{RULE_LABELS[w.rule]}</div>
+      <div style={{ fontSize: 11, color: w.severity === 'warn' ? 'var(--warn)' : 'var(--fg-muted)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>{RULE_LABELS[w.rule]}</div>
       <div style={{ fontSize: 13, color: 'var(--fg)' }}>{w.message}</div>
       <div style={{ fontSize: 12, color: 'var(--fg-muted)' }}>{w.reason}</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
