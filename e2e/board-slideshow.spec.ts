@@ -4,6 +4,9 @@ import { deflateSync } from 'node:zlib';
 import { chromium, type Page } from '@playwright/test';
 import { test, expect, stackEnabled, stackSkipReason, type QaUser } from './support/stack';
 
+// The slides fade in over a quarter of a second; axe measures contrast on what is on screen, so scan only once the slide has finished fading in (other animations on the page, such as a spinner, never end).
+const settled = (page: Page) => expect.poll(() => page.evaluate(() => document.getAnimations().filter((a) => a.playState === 'running' && String((a as CSSAnimation).animationName ?? '').includes('slideIn')).length)).toBe(0);
+
 // Mood boards: search within a board, and the slideshow, in the Studio (Sam) and on the shared page (a signed-out
 // visitor). Real data, no mocks. Opt-in: E2E_LOCAL_STACK=1 (see e2e/support/stack.ts).
 const AXE = readFileSync(require.resolve('axe-core/axe.min.js'), 'utf8');
@@ -134,6 +137,7 @@ test.describe('Board search and slideshow (local Supabase)', () => {
       await expect(show.getByText('1 of 5', { exact: true })).toBeVisible();
       await expect(show.getByRole('img', { name: 'Harbour at dusk' })).toBeVisible();
       if (SHOTS) { await page.waitForTimeout(600); await page.screenshot({ path: `${SHOTS}/slideshow-1400.png` }); }
+      await settled(page);
       expect(await axeViolations(page, '[role=dialog]')).toEqual([]);
 
       await page.keyboard.press('ArrowRight');
@@ -187,6 +191,7 @@ test.describe('Board search and slideshow (local Supabase)', () => {
       await expect(vShow.getByText('2 of 5', { exact: true })).toBeVisible();
       await expect(vShow.getByRole('img', { name: 'Rain on glass' })).toBeVisible();
       if (SHOTS) { await visitor.waitForTimeout(600); await visitor.screenshot({ path: `${SHOTS}/shared-slideshow-1200.png` }); }
+      await settled(visitor);
       expect(await axeViolations(visitor, '[role=dialog]')).toEqual([]);
       await visitor.keyboard.press('Escape');
       await expect(vShow).toHaveCount(0);

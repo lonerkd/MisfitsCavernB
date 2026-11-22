@@ -14,9 +14,11 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { useCanShape } from '@/lib/brief';
 import {
-  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, highlightSegments, matchCards, matchLabel, mediaSrc, stepMatch, studio, toSlides, useMoodBoardItems, useMoodBoards, useSignedUrls,
+  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, mediaSrc, studio, useMoodBoardItems, useMoodBoards, useSignedUrls,
   type BoardTemplate, type MoodBoard, type MoodBoardItem, type MoodBoardShare,
 } from '@/lib/studio';
+import { highlightSegments, matchCards, matchLabel, stepMatch } from '@/lib/studio/board-search';
+import { toSlides } from '@/lib/studio/board-slides';
 import { boardPrintHtml } from '@/lib/studio/boards-print';
 import { useStudio } from '../StudioContext';
 import { ErrorBar } from '../ui';
