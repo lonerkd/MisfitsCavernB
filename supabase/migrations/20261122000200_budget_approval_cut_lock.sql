@@ -23,6 +23,14 @@ CREATE OR REPLACE FUNCTION internal.projects_budget_approval()
  SET search_path TO ''
 AS $function$
 begin
+  if tg_op = 'INSERT' then
+    -- A new project starts unapproved, whatever the client sends.
+    new.budget_approved_at := null;
+    new.budget_approved_by := null;
+    new.budget_approved_total := null;
+    new.budget_approved_lines := null;
+    return new;
+  end if;
   if new.budget_approved_at is distinct from old.budget_approved_at then
     if new.budget_approved_at is null then
       new.budget_approved_by := null;
@@ -46,7 +54,7 @@ end;
 $function$;
 REVOKE ALL ON FUNCTION internal.projects_budget_approval() FROM PUBLIC, anon, authenticated;
 DROP TRIGGER IF EXISTS projects_budget_approval ON public.projects;
-CREATE TRIGGER projects_budget_approval BEFORE UPDATE ON public.projects
+CREATE TRIGGER projects_budget_approval BEFORE INSERT OR UPDATE ON public.projects
   FOR EACH ROW EXECUTE FUNCTION internal.projects_budget_approval();
 
 ALTER TABLE public.post_cuts

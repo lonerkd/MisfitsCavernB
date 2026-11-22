@@ -45,6 +45,13 @@ describe('budget approval', () => {
     expect((await progress()).budget_approved).toBe(false);
   });
 
+  it('a project cannot be created already approved', async () => {
+    const ins = await cast.sam.client.from('projects').insert({ title: 'Forged', creator_id: cast.sam.id, budget_approved_at: new Date().toISOString(), budget_approved_by: cast.riley.id, budget_approved_total: 5, budget_approved_lines: 9 }).select('id, budget_approved_at, budget_approved_by, budget_approved_total, budget_approved_lines').single();
+    expect(ins.error).toBeNull();
+    expect(ins.data).toMatchObject({ budget_approved_at: null, budget_approved_by: null, budget_approved_total: null, budget_approved_lines: null });
+    await cast.sam.client.from('projects').delete().eq('id', ins.data!.id);
+  });
+
   it('crew and outsiders cannot approve', async () => {
     await cast.jordan.client.from('projects').update({ budget_approved_at: new Date().toISOString() }).eq('id', projectId);
     expect((await project(cast.sam.client)).data.budget_approved_at).toBeNull();
