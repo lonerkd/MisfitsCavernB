@@ -73,6 +73,8 @@ function titlePageLines(xml: string): string[] {
 export function parseFdx(xml: string): string {
   const blocks: Block[] = [];
   const title = titlePageLines(xml);
+  // Numbers our own export generated (1, 2, 3 for a script that had none) are not the writer's: they are not imported.
+  const generatedNumbers = /<!--cavern:autonumbered-->/.test(xml);
   // The title page is not body text: its keys go to the top of the script (above), the paragraphs never into the body.
   xml = xml.replace(/<TitlePage\b[\s\S]*?<\/TitlePage>/g, '');
   const tokenRe = new RegExp(String.raw`<DualDialogue\b[^>]*>([\s\S]*?)<\/DualDialogue>|` + PARA, 'g');
@@ -81,6 +83,9 @@ export function parseFdx(xml: string): string {
     const type = FDX_TYPE_MAP[typeName] || 'action';
     let text = textOf(inner).replace(/[\r\n\t]+/g, ' ').trim();
     if (!text) return;
+    // A scene number Final Draft holds apart from the heading (Number="12A") is written back as a typed number (#12A#).
+    const num = type === 'scene' && !generatedNumbers ? (attrs.match(/\bNumber="([^"]+)"/) || [])[1]?.replace(/[^\w.-]/g, '') : undefined;
+    if (num && !/#[\w.-]+#\s*$/.test(text) && !text.toUpperCase().startsWith(num.toUpperCase() + '.') && !text.toUpperCase().startsWith(num.toUpperCase() + ' ')) text += ` #${num}#`;
     if (type === 'character' && dualSecond.on) text += ' ^';
     // Centered text is a real FDX alignment; Fountain writes it > like this <.
     if (/\bAlignment="Center"/.test(attrs) && type === 'action' && !/^>.*<$/.test(text)) text = `> ${text} <`;

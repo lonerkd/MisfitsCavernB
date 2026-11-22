@@ -19,6 +19,7 @@ import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { ToolHeader } from '../ToolHeader';
 import { budgetDoc } from '@/lib/studio/budget-print';
+import { budgetSpreadsheetXml, budgetSpreadsheetName } from '@/lib/studio/budget-sheet';
 import { BudgetLines } from './BudgetLines';
 import { BudgetApproval } from './BudgetApproval';
 import { CashFlowSection } from './CashFlowSection';
@@ -57,6 +58,17 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
   const summary = useMemo(() => moneySummary(lines, expenses.rows, timesheets.rows), [lines, expenses.rows, timesheets.rows]);
   const aboveIds = useMemo(() => new Set(lines.filter((l) => l.above_the_line).map((l) => l.id)), [lines]);
   const groups = useMemo(() => groupAboveBelow(summary.lines, aboveIds), [summary.lines, aboveIds]);
+  const budgetExcel = () => {
+    const byId = new Map(lines.map((l) => [l.id, l]));
+    return {
+      fileName: budgetSpreadsheetName(project.title),
+      xml: budgetSpreadsheetXml({
+        project: project.title, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned,
+        lines: summary.lines.map((l) => ({ category: byId.get(l.id)?.category ?? l.label, description: byId.get(l.id)?.description, planned: l.planned, committed: l.committed, paid: l.paid, left: l.left, above: aboveIds.has(l.id) })),
+        generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+      }),
+    };
+  };
   const nameOf = useMemo(() => new Map(crew.map((c) => [c.user_id, c.username])), [crew]);
 
   return (
@@ -69,7 +81,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
           <section aria-label="Budget vs spend" className={s.stack} style={{ gap: 12 }}>
             <ToolHeader icon={<DollarSign size={16} />} eyebrow="Money" title="Budget vs spend" purpose="What was planned, what is committed, what is paid, and what is left." accent={project.accent_color}
               next={lines.length === 0 ? { text: runsBudget ? 'Start from a template below, add the first budget line, or let the breakdown write them.' : 'No budget lines yet.' } : summary.totals.left < 0 ? { text: `Over budget by ${money(-summary.totals.left)}.` } : null}
-              actions={<PrintButton label="the budget" build={() => budgetDoc({
+              actions={<PrintButton label="the budget" excel={() => budgetExcel()} build={() => budgetDoc({
                 project: project.title, accent: project.accent_color, logo: project.logo_url, lines: summary.lines.map((l) => ({ ...l, above: aboveIds.has(l.id) })), totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned, format: money,
                 generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
               })} />} />
