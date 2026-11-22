@@ -158,6 +158,16 @@ column casting_auditions.id uuid default gen_random_uuid() not null
 column casting_auditions.notes text
 column casting_auditions.project_id uuid not null
 column casting_auditions.scheduled_at timestamp with time zone not null
+column casting_candidates.character_name text not null
+column casting_candidates.created_at timestamp with time zone default now() not null
+column casting_candidates.created_by uuid
+column casting_candidates.id uuid default gen_random_uuid() not null
+column casting_candidates.name text not null
+column casting_candidates.note text
+column casting_candidates.project_id uuid not null
+column casting_candidates.reel_url text
+column casting_candidates.status text default 'shortlisted'::text not null
+column casting_candidates.user_id uuid
 column casting_history.action text not null
 column casting_history.actor_id uuid
 column casting_history.character_name text not null
@@ -1086,6 +1096,13 @@ constraint casting_auditions.casting_auditions_created_by_fkey FOREIGN KEY (crea
 constraint casting_auditions.casting_auditions_crew_user_id_fkey FOREIGN KEY (crew_user_id) REFERENCES profiles(id) ON DELETE CASCADE
 constraint casting_auditions.casting_auditions_pkey PRIMARY KEY (id)
 constraint casting_auditions.casting_auditions_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint casting_candidates.casting_candidates_created_by_fkey FOREIGN KEY (created_by) REFERENCES auth.users(id) ON DELETE SET NULL
+constraint casting_candidates.casting_candidates_name_check CHECK (((length(btrim(name)) >= 1) AND (length(btrim(name)) <= 120)))
+constraint casting_candidates.casting_candidates_pkey PRIMARY KEY (id)
+constraint casting_candidates.casting_candidates_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint casting_candidates.casting_candidates_reel_url_check CHECK (((reel_url IS NULL) OR (reel_url ~* '^https?://'::text)))
+constraint casting_candidates.casting_candidates_status_check CHECK ((status = ANY (ARRAY['shortlisted'::text, 'callback'::text, 'passed'::text])))
+constraint casting_candidates.casting_candidates_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE SET NULL
 constraint casting_history.casting_history_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES auth.users(id)
 constraint casting_history.casting_history_pkey PRIMARY KEY (id)
 constraint casting_history.casting_history_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -2037,6 +2054,9 @@ index CREATE INDEX call_sheets_updated_by_idx ON public.call_sheets USING btree 
 index CREATE INDEX casting_auditions_created_by_idx ON public.casting_auditions USING btree (created_by)
 index CREATE INDEX casting_auditions_crew_user_id_idx ON public.casting_auditions USING btree (crew_user_id)
 index CREATE INDEX casting_auditions_project_id_idx ON public.casting_auditions USING btree (project_id)
+index CREATE INDEX casting_candidates_created_by_idx ON public.casting_candidates USING btree (created_by)
+index CREATE INDEX casting_candidates_project_id_idx ON public.casting_candidates USING btree (project_id, character_name)
+index CREATE INDEX casting_candidates_user_id_idx ON public.casting_candidates USING btree (user_id)
 index CREATE INDEX casting_history_actor_id_idx ON public.casting_history USING btree (actor_id)
 index CREATE INDEX casting_history_project_id_idx ON public.casting_history USING btree (project_id)
 index CREATE INDEX casting_notes_created_by_idx ON public.casting_notes USING btree (created_by)
@@ -2307,6 +2327,7 @@ index CREATE UNIQUE INDEX call_sheets_shoot_day_key ON public.call_sheets USING 
 index CREATE UNIQUE INDEX campaigns_pkey ON public.campaigns USING btree (id)
 index CREATE UNIQUE INDEX capabilities_pkey ON public.capabilities USING btree (key)
 index CREATE UNIQUE INDEX casting_auditions_pkey ON public.casting_auditions USING btree (id)
+index CREATE UNIQUE INDEX casting_candidates_pkey ON public.casting_candidates USING btree (id)
 index CREATE UNIQUE INDEX casting_history_pkey ON public.casting_history USING btree (id)
 index CREATE UNIQUE INDEX casting_notes_pkey ON public.casting_notes USING btree (id)
 index CREATE UNIQUE INDEX change_acknowledgements_pkey ON public.change_acknowledgements USING btree (project_id, note_id, user_id)
@@ -2485,6 +2506,10 @@ policy public.casting_auditions "casting_auditions_delete" PERMISSIVE DELETE to 
 policy public.casting_auditions "casting_auditions_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_auditions "casting_auditions_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
 policy public.casting_auditions "casting_auditions_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check -
+policy public.casting_candidates "casting_candidates_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
+policy public.casting_candidates "casting_candidates_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
+policy public.casting_candidates "casting_candidates_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
+policy public.casting_candidates "casting_candidates_update" PERMISSIVE UPDATE to public using internal.is_project_creator(project_id) check internal.is_project_creator(project_id)
 policy public.casting_history "casting_history_insert" PERMISSIVE INSERT to public using - check internal.is_project_creator(project_id)
 policy public.casting_history "casting_history_select" PERMISSIVE SELECT to public using internal.can_access_project(project_id) check -
 policy public.casting_notes "casting_notes_delete" PERMISSIVE DELETE to public using internal.is_project_creator(project_id) check -
@@ -2829,6 +2854,7 @@ rls call_sheets enabled=true forced=false
 rls campaigns enabled=true forced=false
 rls capabilities enabled=true forced=false
 rls casting_auditions enabled=true forced=false
+rls casting_candidates enabled=true forced=false
 rls casting_history enabled=true forced=false
 rls casting_notes enabled=true forced=false
 rls change_acknowledgements enabled=true forced=false
