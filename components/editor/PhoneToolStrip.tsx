@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, type ReactNode } from 'react';
-import { ArrowRightToLine, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, MoreHorizontal, PanelRight, Redo2, Search, StickyNote, Undo2 } from 'lucide-react';
+import { ArrowDown, ArrowRightToLine, ArrowUp, ChevronsDown, ChevronsUp, KeyboardOff, MoreHorizontal, PanelRight, Redo2, Search, StickyNote, Undo2 } from 'lucide-react';
 
 const ELEMENTS: Array<[string, string]> = [['scene', 'Scene'], ['action', 'Action'], ['character', 'Character'], ['dialogue', 'Dialogue'], ['transition', 'Transition']];
 
@@ -58,25 +58,29 @@ export function PhoneToolStrip(p: PhoneToolStripProps) {
   const sep = (k: string) => <span key={k} aria-hidden style={{ flex: '0 0 1px', alignSelf: 'stretch', margin: p.compact ? '4px 1px' : '6px 2px', background: 'var(--border)' }} />;
   return (
     <div role="toolbar" onTouchStartCapture={remember} onPointerDownCapture={() => { if (!held.current) remember(); }} aria-label="Writing tools" style={{
-      position: 'fixed', left: 0, right: 0, bottom: p.bottom, zIndex: 150, display: 'flex', alignItems: 'center', gap: p.compact ? 6 : 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+      position: 'fixed', left: 0, right: 0, bottom: p.bottom, zIndex: 150, display: 'flex', alignItems: 'center', gap: p.compact ? 6 : 8,
       padding: p.compact ? '3px 12px' : '8px 12px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.08)',
       paddingLeft: 'max(12px, env(safe-area-inset-left))', paddingRight: 'max(12px, env(safe-area-inset-right))',
     }}>
-      {btn('hide', 'Put the keyboard away', p.hideKeyboard, <ChevronDown size={ic} />, false)}
+      <div style={{ flex: '1 1 auto', minWidth: 0, display: 'flex', alignItems: 'center', gap: p.compact ? 6 : 8, overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      {btn('hide', 'Put the keyboard away', p.hideKeyboard, <KeyboardOff size={ic} />, false)}
       {btn('undo', 'Undo', p.undo, <Undo2 size={ic} />, false)}
       {btn('redo', 'Redo', p.redo, <Redo2 size={ic} />, false)}
       {sep('s1')}
       {btn('type', 'Change element type', () => p.cycle(false), <ArrowRightToLine size={ic} />, false)}
       {btn('prev', 'Previous scene', p.prevScene, <ChevronsUp size={ic} />, false)}
       {btn('next', 'Next scene', p.nextScene, <ChevronsDown size={ic} />, false)}
-      {btn('up', 'Line up', p.lineUp, <ChevronUp size={ic} />, false)}
-      {btn('down', 'Line down', p.lineDown, <ChevronDown size={ic} />, false)}
+      {btn('up', 'Line up', p.lineUp, <ArrowUp size={ic} />, false)}
+      {btn('down', 'Line down', p.lineDown, <ArrowDown size={ic} />, false)}
       {sep('s2')}
       {ELEMENTS.map(([type, label]) => btn(type, label, () => p.insert(type)))}
       {sep('s3')}
       {btn('find', 'Find and replace', p.find, <Search size={ic} />, false)}
       {btn('notes', 'Notes', p.notes, <StickyNote size={ic} />, false)}
       {btn('tools', 'Tools', p.tools, <PanelRight size={ic} />, false)}
+      </div>
+      {/* The menu stays on screen at the right edge, whatever the tools have scrolled to: with the keyboard up the page's own menu is out of reach. */}
+      {sep('s4')}
       {btn('more', 'More', p.more, <MoreHorizontal size={ic} />, false)}
     </div>
   );

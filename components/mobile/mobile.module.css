@@ -54,6 +54,9 @@
   border-top: 1px solid var(--border-2);
   box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.35);
 }
+/* The handle and the title are where a swipe down starts (a bigger target than the 5 px bar); the page must not scroll under the finger there. */
+.dragZone { touch-action: none; cursor: grab; }
+.dragZone:active { cursor: grabbing; }
 .grip { width: 40px; height: 5px; border-radius: 4px; background: rgba(var(--ink-rgb), 0.2); margin: 4px auto 12px; }
 .sheetHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
 .sheetTitle { font-family: var(--display); font-size: 22px; letter-spacing: -0.02em; margin: 0; color: var(--fg-strong); font-weight: 400; }
@@ -61,6 +64,8 @@
 
 .section { margin: 14px 0 6px; font-family: var(--mono); font-size: 11px; letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
 .places { margin-bottom: 10px; }
+/* What this page offers sits above the places: air between them, not touching. */
+.pageActions { margin-bottom: 14px; }
 .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tile {
   position: relative; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px;
