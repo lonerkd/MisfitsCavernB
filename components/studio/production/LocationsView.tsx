@@ -4,7 +4,8 @@ import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import EmptyState from '@/components/ui/EmptyState';
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, MapPin, PenLine, Plus, Trash2 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { ArrowRight, ChevronDown, MapPin, PenLine, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import {
@@ -17,8 +18,12 @@ import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { locationsDoc } from '@/lib/studio/locations-print';
+import { worldLocations, type Appearance, type WorldLocation } from '@/lib/studio/world';
 import { ToolHeader } from '../ToolHeader';
 import s from '../studio.module.css';
+
+// The cross-place checks and the world bible load when the view does, not with the Studio.
+const WorldInsights = dynamic(() => import('../WorldInsights').then((m) => m.WorldInsights), { ssr: false, loading: () => <p className={s.hint}>Reading what the script says about its places…</p> });
 
 /**
  * Every place the script goes, as a record the production fills in: where it
@@ -37,6 +42,11 @@ export function LocationsView() {
   const { toast } = useToast();
 
   const rows = useMemo(() => locationRows(scenes.rows, records.rows), [scenes.rows, records.rows]);
+  const world = useMemo(() => new Map(worldLocations(scenes.rows, records.rows, days.rows).map((w) => [w.name, w])), [scenes.rows, records.rows, days.rows]);
+  const [busyAdd, setBusyAdd] = useState<string | null>(null);
+  // Places scenes name that have no record yet: offered as an add, so the list a person fills in is complete.
+  const unlisted = rows.filter((r) => !r.record && r.scenes.length > 0);
+  const listed = rows.filter((r) => r.record || r.scenes.length === 0);
   const locked = rows.filter((r) => r.scenes.length && locationReadiness(r.name, r.record).ready).length;
   const inScript = rows.filter((r) => r.scenes.length).length;
 
@@ -53,6 +63,24 @@ export function LocationsView() {
       toast(err instanceof Error ? err.message : 'Could not add the location', 'error');
     }
   };
+
+  const addPlace = async (name: string) => {
+    setBusyAdd(name);
+    try {
+      const row = await studio.saveLocation(project.id, name, {});
+      records.upsertLocal(row);
+      setOpen(row.name);
+      toast(`${row.name} added to Locations`, 'success');
+    } catch (err) {
+      toast(err instanceof Error ? err.message : 'Could not add the location', 'error');
+    } finally {
+      setBusyAdd(null);
+    }
+  };
+
+  if (scenes.status === 'loading' && rows.length === 0) {
+    return <div style={{ minHeight: 160, display: 'grid', placeItems: 'center' }} aria-busy="true"><span className={s.spinner} aria-label="Loading the locations" /></div>;
+  }
 
   if (scenes.status !== 'loading' && rows.length === 0) {
     return (
@@ -77,24 +105,50 @@ export function LocationsView() {
             scenes: r.scenes.map((sc) => sc.scene_number), days: r.days, notes: r.record?.notes ?? null,
           })),
         })} /> : undefined} />
-      {records.status === 'error' && <p className={s.hint} style={{ color: 'var(--danger)' }}>{records.error}</p>}
+      {records.status === 'error' && <p className={s.hint} role="alert" style={{ color: 'var(--danger)' }}>{records.error}</p>}
+      {scenes.status === 'error' && <p className={s.hint} role="alert" style={{ color: 'var(--danger)' }}>{scenes.error ?? 'Could not load the scenes, so where each place appears may be incomplete.'}</p>}
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {rows.map((row) => (
-          <LocationItem key={row.name} row={row} days={days.rows} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
+        {listed.map((row) => (
+          <LocationItem key={row.name} row={row} where={world.get(row.name)} days={days.rows} expanded={open === row.name} onToggle={() => setOpen(open === row.name ? null : row.name)}
             onSaved={(r) => records.upsertLocal(r)} onRenamed={(r) => { records.upsertLocal(r); setOpen(r.name); }} onRemoved={(id) => records.removeLocal(id)} />
         ))}
       </ul>
+      {unlisted.length > 0 && (
+        <section aria-labelledby="unlisted-places" data-testid="unlisted-places" className={s.stack} style={{ gap: 8 }}>
+          <div>
+            <h3 id="unlisted-places" className={s.panelTitle} style={{ margin: 0 }}>In the script, not in Locations · {unlisted.length}</h3>
+            <p className={s.hint} style={{ margin: '4px 0 0' }}>Scenes are set at these places, but there is no record to fill in an address, a permit or a cost.</p>
+          </div>
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {unlisted.map((row) => {
+              const w = world.get(row.name);
+              return (
+                <li key={row.name} className={s.panel} data-testid="unlisted-place" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '10px 14px' }}>
+                  <span style={{ flex: '1 1 200px', minWidth: 0 }}>
+                    <span style={{ display: 'block', fontFamily: 'var(--display)', fontSize: '1.05rem', letterSpacing: '-0.02em' }}>{row.name}</span>
+                    <span className={s.hint}>{row.scenes.length} scene{row.scenes.length === 1 ? '' : 's'}{w && w.appearances.length ? ` · scene${w.appearances.length === 1 ? '' : 's'} ${w.appearances.map((a) => a.number).join(', ')}` : ''}</span>
+                  </span>
+                  <button type="button" className={cx(s.btn, s.small)} disabled={busyAdd === row.name} onClick={() => void addPlace(row.name)} aria-label={`Add ${row.name} as a location`}>
+                    <Plus size={11} aria-hidden /> Add as location
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
       <form onSubmit={addOther} className={s.row} style={{ gap: 8 }}>
         <input className={s.input} style={{ maxWidth: 280 }} placeholder="A location the script doesn’t name yet" aria-label="New location name"
           value={adding} maxLength={200} onChange={(e) => setAdding(e.target.value)} />
         <button type="submit" className={cx(s.btn, s.small)} disabled={!adding.trim()}><Plus size={11} /> Add</button>
       </form>
+      <WorldInsights scenes={scenes.rows} records={records.rows} days={days.rows} />
     </div>
   );
 }
 
-function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRemoved }: {
-  row: LocationRow; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRenamed: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
+function LocationItem({ row, where, days, expanded, onToggle, onSaved, onRenamed, onRemoved }: {
+  row: LocationRow; where?: WorldLocation; days: ShootDay[]; expanded: boolean; onToggle: () => void; onSaved: (r: ProjectLocation) => void; onRenamed: (r: ProjectLocation) => void; onRemoved: (id: string) => void;
 }) {
   const { project } = useStudio();
   const { toast } = useToast();
@@ -143,7 +197,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
     .filter((d): d is typeof d & { date: string; light: NonNullable<typeof d.light> } => !!d.light);
   const undated = row.days.filter((n) => !days.find((d) => d.day_number === n)?.shoot_date);
   const summary = [
-    row.scenes.length ? `${row.scenes.length} scene${row.scenes.length === 1 ? '' : 's'}` : 'not in the script',
+    row.scenes.length ? `${row.scenes.length} scene${row.scenes.length === 1 ? '' : 's'}` : 'not in the script yet',
     row.days.length ? `day${row.days.length === 1 ? '' : 's'} ${row.days.join(', ')}` : null,
     row.exterior ? 'exterior' : null,
     row.night ? 'night' : null,
@@ -216,11 +270,7 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
             <span className={s.hint}>Notes (access, parking, power, noise, hours)</span>
             <textarea className={s.textarea} rows={2} defaultValue={rec?.notes ?? ''} key={`n:${rec?.notes}`} maxLength={5000} onBlur={(e) => text('notes', e.target.value)} />
           </label>
-          {row.scenes.length > 0 && (
-            <p className={s.hint} style={{ margin: 0 }}>
-              Scenes: {row.scenes.map((sc) => `${sc.scene_number}${sc.shoot_day ? ` (day ${sc.shoot_day})` : ''}`).join(', ')}
-            </p>
-          )}
+          <Appearances name={row.name} where={where} />
           <div className={s.row} style={{ gap: 8 }}>
             {rec?.address && <a href={mapHref(rec.address)} target="_blank" rel="noopener noreferrer" className={cx(s.btnGhost, s.small)}><MapPin size={11} /> Map<span className="sr-only"> (opens in a new tab)</span></a>}
             {rec && <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => void remove()}><Trash2 size={11} /> Remove record</button>}
@@ -228,5 +278,39 @@ function LocationItem({ row, days, expanded, onToggle, onSaved, onRenamed, onRem
         </div>
       )}
     </li>
+  );
+}
+
+const dateLabel = (d: string) => new Date(`${d}T00:00`).toLocaleDateString([], { weekday: 'short', day: 'numeric', month: 'short' });
+
+/** The scenes set at this place, in script order, each with a jump to it in the editor. Read from the scenes; nothing is stored. */
+function Appearances({ name, where }: { name: string; where?: WorldLocation }) {
+  const { openInScript, scriptId } = useStudio();
+  const list = where?.appearances ?? [];
+  const meta = (a: Appearance) => [
+    a.intExt, a.time, a.storyDay != null ? `story day ${a.storyDay}` : null,
+    a.shootDay != null ? `shoot day ${a.shootDay}${a.shootDate ? ` · ${dateLabel(a.shootDate)}` : ''}` : 'not scheduled', a.pages ? `${a.pages} pp` : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <section aria-label={`Where ${name} appears`} data-testid="appearances" className={s.stack} style={{ gap: 6 }}>
+      <div className={s.hint} style={{ color: 'var(--fg)' }}>
+        Where it appears · {list.length === 0 ? 'not in the script yet' : `${list.length} scene${list.length === 1 ? '' : 's'}${where?.pages ? ` · ${where.pages} pp` : ''}`}
+      </div>
+      {list.length === 0
+        ? <p className={s.hint} style={{ margin: 0 }}>No scene is set here. A place a scene names shows up in the list without you adding it.</p>
+        : (
+          <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {list.map((a) => (
+              <li key={a.sceneId} data-testid="appearance" style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+                <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript({ id: a.sceneId, script_id: a.scriptId ?? scriptId })} aria-label={`Open scene ${a.number} in the script`}>
+                  Sc {a.number} <ArrowRight size={11} aria-hidden />
+                </button>
+                <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 13, color: 'var(--fg)' }}>{a.heading || `Scene ${a.number}`}</span>
+                <span className={s.hint}>{meta(a)}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+    </section>
   );
 }
