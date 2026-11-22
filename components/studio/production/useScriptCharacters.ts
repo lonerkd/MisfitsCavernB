@@ -7,6 +7,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { fetchScriptContent } from '@/lib/studio';
 import { loadReadingContext } from '@/lib/studio/reading-context';
 import type { Tables } from '@/lib/supabase/database.types';
+import type { ScriptLine, Scene } from '@/lib/scriptos/types';
 
 export const CHARACTER_PALETTE = ['#e8431a', '#6366f1', '#10b981', '#f59e0b', '#ec4899', '#0099ff', '#a855f7'];
 
@@ -23,9 +24,12 @@ export interface ScriptCharacter {
  * with a saved bible entry, merged by name.
  */
 const NO_CHARS: ScriptCharacter[] = [];
+const EMPTY_READING = { lines: [] as ScriptLine[], scenes: [] as Scene[], rejectedNames: [] as string[] };
 
 export function useScriptCharacters(scriptId: string | null, userId: string, format: string | null = null) {
   const [loadedChars, setChars] = useState<ScriptCharacter[]>([]);
+  // The script as read (for the consistency checks and the relationship map), and the names the project said are not characters.
+  const [reading, setReading] = useState<{ lines: ScriptLine[]; scenes: Scene[]; rejectedNames: string[] }>({ lines: [], scenes: [], rejectedNames: [] });
   // How the last load for a script went; a script without one is loading.
   const [loaded, setLoaded] = useState<{ scriptId: string; ok: boolean } | null>(null);
   const status: 'loading' | 'ready' | 'error' = !scriptId ? 'ready' : loaded?.scriptId !== scriptId ? 'loading' : loaded.ok ? 'ready' : 'error';
@@ -39,7 +43,9 @@ export function useScriptCharacters(scriptId: string | null, userId: string, for
       loadReadingContext(scriptId), // the cast, the "not a character" verdicts, the places and the previous draft: read as the editor reads
     ]).then(([text, saved, context]) => {
       const byName = new Map(saved.map((r) => [r.name, r]));
-      const parsed = parseScript(text, readingFormat(format), undefined, { context }).characters.map((c) => c.name).filter(Boolean);
+      const result = parseScript(text, readingFormat(format), undefined, { context });
+      setReading({ lines: result.lines, scenes: result.scenes, rejectedNames: [...(context.rejectedNames ?? [])] });
+      const parsed = result.characters.map((c) => c.name).filter(Boolean);
       const names = Array.from(new Set([...parsed, ...saved.map((r) => r.name)]));
       setChars(names.map((name, i) => {
         const row = byName.get(name) ?? null;
@@ -66,5 +72,5 @@ export function useScriptCharacters(scriptId: string | null, userId: string, for
     setChars((prev) => prev.map((x) => (x.name === c.name ? { ...x, row: data } : x)));
   }, [ensureRow, userId]);
 
-  return { chars, status, reload: load, ensureRow, save };
+  return { chars, status, reload: load, ensureRow, save, reading: scriptId ? reading : EMPTY_READING };
 }

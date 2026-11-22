@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Pencil, Plus, Users, X } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
 import { studio, useCharacterMedia, useSignedUrls, mediaSrc, characterMediaKey, type Media } from '@/lib/studio';
@@ -13,13 +14,15 @@ import { MediaDetail } from './media/MediaDetail';
 import { cx } from './ui';
 import s from './studio.module.css';
 
+const CharacterInsights = dynamic(() => import('./CharacterInsights').then((m) => m.CharacterInsights), { ssr: false, loading: () => <p className={s.hint}>Loading what the script says…</p> });
+
 type Draft = { full_name: string; age: string; arc: string; description: string };
 
 /** Character bible for the selected script, with a look-board per character. */
 export function CharacterBible() {
   const { project, userId, scriptId, scriptFormat, media, mediaById } = useStudio();
   const { toast } = useToast();
-  const { chars, status, ensureRow, save } = useScriptCharacters(scriptId, userId, scriptFormat);
+  const { chars, status, ensureRow, save, reading } = useScriptCharacters(scriptId, userId, scriptFormat);
   const looks = useCharacterMedia(project.id);
   const { shown: shownChars } = useRecordFind(useMemo(() => chars.map((c) => ({ name: c.name, full_name: c.row?.full_name ?? '', age: c.row?.age ?? '', arc: c.row?.arc ?? '', description: c.row?.description ?? '' })), [chars]));
   const shownNames = new Set(shownChars.map((c) => c.name));
@@ -115,6 +118,8 @@ export function CharacterBible() {
           );
         })}
       </div>
+
+      {status === 'ready' && chars.length > 0 && <CharacterInsights chars={chars} reading={reading} />}
 
       {pickFor && (
         <MediaPicker

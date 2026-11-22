@@ -96,3 +96,8 @@ editor margins. Brief → Cast & crew hints, Breakdown hints, role posts.
 
 - Studio's graph is 140 files; tabs are client-rendered in one page — a
   candidate for route segments per tab in the restructure.
+
+
+## Character bible: what the script says (2026-11-22)
+
+Under the bible cards (Production › Story): who talks to whom (pairs ranked by strength, a diagram of the top twelve that scrolls in its own box), consistency warnings with a jump to the editor line and a device-local dismissal, and Print / PDF + CSV of the character bible (overview, then a page per main character). Derived from the script; nothing stored. Detail: `scriptos-engine.md`.

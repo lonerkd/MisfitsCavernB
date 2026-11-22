@@ -10,6 +10,7 @@ import { locationsDoc } from './locations-print';
 import { crewDoc } from './crew-print';
 import { shotListDoc } from './shotlist-print';
 import { castDoc } from './cast-print';
+import { characterBibleDoc } from './character-bible-print';
 import { breakdownDoc } from './breakdown-print';
 import { pitchDoc } from './pitch-print';
 import { revisionsDoc } from './revisions-print';
@@ -41,6 +42,7 @@ const docs: Record<string, () => string> = {
   locations: () => printHtml(locationsDoc({ ...base, format: fmt, rows: range(N).map((i) => ({ name: `CAIS DO SODRÉ — LOWER PLATFORM ${i + 1}`, address: 'Praça do Duque da Terceira, 1200-161 Lisboa', contact: 'Rui Almeida 912 000 000', status: i % 2 ? 'Confirmed' : 'Scouting', permit: 'Permit granted', cost: 500 + i, scenes: [4, 9, 12, 15, 18, 21, 24], days: [1, 2, 3, 4], notes: LONG })) })),
   crew: () => printHtml(crewDoc({ ...base, crew: range(N).map((i) => ({ name: NAMES[i % 4], role: i % 3 ? 'Director of Photography' : 'First Assistant Director', status: ['confirmed', 'pending', null][i % 3], away: i % 7 === 0 ? '12–14 Mar and 20–22 Mar' : null })) })),
   shotlist: () => printHtml(shotListDoc({ ...base, filter: 'Status: planned', shots: range(N).map((i) => ({ scene: i + 1, number: `${i + 1}A`, size: 'Medium close-up', angle: 'Low', movement: i % 2 ? 'dolly' : 'static', lens: '35mm', description: LONG, status: i % 3 ? 'planned' : 'shot' })) })),
+  characterBible: () => printHtml(characterBibleDoc({ ...base, characters: range(14).map((i) => ({ name: `CHARACTER NUMBER ${i + 1}`, fullName: NAMES[i % 4], age: '30s', description: LONG, backstory: LONG, motivation: LONG, arc: LONG, notes: i % 3 ? null : LONG, scenes: i + 3, lines: 40 - i, talksTo: [{ name: 'MAYA', strength: 30 - i }, { name: 'LUIS', strength: 20 - i }], warnings: i % 4 ? [] : ['MAYAH and MAYA look like one character spelled two ways.'] })) })),
   cast: () => printHtml(castDoc({ ...base, rows: range(N).map((i) => ({ character: `CHARACTER NUMBER ${i + 1} THE ELDER`, actor: i % 4 ? NAMES[i % 4] : null, scenes: i + 3, days: [1, 2, 4, 5, 7, 8, 9, 10, 11, 12], arc: LONG })) })),
   breakdown: () => printHtml(breakdownDoc({ ...base, scenes: range(5).map((i) => ({ number: i + 1, heading: `EXT. THE OLD FERRY TERMINAL AT THE END OF THE QUAY ${i + 1}`, kind: 'EXT · DAY', pages: '1.5', day: 2,
     boxes: [{ label: 'Cast', names: range(12).map((j) => `CHARACTER ${j}`) }, { label: 'Props', names: range(25).map((j) => `Umbrella number ${j}`) }, { label: 'Vehicles', names: ['Ferry'] }] })) })),
