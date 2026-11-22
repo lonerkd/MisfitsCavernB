@@ -81,7 +81,7 @@ test.describe('Call sheet safety details (local Supabase)', () => {
     await expect(jordan.getByRole('link', { name: '555 0100' })).toHaveAttribute('href', 'tel:5550100');
 
     // The printed sheet carries it.
-    await sam.getByRole('button', { name: 'Print', exact: true }).click();
+    await sam.getByRole('button', { name: 'Print', exact: true }).last().click();
     await expect.poll(async () => sam.evaluate(() => ((window as unknown as { __printed?: string[] }).__printed ?? []).join('\n'))).toContain('Nearest hospital');
     const printed = await sam.evaluate(() => ((window as unknown as { __printed?: string[] }).__printed ?? []).join('\n'));
     expect(printed).toContain('St Mary’s, 1 Hospital Way');
