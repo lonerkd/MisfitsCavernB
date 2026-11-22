@@ -143,7 +143,7 @@ The owner will open a new repository at launch and wants it to stand up to inves
 The island already has modes (`lib/island/mode.ts`: rest, context, live, open, caps, dot) and `emit()`s brief events (saved, synced, joined). _(full text: `backlog-detail.md`, 4.1)_
 
 ### 4.2 Discord
-**Built**: Discord sign-in (`app/(suite)/auth`, `signInWithOAuth({ provider: 'discord' })`; name and avatar from the identity in `app/(suite)/auth/callback`); posting a channel's messages to a Discord webhook (`/api/discord/notify`, `/test`). _(full text: `backlog-detail.md`, 4.2)_
+**Owner direction (brainstorm, 2026-11-22):** connecting a Discord account should make a **mirror** of the Lounge, and of whichever parts of the suite the person chooses to connect, for **persistent data sharing**, plus **project logging and management… _(full text: `backlog-detail.md`, 4.2)_
 
 ### 4.3 Translation and localisation
 Nothing built. Translate a script into 50+ languages (a translation service), side by side with the original, formatting kept (translate dialogue and action, never element types); translation memory and a per-project glossary; translator comments,… _(full text: `backlog-detail.md`, 4.3)_
@@ -184,8 +184,8 @@ Nothing built. Translate a script into 50+ languages (a translation service), si
 ### 4.15 Casting
 **Built**: casting per character with its scene footprint (`character_castings`, Studio › Cast & crew); casting calls posted as jobs (accepting an applicant casts them); each character's look-board. _(full text: `backlog-detail.md`, 4.15)_
 
-### 3.24 Voice rooms beyond eight — an SFU — L (found 2026-10-18)
-A voice room is a full mesh and now refuses a 9th person (`lib/webrtc/mesh.ts`: toast + "room is full"). _(full text: `backlog-detail.md`, 3.24)_
+### 3.24 Voice rooms beyond eight — an SFU — RETIRED (owner, 2026-11-22: "we don't need rooms bigger than 8, for that we'll use the discord connection")
+**Decision:** a voice room stays at eight people (the mesh, with its "room is full" message); nothing to build, no outside media service to buy. _(full text: `backlog-detail.md`, 3.24)_
 
 ### 3.23 Owner's workflow: View as everywhere, announcements, an owner dashboard — M (owner request, 2026-10-12)
 **View as** exists for the hub, the Studio, the Lounge and the call-sheet page (`lib/os/viewAs.ts`). _(full text: `backlog-detail.md`, 3.23)_

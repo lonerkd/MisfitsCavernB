@@ -1,6 +1,9 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { parseScript } from './parser';
 import { exportScriptAsFdx } from './export';
+import { scriptToFdx } from './fdx-export';
+
 import { importToContent } from './import';
 
 /**
@@ -21,7 +24,7 @@ async function exportFdx(content: string, title: string): Promise<string> {
   };
   URL.revokeObjectURL = () => {};
   try {
-    exportScriptAsFdx({ id: 'fdx-roundtrip', title, content, format: 'screenplay', createdAt: '', updatedAt: '' });
+    await exportScriptAsFdx({ id: 'fdx-roundtrip', title, content, format: 'screenplay', createdAt: '', updatedAt: '' });
   } finally {
     URL.createObjectURL = originalCreate;
     URL.revokeObjectURL = originalRevoke;
@@ -41,21 +44,10 @@ function signature(text: string): string[] {
     .map((l) => `${l.type}|${l.text.trim()}`);
 }
 
-/**
- * The importer reads every <Paragraph> in the file, including the TitlePage
- * header and content, as body text (fixed: parseFdx skips it). The
- * per-script cases therefore drop the TitlePage element before importing, so
- * that each case measures the body. The title page itself is still exported
- * as body paragraphs and is still compared.
- */
-function withoutTitlePage(xml: string): string {
-  return xml.replace(/<TitlePage>[\s\S]*?<\/TitlePage>/, '');
-}
-
 async function roundTrip(fountain: string): Promise<{ before: string[]; after: string[] }> {
   const before = signature(fountain);
   const xml = await exportFdx(fountain, 'Round Trip');
-  const { content } = importToContent(withoutTitlePage(xml), 'round-trip.fdx');
+  const { content } = importToContent(xml, 'round-trip.fdx');
   return { before, after: signature(content) };
 }
 
@@ -100,19 +92,22 @@ Hello.
 `,
   },
   {
-    name: 'dual dialogue: caret after the name, and a caret on its own line',
+    name: 'dual dialogue: caret after the name, with parentheticals and a second pair',
     fountain: `INT. BAR - NIGHT
 
 BRICK
+(smiling)
 Hi.
 
 STEEL ^
+(grins)
 Hey.
+More.
 
-STEEL
+STEEL (V.O.)
 Screw retirement.
-^
-BRICK
+
+BRICK ^
 Screw retirement.
 `,
   },
@@ -232,5 +227,138 @@ Body.
     const xml = await exportFdx(fountain, 'My Film');
     const { content } = importToContent(xml, 'full.fdx');
     expect(signature(content)).toEqual(signature(fountain));
+  });
+});
+
+const wellFormed = (xml: string): Document => {
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  const err = doc.getElementsByTagName('parsererror');
+  if (err.length) throw new Error('FDX is not well-formed XML: ' + err[0].textContent);
+  return doc;
+};
+
+describe('FDX real elements', () => {
+  const DUAL = `INT. BAR - NIGHT
+
+BRICK
+(smiling)
+Hi.
+
+STEEL ^
+(grins)
+Hey.
+`;
+
+  it('writes dual dialogue as one <DualDialogue> with both speakers and no caret as text', () => {
+    const xml = scriptToFdx({ id: 'x', title: 'T', content: DUAL, format: 'screenplay', createdAt: '', updatedAt: '' });
+    const doc = wellFormed(xml);
+    const dual = doc.querySelectorAll('Content > DualDialogue');
+    expect(dual).toHaveLength(1);
+    expect([...dual[0].querySelectorAll('Paragraph')].map((p) => p.getAttribute('Type'))).toEqual(['Character', 'Parenthetical', 'Dialogue', 'Character', 'Parenthetical', 'Dialogue']);
+    const texts = [...doc.querySelectorAll('Text')].map((t) => t.textContent ?? '');
+    expect(texts.some((t) => t.includes('^'))).toBe(false);
+  });
+
+  it('round trips dual dialogue exactly (text -> FDX -> text)', async () => {
+    const xml = await exportFdx(DUAL, 'T');
+    expect(importToContent(xml, 'd.fdx').content).toBe(DUAL);
+  });
+
+  it('a caret on its own line becomes the caret after the second name, and is still dual', async () => {
+    const src = `INT. A - DAY
+
+STEEL
+Yes.
+^
+BRICK
+No.
+`;
+    const xml = await exportFdx(src, 'T');
+    expect(xml).toContain('<DualDialogue>');
+    expect(importToContent(xml, 'd.fdx').content).toBe(`INT. A - DAY
+
+STEEL
+Yes.
+
+BRICK ^
+No.
+`);
+  });
+
+  it('writes centered text as an aligned Action paragraph, with no > < markers', async () => {
+    const src = `INT. A - DAY
+
+Body.
+
+> THE END <
+`;
+    const xml = await exportFdx(src, 'T');
+    const doc = wellFormed(xml);
+    const centered = [...doc.querySelectorAll('FinalDraft > Content > Paragraph')].filter((p) => p.getAttribute('Alignment') === 'Center');
+    expect(centered.map((p) => p.textContent?.trim())).toEqual(['THE END']);
+    expect(centered[0].getAttribute('Type')).toBe('Action');
+    expect(importToContent(xml, 'c.fdx').content).toBe(src);
+  });
+
+  it('writes the title page as a TitlePage and reads every key back', async () => {
+    const src = `Title: My Film & Co
+Credit: Written by
+Author: Sam <s@x.io>
+Source: Based on a book
+Draft date: 1 Jan
+Contact: a@b.c
+  12 Road
+  Town
+
+INT. A - DAY
+
+Body.
+`;
+    const xml = await exportFdx(src, 'My Film & Co');
+    const doc = wellFormed(xml);
+    expect(doc.querySelectorAll('FinalDraft > TitlePage > Content > Paragraph').length).toBe(8);
+    // none of the title keys is body text
+    expect([...doc.querySelectorAll('FinalDraft > Content Text')].map((t) => t.textContent)).toEqual(['INT. A - DAY', 'Body.']);
+    expect(importToContent(xml, 't.fdx').content).toBe(src);
+  });
+
+  it('a script with no title page gets a generated one that is not imported back', async () => {
+    const src = `INT. A - DAY
+
+Body.
+`;
+    const xml = await exportFdx(src, 'Untitled');
+    expect(wellFormed(xml).querySelectorAll('TitlePage > Content > Paragraph')).toHaveLength(1);
+    expect(importToContent(xml, 'n.fdx').content).toBe(src);
+  });
+
+  it('reads the title page of a file that Final Draft wrote (no labels): title, credit, author, contact', () => {
+    const para = (c: boolean, t: string) => `<Paragraph Alignment="${c ? 'Center' : 'Left'}"><Text>${t}</Text></Paragraph>`;
+    const xml = `<?xml version="1.0"?><FinalDraft><Content><Paragraph Type="Scene Heading"><Text>INT. A - DAY</Text></Paragraph></Content>
+<TitlePage><Content>${para(true, 'BIG FILM')}${para(true, 'Written by')}${para(true, 'Ann')}${para(false, 'ann@x.io')}</Content></TitlePage></FinalDraft>`;
+    expect(importToContent(xml, 'fd.fdx').content).toBe('Title: BIG FILM\nCredit: Written by\nAuthor: Ann\nContact: ann@x.io\n\nINT. A - DAY\n');
+  });
+
+  it('sections and synopses are General paragraphs that keep their marker and come back exactly', async () => {
+    const src = `# ACT ONE
+
+= Brick arrives.
+
+INT. A - DAY
+
+Body.
+`;
+    const xml = await exportFdx(src, 'T');
+    const types = [...wellFormed(xml).querySelectorAll('FinalDraft > Content > Paragraph')].map((p) => p.getAttribute('Type'));
+    expect(types.slice(0, 2)).toEqual(['General', 'General']);
+    expect(signature(importToContent(xml, 's.fdx').content)).toEqual(signature(src));
+  });
+
+  it('every case exports well-formed XML and leaks no dual or centered marker', async () => {
+    for (const c of CASES) {
+      const xml = await exportFdx(c.fountain, 'A & B <c>');
+      const texts = [...wellFormed(xml).querySelectorAll('Text')].map((t) => t.textContent ?? '');
+      expect(texts.some((t) => t.includes('^') || /^> THE END <$/.test(t))).toBe(false);
+    }
   });
 });

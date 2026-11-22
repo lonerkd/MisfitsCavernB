@@ -85,8 +85,9 @@ export function useScriptExport({ currentScript, content, titlePage, toast, onDo
       exportScriptAsText({ ...currentScript, content }, format as 'txt' | 'fountain');
       toast(`Exported as .${format}`, 'success');
     } else if (format === 'fdx') {
-      exportScriptAsFdx({ ...currentScript, content });
-      toast('Exported as .fdx (Final Draft)', 'success');
+      exportScriptAsFdx({ ...currentScript, content })
+        .then(() => toast('Exported as .fdx (Final Draft)', 'success'))
+        .catch(() => toast('Could not make the .fdx — check your connection and try again.', 'error'));
     } else if (format === 'pdf') {
       toast('Generating PDF...', 'info');
       exportScriptAsPdf({ ...currentScript, content }, titlePage).catch(() => toast('Could not make the PDF — check your connection and try again.', 'error'));
