@@ -61,7 +61,7 @@ export function MediaFilters({ f }: { f: ReturnType<typeof useMediaFilters> }) {
         <label className={cx(s.row, s.search)} style={{ gap: 6 }}>
           <Search size={13} className={s.dim} aria-hidden />
           <span className={s.srOnly}>Search the library</span>
-          <input className={s.input} type="search" placeholder="Search titles, boards, notes" value={f.query} onChange={(e) => f.setQuery(e.target.value)} />
+          <input className={s.input} type="search" placeholder="Search library" aria-label="Search titles, boards and notes" value={f.query} onChange={(e) => f.setQuery(e.target.value)} />
         </label>
       </div>
       {f.archivedCount > 0 && (
