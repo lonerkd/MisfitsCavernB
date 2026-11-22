@@ -329,13 +329,19 @@ filters in compare).
 **Built**: the character bible (description, backstory, motivation, arc,
 notes — `script_characters`, `script_metadata.character_bible`), a
 look-board per character, casting with each character's scene footprint,
-dialogue and scene counts (editor › Stats).
-**To add**: richer cards (goals, fears, flaws), an arc timeline, a
-relationship map, voice samples taken from their lines, a backstory
-timeline, appearances per scene, comparing two characters, templates
-(protagonist, antagonist, mentor), consistency warnings (a name spelled two
-ways, a dead character speaking), a character bible PDF, wardrobe from the
-breakdown's wardrobe elements.
+dialogue and scene counts (editor › Stats). **Built 2026-11-22 (slices 1 and 3, no migration):** consistency warnings
+(`lib/scriptos/character-checks.ts`: a name spelled two ways, speaks before
+introduction, speaks after a death beat, one line only, introduced but never
+speaks; each with a reason and a jump; dismissals device-local), who talks to
+whom (`lib/scriptos/relationships.ts`; list and SVG diagram in Studio ›
+Story), and the character bible as a PDF/CSV through the print kit. Spec
+`e2e/character-insights.spec.ts`. Details in `scriptos-engine.md`.
+**To add**: slice 2 (richer cards: goals, fears, flaws, templates; an arc
+timeline; needs a migration: `script_characters` fields and `character_arcs`),
+comparing two characters, voice samples (with 4.14), wardrobe from the
+breakdown's wardrobe elements, named relationships beside the derived ones,
+the warnings in the editor's Stats panel and per-card, and a shared (project)
+dismissal if co-writers should see one person's "on purpose".
 
 ### 4.9 Script formats, import and export
 **Built**: import PDF, FDX, Fountain, text; export PDF (title page,

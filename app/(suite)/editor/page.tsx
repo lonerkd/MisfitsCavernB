@@ -80,6 +80,7 @@ import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
+const CharacterWarnings = dynamic(() => import('@/components/editor/CharacterWarnings').then((m) => m.CharacterWarnings), { ssr: false });
 const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
@@ -902,7 +903,8 @@ export default function EditorPage() {
     return () => clearTimeout(t);
   }, [currentScript?.id, currentSceneIdx, sceneIds]);
   const jumpRef = useRef(jumpToScene);
-  useLayoutEffect(() => { jumpRef.current = jumpToScene; });
+  const jumpLineRef = useRef(jumpToLine);
+  useLayoutEffect(() => { jumpRef.current = jumpToScene; jumpLineRef.current = jumpToLine; });
 
   // A cut note to open once its line is placed (?note=, or from the Studio pane).
   const [pendingNote, setPendingNote] = useState<string | null>(() => (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('note') : null));
@@ -934,6 +936,15 @@ export default function EditorPage() {
     sceneParam.current = null;
     jumpRef.current(idx);
   }, [currentScript?.id, sceneIds]);
+
+  // `?line=N` (a character warning in the Studio): put the caret on that line once the script is read.
+  const lineParam = useRef<number | null>(typeof window !== 'undefined' && /^\d+$/.test(new URLSearchParams(window.location.search).get('line') ?? '') ? Number(new URLSearchParams(window.location.search).get('line')) : null);
+  useEffect(() => {
+    const want = lineParam.current;
+    if (want === null || !currentScript?.id || lines.length === 0) return;
+    lineParam.current = null;
+    jumpLineRef.current(Math.min(want, lines.length - 1), false);
+  }, [currentScript?.id, lines.length]);
 
   // Cut notes (Studio › Post) pinned to lines, shown in the margin.
   const lineCutNotes = useLineCutNotes(currentScript?.project_id ?? null);
@@ -1428,6 +1439,10 @@ export default function EditorPage() {
                   })}
                 </div>
               )}
+              <CharacterWarnings
+                lines={lines} scenes={parsedScenes} rejectedNames={corrections.rows.filter((r) => r.kind === 'not_character').map((r) => r.name)}
+                storageKey={currentScript?.id ?? ''} onJump={(line) => { setShowCharBible(false); jumpToLine(line); }}
+              />
               <div style={{ marginTop: 16 }}>
                 <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)', margin: '0 0 8px' }}>Relationships</h3>
                 <RelationshipMap relationships={relationships} onChange={setRelationships} />
