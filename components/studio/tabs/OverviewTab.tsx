@@ -36,7 +36,7 @@ export function OverviewTab({ onOpen, onNavigate }: { onOpen: (tab: TabId) => vo
     return () => { alive = false; void supabase.removeChannel(channel); };
   }, [project.id]);
 
-  const budget = (project.budget_items ?? []).reduce((sum, b) => sum + Number(b.amount || 0), 0);
+  const budget = (project.budget_items ?? []).reduce((sum, b) => sum + Number(b.amount || 0) + Number(b.fringe_amount || 0), 0);
   const linkedScenes = new Set(links.rows.map((l) => l.scene_id)).size;
   const shared = media.rows.filter((m) => m.shared).length;
   const crew = project.crew?.length ?? 0;
