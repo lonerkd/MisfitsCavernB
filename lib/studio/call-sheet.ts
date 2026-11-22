@@ -7,7 +7,10 @@ import type { Json } from '@/lib/supabase/database.types';
 type SheetFields = {
   shoot_date: string | null; general_call: string | null; shooting_call: string | null; estimated_wrap: string | null;
   location_address: string | null; weather: string | null; notes: string | null;
+  /** Emergency details: absent on a sheet issued before they existed, which reads as empty. */
+  hospital_name?: string | null; hospital_address?: string | null; hospital_phone?: string | null; police_phone?: string | null; medic?: string | null;
 };
+type SheetInput = SheetFields;
 type CallFields = { crew_user_id: string | null; character_id?: string | null; character_name: string | null; call_time: string | null; remarks: string | null };
 
 export interface CallEntry { call_time: string | null; remarks: string | null }
@@ -18,9 +21,11 @@ export interface CallSheetSnapshot extends SheetFields {
   cast_by_id?: Record<string, CallEntry & { name: string | null }>;
 }
 
-const FIELDS: (keyof SheetFields)[] = ['shoot_date', 'general_call', 'shooting_call', 'estimated_wrap', 'location_address', 'weather', 'notes'];
+const FIELDS: (keyof SheetFields)[] = ['shoot_date', 'general_call', 'shooting_call', 'estimated_wrap', 'location_address', 'weather', 'notes', 'hospital_name', 'hospital_address', 'hospital_phone', 'police_phone', 'medic'];
 
-export function snapshotOf(sheet: SheetFields, calls: CallFields[]): CallSheetSnapshot {
+export const EMERGENCY_FIELDS = ['hospital_name', 'hospital_address', 'hospital_phone', 'police_phone', 'medic'] as const;
+
+export function snapshotOf(sheet: SheetInput, calls: CallFields[]): CallSheetSnapshot {
   const out = { calls: {}, cast_calls: {}, cast_by_id: {} } as CallSheetSnapshot;
   for (const k of FIELDS) out[k] = sheet[k] ?? null;
   for (const c of calls) {
@@ -74,8 +79,9 @@ export function changesBetween(prev: CallSheetSnapshot, next: CallSheetSnapshot)
   const labels: Record<keyof SheetFields, string> = {
     shoot_date: 'date', general_call: 'general call', shooting_call: 'shooting call', estimated_wrap: 'wrap',
     location_address: 'location', weather: 'weather', notes: 'notes',
+    hospital_name: 'emergency details', hospital_address: 'emergency details', hospital_phone: 'emergency details', police_phone: 'emergency details', medic: 'emergency details',
   };
-  const out = FIELDS.filter((k) => (prev[k] ?? null) !== (next[k] ?? null)).map((k) => labels[k]);
+  const out = Array.from(new Set(FIELDS.filter((k) => (prev[k] ?? null) !== (next[k] ?? null)).map((k) => labels[k])));
   const moved = (a: Record<string, CallEntry>, b: Record<string, CallEntry>) =>
     Array.from(new Set([...Object.keys(a), ...Object.keys(b)]))
       .filter((k) => a[k]?.call_time !== b[k]?.call_time || a[k]?.remarks !== b[k]?.remarks).length;
@@ -89,7 +95,7 @@ export type IssueState =
   | { status: 'issued'; version: number }
   | { status: 'changed'; version: number; changes: string[] };
 
-export function issueState(sheet: (SheetFields & { version: number; issued: Json | null }) | undefined, calls: CallFields[]): IssueState {
+export function issueState(sheet: (SheetInput & { version: number; issued: Json | null }) | undefined, calls: CallFields[]): IssueState {
   if (!sheet || !sheet.version) return { status: 'draft' };
   const issued = toSnapshot(sheet.issued);
   const now = snapshotOf(sheet, calls);

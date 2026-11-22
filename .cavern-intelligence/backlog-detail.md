@@ -366,7 +366,7 @@ TV; custom element styles; headers/footers with dynamic content.
 **Built**: tagging (with suggestions from past projects), categories and
 rates, per-scene sheets, page eighths, scene duration, Day/Night and
 INT/EXT, stripboard with auto-schedule and company moves, Day out of days,
-call sheets, readiness, printable sheets, push to budget.
+call sheets, readiness, printable sheets, push to budget. **Built 2026-11-22:** emergency details on the call sheet (nearest hospital with address and phone, police, set medic; a new sheet copies the latest sheet's) in the issued snapshot, the change check, the crew's page and the print; and a "Text it" / "Copy" action per person (an `sms:` link, no provider). **Needs the owner:** an automatic nearest-hospital lookup (a places service) and sending call sheets by SMS from the server (an SMS provider) both cost money and are not built (parity gap 2).
 **To add**: suggested props, vehicles, wardrobe, VFX/SFX, stunts and animals
 from action lines (to accept — never tagged automatically); a one-liner;
 location and props reports; proper PDF breakdown reports; export to Movie

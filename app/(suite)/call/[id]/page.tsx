@@ -227,6 +227,26 @@ export default function CallSheetPage() {
             </div>
           )}
         </section>
+        {(snap.hospital_name || snap.hospital_address || snap.hospital_phone || snap.police_phone || snap.medic) && (
+          <section aria-labelledby="emergency">
+            <h2 id="emergency" className={c.h2}>Emergency</h2>
+            <section className={c.grid} aria-label="Emergency details">
+              {[
+                ['Nearest hospital', [snap.hospital_name, snap.hospital_address].filter(Boolean).join(', ')],
+                ['Hospital phone', snap.hospital_phone],
+                ['Police', snap.police_phone],
+                ['Set medic', snap.medic],
+              ].filter(([, v]) => v).map(([label, v]) => (
+                <div key={label as string} className={c.fact}>
+                  <span className={c.factLabel}>{label}</span>
+                  <span className={c.factValue}>
+                    {label === 'Hospital phone' || label === 'Police' ? <a className={c.map} href={`tel:${(v as string).replace(/[^\d+]/g, '')}`}>{v}</a> : v}
+                  </span>
+                </div>
+              ))}
+            </section>
+          </section>
+        )}
         {snap.notes && <section aria-labelledby="notes"><h2 id="notes" className={c.h2}>Notes</h2><p className={c.notes}>{snap.notes}</p></section>}
 
         <section aria-labelledby="scenes">

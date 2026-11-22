@@ -8,7 +8,7 @@ import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
 import { placeResolver } from '@/lib/film/places';
 import {
-  issueState, locationKey, studio, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
+  EMERGENCY_FIELDS, callTextBody, issueState, locationKey, smsHref, studio, toSnapshot, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
@@ -65,6 +65,13 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   const placeOf = useMemo(() => placeResolver(locations.rows), [locations.rows]);
   const addressOf = useMemo(() => new Map(locations.rows.filter((l) => l.address).map((l) => [locationKey(l.name), l.address as string])), [locations.rows]);
   const [openDay, setOpenDay] = useState<number | null>(null);
+  // The emergency details a new sheet starts with: the production types them once, and a new day copies the latest sheet's
+  // (the sheet at the same address first, since the hospital belongs to the place).
+  const safetyDefaults = (address: string | null | undefined): CallSheetPatch => {
+    const filled = sheets.rows.filter((x) => EMERGENCY_FIELDS.some((k) => x[k])).sort((a, b) => b.shoot_day - a.shoot_day);
+    const from = filled.find((x) => address && x.location_address === address) ?? filled[0];
+    return from ? Object.fromEntries(EMERGENCY_FIELDS.filter((k) => from[k]).map((k) => [k, from[k]])) as CallSheetPatch : {};
+  };
   const days = useMemo(() => Array.from(new Set(scenes.map((sc) => sc.shoot_day ?? 1))).sort((a, b) => a - b), [scenes]);
   const sheetFor = (day: number) => sheets.rows.find((x) => x.shoot_day === day);
   // Who's away on a dated day — seen by those who plan the production.
@@ -97,6 +104,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       location: sheet?.location_address ?? null, weather: sheet?.weather ?? null, light: lightLine(film.get(day)?.light) ?? '',
       planNotes: [...(film.get(day)?.notes ?? []).filter((n) => n.kind !== 'no-date' && n.kind !== 'no-place').map((n) => lightNoteText(n)), ...looksFor(day).map((l) => `Look change: ${l}`)],
       notes: sheet?.notes ?? null,
+      emergency: sheet ? { hospitalName: sheet.hospital_name, hospitalAddress: sheet.hospital_address, hospitalPhone: sheet.hospital_phone, policePhone: sheet.police_phone, medic: sheet.medic } : undefined,
       scenes: d.dayScenes.map((sc) => ({ number: sc.scene_number, heading: sc.heading ?? sc.title ?? '' })),
       pages: d.pages, locations: d.locations,
       cast: d.cast.map((name) => { const c = callOf({ character_name: name }); return { name, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
@@ -148,6 +156,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
                   calls={dayCalls}
                   onSheet={(row) => sheets.upsertLocal(row)}
                   onCall={(row, removedId) => { if (row) calls.upsertLocal(row); else if (removedId) calls.removeLocal(removedId); }}
+                  defaults={safetyDefaults}
                   onPrint={() => print(day)}
                   onPrintSides={() => printSides(day)}
                   onClose={() => setOpenDay(null)}
@@ -253,7 +262,9 @@ const STRIP_COLOR: Record<StripKind, string> = {
   'int-day': 'var(--strip-int-day)', 'ext-day': 'var(--strip-ext-day)', 'int-night': 'var(--strip-int-night)', 'ext-night': 'var(--strip-ext-night)',
 };
 
-function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onPrintSides, onClose }: {
+function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state, acks, addresses, film, onIssued, onSheet, onCall, onPrint, onPrintSides, onClose }: {
+  /** The emergency details a brand-new sheet copies (from the latest sheet), given the address it starts with. */
+  defaults: (address: string | null | undefined) => CallSheetPatch;
   /** The day as the film graph has it: its light and what in the plan fights it. */
   film: FilmDay | undefined;
   /** Look changes the day touches (Continuity), worded for the sheet. */
@@ -268,7 +279,9 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
   const { toast } = useToast();
 
   const saveSheet = async (patch: CallSheetPatch): Promise<CallSheet | null> => {
-    try { const row = await studio.saveCallSheet(project.id, day, patch); onSheet(row); return row; }
+    // The first save creates the sheet: it starts with the production's emergency details, unless this save sets them.
+    const first = sheet ? patch : { ...defaults(patch.location_address), ...patch };
+    try { const row = await studio.saveCallSheet(project.id, day, first); onSheet(row); return row; }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not save the call sheet', 'error'); return null; }
   };
 
@@ -311,6 +324,23 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
     );
   };
 
+  // "Text it": the person's call as it was issued, with the link to the crew's call page, in the phone's own messaging app.
+  const issuedSnap = sheet?.version ? toSnapshot(sheet.issued) : null;
+  const textBody = (target: CallTarget, as: string | null) => {
+    if (!sheet || !issuedSnap) return null;
+    const entry = 'crew_user_id' in target ? issuedSnap.calls[target.crew_user_id] : issuedSnap.cast_calls[target.character_name];
+    return callTextBody({
+      project: project.title, day,
+      date: issuedSnap.shoot_date ? new Date(issuedSnap.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : null,
+      call: hhmm(entry?.call_time) || hhmm(issuedSnap.general_call), as: entry?.call_time ? as : null, location: issuedSnap.location_address,
+      url: `${window.location.origin}/call/${sheet.id}`,
+    });
+  };
+  const copyText = async (body: string) => {
+    try { await navigator.clipboard.writeText(body); toast('Message copied', 'success'); }
+    catch { toast('Could not copy the message', 'error'); }
+  };
+
   const callRow = (key: string, target: CallTarget, name: string, role?: string) => {
     const x = calls.find((y) => ('crew_user_id' in target ? y.crew_user_id === target.crew_user_id : y.character_name === target.character_name));
     const time = hhmm(x?.call_time);
@@ -326,6 +356,16 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
           placeholder="Remarks" aria-label={`Remarks for ${name}`} defaultValue={remarks} key={`r:${x?.id}:${remarks}`} maxLength={1000}
           onBlur={(e) => { const v = e.target.value.trim(); if (v !== remarks) void saveCall(target, { call_time: time || null, remarks: v || null }); }}
         />
+        {(() => {
+          const body = textBody(target, 'character_name' in target ? target.character_name : null);
+          if (!body) return null;
+          return (
+            <span className={c.textIt}>
+              <a href={smsHref(body)} aria-label={`Text ${name} their call`} className={c.ghost}>Text it</a>
+              <button type="button" className={c.ghost} aria-label={`Copy the message for ${name}`} onClick={() => void copyText(body)}>Copy</button>
+            </span>
+          );
+        })()}
       </div>
     );
   };
@@ -382,6 +422,16 @@ function DayEditor({ day, looksToday, sheet, facts, crew, calls, state, acks, ad
           </div>
         ))}
         {textField('weather', 'Weather')}
+        <PaperHead>Emergency</PaperHead>
+        <div className={c.pair}>
+          {textField('hospital_name', 'Nearest hospital')}
+          {textField('hospital_phone', 'Hospital phone', 'tel')}
+        </div>
+        {textField('hospital_address', 'Hospital address')}
+        <div className={c.pair}>
+          {textField('police_phone', 'Police')}
+          {textField('medic', 'Set medic')}
+        </div>
         {textField('notes', 'Notes', 'text', true, 'Parking, safety, catering')}
 
         <PaperHead aside={facts.pages ? `${facts.pages} pg` : undefined}>Scenes</PaperHead>
