@@ -368,7 +368,7 @@ location and props reports; proper PDF breakdown reports; export to Movie
 Magic Scheduling and Gorilla.
 
 ### 4.11 World building and locations
-**Unfinished attempt (2026-11-22):** a stopped agent left partial, never-run, unreviewed work on the branch `claude/world-building-wip` (`lib/studio/world.ts` and test, `WorldInsights.tsx`, `world-print.ts`, a Locations view change, `e2e/world-locations.spec.ts`): where each location appears, continuity checks, a world bible print. Resume or redo; it was not measured for false positives and must not be merged as is.
+**Resumed 2026-11-22 (PR 718):** the WIP is finished: appearances per place with a jump, unlisted places, the cross-place checks and a world bible print, with `e2e/world-locations.spec.ts` passing against the local stack. **For the owner (to look at by eye, 2026-11-22):** the Locations screen on a desktop and on a phone (appearances, the checks, the world bible PDF).
 **Built**: Locations (status, permit, address, contact, cost, notes; scenes
 link by name); scene references.
 **To add**: location mood boards (4.5), a map view, time period, world rules
@@ -424,6 +424,7 @@ languages, listening together live (Lounge voice exists), bookmarks and
 loops, notes during playback, comparing reads, scoring from the Soundtrack.
 
 ### 4.15 Casting
+**Candidates built 2026-11-22 (PR 719):** a shortlist per role (`casting_candidates`: name, status, reel link, note; `CandidateShortlist` on the Casting Board). **For the owner (to look at by eye):** the Casting Board with a few candidates, on a desktop and a phone. **Left:** photos on a candidate, candidates in the casting-sheet export, audition scheduling into the call-sheet machinery.
 **Built**: casting per character with its scene footprint
 (`character_castings`, Studio › Cast & crew); casting calls posted as jobs
 (accepting an applicant casts them); each character's look-board.
