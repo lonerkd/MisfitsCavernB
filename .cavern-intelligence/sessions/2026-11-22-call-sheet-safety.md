@@ -4,6 +4,8 @@ Migration `20261122000700_call_sheet_safety.sql`: five text columns on `call_she
 
 App: the Day editor has an Emergency block; a new sheet copies the latest sheet's details (the sheet at the same address first), which is the "enter it once per location" default without a new project column. The details flow through the snapshot type and diff in `lib/studio/call-sheet.ts` (old snapshots read as empty, so they compare cleanly), the crew's `/call/[id]` page (phone numbers are `tel:` links) and the print (`call-sheet-print.ts`). `lib/studio/call-sms.ts` builds the text (under 320 characters, link never cut, percent-encoded `sms:?&body=`); each person's row on an issued sheet has "Text it" (their issued call plus the call page link) and "Copy". No server send, no provider.
 
+**Budget:** `/studio` measured 392.2 kB in CI against 392 even after trimming the new UI (the emergency fields share a grid, and "Text it" copies the message on a computer instead of a second button); raised to 393, the smallest step. 
+
 **Not built, needs the owner and costs money:** an automatic nearest-hospital lookup (a places service) and sending call sheets by SMS from the server (an SMS provider). Both stay in parity gap 2.
 
 **Migration still needs applying to production and then staging** (by the main session after merge), then the drift check.
