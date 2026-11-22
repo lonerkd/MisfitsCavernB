@@ -64,7 +64,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
       fileName: budgetSpreadsheetName(project.title),
       xml: budgetSpreadsheetXml({
         project: project.title, totals: summary.totals, labourPaid: summary.labour.paid, unassigned: summary.unassigned,
-        lines: summary.lines.map((l) => ({ category: byId.get(l.id)?.category ?? l.label, description: byId.get(l.id)?.description, planned: l.planned, committed: l.committed, paid: l.paid, left: l.left, above: aboveIds.has(l.id) })),
+        lines: summary.lines.map((l) => ({ category: byId.get(l.id)?.category ?? l.label, description: byId.get(l.id)?.description, planned: l.planned, base: l.base, fringe: l.fringe, committed: l.committed, paid: l.paid, left: l.left, above: aboveIds.has(l.id) })),
         generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
       }),
     };
@@ -88,7 +88,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
             <BudgetApproval projectId={project.id} isOwner={isOwner} lines={lines} approvedAt={project.budget_approved_at} approvedTotal={project.budget_approved_total} approvedLines={project.budget_approved_lines} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
               {([
-                ['Planned', summary.totals.planned, undefined],
+                ['Planned', summary.totals.planned, summary.lines.some((l) => l.fringe) ? `Includes ${money(summary.lines.reduce((n, l) => n + l.fringe, 0))} of fringes` : undefined],
                 ['Committed', summary.totals.committed, 'Purchase orders out, not yet paid'],
                 ['Paid', summary.totals.paid, summary.labour.paid ? `Includes ${money(summary.labour.paid)} of approved labour` : undefined],
                 ['Left', summary.totals.left, undefined],
@@ -118,7 +118,7 @@ export function MoneyView({ crew }: { crew: CrewName[] }) {
                     {g.lines.map((l) => (
                       <tr key={l.id} style={{ borderTop: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
                         <td style={{ padding: 6 }}>{l.label}</td>
-                        <td style={{ padding: 6, textAlign: 'right' }}>{money(l.planned)}</td>
+                        <td style={{ padding: 6, textAlign: 'right' }} title={l.fringe ? `${money(l.base)} + ${money(l.fringe)} fringe` : undefined}>{money(l.planned)}{l.fringe ? <div className={s.hint} style={{ margin: 0, fontSize: 11 }}>{money(l.base)} + {money(l.fringe)} fringe</div> : null}</td>
                         <td style={{ padding: 6, textAlign: 'right' }}>{l.committed ? money(l.committed) : '—'}</td>
                         <td style={{ padding: 6, textAlign: 'right' }}>{l.paid ? money(l.paid) : '—'}</td>
                         <td style={{ padding: 6, textAlign: 'right', color: l.left < 0 ? 'var(--danger)' : undefined }}>{l.left < 0 ? `${money(-l.left)} over` : money(l.left)}</td>

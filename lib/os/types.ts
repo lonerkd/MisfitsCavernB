@@ -21,6 +21,7 @@ export interface BudgetItem {
   description: string;
   amount: number;
   actual_cost?: number;
+  fringe_amount?: number;
 }
 
 export interface TimelineItem {

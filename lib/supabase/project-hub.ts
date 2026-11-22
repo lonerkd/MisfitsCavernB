@@ -8,7 +8,7 @@ import type { Json, Tables } from './database.types';
 import type { ProjectSettings } from '@/lib/types/settings';
 
 export interface TaskRow { id: string; title: string; completed: boolean; assigned_to: string | null; due_date: string | null }
-export interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null }
+export interface BudgetRow { id: string; category: string; amount: number; actual_cost?: number | null; fringe_amount?: number | null }
 export interface TimelineRow { id: string; title: string; start_date: string | null; end_date: string | null }
 export interface CrewRow { id: string; user_id: string; role: string; craft: string | null; profiles?: { username: string } | null }
 export interface PortfolioRow { id: string; title: string; share_token: string }
@@ -76,7 +76,7 @@ export async function getProjectOverview(projectId: string): Promise<ProjectOver
     supabase.from('scripts').select('id').eq('project_id', projectId),
     supabase.from('project_crew').select('id, user_id, role, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
     supabase.from('project_tasks').select('completed').eq('project_id', projectId),
-    supabase.from('budget_items').select('amount').eq('project_id', projectId),
+    supabase.from('budget_items').select('amount, fringe_amount').eq('project_id', projectId),
     supabase.from('timeline_items').select('id, title, end_date, status').eq('project_id', projectId),
     supabase.from('scenes').select('est_duration').eq('project_id', projectId).is('removed_at', null),
     supabase.from('media').select('id', { count: 'exact', head: true }).eq('project_id', projectId),
@@ -96,7 +96,7 @@ export async function getProjectOverview(projectId: string): Promise<ProjectOver
     crew: (cr.data ?? []).map((c) => ({ id: c.user_id, name: c.profiles?.username || 'Crew', role: c.craft || (c.role === 'lead' ? 'Lead' : 'Crew') })),
     tasks: tasks.length,
     tasksDone: tasks.filter((t) => t.completed).length,
-    budget: (bd.data ?? []).reduce((n, x) => n + Number(x.amount || 0), 0),
+    budget: (bd.data ?? []).reduce((n, x) => n + Number(x.amount || 0) + Number(x.fringe_amount || 0), 0),
     milestones: tl.data ?? [],
     concepts: cn.count ?? 0,
     portfolio: pf.data ?? [],
@@ -122,7 +122,7 @@ export interface ProductionData {
 export async function getProductionData(projectId: string): Promise<ProductionData> {
   const [t, b, tl, c, pf, proj] = await Promise.all([
     supabase.from('project_tasks').select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at'),
-    supabase.from('budget_items').select('id,category,amount,actual_cost').eq('project_id', projectId).order('created_at'),
+    supabase.from('budget_items').select('id,category,amount,fringe_amount,actual_cost').eq('project_id', projectId).order('created_at'),
     supabase.from('timeline_items').select('id,title,start_date,end_date').eq('project_id', projectId).order('start_date', { nullsFirst: true }),
     supabase.from('project_crew').select('id,user_id,role,craft,profiles!project_crew_user_id_fkey(username)').eq('project_id', projectId),
     supabase.from('portfolio_projects').select('id,title,share_token').eq('source_project_id', projectId).order('created_at', { ascending: false }),
