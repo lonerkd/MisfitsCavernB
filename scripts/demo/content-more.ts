@@ -6,7 +6,7 @@ const pic = (id: number) => `https://picsum.photos/id/${id}/1200/800`;
 
 /** New sample people (crafts the base cast lacks). Accounts on demo.misfitscavern.invalid with no password: they cannot sign in. */
 export const MORE_PERSONAS: Persona[] = [
-  { key: 'idris', username: 'idris_vance', craft: 'Colourist', location: 'Vancouver, BC', bio: 'Colourist for shorts and docs. Grades in a dark room with a view of the harbour. Sample crew for the demo.' },
+  { key: 'idris', username: 'idris_vance', craft: 'Colorist', location: 'Vancouver, BC', bio: 'Colourist for shorts and docs. Grades in a dark room with a view of the harbour. Sample crew for the demo.' },
   { key: 'priya', username: 'priya_nair', craft: 'Composer', location: 'Victoria, BC', bio: 'Composer for picture: small string sections, a lot of silence. Sample crew for the demo.' },
   { key: 'bea', username: 'bea_lowell', craft: 'Production accountant', location: 'Calgary, AB', bio: 'Production accountant. Keeps the budget honest and the receipts in order. Sample crew for the demo.' },
   { key: 'tomas', username: 'tomas_reyes', craft: 'Script supervisor', location: 'Edmonton, AB', bio: 'Script supervisor and continuity. Remembers which hand held the cup. Sample crew for the demo.' },
@@ -57,7 +57,7 @@ The last scheduled crossing. Ferry lights on the black water. No narration. Ruth
       { who: 'sasha', craft: 'Editor', role: 'lead' },
       { who: 'mara', craft: 'Director of photography', role: 'contributor' },
       { who: 'june', craft: 'Production sound mixer', role: 'contributor' },
-      { who: 'idris', craft: 'Colourist', role: 'contributor' },
+      { who: 'idris', craft: 'Colorist', role: 'contributor' },
       { who: 'priya', craft: 'Composer', role: 'contributor' },
       { who: 'lena', craft: 'Actor', role: 'viewer' },
     ],
@@ -279,7 +279,7 @@ END CARD: Brightside Oat Drink. Shake it. Pour it. Share it.`,
           { who: 'kofi', note: 'Not quite the age on the breakdown, but I would love to sit in that kitchen with you all.', status: 'rejected', daysAgo: 3 },
         ],
       },
-      { key: 'food', title: 'Food stylist, one shoot day', role: 'Food stylist', status: 'open', rate: 350, rateType: 'fixed', description: 'Pour, spill and reset for three glasses and a carton. Own kit preferred.' },
+      { key: 'food', title: 'Food stylist, one shoot day', role: 'Other', status: 'open', rate: 350, rateType: 'fixed', description: 'Pour, spill and reset for three glasses and a carton. Own kit preferred.' },
     ],
     channels: [
       { name: 'announcements', audience: 'team', topic: 'Call sheets and changes.', messages: [
@@ -295,7 +295,7 @@ END CARD: Brightside Oat Drink. Shake it. Pour it. Share it.`,
     set: 'more', key: 'cider', owner: 'me', title: 'Northern Lights Cider — launch', format: 'Advertising', status: 'production', visibility: 'team', accent: '#8b5e3c',
     startOffset: -20, endOffset: 14, budget: 6000,
     logline: 'A launch campaign for a dry apple cider: one thirty-second spot, six cutdowns, and a bartender takeover that runs through the first winter.',
-    brief: { genre: ['drama'], tone: 'grounded', audience: 'adults', goal: ['online'], platforms: ['instagram', 'tiktok'], capture: 'cinema', locations: 'practical' },
+    brief: { genre: ['drama'], tone: 'grounded', audience: 'adults', goal: ['online'], platforms: ['social'], capture: 'cinema', locations: 'practical' },
     script: {
       title: 'Northern Lights Cider — 30 second spot, “First Pour”', text: `INT. CIDERY TASTING ROOM - NIGHT
 
@@ -409,7 +409,7 @@ END SCREEN: Subscribe for next Saturday. The parts list is in the description.`,
       { scene: 3, shots: [{ size: 'CU', movement: 'Static', lens: '50mm', desc: 'The headstock turns, Kofi smiling.', status: 'planned' }] },
     ],
     crew: [
-      { who: 'kofi', craft: 'Host', role: 'lead' },
+      { who: 'kofi', craft: 'Multi-hyphenate', role: 'lead' },
       { who: 'sasha', craft: 'Editor', role: 'contributor' },
       { who: 'theo', craft: 'Gaffer', role: 'contributor' },
       { who: 'june', craft: 'Production sound mixer', role: 'contributor' },
@@ -429,7 +429,7 @@ END SCREEN: Subscribe for next Saturday. The parts list is in the description.`,
       { kind: 'stage', title: 'Ep 2 · Picture edit', dept: 'edit', status: 'in_progress', dueOffset: 2, who: 'sasha' },
       { kind: 'stage', title: 'Ep 2 · Sound', dept: 'sound', status: 'review', dueOffset: 3, who: 'june' },
       { kind: 'deliverable', title: 'Ep 2 · Captions (.srt)', status: 'todo', dueOffset: 4 },
-      { kind: 'stage', title: 'Ep 3 · Shoot planning', dept: 'production', status: 'todo', dueOffset: 9, who: 'me' },
+      { kind: 'stage', title: 'Ep 3 · Shoot planning', dept: 'general', status: 'todo', dueOffset: 9, who: 'me' },
       { kind: 'deliverable', title: 'Ep 3 · Thumbnail', status: 'todo', dueOffset: 12 },
     ],
     campaigns: [
@@ -596,7 +596,7 @@ The vault door is warm to the touch. Behind it, the second half of the ledger.
     ],
     jobs: [
       {
-        key: 'narrative', title: 'Narrative designer: Cinder Court', role: 'Narrative designer', status: 'open', rate: 60, rateType: 'hourly',
+        key: 'narrative', title: 'Narrative designer: Cinder Court', role: 'Writer', status: 'open', rate: 60, rateType: 'hourly',
         description: 'Branching dialogue and the ledger’s record system. Twelve weeks part-time, remote with one studio visit.',
       },
       {
@@ -872,7 +872,7 @@ A freight car rolls out of the yard, empty. The women watch it go, and then they
       { title: 'Festival premiere', type: 'event', status: 'completed', start: -200 },
     ],
     portfolio: {
-      title: 'Winter Quarters', description: 'A winter in a railway boarding house, six women and one unpaid rent.', category: 'Feature', year: 2026, role: 'Writer / Director',
+      title: 'Winter Quarters', description: 'A winter in a railway boarding house, six women and one unpaid rent.', category: 'Feature', year: 2026, role: 'Director',
       blocks: [
         { type: 'cover', title: 'Winter Quarters', image: pic(190) },
         { type: 'concept', title: 'The idea', body: 'The company stopped paying. The women kept the stove lit.' },

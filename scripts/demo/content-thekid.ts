@@ -6,9 +6,9 @@ const pic = (id: number) => `https://picsum.photos/id/${id}/1200/800`;
 
 /** Sample people for this account's world. Accounts on demo.misfitscavern.invalid with no password: they cannot sign in. */
 export const THEKID_PERSONAS: Persona[] = [
-  { key: 'priya', username: 'priya_menon', craft: 'Publicist', location: 'Calgary, AB', bio: 'Publicist for independent films and a regular on the festival circuit. Sample crew for the demo.' },
-  { key: 'owen', username: 'owen_gallagher', craft: 'Motion graphics artist', location: 'Calgary, AB', bio: 'Titles, lower thirds and far too many kinetic type tests. Sample crew for the demo.' },
-  { key: 'bea', username: 'bea_kowalczyk', craft: 'Line producer', location: 'Edmonton, AB', bio: 'Keeps the budget and the day honest. Sample crew for the demo.' },
+  { key: 'priyam', username: 'priya_menon', craft: 'Press', location: 'Calgary, AB', bio: 'Publicist for independent films and a regular on the festival circuit. Sample crew for the demo.' },
+  { key: 'owen', username: 'owen_gallagher', craft: 'Motion designer', location: 'Calgary, AB', bio: 'Titles, lower thirds and far too many kinetic type tests. Sample crew for the demo.' },
+  { key: 'beak', username: 'bea_kowalczyk', craft: 'Line producer', location: 'Edmonton, AB', bio: 'Keeps the budget and the day honest. Sample crew for the demo.' },
   { key: 'tobi', username: 'tobi_adeyemi', craft: 'Sound designer', location: 'Calgary, AB', bio: 'Sound designer and podcast mixer, mostly for voices that need more room. Sample crew for the demo.' },
 ];
 
@@ -19,7 +19,7 @@ export const THEKID_PROJECTS: DemoProject[] = [
     set: 'thekid', key: 'backrow', owner: 'me', title: 'Back Row', format: 'Podcast', status: 'production', visibility: 'team', accent: '#8e44ad',
     startOffset: -21, endOffset: 60, budget: 9000,
     logline: 'A weekly film-talk podcast for people who read the credits: two hosts, one guest a week, and a rule that nobody says “it’s not that deep.”',
-    brief: { genre: ['talk'], tone: 'conversational', audience: 'adults', goal: ['online', 'portfolio'], target_runtime: 55, platforms: ['podcast', 'youtube'] },
+    brief: { genre: ['comedy'], tone: 'light', audience: 'adults', goal: ['online', 'portfolio'], target_runtime: 55, platforms: ['podcast', 'youtube'] },
     script: {
       title: 'Back Row — episodes 12 to 14', characters: [
         { name: 'HOST', description: 'Runs the show. Reads every credit, including the ones in the rolling text.', color: '#8e44ad' },
@@ -82,18 +82,18 @@ Thanks for listening. Stay for the credits.`,
     ],
     crew: [
       { who: 'tobi', craft: 'Sound designer', role: 'contributor' },
-      { who: 'bea', craft: 'Line producer', role: 'contributor' },
-      { who: 'priya', craft: 'Publicist', role: 'contributor' },
-      { who: 'owen', craft: 'Motion graphics artist', role: 'contributor' },
+      { who: 'beak', craft: 'Line producer', role: 'contributor' },
+      { who: 'priyam', craft: 'Press', role: 'contributor' },
+      { who: 'owen', craft: 'Motion designer', role: 'contributor' },
     ],
     schedule: [
       {
         day: 1, offset: -14, scenes: [5, 6], general: '13:00', shooting: '13:30', wrap: '16:00',
-        address: '212 Mason St, second floor', weather: 'Indoors, the radiator is on', issue: { note: 'Episode 12: a two-hander, no guest.' }, acks: ['tobi', 'bea'],
+        address: '212 Mason St, second floor', weather: 'Indoors, the radiator is on', issue: { note: 'Episode 12: a two-hander, no guest.' }, acks: ['tobi', 'beak'],
         calls: [
           { who: 'me', role: 'Host', time: '12:45' },
           { who: 'tobi', role: 'Sound designer', time: '12:30', remarks: 'Room tone first' },
-          { who: 'bea', role: 'Line producer', time: '12:00' },
+          { who: 'beak', role: 'Line producer', time: '12:00' },
         ],
       },
       {
@@ -108,12 +108,12 @@ Thanks for listening. Stay for the credits.`,
       {
         day: 3, offset: 0, live: true, scenes: [1, 2], general: '14:00', shooting: '14:30', wrap: '17:00',
         address: '212 Mason St, second floor', weather: 'Indoors', notes: 'Priya has the press pack. Keep the chair by the window for her.',
-        issue: { note: 'Episode 14: the studio day. Priya is our guest.' }, acks: ['tobi', 'bea'],
+        issue: { note: 'Episode 14: the studio day. Priya is our guest.' }, acks: ['tobi', 'beak'],
         calls: [
           { who: 'me', role: 'Host', time: '13:30' },
           { who: 'tobi', role: 'Sound designer', time: '13:30', remarks: 'Two mics on the guest chairs' },
-          { who: 'bea', role: 'Line producer', time: '13:45' },
-          { who: 'priya', character: 'GUEST', role: 'Publicist', time: '14:00', remarks: 'Guest. Bring the press pack.' },
+          { who: 'beak', role: 'Line producer', time: '13:45' },
+          { who: 'priyam', role: 'Publicist', time: '14:00', remarks: 'Guest. Bring the press pack.' },
           { who: 'owen', role: 'Motion graphics artist', time: '14:15', remarks: 'Lower thirds and the episode card' },
         ],
         log: [
@@ -126,13 +126,13 @@ Thanks for listening. Stay for the credits.`,
     wrapped: [3, 4, 5, 6],
     timesheets: [
       { who: 'tobi', daysAgo: 6, hours: 6, status: 'approved', rate: 35, note: 'Episode 12 cut and first mix' },
-      { who: 'bea', daysAgo: 2, hours: 4, status: 'submitted', note: 'Studio booking and the guest run-sheet' },
+      { who: 'beak', daysAgo: 2, hours: 4, status: 'submitted', note: 'Studio booking and the guest run-sheet' },
       { who: 'me', daysAgo: 7, hours: 3, status: 'approved', note: 'Show notes for episode 12' },
     ],
     tasks: [
       { title: 'Confirm the cinema sponsor for episode 15', done: false, dueOffset: 3, who: 'me' },
       { title: 'Book the guest for episode 15', done: true },
-      { title: 'Upload episode 13 show notes', done: false, dueOffset: 3, who: 'bea' },
+      { title: 'Upload episode 13 show notes', done: false, dueOffset: 3, who: 'beak' },
     ],
     timeline: [
       { title: 'Season two recording block', type: 'milestone', status: 'in-progress', start: -14, end: 14 },
@@ -156,7 +156,7 @@ Thanks for listening. Stay for the credits.`,
     ],
     jobs: [
       {
-        key: 'show-editor', title: 'Show editor — Back Row (weekly)', role: 'Podcast editor', status: 'in-progress', rate: 35, rateType: 'hourly',
+        key: 'show-editor', title: 'Show editor — Back Row (weekly)', role: 'Editor', status: 'in-progress', rate: 35, rateType: 'hourly',
         description: 'Cut each episode from the raw files: tighten, clean up, leave the laughs. About six hours a week. Remote is fine.',
         applicants: [
           { who: 'tobi', note: 'I mix every episode already. Happy to take the cut on the same files.', status: 'accepted', daysAgo: 12 },
@@ -164,15 +164,15 @@ Thanks for listening. Stay for the credits.`,
         ],
       },
       {
-        key: 'sponsor-reads', title: 'Sponsor-read writer (per episode)', role: 'Copywriter', status: 'open', rate: 250, rateType: 'fixed',
+        key: 'sponsor-reads', title: 'Sponsor-read writer (per episode)', role: 'Writer', status: 'open', rate: 250, rateType: 'fixed',
         description: 'Two 60-second reads a month that sound like the show and still sell the thing. Brief and notes from the host.',
         applicants: [
-          { who: 'priya', note: 'I can write it short, and I know what a host sounds like after a hard week.', status: 'rejected', daysAgo: 4 },
+          { who: 'priyam', note: 'I can write it short, and I know what a host sounds like after a hard week.', status: 'rejected', daysAgo: 4 },
         ],
       },
     ],
     documents: [
-      { kind: 'release', title: 'Guest release — priya_menon', status: 'done', person: 'priya' },
+      { kind: 'release', title: 'Guest release — priya_menon', status: 'done', person: 'priyam' },
       { kind: 'contract', title: 'Editor agreement — show editor', status: 'pending', person: 'tobi', notes: 'Send after episode 14 is out.' },
     ],
     post: [
@@ -195,7 +195,7 @@ Thanks for listening. Stay for the credits.`,
     channels: [
       { name: 'episodes', audience: 'team', topic: 'Recording, cuts and what goes out.', messages: [
         { who: 'me', body: 'Episode 14 records today at 14:00. Priya is in the chair by the window.', minutesAgo: 60 * 6 },
-        { who: 'bea', body: 'The studio is booked until 17:30. Please be out by 17:15, the next band has a load-in.', minutesAgo: 60 * 5 },
+        { who: 'beak', body: 'The studio is booked until 17:30. Please be out by 17:15, the next band has a load-in.', minutesAgo: 60 * 5 },
         { who: 'tobi', body: 'Episode 13 mix is in review. The breath between the two jokes is right now.', minutesAgo: 60 * 20 },
       ] },
     ],
@@ -206,7 +206,7 @@ Thanks for listening. Stay for the credits.`,
     set: 'thekid', key: 'statics', owner: 'me', title: 'Static Bloom', format: 'Music Video', status: 'pre-production', visibility: 'team', accent: '#2980b9',
     startOffset: 3, endOffset: 16, budget: 6000,
     logline: 'A music video for Vesper Lane’s “Static Bloom”: one singer, a row of dead televisions, and a drum fill that switches every screen on at once.',
-    brief: { genre: ['experimental'], tone: 'gritty', audience: 'everyone', goal: ['online', 'portfolio'], target_runtime: 4, capture: 'cinema', locations: 'mixed', style: ['handheld', 'practical'] },
+    brief: { genre: ['experimental'], tone: 'dark', audience: 'everyone', goal: ['online', 'portfolio'], target_runtime: 4, capture: 'cinema', locations: 'mixed', style: ['handheld'] },
     script: {
       title: 'Static Bloom — treatment', text: `INT. REHEARSAL ROOM - NIGHT
 
@@ -244,7 +244,7 @@ The bulb goes out. Every screen in the room comes on at once. VESPER, finally si
       { who: 'mara', craft: 'Director of photography', role: 'contributor' },
       { who: 'theo', craft: 'Gaffer', role: 'contributor' },
       { who: 'tobi', craft: 'Sound designer', role: 'contributor' },
-      { who: 'owen', craft: 'Motion graphics artist', role: 'viewer' },
+      { who: 'owen', craft: 'Motion designer', role: 'viewer' },
     ],
     castings: [{ character: 'VESPER', who: 'lena' }],
     shots: [
@@ -312,7 +312,7 @@ The bulb goes out. Every screen in the room comes on at once. VESPER, finally si
   {
     set: 'thekid', key: 'seconddraft', owner: 'me', title: 'Second Draft', format: 'Short Film', status: 'concept', visibility: 'private', accent: '#7f8c8d',
     logline: 'A ghostwriter who has written every line of a famous director’s breakup film tries to write her own ending.',
-    brief: { genre: ['drama', 'comedy'], tone: 'wry', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 12 },
+    brief: { genre: ['drama', 'comedy'], tone: 'satirical', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 12 },
     beats: [
       { title: 'The call', content: 'The director rings at midnight: the ending needs one more rewrite. Ruth says yes.', color: '#7f8c8d' },
       { title: 'Notes', content: 'Ruth reads twelve drafts of someone else’s heartbreak and finds her own in the margins.', color: '#e67e22' },
@@ -336,12 +336,12 @@ The bulb goes out. Every screen in the room comes on at once. VESPER, finally si
     set: 'thekid', key: 'openmic', owner: 'me', title: 'Open Mic', format: 'Documentary', status: 'post-production', visibility: 'link', accent: '#6d4c41',
     startOffset: -180, endOffset: 60, budget: 22000,
     logline: 'Thirty years of Tuesday nights at a laundromat-turned-comedy room, told by the regulars who kept showing up.',
-    brief: { genre: ['documentary'], tone: 'warm', audience: 'adults', goal: ['festivals', 'online'], target_runtime: 88, platforms: ['festival', 'online'] },
+    brief: { genre: ['drama'], tone: 'light', audience: 'adults', goal: ['festivals', 'online'], target_runtime: 88, platforms: ['vimeo'] },
     crew: [
       { who: 'sasha', craft: 'Editor', role: 'contributor' },
       { who: 'tobi', craft: 'Sound designer', role: 'contributor' },
-      { who: 'owen', craft: 'Motion graphics artist', role: 'contributor' },
-      { who: 'priya', craft: 'Publicist', role: 'contributor' },
+      { who: 'owen', craft: 'Motion designer', role: 'contributor' },
+      { who: 'priyam', craft: 'Press', role: 'contributor' },
     ],
     cuts: [
       { title: 'Assembly, 104 min', url: 'https://example.com/open-mic/assembly', daysAgo: 30, notes: [
@@ -404,7 +404,7 @@ The bulb goes out. Every screen in the room comes on at once. VESPER, finally si
     set: 'thekid', key: 'corner', owner: 'me', title: 'Corner Store Coffee', format: 'Commercial', status: 'completed', visibility: 'team', accent: '#a0522d',
     startOffset: -60, endOffset: -10, budget: 4500,
     logline: 'A thirty-second spot for a neighbourhood coffee counter that wanted the first cup of the morning to look like a place you already know.',
-    brief: { genre: ['commercial'], tone: 'warm', audience: 'everyone', goal: ['online'], target_runtime: 0.5, platforms: ['youtube', 'in-store'] },
+    brief: { genre: ['comedy'], tone: 'light', audience: 'everyone', goal: ['online'], target_runtime: 1, platforms: ['youtube'] },
     script: {
       title: 'Corner Store Coffee — 30 s spot', text: `INT. COFFEE COUNTER - DAWN
 
@@ -444,7 +444,7 @@ SUPER: Corner Store Coffee. Same as yesterday.`,
     crew: [
       { who: 'mara', craft: 'Director of photography', role: 'contributor' },
       { who: 'theo', craft: 'Gaffer', role: 'contributor' },
-      { who: 'owen', craft: 'Motion graphics artist', role: 'contributor' },
+      { who: 'owen', craft: 'Motion designer', role: 'contributor' },
     ],
     castings: [{ character: 'BARISTA', who: 'ines' }, { character: 'CUSTOMER', who: 'kofi' }],
     wrapped: [1, 2, 3],
@@ -487,8 +487,8 @@ SUPER: Corner Store Coffee. Same as yesterday.`,
           { who: 'mara', role: 'Director of photography', time: '05:30' },
           { who: 'theo', role: 'Gaffer', time: '05:30' },
           { who: 'owen', role: 'Motion graphics artist', time: '06:30', remarks: 'End card, shot after the last take' },
-          { character: 'BARISTA', who: 'ines', time: '06:00' },
-          { character: 'CUSTOMER', who: 'kofi', time: '06:15' },
+          { character: 'BARISTA', time: '06:00' },
+          { character: 'CUSTOMER', time: '06:15' },
         ],
       },
     ],
@@ -538,7 +538,7 @@ SUPER: Corner Store Coffee. Same as yesterday.`,
     set: 'thekid', key: 'understudy', owner: 'noor', title: 'The Understudy', format: 'Feature', status: 'production', visibility: 'team', accent: '#34495e',
     startOffset: -20, endOffset: 25, budget: 90000,
     logline: 'A stage actor who has never had a line in the spotlight gets one night to play the lead, and the theatre in the rain is the only audience she has.',
-    brief: { genre: ['drama'], tone: 'quiet', era: 'contemporary', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 96 },
+    brief: { genre: ['drama'], tone: 'grounded', era: 'contemporary', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 96 },
     script: {
       title: 'The Understudy — shooting script', text: `FADE IN:
 
@@ -595,8 +595,8 @@ Places, then.`,
           { who: 'mara', role: 'Director of photography', time: '06:30' },
           { who: 'me', role: 'Sound designer', time: '07:00', remarks: 'Radio mic check at the stage door first' },
           { who: 'june', role: 'Production sound mixer', time: '06:45' },
-          { character: 'DANA', who: 'ines', time: '07:30' },
-          { character: 'MARCUS', who: 'kofi', time: '17:00' },
+          { character: 'DANA', time: '07:30' },
+          { character: 'MARCUS', time: '17:00' },
         ],
       },
       {
@@ -606,7 +606,7 @@ Places, then.`,
         calls: [
           { who: 'me', role: 'Sound designer', time: '13:00' },
           { who: 'june', role: 'Production sound mixer', time: '13:00' },
-          { character: 'DANA', who: 'ines', time: '13:30', remarks: 'Wardrobe first' },
+          { character: 'DANA', time: '13:30', remarks: 'Wardrobe first' },
         ],
       },
     ],
@@ -651,7 +651,7 @@ Places, then.`,
     set: 'thekid', key: 'lowtide', owner: 'lena', title: 'Low Tide', format: 'Short Film', status: 'pre-production', visibility: 'team', accent: '#16a085',
     startOffset: 2, endOffset: 22, budget: 6000,
     logline: 'A woman walks out across the tidal flats each morning to the place her father used to fish, and on the last low tide she brings a second cup.',
-    brief: { genre: ['drama'], tone: 'quiet', era: 'contemporary', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 12 },
+    brief: { genre: ['drama'], tone: 'grounded', era: 'contemporary', audience: 'adults', goal: ['festivals'], structure: 'three_act', target_runtime: 12 },
     script: {
       title: 'Low Tide — shooting draft', text: `FADE IN:
 
@@ -700,7 +700,7 @@ Low water is at seven. I’ll be there.`,
         calls: [
           { who: 'me', role: 'Line producer', time: '04:45' },
           { who: 'mara', role: 'Director of photography', time: '05:00' },
-          { character: 'MAE', who: 'lena', time: '05:30' },
+          { character: 'MAE', time: '05:30' },
         ],
       },
     ],
@@ -734,7 +734,7 @@ Low water is at seven. I’ll be there.`,
       {
         key: 'pa-tide', title: 'Production assistant — one day at low water', role: 'Production assistant', status: 'open', rate: 150, rateType: 'fixed',
         description: 'Early start on the flats. Carry, count, keep the crew off the mud. Meals and credit.',
-        applicants: [{ who: 'bea', note: 'I can do an early start and I have my own boots and a 4x4.', status: 'pending', daysAgo: 1 }],
+        applicants: [{ who: 'beak', note: 'I can do an early start and I have my own boots and a 4x4.', status: 'pending', daysAgo: 1 }],
       },
     ],
     tasks: [
@@ -760,7 +760,7 @@ Low water is at seven. I’ll be there.`,
     set: 'thekid', key: 'fourwalls', owner: 'sasha', title: 'Four Walls', format: 'Web Series', status: 'post-production', visibility: 'team', accent: '#c0392b',
     startOffset: -90, endOffset: 30, budget: 15000,
     logline: 'Two neighbours in a shared building talk through the wall for six episodes, and then meet at the back gate.',
-    brief: { genre: ['comedy', 'drama'], tone: 'warm', audience: 'adults', goal: ['online'], target_runtime: 8, platforms: ['youtube', 'vertical'] },
+    brief: { genre: ['comedy', 'drama'], tone: 'light', audience: 'adults', goal: ['online'], target_runtime: 8, platforms: ['youtube', 'social'] },
     script: {
       title: 'Four Walls — episode 3', text: `EPISODE 3 — THE KNOCK
 
@@ -798,8 +798,8 @@ You knock like a man who owns a drum kit.`,
     crew: [
       { who: 'mara', craft: 'Director of photography', role: 'contributor' },
       { who: 'june', craft: 'Production sound mixer', role: 'contributor' },
-      { who: 'owen', craft: 'Motion graphics artist', role: 'contributor' },
-      { who: 'me', craft: 'Podcast host', role: 'viewer' },
+      { who: 'owen', craft: 'Motion designer', role: 'contributor' },
+      { who: 'me', craft: 'Multi-hyphenate', role: 'viewer' },
     ],
     castings: [{ character: 'RUTH', who: 'lena' }, { character: 'ARLO', who: 'kofi' }],
     wrapped: [1, 2, 3],
