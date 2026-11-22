@@ -117,7 +117,7 @@ Done: days and places (1), characters and sides (2), story time and continuity (
 **Built 2026-10-27:** the `Advertising` and `Copywriting` formats, client review links and numbered versions; script-backed deliverables (30/15/6 s spots, radio, posters, banners, headlines, social and other), project-scoped RLS and cards; the `copy`… _(full text: `backlog-detail.md`, 3.32)_
 
 ### 3.20 The classifier and the importer — what is still wrong — S (found 2026-10-11; B2, B3, B5, B6 fixed the rest)
-Still pinned as an expected-failure test: `lib/scriptos/parser-gaps.test.ts` (1). 1. _(full text: `backlog-detail.md`, 3.20)_
+No classifier gap is pinned any more (`lib/scriptos/parser-gaps.test.ts` holds regression cases only; its last `it.fails` was fixed, checked 2026-11-22). 1. _(full text: `backlog-detail.md`, 3.20)_
 
 ### 3.21 The deep brain — the script engine, rung by rung — XL (owner direction, 2026-10-12)
 A layered, deterministic, explainable reading engine: lossless Fountain first, then evidence, a document profile, a whole-document decoder, the suite's context as priors, and memory of corrections; the importers rebuilt on the same engine. _(full text: `backlog-detail.md`, 3.21)_

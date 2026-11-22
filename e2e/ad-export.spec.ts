@@ -80,4 +80,35 @@ test.describe('Ad export (local Supabase)', () => {
     await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: string[] }).__printed.join('\n'))).toContain('Big spring sale');
     } finally { await ctx.close(); }
   });
+
+  test('a past review version prints as it was sent, not as the piece reads today', async ({ browser }) => {
+    test.setTimeout(120_000);
+    const script = (await admin.from('scripts').select('id').eq('project_id', projectId).eq('title', 'Poster A').single()).data!;
+    // The database takes the snapshot when the version is proposed; send it, then change the piece.
+    const v = await admin.from('item_versions').insert({ project_id: projectId, script_id: script.id, label: 'First look' }).select('id, snapshot').single();
+    expect(v.error).toBeNull();
+    expect(v.data!.snapshot).toContain('Big spring sale');
+    expect((await admin.from('item_versions').update({ status: 'sent' }).eq('id', v.data!.id)).error).toBeNull();
+    await admin.from('scripts').update({ content: '# HEADLINE\nA changed headline\n\n# BODY\nNew body.\n' }).eq('id', script.id);
+
+    const ctx = await browser.newContext({ viewport: { width: 1600, height: 900 } });
+    const page = await ctx.newPage();
+    try {
+      await signInAs(page, { email: email, password: PASSWORD });
+      await page.goto(`/studio?project=${projectId}&tab=share`);
+      await expect(page.getByText('Campaign deliverables')).toBeVisible({ timeout: 30_000 });
+      await page.evaluate(() => {
+        const w = window as unknown as { __printed: string[] };
+        w.__printed = [];
+        new MutationObserver((records) => {
+          for (const r of records) for (const n of Array.from(r.addedNodes)) if (n instanceof HTMLIFrameElement && n.srcdoc) w.__printed.push(n.srcdoc);
+        }).observe(document.body, { childList: true });
+      });
+      await page.getByLabel('Print a past version of Poster A').selectOption(v.data!.id);
+      await expect.poll(() => page.evaluate(() => (window as unknown as { __printed: string[] }).__printed.join('\n'))).toContain('Big spring sale');
+      const printed = await page.evaluate(() => (window as unknown as { __printed: string[] }).__printed.join('\n'));
+      expect(printed).not.toContain('A changed headline');
+      expect(printed).toContain('(v1)');
+    } finally { await ctx.close(); }
+  });
 });
