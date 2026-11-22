@@ -17,6 +17,7 @@ import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
 import { ON_SET_HREF } from '@/lib/island/onset';
+import { useBackPlan } from '@/lib/island/useBackPlan';
 import { useOnSet } from '@/lib/island/useOnSet';
 import { useIslandCondition } from '@/lib/island/useIslandCondition';
 import { useActivities } from '@/lib/island/activities';
@@ -88,7 +89,7 @@ function ProjectSwitcher({ onClose, highlight = -1 }: { onClose: () => void; hig
         borderRadius: 14,
         padding: 10,
         width: 220,
-        maxHeight: 'min(60vh, 420px)',
+        maxHeight: 'min(60vh, 420px, var(--island-room, 60vh))',
         overflowY: 'auto',
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
         zIndex: 10,
@@ -209,6 +210,22 @@ export default function EcosystemTaskbar() {
     publish();
     window.addEventListener('resize', publish);
     return () => { window.removeEventListener('resize', publish); root.style.removeProperty('--taskbar-height'); };
+  }, [noDock, scale, surface]);
+
+  // The room above the island, for the menus that open upward: they scroll inside it instead of running off the top.
+  useEffect(() => {
+    const dock = dockRef.current;
+    if (noDock || !dock) return;
+    const measure = () => {
+      const top = islandRef.current?.getBoundingClientRect().top ?? 0;
+      dock.style.setProperty('--island-room', `${Math.max(120, Math.floor(top - 24))}px`);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    const el = islandRef.current;
+    const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(measure) : null;
+    if (ro && el) ro.observe(el);
+    return () => { window.removeEventListener('resize', measure); ro?.disconnect(); };
   }, [noDock, scale, surface]);
 
   const projectSettings = activeProject?.settings;
@@ -334,6 +351,7 @@ export default function EcosystemTaskbar() {
 
   // ── What it has to offer here ────────────────────────────────────────────
   const route = useMemo(() => islandRoute(pathname, !!activeProject), [pathname, activeProject]);
+  const backPlan = useBackPlan(pathname);
   const condition = useIslandCondition();
   const onSet = useOnSet();
   const hubUnread = useHubUnread();
@@ -625,7 +643,18 @@ export default function EcosystemTaskbar() {
 
           <motion.div layout="position" className={s.main}>
             {route.back && mode !== 'dot' && (
-              <Link href={route.back.href} prefetch={false} className={s.btn} aria-label={`Back to ${route.back.label}`}>
+              <Link
+                href={route.back.href}
+                prefetch={false}
+                className={s.btn}
+                aria-label={`Back to ${backPlan.kind === 'history' ? islandRoute(backPlan.path).title : route.back.label}`}
+                onClick={(e) => {
+                  // Back is where you just were; the parent link is only for when there is no earlier page in the app.
+                  if (backPlan.kind !== 'history' || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  window.history.go(-backPlan.steps);
+                }}
+              >
                 <ChevronLeft size={18} strokeWidth={1.5} aria-hidden />
               </Link>
             )}

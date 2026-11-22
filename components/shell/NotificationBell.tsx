@@ -115,7 +115,7 @@ export default function NotificationBell() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="notif-panel"
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
+            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', maxHeight: 'min(380px, var(--island-room, 70vh))',borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>

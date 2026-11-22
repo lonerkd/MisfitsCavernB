@@ -45,6 +45,13 @@ A page describes itself with `usePillStage(descriptor)` (title, fields,
 toggles, actions); a page that doesn't still gets a name and next places from
 `lib/island/routes.ts`. Size is per device (Settings › Island size). It
 overlays the page; `--taskbar-height` is its resting footprint only.
+**Back** (the chevron) returns to the page you were just on (`lib/island/back.ts`,
+unit-tested): history steps over query-only changes (a Studio tab is the same
+page), and it climbs to the logical parent only when no earlier in-app page
+exists (fresh load, another site, sign-in). Menus that open upward (projects,
+notifications, audio) are capped to the room above the island
+(`--island-room`) and scroll inside. The icon row never wraps: buttons tighten
+under 1100px and the Front page icon steps aside under 900px.
 
 ### The island on a phone (≤760px)
 

@@ -1,0 +1,11 @@
+# Session - 2026-11-22: island back, popovers, orphaned icon
+
+Three owner-reported island bugs. No migration.
+
+1. **Back** went to /projects always. Now `planBack` (`lib/island/back.ts`, `useBackPlan`) uses the Navigation API entries: it walks back past entries with the same pathname (query-only changes such as Studio tabs are not pages) to the nearest same-origin, non-`/auth` page and does `history.go(-n)`. With none (fresh load) the link keeps its href, the logical parent. Browsers without the Navigation API use the last pathname seen in the tab (one step). The label follows ("Back to Studio"). The chevron still shows only where a parent exists (not on top-level pages).
+2. **Popovers** (projects, notifications, audio) now cap to `--island-room` (island top minus 24px, measured on resize and island size change) and scroll inside.
+3. **Orphaned Front page icon**: the icon row (`.nav`) wrapped. It is now `nowrap`; under 1100px the buttons shrink to 40px, under 900px the Front page icon is hidden (Settings and Profile keep the rest).
+
+4. **Phone bar ghosting** (owner screenshot: the pill half transparent over the status bar). The code has no scroll-hide; the pill hides only for the keyboard (`usePhoneLayout().typing`: visible height short by more than 120px, with no focus test and no hysteresis, so browser-chrome resizing during scroll could flip it) and faded with an opacity transition that a browser could catch half way. Now `keyboardUp` (`lib/os/usePhone.ts`, unit-tested) hides it only with an editable focused and a keyboard-sized gap, releasing below 60px; the hidden state is slid off and `visibility: hidden` after the slide, with no opacity fade, so it is either fully shown or gone. I could not reproduce the iOS screenshot (real Safari visual-viewport behaviour), so this is a hardening, not a proven fix; it is at the foot, so the top safe area does not apply.
+
+**Verified:** typecheck, eslint on the changed files, unit tests (`lib/island`, `components/shell`), and `e2e/island-back-popovers.spec.ts` plus `e2e/island.spec.ts` on the local stack (see PR). **Not verified:** a real phone/tablet browser, Safari/Firefox without the Navigation API (fallback path is unit-tested only), the 900px hide in a browser.
