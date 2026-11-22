@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { parseScript } from './parser';
-import { exportScriptAsFdx, scriptToFdx } from './export';
+import { exportScriptAsFdx } from './export';
+import { scriptToFdx } from './fdx-export';
 
 import { importToContent } from './import';
 
@@ -23,7 +24,7 @@ async function exportFdx(content: string, title: string): Promise<string> {
   };
   URL.revokeObjectURL = () => {};
   try {
-    exportScriptAsFdx({ id: 'fdx-roundtrip', title, content, format: 'screenplay', createdAt: '', updatedAt: '' });
+    await exportScriptAsFdx({ id: 'fdx-roundtrip', title, content, format: 'screenplay', createdAt: '', updatedAt: '' });
   } finally {
     URL.createObjectURL = originalCreate;
     URL.revokeObjectURL = originalRevoke;
