@@ -8,6 +8,7 @@ import GrainOverlay from '@/components/ui/GrainOverlay';
 import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { useInPane, projectPairSearch } from '@/lib/split/pane';
+import { readPartner } from '@/lib/split/pair';
 import { Columns2 } from 'lucide-react';
 import { useScrollToHash } from '@/lib/util/scrollToHash';
 import { usePhoneLayout } from '@/lib/os/usePhone';
@@ -258,7 +259,7 @@ export default function ProjectHubPage() {
             {project.isOwner && <ViewAsSwitch projectId={id} />}
             {/* On a phone the split only stacks its two panes, which the pill and the tool header already do better. */}
             {!inPane && !phone.phone && (
-              <Link href={`/split${projectPairSearch(id, progressState.progress?.current.id ?? project.phase)}`} title="The project in one pane, the tool this phase works in beside it. Tools you open from the toolkit come up beside the project."
+              <Link href={`/split${projectPairSearch(id, progressState.progress?.current.id ?? project.phase, readPartner(id))}`} title="The project in one pane, the tool this phase works in beside it. Tools you open from the toolkit come up beside the project."
                 style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '6px 12px', borderRadius: 9999, border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-strong)', textDecoration: 'none' }}>
                 <Columns2 size={13} aria-hidden /> Two panes
               </Link>
