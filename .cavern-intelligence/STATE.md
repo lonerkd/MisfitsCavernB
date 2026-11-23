@@ -24,7 +24,7 @@
 
 ## Standing permissions (owner, 2026-11-08)
 
-Claude may merge its own pull requests once the required checks are green (a pull request the risk bot rates high, or that declares a Large change, first gets the independent review RULES 11 asks for, 2026-11-18), and may apply its own migrations to production and then staging (then the drift check), without asking each time. Still ask first for anything destructive to live data, rotating keys, changing auth settings, or a design decision the owner has not made. (The head-bound `claude-review` approval and the `main-2` ruleset date from the cheaper-model days; `claude-review` is not a required check.)
+Claude may merge its own pull requests once the required checks are green (a pull request the risk bot rates high, or that declares a Large change, first gets the review RULES 11 asks for, which Claude may do itself, owner 2026-11-23), and may apply its own migrations to production and then staging (then the drift check), without asking each time. Still ask first for anything destructive to live data, rotating keys, changing auth settings, or a design decision the owner has not made. (The head-bound `claude-review` approval and the `main-2` ruleset date from the cheaper-model days; `claude-review` is not a required check.)
 
 ## Direction (owner, 2026-10-10)
 
