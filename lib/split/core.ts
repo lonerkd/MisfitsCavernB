@@ -159,6 +159,6 @@ export function phasePartner(phase: string): string {
 }
 
 /** A project's page in the first pane and the tool its phase works in beside it. */
-export function projectPairSearch(projectId: string, phase: string): string {
-  return layoutToSearch({ ...DEFAULT_LAYOUT, a: `/projects/${projectId}`, b: phasePartner(phase), ratio: 0.5, linked: true });
+export function projectPairSearch(projectId: string, phase: string, remembered?: string | null): string {
+  return layoutToSearch({ ...DEFAULT_LAYOUT, a: `/projects/${projectId}`, b: remembered || phasePartner(phase), ratio: 0.5, linked: true });
 }
