@@ -233,6 +233,7 @@ describe('the project in two panes', () => {
     const l = layoutFromSearch(projectPairSearch('p1', 'post-production'));
     expect(l.a).toBe('/projects/p1');
     expect(l.b).toBe('/studio?tab=post');
+    expect(layoutFromSearch(projectPairSearch('p1', 'post-production', '/studio?tab=library')).b).toBe('/studio?tab=library');
   });
   it('accepts an open-beside message only for a safe path', () => {
     const m = (href: string) => ({ [SPLIT_KEY]: true, type: 'open-beside', href });

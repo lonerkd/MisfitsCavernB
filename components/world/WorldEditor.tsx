@@ -2,7 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { emptyWorld, addLocation, type World, type WorldLocation, type WorldLore, type WorldRule, type WorldTimelineEvent } from '@/lib/world/world';
 import { getWorld, saveWorld } from '@/lib/supabase/world';
-import { exportWorldBible } from '@/lib/world/export';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { worldNotesDoc } from '@/lib/world/print';
 
 const MAP_W = 720;
 const MAP_H = 360;
@@ -11,7 +12,7 @@ const project = (lat: number, lng: number) => ({
   y: ((90 - lat) / 180) * MAP_H,
 });
 
-export function WorldEditor({ projectId }: { projectId: string }) {
+export function WorldEditor({ projectId, projectTitle, accent = null, logo = null }: { projectId: string; projectTitle?: string; accent?: string | null; logo?: string | null }) {
   const [world, setWorld] = useState<World>(() => emptyWorld(projectId));
   const [name, setName] = useState('');
   const [loreTitle, setLoreTitle] = useState('');
@@ -40,7 +41,7 @@ export function WorldEditor({ projectId }: { projectId: string }) {
     <div style={{ display: 'grid', gap: 12 }}>
       <div style={{ display: 'flex', gap: 8 }}>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Location name" style={{ flex: 1, background: 'var(--bg-2)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: 8 }} />
-        <button type="button" onClick={() => exportWorldBible(world)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'none', color: 'var(--fg)', cursor: 'pointer' }}>Export</button>
+        <PrintButton label="the world notes" build={() => worldNotesDoc({ world, project: projectTitle, accent, logo, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })} />
         <button type="button" onClick={() => { if (!name.trim()) return; setWorld((w) => addLocation(w, { id: crypto.randomUUID(), name: name.trim(), description: '', mood: '' })); setName(''); }} style={{ padding: '8px 12px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', cursor: 'pointer' }}>Add</button>
       </div>
 
