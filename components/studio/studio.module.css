@@ -358,7 +358,12 @@
   .search { max-width: none; flex: 1 1 100%; }
   .search > .input { flex: 1; min-width: 0; }
 }
+/* A short title and one button stay on a single row, also on a phone. */
+.modalHead.modalHeadCompact { flex-wrap: nowrap; align-items: center; padding: 10px 16px; }
+.modalHead.modalHeadCompact > .modalTitle { flex: 1 1 auto; font-size: 1.15rem; }
+.modalHead.modalHeadCompact > .actions { flex: 0 0 auto; width: auto; }
 .modalBody { padding: 20px; }
+@media (max-width: 760px) { .modalBody { padding: 16px; } }
 .detail { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(260px, 1fr); gap: 24px; }
 @media (max-width: 820px) { .detail { grid-template-columns: 1fr; } }
 .viewer {

@@ -364,6 +364,7 @@ reads `12A` but `sync_script_scenes` stores the position in the integer
 TV; custom element styles; headers/footers with dynamic content.
 
 ### 4.10 Breakdown and scheduling
+**Built 2026-11-23:** the Breakdown tab leads with readiness (phase, milestones, untagged scenes, elements needed or unpriced, cost against budget; `lib/studio/breakdown-focus.ts`) and the Categories & rates sheet fits a phone. **Left:** look at both in a browser and run `e2e/breakdown-categories-phone.spec.ts` against a local stack.
 **Built 2026-11-22:** named schedule versions with compare and restore (`schedule_versions`; a restore saves the live board first). **Left:** let a crew member holding `schedule.write` save and restore (the UI keys on the owner), compare two versions with each other, a label per restore in the activity feed (S each).
 **Built**: tagging (with suggestions from past projects), categories and
 rates, per-scene sheets, page eighths, scene duration, Day/Night and
