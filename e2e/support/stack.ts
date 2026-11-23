@@ -108,6 +108,38 @@ export class Stack {
     return user;
   }
 
+  /** A QA-marked email and username for an account the spec makes through the real sign-up form (nothing exists to delete until the form has run). */
+  qaIdentity(label = 'signup'): { email: string; username: string } {
+    const l = label.replace(/[^a-z0-9]/gi, '').toLowerCase() || 'signup';
+    const n = this.n++;
+    return { email: `${QA_PREFIX}.${l}.${this.tag}.${n}@${QA_DOMAIN}`, username: `${QA_PREFIX}${l}${this.tag}${n}` };
+  }
+
+  /**
+   * Take over an account made outside `createUser` (through the sign-up form): flag it sample on staging and
+   * delete it at teardown. Call it right after the form has created the account; the account is looked up by
+   * email again at teardown, so a spec that fails halfway still cleans up.
+   */
+  async adoptSignup(email: string): Promise<void> {
+    const find = async (): Promise<string | null> => {
+      for (let page = 1; page <= 20; page++) {
+        const { data, error } = await this.admin.auth.admin.listUsers({ page, perPage: 200 });
+        if (error) throw new Error(`adoptSignup failed: ${error.message}`);
+        const hit = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
+        if (hit) return hit.id;
+        if (data.users.length < 200) return null;
+      }
+      return null;
+    };
+    this.onCleanup(`signup ${email}`, async () => {
+      const id = await find();
+      if (!id) return;
+      const { error } = await this.admin.auth.admin.deleteUser(id);
+      if (error) throw new Error(error.message);
+    });
+    if (this.staging) { const id = await find(); if (id) await this.markSample(id); }
+  }
+
   /** Flag a profile as sample (service role only: the guard trigger refuses anyone signed in). */
   async markSample(userId: string): Promise<void> {
     for (let i = 0; i < 10; i++) {
