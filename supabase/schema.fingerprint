@@ -828,6 +828,13 @@ column scenes.story_time text
 column scenes.time_of_day text default 'DAY'::text
 column scenes.title text not null
 column scenes.updated_at timestamp with time zone default now() not null
+column schedule_versions.auto boolean default false not null
+column schedule_versions.created_at timestamp with time zone default now() not null
+column schedule_versions.created_by uuid default auth.uid()
+column schedule_versions.id uuid default gen_random_uuid() not null
+column schedule_versions.label text not null
+column schedule_versions.project_id uuid not null
+column schedule_versions.snapshot jsonb not null
 column script_annotations.created_at timestamp with time zone default now()
 column script_annotations.created_by uuid default auth.uid()
 column script_annotations.id uuid default uuid_generate_v4() not null
@@ -1599,6 +1606,11 @@ constraint scenes.scenes_shoot_day_fkey FOREIGN KEY (shoot_day_id, project_id) R
 constraint scenes.scenes_story_day_check CHECK (((story_day IS NULL) OR (story_day >= 1)))
 constraint scenes.scenes_story_time_check CHECK (((story_time IS NULL) OR (char_length(story_time) <= 60)))
 constraint scenes.scenes_time_of_day_check CHECK (((char_length(time_of_day) >= 1) AND (char_length(time_of_day) <= 40)))
+constraint schedule_versions.schedule_versions_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint schedule_versions.schedule_versions_label_len CHECK (((char_length(btrim(label)) >= 1) AND (char_length(btrim(label)) <= 80)))
+constraint schedule_versions.schedule_versions_pkey PRIMARY KEY (id)
+constraint schedule_versions.schedule_versions_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+constraint schedule_versions.schedule_versions_snapshot_check CHECK (((jsonb_typeof(snapshot) = 'object'::text) AND (jsonb_typeof((snapshot -> 'scenes'::text)) = 'array'::text) AND (jsonb_typeof((snapshot -> 'days'::text)) = 'array'::text) AND (jsonb_array_length((snapshot -> 'scenes'::text)) <= 2000) AND (jsonb_array_length((snapshot -> 'days'::text)) <= 400) AND (pg_column_size(snapshot) <= 400000)))
 constraint script_annotations.script_annotations_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint script_annotations.script_annotations_pkey PRIMARY KEY (id)
 constraint script_annotations.script_annotations_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
@@ -1813,6 +1825,7 @@ function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82
 function internal.reports_notify_outcome() body=dbab3b8ce84f1c257409bd3f704f6c41
 function internal.review_links_check() body=d2baf09f6943b7bb93c0d71868d648b3
 function internal.scenes_link_place_and_day() body=13a789c7c76cc0876cc528998c76daa2
+function internal.schedule_versions_immutable() body=8e8394bf3690e02561b452d48fd560b9
 function internal.scripts_share_guard() body=4844904f6f907f6451ef0a5b80e1bc3d
 function internal.seed_breakdown_categories(p_project uuid) body=a93a659529362bd028ddeb7291d6aeb3
 function internal.shoot_days_date_to_call_sheet() body=e4538e1cc3c6d9d0b9db85fb0895308e
@@ -1999,6 +2012,7 @@ grant function internal.reading_memory_from_correction() postgres
 grant function internal.reports_notify_outcome() postgres
 grant function internal.review_links_check() postgres
 grant function internal.scenes_link_place_and_day() postgres
+grant function internal.schedule_versions_immutable() postgres
 grant function internal.scripts_share_guard() postgres
 grant function internal.seed_breakdown_categories(p_project uuid) postgres,service_role
 grant function internal.shoot_days_date_to_call_sheet() postgres
@@ -2329,6 +2343,8 @@ index CREATE INDEX scenes_location_fkey_idx ON public.scenes USING btree (locati
 index CREATE INDEX scenes_script_id_fkey_idx ON public.scenes USING btree (script_id)
 index CREATE INDEX scenes_script_ordinal_idx ON public.scenes USING btree (script_id, ordinal) WHERE (removed_at IS NULL)
 index CREATE INDEX scenes_shoot_day_fkey_idx ON public.scenes USING btree (shoot_day_id, project_id)
+index CREATE INDEX schedule_versions_created_by_idx ON public.schedule_versions USING btree (created_by)
+index CREATE INDEX schedule_versions_project_idx ON public.schedule_versions USING btree (project_id, created_at DESC)
 index CREATE INDEX script_annotations_created_by_fkey_idx ON public.script_annotations USING btree (created_by)
 index CREATE INDEX script_annotations_project_id_fkey_idx ON public.script_annotations USING btree (project_id)
 index CREATE INDEX script_stash_created_by_idx ON public.script_stash USING btree (created_by)
@@ -2506,6 +2522,7 @@ index CREATE UNIQUE INDEX scene_states_pkey ON public.scene_states USING btree (
 index CREATE UNIQUE INDEX scene_states_scene_character_key ON public.scene_states USING btree (scene_id, character_id)
 index CREATE UNIQUE INDEX scenes_id_project_key ON public.scenes USING btree (id, project_id)
 index CREATE UNIQUE INDEX scenes_pkey ON public.scenes USING btree (id)
+index CREATE UNIQUE INDEX schedule_versions_pkey ON public.schedule_versions USING btree (id)
 index CREATE UNIQUE INDEX script_annotations_pkey ON public.script_annotations USING btree (id)
 index CREATE UNIQUE INDEX script_characters_pkey ON public.script_characters USING btree (id)
 index CREATE UNIQUE INDEX script_characters_script_id_name_key ON public.script_characters USING btree (script_id, name)
@@ -2796,6 +2813,9 @@ policy public.scenes "scenes delete" PERMISSIVE DELETE to authenticated using in
 policy public.scenes "scenes insert" PERMISSIVE INSERT to authenticated using - check internal.can_access_project(project_id)
 policy public.scenes "scenes update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
 policy public.scenes "scenes view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.schedule_versions "schedule versions add" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.schedule_versions "schedule versions remove" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
+policy public.schedule_versions "schedule versions view" PERMISSIVE SELECT to authenticated using (internal.can_shape_project(project_id) OR internal.has_capability(project_id, 'schedule.write'::text)) check -
 policy public.script_annotations "script_annotations delete" PERMISSIVE DELETE to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
 policy public.script_annotations "script_annotations insert" PERMISSIVE INSERT to authenticated using - check ((internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) AND (created_by = ( SELECT auth.uid() AS uid)))
 policy public.script_annotations "script_annotations view" PERMISSIVE SELECT to authenticated using (internal.is_project_creator(project_id) OR internal.is_project_member(project_id)) check -
@@ -3005,6 +3025,7 @@ rls scene_media enabled=true forced=false
 rls scene_state_elements enabled=true forced=false
 rls scene_states enabled=true forced=false
 rls scenes enabled=true forced=false
+rls schedule_versions enabled=true forced=false
 rls script_annotations enabled=true forced=false
 rls script_characters enabled=true forced=false
 rls script_metadata enabled=true forced=false
@@ -3143,6 +3164,7 @@ trigger CREATE TRIGGER review_links_check BEFORE INSERT ON public.review_links F
 trigger CREATE TRIGGER scene_states_updated_at BEFORE UPDATE ON public.scene_states FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER scenes_link_place_and_day BEFORE INSERT OR UPDATE OF location, shoot_day ON public.scenes FOR EACH ROW EXECUTE FUNCTION internal.scenes_link_place_and_day()
 trigger CREATE TRIGGER scenes_updated_at BEFORE UPDATE ON public.scenes FOR EACH ROW EXECUTE FUNCTION update_updated_at()
+trigger CREATE TRIGGER schedule_versions_immutable BEFORE UPDATE ON public.schedule_versions FOR EACH ROW EXECUTE FUNCTION internal.schedule_versions_immutable()
 trigger CREATE TRIGGER scripts_share_guard BEFORE INSERT OR UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION internal.scripts_share_guard()
 trigger CREATE TRIGGER scripts_updated_at BEFORE UPDATE ON public.scripts FOR EACH ROW EXECUTE FUNCTION update_updated_at()
 trigger CREATE TRIGGER shoot_days_date_to_call_sheet AFTER UPDATE OF shoot_date ON public.shoot_days FOR EACH ROW WHEN (((pg_trigger_depth() < 1) AND (new.shoot_date IS DISTINCT FROM old.shoot_date))) EXECUTE FUNCTION internal.shoot_days_date_to_call_sheet()
