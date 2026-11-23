@@ -25,6 +25,11 @@ import { readable } from '@/lib/util/color';
 import { useStudio } from '../StudioContext';
 import { cx } from '../ui';
 import { DoodTable } from './DoodTable';
+import { takeSnapshot } from '@/lib/studio/schedule-versions';
+import dynamic from 'next/dynamic';
+
+// Loaded when the Schedule opens, not with every Studio tab.
+const ScheduleVersions = dynamic(() => import('./ScheduleVersions').then((m) => m.ScheduleVersions), { ssr: false });
 import s from '../studio.module.css';
 import b from './stripboard.module.css';
 
@@ -67,6 +72,7 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
     [list, shootDays.rows, places.rows, sheets.rows],
   );
   const dateOf = useMemo(() => new Map(Array.from(film.values()).filter((d) => d.date).map((d) => [d.number, d.date as string])), [film]);
+  const liveSnapshot = useMemo(() => takeSnapshot(list, shootDays.rows), [list, shootDays.rows]);
   const wrapped = list.filter((sc) => sc.status === 'wrapped').length;
   const totalEighths = list.reduce((n, sc) => n + eighthsOf(sc.est_duration), 0);
 
@@ -233,6 +239,10 @@ export function StripboardView({ elementCounts, costs }: { elementCounts: Map<st
         </div>
         <button type="button" className={cx(s.btn, s.small)} onClick={autoSchedule} disabled={busy || !list.length}><Wand2 size={11} aria-hidden /> {busy ? 'Scheduling…' : 'Auto-schedule'}</button>
         <button type="button" className={cx(s.btn, s.small)} onClick={print} disabled={!list.length}><Printer size={11} aria-hidden /> Print</button>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <ScheduleVersions key={project.id} projectId={project.id} live={liveSnapshot} canWrite={isOwner} upsertScene={scenes.upsertLocal} upsertDay={shootDays.upsertLocal} onAnnounce={setAnnounce} />
       </div>
 
       <div aria-live="polite" className="sr-only">{announce}</div>

@@ -90,3 +90,15 @@
 @media (pointer: coarse), (max-width: 760px) {
   .statusBtn { width: 40px; height: 40px; margin: -10px -10px -10px 0; }
 }
+
+/* Schedule versions */
+.versions { flex-basis: 100%; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.versionsPanel { width: 100%; border: 1px solid var(--border-2); border-radius: var(--r-md); background: var(--panel); padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.versionsSave { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.versionsSave input { flex: 1 1 220px; min-width: 0; }
+.versionList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.versionRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.versionName { font-weight: 700; color: var(--fg); flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+.versionName em { font-style: normal; font-weight: 400; color: var(--fg-dim); }
+.versionDiff { border-top: 1px solid var(--border-2); padding-top: 8px; font-size: var(--text-sm); color: var(--fg-muted); }
+.versionDiff ul { margin: 6px 0 0; padding-left: 18px; }
