@@ -20,6 +20,8 @@ export interface CallSheetPrintInput {
   /** Plan warnings worth printing (the light, the continuity), already worded. */
   planNotes: string[];
   notes: string | null;
+  /** Emergency details; every part optional. A sheet with none prints no emergency block. */
+  emergency?: { hospitalName?: string | null; hospitalAddress?: string | null; hospitalPhone?: string | null; policePhone?: string | null; medic?: string | null };
   scenes: Array<{ number: number; heading: string }>;
   pages: string | null;
   locations: string[];
@@ -32,6 +34,14 @@ export function callSheetDoc(i: CallSheetPrintInput): PrintDoc {
   const blocks: PrintBlock[] = [];
   for (const n of i.planNotes) blocks.push({ type: 'note', text: n });
   if (i.notes?.trim()) blocks.push({ type: 'section', title: 'Notes', blocks: [{ type: 'text', text: i.notes.trim() }] });
+
+  const e = i.emergency;
+  const hospital = [e?.hospitalName, e?.hospitalAddress].map((x) => x?.trim()).filter(Boolean).join(', ');
+  const facts: Array<[string, string | null]> = [
+    ['Nearest hospital', hospital || null], ['Hospital phone', e?.hospitalPhone?.trim() || null],
+    ['Police', e?.policePhone?.trim() || null], ['Set medic', e?.medic?.trim() || null],
+  ];
+  if (facts.some(([, v]) => v)) blocks.push({ type: 'section', title: 'Emergency', blocks: [{ type: 'facts', items: facts.filter(([, v]) => v) }] });
 
   // Each list's heading is its table's title, so it repeats on every page the list continues onto (the crew list, the cast).
   blocks.push({

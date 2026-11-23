@@ -14,6 +14,7 @@ export * from './media-kind';
 export * from './boards';
 export * from './call-sheet';
 export * from './call-sheet-load';
+export * from './call-sms';
 export * from './locations';
 export * from './money';
 export * from './documents';
