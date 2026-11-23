@@ -13,6 +13,8 @@ import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import s from './split.module.css';
 
 type Side = 'a' | 'b';
+import { pairOf, writePartner } from '@/lib/split/pair';
+
 const STORE_KEY = 'mc_split_layout';
 const NARROW = '(max-width: 760px)';
 
@@ -63,6 +65,8 @@ function Split({ search }: { search: string }) {
     const search = layoutToSearch({ ...layout, a: here.a.href, b: here.b.href });
     window.history.replaceState(null, '', `/split${search}`);
     try { localStorage.setItem(STORE_KEY, search); } catch { /* blocked */ }
+    const pair = pairOf(here.a.href, here.b.href);
+    if (pair) writePartner(pair.projectId, pair.partner);
   }, [layout, here]);
 
   // Relay between panes. Only same-origin messages from our own two frames.
