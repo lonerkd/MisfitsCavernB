@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Support cases and the platform numbers, in a real browser against a local stack: a member opens a case from Help, an admin answers it (the member is
 // notified and reads the answer) and resolves it; the admin home and Analytics show the database's own totals, and a sample project is not counted.
@@ -15,8 +15,7 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
-  let apiUrl = '';
-  let anonKey = '';
+  let anon: () => SupabaseClient;
   const boss = { id: '', email: `sn-boss.${TAG}@journey.test` };
   const member = { id: '', email: `sn-mem.${TAG}@journey.test` };
   const SUBJECT = `Cannot export ${TAG}`;
@@ -24,7 +23,7 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
   const projects: string[] = [];
 
   test.beforeAll(async ({ stack }) => {
-    apiUrl = stack.url; anonKey = stack.anonKey;
+    anon = () => stack.anonClient();
     admin = stack.admin;
     for (const [who, name] of [[boss, 'snboss'], [member, 'snmem']] as const) {
       who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: `${name}${TAG}` })).id;
@@ -93,7 +92,7 @@ test.describe.serial('Admin support and numbers (local Supabase)', () => {
 
   test('the admin home shows the database\'s own totals, and a sample project is not counted', async ({ page }) => {
     test.setTimeout(200_000);
-    const client = createClient(apiUrl, anonKey, { auth: { persistSession: false } });
+    const client = anon();
     expect((await client.auth.signInWithPassword({ email: boss.email, password: PASSWORD })).error).toBeNull();
     // The RPC returns one row; the app maps `creators` to the user total.
     const stats = async () => {
