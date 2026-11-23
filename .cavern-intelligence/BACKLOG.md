@@ -29,14 +29,11 @@ Sizes: **S** ≈ an hour or two · **M** ≈ a session · **L** ≈ several sess
 - **Password reset needs the redirect allowed** (3.4 shipped) — Supabase dashboard › Auth › URL Configuration: add `https://<production domain>/auth/reset` (and each Vercel preview you test on) to the Redirect URLs, or reset links land on the Site URL instead. Then send yourself one reset email on production to check it, and the custom SMTP sender (below) before strangers use it.
 - **Lawyer review** of `/privacy` and `/terms` (`lib/legal/legal.ts` names the operator).
 - **Make `mobile-audit` a required check** (GitHub › Settings › Rules) once it has run green on a few real pull requests (2026-11-18: it now also runs the page-error spec and the Paper theme scan, which found real defects); and `claude-review` is still not required, so a "high-risk" label cannot stop a merge (RULES 11 asks for an independent review instead). Only you can change the ruleset.
-- **Optional — branch protection on `main`** with `checks` and `database`
-  required. (`e2e-local` is now a nightly scheduled check, not a PR gate.)
-  Branch protection turns on GitHub auto-merge, so a green PR merges itself
-  instead of waiting for a session to notice.
+- **Optional — more required checks.** Branch protection is done: the `main-2` ruleset (2026-11-07) requires `conventional`, `checks`, `database` and `gate`, no bypass. Left, only if you want it: make `mobile-audit` required (above), and turn on GitHub auto-merge so a green PR merges itself instead of waiting for a session to notice. (`e2e-local` is a nightly scheduled check, not a PR gate.)
 - **Leaked-password protection** — Supabase dashboard › Auth › Passwords.
   Still flagged by the security advisor (`auth_leaked_password_protection`).
 - **Stashes**: the cloud container's ("legal") is dropped (every line was on `main`). **Old stashes on the Windows machine** (the one that made the island branch): `stash@{1}` and `stash@{2}`, from June–July, predate the rewrites and were never reconciled. Not reachable from a cloud session (checked 2026-11-18: no computer folder is attached): look at each there (`git stash show -p stash@{n}`); anything not on `main` goes into a branch, then drop them.
-- **Stale remote branches** (checked 2026-11-18 against PR state and `git cherry`; a cloud session cannot delete branches, both the API and git return 403, so these are yours): **safe to delete**, their changes are on `main` or superseded: `claude/backlog-index` (96c5dc9c), `claude/governance-budget` (cdfdc6ac; its one idea, counting more workflow files as prose in `ci.yml`'s `changes` job, was not ported on purpose), `claude/rules-merge` (a858cd87): `git push origin --delete claude/backlog-index claude/governance-budget claude/rules-merge`, or the Branches page. **Not to delete:** `cavern-offline` (37 commits of your own from 2026-10-15, "the open-source, local-first cut": decide what it is), `claude/tool-breadth` (closed today by another session with commits that may not be on `main`), and the branches of open PRs. `claude/design-scales` is gone.
+- **Stale remote branches** (checked 2026-11-18 against PR state and `git cherry`; a cloud session cannot delete branches, both the API and git return 403, so these are yours): **safe to delete**, their changes are on `main` or superseded: `claude/backlog-index` (96c5dc9c), `claude/governance-budget` (cdfdc6ac; its one idea, counting more workflow files as prose in `ci.yml`'s `changes` job, was not ported on purpose), `claude/rules-merge` (a858cd87): `git push origin --delete claude/backlog-index claude/governance-budget claude/rules-merge`, or the Branches page. **Not to delete:** `cavern-offline` (37 commits of your own from 2026-10-15, "the open-source, local-first cut": decide what it is), `claude/tool-breadth` (closed today by another session with commits that may not be on `main`), and the branches of open PRs. `claude/design-scales` is gone. **Checked 2026-11-23** (`git ls-remote`): the three "safe to delete" branches, `cavern-offline` and `claude/tool-breadth` still exist, plus `claude/world-building-wip` (its work was finished and merged in PR 718: probably safe to delete, `git cherry` not run), and `claude/mobile-audit-call`, `claude/notif-digest`, `claude/one-home`, `claude/sound-batch` and a dependabot branch that this list never covered: look at each before deleting.
 
 ## 2. To verify
 
@@ -51,7 +48,7 @@ Sizes: **S** ≈ an hour or two · **M** ≈ a session · **L** ≈ several sess
 Plan, inventory and order of work: [plans/2026-11-07-information-architecture-and-sound.md](plans/2026-11-07-information-architecture-and-sound.md). _(full text: `backlog-detail.md`, 3.42)_
 
 ### 3.44 The portfolio — an audit and an upgrade — L (owner, 2026-11-08: "the next major upgrade needed")
-Plan and audit: [plans/2026-11-08-portfolio-upgrade.md](plans/2026-11-08-portfolio-upgrade.md) (sketched 2026-11-08, nothing built). _(full text: `backlog-detail.md`, 3.44)_
+Plan and audit: [plans/2026-11-08-portfolio-upgrade.md](plans/2026-11-08-portfolio-upgrade.md) (sketched 2026-11-08; built in the steps listed below). _(full text: `backlog-detail.md`, 3.44)_
 
 ### 3.45 Print and export, one kit for the whole suite — L (owner, 2026-11-08)
 Owner: "almost all tools and the stuff built into the suite needs to be easily exported for print in an intuitive, gorgeous file." **Built 2026-11-08:** the print kit (`lib/print/`, `conventions.md` §6a) and the portfolio one-sheet on it (a "One-sheet… _(full text: `backlog-detail.md`, 3.45)_
@@ -79,9 +76,6 @@ The audit [plans/2026-11-15-role-suites-audit.md](plans/2026-11-15-role-suites-a
 
 ### 3.52 Phase requirements, by role and for the project — M/L (owner, 2026-11-21: "what each role and the project need to actually and accurately advance, with real assets")
 **Built 2026-11-21:** (1) the lock screen (`LockedTool`): what is left before the tool's phase, each step with its hint, progress, who usually does it (`MILESTONE_ROLES`, crafts from the role model, test-guarded), a *Go* to where it is done, what opens the… _(full text: `backlog-detail.md`, 3.52)_
-
-### 3.46 UX audit findings, not yet fixed — S each (Hermes audit, 2026-11-08)
-Colours fixed 2026-11-08: the editor's checkboxes, the Insert link, the revision caret and the writing-goal bar used a hard-coded blue (`#0099ff`) and now use the theme's accent (`var(--accent)`). _(full text: `backlog-detail.md`, 3.46)_
 
 ### 3.43 The Cavern experience — an explorable cave that listens — M/L (owner, 2026-11-08)
 Plan: [plans/2026-11-08-the-cavern-experience.md](plans/2026-11-08-the-cavern-experience.md). _(full text: `backlog-detail.md`, 3.43)_
