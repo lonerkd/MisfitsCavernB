@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlignLeft, Type, ChevronDown, ChevronUp } from 'lucide-react';
 import * as Diff from 'diff';
+import { PrintButton } from '@/components/ui/PrintButton';
+import { diffDoc } from '@/lib/scriptos/diff-print';
 import { listChangeReviews, setChangeReview, clearChangeReview } from '@/lib/supabase/changeReviews';
 
 interface DiffModalProps {
@@ -19,6 +21,10 @@ interface DiffModalProps {
   projectId?: string;
   scriptId?: string;
   userId?: string;
+  /** The project's name, accent and logo, for the printed change list. */
+  projectTitle?: string;
+  accent?: string | null;
+  logo?: string | null;
 }
 
 type DiffMode = 'lines' | 'words' | 'side';
@@ -129,21 +135,7 @@ function computeStats(changes: Diff.Change[]) {
   return { added, removed, unchanged };
 }
 
-function exportDiffToPrint(label: string, originalText: string, modifiedText: string) {
-  const w = window.open('', '_blank');
-  if (!w) return;
-  const changes = Diff.diffLines(originalText, modifiedText);
-  const rows = changes.map((c) => {
-    const lines = c.value.split('\n'); if (lines[lines.length - 1] === '') lines.pop();
-    const color = c.added ? '#059669' : c.removed ? '#dc2626' : '#666';
-    const bg = c.added ? 'rgba(16,185,129,0.12)' : c.removed ? 'rgba(239,68,68,0.12)' : 'transparent';
-    return lines.map((t) => `<div style="background:${bg};color:${color};white-space:pre-wrap;">${c.added ? '+' : c.removed ? '−' : ' '}${t}</div>`).join('');
-  }).join('');
-  w.document.write(`<!doctype html><html><head><title>Diff — ${label}</title></head><body style="font-family: monospace; max-width: 800px; margin: 24px auto; line-height: 1.5;"><h1>Diff — ${label}</h1>${rows}<script>window.print()</script></body></html>`);
-  w.document.close();
-}
-
-export function DiffModal({ isOpen, onClose, originalText, modifiedText, label, kindOf, projectId, scriptId, userId }: DiffModalProps) {
+export function DiffModal({ isOpen, onClose, originalText, modifiedText, label, kindOf, projectId, scriptId, userId, projectTitle, accent = null, logo = null }: DiffModalProps) {
   const [mode, setMode] = useState<DiffMode>('lines');
   const [collapsedHunks, setCollapsedHunks] = useState<Set<number>>(new Set());
   const [context, setContext] = useState(3);
@@ -565,16 +557,10 @@ export function DiffModal({ isOpen, onClose, originalText, modifiedText, label, 
                   <button onClick={() => jumpToHunk(currentHunk + 1)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.07)', border: 'none', color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer' }}>Next ›</button>
                 </>
               )}
-              <button
-                onClick={() => exportDiffToPrint(label, originalText, modifiedText)}
-                style={{
-                  fontSize: 12, padding: '6px 16px', borderRadius: 8,
-                  background: 'rgba(var(--ink-rgb), 0.07)', border: 'none',
-                  color: 'rgba(var(--ink-rgb), 0.6)', cursor: 'pointer',
-                }}
-              >
-                Export
-              </button>
+              <PrintButton label="the change list" build={() => diffDoc({
+                label, project: projectTitle, accent, logo, changes: Diff.diffLines(originalText, modifiedText),
+                generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
+              })} />
               <button
                 onClick={onClose}
                 style={{
