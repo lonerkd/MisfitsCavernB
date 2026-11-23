@@ -31,6 +31,7 @@ import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island
 import { ISLAND_PREFS_EVENT, applyIslandPrefs, readIslandPrefs, DEFAULT_ISLAND_PREFS } from '@/lib/island/prefs';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
+import { useIslandPopover } from '@/lib/island/popover';
 import dynamic from 'next/dynamic';
 import s from '../island/island.module.css';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
@@ -249,6 +250,7 @@ export default function EcosystemTaskbar() {
   const [typing, setTyping] = useState(false);
   const [capsDismissed, setCapsDismissed] = useState(false);
   const [projectsOpen, setProjectsOpen] = useState(false);
+  const { rootRef: projectsRoot, buttonRef: projectsButton } = useIslandPopover<HTMLSpanElement>('projects', projectsOpen, () => setProjectsOpen(false));
   const { projects: allProjects, activeProject: currentProject, setActiveProject: pickProject } = useProject();
   const [projIdx, setProjIdx] = useState(-1);
   const [kbFocusIndex, setKbFocusIndex] = useState(-1);
@@ -599,8 +601,9 @@ export default function EcosystemTaskbar() {
               </span>
             )}
 
-            <span className={s.slot} data-tip={activeProject ? activeProject.title : 'Projects'} data-open={projectsOpen}>
+            <span ref={projectsRoot} className={s.slot} data-tip={activeProject ? activeProject.title : 'Projects'} data-open={projectsOpen}>
               <button
+                ref={projectsButton}
                 type="button"
                 className={s.btn}
                 aria-label="Switch project"
@@ -621,9 +624,7 @@ export default function EcosystemTaskbar() {
             <span className={s.rule} aria-hidden />
 
             <span className={s.bell}><NotificationBell /></span>
-            <div style={{ display: 'flex', alignItems: 'center', margin: '0 4px' }}>
-              <GlobalAudioWidget />
-            </div>
+            <GlobalAudioWidget />
 
             {([
               { id: 'profile', name: 'Profile', icon: User, path: '/profile' },

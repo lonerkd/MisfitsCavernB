@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter, usePathname } from 'next/navigation';
 import { Bell, Check, X } from 'lucide-react';
@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { Notification, fetchNotifications, markRead, markAllRead, deleteNotification, typeEnabled } from '@/lib/supabase/notifications';
 import { awaitOSUser } from '@/lib/os';
 import { useOnChange } from '@/lib/hooks/useOnChange';
+import { useIslandPopover } from '@/lib/island/popover';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -24,7 +25,7 @@ export default function NotificationBell() {
   const [items, setItems] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
+  const { rootRef, buttonRef } = useIslandPopover<HTMLDivElement>('notifications', open, () => setOpen(false));
 
   const unread = items.filter(n => !n.read).length;
   // The badge's own text is part of the button's name (WCAG 2.5.3 Label in Name): "Notifications, 3 unread", "Notifications, 9+ unread".
@@ -56,12 +57,6 @@ export default function NotificationBell() {
   }, [userId]);
 
   useOnChange(pathname, () => setOpen(false));
-  useEffect(() => {
-    if (!open) return;
-    const h = (e: MouseEvent) => { if (!rootRef.current?.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [open]);
 
   const openItem = async (n: Notification) => {
     if (!n.read) { setItems(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x)); await markRead(n.id); }
@@ -86,6 +81,7 @@ export default function NotificationBell() {
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
       <motion.button
+        ref={buttonRef}
         onClick={() => setOpen(o => !o)}
         onHoverStart={() => setHovered(true)}
         onHoverEnd={() => setHovered(false)}
@@ -115,6 +111,7 @@ export default function NotificationBell() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="notif-panel"
+            data-island-popover="notifications"
             style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', maxHeight: 'min(380px, var(--island-room, 70vh))',borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
