@@ -3,9 +3,14 @@
 // The shoot, packaged for the editor: which take of each shot to use, the sound and camera records, the cards, and what the editor
 // cannot use yet. Read from the records the crew already keep (script supervisor, camera, sound, media offload); nothing is entered
 // here. Prints or saves as a PDF or CSV.
-import React, { useMemo } from 'react';
-import { Download, Printer, PackageCheck } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Download, Printer, PackageCheck, Send } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
+import { useConfirm } from '@/components/ui/Confirm';
+import { getProjectCrew } from '@/lib/supabase/crew-management';
+import { loadCrafts } from '@/lib/crafts/crafts';
+import { notify } from '@/lib/supabase/notifications';
+import { editorialRecipients, handoffMessage } from '@/lib/studio/editor-handoff';
 import { useSettingsList } from './useSettingsList';
 import { useRecordTargets } from './RecordLinks';
 import { editorPackage, type PackageInput } from '@/lib/studio/editor-package';
@@ -19,8 +24,10 @@ import { cx } from '../ui';
 import s from '../studio.module.css';
 
 export function EditorPackagePanel() {
-  const { project, shots } = useStudio();
+  const { project, shots, userId } = useStudio();
   const { toast } = useToast();
+  const confirm = useConfirm();
+  const [sending, setSending] = useState(false);
   const t = useRecordTargets();
   const takes = useSettingsList('scriptNotes', { find: false }).items as unknown as ScriptTake[];
   const camera = useSettingsList('cameraReports', { find: false }).items as unknown as PackageInput['camera'];
@@ -34,11 +41,38 @@ export function EditorPackagePanel() {
 
   const doc = () => editorPackageDoc(pkg, { project: project.title, accent: project.accent_color, logo: project.logo_url, generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) });
 
+  const send = async () => {
+    if (sending) return;
+    setSending(true);
+    try {
+      const [crew, crafts] = await Promise.all([getProjectCrew(project.id), loadCrafts()]);
+      const to = editorialRecipients(crew.map((c) => ({ user_id: c.user_id, username: c.username, craft: c.craft, status: c.status })), crafts, userId);
+      if (to.length === 0) { toast('No confirmed editor on the crew yet. Add one in Cast & crew (an Editorial craft).', 'error'); return; }
+      const ok = await confirm({
+        title: `Send to ${to.length} ${to.length === 1 ? 'person' : 'people'}?`,
+        message: `${to.map((r) => `${r.name} (${r.craft})`).join(', ')} get a notification with what is ready and what is not, linked to this package.${pkg.ready ? '' : ` ${pkg.attention.length} thing${pkg.attention.length === 1 ? ' is' : 's are'} not ready yet; they are told.`}`,
+        confirmLabel: 'Send',
+      });
+      if (!ok) return;
+      const m = handoffMessage(pkg, project.title);
+      let sent = 0;
+      let failed = 0;
+      for (const r of to) {
+        const err = await notify(r.user_id, { type: 'crew', title: m.title, body: m.body, link: `/studio?project=${project.id}&tab=production&view=editorial` }, userId);
+        if (err) failed++; else sent++;
+      }
+      toast(failed ? `Sent to ${sent}; could not reach ${failed}. Try again for the rest.` : `Sent to ${sent} ${sent === 1 ? 'person' : 'people'}.`, failed ? 'error' : 'success');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Could not send the package.', 'error');
+    } finally { setSending(false); }
+  };
+
   return (
     <section className={s.panel} style={{ padding: 12 }} aria-labelledby="ed-package">
       <div className={s.row} style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <h3 id="ed-package" className={s.panelTitle} style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}><PackageCheck size={14} aria-hidden /> Package for the editor</h3>
         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
+          {pkg.scenes.length > 0 && <button type="button" className={cx(s.btn, s.small)} onClick={() => void send()} disabled={sending} aria-label="Send the package to the editor"><Send size={11} aria-hidden /> Send to editor</button>}
           <button type="button" className={cx(s.btn, s.small)} onClick={() => { if (!printDocument(doc())) toast('Could not open the print dialog.', 'error'); }} aria-label="Print / PDF: the editor's package"><Printer size={11} aria-hidden /> Print / PDF</button>
           <button type="button" className={cx(s.btn, s.small)} onClick={() => { if (!downloadCsv(doc())) toast('Could not save the file.', 'error'); }} aria-label="CSV: the editor's package"><Download size={11} aria-hidden /> CSV</button>
         </span>
