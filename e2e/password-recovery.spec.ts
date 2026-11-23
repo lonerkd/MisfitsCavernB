@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect, stackEnabled, stackSkipReason } from './support/stack';
 
 // Password recovery end to end, on the local stack: the reset email lands in
 // the local mail catcher (Mailpit, behind Supabase's `inbucket` port 54324).
@@ -45,13 +46,15 @@ async function requestReset(page: Page, email: string) {
 const SAME_ANSWER = /if that address has an account/i;
 
 test.describe('password recovery', () => {
+  test.skip(!stackEnabled, stackSkipReason);
   test.beforeAll(async () => {
     test.skip(!(await mailCatcherUp()), 'needs the local mail catcher (supabase start)');
   });
 
-  test('forgot password → email → new password → signs in with it', async ({ browser }, testInfo) => {
+  test('forgot password → email → new password → signs in with it', async ({ browser, stack }, testInfo) => {
     const baseURL = testInfo.project.use.baseURL;
-    const email = `e2e.recover.${Date.now()}.${Math.floor(Math.random() * 1e4)}@example.com`;
+    // QA-marked, and removed at teardown (the account is made through the real sign-up form).
+    const { email, username } = stack.qaIdentity('recover');
 
     // 1 — an account exists (made in its own browser, then left behind).
     const maker = await browser.newContext({ baseURL });
@@ -59,11 +62,12 @@ test.describe('password recovery', () => {
     await makerPage.goto('/auth');
     await makerPage.getByRole('button', { name: 'Sign Up' }).first().click();
     await makerPage.fill('input[name="email"]', email);
-    await makerPage.fill('input[name="username"]', `recover${String(Date.now()).slice(-7)}`);
+    await makerPage.fill('input[name="username"]', username);
     await makerPage.fill('input[name="password"]', OLD_PASSWORD);
     await makerPage.getByRole('button', { name: 'Create Account' }).click();
     await makerPage.waitForURL((u) => !u.pathname.startsWith('/auth'), { timeout: 25_000 });
     await maker.close();
+    await stack.adoptSignup(email);
 
     // 2 — a signed-out browser asks for a reset.
     const context = await browser.newContext({ baseURL });

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 import type { Page } from '@playwright/test';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // The admin's real actions, in a real browser against a local stack: grant and remove admin rights, suspend a person (they cannot sign in) and lift it, each recorded in the audit log; clear a reported error; the platform totals count real accounts. Opt-in: E2E_LOCAL_STACK=1.
 const PASSWORD = randomUUID();
@@ -13,14 +13,13 @@ test.describe.serial('Admin actions (local Supabase)', () => {
   test.skip(!stackEnabled, stackSkipReason);
 
   let admin: SupabaseClient;
-  let apiUrl = '';
-  let anonKey = '';
+  let anon: () => SupabaseClient;
   const boss = { id: '', email: `aa-boss.${TAG}@journey.test`, name: `aaboss${TAG}` };
   const member = { id: '', email: `aa-mem.${TAG}@journey.test`, name: `aamem${TAG}` };
   const ERR = `Admin sweep error ${TAG}`;
 
   test.beforeAll(async ({ stack }) => {
-    apiUrl = stack.url; anonKey = stack.anonKey;
+    anon = () => stack.anonClient();
     admin = stack.admin;
     for (const who of [boss, member]) {
       who.id = (await stack.createUser({ email: who.email, password: PASSWORD, username: who.name })).id;
@@ -38,7 +37,7 @@ test.describe.serial('Admin actions (local Supabase)', () => {
     await signInAs(page, { email: who.email, password: PASSWORD });
   };
   const canSignIn = async () => {
-    const c = createClient(apiUrl, anonKey, { auth: { persistSession: false } });
+    const c = anon();
     return !(await c.auth.signInWithPassword({ email: member.email, password: PASSWORD })).error;
   };
   const row = (page: Page, name: string) => page.getByRole('row').filter({ hasText: name });
