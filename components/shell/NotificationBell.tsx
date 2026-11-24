@@ -9,6 +9,7 @@ import { Notification, fetchNotifications, markRead, markAllRead, deleteNotifica
 import { awaitOSUser } from '@/lib/os';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useIslandPopover } from '@/lib/island/popover';
+import { deliveryNote } from '@/lib/notifications/delivery';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -140,6 +141,7 @@ export default function NotificationBell() {
                   <div style={{ flex: 1, minWidth: 0, paddingLeft: 6 }}>
                     <div style={{ fontSize: 12, color: 'var(--fg)', fontWeight: n.read ? 400 : 600 }}>{n.title}</div>
                     {n.body && <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}
+                    {deliveryNote(n) && <div data-testid="delivery-note" style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 3, fontStyle: 'italic' }}>{deliveryNote(n)}</div>}
                     <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4, fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)' }}>{timeAgo(n.created_at)}</div>
                   </div>
                   <button aria-label="Dismiss" onClick={(e) => clearOne(e, n.id)} title="Dismiss" style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer', flexShrink: 0, height: 'fit-content' }}>
