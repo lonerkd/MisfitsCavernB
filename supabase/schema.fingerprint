@@ -1820,6 +1820,7 @@ function internal.projects_budget_approval() body=f40ed6c5b95f6ab30c3456cb772a7f
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.push_release_held() body=7f353e8da8462541d9296975ad652cb6
 function internal.reading_memory_forget_correction() body=7764bdc57efd2ef63d5de7f8b1b34926
 function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82eebf338f
 function internal.reports_notify_outcome() body=dbab3b8ce84f1c257409bd3f704f6c41
@@ -2007,6 +2008,7 @@ grant function internal.projects_budget_approval() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
+grant function internal.push_release_held() postgres
 grant function internal.reading_memory_forget_correction() postgres
 grant function internal.reading_memory_from_correction() postgres
 grant function internal.reports_notify_outcome() postgres
