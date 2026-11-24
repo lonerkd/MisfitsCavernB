@@ -16,6 +16,7 @@ export const MILESTONE_ROLES: Record<string, string[]> = {
   references: ['Director', 'Production designer', 'Director of photography'],
   crew: ['Producer', 'Line producer', 'Production manager'],
   casting: ['Casting director', 'Director', 'Producer'],
+  'casting-complete': ['Casting director', 'Director', 'Producer'],
   shots: ['Director', 'Director of photography', 'First assistant director'],
   breakdown: ['First assistant director', 'Production manager', 'Producer'],
   'lock-script': ['Writer', 'Director', 'Script supervisor'],
