@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import EmptyState from '@/components/ui/EmptyState';
 import Link from 'next/link';
 import { ArrowDown, ArrowUp, DollarSign, PenLine, Plus, Printer, Settings2, Tags, Trash2 } from 'lucide-react';
@@ -8,9 +8,13 @@ import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
 import { catStyle } from '@/components/breakdown/CategoryChips';
-import { useShootDays, useTimesheets } from '@/lib/studio';
-import { labourByDay, money as formatMoney } from '@/lib/studio/money';
-import { breakdown, costByCategory, costByScene, costOfScenes, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
+import { studio, useExpenses, useShootDays, useTimesheets, type BudgetItem } from '@/lib/studio';
+import { useMyCapabilities } from '@/lib/roles/capabilities';
+import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
+import { breakdownFocus, type FocusAction } from '@/lib/studio/breakdown-focus';
+import { BreakdownFocus } from './BreakdownFocus';
+import { labourByDay, moneySummary, money as formatMoney } from '@/lib/studio/money';
+import { breakdown, BUDGET_PREFIX, costByCategory, costByScene, costOfScenes, useBreakdown, ELEMENT_STATUSES, type BreakdownCategory, type BreakdownElement, type BreakdownState, type ElementStatus } from '@/lib/breakdown';
 import { useProject } from '@/lib/os';
 import { announceProgressChange } from '@/lib/supabase/progress';
 import { eighthsOf } from '@/lib/studio/shoot-days';
@@ -43,6 +47,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   const [openId, setOpenId] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [pushing, setPushing] = useState(false);
+  const [pushNonce, setPushNonce] = useState(0);
 
   const categories = bd.categories.rows;
   const elements = bd.elements.rows;
@@ -50,6 +55,19 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
   const total = costs.reduce((n, c) => n + c.amount, 0);
   const unpriced = costs.reduce((n, c) => n + c.unpriced, 0);
   const ready = elements.filter((e) => e.status === 'ready').length;
+
+  // Readiness leads the tab: the project's phase and milestones, this breakdown's own numbers, and the budget for those who may read it.
+  const { signals, progress } = useProjectProgress(project.id);
+  const caps = useMyCapabilities(project.id);
+  const seesBudget = caps.can('budget.read');
+  const expenses = useExpenses(project.id);
+  const [budgetLines, setBudgetLines] = useState<BudgetItem[]>([]);
+  useEffect(() => {
+    let live = true;
+    if (seesBudget) studio.listBudgetLines(project.id).then((r) => { if (live) setBudgetLines(r); }).catch(() => { if (live) setBudgetLines([]); });
+    else Promise.resolve().then(() => { if (live) setBudgetLines([]); });
+    return () => { live = false; };
+  }, [project.id, seesBudget, pushNonce]);
 
   // Labour logged on each dated shoot day (what the person can see: the owner and the money tool's readers see everyone's hours).
   const shootDays = useShootDays(project.id);
@@ -68,6 +86,25 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
     const cost = costOfScenes(order.map((d) => [String(d), days.get(d)!] as const), bd.tags.rows, elements, categories);
     return order.map((d) => ({ day: d, sceneIds: days.get(d)!, line: cost.get(String(d))! }));
   }, [scenes.rows, bd.tags.rows, elements, categories]);
+
+  const focus = useMemo(() => {
+    const taggedScenes = new Set(bd.tags.rows.map((t) => t.scene_id));
+    const money = moneySummary(budgetLines, expenses.rows, timesheets.rows);
+    const fromBreakdown = budgetLines.filter((l) => l.category.startsWith(BUDGET_PREFIX)).reduce((n, l) => n + Number(l.amount), 0);
+    return breakdownFocus({
+      signals, progress, scriptId,
+      scenes: scenes.rows.length,
+      scenesTagged: scenes.rows.filter((sc) => taggedScenes.has(sc.id)).length,
+      elements: {
+        total: elements.length,
+        needed: elements.filter((e) => e.status === 'needed').length,
+        sourcing: elements.filter((e) => e.status === 'sourcing').length,
+        ready,
+        unpriced,
+      },
+      budget: { lines: budgetLines.length, planned: money.totals.planned, actual: money.totals.committed + money.totals.paid, estimate: total, fromBreakdown },
+    });
+  }, [signals, progress, scriptId, scenes.rows, bd.tags.rows, elements, ready, unpriced, total, budgetLines, expenses.rows, timesheets.rows]);
 
   const sceneById = useMemo(() => new Map(scenes.rows.map((sc) => [sc.id, sc])), [scenes.rows]);
   const scenesOf = useMemo(() => {
@@ -89,6 +126,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
       const r = await breakdown.syncBudget(project.id, costs.map((c) => ({ label: c.category.label, amount: c.amount })));
       await refreshProject(project.id);
       announceProgressChange(project.id);
+      setPushNonce((n) => n + 1);
       const changed = r.added + r.updated + r.removed;
       const n = costs.filter((c) => c.amount > 0).length;
       const estimated = costs.reduce((x, c) => x + c.estimated, 0);
@@ -99,6 +137,12 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
     } finally {
       setPushing(false);
     }
+  };
+
+  const onFocusAction = (a: FocusAction) => {
+    if (a === 'push-budget') void pushToBudget();
+    else if (a === 'categories') setEditing(true);
+    else { setMode('category'); setQ(''); setStatus(elements.some((e) => e.status === 'needed') ? 'needed' : 'sourcing'); }
   };
 
   const printSheets = () => {
@@ -126,6 +170,7 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
 
   return (
     <div>
+      <BreakdownFocus focus={focus} projectId={project.id} onAction={onFocusAction} readinessHref="/studio?tab=production&view=readiness" />
       <div className={v.top}>
         <div className={v.totals}>
           <div className={v.total}><div className={v.totalValue}>{elements.length}</div><div className={v.totalLabel}>Elements</div></div>
@@ -344,39 +389,38 @@ function CategoryEditor({ bd, projectId, isOwner, onClose }: { bd: BreakdownStat
   };
 
   return (
-    <Modal title="Categories & rates" onClose={onClose} actions={<button type="button" className={s.btnPrimary} onClick={onClose}>Done</button>}>
+    <Modal title="Categories & rates" compact onClose={onClose} actions={<button type="button" className={cx(s.btnPrimary, s.small)} onClick={onClose}>Done</button>}>
       <p className={s.hint} style={{ marginTop: 0 }}>A unit cost prices any element in the category that has none of its own.</p>
       <div className={v.edRows}>
         {cats.map((c, i) => (
-          <div key={c.id} className={v.edRow}>
+          <div key={c.id} className={v.edRow} data-testid="cat-row">
             <label className="sr-only" htmlFor={`cc-${c.id}`}>{c.label} colour</label>
-            <input id={`cc-${c.id}`} type="color" className={v.colorInput} defaultValue={c.color} onBlur={(e) => { if (e.target.value !== c.color) void save(c, { color: e.target.value }); }} />
-            <div>
-              <label className="sr-only" htmlFor={`cl-${c.id}`}>Name</label>
+            <input id={`cc-${c.id}`} type="color" className={cx(v.colorInput, v.edSw)} defaultValue={c.color} onBlur={(e) => { if (e.target.value !== c.color) void save(c, { color: e.target.value }); }} />
+            <div className={v.edName}>
+              <label className="sr-only" htmlFor={`cl-${c.id}`}>{c.label} name</label>
               <input id={`cl-${c.id}`} className={s.input} defaultValue={c.label} maxLength={60}
                 onBlur={(e) => { const x = e.target.value.trim(); if (x && x !== c.label) void save(c, { label: x }); else e.target.value = c.label; }} />
-              <div className={v.edCount}>{countOf(c.id)} element{countOf(c.id) === 1 ? '' : 's'}</div>
             </div>
-            <div>
+            <div className={v.edRate}>
               <label className="sr-only" htmlFor={`cu-${c.id}`}>{c.label} unit cost</label>
               <input id={`cu-${c.id}`} className={s.input} inputMode="decimal" defaultValue={c.unit_cost ? String(c.unit_cost) : ''} placeholder="$ each"
                 onBlur={(e) => { const n = e.target.value.trim() === '' ? 0 : Number(e.target.value.replace(/[^0-9.]/g, '')); if (Number.isFinite(n) && n !== c.unit_cost) void save(c, { unit_cost: n }); }} />
             </div>
+            <div className={v.edCount} data-testid="cat-count">{countOf(c.id)} element{countOf(c.id) === 1 ? '' : 's'}</div>
             <div className={v.edActions}>
-              <button type="button" className={s.iconBtn} aria-label={`Move ${c.label} up`} disabled={i === 0} onClick={() => void move(i, -1)}><ArrowUp size={12} /></button>
-              <button type="button" className={s.iconBtn} aria-label={`Move ${c.label} down`} disabled={i === cats.length - 1} onClick={() => void move(i, 1)}><ArrowDown size={12} /></button>
-              {isOwner && <button type="button" className={s.iconBtn} aria-label={`Delete ${c.label}`} onClick={() => void remove(c)}><Trash2 size={12} /></button>}
+              <button type="button" className={s.iconBtn} aria-label={`Move ${c.label} up`} disabled={i === 0} onClick={() => void move(i, -1)}><ArrowUp size={14} /></button>
+              <button type="button" className={s.iconBtn} aria-label={`Move ${c.label} down`} disabled={i === cats.length - 1} onClick={() => void move(i, 1)}><ArrowDown size={14} /></button>
+              {isOwner && <button type="button" className={s.iconBtn} aria-label={`Delete ${c.label}`} onClick={() => void remove(c)}><Trash2 size={14} /></button>}
             </div>
           </div>
         ))}
-        <div className={v.edRow} style={{ marginTop: 8 }}>
+        <div className={v.edAdd}>
           <label className="sr-only" htmlFor="cc-new">New category colour</label>
           <input id="cc-new" type="color" className={v.colorInput} value={color} onChange={(e) => setColor(e.target.value)} />
           <div>
             <label className="sr-only" htmlFor="cl-new">New category name</label>
             <input id="cl-new" className={s.input} value={label} maxLength={60} placeholder="New category, e.g. Weapons" onChange={(e) => setLabel(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void add(); }} />
           </div>
-          <span />
           <button type="button" className={cx(s.btn, s.small)} onClick={() => void add()} disabled={!label.trim()}><Plus size={11} aria-hidden /> Add</button>
         </div>
       </div>
