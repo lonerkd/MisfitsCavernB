@@ -156,7 +156,7 @@ export async function addTask(projectId: string, title: string): Promise<TaskRow
   return data as TaskRow;
 }
 
-export async function updateTask(id: string, patch: Partial<Pick<TaskRow, 'completed' | 'assigned_to' | 'due_date'>>): Promise<void> {
+export async function updateTask(id: string, patch: Partial<Pick<TaskRow, 'completed' | 'assigned_to' | 'due_date' | 'title'>>): Promise<void> {
   const { error } = await supabase.from('project_tasks').update(patch).eq('id', id);
   if (error) throw error;
 }
