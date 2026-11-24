@@ -29,6 +29,9 @@ export interface ProjectSignals {
   /** Crew who have confirmed (an invitation is not a crew member). */
   crew_confirmed: number;
   castings: number;
+  /** Characters who are in at least one scene, and how many of them have a casting (by id). */
+  cast_roles: number;
+  cast_roles_cast: number;
   shots: number;
   call_sheets: number;
   /** Call sheets actually issued (not only dated). */
@@ -66,7 +69,7 @@ export interface ProjectSignals {
 export const EMPTY_SIGNALS: ProjectSignals = {
   status: null, project_type: null, format: null, visibility: null, unlock_all: false, logline: false,
   scripts: 0, characters: 0, scenes: 0, scenes_wrapped: 0, beats: 0, media: 0, media_shared: 0,
-  crew: 0, crew_confirmed: 0, castings: 0, shots: 0, call_sheets: 0, call_sheets_issued: 0, locations: 0, locations_confirmed: 0, permits_open: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, budget_approved: false, milestones: 0,
+  crew: 0, crew_confirmed: 0, castings: 0, cast_roles: 0, cast_roles_cast: 0, shots: 0, call_sheets: 0, call_sheets_issued: 0, locations: 0, locations_confirmed: 0, permits_open: 0, shoot_start: null, shoot_end: null, breakdown_elements: 0, revisions: 0, tasks: 0, tasks_done: 0, budget_lines: 0, budget_approved: false, milestones: 0,
   cuts: 0, cuts_locked: 0, post_notes: 0, post_notes_open: 0, stages: 0, stages_done: 0, deliverables: 0, deliverables_done: 0,
   campaigns: 0, festivals_submitted: 0, portfolio: 0,
 };
@@ -176,6 +179,9 @@ export const MILESTONES: MilestoneDef[] = [
     place: { kind: 'studio', tab: 'production', view: 'paperwork' }, done: (s) => s.locations > 0 && s.permits_open === 0 },
   { id: 'casting', phase: 'pre-production', label: 'Cast a role', hint: 'Match characters to people on the crew.',
     place: { kind: 'studio', tab: 'production', view: 'crew' }, done: (s) => s.castings > 0 },
+  { id: 'casting-complete', phase: 'pre-production', label: 'Cast every role in the film', hint: 'Every character who is in a scene has someone cast; the count is read from the scenes, not typed.',
+    place: { kind: 'studio', tab: 'production', view: 'crew' }, done: (s) => s.cast_roles > 0 && s.cast_roles_cast >= s.cast_roles,
+    progress: (s) => ({ value: s.cast_roles_cast, of: s.cast_roles }) },
   { id: 'shots', phase: 'pre-production', label: 'Plan your shots', hint: 'A shot list for each scene.',
     place: { kind: 'studio', tab: 'scenes' }, done: (s) => s.shots > 0 },
   { id: 'budget', phase: 'pre-production', label: 'Set a budget', hint: 'Estimate one from the script, then adjust.',

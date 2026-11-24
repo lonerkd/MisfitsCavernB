@@ -31,3 +31,13 @@ describe('phase needs', () => {
     expect(rolesUsing('script')).toEqual([]);
   });
 });
+
+describe('casting-complete', () => {
+  const m = MILESTONES.find((x) => x.id === 'casting-complete')!;
+  it('is done only when every character in a scene has a casting, and shows the count', () => {
+    expect(m.done({ ...EMPTY_SIGNALS })).toBe(false);
+    expect(m.done({ ...EMPTY_SIGNALS, cast_roles: 3, cast_roles_cast: 2 })).toBe(false);
+    expect(m.done({ ...EMPTY_SIGNALS, cast_roles: 3, cast_roles_cast: 3 })).toBe(true);
+    expect(m.progress?.({ ...EMPTY_SIGNALS, cast_roles: 3, cast_roles_cast: 2 })).toEqual({ value: 2, of: 3 });
+  });
+});

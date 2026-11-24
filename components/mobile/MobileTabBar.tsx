@@ -31,6 +31,7 @@ import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { keyboardUp, usePhoneLayout } from '@/lib/os/usePhone';
 import { shouldDismiss } from './sheetDrag';
+import { lockScroll } from '@/lib/ui/scrollLock';
 
 const TOOLS = [
   { href: '/editor', label: 'Script', icon: FileText },
@@ -64,9 +65,8 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
     closeRef.current?.focus();
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', esc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', esc); document.body.style.overflow = prev; };
+    const unlock = lockScroll();
+    return () => { window.removeEventListener('keydown', esc); unlock(); };
   }, [onClose]);
 
   const toggles = activeDescriptor?.toggles ?? [];
