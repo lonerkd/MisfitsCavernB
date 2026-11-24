@@ -1,0 +1,5 @@
+# Session - 2026-11-23: a phase milestone for casting every role (BACKLOG 3.52)
+
+"Cast a role" was ticked by any single casting, so a film with one of ten roles cast counted as done. New pre-production milestone **Cast every role in the film**: done when every character who is in at least one scene has a casting by id, with a count (n of m) read from the scenes, not typed. `project_progress` gains `cast_roles` and `cast_roles_cast` (migration `20261123000200`, same function and privileges, still invoker); a format that skips casting skips the new one; it names Casting director, Director and Producer as who usually does it (`MILESTONE_ROLES`, test-guarded). Persona test (`phase-signals.test.ts`): counts follow scenes and castings, crew see the same, an outsider to another project gets nothing.
+
+**Verified:** typecheck, lint, `lib/os` and `lib/roles` tests (203). The persona test and the migration run in the `database` check; production and staging need the migration applied by hand after merge, then the drift check.

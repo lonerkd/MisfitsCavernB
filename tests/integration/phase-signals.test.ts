@@ -50,6 +50,30 @@ describe('project_progress: the new signals', () => {
     expect((await progress()).call_sheets_issued).toBe(1);
   });
 
+  it('cast_roles counts the characters who are in a scene, and cast_roles_cast those with a casting (by id)', async () => {
+    const admin = adminClient();
+    const scene = (await admin.from('scenes').insert({ project_id: projectId, scene_number: 1, title: 'CAST', heading: 'INT. CAST - DAY' }).select('id').single()).data!.id;
+    const ids = (await admin.from('characters').insert([{ project_id: projectId, name: 'MAYA' }, { project_id: projectId, name: 'IVY' }, { project_id: projectId, name: 'NOBODY' }]).select('id, name')).data ?? [];
+    const idOf = (n: string) => ids.find((c) => c.name === n)!.id;
+    // NOBODY is in no scene, so is not a role in the film yet.
+    await admin.from('scene_characters').insert([{ scene_id: scene, character_id: idOf('MAYA'), project_id: projectId }, { scene_id: scene, character_id: idOf('IVY'), project_id: projectId }]);
+    const none = await progress();
+    expect(none.cast_roles).toBe(2);
+    expect(none.cast_roles_cast).toBe(0);
+    await cast.sam.client.from('character_castings').insert({ project_id: projectId, character_name: 'MAYA', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
+    expect((await progress()).cast_roles_cast).toBe(1);
+    await cast.sam.client.from('character_castings').insert({ project_id: projectId, character_name: 'IVY', crew_user_id: cast.jordan.id, created_by: cast.sam.id });
+    const all = await progress();
+    expect(all.cast_roles).toBe(2);
+    expect(all.cast_roles_cast).toBe(2);
+    // Crew sees the same; an outsider to another project gets nothing for it.
+    const crew = ((await cast.jordan.client.rpc('project_progress', { p_project: projectId })).data ?? {}) as Record<string, number>;
+    expect(crew.cast_roles_cast).toBe(2);
+    const { projectId: other } = await createCrewedProject(cast, 'Phase signals, other');
+    const outsider = await cast.riley.client.rpc('project_progress', { p_project: other });
+    expect(outsider.data ?? null).toBeNull();
+  });
+
   it('formats without a shoot skip the new pre-production milestones', async () => {
     const rows = (await adminClient().from('project_formats').select('name, skip_milestones').in('name', ['Podcast', 'Copywriting', 'Blog / Newsletter', 'Video Game', 'Documentary', 'Short Film', 'Advertising', 'YouTube', 'Commercial'])).data ?? [];
     const skips = new Map(rows.map((r: { name: string; skip_milestones: string[] }) => [r.name, r.skip_milestones]));
