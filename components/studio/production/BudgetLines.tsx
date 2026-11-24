@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { Briefcase, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
@@ -50,9 +50,12 @@ export function BudgetLines({ projectId, userId, lines, onChange }: {
   const [pdRate, setPdRate] = useState('');
   const [pdPeople, setPdPeople] = useState('1');
 
+  // A read that finishes after the view is gone must not set state (it also failed the unit run now and then, with the page already torn down).
+  const mounted = useRef(true);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const loadFringes = () => Promise.all([listFringes(projectId), listFringeLinks(projectId)]).then(
-    ([f, links]) => { setFringes(f); setApplied(new Set(links.map((l) => `${l.budget_item_id}:${l.fringe_id}`))); },
-    () => { setFringes([]); setApplied(new Set()); },
+    ([f, links]) => { if (mounted.current) { setFringes(f); setApplied(new Set(links.map((l) => `${l.budget_item_id}:${l.fringe_id}`))); } },
+    () => { if (mounted.current) { setFringes([]); setApplied(new Set()); } },
   );
   useEffect(() => { void loadFringes(); // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
