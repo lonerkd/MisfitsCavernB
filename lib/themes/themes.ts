@@ -6,7 +6,7 @@
 
 export type ThemeId =
   | 'default' | 'misfit' | 'terminal' | 'blueprint' | 'mono' | 'paper' | 'editorial'
-  | 'glass' | 'neon' | 'slate' | 'lagoon' | 'forest' | 'vampire';
+  | 'glass' | 'neon' | 'slate' | 'lagoon' | 'forest' | 'vampire' | 'rainbow';
 
 export interface ThemeDef {
   id: ThemeId;
@@ -30,6 +30,7 @@ export const THEMES: ThemeDef[] = [
   { id: 'neon', label: 'Neon', hint: 'Night city: magenta and electric cyan', mode: 'dark', swatch: ['#0b0114', '#f3e8ff', '#ff2bd6'] },
   { id: 'slate', label: 'Slate', hint: 'Cool grey-blue, easy on the eyes', mode: 'dark', swatch: ['#11161d', '#d6dde6', '#7aa2f7'] },
   { id: 'lagoon', label: 'Lagoon', hint: 'Light, with teal', mode: 'light', swatch: ['#eef6f5', '#0e2a2c', '#096a68'] },
+  { id: 'rainbow', label: 'Rainbow', hint: 'Clear glass over a slow colour flow; every outline cycles the spectrum', mode: 'dark', swatch: ['#0a0c14', '#f2f4ff', '#ff5fa8'] },
   { id: 'forest', label: 'Forest', hint: 'Sage and gold on deep green', mode: 'dark', swatch: ['#090c0a', '#f4ebd0', '#5f9e8f'] },
 ];
 

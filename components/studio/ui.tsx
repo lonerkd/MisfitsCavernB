@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { usePhoneLayout } from '@/lib/os/usePhone';
 import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import s from './studio.module.css';
+import { lockScroll } from '@/lib/ui/scrollLock';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
 
@@ -70,11 +71,10 @@ export function Modal({ title, onClose, children, actions, narrow, compact }: { 
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKey, true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prevOverflow;
+      unlock();
       opener?.focus?.();
     };
   }, []);
