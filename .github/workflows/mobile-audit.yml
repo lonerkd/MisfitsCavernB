@@ -1,6 +1,6 @@
 name: Mobile audit
 
-# The phone audit (scripts/mobile-audit.mjs) as a check: an iPhone 15 Pro, portrait and landscape, over 18 routes of the built app on
+# The phone audit (scripts/mobile-audit.mjs) as a check: an iPhone 15 Pro, portrait and landscape, over 29 routes of the built app on
 # the local stack. It fails when a route is worse than scripts/mobile-audit-baseline.json (sideways scroll, controls under a thumb,
 # text too small, controls under a fixed bar, a field or its button hidden by the keyboard). The numbers only shrink: fix something,
 # run `node scripts/mobile-audit.mjs --update`, commit the smaller baseline. Chromium imitates an iPhone; real Safari still needs a person.

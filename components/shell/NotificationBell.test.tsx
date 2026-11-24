@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 
 type N = { id: string; read: boolean; title: string; body: string; created_at: string; type: string; link: string | null };
 const feed = vi.hoisted(() => ({ items: [] as unknown[] }));
@@ -36,5 +36,16 @@ describe('the bell names its badge', () => {
     render(<NotificationBell />);
     const b = await screen.findByRole('button', { name: 'Notifications, 9+ unread' });
     expect(b.textContent).toContain('9+');
+  });
+});
+
+describe('the bell is honest about a held push', () => {
+  it('says a notification was held for quiet hours once the panel is open', async () => {
+    feed.items = [{ ...note(1), push_skipped: 'quiet-hours' }, note(2)];
+    render(<NotificationBell />);
+    fireEvent.click(await screen.findByRole('button', { name: /^Notifications/ }));
+    const lines = await screen.findAllByTestId('delivery-note');
+    expect(lines).toHaveLength(1);
+    expect(lines[0].textContent).toMatch(/quiet hours/);
   });
 });
