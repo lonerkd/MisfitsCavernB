@@ -9,7 +9,7 @@ import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { renameCharacterInText, renamePlaceInText, validCharacterName, validPlaceName } from '@/lib/scriptos/rename';
-import { renameLocationRecord } from '@/lib/film/rename-location';
+import { renameLocationRecord, placeNames } from '@/lib/film/rename-location';
 import { renameCharacterRow } from '@/lib/film/rename-character';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
@@ -559,12 +559,17 @@ export default function EditorPage() {
     if (next === from.trim().toUpperCase()) return null;
     const out = renamePlaceInText(content, lines, from, next);
     if (out.changed === 0) return `No scene heading for ${from} was found to rename.`;
+    let chose: { existing: string; leftBehind: string | null } | null = null;
     if (currentScript?.project_id) {
-      const problem = await renameLocationRecord(currentScript.project_id, from, next);
-      if (problem) return problem;
+      const res = await renameLocationRecord(currentScript.project_id, from, next);
+      if ('problem' in res) return res.problem;
+      if (res.change.action === 'choose') chose = res.change;
     }
     setContent(out.text);
-    toast(`${from} is now ${next} (${out.changed} ${out.changed === 1 ? 'heading' : 'headings'})`, 'success');
+    const n = `${out.changed} ${out.changed === 1 ? 'heading' : 'headings'}`;
+    toast(chose
+      ? `${from} is now ${chose.existing} (${n}).${chose.leftBehind ? ` The record “${chose.leftBehind}” is still in Locations: merge or delete it there.` : ''}`
+      : `${from} is now ${next} (${n})`, 'success');
     return null;
   };
 
@@ -1088,6 +1093,7 @@ export default function EditorPage() {
       <EditorRightPanels
         onRenameCharacter={renameCharacter}
         onRenamePlace={renamePlace}
+        loadPlaceNames={() => (currentScript?.project_id ? placeNames(currentScript.project_id) : Promise.resolve([]))}
         showBreakdown={tools.breakdown}
         currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
         rightPanel={rightPanel} setRightPanel={setRightPanel}
