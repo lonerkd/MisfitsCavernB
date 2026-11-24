@@ -4,21 +4,6 @@
   min-height: 100vh;
 }
 
-.bar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  height: 58px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-}
-.barLeft { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .logo {
   font-family: var(--display);
   font-size: 0.95rem;
@@ -51,15 +36,19 @@
   cursor: pointer;
   text-overflow: ellipsis;
 }
+@media (pointer: coarse) { .projectPicker select { height: 44px; font-size: 13px; } }
+.projectPicker { flex: 0 1 auto; min-width: 0; }
 .projectPicker select:focus-visible { border-color: var(--studio-color, var(--violet)); }
 .projectPicker option { background: var(--bg-2); color: var(--fg); }
 
 .tabs {
   position: sticky;
-  top: 58px;
-  z-index: 90;
+  top: 0;
+  z-index: 100;
   display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 10px;
   padding: 8px 16px;
   background: var(--glass);
   backdrop-filter: blur(16px);
@@ -75,6 +64,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   max-width: 100%;
+  min-width: 0;
 }
 .tabList::-webkit-scrollbar { display: none; }
 /* A fade on the side that still has tabs past it: the strip scrolls. */
@@ -126,8 +116,7 @@
 }
 
 @media (max-width: 640px) {
-  .bar { padding: 0 14px; }
-  .projectPicker select { max-width: min(56vw, 240px); }
+  .projectPicker select { max-width: min(38vw, 180px); }
   .tabs { justify-content: flex-start; }
 }
 .tabLoading { min-height: 40vh; display: grid; place-items: center; }
