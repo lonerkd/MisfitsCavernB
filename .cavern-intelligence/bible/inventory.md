@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 113 tables · 84 database functions · 160 e2e specs**
+**55 pages · 9 API routes · 113 tables · 84 database functions · 161 e2e specs**
 
 ## Routes
 
@@ -53,7 +53,7 @@
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 53 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, scriptos, studio, supabase, types, validation | accessibility, portfolio-page |
 | `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (484) | 52 files · components: portfolio, ui · lib: auth, formats, island, os, portfolio, push, scriptos, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, portfolio-page, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 51 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, scriptos, studio, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, page-errors, your-data |
-| `/projects/[id]` | signed in | `app/(suite)/projects/[id]/page.tsx` (439) | 116 files · components: brief, crafts, film, formats, guides, progress, projects, roles, studio, ui · lib: auth, brief, crafts, film, formats, guides, hooks, lounge, notifications, os, pocket, push, review, roles, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, announcements, brief, budget-lines, free-project, guides, island-back-popovers, keyboard-audit, layout, mobile, page-errors, phases, project-manager, split, table-read, task-card, themes, view-as-role, view-as |
+| `/projects/[id]` | signed in | `app/(suite)/projects/[id]/page.tsx` (439) | 116 files · components: brief, crafts, film, formats, guides, progress, projects, roles, studio, ui · lib: auth, brief, crafts, film, formats, guides, hooks, lounge, notifications, os, pocket, push, review, roles, scriptos, split, studio, supabase, themes, types, util, validation, writing | accessibility, announcements, brief, budget-lines, free-project, guides, island-back-popovers, keyboard-audit, layout, mobile, page-errors, phases, project-manager, split, table-read, task-card, task-edit, themes, view-as-role, view-as |
 | `/projects/[id]/pitch` | signed in | `app/(suite)/projects/[id]/pitch/page.tsx` (626) | 49 files · components: ui · lib: auth, formats, notifications, os, portfolio, push, scriptos, studio, supabase, types, util, validation | accessibility, project-manager |
 | `/projects/[id]/world` | signed in | `app/(suite)/projects/[id]/world/page.tsx` (17) | 13 files · components: ui, world · lib: print, supabase, world | **none** |
 | `/projects` | signed in | `app/(suite)/projects/page.tsx` (673) | 65 files · components: brand, formats, ui · lib: auth, brief, formats, hooks, island, lounge, onboarding, os, push, scriptos, studio, supabase, types, util, validation | accessibility, auth-journey, free-project, island-back-popovers, island-one-popover, island, keyboard-audit, layout, login-smoke, mobile, notes-studio, onboarding, page-errors, phone-sheet, projects-keyboard-phase, route-smoke, search, themes |
@@ -782,6 +782,7 @@
 | `suspend-user.spec.ts` | `/admin/audit-logs`, `/admin/users`, `/auth`, `/crew/*` |
 | `table-read.spec.ts` | `/editor`, `/projects/*` |
 | `task-card.spec.ts` | `/projects/*` |
+| `task-edit.spec.ts` | `/projects/*` |
 | `theme-default.spec.ts` | `/auth` |
 | `themes.spec.ts` | `/projects`, `/projects/*`, `/settings` |
 | `today-owner.spec.ts` | `/community` |
