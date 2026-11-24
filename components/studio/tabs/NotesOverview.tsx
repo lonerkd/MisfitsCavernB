@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FileText, Folder, MessageSquare, Plus, StickyNote, Users } from 'lucide-react';
 import { NotesPanel } from '@/components/notes/NotesPanel';
+import { NotesChecklist } from './NotesChecklist';
 import { useToast } from '@/components/ui/Toast';
 import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { logAuditAction } from '@/lib/supabase/audit';
@@ -67,6 +68,8 @@ export function NotesOverview({ onOpen }: { onOpen: (tab: TabId) => void }) {
         <div className={s.panelTitle}><StickyNote size={14} /> Notes</div>
         <NotesPanel quick projectId={project.id} userId={userId} isProjectOwner={isOwner} />
       </div>
+
+      <NotesChecklist projectId={project.id} />
 
       <div className={s.panel} aria-labelledby="notes-docs-title">
         <div className={s.panelTitle} id="notes-docs-title"><FileText size={14} /> Documents</div>
