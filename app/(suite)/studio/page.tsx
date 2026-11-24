@@ -164,8 +164,8 @@ export default function StudioPage() {
     <div className={cx(s.page, page.main)}>
       <h1 className="sr-only">Studio{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
-      {(projects.length > 0 || activeProject) && (
-        <nav className={page.tabs} aria-label="Studio sections">
+      <header className={page.bar}>
+        <div className={page.barLeft}>
           {projects.length > 0 && (
             <label className={page.projectPicker}>
               <select
@@ -178,7 +178,11 @@ export default function StudioPage() {
               </select>
             </label>
           )}
-          {activeProject && (
+        </div>
+      </header>
+
+      {activeProject && (
+        <nav className={page.tabs} aria-label="Studio sections">
           <div ref={tabListRef} className={page.tabList} role="tablist" data-more-left={edges.left || undefined} data-more-right={edges.right || undefined}>
             {tabs.map((t) => (
               <button
@@ -199,7 +203,6 @@ export default function StudioPage() {
               </button>
             ))}
           </div>
-          )}
         </nav>
       )}
 
