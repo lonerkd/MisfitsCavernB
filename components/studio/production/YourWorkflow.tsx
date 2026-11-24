@@ -8,6 +8,7 @@ import { workflowFor, STAGES } from '@/lib/roles/workflows';
 import type { ProductionView, ProjectSignals } from '@/lib/os/progress';
 import { readiness, readySummary, recordKindsNeeded } from '@/lib/roles/readiness';
 import { listRecords, type RecordKind } from '@/lib/supabase/productionRecords';
+import { PROGRESS_EVENT } from '@/lib/supabase/progress';
 import { PRODUCTION_VIEW_LABELS } from '@/lib/os/progress';
 import { cx } from '../ui';
 import s from '../studio.module.css';
@@ -17,6 +18,15 @@ export function YourWorkflow({ craft, department, openable, onView, projectId, s
   // A step is ready when its tool holds real data. Record counts are read as this person sees them (RLS), only for the kinds their steps use.
   const [recordCounts, setRecordCounts] = useState<Record<string, number>>({});
   const kinds = recordKindsNeeded(w, STAGES).join(',');
+  // Re-read when the window regains focus (work done in another tab) and when anything on the page announces a change, like the project's own progress.
+  const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    const again = () => setRefresh((n) => n + 1);
+    const onFocus = () => { if (document.visibilityState === 'visible') again(); };
+    window.addEventListener('focus', onFocus);
+    window.addEventListener(PROGRESS_EVENT, again);
+    return () => { window.removeEventListener('focus', onFocus); window.removeEventListener(PROGRESS_EVENT, again); };
+  }, []);
   useEffect(() => {
     if (!projectId || !kinds) return;
     let live = true;
@@ -24,7 +34,7 @@ export function YourWorkflow({ craft, department, openable, onView, projectId, s
       .then((rows) => { if (live) setRecordCounts(Object.fromEntries(rows)); })
       .catch(() => { /* unknown, so no tick is shown */ });
     return () => { live = false; };
-  }, [projectId, kinds]);
+  }, [projectId, kinds, refresh]);
   const ev = { signals: signals ?? null, recordCounts };
   const prep = readySummary(readiness(w, 'Prep', ev));
   return (
