@@ -5,5 +5,3 @@
 **Rainbow theme** (`rainbow`, dark): clear glass surfaces over a slowly moving colour wash; `--mc-hue` (a registered `@property`) turns every 14 s and drives the accent and the outlines. Static hex fallbacks sit in the first block (the swatch test reads them); still under reduced motion, opaque under reduced transparency.
 
 **Verified:** typecheck, lint, theme and scroll-lock tests. **Not verified:** not looked at in a browser, and the split-pane/island overlap in the owner's screenshots (island pill over page content, Lounge/Script panes) is not investigated: BACKLOG item to pick up.
-
-**Mobile audit.** `mobile-audit` had been red since #749 folded the project switcher into the tab row (the page content moved up 58px, so one control per route now sits behind the phone's bottom pill at scroll 0: the Go link, Open scene, Upload files, Go: Write the logline). Reproduced locally; scrolled to the end of every studio tab the lowest control stops 150 to 220px above the pill, so nothing is unreachable. Four baseline entries (portrait overview, scenes, library, onset) raised from 0 to 1 on purpose, not a layout fix.
