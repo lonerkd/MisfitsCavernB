@@ -62,6 +62,8 @@ export interface EditorRightPanelsProps {
   onRenameCharacter?: (from: string, to: string) => Promise<string | null>;
   /** Rename a place everywhere: its scene headings in the text and its location record. Resolves to a sentence when it cannot. */
   onRenamePlace?: (from: string, to: string) => Promise<string | null>;
+  /** The project's existing places, offered in the rename field: naming one of them folds this place into it. */
+  loadPlaceNames?: () => Promise<string[]>;
   handleLockRevision: () => void;
   revisions: Revision[];
   onViewRevision: (revisionId: string) => void;
@@ -137,13 +139,14 @@ export function EditorRightPanels({
   setNightModePreview, chars, charStats, handleLockRevision, revisions, onViewRevision, onCompare,
   setContent, toast, showSceneNumbers, setShowSceneNumbers, showWatermark,
   setShowWatermark, lintIssues, stash, textareaRef, currentScript,
-  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null, onRenameCharacter, onRenamePlace,
+  referencesPanel, notesPanel, sceneMusic, soundPanel, breakdownPanel, readingPanel, analyticsPanel, showBreakdown = true, currentStory = null, onRenameCharacter, onRenamePlace, loadPlaceNames,
 }: EditorRightPanelsProps) {
   const TYPE_COLORS = { character: CHARACTER_COLOR };
 
   const [analyticsOpen, setAnalyticsOpen] = useState(true);
   const [breakdownOpen, setBreakdownOpen] = useState(true);
   const [charsOpen, setCharsOpen] = useState(false);
+  const [knownPlaces, setKnownPlaces] = useState<string[]>([]);
   const [placeRename, setPlaceRename] = useState<{ value: string; error: string | null; busy: boolean } | null>(null);
   const [renaming, setRenaming] = useState<{ name: string; value: string; error: string | null; busy: boolean } | null>(null);
   const [lintOpen, setLintOpen] = useState(false);
@@ -225,15 +228,16 @@ export function EditorRightPanels({
                             >
                               <label style={{ flex: 1, minWidth: 120 }}>
                                 <span className="sr-only">New name for {slugPlace(scene.text)}</span>
-                                <input autoFocus value={placeRename.value} maxLength={80} onChange={(e) => setPlaceRename({ ...placeRename, value: e.target.value, error: null })}
+                                <input autoFocus list="known-places" value={placeRename.value} maxLength={80} onChange={(e) => setPlaceRename({ ...placeRename, value: e.target.value, error: null })}
                                   style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12 }} />
+                                <datalist id="known-places">{knownPlaces.map((n) => <option key={n} value={n} />)}</datalist>
                               </label>
                               <button type="submit" disabled={placeRename.busy} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--fg)', fontSize: 12, cursor: 'pointer' }}>{placeRename.busy ? 'Renaming…' : 'Rename place'}</button>
                               <button type="button" onClick={() => setPlaceRename(null)} style={{ minHeight: 32, padding: '0 10px', borderRadius: 8, border: 'none', background: 'transparent', color: 'var(--fg-muted)', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
                               {placeRename.error && <div role="alert" style={{ flexBasis: '100%', fontSize: 11, color: 'var(--danger)' }}>{placeRename.error}</div>}
                             </form>
                           ) : (
-                            <button type="button" onClick={() => setPlaceRename({ value: slugPlace(scene.text)!, error: null, busy: false })}
+                            <button type="button" onClick={() => { setPlaceRename({ value: slugPlace(scene.text)!, error: null, busy: false }); void loadPlaceNames?.().then(setKnownPlaces); }}
                               style={{ marginBottom: 10, padding: 0, border: 'none', background: 'transparent', color: 'var(--violet)', fontSize: 11, textDecoration: 'underline', cursor: 'pointer' }}>Rename place… <span className="sr-only">{slugPlace(scene.text)}</span></button>
                           ))}
                           <div style={{ display: 'flex', gap: 8, marginBottom: chars.length ? 10 : 0 }}>
