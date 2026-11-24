@@ -6,6 +6,7 @@
 
 import { useCallback } from 'react';
 import { importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
+import { importDoubts, importMessage } from '@/lib/scriptos/import-report';
 import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf } from '@/lib/scriptos/export';
 import type { TitlePage } from '@/lib/scriptos/titlepage';
 
@@ -30,7 +31,7 @@ export function useScriptImport({ setScripts, setCurrentScript, setContent, toas
         setScripts((prev) => [...prev, imported]);
         setCurrentScript(imported);
         setContent(text);
-        toast(`Imported "${title}"`, 'success');
+        toast(importMessage(title, importDoubts(text)), 'success');
       }
     };
 
