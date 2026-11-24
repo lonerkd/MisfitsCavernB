@@ -1,0 +1,5 @@
+# Session - 2026-11-23: what quiet hours held goes out as one push (BACKLOG 3.53, slice 2b)
+
+A notification that arrived in a person's quiet hours stayed in the bell and was never pushed. Now a pg_cron worker (`internal.push_release_held`, every 5 minutes, migration `20261123000100`) asks `/api/push/dispatch` (`release_for`) to release them for each person with held notifications from the last day; `releaseHeld` (`lib/push/dispatch.ts`) waits while the person is still in quiet hours, then sends **one** push ("3 things while you were away", the first titles named; a single one goes as itself), stamps `pushed_at` and clears the marker so nothing sends twice. Kinds switched off since are marked and left out; a failed send marks `failed`.
+
+**Verified:** typecheck, lint, `lib/push` unit tests (9, including: one push for many, waits in quiet hours, nothing held, a failed send is not marked delivered). **Not verified:** the migration on a database and the cron firing (the `database` check applies it; production needs it applied by hand after merge, then the drift check), and a real device receiving the batched push.
