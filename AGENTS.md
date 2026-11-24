@@ -96,11 +96,7 @@ Storage; the production and staging projects are in `tools-and-access.md` ยง2) ย
     hooks and the agent workflows are not furniture: when one is wasteful,
     wrong for the owner's setup, or behind the tools, improve it in the same PR
     and say why in the session note. The budget above is the ruler.
-11. **A review that is not your own, for what is costly.** A pull request the
-    risk bot rates high, or one that declares a **Large change**, is reviewed by
-    something that did not write it before it merges: run the `code-review`
-    skill (fresh reviewers) on the diff, fix what is real, and put what it found
-    in the description. Writing "reviewed" about your own work is not a review.
+11. **A review, for what is costly.** A pull request the risk bot rates high, or one that declares a **Large change**, is reviewed before it merges: run the `code-review` skill on the diff, fix what is real, and put what it found in the description. **A Claude agent may review its own work** (owner, 2026-11-23: the independent-reviewer requirement was written for the weak local model that hallucinates and makes a mess, not for Claude); a fresh reviewer is still the better choice for a migration or an access change, but not a precondition. A review by a weaker or local model never counts.
 
 ## Working without being asked (owner, 2026-11-21)
 

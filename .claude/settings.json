@@ -6,7 +6,8 @@
   },
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": "node scripts/latest-sessions.js 3" }] }
+      { "hooks": [{ "type": "command", "command": "node scripts/latest-sessions.js 3" },
+        { "type": "command", "command": "node scripts/check-state-facts.mjs --quiet" }] }
     ]
   },
   "permissions": {
