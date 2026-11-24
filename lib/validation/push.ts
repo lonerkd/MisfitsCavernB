@@ -5,9 +5,11 @@ import { z } from 'zod';
 import { uuidSchema } from './index';
 
 // What the database posts to /api/push/dispatch (internal.push_notification).
-export const pushDispatchBodySchema = z.object({
-  notification_id: uuidSchema,
-});
+// One notification right after it is written, or a person whose held notifications may now go out (internal.push_release_held).
+export const pushDispatchBodySchema = z.union([
+  z.object({ notification_id: uuidSchema }),
+  z.object({ release_for: uuidSchema }),
+]);
 
 // A browser's push subscription (PushSubscription.toJSON()), as Settings saves it.
 export const pushSubscriptionSchema = z.object({

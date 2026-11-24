@@ -77,3 +77,64 @@ export async function dispatchNotification(db: SupabaseClient, notificationId: s
   await note(db, n.id, result.sent > 0 ? { pushed_at: new Date().toISOString() } : { push_skipped: 'failed' });
   return result;
 }
+
+export interface ReleaseResult { released: number; sent: number; removed: number; failed: number; skipped?: 'nothing-held' | 'quiet-hours' | 'no-devices' | 'switched-off' }
+
+/** What the one batched push says: how many, then each notification's own title, so it still makes sense on its own. */
+export function toBatchPayload(rows: { id: string; type: string; title: string; link: string | null }[]): PushPayload {
+  if (rows.length === 1) return toPayload({ ...rows[0], body: null });
+  const first = rows.slice(0, 3).map((r) => r.title).join(' · ');
+  const more = rows.length > 3 ? ` · and ${rows.length - 3} more` : '';
+  return { id: rows[0].id, title: `${rows.length} things while you were away`.slice(0, 120), body: (first + more).slice(0, 300), link: '/community', tag: 'held-digest' };
+}
+
+/** Deliver what quiet hours held for one person as ONE push, once their quiet hours are over. Each row it covers is stamped (pushed_at, and the
+ *  quiet-hours marker cleared) so it is never sent again. Kinds the person has since switched off are marked and left out. */
+export async function releaseHeld(db: SupabaseClient, userId: string, send: PushSend, now: Date = new Date()): Promise<ReleaseResult> {
+  const none = (skipped: NonNullable<ReleaseResult['skipped']>): ReleaseResult => ({ released: 0, sent: 0, removed: 0, failed: 0, skipped });
+  const { data: profile, error: pErr } = await db.from('profiles').select('notification_prefs').eq('id', userId).maybeSingle();
+  if (pErr) throw pErr;
+  const prefs = readPrefs(profile?.notification_prefs);
+  // Still inside quiet hours: ask again later (a normal kind is held; the held rows here are never urgent ones).
+  if (holdPush('held', prefs, now)) return none('quiet-hours');
+
+  const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+  const { data: rows, error } = await db.from('notifications').select('id, type, title, link, created_at')
+    .eq('user_id', userId).eq('push_skipped', 'quiet-hours').is('pushed_at', null).gt('created_at', since).order('created_at', { ascending: true });
+  if (error) throw error;
+  if (!rows?.length) return none('nothing-held');
+
+  const wanted = rows.filter((r) => typeEnabled(r.type, prefs));
+  const off = rows.filter((r) => !typeEnabled(r.type, prefs));
+  if (off.length) await db.from('notifications').update({ push_skipped: 'switched-off' }).in('id', off.map((r) => r.id));
+  if (!wanted.length) return { ...none('switched-off'), released: 0 };
+
+  const { data: subs, error: sErr } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth').eq('user_id', userId);
+  if (sErr) throw sErr;
+  if (!subs?.length) {
+    await db.from('notifications').update({ push_skipped: 'no-devices' }).in('id', wanted.map((r) => r.id));
+    return none('no-devices');
+  }
+
+  const payload = JSON.stringify(toBatchPayload(wanted));
+  const result: ReleaseResult = { released: 0, sent: 0, removed: 0, failed: 0 };
+  await Promise.all(subs.map(async (s) => {
+    try {
+      const res = await send({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }, payload);
+      if (gone(res.statusCode)) throw Object.assign(new Error('gone'), { statusCode: res.statusCode });
+      result.sent++;
+      await db.from('push_subscriptions').update({ last_used_at: new Date().toISOString() }).eq('id', s.id);
+    } catch (e) {
+      const status = (e as { statusCode?: number }).statusCode ?? 0;
+      if (gone(status)) { await db.from('push_subscriptions').delete().eq('id', s.id); result.removed++; } else { result.failed++; }
+    }
+  }));
+  const ids = wanted.map((r) => r.id);
+  if (result.sent > 0) {
+    await db.from('notifications').update({ pushed_at: now.toISOString(), push_skipped: null }).in('id', ids);
+    result.released = ids.length;
+  } else {
+    await db.from('notifications').update({ push_skipped: 'failed' }).in('id', ids);
+  }
+  return result;
+}
