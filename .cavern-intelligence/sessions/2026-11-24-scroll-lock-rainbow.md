@@ -5,3 +5,5 @@
 **Rainbow theme** (`rainbow`, dark): clear glass surfaces over a slowly moving colour wash; `--mc-hue` (a registered `@property`) turns every 14 s and drives the accent and the outlines. Static hex fallbacks sit in the first block (the swatch test reads them); still under reduced motion, opaque under reduced transparency.
 
 **Verified:** typecheck, lint, theme and scroll-lock tests. **Not verified:** not looked at in a browser, and the split-pane/island overlap in the owner's screenshots (island pill over page content, Lounge/Script panes) is not investigated: BACKLOG item to pick up.
+
+**Studio tab row reverted.** `mobile-audit` had been red since #749 folded the project switcher into the tab row (a sticky, z-100 strip at the top, 58px of header gone): one control per studio route then sat behind the phone's bottom pill at scroll 0, and the owner suspected it of the wider layout trouble. Reproduced locally, then reverted #749 (separate header, audit baseline back to 0) at the owner's request instead of re-baselining. #749's own note stays for the record. If the folded switcher is wanted again, the tabs must clear the island and the bottom pill first.
