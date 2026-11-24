@@ -63,7 +63,7 @@ describe('the default', () => {
   });
 
   it('keeps the rest in their order after it', () => {
-    expect(THEMES.map((t) => t.id)).toEqual(['misfit', 'default', 'paper', 'vampire', 'blueprint', 'terminal', 'editorial', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'forest']);
+    expect(THEMES.map((t) => t.id)).toEqual(['misfit', 'default', 'paper', 'vampire', 'blueprint', 'terminal', 'editorial', 'mono', 'glass', 'neon', 'slate', 'lagoon', 'rainbow', 'forest']);
   });
 });
 
