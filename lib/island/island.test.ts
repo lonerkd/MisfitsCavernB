@@ -102,9 +102,9 @@ describe('island size', () => {
   });
 
   it('asks pages for room in step with its size', () => {
-    expect(islandReserve(1)).toBe(64);
-    expect(islandReserve(ISLAND_SCALE_MIN)).toBeLessThan(64);
-    expect(islandReserve(ISLAND_SCALE_MAX)).toBe(77);
+    expect(islandReserve(1)).toBe(70);
+    expect(islandReserve(ISLAND_SCALE_MIN)).toBeLessThan(70);
+    expect(islandReserve(ISLAND_SCALE_MAX)).toBe(84);
     expect(islandReserve(50)).toBe(islandReserve(ISLAND_SCALE_MAX));
   });
 });
