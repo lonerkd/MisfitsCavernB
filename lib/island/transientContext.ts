@@ -24,8 +24,11 @@ export function useTransientContext(key: string, engaged: boolean, ms: number = 
     return () => clearTimeout(t);
   }, [key, engaged, putAway, ms]);
 
+  // No context clears what was put away, so the same place shows again when it returns (reset during render, not in an effect).
+  if (!key && putAway !== null) setPutAway(null);
+
   useEffect(() => {
-    if (!key) { setPutAway(null); return; }
+    if (!key) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setPutAway(key); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
