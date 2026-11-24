@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { EMPTY_SIGNALS } from '@/lib/os/progress';
 
 const listRecords = vi.hoisted(() => vi.fn());
@@ -16,7 +16,7 @@ vi.mock('@/lib/roles/workflows', async (orig) => ({
 
 import { YourWorkflow } from './YourWorkflow';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); listRecords.mockReset(); });
 
 describe('YourWorkflow readiness', () => {
   it('ticks the steps whose tools hold data, leaves empty ones open, and shows nothing for steps without evidence', async () => {
@@ -33,5 +33,13 @@ describe('YourWorkflow readiness', () => {
     render(<YourWorkflow craft="Director" department={null} openable={[]} onView={() => {}} />);
     expect(screen.queryByLabelText('Ready')).toBeNull();
     expect(screen.queryByLabelText('Not started')).toBeNull();
+  });
+  it('re-reads the records when the project announces a change, so a tick appears without a reload', async () => {
+    listRecords.mockResolvedValue([]);
+    render(<YourWorkflow craft="Director" department={null} openable={['breakdown']} onView={() => {}} projectId="p1" signals={{ ...EMPTY_SIGNALS, breakdown_elements: 3 }} />);
+    await waitFor(() => expect(screen.getByText(/Prep: 1 of 2 ready/)).toBeTruthy());
+    listRecords.mockResolvedValue([{ id: 'r1' }]);
+    await act(async () => { window.dispatchEvent(new CustomEvent('mc-progress-refresh', { detail: { projectId: 'p1' } })); });
+    await waitFor(() => expect(screen.getByText(/Prep: 2 of 2 ready/)).toBeTruthy());
   });
 });
