@@ -37,7 +37,7 @@ import v from './breakdownView.module.css';
 import { BriefHints } from '@/components/brief/BriefHints';
 
 export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: string; username: string }>; onNavigate?: (view: string) => void }) {
-  const { project, scenes, scriptId, isOwner, castOf: castOfScene } = useStudio();
+  const { project, scenes, scriptId, isOwner, castOf: castOfScene, doubtfulSceneOrdinals } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const bd = useBreakdown(project.id);
@@ -296,6 +296,9 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
                         <span className={v.sheetHeading}>{sc.heading ?? sc.title}</span>
                         <span className={v.sheetMeta}>{STRIP_LABEL[stripKind(sc)]} · {pages(eighthsOf(sc.est_duration))} pp · Day {sc.shoot_day ?? 1} · {money(sceneCost.get(sc.id)?.amount ?? 0)}</span>
                       </div>
+                      {sc.ordinal != null && doubtfulSceneOrdinals.has(sc.ordinal) && (
+                        <p className={v.empty} role="note">The script read for this scene is doubtful, so what is tagged here may be off. Review it in the editor (Doubtful reads).</p>
+                      )}
                       {boxes.length === 0 ? <p className={v.empty}>Nothing tagged in this scene.</p> : (
                         <div className={v.boxes}>
                           {boxes.map(({ c, items }) => (
