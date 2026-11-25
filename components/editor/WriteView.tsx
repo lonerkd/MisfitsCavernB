@@ -354,7 +354,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 4,
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '6px 16px', background: 'var(--surface)', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
+                    padding: '6px 16px', background: 'var(--bg-2)', borderTop: '1px solid rgba(var(--ink-rgb), 0.06)',
                     fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)',
                   }}>
                     <span style={{ color, textTransform: 'var(--caps)', fontWeight: 700 }}>{status.label}</span>

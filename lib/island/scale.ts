@@ -30,10 +30,13 @@ export function writeIslandScale(value: number): number {
 /** The gap under the island, and the air pages leave above it. */
 const GAP_BELOW = 14;
 const AIR_ABOVE = 8;
-/** The resting pill at size 1, border included. */
-const PILL = 42;
+/** The resting pill at size 1, border included: on a project the resting shape is the context
+ * handle (46 px in island.module.css) plus the island's two 1 px borders. The plainer handle is
+ * 40 px, but pages reserve for the shape that actually rests over them, or the pill rides up over
+ * the foot of the page (it covered the Lounge rail's settings button). */
+const PILL = 48;
 
-/** Room pages leave for the resting island (--taskbar-height), in px: 64 at size 1. */
+/** Room pages leave for the resting island (--taskbar-height), in px: 70 at size 1. */
 export function islandReserve(scale: number): number {
   return Math.round(GAP_BELOW + PILL * clampIslandScale(scale) + AIR_ABOVE);
 }
