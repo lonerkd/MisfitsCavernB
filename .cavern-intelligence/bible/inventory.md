@@ -2,7 +2,7 @@
 
 > Built by `npm run bible` from the code — don't edit by hand. What each part is *for* is in the chapters (see [README](README.md)).
 
-**55 pages · 9 API routes · 113 tables · 84 database functions · 162 e2e specs**
+**55 pages · 9 API routes · 114 tables · 84 database functions · 162 e2e specs**
 
 ## Routes
 
@@ -460,6 +460,7 @@
 | `character_media` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/editor`, `/soundtrack`, `/studio` |
 | `characters` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/community`, `/editor`, `/soundtrack`, `/studio` |
 | `client_errors` | **no route** (server-side, triggers or functions only) |
+| `context_notices` | **no route** (server-side, triggers or functions only) |
 | `craft_capabilities` | `/call/[id]`, `/community`, `/lounge`, `/projects/[id]`, `/studio` |
 | `crafts` | `/b/[token]`, `/p/[token]`, `/portfolios`, `/review/[token]`, `/s/[token]`, `/shared/[token]`, `/sign/[token]`, `/u/[handle]`, `/admin/brief-questions`, `/admin/crafts`, `/call/[id]`, `/community`, `/crew`, `/jobs`, `/lounge`, `/m/[id]`, `/profile`, `/projects/[id]`, `/studio`, `/welcome` |
 | `credit_requests` | `/shared/[token]`, `/studio` |
