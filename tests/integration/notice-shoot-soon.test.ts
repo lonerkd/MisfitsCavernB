@@ -20,21 +20,22 @@ beforeAll(async () => {
   cast = await createCast();
   ({ projectId } = await createCrewedProject(cast, 'Shoot soon'));
   const admin = adminClient();
-  const places = (await admin.from('project_locations').insert([
+  await admin.from('project_locations').insert([
     { project_id: projectId, name: 'DOCK', status: 'option', permit: 'needed' },
     { project_id: projectId, name: 'CABIN', status: 'confirmed', permit: 'granted' },
     { project_id: projectId, name: 'QUARRY', status: 'option', permit: 'applied' },
-  ]).select('id, name')).data ?? [];
-  const place = (n: string) => places.find((p) => p.name === n)!.id;
-  const days = (await admin.from('shoot_days').insert([
+  ]);
+  await admin.from('shoot_days').insert([
     { project_id: projectId, day_number: 1, shoot_date: day(2) },
     { project_id: projectId, day_number: 2, shoot_date: day(10) },
-  ]).select('id, day_number')).data ?? [];
-  const dayId = (n: number) => days.find((d) => d.day_number === n)!.id;
+  ]);
+  // Scenes are written the way the app writes them: the place is the location text and the day is the day
+  // number; the scenes_link_place_and_day trigger derives location_id / shoot_day_id from those. Writing
+  // the FK columns directly is overwritten by that trigger (location text empty -> location_id set null).
   await admin.from('scenes').insert([
-    { project_id: projectId, scene_number: 1, title: 'A', heading: 'EXT. DOCK - DAY', location_id: place('DOCK'), shoot_day_id: dayId(1) },
-    { project_id: projectId, scene_number: 2, title: 'B', heading: 'INT. CABIN - DAY', location_id: place('CABIN'), shoot_day_id: dayId(1) },
-    { project_id: projectId, scene_number: 3, title: 'C', heading: 'EXT. QUARRY - DAY', location_id: place('QUARRY'), shoot_day_id: dayId(2) },
+    { project_id: projectId, scene_number: 1, title: 'A', heading: 'EXT. DOCK - DAY', location: 'DOCK', shoot_day: 1 },
+    { project_id: projectId, scene_number: 2, title: 'B', heading: 'INT. CABIN - DAY', location: 'CABIN', shoot_day: 1 },
+    { project_id: projectId, scene_number: 3, title: 'C', heading: 'EXT. QUARRY - DAY', location: 'QUARRY', shoot_day: 2 },
   ]);
 });
 afterAll(async () => { await destroyCast(cast); });
