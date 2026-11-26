@@ -67,7 +67,9 @@
   grid-template-areas: "sw name rate count act";
 }
 .edSw { grid-area: sw; } .edName { grid-area: name; min-width: 0; } .edRate { grid-area: rate; min-width: 0; } .edCount { grid-area: count; } .edActions { grid-area: act; }
-.edRow .input { min-height: 44px; min-width: 0; }
+/* The row's fields carry the Studio module's .input class, whose hashed name this module cannot select — so the
+   44px rule is written against the element, or it silently never applies (a desktop row came out 38px tall). */
+.edRow input { min-height: 44px; min-width: 0; }
 .colorInput { width: 44px; height: 44px; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; padding: 3px; cursor: pointer; }
 .edActions { display: flex; gap: 2px; justify-content: flex-end; }
 .edActions > button { width: 44px; height: 44px; }

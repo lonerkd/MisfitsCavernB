@@ -14,7 +14,8 @@ test.describe('Editing a task’s text (local Supabase)', () => {
     await signInAs(page, owner);
     await page.goto(`/projects/${project.id}`);
     await page.getByRole('button', { name: `Edit ${title}` }).click();
-    const field = page.getByRole('textbox', { name: `Text of task ${title}` });
+    // The editor is MentionInput: a combobox (its @ picker), not a plain textbox.
+    const field = page.getByRole('combobox', { name: `Text of task ${title}` });
     await field.fill(`Book two vans ${stack.tag}`);
     await page.getByRole('button', { name: 'Save task text' }).click();
     await expect(page.getByText(`Book two vans ${stack.tag}`)).toBeVisible({ timeout: 30_000 });

@@ -60,6 +60,9 @@ describe('breakdownFocus', () => {
     expect(over.detail).toBe('$1,400 spent against $1,000 planned, $400 over.');
     expect(over.to).toEqual({ place: { kind: 'studio', tab: 'production', view: 'money' } });
     expect(r.items.find((i) => i.id === 'budget-sync')?.to).toEqual({ action: 'push-budget' });
+    // Its label must differ from the toolbar's own "Push to budget" button: both are on the Breakdown tab
+    // at once, and two buttons with one name are a strict-mode failure (and a voice-control trap).
+    expect(r.items.find((i) => i.id === 'budget-sync')?.actionLabel).toBe('Push estimate to budget');
   });
 
   it('a budget that matches the breakdown asks for nothing', () => {

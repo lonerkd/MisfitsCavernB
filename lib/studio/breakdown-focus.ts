@@ -131,7 +131,7 @@ export function breakdownFocus(f: FocusFacts): BreakdownFocus {
         detail: b.lines === 0
           ? `The breakdown estimates ${money(b.estimate)}. Push it to start the budget.`
           : `The breakdown estimates ${money(b.estimate)}; its lines in the budget add up to ${money(b.fromBreakdown)}.`,
-        to: { action: 'push-budget' }, actionLabel: 'Push to budget',
+        to: { action: 'push-budget' }, actionLabel: 'Push estimate to budget',
       });
     }
   }
