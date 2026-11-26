@@ -245,9 +245,18 @@ export async function bootOS() {
     const user = data.session?.user;
     if (user) {
       osAdoptSession(user);
-      supabase.auth.getUser().then(({ data: fresh, error }) => {
+      const adoptedToken = data.session?.access_token;
+      supabase.auth.getUser().then(async ({ data: fresh, error }) => {
         const rejected = !fresh.user && error && (error.status === 401 || error.status === 403);
-        if (rejected) resetOS();
+        if (!rejected) return;
+        // The verdict belongs to the session boot adopted. If a fresh sign-in
+        // has already replaced it, the rejection says nothing about the new
+        // session — demoting that one strands the user on /auth, signed in
+        // (their theme, their projects) but going nowhere until a refresh.
+        // Only reset when the live session is still the rejected one.
+        const { data: now } = await supabase.auth.getSession();
+        if (now.session && now.session.access_token !== adoptedToken) return;
+        resetOS();
       }).catch(() => { /* offline: keep the local session */ });
     } else {
       setSession({ status: 'anon' });
