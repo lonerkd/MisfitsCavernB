@@ -36,6 +36,10 @@ export function scrollToReveal(field: { top: number; bottom: number }, visible: 
  * ends up under it and the page cannot scroll far enough. While the keyboard is up this (1) marks the page (`html[data-typing]`,
  * which the island and tab bar read) and publishes its height as `--kb`, which the page's scroll area uses as bottom padding
  * (globals.css), and (2) scrolls a field you tap into the middle of what is visible once the keyboard has finished rising.
+ * On a phone it also publishes `--vvh`: where the visible area actually ends, in layout-viewport coordinates (the visual
+ * viewport's height plus its offset). Full-height rooms (the Lounge) are sized from it, so the room ends at the keyboard's top
+ * edge however the browser reports the keyboard — overlaid on the layout viewport, or resizing it (an in-app webview, the
+ * installed app), where a height derived from `100dvh` minus the covered amount can silently read as no keyboard at all.
  */
 export function PhoneKeyboard() {
   const phone = usePhoneLayout();
@@ -44,8 +48,10 @@ export function PhoneKeyboard() {
     const root = document.documentElement;
     if (phone.typing) root.setAttribute('data-typing', 'true'); else root.removeAttribute('data-typing');
     root.style.setProperty('--kb', phone.typing ? `${phone.keyboard}px` : '0px');
-    return () => { root.removeAttribute('data-typing'); root.style.removeProperty('--kb'); };
-  }, [phone.typing, phone.keyboard]);
+    if (phone.phone) root.style.setProperty('--vvh', `${phone.height + phone.offset}px`);
+    else root.style.removeProperty('--vvh');
+    return () => { root.removeAttribute('data-typing'); root.style.removeProperty('--kb'); root.style.removeProperty('--vvh'); };
+  }, [phone.typing, phone.keyboard, phone.phone, phone.height, phone.offset]);
 
   useEffect(() => {
     if (!phone.phone) return;
