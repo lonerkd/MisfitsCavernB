@@ -41,6 +41,27 @@ describe('getCallSheetView', () => {
   it('shows an outsider nothing', async () => {
     expect(await createStudioApi(cast.riley.client).getCallSheetView(sheetId, cast.riley.id)).toBeNull();
   });
+
+  it('shows a scene’s place as its linked location’s current name, not the heading text it was filed under', async () => {
+    const sheet = (await cast.sam.client.from('call_sheets').insert({ project_id: projectId, shoot_day: 4, shoot_date: '2026-12-04' }).select('id').single()).data!.id;
+    await addSceneWithCast(cast.sam.client, projectId, { scene_number: 4, title: 'Scene 4', location: 'HARBOR', shoot_day: 4 }, []);
+    // The insert linked the scene to a location record named HARBOR; renaming the record is the divergence:
+    // the scene's text still says HARBOR, the crew should see the place's current name.
+    const place = (await cast.sam.client.from('project_locations').select('id').eq('project_id', projectId).eq('name', 'HARBOR').single()).data!;
+    expect((await cast.sam.client.from('project_locations').update({ name: 'DOCK OFFICE' }).eq('id', place.id)).error).toBeNull();
+    const view = await createStudioApi(cast.jordan.client).getCallSheetView(sheet, cast.jordan.id);
+    expect(view!.scenes).toHaveLength(1);
+    expect(view!.scenes[0].location).toBe('DOCK OFFICE');
+  });
+
+  it('saves a cast call by character id, with the name kept as its label', async () => {
+    const maya = (await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'MAYA').single()).data!;
+    const api = createStudioApi(cast.sam.client);
+    const sheet = (await api.listCallSheets(projectId)).find((s) => s.id === sheetId)!;
+    const row = await api.saveCall(sheet, { character_id: maya.id, character_name: 'MAYA' }, undefined, { call_time: '06:30', remarks: null });
+    expect(row?.character_id).toBe(maya.id);
+    expect(row?.character_name).toBe('MAYA');
+  });
 });
 
 describe('sceneCast', () => {
