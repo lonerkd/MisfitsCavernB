@@ -4,7 +4,7 @@ import { useFake } from '@/tests/unit-support/fakeSupabase';
 vi.mock('./client', async () => ({ supabase: (await import('@/tests/unit-support/fakeSupabase')).supabaseProxy }));
 
 import {
-  addCrewByUsername, addTask, getProductionData, getProductionFeed, getProjectOverview, getProjectRow, saveFestivals, setBudgetActual,
+  addCrewByUsername, addTask, updateTask, getProductionData, getProductionFeed, getProjectOverview, getProjectRow, saveFestivals, setBudgetActual,
 } from './project-hub';
 
 const boom = { message: 'permission denied' };
@@ -132,6 +132,14 @@ describe('writes', () => {
     const f = useFake({ project_tasks: { data: { id: 't1', title: 'Scout' } } });
     expect(await addTask('p1', 'Scout')).toEqual({ id: 't1', title: 'Scout' });
     expect(f.argsOf('project_tasks', 'insert')[0]).toEqual([{ project_id: 'p1', title: 'Scout' }]);
+  });
+
+  it('updateTask can change a task’s text, and a failed change throws', async () => {
+    const f = useFake({ project_tasks: {} });
+    await updateTask('t1', { title: 'Book the van for @[Day 3](d3)' });
+    expect(f.argsOf('project_tasks', 'update')[0]).toEqual([{ title: 'Book the van for @[Day 3](d3)' }]);
+    useFake({ project_tasks: { error: boom } });
+    await expect(updateTask('t1', { title: 'x' })).rejects.toBe(boom);
   });
 
   it('setBudgetActual clears with null', async () => {

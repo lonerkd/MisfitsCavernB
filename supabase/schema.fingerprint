@@ -265,6 +265,10 @@ column client_errors.release text
 column client_errors.stack text
 column client_errors.user_agent text
 column client_errors.user_id uuid
+column context_notices.key text not null
+column context_notices.kind text not null
+column context_notices.notified_at timestamp with time zone default now() not null
+column context_notices.project_id uuid not null
 column craft_capabilities.capability text not null
 column craft_capabilities.craft text not null
 column crafts.above_the_line boolean default false not null
@@ -1210,6 +1214,10 @@ constraint client_errors.client_errors_release_check CHECK ((char_length(release
 constraint client_errors.client_errors_stack_check CHECK ((char_length(stack) <= 8000))
 constraint client_errors.client_errors_ua_check CHECK ((char_length(user_agent) <= 300))
 constraint client_errors.client_errors_user_fkey FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE SET NULL
+constraint context_notices.context_notices_key_check CHECK (((char_length(key) >= 1) AND (char_length(key) <= 200)))
+constraint context_notices.context_notices_kind_check CHECK (((char_length(kind) >= 1) AND (char_length(kind) <= 40)))
+constraint context_notices.context_notices_pkey PRIMARY KEY (project_id, kind, key)
+constraint context_notices.context_notices_project_id_fkey FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
 constraint craft_capabilities.craft_capabilities_capability_fkey FOREIGN KEY (capability) REFERENCES capabilities(key) ON UPDATE CASCADE ON DELETE CASCADE
 constraint craft_capabilities.craft_capabilities_craft_fkey FOREIGN KEY (craft) REFERENCES crafts(name) ON UPDATE CASCADE ON DELETE CASCADE
 constraint craft_capabilities.craft_capabilities_pkey PRIMARY KEY (craft, capability)
@@ -1798,6 +1806,7 @@ function internal.notes_guard() body=82d05cc6e3308cb72b8594b19c7b1f03
 function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
 function internal.notifications_timing_guard() body=22ad364d5ba92eab613de2b54724b9d6
 function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) body=372f2e21e143405a5033b521e85ef0e2
+function internal.notify_shoot_soon_permits() body=ad2bffdbda84c2b057f0155066695a85
 function internal.notify_signing(p_project uuid, p_title text, p_body text) body=6bf7082aae481bd3ab9a9ecde4f6104a
 function internal.path_project_id(object_name text) body=c78b7805aa86e402c8a05787c6e162d9
 function internal.phase_rank(p_status text) body=c56184a234e0069def12fcde9b6239fb
@@ -1820,6 +1829,7 @@ function internal.projects_budget_approval() body=f40ed6c5b95f6ab30c3456cb772a7f
 function internal.projects_seed_breakdown() body=54e0ad37a8f72270988db692fbe9e35c
 function internal.projects_withdraw_case_study() body=b17b486dadf766b3fbbd63dcb5865493
 function internal.push_notification() body=1016fc962ce51c07547e0198740baaa3
+function internal.push_release_held() body=7f353e8da8462541d9296975ad652cb6
 function internal.reading_memory_forget_correction() body=7764bdc57efd2ef63d5de7f8b1b34926
 function internal.reading_memory_from_correction() body=79d958bdf4ac3bf44bb59d82eebf338f
 function internal.reports_notify_outcome() body=dbab3b8ce84f1c257409bd3f704f6c41
@@ -1898,7 +1908,7 @@ function public.patch_project_settings(p_project_id uuid, p_patch jsonb) body=8e
 function public.pin_message(p_message uuid, p_pinned boolean) body=0974e10cb9ce305b2f54df009fec1341
 function public.project_availability(p_project uuid, p_from date, p_to date) body=34fc5b8eb18eca5b8a479c54a05f7290
 function public.project_context(p_project uuid) body=ee65d82f9155bacab1bb65d4e0d189c1
-function public.project_progress(p_project uuid) body=631ee485e15ad578aac757bcbb7ef3f7
+function public.project_progress(p_project uuid) body=14ff803956ab01254cbb5bab2c7c8138
 function public.projects_progress(p_projects uuid[]) body=ee21868466c414b961563f9fbdafcde4
 function public.reading_memory_for_user(p_user_id uuid, p_format text) body=2a66ee1818dfad753f1ee9a348cafd3d
 function public.report_client_error(p_kind text, p_message text, p_stack text, p_path text, p_digest text, p_release text, p_user_agent text) body=17a56ee9bd9512a893269fc1968c990a
@@ -1985,6 +1995,7 @@ grant function internal.notes_guard() postgres
 grant function internal.notes_notify() postgres
 grant function internal.notifications_timing_guard() postgres
 grant function internal.notify_review(p_project uuid, p_version uuid, p_title text, p_body text) postgres
+grant function internal.notify_shoot_soon_permits() postgres
 grant function internal.notify_signing(p_project uuid, p_title text, p_body text) postgres
 grant function internal.path_project_id(object_name text) anon,authenticated,postgres,service_role
 grant function internal.phase_rank(p_status text) postgres
@@ -2007,6 +2018,7 @@ grant function internal.projects_budget_approval() postgres
 grant function internal.projects_seed_breakdown() postgres,service_role
 grant function internal.projects_withdraw_case_study() postgres
 grant function internal.push_notification() postgres
+grant function internal.push_release_held() postgres
 grant function internal.reading_memory_forget_correction() postgres
 grant function internal.reading_memory_from_correction() postgres
 grant function internal.reports_notify_outcome() postgres
@@ -2432,6 +2444,7 @@ index CREATE UNIQUE INDEX characters_id_project_key ON public.characters USING b
 index CREATE UNIQUE INDEX characters_name_key ON public.characters USING btree (project_id, name)
 index CREATE UNIQUE INDEX characters_pkey ON public.characters USING btree (id)
 index CREATE UNIQUE INDEX client_errors_pkey ON public.client_errors USING btree (id)
+index CREATE UNIQUE INDEX context_notices_pkey ON public.context_notices USING btree (project_id, kind, key)
 index CREATE UNIQUE INDEX craft_capabilities_pkey ON public.craft_capabilities USING btree (craft, capability)
 index CREATE UNIQUE INDEX crafts_pkey ON public.crafts USING btree (name)
 index CREATE UNIQUE INDEX credit_requests_one_pending_idx ON public.credit_requests USING btree (project_id, requester_id) WHERE (status = 'pending'::text)
@@ -2967,6 +2980,7 @@ rls character_castings enabled=true forced=false
 rls character_media enabled=true forced=false
 rls characters enabled=true forced=false
 rls client_errors enabled=true forced=false
+rls context_notices enabled=true forced=false
 rls craft_capabilities enabled=true forced=false
 rls crafts enabled=true forced=false
 rls credit_requests enabled=true forced=false

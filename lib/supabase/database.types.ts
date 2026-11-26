@@ -1496,6 +1496,36 @@ export type Database = {
           },
         ];
       };
+      context_notices: {
+        Row: {
+          key: string;
+          kind: string;
+          notified_at: string;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          key: string;
+          kind: string;
+          notified_at?: string;
+          project_id: string;
+        };
+        Update: {
+          key?: string;
+          kind?: string;
+          notified_at?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "context_notices_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       craft_capabilities: {
         Row: {
           capability: string;

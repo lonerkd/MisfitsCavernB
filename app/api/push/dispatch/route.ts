@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import webpush from 'web-push';
-import { dispatchNotification } from '@/lib/push/dispatch';
+import { dispatchNotification, releaseHeld } from '@/lib/push/dispatch';
 import { parseJsonBody } from '@/lib/validation';
 import { pushDispatchBodySchema } from '@/lib/validation/push';
 
@@ -42,8 +42,11 @@ export async function POST(req: NextRequest) {
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'https://misfits-cavern-b.vercel.app', publicKey, privateKey);
   const db = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   try {
-    const result = await dispatchNotification(db, parsed.data.notification_id, (t, payload) =>
-      webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, payload, { TTL: 3600, urgency: 'high' }));
+    const send = (t: { endpoint: string; p256dh: string; auth: string }, payload: string) =>
+      webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, payload, { TTL: 3600, urgency: 'high' });
+    const result = 'release_for' in parsed.data
+      ? await releaseHeld(db, parsed.data.release_for, send)
+      : await dispatchNotification(db, parsed.data.notification_id, send);
     return NextResponse.json({ ok: true, ...result });
   } catch (e) {
     console.error('Push dispatch failed:', e);

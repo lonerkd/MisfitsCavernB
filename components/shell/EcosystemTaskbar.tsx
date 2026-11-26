@@ -15,6 +15,7 @@ import { splitHref } from '@/lib/split/pane';
 import { useProject } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
+import { useTransientContext } from '@/lib/island/transientContext';
 import { islandMode, isDeck, isEditable, isTypingKey } from '@/lib/island/mode';
 import { ON_SET_HREF } from '@/lib/island/onset';
 import { useBackPlan } from '@/lib/island/useBackPlan';
@@ -271,10 +272,13 @@ export default function EcosystemTaskbar() {
     window.addEventListener('storage', read);
     return () => { window.removeEventListener(ISLAND_PREFS_EVENT, read); window.removeEventListener('storage', read); };
   }, []);
+  const engaged = hover || held || kbFocus || pinned || projectsOpen;
+  // The context shape is a moment: it expands when the place or the thing under the pointer changes, then rests.
+  const contextShown = useTransientContext(zoneActive ? `${pathname}|${zoneChain.map((z) => z.title).join(' › ')}` : '', engaged);
   const mode = islandMode(applyIslandPrefs({
     caps: kbActive, capsDismissed, typing,
-    engaged: hover || held || kbFocus || pinned || projectsOpen,
-    zone: zoneActive, live: !!transient, activity: !!activity,
+    engaged,
+    zone: zoneActive && contextShown, live: !!transient, activity: !!activity,
   }, statePrefs));
   const deck = isDeck(mode);
   /** Every control on the deck answers to a key while Caps Lock is on. */
@@ -659,6 +663,8 @@ export default function EcosystemTaskbar() {
                 <ChevronLeft size={18} strokeWidth={1.5} aria-hidden />
               </Link>
             )}
+            {/* The change of context is announced even after the shape has gone back to rest. */}
+            <span role="status" aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)', whiteSpace: 'nowrap' }}>{zoneActive && crumbs ? zoneChain.map((z) => z.title).join(' › ') : ''}</span>
             <button
               type="button"
               className={s.handle}

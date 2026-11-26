@@ -125,6 +125,18 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
       if (notifyError) toast(`Saved, but the person assigned wasn’t notified: ${notifyError}`, 'error');
     }
   };
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  // Edit a task's text: the mentions in it are re-linked (new ones added, dropped ones removed).
+  const saveTaskTitle = async (t: TaskRow, title: string) => {
+    const next = title.trim();
+    if (!next) { toast('A task needs some text. Delete it instead if it is not needed.', 'error'); return; }
+    if (next === t.title) { setEditingTask(null); return; }
+    if (!await attempt(() => hub.updateTask(t.id, { title: next }))) return;
+    setTasks(p => p.map(x => x.id === t.id ? { ...x, title: next } : x));
+    setEditingTask(null);
+    const problem = await syncMentions(projectId, t.id, next);
+    if (problem) toast(`The task was changed, but its mentions weren’t saved: ${problem}`, 'error');
+  };
   const delTask = async (id: string) => {
     if (!await confirm('Delete this task? This cannot be undone.')) return;
     const prev = tasks;
@@ -211,7 +223,16 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
             <div key={t.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <Row>
               <button onClick={() => toggleTask(t)} aria-label="toggle" style={{ background: 'none', border: `1px solid ${t.completed ? 'var(--ok)' : 'rgba(var(--ink-rgb), 0.25)'}`, borderRadius: 4, width: 15, height: 15, cursor: 'pointer', color: 'var(--ok)', fontSize: 11, lineHeight: 1, flexShrink: 0 }}>{t.completed ? '✓' : ''}</button>
-              <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}><MentionText text={t.title} projectId={projectId} entities={entities.rows} /></span>
+              {editingTask === t.id ? (
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <MentionInput entities={entities.rows} initial={t.title} keep label={`Text of task ${plain(t.title)}`} submitLabel="Save task text" placeholder="Task…" onSubmit={(v) => void saveTaskTitle(t, v)}
+                    style={{ background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '4px 6px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' }}
+                    buttonStyle={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 10px', cursor: 'pointer', fontSize: 11 }} />
+                </span>
+              ) : (
+                <span style={{ flex: 1, minWidth: 0, fontSize: 11, color: t.completed ? 'var(--fg-dim)' : 'var(--fg)', textDecoration: t.completed ? 'line-through' : 'none' }}><MentionText text={t.title} projectId={projectId} entities={entities.rows} /></span>
+              )}
+              <button type="button" onClick={() => setEditingTask(editingTask === t.id ? null : t.id)} aria-label={editingTask === t.id ? `Cancel editing ${plain(t.title)}` : `Edit ${plain(t.title)}`} style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', textDecoration: 'underline' }}>{editingTask === t.id ? 'Cancel' : 'Edit'}</button>
               <Link href={`/studio?project=${projectId}&card=${t.id}`} aria-label={`Open the card for ${plain(t.title)}`} style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--violet)', textDecoration: 'underline', flexShrink: 0 }}>Card</Link>
               <DelBtn onClick={() => delTask(t.id)} />
             </Row>

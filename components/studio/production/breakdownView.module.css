@@ -59,8 +59,52 @@
 .empty { font-family: var(--mono); font-size: 11px; color: var(--fg-dim); }
 
 /* ── Category editor ─────────────────────────────────── */
-.edRows { display: flex; flex-direction: column; gap: 6px; }
-.edRow { display: grid; grid-template-columns: 34px minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; }
-.colorInput { width: 34px; height: 30px; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; padding: 2px; cursor: pointer; }
-.edActions { display: flex; gap: 2px; }
-.edCount { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
+.edRows { display: flex; flex-direction: column; gap: 10px; }
+/* One category: swatch, name, rate, element count, reorder / delete. Named areas, so a narrow screen re-stacks them instead of squeezing the name. */
+.edRow {
+  display: grid; gap: 6px 8px; align-items: center;
+  grid-template-columns: 44px minmax(0, 1fr) 120px 84px auto;
+  grid-template-areas: "sw name rate count act";
+}
+.edSw { grid-area: sw; } .edName { grid-area: name; min-width: 0; } .edRate { grid-area: rate; min-width: 0; } .edCount { grid-area: count; } .edActions { grid-area: act; }
+/* The row's fields carry the Studio module's .input class, whose hashed name this module cannot select — so the
+   44px rule is written against the element, or it silently never applies (a desktop row came out 38px tall). */
+.edRow input { min-height: 44px; min-width: 0; }
+.colorInput { width: 44px; height: 44px; border: 1px solid var(--border-2); border-radius: 8px; background: transparent; padding: 3px; cursor: pointer; }
+.edActions { display: flex; gap: 2px; justify-content: flex-end; }
+.edActions > button { width: 44px; height: 44px; }
+.edCount { font-family: var(--mono); font-size: max(10px, var(--mc-min-font, 0px)); color: var(--fg-dim); white-space: nowrap; }
+.edAdd { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
+/* A phone: the name takes the full width on the first line; rate, count and the buttons sit under it. */
+@media (max-width: 760px) {
+  .edRow {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    grid-template-areas: "sw name name" ". rate act" ". count act";
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+  }
+  .edAdd { grid-template-columns: 44px minmax(0, 1fr); }
+  .edAdd > button { grid-column: 2; justify-self: start; }
+}
+
+/* ── Readiness: the lead of the tab ───────────────────── */
+.focus { border: 1px solid var(--border); border-radius: 14px; background: var(--panel); padding: 14px 16px; margin-bottom: 16px; }
+.focusBlocked { border-color: color-mix(in srgb, var(--warn) 55%, var(--border)); }
+.focusClear { border-color: color-mix(in srgb, var(--ok) 50%, var(--border)); }
+.focusHead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.focusIcon { flex-shrink: 0; color: var(--fg-muted); }
+.focusBlocked .focusIcon { color: var(--warn); }
+.focusClear .focusIcon { color: var(--ok); }
+.focusTitles { flex: 1 1 220px; min-width: 0; }
+.focusTitle { margin: 0; font-family: var(--display); font-size: 1.15rem; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.focusContext { margin: 2px 0 0; font-family: var(--mono); font-size: max(10px, var(--mc-min-font, 0px)); color: var(--fg-dim); }
+.focusList { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; }
+.focusRow { display: grid; grid-template-columns: 72px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 0; border-top: 1px solid var(--border); }
+.focusKind { font-family: var(--mono); font-size: max(10px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
+.focusRowBlocker .focusKind { color: var(--warn); }
+.focusRowTitle { font-size: 13px; color: var(--fg); overflow-wrap: anywhere; }
+.focusRowDetail { font-size: 12px; color: var(--fg-muted); margin-top: 2px; overflow-wrap: anywhere; }
+.focusMore { margin: 8px 0 0; font-size: 12px; color: var(--fg-dim); }
+@media (max-width: 760px) {
+  .focusRow { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .focusRow > a, .focusRow > button { justify-self: start; }
+}

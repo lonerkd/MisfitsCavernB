@@ -174,6 +174,7 @@ blocks on `[data-theme="<id>"]` in `app/globals.css`:
 | `paper` (Paper) | light | warm off-white, ink text, rust accent |
 | `default` (Cavern) | dark | near-black, cool white text, ember accent — the brand's night look |
 | `vampire` (Vampire) | dark | black, blood red accent |
+| `rainbow` (Rainbow) | dark | clear glass over a slow colour flow; accent and outlines cycle the spectrum (`--mc-hue`) |
 | `blueprint` (Blueprint) | dark | drafting blue, sky accent, grid |
 | `terminal` (Terminal) | dark | green phosphor, mono type |
 | `editorial` (Editorial) | light | white, black type, red accent, serif display |

@@ -302,7 +302,7 @@ function Appearances({ name, where }: { name: string; where?: WorldLocation }) {
           <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
             {list.map((a) => (
               <li key={a.sceneId} data-testid="appearance" style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-                <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript({ id: a.sceneId, script_id: a.scriptId ?? scriptId })} aria-label={`Open scene ${a.number} in the script`}>
+                <button type="button" className={cx(s.btnGhost, s.small)} onClick={() => openInScript({ id: a.sceneId, script_id: a.scriptId ?? scriptId })} aria-label={`Sc ${a.number} — open scene ${a.number} in the script`}>
                   Sc {a.number} <ArrowRight size={11} aria-hidden />
                 </button>
                 <span style={{ flex: '1 1 160px', minWidth: 0, fontSize: 13, color: 'var(--fg)' }}>{a.heading || `Scene ${a.number}`}</span>

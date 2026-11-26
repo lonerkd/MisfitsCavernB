@@ -273,10 +273,10 @@ body.custom-cursor-active * {
    the same panes: the three desk columns left it a message column about 300 px wide and 150 px tall. */
 @media (max-width: 760px), (pointer: coarse) and (max-height: 500px) {
   .mc-lounge-back { display: inline-flex !important; }
-  .mc-lounge { padding-bottom: 0 !important; min-height: 0 !important; height: auto !important; }
+  .mc-lounge { padding-bottom: 0 !important; min-height: 0 !important; height: calc(100dvh - var(--mc-safe-top) - 76px - env(safe-area-inset-bottom)) !important; }
   .mc-lounge-top { padding: 0 12px !important; gap: 8px; }
   .mc-lounge-online { display: none !important; }
-  .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 62px - 76px - env(safe-area-inset-bottom)); flex: none !important; }
+  .mc-lounge-body { flex: 1 1 auto !important; min-height: 0; height: auto; }
   .mc-lounge-body[data-pane='list'] { flex-direction: column; overflow-y: auto !important; }
   .mc-lounge-body[data-pane='list'] .mc-lounge-chat { display: none !important; }
   .mc-lounge-body[data-pane='list'] .mc-lounge-channels { width: 100% !important; border-right: 0 !important; flex-shrink: 0; }
@@ -301,7 +301,7 @@ body.custom-cursor-active * {
   .mc-lounge-composer { padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important; }
   /* The keyboard is up (PhoneKeyboard publishes its height as --kb): the room ends where the keyboard starts, so the composer sits on
      top of it instead of under it, and the pill's 76 px and the home indicator are not reserved (the keyboard covers both). */
-  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 62px - var(--kb, 0px)); }
+  html[data-typing='true'] .mc-lounge { height: calc(100dvh - var(--mc-safe-top) - var(--kb, 0px)) !important; }
   html[data-typing='true'] .mc-lounge-composer { padding-bottom: 8px !important; }
   html[data-typing='true'] .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
   /* The thread panel is fixed to the layout viewport, which iOS leaves behind the keyboard: lift it by --kb so its reply field sits on
@@ -315,9 +315,10 @@ body.custom-cursor-active * {
 }
 /* ...and sideways the top bar is 44 px and the island's dock (not the tab pill) is what the room leaves space for. */
 @media (pointer: coarse) and (max-height: 500px) {
-  /* The chat column already pads itself by the island's own height (--taskbar-height), so only the top bar comes off here; the list
-     pane scrolls under the island, so it gets that room as scroll space at its end. */
-  .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - 44px - env(safe-area-inset-bottom)); }
+  /* Sideways the room ends at the home indicator and the body flexes under the top bar and the welcome banner; the chat
+     column already pads itself by the island's own height (--taskbar-height), and the list pane scrolls under the island,
+     so it gets that room as scroll space at its end. */
+  .mc-lounge { height: calc(100dvh - var(--mc-safe-top) - env(safe-area-inset-bottom)) !important; }
   /* The room is exactly one screen tall, so the page's own 76 px foot (every other page's room for the island) would only make the
      window scroll, and scrolling the latest message into view then took the chat header off the top. */
   .main-content-container:has(.mc-lounge) { padding-bottom: 0; }
@@ -330,7 +331,7 @@ body.custom-cursor-active * {
   /* Typing sideways, the keyboard takes about half of a 393 px screen: the top bar and the chat header would take most of what is left
      (the message list was down to a line or two), so both step aside until the keyboard goes; the composer and the messages stay. */
   html[data-typing='true'] .mc-lounge-top, html[data-typing='true'] .mc-lounge-chathead { display: none !important; }
-  html[data-typing='true'] .mc-lounge-body { height: calc(100dvh - var(--mc-safe-top) - var(--kb, 0px)); }
+  html[data-typing='true'] .mc-lounge { height: calc(100dvh - var(--mc-safe-top) - var(--kb, 0px)) !important; }
   /* The island makes way for the keyboard, so the chat column no longer leaves its height empty under the composer. */
   html[data-typing='true'] .mc-lounge-chat { padding-bottom: 0 !important; }
   /* The chat header's buttons keep their icons and lose their words sideways (their names stay in aria-label), and the header is slimmer. */
@@ -1151,6 +1152,47 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
 html[data-typing='true'] body { padding-bottom: var(--kb, 0px); }
 html[data-typing='true'] .main-content-container { padding-bottom: calc(var(--kb, 0px) + 24px); }
 
+
+/* Rainbow: clear glass over a slowly flowing spectrum. `--mc-hue` turns once every 14 s (a registered property, so it can be
+   animated); the accent and every accent outline follow it, and the page behind the translucent surfaces is a moving wash of
+   the same colours. A reader who asks for less motion gets a still rainbow. */
+@property --mc-hue { syntax: '<number>'; inherits: true; initial-value: 0; }
+@keyframes mc-hue-turn { to { --mc-hue: 360; } }
+[data-theme="rainbow"] {
+  animation: mc-hue-turn 14s linear infinite;
+  --bg: #0a0c14; --bg-2: #0d1019; --bg-3: #10131f; --bg-4: #151927;
+  --fg: #f2f4ff; --fg-muted: rgba(242, 244, 255, 0.78); --fg-dim: rgba(242, 244, 255, 0.64); --fg-ghost: rgba(242, 244, 255, 0.14);
+  --accent: #ff5fa8; --accent-dim: rgba(255, 95, 168, 0.2); --accent-glow: rgba(255, 95, 168, 0.14);
+  --secondary: #5ff0c4; --secondary-dim: rgba(95, 240, 196, 0.2);
+  --border: rgba(255, 255, 255, 0.12); --border-2: rgba(255, 95, 168, 0.4); --border-accent: rgba(255, 95, 168, 0.7);
+  --fg-rgb: 242, 244, 255; --ink-rgb: 255, 255, 255; --fg-strong: #ffffff; --on-accent: #0a0c14;
+  --surface: rgba(10, 12, 20, 0.34); --surface-2: rgba(10, 12, 20, 0.26); --glass: rgba(10, 12, 20, 0.3);
+  --frost: blur(20px) saturate(1.5);
+  --script-color: #ff5fa8; --studio-color: #5ff0c4; --jobs-color: #a78bfa;
+  --ambient-r: 255; --ambient-g: 95; --ambient-b: 168;
+  color-scheme: dark;
+}
+[data-theme="rainbow"] {
+  --accent: hsl(var(--mc-hue) 92% 64%); --accent-dim: hsl(var(--mc-hue) 92% 64% / 0.2); --accent-glow: hsl(var(--mc-hue) 92% 64% / 0.14);
+  --secondary: hsl(calc(var(--mc-hue) + 140) 90% 64%); --secondary-dim: hsl(calc(var(--mc-hue) + 140) 90% 64% / 0.2);
+  --border: rgba(255, 255, 255, 0.12); --border-2: hsl(var(--mc-hue) 90% 66% / 0.45); --border-accent: hsl(var(--mc-hue) 92% 66% / 0.75);
+  --script-color: hsl(var(--mc-hue) 92% 64%); --studio-color: hsl(calc(var(--mc-hue) + 120) 90% 64%); --jobs-color: hsl(calc(var(--mc-hue) + 240) 90% 68%);
+}
+[data-theme="rainbow"] body {
+  background-image:
+    radial-gradient(60vw 60vw at 8% 0%, hsl(var(--mc-hue) 90% 55% / 0.34), transparent 62%),
+    radial-gradient(55vw 55vw at 100% 30%, hsl(calc(var(--mc-hue) + 120) 90% 55% / 0.28), transparent 62%),
+    radial-gradient(60vw 50vw at 40% 110%, hsl(calc(var(--mc-hue) + 240) 90% 55% / 0.3), transparent 62%);
+  background-attachment: fixed;
+}
+[data-theme="rainbow"] [style*="min-height: 100vh"][style*="background: var(--bg)"],
+[data-theme="rainbow"] [style*="min-height: 100dvh"][style*="background: var(--bg)"] { background: transparent !important; }
+[data-theme="rainbow"] [style*="background: var(--surface)"],
+[data-theme="rainbow"] [style*="background: var(--surface-2)"],
+[data-theme="rainbow"] [style*="background: var(--glass)"],
+[data-theme="rainbow"] .glass, [data-theme="rainbow"] .glass-sm, [data-theme="rainbow"] .glass-heavy { backdrop-filter: var(--frost); -webkit-backdrop-filter: var(--frost); }
+@media (prefers-reduced-motion: reduce) { [data-theme="rainbow"] { animation: none; } }
+@media (prefers-reduced-transparency: reduce) { [data-theme="rainbow"] { --surface: var(--bg-3); --surface-2: var(--bg-2); --glass: var(--bg-2); --frost: none; } }
 
 /* ═══════════════════════════════
    FROSTED MODE (BACKLOG 3.48)

@@ -17,6 +17,7 @@ import type { TranscriptLineDraft } from '@/lib/studio/transcript';
 import { baseType, describe, dictationLine, pickAudioType, recClock, voiceMemoName, type Capture } from '@/lib/pocket/capture';
 import { capture, discard, flush, listOutbox, OUTBOX_EVENT, type FlushResult } from '@/lib/pocket/outbox';
 import m from './mobile.module.css';
+import { lockScroll } from '@/lib/ui/scrollLock';
 
 type Mode = 'pick' | 'voice' | 'note' | 'link';
 
@@ -194,9 +195,8 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
     closeRef.current?.focus();
     const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', esc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', esc); document.body.style.overflow = prev; };
+    const unlock = lockScroll();
+    return () => { window.removeEventListener('keydown', esc); unlock(); };
   }, [onClose]);
 
   const report = (what: string, r: FlushResult, id: string) => {

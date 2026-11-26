@@ -6,6 +6,7 @@ import { X } from 'lucide-react';
 import { usePhoneLayout } from '@/lib/os/usePhone';
 import { DiscSwitch } from '@/components/ui/DiscSwitch';
 import s from './studio.module.css';
+import { lockScroll } from '@/lib/ui/scrollLock';
 
 export const cx = (...names: Array<string | false | null | undefined>) => names.filter(Boolean).join(' ');
 
@@ -49,7 +50,7 @@ export function ErrorBar({ message, onRetry }: { message: string; onRetry?: () =
  * Accessible modal: labelled dialog, Escape and backdrop close, focus moves in
  * on open and returns to the opener on close, Tab stays inside.
  */
-export function Modal({ title, onClose, children, actions, narrow }: { title: string; onClose: () => void; children: React.ReactNode; actions?: React.ReactNode; narrow?: boolean }) {
+export function Modal({ title, onClose, children, actions, narrow, compact }: { title: string; onClose: () => void; children: React.ReactNode; actions?: React.ReactNode; narrow?: boolean; /** Keep the title and its buttons on one short row, also on a phone. */ compact?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const closeRef = useRef(onClose);
   useLayoutEffect(() => { closeRef.current = onClose; });
@@ -70,11 +71,10 @@ export function Modal({ title, onClose, children, actions, narrow }: { title: st
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     };
     document.addEventListener('keydown', onKey, true);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     return () => {
       document.removeEventListener('keydown', onKey, true);
-      document.body.style.overflow = prevOverflow;
+      unlock();
       opener?.focus?.();
     };
   }, []);
@@ -92,7 +92,7 @@ export function Modal({ title, onClose, children, actions, narrow }: { title: st
   return createPortal(
     <div className={s.backdrop} style={typing ? { top: phone.offset, bottom: 'auto', height: phone.height, alignItems: 'flex-start', padding: 8 } : undefined} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div ref={ref} role="dialog" aria-modal="true" aria-labelledby={titleId} className={cx(s.page, s.modal, narrow && s.modalNarrow)} style={typing ? { maxHeight: phone.height - 16 } : undefined}>
-        <div className={s.modalHead}>
+        <div className={cx(s.modalHead, compact && s.modalHeadCompact)}>
           <div id={titleId} className={s.modalTitle}>{title}</div>
           <div className={s.actions}>
             {actions}

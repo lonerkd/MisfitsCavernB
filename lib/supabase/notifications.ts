@@ -10,6 +10,9 @@ export interface Notification {
   link: string | null;
   read: boolean;
   created_at: string;
+  /** Why the push to the phone did not go out (quiet-hours, failed…); written only by the push sender. */
+  push_skipped?: string | null;
+  pushed_at?: string | null;
 }
 
 export { DEFAULT_NOTIFICATION_PREFS, typeEnabled, type NotificationPrefs } from '@/lib/notifications/prefs';

@@ -149,6 +149,13 @@ export async function getProductionData(projectId: string): Promise<ProductionDa
 
 // ── Tasks ────────────────────────────────────────────────────────────────────
 
+export async function listTasks(projectId: string): Promise<TaskRow[]> {
+  const { data, error } = await supabase.from('project_tasks')
+    .select('id,title,completed,assigned_to,due_date').eq('project_id', projectId).order('created_at', { ascending: true });
+  if (error) throw error;
+  return (data ?? []) as TaskRow[];
+}
+
 export async function addTask(projectId: string, title: string): Promise<TaskRow> {
   const { data, error } = await supabase.from('project_tasks')
     .insert({ project_id: projectId, title }).select('id,title,completed,assigned_to,due_date').single();
@@ -156,7 +163,7 @@ export async function addTask(projectId: string, title: string): Promise<TaskRow
   return data as TaskRow;
 }
 
-export async function updateTask(id: string, patch: Partial<Pick<TaskRow, 'completed' | 'assigned_to' | 'due_date'>>): Promise<void> {
+export async function updateTask(id: string, patch: Partial<Pick<TaskRow, 'completed' | 'assigned_to' | 'due_date' | 'title'>>): Promise<void> {
   const { error } = await supabase.from('project_tasks').update(patch).eq('id', id);
   if (error) throw error;
 }

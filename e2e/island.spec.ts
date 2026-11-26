@@ -83,7 +83,7 @@ test.describe('The island (local Supabase)', () => {
     expect(open.x + open.width).toBeLessThanOrEqual(DESK.viewport.width);
     expect(open.y + open.height).toBeLessThanOrEqual(DESK.viewport.height);
     // The room it asks pages for doesn't change when it opens.
-    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height').trim())).toBe('64px');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height').trim())).toBe('70px');
 
     // Its control does the real thing. (Pointing at the strip first: a press where the pill
     // was, in the moment after it opens, keeps the island open rather than pressing a control.)
@@ -174,11 +174,11 @@ test.describe('The island (local Supabase)', () => {
     const reserve = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--taskbar-height').trim());
     const height = async () => (await surface(page).boundingBox())!.height;
     const normal = await height();
-    expect(await reserve()).toBe('64px');
+    expect(await reserve()).toBe('70px');
 
     await slider.fill('1.3');
     await expect.poll(height).toBeGreaterThan(normal + 8);
-    expect(await reserve()).toBe('77px');
+    expect(await reserve()).toBe('84px');
     await slider.fill('0.8');
     await expect.poll(height).toBeLessThan(normal - 4);
     // Smaller controls, but its words stay at the 11px floor.
@@ -189,7 +189,7 @@ test.describe('The island (local Supabase)', () => {
     await page.goto('/community');
     await expect(island(page)).toBeVisible({ timeout: 30_000 });
     await page.mouse.move(10, 10);
-    await expect.poll(reserve).toBe('77px');
+    await expect.poll(reserve).toBe('84px');
     // And the opened island still fits the screen at its largest.
     await page.waitForTimeout(1200);
     await surface(page).hover();

@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, ExternalLink, Pause, Play, X } from 'lucide-react';
 import { AUTO_SECONDS, stepSlide, type Slide } from '@/lib/studio/board-slides';
 import c from './slideshow.module.css';
+import { lockScroll } from '@/lib/ui/scrollLock';
 
 interface Props { name: string; slides: Slide[]; startIndex?: number; onClose: () => void }
 
@@ -29,11 +30,10 @@ export default function BoardSlideshow({ name, slides, startIndex = 0, onClose }
   // Focus in on open, back to the opener on close; the page behind does not scroll.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const unlock = lockScroll();
     rootRef.current?.focus();
     return () => {
-      document.body.style.overflow = overflow;
+      unlock();
       if (opener && opener.isConnected) opener.focus();
     };
   }, []);
