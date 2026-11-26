@@ -82,17 +82,15 @@ export default function AuthPage() {
   // someone who is already signed in and lands on /auth.
   // A new account with nowhere particular to go starts at /welcome.
   const isNewAccount = useRef(false);
+  // New accounts only land on surfaces that work without projects.
+  // Existing accounts honour their redirect target (e.g. /studio after gating).
+  const landingTarget = useCallback(() => {
+    if (isNewAccount.current && !isNewSurface) return '/';
+    return isNewAccount.current && isNewSurface ? '/welcome' : redirectTo;
+  }, [redirectTo, isNewSurface]);
   useEffect(() => {
-    if (status === 'authed') {
-      // New accounts only land on surfaces that work without projects.
-      // Existing accounts honour their redirect target (e.g. /studio after gating).
-      if (isNewAccount.current && !isNewSurface) {
-        router.replace('/');
-      } else {
-        router.replace(isNewAccount.current && isNewSurface ? '/welcome' : redirectTo);
-      }
-    }
-  }, [status, redirectTo, isNewSurface, router]);
+    if (status === 'authed') router.replace(landingTarget());
+  }, [status, landingTarget, router]);
 
   // Every change (and the submit) takes all the fields from the form itself, not
   // just the one that changed: an input event can be lost while the page
@@ -181,8 +179,13 @@ export default function AuthPage() {
         }
         toast('Account created.', 'success');
       }
-      // No navigation here: the status effect above moves us once the OS store
-      // reports 'authed' (osSignIn/osSignUp already awaited hydration).
+      // Move on the submit's own success, not only on the status effect above:
+      // osSignIn/osSignUp marked the store 'authed' before returning, so the
+      // destination's gate cannot bounce us back here. The effect alone left
+      // this page stranded whenever the store's transition was missed or
+      // reset in between — signed in (theme, toast) but going nowhere until
+      // a manual refresh. The effect still covers landing here already authed.
+      router.replace(landingTarget());
     } catch (err: any) {
       isNewAccount.current = false;
       const code = err.code || '';
