@@ -11,6 +11,18 @@ export const MAX_CHUNK_CHARS = 150_000;
 export const CHUNK_TIMEOUT_MS = 30_000;
 /** The most parts one payload may have (about 9.6 MB of base64), so a sender cannot make a receiver hoard. */
 export const MAX_CHUNKS = 64;
+/**
+ * The largest update a receiver will apply, in bytes once decoded: past it the live provider drops the
+ * message without a word, rather than let one message stall the editor (`sync.ts`, `receiveUpdate`).
+ */
+export const MAX_UPDATE_BYTES = 2_000_000;
+/**
+ * The largest encoded payload a receiver will take, and so the most a sender may send: MAX_UPDATE_BYTES in
+ * base64, rounded down to a whole four-character group, so anything under this line also decodes to under
+ * the byte line. Before the two sides shared one line, a sender happily chunked up to MAX_CHUNKS parts —
+ * about 9.6 MB — that the receiver silently dropped, and the offline queue's broadcast still said 'sent'.
+ */
+export const MAX_PAYLOAD_CHARS = 2_666_664;
 /** The most partial payloads held at once. */
 const MAX_PENDING_SETS = 16;
 

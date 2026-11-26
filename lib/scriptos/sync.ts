@@ -13,6 +13,7 @@ import {
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
   mapThroughDelta,
+  reconcileScriptText,
   REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
   SCRIPT_TEXT_FIELD,
@@ -23,7 +24,7 @@ import {
   YJS_UPDATE_EVENT,
   type PersistedScriptText,
 } from './cowriting';
-import { ChunkReassembler, toWirePayloads } from './chunks';
+import { ChunkReassembler, MAX_PAYLOAD_CHARS, MAX_UPDATE_BYTES, toWirePayloads } from './chunks';
 
 export interface Collaborator {
   userId: string;
@@ -75,6 +76,13 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
     /** Send one encoded update, in numbered chunks when it is too large for one Realtime message. */
     const sendEncoded = (event: string, encoded: string, what: string) => {
       if (!channel || !subscribed) return;
+      // A receiver drops anything past the shared size line without a word (chunks.ts), so sending it
+      // anyway would mark a sync that never arrives. The words are not lost: the stored shared state
+      // carries them, and an open editor merges that at its next save.
+      if (encoded.length > MAX_PAYLOAD_CHARS) {
+        console.warn(`[Script Sync] Not broadcasting ${what}: past the size a receiver will take.`);
+        return;
+      }
       const ch = channel;
       void (async () => {
         try {
@@ -96,9 +104,9 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
 
     const receiveUpdate = ({ payload }: { payload?: unknown }) => {
       const encoded = reassembler.accept(payload);
-      if (encoded === null || encoded.length > 2_700_000) return;
+      if (encoded === null || encoded.length > MAX_PAYLOAD_CHARS) return;
       const update = decodeScriptTextUpdate(encoded);
-      if (!update || update.length > 2_000_000) return;
+      if (!update || update.length > MAX_UPDATE_BYTES) return;
       try { Y.applyUpdate(doc!, update, REMOTE_EDIT_ORIGIN); }
       catch (error) { console.warn('[Script Sync] Ignored an invalid Yjs update:', error); }
     };
@@ -221,6 +229,13 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         }
       } else if (!savedState && text.toString() !== localContentRef.current) {
         applyScriptText(text, localContentRef.current, REMOTE_EDIT_ORIGIN);
+      }
+      // Words that reached the script's plain-text column without reaching its shared document — a beat
+      // appended while no editor was open writes the column alone (`append_to_script`) — are in neither
+      // the restored state nor the server's, and the next save would write the document back over them.
+      // Fold them in against the saved state's base before anything is published or saved (BACKLOG 3.33).
+      if (savedState?.state?.length && scriptResult.data?.content) {
+        reconcileScriptText(doc, baseContent, scriptResult.data.content);
       }
 
       undoManager = new Y.UndoManager(text, { trackedOrigins: new Set([LOCAL_EDIT_ORIGIN]), captureTimeout: 600 });

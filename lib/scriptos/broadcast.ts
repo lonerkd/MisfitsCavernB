@@ -1,5 +1,5 @@
 import { YJS_SYNC_EVENT } from './cowriting';
-import { toWirePayloads } from './chunks';
+import { MAX_PAYLOAD_CHARS, toWirePayloads } from './chunks';
 
 const SUBSCRIBE_TIMEOUT_MS = 5_000;
 
@@ -31,6 +31,10 @@ export async function broadcastMergedUpdate(client: BroadcastClient, scriptId: s
   // channel, it is that editor's live co-writing channel: it already syncs the merge, and removing it below would
   // cut the editor off. So leave it alone.
   if (client.getChannels?.().some((c) => c.topic === `realtime:script_${scriptId}`)) return 'editor-open-here';
+  // A receiver drops a state past the shared size line (chunks.ts) without answering, so sending one
+  // would be reported as sent when nothing arrived. The merge is already saved; call it failed and let
+  // the next-save path carry it, as it does for any broadcast an editor misses.
+  if (encodedState.length > MAX_PAYLOAD_CHARS) return 'failed';
   let channel: BroadcastChannel | null = null;
   try {
     channel = client.channel(`script_${scriptId}`, { config: { private: true, broadcast: { self: false } } });

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ChunkReassembler, MAX_CHUNK_CHARS } from './chunks';
+import { ChunkReassembler, MAX_CHUNK_CHARS, MAX_PAYLOAD_CHARS } from './chunks';
 import { broadcastMergedUpdate, type BroadcastChannel, type BroadcastClient } from './broadcast';
 
 function fake(opts: { status?: string; sendResult?: unknown; sendThrows?: boolean } = {}) {
@@ -44,6 +44,13 @@ describe('broadcastMergedUpdate', () => {
     const r = new ChunkReassembler();
     const done = (sent as { event: string; payload: unknown }[]).map((m) => { expect(m.event).toBe('yjs_sync'); return r.accept(m.payload); });
     expect(done[2]).toBe(big);
+  });
+
+  it('reports failed, without opening a channel, for a state past the size a receiver will take', async () => {
+    const { client, sent } = fake();
+    expect(await broadcastMergedUpdate(client, 's1', 'A'.repeat(MAX_PAYLOAD_CHARS + 1))).toBe('failed');
+    expect(client.channel).not.toHaveBeenCalled();
+    expect(sent).toHaveLength(0);
   });
 
   it('reports a channel that will not subscribe, and cleans up', async () => {

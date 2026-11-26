@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ChunkReassembler, MAX_CHUNK_CHARS, toWirePayloads } from './chunks';
+import { ChunkReassembler, MAX_CHUNK_CHARS, MAX_CHUNKS, MAX_PAYLOAD_CHARS, MAX_UPDATE_BYTES, toWirePayloads } from './chunks';
 
 const big = (n: number) => 'ab'.repeat(n / 2);
 
@@ -44,6 +44,17 @@ describe('chunking Yjs payloads', () => {
     t = 5000;
     expect(r.pending).toBe(0);
     expect(r.accept(parts[2])).toBeNull();
+  });
+
+  it('keeps one size line for both sides: what a sender may send, a receiver will take', () => {
+    // The encoded line is the byte line in base64, rounded down to a whole group of four, so a payload
+    // at the line decodes to no more than the most a receiver will apply.
+    expect(MAX_PAYLOAD_CHARS % 4).toBe(0);
+    expect((MAX_PAYLOAD_CHARS / 4) * 3).toBeLessThanOrEqual(MAX_UPDATE_BYTES);
+    // And it still travels as a part count the receiver accepts.
+    const parts = toWirePayloads(big(MAX_PAYLOAD_CHARS), 'cap');
+    expect(parts.length).toBe(Math.ceil(MAX_PAYLOAD_CHARS / MAX_CHUNK_CHARS));
+    expect(parts.length).toBeLessThanOrEqual(MAX_CHUNKS);
   });
 
   it('ignores malformed chunks', () => {
