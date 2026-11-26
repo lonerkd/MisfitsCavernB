@@ -69,7 +69,7 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     const [cardW, textW] = await roleCard.evaluate((el) => [el.getBoundingClientRect().width, (el.querySelector('p') as HTMLElement).getBoundingClientRect().width]);
     expect(textW).toBeGreaterThan(cardW * 0.6);
     // The public newsletter is there too.
-    await expect(page.locator('[aria-labelledby="community-hub"]')).toContainText(hubTitle);
+    await expect(page.locator('[aria-labelledby="home-hub"]')).toContainText(hubTitle);
 
     // Made a member of the private channel, its unread appears (checked in the database as well as on screen).
     await stack.insert('channel_members', { channel_id: secretId, user_id: jordan.id, can_post: true, can_manage: false });
@@ -84,10 +84,9 @@ test.describe('Community personas (Sam, Jordan, Riley)', () => {
     await page.goto('/community');
 
     // The public parts load: the newsletter post and the section headings.
-    const hub = page.locator('[aria-labelledby="community-hub"]');
+    const hub = page.locator('[aria-labelledby="home-hub"]');
     await expect(hub).toContainText(hubTitle, { timeout: 30_000 });
     await expect(page.getByRole('heading', { name: 'Crew open to work' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'The Cavern', exact: true })).toBeVisible();
 
     // Your day for an outsider is empty of Sam's work.
     await expect(page.locator('[aria-labelledby="today-lounge"]')).toContainText(/caught up/);

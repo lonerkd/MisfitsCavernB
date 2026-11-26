@@ -11,7 +11,6 @@ import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/os';
 import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
-  { label: 'Community', href: '/community' },
   { label: 'Editor',    href: '/editor'    },
   { label: 'Studio',    href: '/studio'    },
   { label: 'Lounge',    href: '/lounge'    },

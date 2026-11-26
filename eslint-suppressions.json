@@ -109,7 +109,7 @@
   },
   "app/(suite)/page.tsx": {
     "no-restricted-syntax": {
-      "count": 2
+      "count": 1
     }
   },
   "app/(suite)/portfolio/manage/page.tsx": {
@@ -218,11 +218,6 @@
   },
   "components/brief/BriefPanel.tsx": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "components/community/TheCavern.tsx": {
-    "no-restricted-syntax": {
       "count": 1
     }
   },

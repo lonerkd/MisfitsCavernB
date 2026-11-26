@@ -14,7 +14,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Sun, FolderOpen, Search, MessageSquare, X, FileText, LayoutGrid, Briefcase, Users, Film, Music,
-  User, Settings, Bell, Plus, ChevronLeft, Globe, type LucideIcon,
+  User, Settings, Bell, Plus, ChevronLeft, type LucideIcon,
 } from 'lucide-react';
 import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
@@ -40,17 +40,16 @@ const TOOLS = [
   { href: '/crew', label: 'Crew', icon: Users },
   { href: '/portfolio', label: 'Portfolio', icon: Film },
   { href: '/soundtrack', label: 'Sound', icon: Music },
-  { href: '/community#updates', label: 'Updates', icon: Bell },
+  { href: '/#updates', label: 'Updates', icon: Bell },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/settings', label: 'Settings', icon: Settings },
-  { href: '/', label: 'Front page', icon: Globe },
 ] as const;
 
 /** Pages that are the whole screen, or for people outside the suite. */
 const hiddenOn = (path: string) => path === '/auth' || path === '/login' || path === '/privacy' || path === '/terms' || path === '/split' || path.startsWith('/editor') || /^\/(shared|p|s|call)\//.test(path);
 
 const PLACES: { href: string; label: string; icon: LucideIcon; match: (p: string) => boolean }[] = [
-  { href: '/community', label: 'Community', icon: Sun, match: (p) => p.startsWith('/community') || p.startsWith('/hub') },
+  { href: '/', label: 'Home', icon: Sun, match: (p) => p === '/' || p.startsWith('/community') || p.startsWith('/hub') },
   { href: '/projects', label: 'Projects', icon: FolderOpen, match: (p) => p.startsWith('/projects') || p.startsWith('/studio') || p.startsWith('/editor') },
   { href: '/lounge', label: 'Lounge', icon: MessageSquare, match: (p) => p.startsWith('/lounge') },
 ];
@@ -212,7 +211,7 @@ export default function MobileTabBar() {
   // The home-screen shortcut and the share menu land on Today with what to
   // capture: open Capture with it, then tidy the address.
   const search = useLocationSearch();
-  const shared = useMemo(() => (authed && pathname === '/community' ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
+  const shared = useMemo(() => (authed && (pathname === '/' || pathname === '/community') ? fromShare(new URLSearchParams(search)) : null), [authed, pathname, search]);
   const sharedKey = shared ? search : '';
   // Open each share once — including one already in the address when this mounts.
   const [handledShare, setHandledShare] = useState('');
@@ -223,7 +222,7 @@ export default function MobileTabBar() {
   } else if (!sharedKey && handledShare) {
     setHandledShare(''); // the address is tidied: the same share can come again
   }
-  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/community'); }, [sharedKey]);
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/'); }, [sharedKey]);
   useEffect(() => {
     if (!authed) return;
     let live = true;
