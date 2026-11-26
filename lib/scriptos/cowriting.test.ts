@@ -3,6 +3,7 @@ import * as Y from 'yjs';
 import {
   applyScriptText,
   applyScriptUpdate,
+  baselineClientIdFor,
   decodeScriptTextUpdate,
   encodeScriptTextUpdate,
   encodeScriptTextState,
@@ -10,6 +11,7 @@ import {
   mapThroughDelta,
   mergeScriptTexts,
   mergeServerIntoLocal,
+  rebaseSeededDoc,
   reconcileScriptText,
   REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
@@ -281,5 +283,67 @@ describe('reconcileScriptText', () => {
     expect(reconcileScriptText(opened, saved.baseContent, opened.getText(SCRIPT_TEXT_FIELD).toString())).toBe(false);
     expect(opened.getText(SCRIPT_TEXT_FIELD).toString()).toContain('From the device.');
     opened.destroy();
+  });
+});
+
+describe('seed identity (BACKLOG 3.33 leftover (i): seeds must not collide)', () => {
+  const V1 = 'INT. HOUSE - DAY\n\nAlice enters.';
+  const V2 = 'INT. HOUSE - DAY\n\nAlicia enters.'; // a content-only write changed the text between two loads
+
+  it('derives the baseline client id from the seeded words', () => {
+    expect(baselineClientIdFor(V1)).toBe(baselineClientIdFor(V1));
+    expect(baselineClientIdFor(V1)).not.toBe(baselineClientIdFor(V2));
+    expect(baselineClientIdFor('')).not.toBe(baselineClientIdFor(V1));
+  });
+
+  it('two windows seeding the same words still merge cleanly, with no duplication', () => {
+    const a = createDoc(V1);
+    const b = createDoc(V1);
+    Y.applyUpdate(b.doc, Y.encodeStateAsUpdate(a.doc));
+    expect(b.text.toString()).toBe(V1);
+    a.doc.destroy();
+    b.doc.destroy();
+  });
+
+  it('a window that seeded older words rebases onto the server state instead of merging two baselines', () => {
+    const server = createDoc(V2);
+    server.text.insert(server.text.length, '\n\nBob smiles.');
+    const serverUpdate = Y.encodeStateAsUpdate(server.doc);
+
+    const opened = createDoc(V1); // seeded before the content-only write landed; no edits of its own yet
+    expect(rebaseSeededDoc(opened.doc, V1, serverUpdate)).toBe(true);
+    expect(opened.text.toString()).toBe(server.text.toString());
+    server.doc.destroy();
+    opened.doc.destroy();
+  });
+
+  it('the rebase makes the two windows converge exactly (the old fixed id silently garbled this)', () => {
+    const a = createDoc(V1);
+    const b = createDoc(V2);
+    expect(rebaseSeededDoc(b.doc, V2, Y.encodeStateAsUpdate(a.doc))).toBe(true);
+    Y.applyUpdate(a.doc, Y.encodeStateAsUpdate(b.doc));
+    expect(a.text.toString()).toBe(V1);
+    expect(b.text.toString()).toBe(V1);
+    a.doc.destroy();
+    b.doc.destroy();
+  });
+
+  it('refuses to rebase over edits the window made since seeding', () => {
+    const server = createDoc(V2);
+    const opened = createDoc(V1);
+    opened.text.insert(0, 'OWN ');
+    expect(rebaseSeededDoc(opened.doc, V1, Y.encodeStateAsUpdate(server.doc))).toBe(false);
+    expect(opened.text.toString()).toBe(`OWN ${V1}`);
+    server.doc.destroy();
+    opened.doc.destroy();
+  });
+
+  it('does nothing when the server state holds the same words that were seeded', () => {
+    const server = createDoc(V1);
+    const opened = createDoc(V1);
+    expect(rebaseSeededDoc(opened.doc, V1, Y.encodeStateAsUpdate(server.doc))).toBe(false);
+    expect(opened.text.toString()).toBe(V1);
+    server.doc.destroy();
+    opened.doc.destroy();
   });
 });

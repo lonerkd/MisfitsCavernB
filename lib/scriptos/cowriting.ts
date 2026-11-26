@@ -10,7 +10,6 @@ export const YJS_UPDATE_EVENT = 'yjs_update';
 export const YJS_SYNC_REQUEST_EVENT = 'yjs_sync_request';
 export const YJS_SYNC_EVENT = 'yjs_sync';
 
-const BASELINE_CLIENT_ID = 0x4d43;
 const LOCAL_STATE_PREFIX = 'mc_script_yjs_';
 
 export const scriptTextStateKey = (scriptId: string) => `${LOCAL_STATE_PREFIX}${scriptId}`;
@@ -20,13 +19,68 @@ export interface PersistedScriptText {
   baseContent: string;
 }
 
+/**
+ * The client id a seed of these words is written under, derived from the words themselves (two
+ * FNV-1a passes, combined under 2^53). Every window seeding the same words seeds them under the
+ * same id with the same item ids, so the seeds merge as one baseline — that was the one property
+ * the old single fixed id (0x4d43) got right. Windows seeding different words (a content-only write
+ * landed between their first loads) seed under different ids, so their baselines can no longer
+ * collide: under one shared id, two different texts claimed the same item ids, both replicas'
+ * state vectors agreed they were synced, and the texts silently differed — one window's read of
+ * the script came out garbled (BACKLOG 3.33 leftover (i)). Distinct ids make a divergence visible
+ * and recoverable instead; `rebaseSeededDoc` is the recovery.
+ */
+export function baselineClientIdFor(content: string): number {
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < content.length; i++) {
+    const code = content.charCodeAt(i);
+    h1 = Math.imul(h1 ^ code, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 ^ (code + i), 0x85ebca6b) >>> 0;
+  }
+  return h1 * 0x200000 + (h2 & 0x1fffff);
+}
+
 export function seedScriptText(doc: Y.Doc, content: string): void {
   if (!content) return;
   const baseline = new Y.Doc();
-  baseline.clientID = BASELINE_CLIENT_ID;
+  baseline.clientID = baselineClientIdFor(content);
   baseline.getText(SCRIPT_TEXT_FIELD).insert(0, content);
   Y.applyUpdate(doc, Y.encodeStateAsUpdate(baseline), REMOTE_EDIT_ORIGIN);
   baseline.destroy();
+}
+
+/**
+ * A document this session seeded from the plain-text column, meeting the server's stored shared
+ * state: if the words that were seeded are not the words the server's state was built on (a
+ * content-only write landed between this window's load and the state's), the two baselines must
+ * not merge — the seeded words are replaced wholesale by the server's state, so this window
+ * continues from the shared document everyone else holds.
+ *
+ * Only safe while the document still holds exactly the seeded words: a window that has typed
+ * since seeding has edits of its own woven into its baseline, and replacing it would lose them,
+ * so this refuses (false) and the ordinary merge stands. Also false when there is nothing to
+ * rebase onto — the server state holds the seeded words, or cannot be read. True when the
+ * document was rebased; the caller must not then also apply the same update the ordinary way.
+ */
+export function rebaseSeededDoc(doc: Y.Doc, seededContent: string, serverUpdate: Uint8Array): boolean {
+  const text = doc.getText(SCRIPT_TEXT_FIELD);
+  if (text.toString() !== seededContent) return false;
+  const scratch = new Y.Doc();
+  try {
+    Y.applyUpdate(scratch, serverUpdate);
+    const serverContent = scratch.getText(SCRIPT_TEXT_FIELD).toString();
+    if (serverContent === seededContent) return false;
+    doc.transact(() => {
+      if (text.length) text.delete(0, text.length);
+      Y.applyUpdate(doc, serverUpdate, REMOTE_EDIT_ORIGIN);
+    }, REMOTE_EDIT_ORIGIN);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    scratch.destroy();
+  }
 }
 
 export function applyScriptText(
