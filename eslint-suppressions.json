@@ -78,9 +78,6 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 7
-    },
-    "no-restricted-syntax": {
-      "count": 4
     }
   },
   "app/(suite)/jobs/[id]/page.tsx": {
