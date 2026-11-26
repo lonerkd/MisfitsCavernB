@@ -34,7 +34,7 @@ test.describe('No page errors (local Supabase)', () => {
     test(`loads without a page error: ${vp.name}`, async ({ stack }) => {
       test.setTimeout(240_000);
       const routes = [
-        '/community', '/projects', `/projects/${projectId}`,
+        '/', '/projects', `/projects/${projectId}`,
         `/editor?script=${scriptId}`, `/studio?project=${projectId}`, `/studio?project=${projectId}&tab=scenes`,
         `/studio?project=${projectId}&tab=library`, `/studio?project=${projectId}&tab=production`,
         `/studio?project=${projectId}&tab=production&view=money`, `/studio?project=${projectId}&tab=share`,

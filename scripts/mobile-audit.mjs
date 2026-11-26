@@ -29,7 +29,7 @@ const shareToken = `ph${TAG}${randomUUID().replace(/-/g, '').slice(0, 10)}`;
 await admin.from('projects').update({ visibility: 'link', share_token: shareToken }).eq('id', project.id);
 
 const ROUTES = [
-  '/community', '/call', '/projects', `/projects/${project.id}`, `/studio?project=${project.id}`,
+  '/', '/call', '/projects', `/projects/${project.id}`, `/studio?project=${project.id}`,
   `/studio?project=${project.id}&tab=scenes`, `/studio?project=${project.id}&tab=production`, `/studio?project=${project.id}&tab=library`,
   `/studio?project=${project.id}&tab=post`, `/studio?project=${project.id}&tab=share`,
   `/editor?script=${script.id}`, '/lounge', '/crew', '/jobs', '/profile', '/settings', '/soundtrack', '/portfolio', '/welcome',
