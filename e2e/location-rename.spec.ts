@@ -36,7 +36,7 @@ test.describe('Renaming a location (local Supabase)', () => {
       await name.fill('Diner');
       await name.blur();
 
-      await expect(page.getByRole('button', { name: /DINER/ })).toBeVisible({ timeout: 15_000 });
+      await expect(page.getByRole('button', { name: /^DINER/ })).toBeVisible({ timeout: 15_000 });
       await expect(page.getByRole('button', { name: /KITCHEN/ })).toHaveCount(0);
       const rows = (await admin.from('project_locations').select('name').eq('project_id', projectId)).data!.map((r) => r.name).sort();
       expect(rows).toEqual(['DINER', 'GARAGE']);
@@ -45,9 +45,9 @@ test.describe('Renaming a location (local Supabase)', () => {
       expect(scene.project_locations.name).toBe('DINER');
 
       await page.reload();
-      await expect(page.getByRole('button', { name: /DINER/ })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByRole('button', { name: /^DINER/ })).toBeVisible({ timeout: 30_000 });
       await expect(page.getByRole('button', { name: /KITCHEN/ })).toHaveCount(0);
-      await expect(page.getByRole('button', { name: /DINER/ })).toContainText('1 scene');
+      await expect(page.getByRole('button', { name: /^DINER/ })).toContainText('1 scene');
     } finally { await ctx.close(); await browser.close(); }
   });
 });
