@@ -92,4 +92,4 @@ jobs:
 
       - name: A quiet day
         if: steps.gate.outputs.enabled == 'true' && steps.gather.outputs.quiet == 'true'
-        run: echo "Nothing changed since ${{ steps.gather.outputs.since }}: no review, no issue."
+        run: 'echo "Nothing changed since ${{ steps.gather.outputs.since }}: no review, no issue."'
