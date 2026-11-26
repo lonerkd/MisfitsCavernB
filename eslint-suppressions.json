@@ -139,12 +139,6 @@
   "app/(suite)/projects/[id]/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 4
-    },
-    "no-restricted-syntax": {
-      "count": 1
     }
   },
   "app/(suite)/projects/[id]/pitch/page.tsx": {

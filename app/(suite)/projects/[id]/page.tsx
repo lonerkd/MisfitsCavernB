@@ -1,11 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useEffectEvent } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import GrainOverlay from '@/components/ui/GrainOverlay';
-import { useConfirm } from '@/components/ui/Confirm';
 import { useToast } from '@/components/ui/Toast';
 import { useInPane, projectPairSearch } from '@/lib/split/pane';
 import { readPartner } from '@/lib/split/pair';
@@ -13,15 +11,10 @@ import { Columns2 } from 'lucide-react';
 import { useScrollToHash } from '@/lib/util/scrollToHash';
 import { usePhoneLayout } from '@/lib/os/usePhone';
 import { TwoPanesOffer } from '@/components/projects/TwoPanesOffer';
-import { getProjectOverview, getProjectRow, type MilestoneRow, type ProjectOverview } from '@/lib/supabase/project-hub';
-import { updateProjectVisibility, PROJECT_VISIBILITY } from '@/lib/supabase/projects';
-import { type Phase, mapStatusToPhase, phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
+import { updateProjectVisibility } from '@/lib/supabase/projects';
+import { phaseIndexIn, useProject, useCurrentUser } from '@/lib/os';
 import { findFormat, formatPhases, useFormats } from '@/lib/formats/formats';
-import type { ProjectSettings } from '@/lib/types/settings';
 import { getProjectModules } from '@/lib/types/settings';
-import type { ScriptFormat } from '@/lib/scriptos/parser';
-import { awaitOSUser } from '@/lib/os';
-import { readable } from '@/lib/util/color';
 import { useOnlinePresence } from '@/lib/hooks/usePresence';
 import { HereLine } from '@/components/studio/HereLine';
 import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
@@ -34,64 +27,22 @@ import { AnnouncementBox } from '@/components/projects/AnnouncementBox';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import { LoglineEditor } from '@/components/progress/LoglineEditor';
 import { LogoEditor } from '@/components/progress/LogoEditor';
-import type { ProjectHubViewModel } from '@/components/projects/hub/types';
-import { DeptWindow, ScriptPreview, AssetPreview, CrewPreview, TimelinePreview, PortfolioPreview } from '@/components/projects/hub/DeptWindow';
+import { DeptWindow, ScriptPreview, AssetPreview, CrewPreview, TimelinePreview, PortfolioPreview, DistributionPreview } from '@/components/projects/hub/DeptWindow';
+import { useProjectHubData } from '@/components/projects/hub/useProjectHubData';
+import { HubTopBar } from '@/components/projects/hub/HubTopBar';
 import { ProductionManager } from '@/components/projects/hub/ProductionManager';
 
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function ProjectHubPage() {
-  const confirm = useConfirm();
   const { toast } = useToast();
   const params = useParams();
   const inPane = useInPane();
-  const router = useRouter();
   const id = String(params.id);
-  const { activeProject, setActiveProject, refreshProject } = useProject();
+  const { refreshProject } = useProject();
 
-  const [realProject, setRealProject] = useState<ProjectHubViewModel | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // The session follows the project being viewed (once it has loaded).
-  const followProject = useEffectEvent((pid: string) => { if (activeProject?.id !== pid) refreshProject(pid); });
-  const reportError = useEffectEvent((message: string) => toast(message, 'error'));
-
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      getProjectRow(id).catch((e) => { console.error('Failed to load project:', e); return null; }).then(async (row) => {
-        if (!active) return;
-        if (!row) { router.push('/projects'); return; }
-        const phase = mapStatusToPhase(row.status ?? undefined);
-        const me = (await awaitOSUser()) || null;
-        const token = row.share_token || '';
-        setRealProject({
-          id: row.id,
-          title: row.title,
-          type: row.project_type || 'Project',
-          phase,
-          deadline: row.end_date || '',
-          description: row.description || '',
-          color: readable(row.accent_color || 'var(--accent)'),
-          accent: row.accent_color,
-          logoUrl: row.logo_url,
-          team: [],
-          settings: row.settings as unknown as ProjectSettings,
-          visibility: (row.visibility as ProjectHubViewModel['visibility']) || 'team',
-          shareUrl: token ? `/shared/${token}` : '',
-          isOwner: me?.id === row.creator_id,
-        });
-        setLoading(false);
-        followProject(row.id);
-      });
-    })();
-    return () => { active = false; };
-  }, [id, router]);
-
-  const [counts, setCounts] = useState({ scripts: 0, pages: 0, crew: 0, tasks: 0, tasksDone: 0, budget: 0, timeline: 0, scenes: 0, concepts: 0, festivalsSubmitted: 0, festivalsAccepted: 0, campaigns: 0 });
-  const [milestones, setMilestones] = useState<MilestoneRow[]>([]);
-  const [portfolioPieces, setPortfolioPieces] = useState<{ id: string; title: string }[]>([]);
-  const [crewTeam, setCrewTeam] = useState<{ id: string; name: string; role: string }[]>([]);
+  const { project: realProject, setProject: setRealProject, loading, counts, milestones, portfolioPieces, crewTeam } =
+    useProjectHubData(id, toast);
   const onlineIds = useOnlinePresence(realProject ? 'me' : null);
   const progressState = useProjectProgress(id);
   const briefFormat = progressState.signals?.project_type ?? null;
@@ -99,39 +50,6 @@ export default function ProjectHubPage() {
   const canShape = useCanShape(realProject ? id : null, !!realProject?.isOwner);
   const { formats } = useFormats();
   const me = useCurrentUser().user;
-  useEffect(() => {
-    let active = true;
-    (async () => {
-      let o: ProjectOverview;
-      try { o = await getProjectOverview(id); }
-      catch (e) {
-        console.error('Failed to load the project overview:', e);
-        if (active) reportError('Could not load this project’s numbers.');
-        return;
-      }
-      if (!active) return;
-      const { eighths } = o;
-      setCounts({
-        scripts: o.scripts,
-        // Short scripts in tenths (3/8 pg → 0.4), longer ones in whole pages.
-        pages: eighths < 80 ? Math.round(eighths / 0.8) / 10 : Math.round(eighths / 8),
-        crew: o.crew.length,
-        tasks: o.tasks,
-        tasksDone: o.tasksDone,
-        budget: o.budget,
-        timeline: o.milestones.length,
-        scenes: o.scenes,
-        concepts: o.concepts,
-        festivalsSubmitted: o.festivalsSubmitted,
-        festivalsAccepted: o.festivalsAccepted,
-        campaigns: o.campaigns,
-      });
-      setMilestones(o.milestones);
-      setPortfolioPieces(o.portfolio);
-      setCrewTeam(o.crew);
-    })();
-    return () => { active = false; };
-  }, [id]);
 
   const viewMode = useViewAs(id);
   const project = realProject;
@@ -196,55 +114,15 @@ export default function ProjectHubPage() {
       }} />
 
       {/* Back, title and project live in the island; what's left here is this project's own tools. */}
-      <div className="mc-project-top" style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'flex-end', padding: '16px 28px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {onlineCount > 0 && (
-            <div className="mc-hide-phone" style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', letterSpacing: 'var(--caps-track)' }}>
-              <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--success)', display: 'inline-block', animation: 'pulse 2.5s ease-in-out infinite' }} />
-              {onlineCount} online
-            </div>
-          )}
-          {counts.tasks > 0 && (
-          <div title="Tasks completed" className="mc-hide-phone" style={{
-            fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)',
-            padding: '5px 10px', borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.04)',
-          }}>
-            {counts.tasksDone}/{counts.tasks} tasks done
-          </div>
-          )}
-          {ownerView && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span aria-hidden style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>Visible to</span>
-              <select
-                value={project.visibility}
-                onChange={e => changeVisibility(e.target.value as 'private' | 'team' | 'link' | 'public')}
-                aria-label="Project visibility"
-                title="Who can see this project"
-                style={{
-                  fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-muted)',
-                  background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.1)',
-                  borderRadius: 8, padding: '5px 8px', cursor: 'pointer', outline: 'none', maxWidth: '100%',
-                }}
-              >
-                {PROJECT_VISIBILITY.map(v => (
-                  <option key={v.id} value={v.id}>{v.label}</option>
-                ))}
-              </select>
-              {project.visibility === 'link' && (
-                <button
-                  onClick={copyShareLink}
-                  title="Copy the share link — anyone with it can view this project"
-                  style={{
-                    fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--jobs-text)',
-                    background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.3)',
-                    borderRadius: 8, padding: '5px 10px', cursor: 'pointer', whiteSpace: 'nowrap',
-                  }}
-                >Copy link</button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <HubTopBar
+        onlineCount={onlineCount}
+        tasks={counts.tasks}
+        tasksDone={counts.tasksDone}
+        ownerView={ownerView}
+        visibility={project.visibility}
+        onVisibilityChange={changeVisibility}
+        onCopyShareLink={copyShareLink}
+      />
 
       <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
 
@@ -407,20 +285,7 @@ export default function ProjectHubPage() {
                 { label: 'Festivals', value: counts.festivalsSubmitted },
                 { label: 'Campaigns', value: counts.campaigns },
               ]}
-              preview={
-                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[
-                    { label: 'Festival submissions', value: String(counts.festivalsSubmitted) },
-                    { label: 'Accepted', value: String(counts.festivalsAccepted) },
-                    { label: 'Campaigns planned', value: String(counts.campaigns) },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{label}</span>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              }
+              preview={<DistributionPreview submitted={counts.festivalsSubmitted} accepted={counts.festivalsAccepted} campaigns={counts.campaigns} />}
             />
           )}
 
