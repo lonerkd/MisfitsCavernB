@@ -13,6 +13,7 @@ import {
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
   mapThroughDelta,
+  rebaseSeededDoc,
   reconcileScriptText,
   REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
@@ -25,6 +26,7 @@ import {
   type PersistedScriptText,
 } from './cowriting';
 import { ChunkReassembler, MAX_PAYLOAD_CHARS, MAX_UPDATE_BYTES, toWirePayloads } from './chunks';
+import { BroadcastGate } from './send-gate';
 
 export interface Collaborator {
   userId: string;
@@ -56,13 +58,19 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
   useEffect(() => {
     if (!scriptId) return;
     let cancelled = false;
-    let subscribed = false;
+    // Sends follow connection health, not just the subscription: a window whose websocket stays
+    // open while its saves cannot reach the server must not broadcast edits its stored state knows
+    // nothing of (BACKLOG 3.33 leftover (i)). Held sends owe one full-state resync on recovery.
+    const gate = new BroadcastGate(typeof navigator !== 'undefined' ? navigator.onLine : true);
     let saveTimer: ReturnType<typeof setTimeout> | null = null;
     let doc: Y.Doc | null = null;
     let text: Y.Text | null = null;
     let undoManager: Y.UndoManager | null = null;
     let channel: ReturnType<typeof supabase.channel> | null = null;
     let baseContent = '';
+    // The words this session seeded the document from, while no stored shared state existed. If the
+    // server's state turns out to be built on different words, the seed is rebased, not merged.
+    let seededContent: string | null = null;
     let releaseLive: (() => void) | null = null;
     pendingContentRef.current = null;
 
@@ -75,7 +83,7 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
 
     /** Send one encoded update, in numbered chunks when it is too large for one Realtime message. */
     const sendEncoded = (event: string, encoded: string, what: string) => {
-      if (!channel || !subscribed) return;
+      if (!channel || !gate.allowSend()) return;
       // A receiver drops anything past the shared size line without a word (chunks.ts), so sending it
       // anyway would mark a sync that never arrives. The words are not lost: the stored shared state
       // carries them, and an open editor merges that at its next save.
@@ -101,6 +109,18 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       if (!doc) return;
       sendEncoded(YJS_SYNC_EVENT, encodeScriptTextUpdate(doc), 'Yjs state');
     };
+
+    /** Answer a held send's debt once health returns: one full state, and ask the room for theirs. */
+    const flushResync = () => {
+      if (!doc || !gate.consumeResync()) return;
+      sendState();
+      void channel?.send({ type: 'broadcast', event: YJS_SYNC_REQUEST_EVENT, payload: {} });
+    };
+
+    const onOnline = () => { if (gate.setOnline(true)) flushResync(); };
+    const onOffline = () => { gate.setOnline(false); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
 
     const receiveUpdate = ({ payload }: { payload?: unknown }) => {
       const encoded = reassembler.accept(payload);
@@ -171,16 +191,21 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
           const error = await writeMerged(user.id);
           if (cancelled) return;
           if (error) {
+            // The server is not being reached, however open the channel looks: hold broadcasts
+            // until a save lands again, so live edits and stored state cannot part ways.
+            gate.recordSave(false);
             console.warn('[Script Sync] Could not save the merged script:', error);
             // Nothing else would save this text if the writer stops typing now: try again, a few times.
             void markScriptPending(scriptId);
             if (saveRetries++ < 3) saveContent();
           } else {
+            if (gate.recordSave(true)) flushResync();
             saveRetries = 0;
             setLastSyncedAt(new Date());
             void markScriptSynced(scriptId, text?.toString() ?? '');
           }
         } catch (error) {
+          gate.recordSave(false);
           if (!cancelled) console.warn('[Script Sync] Could not save the merged script:', error);
         } finally {
           if (!cancelled) setIsSyncing(false);
@@ -203,11 +228,15 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       text = doc.getText(SCRIPT_TEXT_FIELD);
       const initialServerContent = scriptResult.data?.content ?? localContentRef.current;
       baseContent = savedState?.baseContent ?? initialServerContent;
+      const seed = (content: string) => {
+        seededContent = content;
+        seedScriptText(doc!, content);
+      };
       if (savedState?.state?.length) {
         try { restoreScriptTextState(doc, savedState); }
         catch (error) {
           console.warn('[Script Sync] Ignored invalid local Yjs state:', error);
-          seedScriptText(doc, initialServerContent);
+          seed(initialServerContent);
           applyScriptText(text, localContentRef.current, REMOTE_EDIT_ORIGIN);
         }
       }
@@ -215,17 +244,22 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
         const remoteState = decodeScriptTextUpdate(scriptResult.data.yjs_state);
         if (remoteState) {
           try { Y.applyUpdate(doc, remoteState, REMOTE_EDIT_ORIGIN); }
-          catch { seedScriptText(doc, initialServerContent); }
-        } else seedScriptText(doc, initialServerContent);
+          catch { seed(initialServerContent); }
+        } else seed(initialServerContent);
       } else {
-        seedScriptText(doc, initialServerContent);
+        seed(initialServerContent);
         applyScriptText(text, localContentRef.current, REMOTE_EDIT_ORIGIN);
       }
       if (savedState && scriptResult.data?.yjs_state) {
         const remoteState = decodeScriptTextUpdate(scriptResult.data.yjs_state);
         if (remoteState) {
-          try { Y.applyUpdate(doc, remoteState, REMOTE_EDIT_ORIGIN); }
-          catch (error) { console.warn('[Script Sync] Ignored invalid stored Yjs state:', error); }
+          // A document seeded in this session (its saved state was unreadable) may rest on
+          // different words than the server's state: rebase it rather than merge two baselines.
+          const rebased = seededContent !== null && rebaseSeededDoc(doc, seededContent, remoteState);
+          if (!rebased) {
+            try { Y.applyUpdate(doc, remoteState, REMOTE_EDIT_ORIGIN); }
+            catch (error) { console.warn('[Script Sync] Ignored invalid stored Yjs state:', error); }
+          }
         }
       } else if (!savedState && text.toString() !== localContentRef.current) {
         applyScriptText(text, localContentRef.current, REMOTE_EDIT_ORIGIN);
@@ -285,8 +319,11 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
             }));
         })
         .subscribe((status: string) => {
-          if (status !== 'SUBSCRIBED' || cancelled) return;
-          subscribed = true;
+          if (status !== 'SUBSCRIBED') { gate.setSubscribed(false); return; }
+          if (cancelled) return;
+          gate.setSubscribed(true);
+          // The sends below are the resync any held edit was owed; spend the debt.
+          gate.consumeResync();
           void channel!.track({ username, line: 1 });
           void (async () => {
             const { data, error } = await supabase.from('scripts')
@@ -298,8 +335,14 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
             else if (data?.yjs_state) {
               const latestState = decodeScriptTextUpdate(data.yjs_state);
               if (latestState) {
-                try { Y.applyUpdate(doc!, latestState, REMOTE_EDIT_ORIGIN); }
-                catch (updateError) { console.warn('[Script Sync] Ignored invalid shared Yjs state:', updateError); }
+                // A document seeded in this session may rest on different words than the
+                // stored state (a content-only write landed in between): rebase, not merge.
+                const rebased = seededContent !== null && rebaseSeededDoc(doc!, seededContent, latestState);
+                if (rebased) seededContent = null;
+                else {
+                  try { Y.applyUpdate(doc!, latestState, REMOTE_EDIT_ORIGIN); }
+                  catch (updateError) { console.warn('[Script Sync] Ignored invalid shared Yjs state:', updateError); }
+                }
               }
             }
             sendUpdate(Y.encodeStateAsUpdate(doc!));
@@ -317,7 +360,9 @@ export function useScriptSync(scriptId: string, localContent: string, onRemoteCh
       cancelled = true;
       readyRef.current = false;
       releaseLive?.();
-      subscribed = false;
+      gate.setSubscribed(false);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
       if (saveTimer) clearTimeout(saveTimer);
       if (channel) void supabase.removeChannel(channel);
       if (channelRef.current === channel) channelRef.current = null;
