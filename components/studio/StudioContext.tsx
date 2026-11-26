@@ -15,7 +15,7 @@ import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { withPreviousDraft } from '@/lib/scriptos/reading-context';
 import { fetchLatestRevisionSnapshot } from '@/lib/studio/reading-context';
-import { castByScene, castOfScene } from '@/lib/film/cast';
+import { castByScene, castIdsByScene, castIdsOfScene, castOfScene } from '@/lib/film/cast';
 import { listRecordLinks, type RecordLinkRow } from '@/lib/supabase/productionRecords';
 import { recordsByScene, type KindCount } from '@/lib/studio/record-links';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
@@ -85,6 +85,8 @@ export interface StudioData {
   goTo: (tab: StudioTab, view?: ProductionView) => void;
   /** Who is in a scene (upper-case names): its linked characters in the film graph, else the older cast text. */
   castOf: (scene: Pick<SceneRow, 'id'>) => string[];
+  /** The ids of who is in a scene, in the same name order as `castOf` (index i of one is index i of the other). */
+  castIdsOf: (scene: Pick<SceneRow, 'id'>) => string[];
   /** scene id → how many role-tool records (camera reports, costumes, …) are linked to it, by tool. */
   recordsByScene: Map<string, KindCount[]>;
   /** The card: which entity is open, how to open and close it. */
@@ -242,6 +244,8 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const sceneCharacterLinks = useSceneCharacters(projectId);
   const castByScn = useMemo(() => castByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
   const castOf = useCallback((scene: Pick<SceneRow, 'id'>) => castOfScene(scene, castByScn), [castByScn]);
+  const castIdsByScn = useMemo(() => castIdsByScene(sceneCharacterLinks.rows, storyCharacters.rows), [sceneCharacterLinks.rows, storyCharacters.rows]);
+  const castIdsOf = useCallback((scene: Pick<SceneRow, 'id'>) => castIdsOfScene(scene, castIdsByScn), [castIdsByScn]);
 
   const wantedCard = new URLSearchParams(useLocationSearch()).get('card');
   const asCardId = (v: string | null) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v.toLowerCase() : null);
@@ -278,6 +282,7 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
     doubtfulSceneOrdinals,
     goTo: onNavigate,
     castOf,
+    castIdsOf,
     recordsByScene: recordsByScn,
     cardId,
     openCard,

@@ -8,7 +8,7 @@ import { useCanShape } from '@/lib/brief';
 import { dayConflicts, describeRange, useProjectAvailability } from '@/lib/availability';
 import { placeResolver } from '@/lib/film/places';
 import {
-  EMERGENCY_FIELDS, callTextBody, issueState, locationKey, smsHref, studio, toSnapshot, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
+  EMERGENCY_FIELDS, callTextBody, findCall, issueState, issuedCallFor, locationKey, smsHref, studio, toSnapshot, useCallSheetAcks, useCastings, useCallSheets, useCallSheetCalls, useProjectLocations, useShootDays,
   type CallSheet, type CallSheetAck, type CallSheetCall, type CallSheetPatch, type CallTarget, type IssueState, type SceneRow,
 } from '@/lib/studio';
 import { lightLine, lightNoteText, type FilmDay } from '@/lib/film/days';
@@ -34,13 +34,27 @@ type CrewMember = { user_id: string; role: string; username?: string };
 
 const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');
 
-function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[], placeOf: (sc: SceneRow) => string, doubtfulOrdinals?: Set<number>) {
+function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => string[], castIdsOf: (sc: SceneRow) => string[], placeOf: (sc: SceneRow) => string, doubtfulOrdinals?: Set<number>) {
   const dayScenes = scenes.filter((sc) => (sc.shoot_day ?? 1) === day).sort((a, b) => a.scene_number - b.scene_number);
   const locations = Array.from(new Set(dayScenes.map(placeOf).filter(Boolean)));
-  const cast = Array.from(new Set(dayScenes.flatMap(castOf)));
+  // The day's cast as entries keyed by character id (the name rides along as the label): two characters
+  // who share a name stay two entries, and a call saved for one can never be read as the other's.
+  const castEntries: Array<{ id: string; name: string }> = [];
+  const seen = new Set<string>();
+  for (const sc of dayScenes) {
+    const names = castOf(sc);
+    const ids = castIdsOf(sc);
+    names.forEach((name, i) => {
+      const id = ids[i] ?? '';
+      const key = id || name;
+      if (seen.has(key)) return;
+      seen.add(key);
+      castEntries.push({ id, name });
+    });
+  }
   const eighths = dayScenes.reduce((t, sc) => { const m = String(sc.est_duration || '').match(/(\d+)\/8/); return t + (m ? Number(m[1]) : 0); }, 0);
   const doubtful = doubtfulOrdinals ? dayScenes.filter((sc) => sc.ordinal != null && doubtfulOrdinals.has(sc.ordinal)).length : 0;
-  return { dayScenes, locations, cast, pages: eighths ? (eighths / 8).toFixed(1) : null, doubtful };
+  return { dayScenes, locations, castEntries, pages: eighths ? (eighths / 8).toFixed(1) : null, doubtful };
 }
 
 /**
@@ -49,7 +63,7 @@ function dayFacts(scenes: SceneRow[], day: number, castOf: (sc: SceneRow) => str
  * are saved (call_sheets / call_sheet_calls) and shared live with the crew.
  */
 export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: CrewMember[] }) {
-  const { project, sceneLines, castOf, doubtfulSceneOrdinals } = useStudio();
+  const { project, sceneLines, castOf, castIdsOf, doubtfulSceneOrdinals } = useStudio();
   const { toast } = useToast();
   const castings = useCastings(project.id);
   const sheets = useCallSheets(project.id);
@@ -91,10 +105,10 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
   };
 
   const print = (day: number) => {
-    const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
+    const d = dayFacts(scenes, day, castOf, castIdsOf, placeOf, doubtfulSceneOrdinals);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((c) => c.call_sheet_id === sheet?.id);
-    const callOf = (t: CallTarget) => mine.find((c) => ('crew_user_id' in t ? c.crew_user_id === t.crew_user_id : c.character_name === t.character_name));
+    const callOf = (t: CallTarget) => findCall(mine, t);
     const ok = printDocument(callSheetDoc({
       project: project.title,
       accent: project.accent_color, logo: project.logo_url,
@@ -107,7 +121,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       emergency: sheet ? { hospitalName: sheet.hospital_name, hospitalAddress: sheet.hospital_address, hospitalPhone: sheet.hospital_phone, policePhone: sheet.police_phone, medic: sheet.medic } : undefined,
       scenes: d.dayScenes.map((sc) => ({ number: sc.scene_number, heading: sc.heading ?? sc.title ?? '' })),
       pages: d.pages, locations: d.locations,
-      cast: d.cast.map((name) => { const c = callOf({ character_name: name }); return { name, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
+      cast: d.castEntries.map(({ id, name }) => { const c = callOf({ character_id: id, character_name: name }); return { name, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
       crew: crew.map((m) => { const c = callOf({ crew_user_id: m.user_id }); return { name: m.username || 'Crew', role: m.role, call: hhmm(c?.call_time), remarks: c?.remarks ?? null }; }),
       generated: new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }),
     }));
@@ -116,15 +130,15 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
 
   // Each called actor's pages for the day, from the script's saved text.
   const printSides = (day: number) => {
-    const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
+    const d = dayFacts(scenes, day, castOf, castIdsOf, placeOf, doubtfulSceneOrdinals);
     const sheet = sheetFor(day);
     const mine = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
     const sides = buildSides(
       d.dayScenes.map((sc) => ({ heading: sc.heading ?? sc.title ?? '', sceneNumber: sc.scene_number, lines: sceneLines.get(sc.id) ?? [] })),
-      d.cast.map((name) => ({
+      d.castEntries.map(({ id, name }) => ({
         character: name,
-        actor: crew.find((m) => m.user_id === castings.rows.find((k) => k.character_name.toUpperCase() === name.toUpperCase())?.crew_user_id)?.username ?? null,
-        call: hhmm(mine.find((x) => x.character_name === name)?.call_time) || null,
+        actor: crew.find((m) => m.user_id === castings.rows.find((k) => k.character_id === id)?.crew_user_id)?.username ?? null,
+        call: hhmm(findCall(mine, { character_id: id, character_name: name })?.call_time) || null,
       })),
     );
     if (!sides.length) { toast('No one called that day has lines in the script yet.', 'info'); return; }
@@ -138,7 +152,7 @@ export function CallSheetsPanel({ scenes, crew }: { scenes: SceneRow[]; crew: Cr
       {(sheets.status === 'error' || calls.status === 'error') && <div className={s.hint} style={{ color: 'var(--danger)' }}>{sheets.error || calls.error}</div>}
       <div className={c.list}>
         {days.map((day) => {
-          const d = dayFacts(scenes, day, castOf, placeOf, doubtfulSceneOrdinals);
+          const d = dayFacts(scenes, day, castOf, castIdsOf, placeOf, doubtfulSceneOrdinals);
           const sheet = sheetFor(day);
           const open = openDay === day;
           const dayCalls = calls.rows.filter((x) => x.call_sheet_id === sheet?.id);
@@ -303,7 +317,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
   const commitTime = (key: 'general_call' | 'shooting_call' | 'estimated_wrap') => (next: string) => field(key, next);
 
   const saveCall = async (target: CallTarget, fields: { call_time: string | null; remarks: string | null; role_label?: string | null }) => {
-    const existing = calls.find((x) => ('crew_user_id' in target ? x.crew_user_id === target.crew_user_id : x.character_name === target.character_name));
+    const existing = findCall(calls, target);
     const sh = sheet ?? await saveSheet({});
     if (!sh) return;
     try { onCall(await studio.saveCall(sh, target, existing, fields), existing?.id); }
@@ -328,7 +342,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
   const issuedSnap = sheet?.version ? toSnapshot(sheet.issued) : null;
   const textBody = (target: CallTarget, as: string | null) => {
     if (!sheet || !issuedSnap) return null;
-    const entry = 'crew_user_id' in target ? issuedSnap.calls[target.crew_user_id] : issuedSnap.cast_calls[target.character_name];
+    const entry = issuedCallFor(issuedSnap, target);
     return callTextBody({
       project: project.title, day,
       date: issuedSnap.shoot_date ? new Date(issuedSnap.shoot_date + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' }) : null,
@@ -338,7 +352,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
   };
 
   const callRow = (key: string, target: CallTarget, name: string, role?: string) => {
-    const x = calls.find((y) => ('crew_user_id' in target ? y.crew_user_id === target.crew_user_id : y.character_name === target.character_name));
+    const x = findCall(calls, target);
     const time = hhmm(x?.call_time);
     const remarks = x?.remarks ?? '';
     return (
@@ -353,7 +367,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
           onBlur={(e) => { const v = e.target.value.trim(); if (v !== remarks) void saveCall(target, { call_time: time || null, remarks: v || null }); }}
         />
         {(() => {
-          const body = textBody(target, 'character_name' in target ? target.character_name : null);
+          const body = textBody(target, 'character_id' in target ? target.character_name : null);
           if (!body) return null;
           return (
             <span className={c.textIt}>
@@ -454,7 +468,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
 
         <PaperHead>Cast</PaperHead>
         <div className={c.calls}>
-          {facts.cast.length ? facts.cast.map((name) => callRow(`c:${name}`, { character_name: name }, name)) : <p className={c.none}>No speaking cast in these scenes.</p>}
+          {facts.castEntries.length ? facts.castEntries.map(({ id, name }) => callRow(`c:${id}`, { character_id: id, character_name: name }, name)) : <p className={c.none}>No speaking cast in these scenes.</p>}
         </div>
         <PaperHead>Crew</PaperHead>
         <div className={c.calls}>

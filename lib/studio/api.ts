@@ -11,6 +11,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '@/lib/supabase/database.types';
 import { logActivity } from '@/lib/supabase/activity';
 import { callFor, toSnapshot } from './call-sheet';
+import { placeResolver } from '@/lib/film/places';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import type { SharedBoard } from './boards';
@@ -100,8 +101,25 @@ export const STANDARD_POST: Array<{ kind: 'stage' | 'deliverable'; title: string
   { kind: 'deliverable', title: 'Festival screener link', department: 'edit' },
 ];
 
-/** Who a call is for: a crew member, or a character (the actor playing them). */
-export type CallTarget = { crew_user_id: string } | { character_name: string };
+/**
+ * Who a call is for: a crew member, or a character (the actor playing them).
+ * A character target carries its id and its name: matching and reading key on
+ * the id, while the write still sends the name as the label — the
+ * `calls_link_character` trigger derives the row's `character_id` from that
+ * name, so the two agree by construction.
+ */
+export type CallTarget = { crew_user_id: string } | { character_id: string; character_name: string };
+
+/**
+ * The saved call for one target, if any. Crew match by user id; cast match by
+ * character id alone — never by name, so two characters who share a name (or
+ * one renamed since its call was saved) can never claim each other's call.
+ */
+export function findCall<T extends Pick<CallSheetCall, 'crew_user_id' | 'character_id'>>(calls: readonly T[], target: CallTarget): T | undefined {
+  return 'crew_user_id' in target
+    ? calls.find((c) => c.crew_user_id === target.crew_user_id)
+    : calls.find((c) => c.character_id != null && c.character_id === target.character_id);
+}
 export type ShotPatch = Partial<Pick<Shot, 'shot_size' | 'angle' | 'movement' | 'lens' | 'description' | 'status' | 'frame_media_id' | 'order_index'>>;
 
 /** A "Shot" margin note in the script that created a shot (script_annotations routed to shots). */
@@ -553,16 +571,19 @@ export function createStudioApi(db: Client) {
     const { data: sheet, error } = await db.from('call_sheets').select('*').eq('id', sheetId).maybeSingle();
     if (error) fail(error, 'Could not load the call sheet');
     if (!sheet) return null;
-    const [p, cl, sc, crew, cast, ack] = await Promise.all([
+    const [p, cl, sc, crew, cast, ack, places] = await Promise.all([
       db.from('projects').select('id, title, creator_id').eq('id', sheet.project_id).maybeSingle(),
       db.from('call_sheet_calls').select('*').eq('call_sheet_id', sheet.id),
-      db.from('scenes').select('id, scene_number, ordinal, script_id, heading, title, location, est_duration, scene_characters(characters(name))')
+      db.from('scenes').select('id, scene_number, ordinal, script_id, heading, title, location, location_id, est_duration, scene_characters(characters(name))')
         .eq('project_id', sheet.project_id).eq('shoot_day', sheet.shoot_day).is('removed_at', null).order('scene_number'),
       db.from('project_crew').select('user_id, craft, profiles!project_crew_user_id_fkey(username)').eq('project_id', sheet.project_id),
       db.from('character_castings').select('character_id, character_name, characters(name)').eq('project_id', sheet.project_id).eq('crew_user_id', userId),
       db.from('call_sheet_acks').select('version').eq('call_sheet_id', sheet.id).eq('user_id', userId).maybeSingle(),
+      db.from('project_locations').select('id, name').eq('project_id', sheet.project_id),
     ]);
-    for (const r of [p, cl, sc, crew, cast, ack]) if (r.error) fail(r.error, 'Could not load the call sheet');
+    for (const r of [p, cl, sc, crew, cast, ack, places]) if (r.error) fail(r.error, 'Could not load the call sheet');
+    // A scene's place is its linked location's current name; the heading's own text is the fallback (placeResolver semantics).
+    const placeOf = placeResolver(places.data ?? []);
     const people = new Map<string, CallSheetPerson>();
     for (const m of crew.data ?? []) people.set(m.user_id, { id: m.user_id, username: m.profiles?.username ?? 'Crew', craft: m.craft });
     if (p.data && !people.has(p.data.creator_id)) {
@@ -574,7 +595,7 @@ export function createStudioApi(db: Client) {
       sheet,
       calls: cl.data ?? [],
       project: p.data ?? null,
-      scenes: (sc.data ?? []).map(({ scene_characters, ...scene }) => ({ ...scene, cast: sceneCast(scene_characters) })),
+      scenes: (sc.data ?? []).map(({ scene_characters, location_id, ...scene }) => ({ ...scene, location: placeOf({ location: scene.location, location_id }), cast: sceneCast(scene_characters) })),
       people,
       castAs: (cast.data ?? []).map((r) => (r.characters?.name ?? r.character_name).trim().toUpperCase()),
       castIds: (cast.data ?? []).map((r) => r.character_id ?? ''),

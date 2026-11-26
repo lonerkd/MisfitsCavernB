@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { callFor, changesBetween, issueState, sameSnapshot, snapshotOf, toSnapshot } from './call-sheet';
+import { callFor, changesBetween, issuedCallFor, issueState, sameSnapshot, snapshotOf, toSnapshot } from './call-sheet';
 
 const sheet = {
   shoot_date: '2026-11-03', general_call: '06:00:00', shooting_call: null, estimated_wrap: null,
@@ -61,5 +61,22 @@ describe('callFor by character id', () => {
   it('does not read an old issued sheet as changed for lacking ids', () => {
     const issued = { ...base, cast_calls: {} };
     expect(sameSnapshot(issued, { ...issued, cast_by_id: {} })).toBe(true);
+  });
+});
+
+describe('issuedCallFor (one target’s issued call, for the text-it body)', () => {
+  const base = { shoot_date: null, general_call: null, shooting_call: null, estimated_wrap: null, location_address: null, weather: null, notes: null, calls: { u1: { call_time: '05:45:00', remarks: null } }, cast_calls: {} };
+  it('reads a crew call by user id', () => {
+    expect(issuedCallFor(base, { crew_user_id: 'u1' })).toEqual({ call_time: '05:45:00', remarks: null });
+    expect(issuedCallFor(base, { crew_user_id: 'u9' })).toBeUndefined();
+  });
+  it('prefers the snapshot’s cast_by_id over the name filing', () => {
+    // The character was renamed after issuing: the name filing holds the old name, the id filing still finds the call.
+    const snap = { ...base, cast_calls: { MAYA: { call_time: '07:00:00', remarks: 'by name' } }, cast_by_id: { c1: { call_time: '06:30:00', remarks: null, name: 'MAYA' } } };
+    expect(issuedCallFor(snap, { character_id: 'c1', character_name: 'MAYA RIVERA' })).toEqual({ call_time: '06:30:00', remarks: null, name: 'MAYA' });
+  });
+  it('falls back to the name filing on a sheet issued before cast_by_id', () => {
+    const snap = { ...base, cast_calls: { MAYA: { call_time: '07:00:00', remarks: null } } };
+    expect(issuedCallFor(snap, { character_id: 'c1', character_name: 'MAYA' })).toEqual({ call_time: '07:00:00', remarks: null });
   });
 });
