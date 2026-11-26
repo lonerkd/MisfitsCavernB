@@ -72,7 +72,7 @@ test.describe('Categories & rates on a phone (local Supabase)', () => {
     const panel = page.getByTestId('breakdown-focus');
     // Nothing tagged yet: the panel says so and points at the script.
     await expect(panel.getByText('Break the script down')).toBeVisible({ timeout: 30_000 });
-    await expect(panel.getByRole('link', { name: /Tag it in the script/ })).toHaveAttribute('href', /editor?script=/);
+    await expect(panel.getByRole('link', { name: /Tag it in the script/ })).toHaveAttribute('href', /\/editor\?script=/);
     // One element still needed, on one scene.
     const { data: cats } = await stack.admin.from('breakdown_categories').select('id, key').eq('project_id', project.id);
     const props = cats?.find((c) => c.key === 'props')?.id;

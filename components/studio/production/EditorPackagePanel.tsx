@@ -72,7 +72,7 @@ export function EditorPackagePanel() {
       <div className={s.row} style={{ gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <h3 id="ed-package" className={s.panelTitle} style={{ margin: 0, display: 'inline-flex', alignItems: 'center', gap: 6 }}><PackageCheck size={14} aria-hidden /> Package for the editor</h3>
         <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 6 }}>
-          {pkg.scenes.length > 0 && <button type="button" className={cx(s.btn, s.small)} onClick={() => void send()} disabled={sending} aria-label="Send the package to the editor"><Send size={11} aria-hidden /> Send to editor</button>}
+          {pkg.scenes.length > 0 && <button type="button" className={cx(s.btn, s.small)} onClick={() => void send()} disabled={sending} aria-label="Send to editor: the package"><Send size={11} aria-hidden /> Send to editor</button>}
           <button type="button" className={cx(s.btn, s.small)} onClick={() => { if (!printDocument(doc())) toast('Could not open the print dialog.', 'error'); }} aria-label="Print / PDF: the editor's package"><Printer size={11} aria-hidden /> Print / PDF</button>
           <button type="button" className={cx(s.btn, s.small)} onClick={() => { if (!downloadCsv(doc())) toast('Could not save the file.', 'error'); }} aria-label="CSV: the editor's package"><Download size={11} aria-hidden /> CSV</button>
         </span>
