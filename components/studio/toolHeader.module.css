@@ -33,8 +33,11 @@
 .summary { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); margin-top: 6px; }
 
 .tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; position: relative; }
-.find { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: var(--r-full); border: 1px solid rgba(var(--fg-rgb), 0.12); color: var(--fg-dim); }
-.find input { background: transparent; border: none; outline: none; color: var(--fg); font-size: 12px; width: 180px; min-width: 0; }
+.find { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: var(--r-full); border: 1px solid rgba(var(--fg-rgb), 0.12); color: var(--fg-dim); max-width: 100%; min-width: 0; box-sizing: border-box; }
+.find input { background: transparent; border: none; outline: none; color: var(--fg); font-size: 12px; width: 180px; max-width: 100%; flex: 1 1 auto; min-width: 0; -webkit-appearance: none; appearance: none; }
+/* The pill carries the focus state (:focus-within below): the global ring on the input itself is a second frame
+   that sits outside the pill — the "highlight doesn't fit its frame" the owner photographed (Nov 26 2026). */
+.find input:focus-visible { outline: none !important; outline-offset: 0; }
 .find:focus-within { border-color: var(--pa); }
 .findCount { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); white-space: nowrap; }
 .here { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-muted); }
