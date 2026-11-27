@@ -29,7 +29,6 @@ import { fetchNotifications, markRead, type Notification } from '@/lib/supabase/
 import { getLoungeUnread, type LoungeUnread } from '@/lib/supabase/messages';
 import { clock, dayLabel, daysUntil, dueLabel, greeting, localDay, mapsHref, nextShootDays, openTasks, urgency } from '@/lib/today/core';
 import { readable } from '@/lib/util/color';
-import { ContinueOffer } from '@/components/mobile/Continue';
 import { InstallHint } from '@/components/mobile/InstallHint';
 import t from './yourDay.module.css';
 
@@ -214,7 +213,6 @@ export function YourDay() {
         </button>
       </header>
 
-      <ContinueOffer inline className={t.wide} />
       <InstallHint className={t.wide} />
 
       {invites.length > 0 && (
