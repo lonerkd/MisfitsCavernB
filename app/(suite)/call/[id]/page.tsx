@@ -5,7 +5,6 @@
 // the top and "Got it" to confirm they've seen this version. Read through
 // RLS: members of the production only.
 
-import { ViewAsBanner } from '@/components/projects/ViewAs';
 import { useViewAs, effectiveOwner } from '@/lib/os/viewAs';
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -172,7 +171,6 @@ export default function CallSheetPage() {
 
   return (
     <div className={c.page}>
-      {project && <ViewAsBanner projectId={project.id} />}
       <div className={c.frame}>
         <p className={c.eyebrow}>{project?.title} · call sheet{version ? ` · v${version}` : ''}</p>
         <h1 className={c.title}>Day {sheet.shoot_day}</h1>

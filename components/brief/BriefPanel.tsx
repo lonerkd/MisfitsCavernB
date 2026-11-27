@@ -152,7 +152,8 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
       <div className={b.head}>
         <div>
           <div className={b.eyebrow}>Project brief</div>
-          <h2 id="brief-title" className={b.title}>{summary || 'What are you making?'}</h2>
+          <h2 id="brief-title" className={b.title}>Project brief</h2>
+          <p className={b.summary}>{summary || 'What are you making?'}</p>
         </div>
         <div className={b.count}>{total.answered} of {total.of} answered</div>
       </div>
@@ -185,8 +186,9 @@ export function BriefPanel({ brief, projectTitle, format, phase, canEdit, accent
               const done = qs.filter((q) => brief.answers[q.key] != null).length;
               return (
                 <button key={p.id} type="button" role="tab" id={`brief-tab-${p.id}`} aria-controls="brief-tabpanel" aria-selected={current === p.id}
-                  className={b.tab} onClick={() => setTab(p.id)}>
-                  {p.label}<span className={b.tabCount}>{done}/{qs.length}</span>
+                  className={b.tab} onClick={() => setTab(p.id)}
+                  aria-label={`${p.label} brief: ${done} of ${qs.length} answered`} title={`${p.label} brief — ${done} of ${qs.length} questions answered`}>
+                  {p.label}<span className={b.tabCount}>{done}/{qs.length}</span><span className={b.tabKind}>brief</span>
                 </button>
               );
             })}

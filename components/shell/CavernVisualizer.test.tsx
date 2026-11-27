@@ -7,9 +7,6 @@ const spotify = {
   togglePlay: vi.fn(), nextTrack: vi.fn(), prevTrack: vi.fn(), seek: vi.fn(),
 };
 vi.mock('@/lib/os/SpotifyContext', () => ({ useSpotify: () => spotify }));
-const cap = vi.hoisted(() => ({ supported: true, start: vi.fn(), toast: vi.fn() }));
-vi.mock('@/lib/cavern/capture', async (orig) => ({ ...(await orig<typeof import('@/lib/cavern/capture')>()), captureSupported: () => cap.supported, startCapture: cap.start }));
-vi.mock('@/components/ui/Toast', () => ({ useToast: () => ({ toast: cap.toast }) }));
 const journeyFeed = vi.hoisted(() => ({ state: { journey: null as unknown, status: 'no-project' as string } }));
 vi.mock('@/lib/cavern/useJourney', () => ({ useJourney: () => journeyFeed.state }));
 import { CavernVisualizer } from './CavernVisualizer';
@@ -29,10 +26,14 @@ describe('CavernVisualizer', () => {
     fireEvent.change(screen.getByRole('slider', { name: 'Seek' }), { target: { value: '90000' } });
     expect(spotify.seek).toHaveBeenCalledWith(90000);
   });
-  it('says which sync level it runs at: with no project it follows the player only', () => {
+  it('keeps the screen clean: no narration, no Listen button — the cave and the player only', () => {
     render(<CavernVisualizer onClose={() => {}} />);
-    expect(screen.getByText('No project open: the cave follows the player only.')).toBeTruthy();
-    expect(screen.getByText('Following the player (the beat is not heard)')).toBeTruthy();
+    expect(screen.queryByText('No project open: the cave follows the player only.')).toBeNull();
+    expect(screen.queryByText('Following the player (the beat is not heard)')).toBeNull();
+    expect(screen.queryByText(/You are steering|Exploring on its own/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Listen to the music|Stop listening/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Close the visualizer' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
   });
   it('closes with its button and with Escape, and Space plays or pauses', () => {
     const onClose = vi.fn();
@@ -60,7 +61,7 @@ describe('CavernVisualizer', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: 'Next track' }), { key: ' ' });
     expect(spotify.togglePlay).not.toHaveBeenCalled();
   });
-  it('steers with the arrow keys and WASD without closing, and says what it is doing', () => {
+  it('steers with the arrow keys and WASD without closing, and says nothing about it', () => {
     const onClose = vi.fn();
     render(<CavernVisualizer onClose={onClose} />);
     for (const key of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'd', 'a', 'w', 's']) {
@@ -69,8 +70,7 @@ describe('CavernVisualizer', () => {
     }
     expect(onClose).not.toHaveBeenCalled();
     expect(spotify.togglePlay).not.toHaveBeenCalled(); // arrows steer; only Space plays and pauses
-    expect(screen.getByText(/Following the player/)).toBeTruthy();
-    expect(screen.getByText(/in$/)).toBeTruthy();
+    expect(screen.queryByText(/Following the player/)).toBeNull();
   });
   it('leaves the seek slider its own arrow keys', () => {
     render(<CavernVisualizer onClose={() => {}} />);
@@ -189,46 +189,6 @@ describe('CavernVisualizer', () => {
       render(<CavernVisualizer onClose={onClose} />);
       for (const key of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) { fireEvent.keyDown(window, { key }); fireEvent.keyUp(window, { key }); }
       expect(onClose).not.toHaveBeenCalled();
-    });
-  });
-  describe('listening to the music (opt-in)', () => {
-    const fake = () => ({ read: () => ({ bass: 0.5, mid: 0.3, treble: 0.2, level: 0.4 }), hearing: () => true, stop: vi.fn(), onEnded: vi.fn() });
-    it('offers it only where the browser can share audio', () => {
-      cap.supported = false;
-      render(<CavernVisualizer onClose={() => {}} />);
-      expect(screen.queryByRole('button', { name: /Listen to the music/ })).toBeNull();
-      cleanup(); cap.supported = true;
-      render(<CavernVisualizer onClose={() => {}} />);
-      expect(screen.getByRole('button', { name: /Listen to the music/ })).toBeTruthy();
-    });
-    it('starts only when asked, turns into Stop listening, and lets go of the share', async () => {
-      const c = fake(); cap.start.mockResolvedValueOnce(c);
-      render(<CavernVisualizer onClose={() => {}} />);
-      expect(cap.start).not.toHaveBeenCalled(); // never on its own
-      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
-      const stop = await screen.findByRole('button', { name: /Stop listening/ });
-      expect(stop.getAttribute('aria-pressed')).toBe('true');
-      fireEvent.click(stop);
-      expect(c.stop).toHaveBeenCalled();
-      expect(await screen.findByRole('button', { name: /Listen to the music/ })).toBeTruthy();
-    });
-    it('lets go of the share when the cave closes', async () => {
-      const c = fake(); cap.start.mockResolvedValueOnce(c);
-      const { unmount } = render(<CavernVisualizer onClose={() => {}} />);
-      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
-      await screen.findByRole('button', { name: /Stop listening/ });
-      unmount();
-      expect(c.stop).toHaveBeenCalled();
-    });
-    it('says why when it could not start, and a cancelled share is not an error', async () => {
-      const { CaptureError } = await import('@/lib/cavern/capture');
-      cap.start.mockRejectedValueOnce(new CaptureError('no-audio', 'No audio was shared.'));
-      render(<CavernVisualizer onClose={() => {}} />);
-      fireEvent.click(screen.getByRole('button', { name: /Listen to the music/ }));
-      await vi.waitFor(() => expect(cap.toast).toHaveBeenCalledWith('No audio was shared.', 'error'));
-      cap.start.mockRejectedValueOnce(new CaptureError('denied', 'Sharing was cancelled.'));
-      fireEvent.click(await screen.findByRole('button', { name: /Listen to the music/ }));
-      await vi.waitFor(() => expect(cap.toast).toHaveBeenCalledWith('Sharing was cancelled.', 'info'));
     });
   });
 });

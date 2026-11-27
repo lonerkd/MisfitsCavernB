@@ -107,7 +107,6 @@ export default function ProjectHubPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', overflow: 'hidden' }}>
       <GrainOverlay />
-      <ViewAsBanner projectId={id} />
 
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, height: '50vh', pointerEvents: 'none', zIndex: 0,
@@ -123,7 +122,7 @@ export default function ProjectHubPage() {
         tasksDone={counts.tasksDone}
       />
 
-      <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
+      <div className="mc-project-body" style={{ padding: '28px 28px calc(var(--taskbar-height, 70px) + 44px)', position: 'relative', zIndex: 1 }}>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -242,7 +241,7 @@ export default function ProjectHubPage() {
             href="#production"
             delay={0.2}
             stats={[
-              { label: 'Milestones', value: counts.timeline },
+              { label: 'Timeline', value: counts.timeline },
               { label: 'Budget', value: counts.budget > 0 ? `$${(counts.budget / 1000).toFixed(1)}k` : '$0' },
             ]}
             preview={<TimelinePreview deadline={project.deadline} milestones={milestones} />}
@@ -282,6 +281,12 @@ export default function ProjectHubPage() {
 
         {/* The owner's controls, grouped at the foot of the hub: the page
             opens on the project itself, not its admin (owner, Nov 26 2026). */}
+        {project.isOwner && (
+          <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <ViewAsSwitch projectId={id} />
+            <ViewAsBanner projectId={id} />
+          </div>
+        )}
         {ownerView && (
           <section aria-label="Project office" style={{ marginBottom: 24, background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 20, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
             <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', margin: 0 }}>Project office</h2>
@@ -290,7 +295,6 @@ export default function ProjectHubPage() {
               onVisibilityChange={changeVisibility}
               onCopyShareLink={copyShareLink}
             />
-            {project.isOwner && <ViewAsSwitch projectId={id} />}
             <LogoEditor
               projectId={id}
               value={project.logoUrl ?? null}

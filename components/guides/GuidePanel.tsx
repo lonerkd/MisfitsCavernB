@@ -73,6 +73,9 @@ export function GuidePanel({ projectId, signals, isOwner, format, structure, acc
   const { progress, loaded: progressLoaded, update } = useGuideProgress(projectId, userId);
   const [tuning, setTuning] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Which "Every step" phase is open; null follows the phase the guide says is current. A press is
+  // state, not a <details> attribute React keeps resetting — the controlled-open rows snapped back.
+  const [openPhase, setOpenPhase] = useState<number | null>(null);
   const [craft, setCraft] = useState<string | null>(null);
 
   // On someone else's project, the guide follows your craft on it.
@@ -139,6 +142,7 @@ export function GuidePanel({ projectId, signals, isOwner, format, structure, acc
   }
 
   const { next, thisWeek } = view;
+  const openIndex = openPhase ?? view.currentIndex;
   const firstWeek = new Set(thisWeek.map((s) => s.id));
   const pace = view.hoursLeft > 0
     ? `${view.totals.done} of ${view.totals.total} steps · about ${Math.ceil(view.hoursLeft)} hours left — ${describeWeeks(view.weeksLeft)} at ${profile.hours}h a week`
@@ -180,19 +184,27 @@ export function GuidePanel({ projectId, signals, isOwner, format, structure, acc
 
       <h3 className={g.sectionTitle}>Every step</h3>
       <div className={g.phases}>
-        {view.phases.filter((p) => p.total > 0).map((p) => (
-          <details key={p.id} className={g.phase} open={p.index === view.currentIndex}>
-            <summary className={g.phaseSummary}>
-              <span>{p.label}{p.index === view.currentIndex && <span className={g.now}>· now</span>}</span>
-              <span className={g.phaseCount}>{p.done}/{p.total}</span>
-            </summary>
-            <ul className={g.steps} aria-label={`${p.label} steps`}>
-              {p.steps.filter((s) => !firstWeek.has(s.id)).map((s) => (
-                <StepItem key={s.id} step={s} projectId={projectId} open={false} busy={busy} onTick={(d) => tick(s, d)} />
+        {view.phases.filter((p) => p.total > 0).map((p) => {
+          const steps = p.steps.filter((s) => !firstWeek.has(s.id));
+          const open = p.index === openIndex;
+          return (
+            <div key={p.id} className={g.phase}>
+              <button type="button" className={g.phaseSummary} aria-expanded={open} onClick={() => setOpenPhase(open ? -1 : p.index)}>
+                <span className={g.phaseLabel}>{p.label}{p.index === view.currentIndex && <span className={g.now}>· now</span>}</span>
+                <span className={g.phaseCount}>{p.done}/{p.total}</span>
+              </button>
+              {open && (steps.length > 0 ? (
+                <ul className={g.steps} aria-label={`${p.label} steps`}>
+                  {steps.map((s) => (
+                    <StepItem key={s.id} step={s} projectId={projectId} open={false} busy={busy} onTick={(d) => tick(s, d)} />
+                  ))}
+                </ul>
+              ) : (
+                <p className={g.phaseNote}>Everything for this phase is in This week, above.</p>
               ))}
-            </ul>
-          </details>
-        ))}
+            </div>
+          );
+        })}
       </div>
     </section>
   );

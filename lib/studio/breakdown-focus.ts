@@ -142,6 +142,7 @@ export function breakdownFocus(f: FocusFacts): BreakdownFocus {
       case 'locations': return `${s.locations_confirmed} of ${s.locations} locations confirmed.`;
       case 'permits': return `${plural(s.permits_open, 'location')} still need or wait on a permit.`;
       case 'casting': return `${plural(s.characters, 'character')}, none cast.`;
+      case 'casting-complete': return `${s.cast_roles_cast} of ${plural(s.cast_roles, 'character')} in a scene cast.`;
       case 'shots': return 'No shots planned yet.';
       case 'schedule': return 'No shoot day has a date.';
       case 'call-sheet': return 'No call sheet issued to the crew yet.';
@@ -160,6 +161,13 @@ export function breakdownFocus(f: FocusFacts): BreakdownFocus {
       if (m.done || handled.has(m.id)) continue;
       add({ id: m.id, kind: kind(m.id), title: m.label, detail: detailOf(m.id, m.hint), to: { place: m.place }, actionLabel: placeLabel(m.place) });
     }
+  }
+
+  // 'Cast a role' is contained in 'Cast every role in the film': when both are still owed, the
+  // stricter one speaks and the weaker stands down — casting is never listed twice (owner, Nov 26, 2026).
+  if (items.some((i) => i.id === 'casting-complete')) {
+    const at = items.findIndex((i) => i.id === 'casting');
+    if (at >= 0) items.splice(at, 1);
   }
 
   items.sort((x, y) => (x.kind === y.kind ? 0 : x.kind === 'blocker' ? -1 : 1));
