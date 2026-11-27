@@ -9,8 +9,8 @@ const label = (s: CandidateStatus) => (s === 'shortlisted' ? 'Shortlisted' : s =
 const field = { background: 'var(--bg)', color: 'var(--fg)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 8px', fontSize: 12 } as const;
 
 /** The shortlist for one role, side by side: who, their reel, a note and where they stand. Crew read; deciders write. */
-export function CandidateShortlist({ projectId, character, userId, canEdit, crew, onCast, onChanged }: {
-  projectId: string; character: string; userId: string | null; canEdit: boolean;
+export function CandidateShortlist({ projectId, character, characterId, userId, canEdit, crew, onCast, onChanged }: {
+  projectId: string; character: string; characterId?: string | null; userId: string | null; canEdit: boolean;
   crew: Array<{ user_id: string; profiles?: { username?: string | null } | null }>;
   onCast?: (userId: string) => void;
   onChanged?: () => void;
@@ -23,7 +23,7 @@ export function CandidateShortlist({ projectId, character, userId, canEdit, crew
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => listCandidates(projectId, character).then(setRows, () => setRows([])), [projectId, character]);
+  const load = useCallback(() => listCandidates(projectId, character, characterId ?? undefined).then(setRows, () => setRows([])), [projectId, character, characterId]);
   useEffect(() => { void load(); }, [load]);
 
   const add = async () => {
@@ -31,7 +31,7 @@ export function CandidateShortlist({ projectId, character, userId, canEdit, crew
     setBusy(true);
     try {
       const match = crew.find((m) => (m.profiles?.username ?? '').toLowerCase() === name.trim().toLowerCase());
-      await addCandidate(projectId, character, { name, reel_url: reel, note, user_id: match?.user_id ?? null }, userId ?? undefined);
+      await addCandidate(projectId, character, { name, reel_url: reel, note, user_id: match?.user_id ?? null, character_id: characterId ?? null }, userId ?? undefined);
       setName(''); setReel(''); setNote('');
       await load();
       onChanged?.();

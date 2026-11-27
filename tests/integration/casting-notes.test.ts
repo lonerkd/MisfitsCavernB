@@ -35,3 +35,42 @@ describe('casting notes', () => {
     expect((await table(anonClient()).select('*').eq('project_id', projectId)).data ?? []).toEqual([]);
   });
 });
+
+describe('casting notes follow the character (20261126000100)', () => {
+  const character = async (name: string) => {
+    const { data } = await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', name).single();
+    if (!data) throw new Error(`character ${name} not found`);
+    return data;
+  };
+
+  it('a note written by name is linked to the character, made if new', async () => {
+    const { error } = await table(cast.sam.client).insert({ project_id: projectId, character_name: 'NOVA', note: 'First read' });
+    expect(error).toBeNull();
+    const ch = await character('NOVA');
+    expect(ch?.id).toBeTruthy();
+    const { data } = await table(cast.sam.client).select('character_id').eq('project_id', projectId).eq('character_name', 'NOVA').single();
+    expect(data.character_id).toBe(ch.id);
+    // Crew reads the linked note too — the link changes nothing about who may see it.
+    expect((await table(cast.jordan.client).select('note').eq('character_id', ch.id)).data).toHaveLength(1);
+    // And crew still cannot rewrite one: the update policy is the creator's alone.
+    await table(cast.jordan.client).update({ note: 'rewritten' }).eq('project_id', projectId).eq('character_name', 'NOVA');
+    expect((await table(cast.sam.client).select('note').eq('character_name', 'NOVA').single()).data.note).toBe('First read');
+  });
+
+  it('a rename carries the note: the name follows, the link stays', async () => {
+    const ch = await character('NOVA');
+    const { error } = await cast.sam.client.from('characters').update({ name: 'NOVA PRIME' }).eq('id', ch.id);
+    expect(error).toBeNull();
+    const { data } = await table(cast.sam.client).select('character_name, character_id').eq('project_id', projectId).eq('character_id', ch.id).single();
+    expect(data.character_name).toBe('NOVA PRIME');
+    expect(data.character_id).toBe(ch.id);
+  });
+
+  it('removing the character unlinks the note but keeps it', async () => {
+    const ch = await character('NOVA PRIME');
+    expect((await cast.sam.client.from('characters').delete().eq('id', ch.id)).error).toBeNull();
+    const { data } = await table(cast.sam.client).select('character_id').eq('project_id', projectId).eq('character_name', 'NOVA PRIME').single();
+    expect(data).not.toBeNull();
+    expect(data.character_id).toBeNull();
+  });
+});
