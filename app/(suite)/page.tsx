@@ -37,8 +37,9 @@ export default function Home() {
       <GrainOverlay />
       <Navigation />
 
+      {/* The offer starts below the fixed top bar (about 60 px on a phone, 80 on a desk): at 20 px it sat under it, the logo and menu drawn over it and "Not now" untappable (the mobile audit's underBar 2 on /, /hub, /today and /auth). */}
       {loggedIn && (
-        <div className="mc-continue-slot" style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 16px 0' }}>
+        <div className="mc-continue-slot" style={{ maxWidth: 1100, margin: '0 auto', padding: 'clamp(64px, 12vw, 84px) 16px 0' }}>
           <ContinueOffer inline />
         </div>
       )}
