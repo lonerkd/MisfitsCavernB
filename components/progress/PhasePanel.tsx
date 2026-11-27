@@ -18,6 +18,7 @@ import dynamic from 'next/dynamic';
 const PhaseGate = dynamic(() => import('./PhaseGate').then((m) => m.PhaseGate));
 import { FormatPicker } from '@/components/formats/FormatPicker';
 import { Brick, PlaceLink, accentVars } from './Bricks';
+import { Lamp } from '@/components/ui/DiscSwitch';
 import { MILESTONE_ROLES } from '@/lib/os/phase-needs';
 import { UnlockReveal } from './UnlockReveal';
 import p from './progress.module.css';
@@ -330,8 +331,8 @@ export function PhasePanel({ projectId, state, isOwner, accent, onNavigate, onFo
           <div className={p.sectionTitle}>
             <Sub className={p.sectionHeading}>Toolkit</Sub>
             {isOwner && (
-              <button type="button" role="switch" aria-checked={signals.unlock_all} className={`${p.switch} ${signals.unlock_all ? p.switchOn : ''}`} onClick={toggleUnlockAll}>
-                <span className={p.switchTrack} aria-hidden /> Open all
+              <button type="button" role="switch" aria-checked={signals.unlock_all} className={p.switch} onClick={toggleUnlockAll}>
+                <Lamp on={signals.unlock_all} small lit="var(--pa)" /> Open all
               </button>
             )}
           </div>

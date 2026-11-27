@@ -12,6 +12,7 @@ import { useToast } from '@/components/ui/Toast';
 import { saveUiPrefs } from '@/lib/os/uiPrefs';
 import { DEFAULT_CHOICE, THEMES, THEME_EVENT, applyTheme, isFrosted, readLocalTheme, withFrosted, writeLocalTheme, type ThemeChoice } from '@/lib/themes/themes';
 import t from './themePicker.module.css';
+import { Lamp } from '@/components/ui/DiscSwitch';
 
 function Preview({ swatch }: { swatch: [string, string, string] }) {
   const [bg, fg, accent] = swatch;
@@ -79,7 +80,7 @@ export function ThemePicker({ signedIn }: { signedIn: boolean }) {
   return (
     <div className={t.wrap}>
       <button type="button" role="switch" aria-checked={isFrosted(choice)} className={t.frost} onClick={toggleFrosted}>
-        <span className={t.frostTrack} aria-hidden><span className={t.frostThumb} /></span>
+        <Lamp on={isFrosted(choice)} />
         <span className={t.frostText}><strong>Frosted</strong><span> Translucent surfaces with a blur behind them, over any theme below.</span></span>
       </button>
       <div className={t.grid} role="radiogroup" aria-label="Theme">
