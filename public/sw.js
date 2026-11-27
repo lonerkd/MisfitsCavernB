@@ -10,7 +10,12 @@
 // look like it dropped the user on the landing page.
 //
 // v3: The Cavern's R13 icons (the old "M" icon was cached in v2).
-const CACHE = 'mc-shell-v3';
+//
+// v4: the auth page is never cached and never served from cache. A cached
+// /auth from an older build (old headings, the pre-fix sign-in flow) could be
+// served on a flaky connection long after the deployment replaced it, so the
+// sign-in screen showed a build that no longer existed.
+const CACHE = 'mc-shell-v4';
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/apple-touch-icon.png'];
 
 const OFFLINE_HTML = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Offline · The Cavern</title></head>
@@ -40,21 +45,21 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return; // Supabase/Spotify/Openverse: leave alone
 
   // Whole-page navigations: network-first, fall back to this page's cached copy.
+  // The auth page is the one exception (v4): never cached, never served from
+  // cache — offline there gets the offline notice, not a stale sign-in screen.
   if (request.mode === 'navigate') {
+    const isAuth = url.pathname === '/auth' || url.pathname.startsWith('/auth/');
+    const offline = () => new Response(OFFLINE_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     event.respondWith(
       fetch(request)
         .then((res) => {
-          if (res.ok && res.type === 'basic' && !res.redirected) {
+          if (!isAuth && res.ok && res.type === 'basic' && !res.redirected) {
             const copy = res.clone();
             caches.open(CACHE).then((c) => c.put(request, copy));
           }
           return res;
         })
-        .catch(() =>
-          caches.match(request).then(
-            (m) => m || new Response(OFFLINE_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }),
-          ),
-        ),
+        .catch(() => (isAuth ? offline() : caches.match(request).then((m) => m || offline()))),
     );
     return;
   }
