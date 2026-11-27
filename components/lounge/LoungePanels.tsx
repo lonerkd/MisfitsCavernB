@@ -7,15 +7,33 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Pin, PinOff, Search, X } from 'lucide-react';
 import { getPinnedMessages, searchLounge, type LoungeHit } from '@/lib/supabase/messages';
+import { useOverlayLayer } from '@/lib/os/overlayStack';
 
 const panelStyle: React.CSSProperties = {
   position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(94vw, 400px)', background: 'var(--surface)',
-  borderLeft: '1px solid rgba(var(--ink-rgb), 0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex',
+  paddingTop: 'var(--mc-safe-top)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex',
   flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)',
 };
 const headStyle: React.CSSProperties = { padding: '14px 18px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' };
 const titleStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--ok)', display: 'inline-flex', alignItems: 'center', gap: 6 };
 const closeStyle: React.CSSProperties = { background: 'transparent', border: 'none', color: 'var(--fg-muted)', cursor: 'pointer' };
+/** The panel shell: a tap-out scrim (phones — .mc-lounge-backdrop in globals.css; the panel used to start at
+ *  the very top of the screen with its header under the clock and no way out but its small close button), the
+ *  slide-in, and a place on the overlay stack so the bars' back chevron closes the panel before it navigates
+ *  anywhere (owner, Nov 26, 2026). */
+function SidePanel({ label, onClose, children }: { label: string; onClose: () => void; children: React.ReactNode }) {
+  useOverlayLayer(true, onClose);
+  return (
+    <>
+      <div aria-hidden className="mc-lounge-backdrop" onClick={onClose} />
+      <motion.aside role="dialog" aria-label={label} initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={panelStyle}
+        onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
+        {children}
+      </motion.aside>
+    </>
+  );
+}
+
 const rowStyle: React.CSSProperties = { display: 'block', width: '100%', textAlign: 'left', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 8, padding: '10px 12px', cursor: 'pointer', color: 'var(--fg)' };
 const metaStyle: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', display: 'flex', gap: 6, marginBottom: 4 };
 
@@ -65,8 +83,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
   }, [live, q, scope, key]);
 
   return (
-    <motion.aside role="dialog" aria-label="Search the Lounge" initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={panelStyle}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
+    <SidePanel label="Search the Lounge" onClose={onClose}>
       <div style={headStyle}>
         <span style={titleStyle}><Search size={12} aria-hidden /> Search</span>
         <button type="button" onClick={onClose} aria-label="Close search" style={closeStyle}><X size={16} /></button>
@@ -105,7 +122,7 @@ export function LoungeSearch({ channel, meId, onClose, onJump }: {
           </button>
         ))}
       </div>
-    </motion.aside>
+    </SidePanel>
   );
 }
 
@@ -128,8 +145,7 @@ export function PinnedPanel({ channel, refreshKey, canUnpin, onUnpin, onClose, o
   }, [channel.id, refreshKey]);
 
   return (
-    <motion.aside role="dialog" aria-label={`Pinned in #${channel.name}`} initial={{ x: 400 }} animate={{ x: 0 }} exit={{ x: 400 }} transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }} style={panelStyle}
-      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}>
+    <SidePanel label={`Pinned in #${channel.name}`} onClose={onClose}>
       <div style={headStyle}>
         <span style={titleStyle}><Pin size={12} aria-hidden /> Pinned in #{channel.name}</span>
         <button type="button" onClick={onClose} aria-label="Close pinned messages" style={closeStyle}><X size={16} /></button>
@@ -156,6 +172,6 @@ export function PinnedPanel({ channel, refreshKey, canUnpin, onUnpin, onClose, o
           </div>
         ))}
       </div>
-    </motion.aside>
+    </SidePanel>
   );
 }
