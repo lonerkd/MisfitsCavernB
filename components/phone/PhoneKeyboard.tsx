@@ -73,9 +73,19 @@ export function PhoneKeyboard() {
     };
     const onFocus = (e: FocusEvent) => { if (!isTypable(e.target as Element)) return; clearTimeout(timer); timer = setTimeout(reveal, 350); };
     document.addEventListener('focusin', onFocus);
-    // The keyboard finishing its rise (or a rotation while typing) re-checks the field.
+    // The keyboard finishing its rise (or a rotation while typing) re-checks the field — but only once the
+    // visible height has settled: the rise fires a run of resizes, each reporting a different height, and
+    // revealing against a moving target makes the page hunt up and down (worst in landscape, where the
+    // visible strip is shortest — owner's report, Nov 26 2026).
     const vv = window.visualViewport;
-    const onResize = () => { clearTimeout(timer); timer = setTimeout(reveal, 150); };
+    let settledH = -1;
+    function armSettle() {
+      const h = vv?.height ?? -1;
+      if (h === settledH) { settledH = -1; reveal(); return; }
+      settledH = h;
+      timer = setTimeout(armSettle, 200);
+    }
+    const onResize = () => { clearTimeout(timer); settledH = vv?.height ?? -1; timer = setTimeout(armSettle, 200); };
     vv?.addEventListener('resize', onResize);
     return () => { document.removeEventListener('focusin', onFocus); vv?.removeEventListener('resize', onResize); clearTimeout(timer); };
   }, [phone.phone]);

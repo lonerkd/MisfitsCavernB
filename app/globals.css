@@ -189,6 +189,14 @@ html {
 }
 @media (display-mode: standalone) and (pointer: coarse) and (max-height: 500px) and (orientation: landscape) { html { --mc-rail: 56px; } }
 
+/* Phones: iOS zooms into any focused field set under 16px and back out on blur — the page lurches up and down with
+   every tap between boxes (owner's report, Nov 26 2026; worst in landscape). 16px is the size Safari never zooms
+   past, so on a phone every form control sits at it, inline styles included. Desktops keep their own sizes. The
+   media query is the suite's phone shape (lib/os/usePhone.ts). */
+@media (max-width: 820px), (pointer: coarse) and (max-height: 500px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+
 body {
   padding-top: var(--mc-safe-top);
   overflow-x: hidden;

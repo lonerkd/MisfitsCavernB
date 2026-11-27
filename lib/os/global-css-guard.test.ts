@@ -9,6 +9,9 @@ describe('globals.css', () => {
   it('has no bare element rule that pads every <section>', () => {
     expect(css).not.toMatch(/^section\s*\{[^}]*padding/m);
   });
+  it('floors phone form controls at 16px so iOS never zooms into a field', () => {
+    expect(css).toMatch(/input, textarea, select \{\s*font-size: 16px !important;/);
+  });
   it('keeps the phone audit hard-coded colours out of the pages it fixed', () => {
     for (const f of ['app/(suite)/crew/page.tsx', 'app/(suite)/profile/page.tsx']) {
       expect(readFileSync(join(process.cwd(), f), 'utf8')).not.toMatch(/#00ff00|rgba\(0,\s*255,\s*0/);
