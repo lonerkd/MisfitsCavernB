@@ -8,11 +8,11 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2 } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
-import { useProject } from '@/lib/os';
+import { useProject, useSession } from '@/lib/os';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { useTransientContext } from '@/lib/island/transientContext';
@@ -38,6 +38,8 @@ import s from '../island/island.module.css';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useHubUnread } from '@/components/hub/useHubUnread';
+import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from '@/components/mobile/Capture';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
@@ -195,6 +197,29 @@ export default function EcosystemTaskbar() {
   // 0 where there is no island (phones use the tab bar).
   const dockRef = useRef<HTMLElement>(null);
   const surface = useIslandSurface();
+  const compact = surface === 'compact-dock';
+
+  // On a phone the island carries Capture beside it — the one thing people do
+  // on set, a single tap away (it lived on the tab bar's pill before the
+  // island took over the phone). The share sheet and the home-screen shortcut
+  // land here too: what another app shared opens Capture with it, once.
+  const { status } = useSession();
+  const [capturing, setCapturing] = useState(false);
+  const [captureStart, setCaptureStart] = useState<CaptureStart | null>(null);
+  const waiting = useOutbox().length;
+  const search = useLocationSearch();
+  const shared = useMemo(() => (compact && status === 'authed' && (pathname === '/' || pathname === '/community') ? fromShare(new URLSearchParams(search)) : null), [compact, status, pathname, search]);
+  const sharedKey = shared ? search : '';
+  const [handledShare, setHandledShare] = useState('');
+  if (sharedKey && shared && sharedKey !== handledShare) {
+    setHandledShare(sharedKey);
+    setCaptureStart(shared);
+    setCapturing(true);
+  } else if (!sharedKey && handledShare) {
+    setHandledShare('');
+  }
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/'); }, [sharedKey]);
+  useOnChange(pathname, () => setCapturing(false));
   // Its size is this device's choice (Settings › Island size); it follows the slider as it moves.
   const [scale, setScale] = useState(1);
   useEffect(() => {
@@ -704,6 +729,13 @@ export default function EcosystemTaskbar() {
               </motion.div>
             )}
 
+            {/* Capture, beside the island on a phone — the pill's button, moved here with the surface. */}
+            {compact && (
+              <button type="button" className={s.captureBtn} aria-haspopup="dialog" aria-expanded={capturing} aria-label="Capture" onClick={() => { setCaptureStart(null); setCapturing(true); }}>
+                <Plus size={22} strokeWidth={2} aria-hidden />
+                {waiting > 0 && <span className={s.captureWaiting}>{waiting}</span>}
+              </button>
+            )}
           </motion.div>
 
           {mode === 'caps' && (
@@ -718,6 +750,7 @@ export default function EcosystemTaskbar() {
           )}
         </motion.div>
       </motion.div>
+      {capturing && compact && <CaptureSheet start={captureStart} onClose={() => setCapturing(false)} />}
     </nav>
   );
 }
