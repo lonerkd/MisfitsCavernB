@@ -15,6 +15,9 @@ import { useHomeData } from '@/components/home/useHomeData';
 import dynamic from 'next/dynamic';
 // Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them).
 const SignedInHome = dynamic(() => import('@/components/home/SignedInHome').then((m) => m.SignedInHome), { loading: () => null });
+// The jump-back-in offer sits above the hero for a signed-in person (owner, Nov 26 2026: it should be higher) —
+// resuming work is the first thing on the page, not a scroll past the pitch.
+const ContinueOffer = dynamic(() => import('@/components/mobile/Continue').then((m) => m.ContinueOffer), { ssr: false, loading: () => null });
 import { usePhoneLayout } from '@/lib/os/usePhone';
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
@@ -33,6 +36,12 @@ export default function Home() {
     <div style={{ background: 'var(--bg)', color: 'var(--fg)', overflowX: 'hidden' }}>
       <GrainOverlay />
       <Navigation />
+
+      {loggedIn && (
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 16px 0' }}>
+          <ContinueOffer inline />
+        </div>
+      )}
 
       <Hero loggedIn={loggedIn} activeProjectTitle={activeProject?.title ?? null} heroOpacity={heroOpacity} heroY={heroY} />
 
