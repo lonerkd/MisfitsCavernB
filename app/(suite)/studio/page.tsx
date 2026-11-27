@@ -5,7 +5,7 @@ import { requestNoteFocus } from '@/lib/notes/focus';
 // its library, the screenplay's scenes and their references, production
 // planning, and what gets shared. Data lives in <StudioProvider> and stays live.
 
-import { ViewAsBanner, OutsiderPreview } from '@/components/projects/ViewAs';
+import { OutsiderPreview } from '@/components/projects/ViewAs';
 import { useViewAs } from '@/lib/os/viewAs';
 import { usePresence } from '@/lib/os/PresenceContext';
 import { ToolFindProvider, ToolHereContext } from '@/components/studio/toolFind';
@@ -227,7 +227,6 @@ export default function StudioPage() {
           activeProject.creator_id === user.id && viewMode === 'outsider' ? <OutsiderPreview projectId={activeProject.id} /> :
           <StudioProvider key={activeProject.id} project={activeProject} userId={user.id} onNavigate={(t, v) => navigate({ kind: 'studio', tab: t, view: v })}>
             <ProgressContext.Provider value={progressState}>
-              <ViewAsBanner projectId={activeProject.id} />
               <div role="tabpanel">
                 {tabLock && !peeked.has(tab) ? (
                   <LockedTool

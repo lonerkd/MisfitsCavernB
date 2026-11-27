@@ -57,18 +57,20 @@ function RolePicker({ projectId }: { projectId: string }) {
   );
 }
 
-/** A bar across the page while previewing, with the way back. Renders nothing in the real view. */
+/** The preview state and the way back, inline with the switch on the project page — shown only
+ *  while previewing (owner, Nov 27, 2026: only when you need it, never a bar pinned to the top
+ *  of every screen). The outsider screen keeps its own, as the way off a dead end. */
 export function ViewAsBanner({ projectId }: { projectId: string }) {
   const mode = useViewAs(projectId);
   const role = useViewAsRole(projectId);
   const sentence = useRoleSentence(role.craft, role.tier);
   if (mode === 'owner') return null;
   return (
-    <div role="status" style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, flexWrap: 'wrap', padding: '8px 16px', background: 'var(--warn)', color: '#1a1200', fontSize: 13 }}>
+    <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '8px 12px', borderRadius: 12, background: 'color-mix(in srgb, var(--warn) 16%, transparent)', border: '1px solid color-mix(in srgb, var(--warn) 55%, var(--border))', color: 'var(--fg)', fontSize: 13 }}>
       <span>{mode === 'crew'
         ? `Previewing as ${role.craft ?? 'a crew member'}: ${sentence ? `${sentence} ` : ''}The screens show what this role sees; your real access has not changed.`
         : NOTE[mode]}</span>
-      <button type="button" onClick={() => setViewAs(projectId, 'owner')} style={{ padding: '3px 10px', borderRadius: 8, border: '1px solid rgba(26,18,0,0.4)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>Back to me</button>
+      <button type="button" onClick={() => setViewAs(projectId, 'owner')} style={{ padding: '3px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'inherit', cursor: 'pointer', fontSize: 12 }}>Back to me</button>
     </div>
   );
 }

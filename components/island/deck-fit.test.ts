@@ -43,7 +43,8 @@ describe('the deck fits a phone', () => {
 
   it('a phone on its side gets the compact manners at any surface', () => {
     const landscape = css.slice(css.indexOf('@media (pointer: coarse) and (max-height: 500px)'));
-    expect(landscape).toContain('.dock .nav { flex-wrap: wrap; }');
+    // The strip scrolled sideways here too since the owner's scroll call (Nov 26, 2026) — island-scroll.test.ts pins the shape.
+    expect(landscape).toContain('.dock .nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto;');
     expect(landscape).toContain('.dock .slot[data-tip]::after { display: none; }');
     expect(landscape).toContain('.dock .onsetLink { max-width: 44vw;');
   });

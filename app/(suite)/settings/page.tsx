@@ -22,6 +22,8 @@ import { PUSH_HINT, usePushSetting } from '@/components/settings/usePushSetting'
 import { ISLAND_STATE_LABELS, readIslandPrefs, writeIslandPrefs } from '@/lib/island/prefs';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
 import { GRAIN_AMOUNT_MAX, GRAIN_AMOUNT_MIN, GRAIN_AMOUNT_STEP, GRAIN_SPEED_MAX, GRAIN_SPEED_MIN, GRAIN_SPEED_STEP, readGrainAmount, readGrainSpeed, writeGrainAmount, writeGrainSpeed } from '@/lib/ui/grain';
+import { readSplitButtonPref, splitButtonVisible, writeSplitButtonPref } from '@/lib/island/splitButton';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -98,6 +100,8 @@ export default function SettingsPage() {
   const [grainAmount, setGrainAmount] = useState(readGrainAmount);
   const [grainSpeed, setGrainSpeed] = useState(readGrainSpeed);
   const [islandStates, setIslandStates] = useState(readIslandPrefs);
+  const [splitBtnPref, setSplitBtnPref] = useState(readSplitButtonPref);
+  const islandSurface = useIslandSurface();
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
   const [notifyProduct, setNotifyProduct] = useState(false);
@@ -326,6 +330,9 @@ export default function SettingsPage() {
               />
               <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{grainSpeed.toFixed(2)}x</span>
             </div>
+          } />
+          <Row label="Split screen button" hint="The split-screen button in the island's deck, on this device. It starts off on phones, where the panes squeeze; the keyboard shortcut still opens a split either way." control={
+            <Toggle on={splitButtonVisible(splitBtnPref, islandSurface === 'compact-dock')} onChange={(v) => setSplitBtnPref(writeSplitButtonPref(v))} />
           } />
           {ISLAND_STATE_LABELS.map(({ key, label, hint }) => (
             <Row key={key} label={`Island: ${label}`} hint={`${hint} On this device.`} control={

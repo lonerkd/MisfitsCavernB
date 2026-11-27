@@ -256,6 +256,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 })}
               </div>
               <textarea
+                className="mc-script-area"
                 ref={textareaRef}
                 value={content}
                 onChange={e => { setTagAt(null); handleEditorChange(e); }}

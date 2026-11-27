@@ -195,13 +195,14 @@
 .captureWaiting { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: var(--on-accent); font: 800 var(--text-xs)/20px var(--ui); text-align: center; border: 2px solid var(--bg); }
 
 /* The compact dock fits a phone in both orientations: desk furniture (key
-   badges, the Caps hints row) goes away, the deck wraps instead of clipping,
+   badges, the Caps hints row) goes away, the deck's strip scrolls sideways instead of wrapping or clipping,
    and long names truncate before anything can run off the edge — the failure
    in the owner's landscape shot of 2026-11-26, where the bell, the profile
    and Sign Out slid past the bar's end. */
 .dock[data-compact='true'] .hints { display: none; }
 .dock[data-compact='true'] .key { display: none; }
-.dock[data-compact='true'] .nav { flex-wrap: wrap; }
+.dock[data-compact='true'] .nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+.dock[data-compact='true'] .nav::-webkit-scrollbar { display: none; }
 .dock[data-compact='true'] .handle { min-width: 0; }
 .dock[data-compact='true'] .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dock[data-compact='true'] .activity { min-width: 0; }
@@ -223,12 +224,13 @@
 /* A phone on its side is wider than the compact width and shorter than any desk, so it is handed the
    full dock at desktop width — and the strip, the hints and the Continue line ran off its edges (the
    owner's landscape shots, 2026-11-26). At that size the dock takes the compact manners whatever
-   surface it was given: the strip wraps, the desk furniture goes, and long names truncate instead of
+   surface it was given: the strip scrolls sideways, the desk furniture goes, and long names truncate instead of
    pushing past the edge. The frosted glass itself is untouched — he likes the transparency. */
 @media (pointer: coarse) and (max-height: 500px) {
   .dock .hints { display: none; }
   .dock .key { display: none; }
-  .dock .nav { flex-wrap: wrap; }
+  .dock .nav { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .dock .nav::-webkit-scrollbar { display: none; }
   .dock .slot[data-tip]::after { display: none; }
   .dock .title { max-width: 34vw; }
   .dock .onsetLink { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }

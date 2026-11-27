@@ -16,7 +16,8 @@
 
 .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
 .eyebrow { font-family: var(--mono); font-size: max(9px, var(--mc-min-font, 0px)); letter-spacing: var(--caps-track); text-transform: var(--caps); color: var(--fg-dim); }
-.title { font-family: var(--display); font-size: clamp(1.4rem, 3vw, 2rem); letter-spacing: -0.02em; line-height: 1.05; color: var(--fg); margin: 4px 0 0; font-weight: 400; }
+.title { font-family: var(--display); font-size: clamp(1.15rem, 2vw, 1.4rem); letter-spacing: -0.02em; line-height: 1.15; color: var(--fg); margin: 4px 0 0; font-weight: 400; }
+.summary { font-family: var(--mono); font-size: 12px; color: var(--fg-muted); margin: 5px 0 0; line-height: 1.45; }
 .count { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); }
 
 .cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; margin-top: 18px; }
@@ -53,6 +54,7 @@
 }
 .tab[aria-selected='true'] { color: var(--fg); border-color: var(--pa-line); background: var(--pa-dim); }
 .tabCount { opacity: 0.8; margin-left: 4px; }
+.tabKind { opacity: 0.55; margin-left: 5px; letter-spacing: 0; text-transform: none; }
 
 .questions { display: flex; flex-direction: column; gap: 16px; }
 .question { border: 0; margin: 0; padding: 0; min-width: 0; }

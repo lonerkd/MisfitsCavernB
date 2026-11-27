@@ -30,6 +30,7 @@ import { assignKeys, type PillSlot } from '@/lib/island/slots';
 import { countKeyUse } from '@/lib/island/keyUse';
 import { peekUndo, scopeOf, subscribeUndo } from '@/lib/os/undo';
 import { ISLAND_SCALE_EVENT, islandReserve, readIslandScale } from '@/lib/island/scale';
+import { SPLIT_BUTTON_EVENT, readSplitButtonPref, splitButtonVisible } from '@/lib/island/splitButton';
 import { ISLAND_PREFS_EVENT, applyIslandPrefs, readIslandPrefs, DEFAULT_ISLAND_PREFS } from '@/lib/island/prefs';
 import { readable } from '@/lib/util/color';
 import NotificationBell from './NotificationBell';
@@ -232,6 +233,29 @@ export default function EcosystemTaskbar() {
     window.addEventListener('storage', read);
     return () => { window.removeEventListener(ISLAND_SCALE_EVENT, read); window.removeEventListener('storage', read); };
   }, []);
+
+  // The split-screen button is this device's choice too (Settings › Appearance); it follows the setting as it changes.
+  const [splitPref, setSplitPref] = useState<boolean | null>(null);
+  useEffect(() => {
+    const read = () => setSplitPref(readSplitButtonPref());
+    read();
+    window.addEventListener(SPLIT_BUTTON_EVENT, read);
+    window.addEventListener('storage', read);
+    return () => { window.removeEventListener(SPLIT_BUTTON_EVENT, read); window.removeEventListener('storage', read); };
+  }, []);
+  const splitShown = splitButtonVisible(splitPref, compact);
+
+  // A scrollable strip keeps the page you are on in reach: when the route changes, the current app
+  // is centred in the strip instead of sitting off its edge.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || nav.scrollWidth <= nav.clientWidth) return;
+    const cur = nav.querySelector('[aria-current="page"]');
+    if (!cur) return;
+    const nr = nav.getBoundingClientRect();
+    const cr = (cur as HTMLElement).getBoundingClientRect();
+    nav.scrollLeft += cr.left - nr.left - (nav.clientWidth - cr.width) / 2;
+  }, [pathname]);
   useEffect(() => {
     const el = dockRef.current;
     const root = document.documentElement;
@@ -600,11 +624,13 @@ export default function EcosystemTaskbar() {
                 <Search size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>/</Key>}
               </button>
             </span>
-            <span className={s.slot} data-tip="Split screen · Ctrl \">
-              <button type="button" className={s.btn} aria-label="Split screen (Control-Backslash)" onClick={openSplit}>
-                <Columns2 size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>\</Key>}
-              </button>
-            </span>
+            {splitShown && (
+              <span className={s.slot} data-tip="Split screen · Ctrl \">
+                <button type="button" className={s.btn} aria-label="Split screen (Control-Backslash)" onClick={openSplit}>
+                  <Columns2 size={18} strokeWidth={1.5} aria-hidden />{keys && <Key>\</Key>}
+                </button>
+              </span>
+            )}
 
             <span className={s.rule} aria-hidden />
 
