@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase/client';
 import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
+import { suitePriorsFromRows, type SuitePriors } from '@/lib/scriptos/suite-priors';
 
 export * from './api';
 export * from './media-kind';
@@ -247,6 +248,36 @@ export function useReadingMemory(userId: string | null) {
   }, [memory]);
 
   return { memory, writerMemory, loading, refresh };
+}
+
+/**
+ * What the rest of the suite knows about a script's project, as priors for the reader (lib/scriptos/suite-priors.ts): the bible
+ * entries a person wrote, the breakdown's cast and things, the roles being cast. Loaded when the script is opened and again when
+ * the page comes back into view (a breakdown or a bible edited in another tab), and on `reload`. Null until loaded, and null
+ * for no project: the reader then reads as it did without the suite.
+ */
+export function useSuitePriors(projectId: string | null, scriptId: string | null) {
+  const [state, setState] = useState<{ key: string; priors: SuitePriors } | null>(null);
+  const [nonce, setNonce] = useState(0);
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
+  const key = projectId && scriptId ? `${projectId}:${scriptId}` : null;
+  useEffect(() => {
+    if (!projectId || !scriptId || !key) return;
+    let cancelled = false;
+    studio.listSuitePriorRows(projectId, scriptId).then((rows) => {
+      if (cancelled) return;
+      const priors = suitePriorsFromRows(rows);
+      // Only a change replaces the priors: an identical reload must not re-read the script.
+      setState((was) => (was && was.key === key && JSON.stringify(was.priors) === JSON.stringify(priors) ? was : { key, priors }));
+    }).catch(() => { /* listSuitePriorRows never rejects; a part that failed is left out */ });
+    return () => { cancelled = true; };
+  }, [projectId, scriptId, key, nonce]);
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === 'visible') reload(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [reload]);
+  return { priors: state && state.key === key ? state.priors : null, reload };
 }
 
 export function useProjectLocations(projectId: string | null) {

@@ -12,6 +12,8 @@ export const PARAM_DOCS: Record<keyof Params, string> = {
   cue: 'a line that looks like a character cue (capitals, short, followed by speech)',
   knownName: 'a cue whose name was already seen speaking, or told to us by the project (a discount)',
   rejectedName: 'a cue whose name a person said is not a character (a heavy penalty)',
+  knownThing: 'a cue whose name the breakdown lists as a thing (a prop, costume, vehicle ...: the suite as a prior, bounded well under a rejection)',
+  knownThingSpeech: 'a line that is only the name of a thing the breakdown lists, read as speech (the object on the page, not a line spoken)',
   extension: 'a cue with an extension such as (V.O.) or (CONT\'D) (a discount)',
   noSpeechUnder: 'a cue with nothing after it to speak',
   cueSentence: 'a "cue" that reads as a sentence',

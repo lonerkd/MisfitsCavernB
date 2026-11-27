@@ -2,7 +2,7 @@
 // sync (a performer's sides, the supervisor's lined script, the characters of the Cast tab, ...). Those used to parse with
 // no context at all, so a cast name or a "not a character" verdict a person had set was honoured in the editor and ignored
 // there. This reads the same project data the editor and the Studio read (the cast, the verdicts, the places, the script's
-// line overrides, its latest locked revision as the previous draft), under the caller's own access (RLS), and keeps it for a
+// line overrides, its latest locked revision as the previous draft, the suite's priors), under the caller's own access (RLS), and keeps it for a
 // short while so several surfaces opening one script share one load. A writer's private reading memory is left out on
 // purpose: these surfaces feed shared rows and shared screens, and must read as the Studio does.
 
@@ -27,16 +27,18 @@ async function load(scriptId: string): Promise<ParseContext> {
   if (error || !script?.project_id) throw new Error('script not readable'); // loadReadingContext reads with no context and does not remember it
   const projectId = script.project_id;
   // Each part of the context is optional: a failed read leaves that part out rather than the surface without its script.
-  const [castings, corrections, overrides, places, snapshot] = await Promise.all([
+  const [castings, corrections, overrides, places, snapshot, suiteRows] = await Promise.all([
     supabase.from('character_castings').select('character_name').eq('project_id', projectId).then((r) => r.data ?? []),
     studio.listReadingCorrections(projectId).catch(() => []),
     studio.listLineOverrides(scriptId).catch(() => []),
     studio.listLocations(projectId).catch(() => []),
     fetchLatestRevisionSnapshot(scriptId).catch(() => null),
+    Promise.resolve().then(() => studio.listSuitePriorRows(projectId, scriptId)).catch(() => ({})),
   ]);
   // The parser is large: pulled in when a context is first built, not with the page.
-  const [{ contextFromProject }, { withPreviousDraft }] = await Promise.all([import('@/lib/scriptos/context'), import('@/lib/scriptos/reading-context')]);
-  const base = contextFromProject(castings, corrections, undefined, overrides, places.map((p) => ({ name: p.name })));
+  const [{ contextFromProject }, { withPreviousDraft }, { suitePriorsFromRows, withSuitePriors }] = await Promise.all([import('@/lib/scriptos/context'), import('@/lib/scriptos/reading-context'), import('@/lib/scriptos/suite-priors')]);
+  // The suite's priors (the bible, the breakdown, casting) under the person's verdicts, as the editor and the Studio read with.
+  const base = withSuitePriors(contextFromProject(castings, corrections, undefined, overrides, places.map((p) => ({ name: p.name }))), suitePriorsFromRows(suiteRows));
   return withPreviousDraft(base, snapshot, script.format ?? null);
 }
 

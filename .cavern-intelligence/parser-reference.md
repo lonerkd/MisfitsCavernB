@@ -204,6 +204,8 @@ The reader's own cut-off numbers: the document profile, the offer of a second re
 | `previousDraftAgreeConfidence` | 80 | a line read the same way as the previous draft read it (which was sure, or a person settled) is at least this sure, so the review does not ask about a line the earlier draft already answered |
 | `knownPlaceHeadingConfidence` | 97 | a scene heading set in a place the project knows (a Locations record) is at least this sure (the place is evidence; it never changes where scenes begin) |
 | `knownPlaceUnmarkedConfidence` | 60 | a caps "PLACE - TIME" line naming a place the project knows, read as action, is capped at this and offered as a scene heading missing INT./EXT. (the review asks; the reading is not changed) |
+| `suiteThingOutweighedHeads` | 3 | a name the breakdown lists as a thing (a prop, a costume, a vehicle) that heads speech at least this many times is read as a speaker after all: the script outweighs the prior, and the reading says the two disagree |
+| `suiteDisagreeConfidenceCap` | 70 | a cue whose name the breakdown lists as a thing is capped at this, so the review asks a person to settle which it is |
 | `forcedActionConfidence` | 100 | a line led by "!" is forced action (the syntax spells it out, so it is never in doubt) |
 
 ## Decoder weights (`DEFAULT_PARAMS`, `lib/scriptos/decode.ts`)
@@ -215,6 +217,8 @@ Costs: lower is a better fit. Tuned on the corpus (`lib/scriptos/corpus`); chang
 | `cue` | 6 | adds (raising it penalises) | a line that looks like a character cue (capitals, short, followed by speech) |
 | `knownName` | 12 | subtracts (raising it favours) | a cue whose name was already seen speaking, or told to us by the project (a discount) |
 | `rejectedName` | 60 | adds (raising it penalises) | a cue whose name a person said is not a character (a heavy penalty) |
+| `knownThing` | 16 | adds (raising it penalises) | a cue whose name the breakdown lists as a thing (a prop, costume, vehicle ...: the suite as a prior, bounded well under a rejection) |
+| `knownThingSpeech` | 10 | adds (raising it penalises) | a line that is only the name of a thing the breakdown lists, read as speech (the object on the page, not a line spoken) |
 | `extension` | 6 | subtracts (raising it favours) | a cue with an extension such as (V.O.) or (CONT'D) (a discount) |
 | `noSpeechUnder` | 30 | adds (raising it penalises) | a cue with nothing after it to speak |
 | `cueSentence` | 25 | adds (raising it penalises) | a "cue" that reads as a sentence |

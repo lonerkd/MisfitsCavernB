@@ -23,6 +23,7 @@ vi.mock('./index', () => ({
     listReadingCorrections: vi.fn(async () => [{ kind: 'not_character', name: 'DARKNESS' }]),
     listLineOverrides: vi.fn(async () => []),
     listLocations: vi.fn(async () => [{ name: 'Kitchen' }]),
+    listSuitePriorRows: vi.fn(async () => ({ elements: [{ name: 'Briefcase', category_key: 'props', category_label: 'Props' }], bible: [{ name: 'LEO', notes: 'The brother.' }], failed: [] })),
   },
 }));
 import { forgetReadingContext, loadReadingContext } from './reading-context';
@@ -33,7 +34,9 @@ afterEach(() => vi.clearAllMocks());
 describe('loadReadingContext: the context the editor reads with, for the surfaces that read a script outside it', () => {
   it('has the cast, the verdicts, the places and the previous draft', async () => {
     const ctx = await loadReadingContext('s1');
-    expect(ctx.characters).toEqual(['MAYA']);
+    expect(ctx.characters).toEqual(['MAYA', 'LEO']); // the cast, then the bible entry a person wrote
+    expect(ctx.suite?.things).toEqual([{ name: 'BRIEFCASE', category: 'Props' }]);
+    expect(ctx.suite?.people.map((p) => `${p.name}:${p.source}`)).toEqual(['LEO:bible', 'MAYA:cast']);
     expect(ctx.rejectedNames).toEqual(['DARKNESS']);
     expect(ctx.places).toEqual(['KITCHEN']);
     expect(ctx.previousDraft?.lines.find((l) => l.text === 'She waits by the door.')?.type).toBe('action');
@@ -62,7 +65,9 @@ describe('loadReadingContext: the context the editor reads with, for the surface
     revisionRows = null;
     const ctx = await loadReadingContext('s1');
     expect(ctx.previousDraft).toBeUndefined();
-    expect(ctx.characters).toEqual(['MAYA']);
+    expect(ctx.characters).toEqual(['MAYA', 'LEO']); // the cast, then the bible entry a person wrote
+    expect(ctx.suite?.things).toEqual([{ name: 'BRIEFCASE', category: 'Props' }]);
+    expect(ctx.suite?.people.map((p) => `${p.name}:${p.source}`)).toEqual(['LEO:bible', 'MAYA:cast']);
     forgetReadingContext();
     scriptRow = null;
     expect(await loadReadingContext('s1')).toEqual({});
@@ -75,6 +80,8 @@ describe('loadReadingContext: the context the editor reads with, for the surface
     scriptRow = { project_id: 'p1', format: 'screenplay' };
     const ctx = await loadReadingContext('s1');
     expect(calls.length).toBeGreaterThan(reads);
-    expect(ctx.characters).toEqual(['MAYA']);
+    expect(ctx.characters).toEqual(['MAYA', 'LEO']); // the cast, then the bible entry a person wrote
+    expect(ctx.suite?.things).toEqual([{ name: 'BRIEFCASE', category: 'Props' }]);
+    expect(ctx.suite?.people.map((p) => `${p.name}:${p.source}`)).toEqual(['LEO:bible', 'MAYA:cast']);
   });
 });

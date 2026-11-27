@@ -17,6 +17,7 @@ import type { TranscriptLineDraft } from './transcript';
 import type { SharedBoard } from './boards';
 import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
 import { forgetReadingContext } from './reading-cache';
+import type { SuiteRows } from '@/lib/scriptos/suite-priors';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
 export type Client = SupabaseClient<Database>;
@@ -843,6 +844,39 @@ export function createStudioApi(db: Client) {
     forgetReadingContext(scriptId);
   }
 
+  /**
+   * What the rest of the suite knows about a script's project, as the reader takes it (lib/scriptos/suite-priors.ts): this script's
+   * character bible and which entries have a look-board, the project's breakdown elements with their category, and the roles with
+   * casting candidates. Read under the caller's own access, from tables every person who can open the project's script reads the
+   * same way (the bible by the script; the rest by the project), so the editor and the Studio build one scene index. A part that
+   * fails to load is left out (`failed` names it) rather than the script read without any context.
+   */
+  async function listSuitePriorRows(projectId: string, scriptId: string): Promise<SuiteRows & { failed: string[] }> {
+    const failed: string[] = [];
+    const part = async <T,>(name: string, run: () => PromiseLike<{ data: T[] | null; error: { message?: string } | null }>): Promise<T[]> => {
+      try {
+        const { data, error } = await run();
+        if (error) throw error;
+        return data ?? [];
+      } catch { failed.push(name); return []; }
+    };
+    const [bible, lookBoards, categories, elements, candidates] = await Promise.all([
+      part('bible', () => db.from('script_characters').select('id, name, full_name, age, description, backstory, motivation, arc, relationships, notes').eq('script_id', scriptId)),
+      part('look-boards', () => db.from('character_media').select('character_id').eq('project_id', projectId)),
+      part('breakdown', () => db.from('breakdown_categories').select('id, key, label').eq('project_id', projectId)),
+      part('breakdown', () => db.from('breakdown_elements').select('name, category_id').eq('project_id', projectId)),
+      part('casting', () => db.from('casting_candidates').select('character_name').eq('project_id', projectId)),
+    ]);
+    const category = new Map(categories.map((c) => [c.id, c]));
+    return {
+      bible,
+      lookBoards,
+      elements: elements.flatMap((e) => { const c = category.get(e.category_id); return c ? [{ name: e.name, category_key: c.key, category_label: c.label }] : []; }),
+      candidates,
+      failed: [...new Set(failed)],
+    };
+  }
+
   async function getReadingMemory(userId: string, format: string = 'screenplay'): Promise<{ kind: string; name: string; metadata: Record<string, unknown>; count: number }[]> {
     const { data, error } = await (db as any).rpc('reading_memory_for_user', { p_user_id: userId, p_format: format });
     if (error) fail(error, 'Could not load reading memory');
@@ -1254,7 +1288,7 @@ export function createStudioApi(db: Client) {
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,
-    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, ensureSceneState, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
+    listCallSheets, saveCallSheet, listCalls, saveCall, issueCallSheet, ackCallSheet, listCallSheetAcks, getCallSheetView, listMyCalls, listShootDays, setShootDayDate, listReadingCorrections, setReadingCorrection, removeReadingCorrection, listLineOverrides, listSuitePriorRows, setLineOverride, removeLineOverride, getReadingMemory, listCharacters, listSceneCharacters, listSceneStates, listStateElements, setStateElement, ensureSceneState, saveSceneState, setSceneStory, listLocations, saveLocation, renameLocation, deleteLocation, listBudgetLines, listVendors, addVendor, listExpenses, addExpense, updateExpense, deleteExpense, listTimesheets, logHours, decideTimesheet, deleteTimesheet, listDocuments, addDocument, updateDocument, deleteDocument, listTranscriptLines, addTranscriptLines, updateTranscriptLine, deleteTranscriptLines, setPaperEdit, attachDocumentFile, documentUrl,
     listSetLog, getDayClock, addSetLog, updateSetLog, deleteSetLog,
     listCuts, addCut, setCutLocked, deleteCut, listPostNotes, addPostNote, listLineCutNotes, setPostNoteResolved, deletePostNote,
     listPostItems, addPostItems, updatePostItem, deletePostItem,

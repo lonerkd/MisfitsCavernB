@@ -1,13 +1,91 @@
 'use client';
 
 import React from 'react';
+import { UserCheck, UserX } from 'lucide-react';
 import type { ScriptKnowledge } from '@/lib/scriptos/knowledge';
+import { PERSON_SOURCE_LABEL, hasSuiteUse, type SuiteUse } from '@/lib/scriptos/suite-priors';
+import { SCRIPT_FORMAT_REGISTRY, isScriptFormat } from '@/lib/formats/script-formats';
+import { readingFormat } from '@/lib/scriptos/reading-format';
+import { useToast } from '@/components/ui/Toast';
+import { studio, type ReadingCorrection } from '@/lib/studio';
 
 const label: React.CSSProperties = { fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' as never, margin: '0 0 6px' };
 const row: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 12, color: 'var(--fg)', padding: '3px 0', overflowWrap: 'anywhere' };
 const dim: React.CSSProperties = { color: 'var(--fg-muted)', fontSize: 11 };
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
+const btn: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 5, minHeight: 32, padding: '4px 9px', borderRadius: 8, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', color: 'var(--fg)', fontSize: 12 };
+const formatLabel = (f: string) => (isScriptFormat(f) ? SCRIPT_FORMAT_REGISTRY[f].label : f);
+
+/**
+ * What the rest of the suite told the reader (lib/scriptos/suite-priors.ts), and what it did with it: the names it believed and
+ * where each came from, the lines it kept from being read as speakers because the production names the thing, the names where the
+ * script and the breakdown disagree, and what a person's own word overruled. A name can be settled here for the whole project,
+ * the same verdict the doubtful-reads list saves.
+ */
+function FromTheProject({ suite, projectId, onCorrected, format }: { suite?: SuiteUse; projectId?: string | null; onCorrected?: (row: ReadingCorrection) => void; format?: string | null }) {
+  const { toast } = useToast();
+  const [saving, setSaving] = React.useState<string | null>(null);
+  const settle = async (name: string, kind: 'character' | 'not_character') => {
+    if (!projectId || saving) return;
+    setSaving(name);
+    try {
+      const row = await studio.setReadingCorrection(projectId, name, kind);
+      onCorrected?.(row);
+      toast(kind === 'character' ? `${name} is read as a character` : `${name} is not read as a character any more`, 'success');
+    } catch (e) {
+      toast((e as { message?: string } | null)?.message || 'Could not save that', 'error');
+    } finally {
+      setSaving(null);
+    }
+  };
+  const read = format ? readingFormat(format) : null;
+  return (
+    <section aria-label="From the project">
+      <h4 style={label}>From the project</h4>
+      {format && (
+        <div style={row}>
+          <span>Written as {formatLabel(format)}{read && read !== format && <span style={dim}> · read with the {formatLabel(read).toLowerCase()} rules</span>}</span>
+        </div>
+      )}
+      {suite?.vouched.map((v) => (
+        <div key={`v-${v.name}`} style={row}>
+          <span>{v.name} <span style={dim}>· {v.said.join(', ')}</span></span>
+          <span style={dim}>{plural(v.cues, 'cue')}</span>
+        </div>
+      ))}
+      {suite?.heldBack.map((h) => (
+        <div key={`h-${h.name}`} style={{ ...row, flexWrap: 'wrap' }}>
+          <span>{h.name} <span style={dim}>· {h.category} in the breakdown, so not read as a speaker</span></span>
+          <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
+            <span style={dim}>{plural(h.lines, 'line')}</span>
+            {projectId && <button type="button" style={btn} disabled={saving === h.name} onClick={() => void settle(h.name, 'character')}><UserCheck size={12} aria-hidden /> It’s a character</button>}
+          </span>
+        </div>
+      ))}
+      {suite?.disagreements.map((d) => (
+        <div key={`d-${d.name}`} style={{ ...row, flexWrap: 'wrap' }}>
+          <span>{d.name} <span style={dim}>· {d.category} in the breakdown, but the script has it speak: which is it?</span></span>
+          <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span style={dim}>{plural(d.cues, 'cue')}</span>
+            {projectId && <button type="button" style={btn} disabled={saving === d.name} onClick={() => void settle(d.name, 'character')}><UserCheck size={12} aria-hidden /> A character</button>}
+            {projectId && <button type="button" style={btn} disabled={saving === d.name} onClick={() => void settle(d.name, 'not_character')}><UserX size={12} aria-hidden /> Not a character</button>}
+          </span>
+        </div>
+      ))}
+      {suite?.overruled.map((o) => (
+        <div key={`o-${o.name}-${o.said}`} style={{ ...row, ...dim }}>
+          <span>
+            {o.name}: {o.said === 'thing' ? 'the breakdown lists it as a thing' : `the project has it ${PERSON_SOURCE_LABEL[o.said]}`}, but {o.because === 'not_character' ? 'a person said it is not a character' : 'it is a character'}, and that stands
+          </span>
+        </div>
+      ))}
+      {suite && suite.told.people + suite.told.things > 0 && (
+        <div style={{ ...row, ...dim }}>The reader weighed {plural(suite.told.people, 'name')} and {plural(suite.told.things, 'thing')} the suite knows. A person’s own word always wins.</div>
+      )}
+    </section>
+  );
+}
 
 /** True when the script holds anything this panel would show. */
 export const hasKnowledge = (k: ScriptKnowledge): boolean =>
@@ -18,14 +96,25 @@ export const hasKnowledge = (k: ScriptKnowledge): boolean =>
  * the layers of a story told in layers, the places it keeps returning to, and what it wrote that the reader did not recognise (so a person
  * can see what was set aside). Shown only where the script has something to show. Nothing here is written anywhere.
  */
-export function ScriptKnowledgePanel({ knowledge: k, previousDraft }: { knowledge: ScriptKnowledge; previousDraft?: { same: number; differs: number } }) {
+export function ScriptKnowledgePanel({ knowledge: k, previousDraft, suite, projectId, onCorrected, format }: {
+  knowledge: ScriptKnowledge;
+  previousDraft?: { same: number; differs: number };
+  /** What the rest of the suite added to the reading (suite-priors.ts suiteUse). */
+  suite?: SuiteUse;
+  projectId?: string | null;
+  onCorrected?: (row: ReadingCorrection) => void;
+  /** The script's own format. */
+  format?: string | null;
+}) {
   const earlier = previousDraft && previousDraft.same + previousDraft.differs > 0 ? previousDraft : null;
-  if (!hasKnowledge(k) && k.places.length === 0 && !earlier) return null;
+  const fromProject = !!format || (!!suite && hasSuiteUse(suite));
+  if (!hasKnowledge(k) && k.places.length === 0 && !earlier && !fromProject) return null;
   const places = k.places.slice(0, 8);
   return (
     <details aria-label="What the reader knows" style={{ margin: '0 0 24px' }}>
       <summary style={{ ...label, cursor: 'pointer', minHeight: 44, display: 'flex', alignItems: 'center' }}>What the reader knows</summary>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 6 }}>
+        {fromProject && <FromTheProject suite={suite} projectId={projectId} onCorrected={onCorrected} format={format} />}
         {earlier && (
           <section aria-label="Previous draft">
             <h4 style={label}>The previous draft</h4>
