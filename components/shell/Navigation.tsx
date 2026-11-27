@@ -52,7 +52,14 @@ export default function Navigation() {
           top: 0,
           left: 0,
           width: '100%',
-          padding: scrolled ? '12px 28px' : '18px 28px',
+          // The bar is fixed to the viewport top, so on a phone the status-bar
+          // clock overlays its row. The app's safe-top inset drops the logo and
+          // links just under the time while the frosted background still runs
+          // to the top edge (owner's ask, Nov 26). Zero on desktop.
+          paddingTop: `calc(${scrolled ? 12 : 18}px + var(--mc-safe-top, 0px))`,
+          paddingRight: 28,
+          paddingBottom: scrolled ? 12 : 18,
+          paddingLeft: 28,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
