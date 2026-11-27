@@ -1,0 +1,15 @@
+# Sweep STATE sync — #824 merged, main CI green on f48176e7
+
+2026-11-27 ~3:54 PM CST, hourly sweep. Docs-only sync (STATE.md handoff + this note).
+
+## What changed on the board during this run
+
+- **#824 merged** (docs(intel): sync STATE — #823 merged, main CI green on e5ec1173; squash `f48176e7`, 15:00 CST); HEAD is now `f48176e7`. This sync records it — #824's own handoff text still said HEAD is now `e5ec1173`, which is the established one-run lag for sweep syncs.
+- **✅ Main CI GREEN on the new HEAD too:** CI run 46067418495 (push, 15:00 CST): checks/database/sbom/history/changes success; Supabase Preview failure = standing; secret scan run 46067418213 + SBOM run 46067418309 success. Resolves the in-progress item the 2:54 run left open.
+- **#816 is now up to date with main:** the pooling session merged main into `claude/pool-nov27-batch` (commit `38d787a9`, 15:52 CST; parents `b2f50a62` + `f48176e7`), so the 6-merges-behind condition is resolved — no rebase needed before merging. CI + database + mobile-audit are in progress on the new head at run end (CI run 46073133675, mobile-audit run 46073133663); gate/risk/conventional/history/changes/GitGuardian success; Supabase Preview skipped. The merge is still the pooling session's call. The sweep did not merge it.
+- **Agent status run 46068853759** (scheduled, 15:13 CST) completed success on `f48176e7` — new since the last run.
+- **Nightly e2e:** no new run — the fourteenth (run 46004453288, 21 tests) is still the latest; #731 open, 26 comments, unchanged. Next run is the fifteenth test.
+- **Drift still green** (run 46036171080, 10:44 CST); no newer drift run. Migration line through `20261126000100` still holds (161 files, newest unchanged).
+- **Vercel cap still in effect** (reset ~22:52 CST Nov 27). No new Vercel bot comment this run.
+- BACKLOG.md, backlog-detail.md, `.perch/mcp.json`, migrations all unchanged. No new GitGuardian mail since Nov 25; no new failure mail since the 10:07:40 CST CI failure mail (already resolved); newest GitHub mail 14:59:43 CST (#824 risk comment).
+- **Local verification did NOT run this run:** the change is prose-only (STATE.md + session note — no RULES, route, table or function text changed, so sync-intel and bible are no-ops by construction) and worktree git/npm tripped an execution-risk check on the last seven runs, so the commit was built through the Git data API and the PR's own CI is the verification; the sweep worktree is still dirty from the #815 run and still needs a reset by a session that can run git there.
