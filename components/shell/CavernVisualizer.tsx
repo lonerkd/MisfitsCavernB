@@ -3,16 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
-import { Disc, Ear, EarOff, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from 'lucide-react';
+import { Disc, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
-import { useToast } from '@/components/ui/Toast';
-import { createBeatTracker, SILENT, smoothLevel, type Levels } from '@/lib/cavern/audio';
-import { captureSupported, startCapture, type Capture, CaptureError } from '@/lib/cavern/capture';
 import { blendCaves, makeCave, seedOf, type Cave, type ZoneSegment } from '@/lib/cavern/cave';
-import { describeSync, journeyLength, journeyPace, journeyTarget, journeyTint, journeyZones, needsResync, originFor, songFraction, type Journey, type JourneyStatus } from '@/lib/cavern/journey';
+import { journeyLength, journeyPace, journeyTarget, journeyTint, journeyZones, needsResync, originFor, songFraction, type Journey, type JourneyStatus } from '@/lib/cavern/journey';
 import { useJourney } from '@/lib/cavern/useJourney';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
-import { guideInput, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
+import { guideInput, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
 import { makeSpores, stepSpores, type Spore } from '@/lib/cavern/spores';
 import { drawScene, RUNNER_AT } from './cavernScene';
 import v from './visualizer.module.css';
@@ -41,8 +38,8 @@ interface Props {
  * hands it back without a jerk. There is no way to lose.
  *
  * It follows the player: the cave is seeded from the song (the same song, the same cave), the light takes the cover's colour, and it
- * slows to a stroll when the music pauses. It is NOT beat-synced unless the person shares audio (Spotify gives a page no audio
- * signal), so nothing here pretends to be a spectrum. Reduced-motion draws one still frame. Escape minimises (or closes); the
+ * slows to a stroll when the music pauses. Nothing on the screen explains any of this — no status lines, no narration, no
+ * buttons but the player's and the window's. Reduced-motion draws one still frame. Escape minimises (or closes); the
  * fullscreen button is the browser's fullscreen on top of this, and leaving it never closes the cave.
  */
 export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'full' }: Props) {
@@ -171,30 +168,6 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
   }, []);
   const letGo = useCallback(() => { world.current.guide = null; }, []);
 
-  // Listening to the computer's sound is opt-in: the browser asks which tab or screen to share, and only then does the cave hear the beat.
-  const { toast } = useToast();
-  const capture = useRef<Capture | null>(null);
-  const [listening, setListening] = useState<'off' | 'starting' | 'on'>('off');
-  const canListen = captureSupported();
-  const stopListening = useCallback(() => { capture.current?.stop(); capture.current = null; setListening('off'); }, []);
-  const startListening = useCallback(async () => {
-    setListening('starting');
-    try {
-      const c = await startCapture();
-      c.onEnded(() => { if (capture.current === c) stopListening(); });
-      capture.current = c;
-      setListening('on');
-    } catch (e) {
-      setListening('off');
-      toast(e instanceof CaptureError ? e.message : 'Could not start listening.', e instanceof CaptureError && e.reason === 'denied' ? 'info' : 'error');
-    }
-  }, [stopListening, toast]);
-  useEffect(() => () => { capture.current?.stop(); capture.current = null; }, []);
-
-  const distance = useRef<HTMLSpanElement>(null);
-  const hearing = useRef<HTMLSpanElement>(null);
-  const modeText = useRef<HTMLSpanElement>(null);
-  const journeyText = useRef<HTMLSpanElement>(null);
   const miniText = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -209,8 +182,6 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
     let t = 0, last = performance.now(), raf = 0, shown = 0;
     W.runner = newRunner(W.cave, 0);
     let spores: Spore[] = makeSpores(70, W.cave, 0, AHEAD, W.seed);
-    const beat = createBeatTracker();
-    let heard: Levels = SILENT;
     const size = () => {
       w = c.clientWidth; h = c.clientHeight;
       // Spend pixels carefully: a big screen at a high pixel ratio is drawn at fewer pixels rather than at a stutter.
@@ -264,27 +235,16 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       if (W.mouse && W.guide && now - W.aimedAt > HOVER_REST_MS) W.guide = null;
       energy += ((playing.current ? 1 : 0.15) - energy) * Math.min(1, dt * 1.5);
       t += dt * (0.25 + energy * 0.75);
-      // What it hears, if the person has shared audio: smoothed, so the light breathes with the music instead of strobing.
-      const cap = capture.current;
-      const raw = cap ? cap.read() : SILENT;
-      heard = { bass: smoothLevel(heard.bass, raw.bass, dt), mid: smoothLevel(heard.mid, raw.mid, dt), treble: smoothLevel(heard.treble, raw.treble, dt), level: smoothLevel(heard.level, raw.level, dt) };
-      const pulse = cap ? beat.update(raw.bass, dt) : 0;
-
       if (!reduce) {
         W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin)) : 1);
         spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
       }
       const r = W.runner!;
-      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: heard.level, bass: heard.bass, pulse });
-      const steering = !isAuto(r);
+      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: 0, bass: 0, pulse: 0 });
       const tally = `${Math.round(r.x * 3).toLocaleString()} m in`;
       if (now - shown > 500) {
         shown = now;
-        if (distance.current) distance.current.textContent = tally;
         if (miniText.current) miniText.current.textContent = tally;
-        if (hearing.current) hearing.current.textContent = !capture.current ? 'Following the player (the beat is not heard)' : capture.current.hearing() ? 'Listening: the light follows the music' : 'Listening, but hearing nothing: share a tab or the screen with audio, and play something';
-        if (journeyText.current) journeyText.current.textContent = describeSync({ status: F.status, journey: F.journey, durationKnown: F.dur > 0, fraction: frac, listening: capture.current !== null }).text;
-        if (modeText.current) modeText.current.textContent = steering ? 'You are steering' : 'Exploring on its own: touch an arrow key to steer';
       }
       if (!reduce) raf = requestAnimationFrame(frame);
     };
@@ -321,10 +281,6 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
         </div>
       ) : (
         <>
-          <div className={`${v.depth} ${fade}`} aria-live="off">
-            <span ref={distance}>0 m in</span><span ref={modeText}>Exploring on its own: touch an arrow key to steer</span><span ref={hearing}>Following the player (the beat is not heard)</span><span ref={journeyText}>No project open: the cave follows the player only.</span>
-            {canListen && <button type="button" className={v.listen} onClick={() => (listening === 'on' ? stopListening() : void startListening())} disabled={listening === 'starting'} aria-pressed={listening === 'on'}>{listening === 'on' ? <EarOff size={14} /> : <Ear size={14} />} {listening === 'on' ? 'Stop listening' : 'Listen to the music'}</button>}
-          </div>
           <div className={`${v.corner} ${fade}`}>
             {canFullscreen && <button type="button" aria-label={fs ? 'Leave fullscreen' : 'Fullscreen'} aria-pressed={fs} title={fs ? 'Leave fullscreen (F)' : 'Fullscreen (F)'} onClick={toggleFullscreen} className={v.btn}>{fs ? <Minimize2 size={20} /> : <Maximize2 size={20} />}</button>}
             {onMinimise && <button type="button" aria-label="Minimise to the corner" title="Keep it in the corner while you work (Esc)" onClick={onMinimise} className={v.btn}><PictureInPicture2 size={20} /></button>}
