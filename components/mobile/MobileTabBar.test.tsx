@@ -62,4 +62,13 @@ describe('MobileTabBar and the keyboard', () => {
     expect(nav.getAttribute('aria-hidden')).toBeNull();
     expect(nav.className).not.toMatch(/hidden/);
   });
+  it('stays up while a checkbox, radio or slider has focus: none of them raises a keyboard', () => {
+    for (const type of ['checkbox', 'radio', 'range']) {
+      cleanup(); document.querySelectorAll('input').forEach((i) => i.remove());
+      const i = document.createElement('input'); i.type = type; document.body.appendChild(i); i.focus();
+      const { container } = render(<MobileTabBar />);
+      expect(bar(container).getAttribute('data-keyboard'), type).toBe('down');
+      expect(bar(container).hasAttribute('inert'), type).toBe(false);
+    }
+  });
 });

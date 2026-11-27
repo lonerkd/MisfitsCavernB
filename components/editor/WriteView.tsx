@@ -93,6 +93,11 @@ function EmphasisLine({ text }: { text: string }) {
   );
 }
 
+/** The page margin around the script: 80 px a side on a desk, shrinking to 36 px on a phone (it was 80 px of a 393 px screen on each side, leaving a
+ *  column about 230 px wide) and 24-60 px above, so a screen held sideways keeps its lines. The highlight layer and the textarea overlay each other
+ *  and must use this same value. */
+const PAGE_PADDING = 'clamp(24px, 6vh, 60px) clamp(36px, 8vw, 80px)';
+
 export function WriteView({ ctx }: { ctx: EditorCtx }) {
   const { bd, openBreakdown } = ctx;
   const [tagAt, setTagAt] = useState<{ ctx: CaretContext; top: number; left: number } | null>(null);
@@ -164,7 +169,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 aria-hidden
                 style={{
                   position: 'absolute', inset: 0, overflow: 'hidden',
-                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px',
+                  padding: focusMode ? '100px 10%' : PAGE_PADDING, paddingBottom: typewriterMode ? '60vh' : '60px',
                   fontFamily: 'var(--script)', fontSize: 16, lineHeight: 1.6,
                   whiteSpace: 'pre-wrap', wordBreak: 'break-word', pointerEvents: 'none',
                 }}
@@ -276,7 +281,7 @@ export function WriteView({ ctx }: { ctx: EditorCtx }) {
                 {...SCRIPT_TEXT_HINTS}
                 style={{
                   position: 'absolute', inset: 0,
-                  padding: focusMode ? '100px 10%' : '60px 80px', paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
+                  padding: focusMode ? '100px 10%' : PAGE_PADDING, paddingBottom: typewriterMode ? '60vh' : '60px', width: '100%',
                   background: 'transparent', border: 'none', color: 'transparent', caretColor: revisionMode ? 'var(--accent)' : 'var(--fg)',
                   fontFamily: 'var(--script)', fontSize: 16, lineHeight: 1.6,
                   resize: 'none', outline: 'none',

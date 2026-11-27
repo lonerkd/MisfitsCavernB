@@ -8,6 +8,7 @@
 // nothing on the desk is out of reach. Phone widths only (CSS); the pill
 // slides away while typing so the keyboard gets the room.
 
+import { isTypable } from '@/components/phone/PhoneKeyboard';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
@@ -190,7 +191,8 @@ export default function MobileTabBar() {
   useEffect(() => {
     const read = () => {
       const a = document.activeElement as HTMLElement | null;
-      const editable = !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
+      // Only a field that raises a soft keyboard counts: a focused checkbox, radio or slider must not hide the pill.
+      const editable = isTypable(a);
       setAside((prev) => barAside(prev, covered, editable));
     };
     read();

@@ -1061,7 +1061,7 @@ export default function EditorPage() {
   );
 
   return (
-    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 42 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh', ...(isMobile && phone.landscape ? { paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 42 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh', ...(isMobile ? { paddingBottom: phone.landscape ? 'calc(64px + env(safe-area-inset-bottom))' : 'calc(76px + env(safe-area-inset-bottom))' /* the island's room: the page's own foot is not added to a one-screen editor (globals.css) */ } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile
@@ -1107,7 +1107,7 @@ export default function EditorPage() {
         </AnimatePresence>
 
         {/* The island floats over the page column alone, so only it makes room; the panels either side run to the foot of the screen. */}
-        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: 'var(--taskbar-height, 0px)', background: 'var(--bg)', position: 'relative' }}>
+        <div className="mc-editor-center" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', boxSizing: 'border-box', paddingBottom: isMobile ? 0 : 'var(--taskbar-height, 0px)' /* a phone reserves the island's room once, below the status line (the root's padding) */, background: 'var(--bg)', position: 'relative' }}>
 
           {focusMode && (
             <button aria-label="Minimize" onClick={() => setFocusMode(false)} style={{

@@ -62,7 +62,7 @@ export function SceneGutter({ items, highlightRef, textareaRef, content }: {
         return (
           <div key={it.line} role="note" aria-label={gutterLabel(it)}
             style={{
-              position: 'absolute', left: 8, top: top + 2, width: 66, textAlign: 'right',
+              position: 'absolute', left: 4, top: top + 2, width: 48, textAlign: 'right',
               fontFamily: 'var(--ui, inherit)', fontSize: 'max(11px, var(--mc-min-font, 0px))', lineHeight: 1.3, color: 'var(--fg-muted)',
               fontStyle: it.guessed ? 'italic' : 'normal', fontVariantNumeric: 'tabular-nums',
             }}>

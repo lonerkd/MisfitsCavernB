@@ -372,7 +372,7 @@ function DayEditor({ defaults, day, looksToday, sheet, facts, crew, calls, state
           return (
             <span className={c.textIt}>
               {/* A computer has no messaging app to open: the message is copied instead. */}
-              <a href={smsHref(body)} aria-label={`Text ${name} their call`} className={c.ghost} onClick={() => { if (!navigator.maxTouchPoints) void navigator.clipboard?.writeText(body).then(() => toast('Message copied', 'success')); }}>Text it</a>
+              <a href={smsHref(body)} aria-label={`Text ${name} their call`} className={c.ghost} onClick={() => { if (!navigator.maxTouchPoints) void navigator.clipboard?.writeText(body).then(() => toast('Message copied', 'success'), () => toast('Could not copy the message', 'error')); }}>Text it</a>
             </span>
           );
         })()}

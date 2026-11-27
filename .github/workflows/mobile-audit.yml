@@ -40,7 +40,7 @@ jobs:
         run: |
           npx playwright install --with-deps chromium > /tmp/pw-install.log 2>&1 &
           PW=$!
-          npm run db:start
+          npm run db:start || { npx supabase stop --no-backup; npm run db:start; }
           wait $PW || { cat /tmp/pw-install.log; exit 1; }
       - name: Build against the local stack and start it
         run: |
