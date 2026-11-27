@@ -35,7 +35,7 @@ describe('the rail: three areas', () => {
   it('shows Productions, Community and People in order, with the hub link pinned above them', () => {
     const { container } = render(<ChannelRail l={lounge()} />);
     const hubLink = screen.getByRole('link', { name: /Learn \/ What.s new/ });
-    expect(hubLink.getAttribute('href')).toBe('/hub');
+    expect(hubLink.getAttribute('href')).toBe('/#updates');
     const sections = [...container.querySelectorAll('section.mc-lounge-section')].map((s) => s.getAttribute('data-area'));
     expect(sections).toEqual(['productions', 'community', 'people']);
     // the link comes before the first area in the document
@@ -107,7 +107,7 @@ describe('the Lounge’s empty states and welcome', () => {
   it('no conversation chosen: the three areas’ purposes and a link to Learn', () => {
     render(<PaneEmptyState l={lounge({ activeChannel: null, messages: [], canPost: false, canManageActive: false })} />);
     for (const a of ['Productions', 'Community', 'People']) expect(screen.getByText(a)).toBeTruthy();
-    expect(screen.getByRole('link', { name: /Open Learn/ }).getAttribute('href')).toBe('/hub');
+    expect(screen.getByRole('link', { name: /Open Learn/ }).getAttribute('href')).toBe('/#updates');
   });
 
   it('an empty channel says hello; a manager gets a real Manage button', () => {
@@ -126,8 +126,8 @@ describe('the Lounge’s empty states and welcome', () => {
 
   it('shows the welcome once, and Got it hides it on this device', () => {
     const { unmount } = render(<LoungeWelcome />);
-    expect(screen.getByRole('link', { name: 'What’s new' }).getAttribute('href')).toBe('/hub');
-    expect(screen.getByRole('link', { name: 'Learn' }).getAttribute('href')).toBe('/hub');
+    expect(screen.getByRole('link', { name: 'What’s new' }).getAttribute('href')).toBe('/#updates');
+    expect(screen.getByRole('link', { name: 'Learn' }).getAttribute('href')).toBe('/#updates');
     fireEvent.click(screen.getByRole('button', { name: /Got it/ }));
     expect(screen.queryByLabelText('Welcome to the Lounge')).toBeNull();
     expect(localStorage.getItem(WELCOME_KEY)).toBe('1');
