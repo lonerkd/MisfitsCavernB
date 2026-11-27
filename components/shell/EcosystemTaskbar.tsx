@@ -267,19 +267,25 @@ export default function EcosystemTaskbar() {
   }, [noDock, scale, surface]);
 
   // The room above the island, for the menus that open upward: they scroll inside it instead of running off the top.
+  // The same measure publishes --island-height on the root: the island's full height right now, open
+  // deck included. --taskbar-height stays the resting reserve (pages must not reflow when the deck
+  // opens), but a modal sheet has to clear the deck as it is, not as it rests.
   useEffect(() => {
     const dock = dockRef.current;
-    if (noDock || !dock) return;
+    const root = document.documentElement;
+    if (noDock || !dock) { root.style.setProperty('--island-height', '0px'); return; }
     const measure = () => {
-      const top = islandRef.current?.getBoundingClientRect().top ?? 0;
+      const rect = islandRef.current?.getBoundingClientRect();
+      const top = rect?.top ?? 0;
       dock.style.setProperty('--island-room', `${Math.max(120, Math.floor(top - 24))}px`);
+      root.style.setProperty('--island-height', `${rect ? Math.ceil(rect.height) : 0}px`);
     };
     measure();
     window.addEventListener('resize', measure);
     const el = islandRef.current;
     const ro = typeof ResizeObserver !== 'undefined' && el ? new ResizeObserver(measure) : null;
     if (ro && el) ro.observe(el);
-    return () => { window.removeEventListener('resize', measure); ro?.disconnect(); };
+    return () => { window.removeEventListener('resize', measure); ro?.disconnect(); root.style.removeProperty('--island-height'); };
   }, [noDock, scale, surface]);
 
   const projectSettings = activeProject?.settings;
