@@ -72,28 +72,30 @@ interface Control {
   run: () => void;
 }
 
-function ProjectSwitcher({ onClose, highlight = -1 }: { onClose: () => void; highlight?: number }) {
+function ProjectSwitcher({ onClose, highlight = -1, compact = false }: { onClose: () => void; highlight?: number; compact?: boolean }) {
   const { projects, activeProject, setActiveProject } = useProject();
   const router = useRouter();
+  // On a phone the list spans the screen above the island, like the bell's panel — centred on its button
+  // it ran off the left edge whenever the button sat left of centre (the owner's shots, Nov 26, 2026).
+  // --island-room is the island's own measure of the space over it; the bottom lands just above its top.
+  const fit: React.CSSProperties = compact
+    ? { position: 'fixed', left: 12, right: 12, bottom: 'calc(100dvh - var(--island-room, 70vh) - 14px)', width: 'auto', marginBottom: 0 }
+    : { position: 'absolute', bottom: '100%', left: '50%', width: 220, marginBottom: 14 };
   return (
     <motion.div
       role="listbox" aria-label="Projects"
       // x centres it over its button (a CSS transform here would be overwritten by the animation).
-      initial={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
+      initial={{ opacity: 0, x: compact ? 0 : '-50%', y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, x: compact ? 0 : '-50%', y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: compact ? 0 : '-50%', y: 10, scale: 0.95 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        position: 'absolute',
-        bottom: '100%',
-        left: '50%',
-        marginBottom: 14,
+        ...fit,
         background: 'var(--surface)',
         backdropFilter: 'blur(28px)',
         border: '1px solid rgba(var(--ink-rgb), 0.08)',
         borderRadius: 14,
         padding: 10,
-        width: 220,
         maxHeight: 'min(60vh, 420px, var(--island-room, 60vh))',
         overflowY: 'auto',
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
@@ -647,7 +649,7 @@ export default function EcosystemTaskbar() {
                 {keys && <Key>P</Key>}
               </button>
               <AnimatePresence>
-                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} highlight={keys ? projIdx : -1} />}
+                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} highlight={keys ? projIdx : -1} compact={compact} />}
               </AnimatePresence>
             </span>
 

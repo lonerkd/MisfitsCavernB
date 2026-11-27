@@ -9,6 +9,7 @@ import { Notification, fetchNotifications, markRead, markAllRead, deleteNotifica
 import { awaitOSUser } from '@/lib/os';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useIslandPopover } from '@/lib/island/popover';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { deliveryNote } from '@/lib/notifications/delivery';
 
 function timeAgo(iso: string): string {
@@ -19,7 +20,7 @@ function timeAgo(iso: string): string {
   return `${Math.floor(s / 86400)}d`;
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ placement = 'up' }: { placement?: 'up' | 'down' }) {
   const router = useRouter();
   const pathname = usePathname();
   const [userId, setUserId] = useState<string | null>(null);
@@ -27,6 +28,21 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const { rootRef, buttonRef } = useIslandPopover<HTMLDivElement>('notifications', open, () => setOpen(false));
+  // The bell lives in two homes: the island (foot of the screen, panel rises) and the top bar (panel must
+  // drop — it rose there too, off the top of the screen, until the owner caught it, Nov 26, 2026; the top
+  // bar passes placement="down"). On a phone neither panel can hang off its button: the island's strip
+  // wraps and the bell lands near an edge, and a 320px panel anchored there ran off the screen (the
+  // owner's shots). There each spans the screen instead — the island's one floating just above the
+  // island (--island-room is the island's own measure of the space over it), the top bar's just under it.
+  const compact = useIslandSurface() === 'compact-dock';
+  const panelFit: React.CSSProperties = compact
+    ? placement === 'up'
+      ? { position: 'fixed', left: 12, right: 12, bottom: 'calc(100dvh - var(--island-room, 70vh) - 14px)', width: 'auto', maxWidth: 'none' }
+      : { position: 'fixed', left: 12, right: 12, top: 'calc(58px + env(safe-area-inset-top, 0px))', width: 'auto', maxWidth: 'none' }
+    : placement === 'up'
+      ? { position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw' }
+      : { position: 'absolute', top: '100%', right: 0, marginTop: 12, width: 320, maxWidth: '92vw' };
+  const rise = placement === 'up' ? 10 : -10;
 
   const unread = items.filter(n => !n.read).length;
   // The badge's own text is part of the button's name (WCAG 2.5.3 Label in Name): "Notifications, 3 unread", "Notifications, 9+ unread".
@@ -109,11 +125,11 @@ export default function NotificationBell() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            initial={{ opacity: 0, y: rise, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: rise, scale: 0.95 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="notif-panel"
             data-island-popover="notifications"
-            style={{ position: 'absolute', bottom: '100%', right: 0, marginBottom: 12, width: 320, maxWidth: '92vw', maxHeight: 'min(380px, var(--island-room, 70vh))',borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
+            style={{ ...panelFit, maxHeight: 'min(380px, var(--island-room, 70vh))', borderRadius: 14, overflow: 'hidden', zIndex: 20 }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)' }}>
               <span style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)' }}>

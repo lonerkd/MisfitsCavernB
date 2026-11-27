@@ -19,6 +19,7 @@ import { baseType, describe, dictationLine, pickAudioType, recClock, voiceMemoNa
 import { capture, discard, flush, listOutbox, OUTBOX_EVENT, type FlushResult } from '@/lib/pocket/outbox';
 import m from './mobile.module.css';
 import { lockScroll } from '@/lib/ui/scrollLock';
+import { shouldDismiss } from './sheetDrag';
 
 type Mode = 'pick' | 'voice' | 'note' | 'link';
 
@@ -202,6 +203,30 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
     return () => { window.removeEventListener('keydown', esc); unlock(); };
   }, [onClose]);
 
+  // Swipe down on the handle or the title to put it away — the same drag the More sheet has, from the first
+  // pixel of movement (a sheet that will not move feels stuck; the owner said so, Nov 26). Pointer events, so
+  // a finger and a mouse behave the same; a press on a button inside (Close) is left to the button.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const drag = useRef<{ y: number; t: number } | null>(null);
+  const pull = (e: React.PointerEvent) => Math.max(0, e.clientY - (drag.current?.y ?? e.clientY));
+  const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    drag.current = { y: e.clientY, t: e.timeStamp };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    if (sheetRef.current) sheetRef.current.style.transition = 'none';
+  };
+  const onMove = (e: React.PointerEvent) => {
+    if (drag.current && sheetRef.current) sheetRef.current.style.transform = `translateY(${pull(e)}px)`;
+  };
+  const onUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    drag.current = null;
+    if (!d || !sheetRef.current) return;
+    if (shouldDismiss(Math.max(0, e.clientY - d.y), e.timeStamp - d.t)) { onClose(); return; }
+    sheetRef.current.style.transition = 'transform 0.2s ease';
+    sheetRef.current.style.transform = '';
+  };
+
   const report = (what: string, r: FlushResult, id: string) => {
     if (r.sent.includes(id)) { toast(`${what} is in ${project?.title ?? 'the library'}.`, 'success'); setDone((d) => [what, ...d].slice(0, 5)); }
     else if (r.failed.some((f) => f.id === id)) toast(r.failed.find((f) => f.id === id)!.error, 'error');
@@ -228,11 +253,13 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
   return createPortal(
     <>
       <div className={m.scrim} onClick={onClose} aria-hidden />
-      <div className={m.sheet} role="dialog" aria-modal="true" aria-labelledby="mc-capture-title">
-        <div className={m.grip} aria-hidden />
-        <div className={m.sheetHead}>
-          <h2 id="mc-capture-title" className={m.sheetTitle}>Capture</h2>
-          <button ref={closeRef} type="button" className={m.close} onClick={onClose} aria-label="Close"><X size={18} aria-hidden /></button>
+      <div ref={sheetRef} className={m.sheet} role="dialog" aria-modal="true" aria-labelledby="mc-capture-title">
+        <div className={m.dragZone} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} data-testid="sheet-drag">
+          <div className={m.grip} aria-hidden />
+          <div className={m.sheetHead}>
+            <h2 id="mc-capture-title" className={m.sheetTitle}>Capture</h2>
+            <button ref={closeRef} type="button" className={m.close} onClick={onClose} aria-label="Close"><X size={18} aria-hidden /></button>
+          </div>
         </div>
 
         {noProject ? (

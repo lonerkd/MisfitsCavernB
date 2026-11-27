@@ -15,6 +15,10 @@ vi.mock('@/lib/supabase/notifications', () => ({
 }));
 import NotificationBell from './NotificationBell';
 
+// The bell now asks which island surface it sits on (its panel fits a phone differently); jsdom has no
+// matchMedia, so give it the desktop answer — these tests are about the badge's name, not the panel's fit.
+window.matchMedia = ((q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {}, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false, onchange: null })) as unknown as typeof window.matchMedia;
+
 const note = (i: number, read = false): N => ({ id: `n${i}`, read, title: 't', body: 'b', created_at: new Date().toISOString(), type: 'x', link: null });
 afterEach(cleanup);
 
