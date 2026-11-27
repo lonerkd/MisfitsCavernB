@@ -164,6 +164,7 @@ export default function StudioPage() {
     <div className={cx(s.page, page.main)}>
       <h1 className="sr-only">Studio{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
+      <div className={page.stickyHead}>
       <header className={page.bar}>
         <div className={page.barLeft}>
           {projects.length > 0 && (
@@ -205,6 +206,7 @@ export default function StudioPage() {
           </div>
         </nav>
       )}
+      </div>
 
       <div className={page.content}>
         {isLoading || (loading && !activeProject) ? (
