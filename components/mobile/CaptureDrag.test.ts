@@ -20,3 +20,26 @@ describe('the Capture sheet drags', () => {
     expect(src).toContain('translateY(${pull(e)}px)');
   });
 });
+
+describe('the Capture sheet leaves the way it should', () => {
+  // The sheet used to unmount on the spot: only a drag-close moved, because the finger carried it
+  // down first, while the X, the scrim and Escape cut instantly (owner, Nov 26, 2026). Now every
+  // close path takes the one animated close — these pins keep them all on it.
+  it('every dismissal goes through the one close path', () => {
+    expect(src).toContain('useOverlayLayer(true, requestClose)');
+    expect(src).toContain("if (e.key === 'Escape') requestClose()");
+    expect(src).toContain('{ requestClose(); return; }');
+    expect(src).toContain('onClick={requestClose}');
+  });
+
+  it('the close slides the sheet down, then the host unmounts it', () => {
+    expect(src).toContain("sheet.style.transform = 'translateY(105%)'");
+    expect(src).toContain('window.setTimeout(onClose, reduce ? 0 : 240)');
+    expect(src).toContain("window.matchMedia('(prefers-reduced-motion: reduce)')");
+  });
+
+  it('the scrim fades with the sheet', () => {
+    expect(src).toContain('ref={scrimRef}');
+    expect(src).toContain("scrim.style.opacity = '0'");
+  });
+});
