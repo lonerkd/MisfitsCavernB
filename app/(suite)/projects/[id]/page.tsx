@@ -242,7 +242,7 @@ export default function ProjectHubPage() {
             href="#production"
             delay={0.2}
             stats={[
-              { label: 'Milestones', value: counts.timeline },
+              { label: 'Timeline', value: counts.timeline },
               { label: 'Budget', value: counts.budget > 0 ? `$${(counts.budget / 1000).toFixed(1)}k` : '$0' },
             ]}
             preview={<TimelinePreview deadline={project.deadline} milestones={milestones} />}

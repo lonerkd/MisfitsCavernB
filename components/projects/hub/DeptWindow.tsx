@@ -188,11 +188,18 @@ export function TimelinePreview({ deadline, milestones }: { deadline: string; mi
   const now = useNow();
   const daysLeft = isNaN(dl) ? null : Math.ceil((dl - now) / 86400000);
   const upcoming = [...milestones].sort((a, b) => String(a.end_date ?? '9999').localeCompare(String(b.end_date ?? '9999'))).slice(0, 5);
+  // The countdown reads the project's own end date; the list under it is the timeline. With nothing on
+  // the timeline, headlining a bare "16 days past the end date" over an empty list contradicts itself —
+  // so an empty timeline says plainly that it has no dates yet, and the countdown only speaks when
+  // there is a schedule for it to speak about.
+  const hasTimeline = milestones.length > 0;
 
   return (
     <div style={{ padding: '14px 16px' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14 }}>
-        {daysLeft === null ? (
+        {!hasTimeline ? (
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>No schedule dates yet</span>
+        ) : daysLeft === null ? (
           <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)' }}>No end date set</span>
         ) : (
           <>
@@ -203,7 +210,7 @@ export function TimelinePreview({ deadline, milestones }: { deadline: string; mi
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {upcoming.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>No milestones yet — add them below.</span>}
+        {upcoming.length === 0 && <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>No timeline items yet — add them below.</span>}
         {upcoming.map((m) => {
           const done = m.status === 'done' || m.status === 'completed';
           return (

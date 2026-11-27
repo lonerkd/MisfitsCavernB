@@ -38,9 +38,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   const { toast } = useToast();
   const entities = useEntities(projectId);
   const [userId, setUserId] = useState<string | null>(null);
-  // The budget is held by the roles that run the money: seeing it and changing it are separate (the database decides).
-  const caps = useMyCapabilities(projectId);
-  const noBudget = !caps.loading && !caps.can('budget.read');
+  const [capsAttempt, setCapsAttempt] = useState(0);
   const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [budget, setBudget] = useState<BudgetRow[]>([]);
   const [timeline, setTimeline] = useState<TimelineRow[]>([]);
@@ -259,7 +257,8 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
           ))}
           <MentionInput
             entities={entities.rows}
-            placeholder="Add a task… (type @ to mention a scene, person or file)"
+            placeholder="Add a task… (type @ to mention)"
+            label="Add a task (type @ to mention a scene, person or file)"
             onSubmit={(v) => void addTask(v)}
             style={{ background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' }}
             buttonStyle={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}
@@ -267,14 +266,7 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
         </Panel>
 
         <Panel title="Budget" accent={accent} headerRight={totalBudget > 0 ? `$${totalBudget.toLocaleString()}` : undefined}>
-          {noBudget && <NeedsCapability projectId={projectId} capability="budget.read" lead="The budget is held by the people who run the money." />}
-          {!noBudget && (
-            <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>
-              {budget.length === 0 ? 'No budget lines yet. ' : `${budget.length} budget line${budget.length === 1 ? '' : 's'}. `}
-              The budget lives in Studio › Money: lines, spend, vendors and what is left.
-              {' '}<Link href="/studio?tab=production&view=money" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, color: 'var(--fg)', textDecoration: 'underline' }}>Open the budget</Link>
-            </p>
-          )}
+          <BudgetGate key={capsAttempt} projectId={projectId} isOwner={isOwner} budgetCount={budget.length} onRetry={() => setCapsAttempt(a => a + 1)} />
         </Panel>
 
         <Panel title="Timeline" accent={accent}>
@@ -371,6 +363,35 @@ export function ProductionManager({ projectId, projectTitle, accent, isOwner }: 
   );
 }
 
+/**
+ * The budget panel's permission gate. The budget is held by the roles that run the money: seeing it
+ * and changing it are separate (the database decides). Three honest states: the read failed (say so,
+ * offer a retry — never dress a network failure up as a refusal), the role lacks budget.read (the
+ * NeedsCapability explanation; the owner previewing as that role is not offered "Ask the owner"), or
+ * the person can see it (the way in).
+ */
+function BudgetGate({ projectId, isOwner, budgetCount, onRetry }: { projectId: string; isOwner: boolean; budgetCount: number; onRetry: () => void }) {
+  const caps = useMyCapabilities(projectId);
+  if (caps.error) {
+    return (
+      <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+        <span>Couldn’t check who can see the budget just now.</span>
+        <button type="button" onClick={onRetry} style={{ fontSize: 12, padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.2)', background: 'transparent', color: 'inherit', cursor: 'pointer' }}>Retry</button>
+      </p>
+    );
+  }
+  if (!caps.loading && !caps.can('budget.read')) {
+    return <NeedsCapability projectId={projectId} capability="budget.read" lead="The budget is held by the people who run the money." canAsk={!isOwner} />;
+  }
+  return (
+    <p style={{ fontFamily: 'var(--mono)', fontSize: 'max(9.5px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', margin: 0, lineHeight: 1.6 }}>
+      {budgetCount === 0 ? 'No budget lines yet. ' : `${budgetCount} budget line${budgetCount === 1 ? '' : 's'}. `}
+      The budget lives in Studio › Money: lines, spend, vendors and what is left.
+      {' '}<Link href="/studio?tab=production&view=money" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, color: 'var(--fg)', textDecoration: 'underline' }}>Open the budget</Link>
+    </p>
+  );
+}
+
 function Panel({ title, accent, headerRight, children }: { title: string; accent: string; headerRight?: string; children: React.ReactNode }) {
   return (
     <div style={{ background: 'var(--glass)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14, padding: 16 }}>
@@ -398,20 +419,47 @@ function AddForm({ placeholder, second, fields, dateLabels, onSubmit, accent }: 
   const set = (i: number, v: string) => setVals(p => p.map((x, idx) => idx === i ? v : x));
   const submit = () => { onSubmit(vals); setVals(fields.map(() => '')); };
   const inputStyle: React.CSSProperties = { flex: 1, minWidth: 0, background: 'rgba(var(--ink-rgb), 0.04)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 8px', color: 'var(--fg)', fontFamily: 'var(--mono)', fontSize: 11, outline: 'none' };
+  const dateLabelStyle: React.CSSProperties = { display: 'block', fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginBottom: 3 };
+  // A date input never shows its placeholder, so a date field squeezed onto the text field's row was
+  // an unlabelled blank box — and the fixed-width dates crushed the text field beside them ("Milest…").
+  // Now the text field gets a row of its own and each date gets a row with a real, visible label.
+  const dateLabelFor = (i: number) => (i === 1 ? (second || dateLabels?.[0] || '') : (dateLabels?.[1] || dateLabels?.[0] || ''));
+  const hasDates = fields.some(f => f === 'date');
+  const addButton = <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>;
   return (
-    <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
-      {fields.map((f, i) => (
-        <input
-          key={i}
-          type={f === 'number' ? 'number' : f === 'date' ? 'date' : 'text'}
-          value={vals[i]}
-          onChange={e => set(i, e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && submit()}
-          placeholder={i === 0 ? placeholder : i === 1 ? (second || dateLabels?.[0] || '') : (dateLabels?.[1] || '')}
-          style={{ ...inputStyle, flex: f === 'date' ? '0 0 110px' : f === 'number' ? '0 0 90px' : 1 }}
-        />
-      ))}
-      <button onClick={submit} aria-label="add" style={{ flexShrink: 0, background: `${accent}1a`, border: `1px solid ${accent}40`, color: accent, borderRadius: 8, padding: '0 12px', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>+</button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 6 }}>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {fields.map((f, i) => f !== 'date' && (
+          <input
+            key={i}
+            type={f === 'number' ? 'number' : 'text'}
+            value={vals[i]}
+            onChange={e => set(i, e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            placeholder={i === 0 ? placeholder : ''}
+            style={{ ...inputStyle, flex: f === 'number' ? '0 0 90px' : 1 }}
+          />
+        ))}
+        {!hasDates && addButton}
+      </div>
+      {hasDates && (
+        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+          {fields.map((f, i) => f === 'date' && (
+            <label key={i} style={{ flex: 1, minWidth: 0 }}>
+              <span style={dateLabelStyle}>{dateLabelFor(i)}</span>
+              <input
+                type="date"
+                value={vals[i]}
+                onChange={e => set(i, e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && submit()}
+                aria-label={dateLabelFor(i)}
+                style={{ ...inputStyle, width: '100%', boxSizing: 'border-box' }}
+              />
+            </label>
+          ))}
+          {addButton}
+        </div>
+      )}
     </div>
   );
 }

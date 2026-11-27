@@ -37,6 +37,12 @@ describe('NeedsCapability', () => {
     expect((screen.getByRole('button', { name: 'Asked' }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('keeps the explanation but offers no "Ask the owner" when the reader is the owner (canAsk false)', () => {
+    render(<NeedsCapability projectId="p1" capability="budget.read" lead="The budget is held by the people who run the money." canAsk={false} />);
+    expect(screen.getByRole('note').textContent).toContain('The budget is held by the people who run the money. It needs “See the budget”.');
+    expect(screen.queryByRole('button', { name: 'Ask the owner' })).toBeNull();
+  });
+
   it('tells the person when it could not be sent, and lets them try again', async () => {
     requestCapability.mockRejectedValueOnce(new Error('offline'));
     render(<NeedsCapability projectId="p1" capability="budget.read" lead="Held back." />);
