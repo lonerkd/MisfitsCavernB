@@ -4,12 +4,14 @@ import { serializeFountain } from './fountain-export';
 import { readingFormat } from './reading-format';
 
 /** The export choices a script's format offers: Final Draft (.fdx) has no elements for podcast, copy, video, prose, game or outline scripts.
- *  A video script also offers its publish package; an article offers the publish-ready Markdown and HTML files (BACKLOG 3.51). */
+ *  A video script also offers its publish package; an article offers the publish-ready Markdown and HTML files;
+ *  a game script offers its build sheet (BACKLOG 3.51). Fountain is a screenplay notation, so none of them offer it. */
 export function exportChoicesFor(format: string | null | undefined): string[] {
   const f = readingFormat(format);
   if (f === 'screenplay') return ['fountain', 'fdx', 'pdf', 'txt'];
   if (f === 'video-script') return ['pdf', 'publish', 'txt'];
   if (f === 'prose') return ['pdf', 'md', 'html', 'txt'];
+  if (f === 'game-script') return ['pdf', 'build', 'txt'];
   return ['pdf', 'txt', 'fountain'];
 }
 
@@ -21,6 +23,7 @@ export function exportChoiceLabel(choice: string): string {
     case 'pdf': return 'PDF';
     case 'txt': return 'Text (.txt)';
     case 'publish': return 'Publish package (.md)';
+    case 'build': return 'Build sheet (.md)';
     case 'md': return 'Markdown (.md)';
     case 'html': return 'HTML article (.html)';
     default: return choice.toUpperCase();
@@ -67,13 +70,18 @@ export async function exportScriptAsFdx(script: StoredScript): Promise<void> {
 /** jsPDF is large and only needed here, so it loads when a PDF is asked for. */
 export async function exportScriptAsPdf(script: StoredScript, titlePage?: { title?: string; credit?: string; author?: string; draftDate?: string }): Promise<void> {
   const f = readingFormat(script.format);
-  if (f === 'video-script' || f === 'prose') {
-    // These two print in their own shape through the print kit (a shooting layout for video, an article for
-    // prose), in the browser's print dialog — which also prints any language as written, unlike jsPDF's fonts.
+  if (f === 'video-script' || f === 'prose' || f === 'game-script') {
+    // These print in their own shape through the print kit (a shooting layout for video, an article for
+    // prose, a beat table per part for a game script), in the browser's print dialog — which also prints
+    // any language as written, unlike jsPDF's fonts.
     const generated = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-    const { videoScriptDoc, proseArticleDoc } = await import('./format-export');
+    const { videoScriptDoc, proseArticleDoc, gameScriptDoc } = await import('./format-export');
     const { printDocument } = await import('@/lib/print/print');
-    const doc = f === 'video-script' ? videoScriptDoc(script, generated, titlePage?.title) : proseArticleDoc(script, generated, titlePage?.title);
+    const doc = f === 'video-script'
+      ? videoScriptDoc(script, generated, titlePage?.title)
+      : f === 'prose'
+        ? proseArticleDoc(script, generated, titlePage?.title)
+        : gameScriptDoc(script, generated, titlePage?.title);
     if (!printDocument(doc)) throw new Error('Could not open the print dialog here.');
     return;
   }

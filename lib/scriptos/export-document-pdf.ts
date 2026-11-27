@@ -3,7 +3,8 @@ import { readingFormat } from './reading-format';
 import type { StoredScript } from './storage';
 
 /**
- * The PDF of a script that is not a screenplay (podcast, ad copy, video, article, game, documentary outline).
+ * The PDF of a script that is not a screenplay and has no format-shaped print of its own (podcast, ad copy,
+ * documentary outline — video, article and game scripts print through the print kit, see format-export.ts).
  * Courier at screenplay margins is wrong for these: a section is a heading, a speaker is a label, and the text is
  * read, not timed at a page a minute. Helvetica, one-inch margins, page numbers at the foot.
  */
