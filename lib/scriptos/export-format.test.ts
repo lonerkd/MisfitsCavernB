@@ -30,4 +30,9 @@ describe('exportChoicesFor', () => {
     expect(exportChoiceLabel('html')).toBe('HTML article (.html)');
     expect(exportChoiceLabel('pdf')).toBe('PDF');
   });
+
+  it('offers a game script its build sheet, and no Fountain (a screenplay notation)', () => {
+    expect(exportChoicesFor('game-script')).toEqual(['pdf', 'build', 'txt']);
+    expect(exportChoiceLabel('build')).toBe('Build sheet (.md)');
+  });
 });
