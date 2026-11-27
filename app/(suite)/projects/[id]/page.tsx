@@ -30,6 +30,7 @@ import { LogoEditor } from '@/components/progress/LogoEditor';
 import { DeptWindow, ScriptPreview, AssetPreview, CrewPreview, TimelinePreview, PortfolioPreview, DistributionPreview } from '@/components/projects/hub/DeptWindow';
 import { useProjectHubData } from '@/components/projects/hub/useProjectHubData';
 import { HubTopBar } from '@/components/projects/hub/HubTopBar';
+import { VisibilityPicker } from '@/components/projects/hub/VisibilityPicker';
 import { ProductionManager } from '@/components/projects/hub/ProductionManager';
 
 // ─── Main page ───────────────────────────────────────────────────────────────
@@ -113,15 +114,13 @@ export default function ProjectHubPage() {
         background: `radial-gradient(ellipse at 50% -20%, ${project.color}0a 0%, transparent 65%)`,
       }} />
 
-      {/* Back, title and project live in the island; what's left here is this project's own tools. */}
+      {/* Back, title and project live in the island; the top strip is status
+          only. The owner's controls sit in the office section at the foot of
+          the hub — the admin stack used to open the page (owner, Nov 26). */}
       <HubTopBar
         onlineCount={onlineCount}
         tasks={counts.tasks}
         tasksDone={counts.tasksDone}
-        ownerView={ownerView}
-        visibility={project.visibility}
-        onVisibilityChange={changeVisibility}
-        onCopyShareLink={copyShareLink}
       />
 
       <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
@@ -134,7 +133,6 @@ export default function ProjectHubPage() {
         >
           <TwoPanesOffer projectId={id} phase={progressState.progress?.current.id ?? project.phase} />
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginBottom: 10 }}>
-            {project.isOwner && <ViewAsSwitch projectId={id} />}
             {/* On a phone the split only stacks its two panes, which the pill and the tool header already do better. */}
             {!inPane && !phone.phone && (
               <Link href={`/split${projectPairSearch(id, progressState.progress?.current.id ?? project.phase, readPartner(id))}`} title="The project in one pane, the tool this phase works in beside it. Tools you open from the toolkit come up beside the project."
@@ -151,16 +149,7 @@ export default function ProjectHubPage() {
             isOwner={ownerView}
             onSaved={(logline) => setRealProject(p => p ? { ...p, description: logline } : p)}
           />
-          {ownerView && (
-            <LogoEditor
-              projectId={id}
-              value={project.logoUrl ?? null}
-              onSaved={(logoUrl) => { setRealProject(p => p ? { ...p, logoUrl } : p); refreshProject(id); }}
-            />
-          )}
         </motion.div>
-
-        {ownerView && me?.id && <AnnouncementBox projectId={id} projectTitle={project.title} userId={me.id} />}
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -290,6 +279,26 @@ export default function ProjectHubPage() {
           )}
 
         </div>
+
+        {/* The owner's controls, grouped at the foot of the hub: the page
+            opens on the project itself, not its admin (owner, Nov 26 2026). */}
+        {ownerView && (
+          <section aria-label="Project office" style={{ marginBottom: 24, background: 'var(--bg-2)', border: '1px solid var(--border)', borderRadius: 20, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h2 style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', margin: 0 }}>Project office</h2>
+            <VisibilityPicker
+              visibility={project.visibility}
+              onVisibilityChange={changeVisibility}
+              onCopyShareLink={copyShareLink}
+            />
+            {project.isOwner && <ViewAsSwitch projectId={id} />}
+            <LogoEditor
+              projectId={id}
+              value={project.logoUrl ?? null}
+              onSaved={(logoUrl) => { setRealProject(p => p ? { ...p, logoUrl } : p); refreshProject(id); }}
+            />
+            {me?.id && <AnnouncementBox projectId={id} projectTitle={project.title} userId={me.id} />}
+          </section>
+        )}
 
         {isRealProject && <div id="production" />}
         {isRealProject && <ProductionManager projectId={id} projectTitle={project.title} accent={project.color} isOwner={ownerView} />}
