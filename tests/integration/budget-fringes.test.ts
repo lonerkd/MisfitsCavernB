@@ -151,3 +151,14 @@ describe('who can see and write them', () => {
     expect((await cast.riley.client.from('budget_items').select('fringe_amount').eq('id', itemId)).data ?? []).toEqual([]);
   });
 });
+
+describe('a fringe is attributed to the person adding it (20261127000200)', () => {
+  it('a budget writer cannot add a fringe as someone else; as themselves or with no author it works', async () => {
+    const forged = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Forged', percent: 5, created_by: cast.sam.id });
+    expect(forged.error).not.toBeNull();
+    const own = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Own', percent: 5, created_by: cast.jordan.id });
+    expect(own.error).toBeNull();
+    const none = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Unsigned', percent: 5 });
+    expect(none.error).toBeNull();
+  });
+});

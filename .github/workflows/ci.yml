@@ -129,7 +129,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm run db:start
+      # The port-54322 "already in use" flake (nightly review 2026-11-27): clear any stale container, and retry the start once.
+      - run: npm run db:start || (npx supabase stop --no-backup; npm run db:start)
       - run: npm run db:drift
       - run: npm run db:types:check
       - run: npm run test:integration

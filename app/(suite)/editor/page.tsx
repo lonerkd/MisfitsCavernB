@@ -1061,7 +1061,7 @@ export default function EditorPage() {
   );
 
   return (
-    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 42 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh', ...(isMobile && phone.landscape ? { paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ ...(isMobile && phone.typing ? { position: 'fixed', top: phone.offset, left: 0, right: 0, height: phone.height, paddingTop: 'var(--mc-safe-top)', paddingBottom: phone.landscape ? 42 : 62 /* room for the tool strip */, paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' } : { height: '100dvh', ...(isMobile ? { paddingBottom: phone.landscape ? 'calc(64px + env(safe-area-inset-bottom))' : 'calc(76px + env(safe-area-inset-bottom))' /* the island's room: the page's own foot is not added to a one-screen editor (globals.css) */ } : {}) }), boxSizing: 'border-box', overflow: 'hidden', background: 'var(--bg)', color: 'var(--fg)', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">ScriptOS{currentScript?.title ? ` — ${currentScript.title}` : ''}</h1>
 
       {!focusMode && !(isMobile && phone.landscape && phone.typing) && (isMobile

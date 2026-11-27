@@ -74,3 +74,23 @@ describe('casting notes follow the character (20261126000100)', () => {
     expect(data.character_id).toBeNull();
   });
 });
+
+describe('a rename by crew carries the notes too', () => {
+  it('Jordan (crew, not the creator) renames a character: the owner\'s note and a candidate follow the new name', async () => {
+    expect((await table(cast.sam.client).insert({ project_id: projectId, character_name: 'ORION', note: 'Quiet, then loud' })).error).toBeNull();
+    const { data: ch } = await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', 'ORION').single();
+    expect(ch).not.toBeNull();
+    expect((await cast.sam.client.from('casting_candidates').insert({ project_id: projectId, character_name: 'ORION', name: 'A. Actor' })).error).toBeNull();
+
+    const { error } = await cast.jordan.client.from('characters').update({ name: 'ORION PRIME' }).eq('id', ch!.id);
+    expect(error).toBeNull();
+    const renamed = await cast.sam.client.from('characters').select('name').eq('id', ch!.id).single();
+    expect(renamed.data?.name).toBe('ORION PRIME');
+
+    // The name text on the linked rows follows the character, whoever renamed it.
+    const note = await table(cast.sam.client).select('character_name').eq('character_id', ch!.id).single();
+    expect(note.data?.character_name).toBe('ORION PRIME');
+    const cand = await cast.sam.client.from('casting_candidates').select('character_name').eq('character_id', ch!.id).single();
+    expect(cand.data?.character_name).toBe('ORION PRIME');
+  });
+});

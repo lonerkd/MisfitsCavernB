@@ -38,7 +38,7 @@
 /* The pill carries the focus state (:focus-within below): the global ring on the input itself is a second frame
    that sits outside the pill — the "highlight doesn't fit its frame" the owner photographed (Nov 26 2026). */
 .find input:focus-visible { outline: none !important; outline-offset: 0; }
-.find:focus-within { border-color: var(--pa); }
+.find:focus-within { border-color: var(--pa); outline: 2px solid var(--pa); outline-offset: 2px; }
 .findCount { font-family: var(--mono); font-size: 11px; color: var(--fg-muted); white-space: nowrap; }
 .here { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; color: var(--fg-muted); }
 .dots { display: inline-flex; }

@@ -38,7 +38,7 @@ export default function Home() {
       <Navigation />
 
       {loggedIn && (
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 16px 0' }}>
+        <div className="mc-continue-slot" style={{ maxWidth: 1100, margin: '0 auto', padding: '20px 16px 0' }}>
           <ContinueOffer inline />
         </div>
       )}

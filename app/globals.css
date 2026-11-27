@@ -360,6 +360,8 @@ body.custom-cursor-active * {
   .mc-lounge-label { display: none; }
   .mc-lounge-chathead { padding-top: 4px !important; padding-bottom: 4px !important; }
 }
+/* The home page's "continue where you left off" slot: no offer, no empty 20 px band above the hero. */
+.mc-continue-slot:empty { display: none; }
 /* The rail's rows (channels, people, the hub link): a hover and a focus ring on every pointer; 44 pt targets wherever a finger is the pointer. */
 .mc-lounge-row { min-height: 32px; box-sizing: border-box; }
 .mc-lounge-row:not([data-active]):hover { background: rgba(var(--ink-rgb), 0.05) !important; }
@@ -1164,6 +1166,8 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select, textarea { font-size: max(16px, 1em) !important; }
   input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']), select { min-height: 44px; }
   input[type='checkbox'], input[type='radio'] { min-width: 24px; min-height: 24px; }
+  /* A slider's thumb is dragged with a finger: the track gets a 44 px target like every other control (the island size and the film grain sliders were 16 px tall). */
+  input[type='range'] { min-height: 44px; }
   .skip-link { min-height: 44px; display: inline-flex; align-items: center; }
   :where(a[href]) { position: relative; }
   :where(a[href])::after { content: ''; position: absolute; left: -4px; right: -4px; top: -14px; bottom: -14px; }
@@ -1176,6 +1180,11 @@ html[data-typing='true'] [data-hide-when-typing] { display: none !important; }
   body { padding-left: max(env(safe-area-inset-left), var(--mc-rail)); padding-right: env(safe-area-inset-right); }
   .main-content-container { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 }
+
+/* The editor is exactly one screen tall (100dvh) and leaves its own room for the island, so the page's 76 px foot (every other page's room for the
+   tab pill and the island) only made the whole window scroll: 76 px taller than the screen in both orientations, caught by measuring the document
+   against the window. Same rule as the Lounge's. */
+.main-content-container:has(.mc-editor-center) { padding-bottom: 0; }
 
 /* The keyboard is up (components/phone/PhoneKeyboard.tsx publishes --kb): the page's scroll area leaves room for it, so the last
    field and its button can be scrolled above the keyboard. */

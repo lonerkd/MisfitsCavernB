@@ -95,6 +95,9 @@ Paper became the default theme and every screen was walked in it (2026-11-03: al
 ### 3.37 One shared e2e helper, and no test accounts in production's numbers — S/M (owner, 2026-11-03)
 **Built 2026-11-15:** `e2e/support/stack.ts` — a Playwright fixture (`stack`, worker-scoped, so it works in `beforeAll`) that picks the backend (the local stack from `npx supabase status` with `E2E_LOCAL_STACK=1`; staging when `E2E_SUPABASE_URL`,… _(full text: `backlog-detail.md`, 3.37)_
 
+### 3.55 Review of the 2026-11-01 to 11-27 merges: found and not yet fixed — M (Haiku sweep of 88 merges, verified by the lead; 2026-11-27)
+Eight read-only reviewers read every code merge since 1 November (docs excluded); the lead verified each finding in the code before acting. _(full text: `backlog-detail.md`, 3.55)_
+
 ### 3.39 The 2026-11-07 audit: fix what it found, in order — M/L (owner request, 2026-11-07)
 The owner asked for a review of everything built 3–7 November for poor execution and fakes (much was done through a weaker model). _(full text: `backlog-detail.md`, 3.39)_
 
