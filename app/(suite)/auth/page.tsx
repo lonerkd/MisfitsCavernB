@@ -278,7 +278,7 @@ export default function AuthPage() {
             {authHeading(mode)[0]}<br /><span style={{ color: 'var(--accent)' }}>{authHeading(mode)[1]}</span>
           </h1>
           <p style={{ fontFamily: 'var(--serif)', fontSize: '0.95rem', fontStyle: 'italic', color: 'var(--fg-muted)', margin: 0 }}>
-            {mode === 'signin' ? 'Welcome back, misfit.' : mode === 'signup' ? 'Join the cavern.' : 'Forgot it? It happens.'}
+            {mode === 'signin' ? 'Good to see you again, misfit.' : mode === 'signup' ? 'Join the cavern.' : 'Forgot it? It happens.'}
           </p>
         </motion.div>
 

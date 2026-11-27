@@ -11,7 +11,6 @@ import { StatsTicker } from '@/components/landing/StatsTicker';
 import { Hero } from '@/components/landing/Hero';
 import { StatsSection } from '@/components/landing/StatsSection';
 import { ModuleGrid } from '@/components/landing/ModuleGrid';
-import { ClosingCta } from '@/components/landing/ClosingCta';
 import { useHomeData } from '@/components/home/useHomeData';
 import dynamic from 'next/dynamic';
 // Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them).
@@ -79,9 +78,6 @@ export default function Home() {
       {loggedIn !== null && (
         <ModuleGrid loggedIn={loggedIn} phone={phone} live={live} works={works} />
       )}
-
-      {loggedIn === false && <ClosingCta />}
-
 
       <footer style={{
         textAlign: 'center',
