@@ -57,6 +57,7 @@ function Split({ search }: { search: string }) {
   const [pulse, setPulse] = useState<Side | null>(null);
   const [frames] = useState(() => ({ a: createRef<HTMLIFrameElement>(), b: createRef<HTMLIFrameElement>() }));
   const wrapRef = useRef<HTMLDivElement>(null);
+  const dragRatio = useRef<number | null>(null);
 
 
   // Keep the URL and this device's memory in step with the panes.
@@ -130,6 +131,23 @@ function Split({ search }: { search: string }) {
   const full = (side: Side) => { window.location.assign(here[side].href); };
   const pct = Math.round(layout.ratio * 100);
 
+  // A drag resizes two framed pages. Committing every move to state re-rendered both of them per
+  // pointer move and rewrote the address and storage with it — the page died under the drag, on the
+  // phone and at a desk alike (the owner, Nov 26, 2026). The move only paints: the wrap's grid is
+  // set directly, and the ratio is committed once, when the drag ends.
+  const paintDrag = (r: number) => {
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const p = Math.round(r * 100);
+    if (column) wrap.style.gridTemplateRows = `${p}fr 10px ${100 - p}fr`;
+    else wrap.style.gridTemplateColumns = `${p}fr 10px ${100 - p}fr`;
+  };
+  const finishDrag = () => {
+    setDragging(false);
+    if (dragRatio.current != null) { update({ ratio: dragRatio.current }); dragRatio.current = null; }
+  };
+
+
   return (
     <div className={s.page}>
       <header className={s.bar}>
@@ -164,9 +182,16 @@ function Split({ search }: { search: string }) {
                 aria-valuenow={pct}
                 aria-valuetext={`First pane ${pct}%`}
                 className={s.divider}
-                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setDragging(true); }}
-                onPointerMove={(e) => { if (dragging) update({ ratio: ratioAt(e.clientX, e.clientY) }); }}
-                onPointerUp={(e) => { e.currentTarget.releasePointerCapture(e.pointerId); setDragging(false); }}
+                onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); dragRatio.current = layout.ratio; setDragging(true); }}
+                onPointerMove={(e) => {
+                  if (!dragging) return;
+                  const r = ratioAt(e.clientX, e.clientY);
+                  dragRatio.current = r;
+                  paintDrag(r);
+                  e.currentTarget.setAttribute('aria-valuenow', String(Math.round(r * 100)));
+                }}
+                onPointerUp={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId); finishDrag(); }}
+                onPointerCancel={() => finishDrag()}
                 onDoubleClick={() => update({ ratio: 0.5 })}
                 onKeyDown={(e) => {
                   const step = e.shiftKey ? 0.1 : 0.05;

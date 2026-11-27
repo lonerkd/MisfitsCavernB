@@ -128,4 +128,19 @@ describe('breakdownFocus', () => {
     expect(r.state).toBe('clear');
     expect(r.headline).toContain('Ready to move on to Pre-Production');
   });
+
+  it('casting is listed once: the stricter read speaks, with the real numbers', () => {
+    const s = sig({ ...DEV_DONE, status: 'pre-production', scripts: 1, scenes: 2, characters: 2, cast_roles: 2, cast_roles_cast: 0, castings: 0, locations: 2, locations_confirmed: 2, permits_open: 0, shots: 1, crew_confirmed: 1, breakdown_elements: 4 });
+    const r = breakdownFocus(facts(s, { elements: { total: 4, needed: 0, sourcing: 0, ready: 4, unpriced: 0 } }));
+    expect(ids(r)).toContain('casting-complete');
+    expect(ids(r)).not.toContain('casting');
+    expect(r.items.find((i) => i.id === 'casting-complete')?.detail).toBe('0 of 2 characters in a scene cast.');
+  });
+
+  it('a partly cast film still hears only the stricter read', () => {
+    const s = sig({ ...DEV_DONE, status: 'pre-production', scripts: 1, scenes: 2, characters: 2, cast_roles: 2, cast_roles_cast: 1, castings: 1, locations: 2, locations_confirmed: 2, permits_open: 0, shots: 1, crew_confirmed: 1, breakdown_elements: 4 });
+    const r = breakdownFocus(facts(s, { elements: { total: 4, needed: 0, sourcing: 0, ready: 4, unpriced: 0 } }));
+    expect(ids(r)).not.toContain('casting');
+    expect(r.items.find((i) => i.id === 'casting-complete')?.detail).toBe('1 of 2 characters in a scene cast.');
+  });
 });

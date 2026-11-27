@@ -180,7 +180,62 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
   return (
     <section aria-labelledby="production-title">
       <SectionHeader id="production-title" title="Production" />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
+      <ToolHereContext.Provider value={`production:${view}`}>
+      <ToolFindProvider key={view}>
+      {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
+      {lock && <LockedTool tool={lock} accent={project.accent_color} projectId={project.id} isOwner={project.creator_id === userId} onNavigate={onNavigate} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
+      <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
+      {!lock && TAB_HEADED[view] && (() => {
+        const v = VIEWS.find((x) => x.id === view)!;
+        return <div style={{ marginBottom: 14 }}><ToolHeader icon={React.cloneElement(v.icon as React.ReactElement<{ size?: number }>, { size: 16 })} eyebrow={v.group} title={v.label} purpose={TAB_HEADED[view]} accent={project.accent_color} /></div>;
+      })()}
+      {!lock && view === 'story' && <StoryView />}
+      {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
+      {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
+      {!lock && view === 'locations' && <LocationsView />}
+      {!lock && view === 'world' && <WorldView />}
+      {!lock && view === 'continuity' && <ContinuityView />}
+      {!lock && view === 'money' && <MoneyView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
+      {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}
+      {!lock && view === 'onset' && <OnSetView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
+      {!lock && view === 'shots' && <ShotListView />}
+      {!lock && view === 'weather' && <WeatherView />}
+      {!lock && view === 'catering' && <CateringView />}
+      {!lock && view === 'safety' && <SafetyView />}
+      {!lock && view === 'props' && <PropsView />}
+      {!lock && view === 'makeup' && <MakeupView />}
+      {!lock && view === 'stills' && <StillsView />}
+      {!lock && view === 'extras' && <ExtrasView />}
+      {!lock && view === 'editorial' && <EditorialView />}
+      {!lock && view === 'claims' && <ClaimsView />}
+      {!lock && view === 'cues' && <CuesView />}
+      {!lock && view === 'spotting' && <SpottingView />}
+      {!lock && view === 'mediaoffload' && <MediaOffloadView />}
+      {!lock && view === 'po' && <PoView />}
+      {!lock && view === 'scriptsup' && <ScriptSupView />}
+      {!lock && view === 'permit' && <PermitView />}
+      {!lock && view === 'costume' && <CostumeView />}
+      {!lock && view === 'vfx' && <VfxView />}
+      {!lock && view === 'sound' && <SoundReportView />}
+      {!lock && view === 'camera' && <CameraReportView />}
+      {!lock && view === 'risk' && <RiskRegisterView />}
+      {!lock && view === 'director' && <DirectorNotebookView />}
+      {!lock && view === 'revisions' && <RevisionsView />}
+      {!lock && view === 'scout' && <ScoutView />}
+      {!lock && view === 'rehearsal' && <RehearsalView />}
+      {!lock && view === 'wrap' && <WrapView />}
+      {!lock && view === 'gear' && <GearView />}
+      {!lock && view === 'dood' && <DoodView />}
+      {!lock && view === 'comms' && <CommsView />}
+      {!lock && view === 'cast' && <CastBreakdownView />}
+      {!lock && view === 'transport' && <TransportView />}
+      {!lock && view === 'reports' && <ProductionReportView />}
+      {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
+      {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
+      </ToolActionsContext.Provider>
+      </ToolFindProvider>
+      </ToolHereContext.Provider>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 24 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <input type="search" aria-label="Find a production tool" placeholder="Find a tool…" value={find} onChange={(e) => setFind(e.target.value)}
                   style={{ width: 'min(100%, 280px)', minHeight: 44, padding: '0 12px', borderRadius: 8, border: '1px solid rgba(var(--ink-rgb), 0.14)', background: 'transparent', color: 'var(--fg)', fontSize: 13 }} />
@@ -243,61 +298,6 @@ export function ProductionTab({ view, onView, onNavigate }: { view: View; onView
               })}
               </div>}
             </div>
-      <ToolHereContext.Provider value={`production:${view}`}>
-      <ToolFindProvider key={view}>
-      {!lock && PRODUCTION_VIEW_TOOL[view] && <ToolIntro tool={toolState(progress, PRODUCTION_VIEW_TOOL[view]!)} accent={project.accent_color} />}
-      {lock && <LockedTool tool={lock} accent={project.accent_color} projectId={project.id} isOwner={project.creator_id === userId} onNavigate={onNavigate} onOpen={() => setPeeked((prev) => new Set(prev).add(view))} />}
-      <ToolActionsContext.Provider value={!lock && recordKindOfView(view) ? <PrintRecordsButton kind={recordKindOfView(view)!} /> : null}>
-      {!lock && TAB_HEADED[view] && (() => {
-        const v = VIEWS.find((x) => x.id === view)!;
-        return <div style={{ marginBottom: 14 }}><ToolHeader icon={React.cloneElement(v.icon as React.ReactElement<{ size?: number }>, { size: 16 })} eyebrow={v.group} title={v.label} purpose={TAB_HEADED[view]} accent={project.accent_color} /></div>;
-      })()}
-      {!lock && view === 'story' && <StoryView />}
-      {!lock && view === 'breakdown' && <BreakdownView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} onNavigate={(v) => onView(v as View)} />}
-      {!lock && view === 'readiness' && <ReadinessView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
-      {!lock && view === 'locations' && <LocationsView />}
-      {!lock && view === 'world' && <WorldView />}
-      {!lock && view === 'continuity' && <ContinuityView />}
-      {!lock && view === 'money' && <MoneyView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew' }))} />}
-      {!lock && view === 'paperwork' && <PaperworkView crew={crew.map((c) => ({ user_id: c.user_id, username: c.profiles?.username ?? 'Crew', craft: c.craft ?? null }))} />}
-      {!lock && view === 'onset' && <OnSetView onNavigate={onNavigate ?? ((p) => { if (p.kind === 'studio' && p.tab === 'production' && p.view) { onView(p.view); return true; } return false; })} />}
-      {!lock && view === 'shots' && <ShotListView />}
-      {!lock && view === 'weather' && <WeatherView />}
-      {!lock && view === 'catering' && <CateringView />}
-      {!lock && view === 'safety' && <SafetyView />}
-      {!lock && view === 'props' && <PropsView />}
-      {!lock && view === 'makeup' && <MakeupView />}
-      {!lock && view === 'stills' && <StillsView />}
-      {!lock && view === 'extras' && <ExtrasView />}
-      {!lock && view === 'editorial' && <EditorialView />}
-      {!lock && view === 'claims' && <ClaimsView />}
-      {!lock && view === 'cues' && <CuesView />}
-      {!lock && view === 'spotting' && <SpottingView />}
-      {!lock && view === 'mediaoffload' && <MediaOffloadView />}
-      {!lock && view === 'po' && <PoView />}
-      {!lock && view === 'scriptsup' && <ScriptSupView />}
-      {!lock && view === 'permit' && <PermitView />}
-      {!lock && view === 'costume' && <CostumeView />}
-      {!lock && view === 'vfx' && <VfxView />}
-      {!lock && view === 'sound' && <SoundReportView />}
-      {!lock && view === 'camera' && <CameraReportView />}
-      {!lock && view === 'risk' && <RiskRegisterView />}
-      {!lock && view === 'director' && <DirectorNotebookView />}
-      {!lock && view === 'revisions' && <RevisionsView />}
-      {!lock && view === 'scout' && <ScoutView />}
-      {!lock && view === 'rehearsal' && <RehearsalView />}
-      {!lock && view === 'wrap' && <WrapView />}
-      {!lock && view === 'gear' && <GearView />}
-      {!lock && view === 'dood' && <DoodView />}
-      {!lock && view === 'comms' && <CommsView />}
-      {!lock && view === 'cast' && <CastBreakdownView />}
-      {!lock && view === 'transport' && <TransportView />}
-      {!lock && view === 'reports' && <ProductionReportView />}
-      {!lock && view === 'schedule' && <ScheduleView crew={crew.map((c) => ({ ...c, username: c.profiles?.username ?? undefined }))} />}
-      {!lock && view === 'crew' && <CrewView crew={crew} onChanged={() => void loadCrew()} />}
-      </ToolActionsContext.Provider>
-      </ToolFindProvider>
-      </ToolHereContext.Provider>
     </section>
   );
 }

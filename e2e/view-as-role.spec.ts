@@ -81,7 +81,9 @@ test.describe('View as a role (local Supabase)', () => {
     await expect(page.locator('#money-spend')).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Your tools' }).getByRole('button')).toContainText(['Gear', 'Schedule', 'Safety', 'Shot list', 'Location scouts']);
 
-    // Back to me: the real view has no preview banner and no role row (the owner has no craft on their own project).
+    // Back to me, from the project page where the switch lives: the real view has no preview
+    // banner and no role row (the owner has no craft on their own project).
+    await page.goto(`/projects/${projectId}`);
     await page.getByRole('button', { name: 'Back to me' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Previewing as' })).toHaveCount(0);
     await expect(page.getByRole('group', { name: 'Your tools' })).toHaveCount(0);
