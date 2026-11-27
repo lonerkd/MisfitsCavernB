@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
 import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/os';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
@@ -21,6 +22,7 @@ const NAV_LINKS = [
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const phone = usePhoneLayout().phone;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, isGuest } = useCurrentUser();
@@ -53,12 +55,15 @@ export default function Navigation() {
           left: 0,
           width: '100%',
           // The bar is fixed to the viewport top, so on a phone the status-bar
-          // clock overlays its row. The app's safe-top inset drops the logo and
-          // links just under the time while the frosted background still runs
-          // to the top edge (owner's ask, Nov 26). Zero on desktop.
-          paddingTop: `calc(${scrolled ? 12 : 18}px + var(--mc-safe-top, 0px))`,
+          // clock overlays its row. The safe-top inset is what clears the clock —
+          // and on a phone the bar stays SLIM around it: 6px of air above the row,
+          // a short pad below, the mark tucked into the top-left corner (owner's
+          // edit, Nov 26). Mobile screen is the scarce resource: clearance comes
+          // from the inset, never from growing the bar. Desktop keeps its airier
+          // pads, where the inset is 0.
+          paddingTop: phone ? 'calc(6px + var(--mc-safe-top, 0px))' : `calc(${scrolled ? 12 : 18}px + var(--mc-safe-top, 0px))`,
           paddingRight: 28,
-          paddingBottom: scrolled ? 12 : 18,
+          paddingBottom: phone ? (scrolled ? 6 : 8) : (scrolled ? 12 : 18),
           paddingLeft: 28,
           display: 'flex',
           justifyContent: 'space-between',
