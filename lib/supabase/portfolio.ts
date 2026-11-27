@@ -33,6 +33,20 @@ export async function getPortfolioProjects(userId?: string) {
 }
 
 /** Saves the pins and the order of a person's pieces (their own only: the database refuses others, and a fourth pin). */
+export interface RecentWork {
+  title: string;
+  year: number;
+  category: string;
+  role: string;
+  accent_color: string;
+}
+
+/** The most recently published portfolio work, newest first (the home page's showcase feed). */
+export async function listRecentWork(limit = 3): Promise<RecentWork[]> {
+  const { data } = await supabase.rpc('get_recent_work', { p_limit: limit });
+  return data ?? [];
+}
+
 export async function savePortfolioOrder(places: Array<{ id: string; pinned: boolean; position: number }>): Promise<void> {
   const results = await Promise.all(places.map((p) => supabase.from('portfolio_projects').update({ pinned: p.pinned, position: p.position }).eq('id', p.id).select('id')));
   const failed = results.find((r) => r.error || !r.data?.length);

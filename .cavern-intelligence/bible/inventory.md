@@ -49,7 +49,7 @@
 | `/jobs` | signed in | `app/(suite)/jobs/page.tsx` (447) | 65 files · components: crafts, jobs, ui · lib: auth, crafts, formats, hooks, island, moderation, notifications, os, push, scriptos, studio, supabase, types, util, validation | accessibility, auth-journey, brief, hiring, keyboard-audit, layout, mobile, onboarding, page-errors, reports, route-smoke |
 | `/lounge` | signed in | `app/(suite)/lounge/page.tsx` (131) | 101 files · components: crafts, hub, lounge, projects, ui · lib: auth, brief, crafts, formats, hooks, hub, island, lounge, moderation, notifications, os, push, roles, scriptos, studio, supabase, types, util, validation, webrtc | accessibility, announcements, auth-journey, brief, community-personas, community, hide-message, island-back-popovers, island-call, island, keyboard-audit, layout, lounge, mobile, page-errors, phone-keyboard, route-smoke, voice-full-room, voice-two-people |
 | `/m/[id]` (api) | open (page checks) | `app/(suite)/m/[id]/route.ts` (28) | 3 files · components: — · lib: supabase | share-pages |
-| `/` | public | `app/(suite)/page.tsx` (444) | 108 files · components: brand, community, home, landing, mobile, roles, shell, ui · lib: auth, brand, community, crafts, film, formats, guides, home, hooks, hub, island, notifications, os, pocket, push, pwa, roles, scriptos, spotify, studio, supabase, themes, today, types, util, validation | accessibility, account-deletion, board-slideshow, home-page-crash, home-routing, island, keyboard-audit, legal, page-errors, real-data, route-smoke |
+| `/` | public | `app/(suite)/page.tsx` (103) | 117 files · components: brand, community, home, landing, mobile, roles, shell, ui · lib: auth, brand, community, crafts, film, formats, guides, home, hooks, hub, island, notifications, os, pocket, portfolio, push, pwa, roles, scriptos, spotify, studio, supabase, themes, today, types, util, validation | accessibility, account-deletion, board-slideshow, home-page-crash, home-routing, island, keyboard-audit, legal, page-errors, real-data, route-smoke |
 | `/portfolio/manage` | signed in | `app/(suite)/portfolio/manage/page.tsx` (320) | 53 files · components: portfolio, ui · lib: auth, formats, os, portfolio, push, scriptos, studio, supabase, types, validation | accessibility, portfolio-page |
 | `/portfolio` | signed in | `app/(suite)/portfolio/page.tsx` (484) | 52 files · components: portfolio, ui · lib: auth, formats, island, os, portfolio, push, scriptos, studio, supabase, types, validation | accessibility, auth-journey, keyboard-audit, page-errors, portfolio-page, route-smoke |
 | `/profile` | signed in | `app/(suite)/profile/page.tsx` (370) | 51 files · components: availability, crafts, ui · lib: auth, availability, crafts, formats, hooks, os, push, scriptos, studio, supabase, types, util, validation | accessibility, auth-journey, availability, keyboard-audit, page-errors, your-data |
@@ -85,7 +85,7 @@
 ### `/p/[token]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `crafts`, `jobs`, `media`, `notifications`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`, `list_public_portfolios`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`, `list_public_portfolios`
 - **Realtime:** `project`, `projects:list`
 
 ### `/portfolios`
@@ -245,7 +245,7 @@
 ### `/crew/[id]`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `jobs`, `media`, `notifications`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `reports`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `admin_close_job`, `admin_reported_message`, `admin_set_suspended`, `get_my_account`, `get_my_portfolio_page`, `get_person_credits`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`
 - **Realtime:** `lounge-presence`, `project`, `projects:list`
 
 ### `/crew`
@@ -308,20 +308,20 @@
 
 ### `/`
 
-- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `capabilities`, `channels`, `characters`, `craft_capabilities`, `crafts`, `crew_capability_overrides`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `job_applications`, `jobs`, `media`, `messages`, `notifications`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_crew_crafts`, `project_tasks`, `projects`, `push_subscriptions`, `scene_characters`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `shoot_days`, `shots`, `timeline_items`
-- **Functions:** `edit_message`, `get_my_account`, `get_my_ui_prefs`, `get_platform_stats`, `get_recent_work`, `lounge_unread`, `mark_lounge_read`, `my_capabilities`, `my_crew_invitations`, `pin_message`, `request_capability`, `respond_to_application`, `respond_to_crew_invitation`, `search_lounge`, `set_my_ui_prefs`, `toggle_message_reaction`
+- **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `call_sheet_acks`, `call_sheet_calls`, `call_sheets`, `campaigns`, `capabilities`, `channels`, `characters`, `craft_capabilities`, `crafts`, `crew_capability_overrides`, `hub_incident_updates`, `hub_posts`, `hub_reads`, `job_applications`, `jobs`, `media`, `messages`, `notifications`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_crew_crafts`, `project_tasks`, `projects`, `push_subscriptions`, `scene_characters`, `scene_states`, `scenes`, `script_annotations`, `script_characters`, `scripts`, `shoot_days`, `shots`, `timeline_items`
+- **Functions:** `edit_message`, `get_my_account`, `get_my_portfolio_page`, `get_my_ui_prefs`, `get_platform_stats`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`, `lounge_unread`, `mark_lounge_read`, `my_capabilities`, `my_crew_invitations`, `pin_message`, `request_capability`, `respond_to_application`, `respond_to_crew_invitation`, `search_lounge`, `set_my_ui_prefs`, `toggle_message_reaction`
 - **Realtime:** `chan`, `notif`, `project`, `projects:list`
 
 ### `/portfolio/manage`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `media`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_formats`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`
 - **Realtime:** `project`, `projects:list`
 
 ### `/portfolio`
 
 - **Tables:** `audit_logs`, `budget_items`, `campaigns`, `media`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `projects`, `push_subscriptions`, `scenes`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`
 - **Realtime:** `project`, `projects:list`
 
 ### `/profile`
@@ -339,7 +339,7 @@
 ### `/projects/[id]/pitch`
 
 - **Tables:** `activity_feed`, `audit_logs`, `budget_items`, `campaigns`, `media`, `notifications`, `portfolio_blocks`, `portfolio_laurels`, `portfolio_media`, `portfolio_projects`, `profiles`, `project_beats`, `project_crew`, `project_tasks`, `projects`, `push_subscriptions`, `scenes`, `script_annotations`, `scripts`, `timeline_items`
-- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_shared_portfolio`, `my_crew_invitations`, `respond_to_crew_invitation`
+- **Functions:** `get_my_account`, `get_my_portfolio_page`, `get_portfolio_page`, `get_recent_work`, `get_shared_portfolio`, `my_crew_invitations`, `respond_to_crew_invitation`
 - **Realtime:** `project`, `projects:list`
 
 ### `/projects/[id]/world`
@@ -485,9 +485,9 @@
 | `notes` | `/editor`, `/studio` |
 | `notifications` | `/p/[token]`, `/shared/[token]`, `/auth/callback`, `/auth`, `/crew/[id]`, `/crew`, `/editor`, `/jobs/[id]`, `/jobs`, `/lounge`, `/`, `/profile`, `/projects/[id]`, `/projects/[id]/pitch`, `/settings`, `/studio`, `/welcome`, `/api/push/dispatch` |
 | `phase_gates` | **no route** (server-side, triggers or functions only) |
-| `portfolio_blocks` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
-| `portfolio_laurels` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
-| `portfolio_media` | `/p/[token]`, `/crew/[id]`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
+| `portfolio_blocks` | `/p/[token]`, `/crew/[id]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
+| `portfolio_laurels` | `/p/[token]`, `/crew/[id]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
+| `portfolio_media` | `/p/[token]`, `/crew/[id]`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]/pitch` |
 | `portfolio_projects` | `/p/[token]`, `/crew/[id]`, `/lounge`, `/`, `/portfolio/manage`, `/portfolio`, `/projects/[id]`, `/projects/[id]/pitch`, `/studio` |
 | `post_cuts` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/editor`, `/soundtrack`, `/studio` |
 | `post_items` | `/b/[token]`, `/shared/[token]`, `/call/[id]`, `/call`, `/editor`, `/soundtrack`, `/studio` |
