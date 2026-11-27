@@ -24,8 +24,8 @@ export function BottomSheet({ open, onClose, title, children, keyboard = 0, full
       <div onClick={onClose} aria-hidden style={{ position: 'absolute', inset: 0, background: 'color-mix(in srgb, var(--bg) 65%, transparent)' }} />
       <div ref={panel} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} style={{
         position: 'absolute', left: 0, right: 0, bottom: keyboard, maxHeight: keyboard ? `calc(100% - ${keyboard}px - 8px)` : full ? '96%' : '92%', minHeight: full && !keyboard ? '70%' : undefined, display: 'flex', flexDirection: 'column',
-        background: 'var(--surface)', color: 'var(--fg)', borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: '0 -20px 60px color-mix(in srgb, var(--bg) 70%, transparent)', outline: 'none',
-        paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)',
+        background: 'var(--bg-2)', color: 'var(--fg)', borderTopLeftRadius: 20, borderTopRightRadius: 20, boxShadow: '0 -20px 60px color-mix(in srgb, var(--bg) 70%, transparent)', outline: 'none',
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + var(--taskbar-height, 0px))', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', padding: '12px 8px 4px 20px', flexShrink: 0 }}>
           <h2 style={{ margin: 0, flex: 1, fontSize: 16, fontWeight: 600 }}>{title}</h2>

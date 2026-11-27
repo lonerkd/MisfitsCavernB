@@ -11,7 +11,7 @@ export function LoungeTopBar({ l }: { l: Lounge }) {
       position: 'sticky',
       top: 0,
       padding: '0 clamp(16px, 4vw, 28px)',
-      height: phone && landscape ? 44 : 62,
+      minHeight: phone && landscape ? 48 : 62,
       gap: 12,
       display: 'flex', justifyContent: 'flex-end', alignItems: 'center',
       zIndex: 100,
@@ -23,7 +23,7 @@ export function LoungeTopBar({ l }: { l: Lounge }) {
     }}>
       {/* The picker takes what room is left and cuts a long name short — the header never runs off a phone screen. */}
       <div style={{ display: 'flex', gap: 14, alignItems: 'center', minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(var(--ink-rgb), 0.03)', padding: '6px 14px', borderRadius: 20, border: '1px solid rgba(var(--ink-rgb), 0.06)', minWidth: 0, maxWidth: 'min(320px, 100%)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(var(--ink-rgb), 0.03)', padding: '0 14px', borderRadius: 20, border: '1px solid rgba(var(--ink-rgb), 0.06)', minWidth: 0, maxWidth: 'min(320px, 100%)' }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: activeProject?.accent_color || 'var(--accent)', flexShrink: 0 }} />
           <select
             aria-label="Active project"
