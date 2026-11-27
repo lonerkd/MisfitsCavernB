@@ -1,9 +1,11 @@
-// Format-shaped exports for the two formats whose readers are not screenwriters (BACKLOG 3.51 gap 2, 3.22):
+// Format-shaped exports for the formats whose readers are not screenwriters (BACKLOG 3.51 gap 2, 3.22):
 // a video script prints as a shooting script — what the viewer sees beside what is said — and publishes as a
 // package built only from the document's own words; an article prints and downloads as an article (a clean
-// Markdown file, or the print kit's HTML) a blog platform can take as it is. Pure: the same script and the
-// same day give the same files. Nothing here invents: chapter times a section does not carry are estimated
-// from its spoken words and labelled estimates, tags come from the title and the section names alone.
+// Markdown file, or the print kit's HTML) a blog platform can take as it is; a game script prints part by
+// part as the beats it is built from and hands over as a build sheet (its structure, cast, script and jumps).
+// Pure: the same script and the same day give the same files. Nothing here invents: chapter times a section
+// does not carry are estimated from its spoken words and labelled estimates, tags come from the title and
+// the section names alone, and a jump's target is the label the writer wrote, never resolved for them.
 import { parseScript } from './parser';
 import { readingFormat } from './reading-format';
 import type { StoredScript } from './storage';
@@ -230,4 +232,189 @@ export function proseMarkdown(script: StoredScript, titleOverride?: string): str
 /** The publish-ready HTML file: the article print as a complete standalone document a blog platform can take. */
 export function proseHtml(script: StoredScript, generated: string, titleOverride?: string): string {
   return printHtml(proseArticleDoc(script, generated, titleOverride));
+}
+
+// ── Game script ──────────────────────────────────────────────────────────────
+
+export interface GameBeat {
+  kind: 'narration' | 'cue' | 'logic' | 'line' | 'choice' | 'jump';
+  /** The speaker of a spoken line; a choice's speaker is the player. */
+  speaker?: string;
+  /** The beat's words: a line without its speaker tag, a choice without its marker, a jump's target;
+   *  logic and cues exactly as written (the print strips a cue's brackets; the build sheet keeps them). */
+  text: string;
+}
+
+export interface GamePart { title: string; beats: GameBeat[] }
+
+const CHOICE_MARKER = /^(?:CHOICE|OPTION|PLAYER CHOICE)\s*\d*\s*[:.\-]\s*/i;
+
+/** A spoken line split into its speaker and its words, when the line carries the tag the reader found. */
+function splitSpeaker(text: string, speaker?: string): { speaker?: string; text: string } {
+  if (!speaker) return { text };
+  const m = text.match(/^([A-Za-z][A-Za-z0-9 .'-]{1,30}):\s*(.+)$/s);
+  return m && m[1].trim().toUpperCase() === speaker ? { speaker, text: m[2].trim() } : { speaker, text };
+}
+
+/** The game script read as its parts: each part's beats in the order written — narration, cues, logic, lines, choices, jumps. */
+export function gameParts(script: StoredScript): GamePart[] {
+  const lines = parseScript(script.content, readingFormat(script.format)).lines;
+  const parts: GamePart[] = [];
+  let current: GamePart | null = null;
+  const open = (title: string): GamePart => {
+    current = { title, beats: [] };
+    parts.push(current);
+    return current;
+  };
+  for (const line of lines) {
+    const t = line.text.trim();
+    if (!t || line.type === 'empty') continue;
+    if (line.type === 'slug') { open(t); continue; }
+    const part = current ?? open('Opening');
+    if (line.type === 'transition') {
+      // A jump: `-> label` sends the story to the node the writer named; the target is kept as written.
+      part.beats.push({ kind: 'jump', text: t.replace(/^->\s*/, '') });
+    } else if (line.type === 'parenthetical') {
+      // Logic ([IF flag], [SET flag = …]) is the game's own notation: kept exactly as written everywhere.
+      part.beats.push({ kind: 'logic', text: t });
+    } else if (line.type === 'shot') {
+      part.beats.push({ kind: 'cue', text: t });
+    } else if (line.type === 'dialogue') {
+      const name = typeof line.meta?.characterName === 'string' ? line.meta.characterName : undefined;
+      if (name === 'PLAYER') {
+        part.beats.push({ kind: 'choice', speaker: 'PLAYER', text: t.replace(CHOICE_MARKER, '').replace(/^[*+]\s+/, '') });
+      } else {
+        const split = splitSpeaker(t, name);
+        part.beats.push({ kind: 'line', speaker: split.speaker, text: split.text });
+      }
+    } else {
+      part.beats.push({ kind: 'narration', text: t });
+    }
+  }
+  return parts;
+}
+
+const BEAT_LABEL: Record<GameBeat['kind'], string> = {
+  narration: 'Narration', cue: 'Cue', logic: 'Logic', line: 'Line', choice: 'Choice', jump: 'Jump',
+};
+
+/**
+ * The game print: one table per part — every beat in the order written, its kind, its speaker, its words,
+ * so the branching reads as a game document and not a screenplay page — then a branch map of the jumps.
+ * A cue's brackets are stripped here (the Beat column already says what it is); the logic keeps its own.
+ */
+export function gameScriptDoc(script: StoredScript, generated: string, titleOverride?: string): PrintDoc {
+  const parts = gameParts(script);
+  const count = (kind: GameBeat['kind']): number => parts.reduce((n, p) => n + p.beats.filter((b) => b.kind === kind).length, 0);
+  const blocks: PrintBlock[] = parts.map((p) => ({
+    type: 'table',
+    title: p.title,
+    columns: [
+      { key: 'beat', label: 'Beat', width: '14%' },
+      { key: 'speaker', label: 'Speaker', width: '18%' },
+      { key: 'text', label: 'Text' },
+    ],
+    rows: p.beats.map((b) => ({
+      beat: BEAT_LABEL[b.kind],
+      speaker: b.kind === 'choice' ? 'PLAYER' : (b.speaker ?? ''),
+      text: b.kind === 'jump' ? `-> ${b.text}` : b.kind === 'cue' ? b.text.replace(/^\[/, '').replace(/\]$/, '') : b.text,
+    })),
+    empty: 'Nothing written in this part yet.',
+  }));
+  const jumps = parts.flatMap((p) => p.beats.filter((b) => b.kind === 'jump').map((b) => ({ from: p.title, to: b.text })));
+  if (jumps.length) {
+    blocks.push({
+      type: 'table',
+      title: 'Where the jumps go',
+      columns: [
+        { key: 'from', label: 'From' },
+        { key: 'to', label: 'Goes to' },
+      ],
+      rows: jumps,
+    });
+  }
+  if (!parts.length) blocks.push({ type: 'note', text: 'Nothing written yet.' });
+  return {
+    title: titleOverride || script.title || 'Untitled',
+    kind: 'Game script',
+    meta: [['Parts', parts.length], ['Dialogue lines', count('line')], ['Player choices', count('choice')], ['Jumps', count('jump')]],
+    blocks,
+    footer: script.title,
+    generated,
+  };
+}
+
+const counted = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * The build sheet for a game script, as one Markdown file the writer hands to whoever builds the game:
+ * the structure (each part with its lines, choices and jumps counted), the cast with their line counts,
+ * the script itself part by part — lines with their speakers, the player's choices grouped, logic and
+ * cues exactly as written — and every jump with the part it leaves from and its target. Nothing is
+ * invented: a jump's target is the label the writer wrote, never resolved to a part it might not name.
+ */
+export function gameBuildSheet(script: StoredScript, generated: string): string {
+  const parts = gameParts(script);
+  const title = script.title || 'Untitled';
+  const out: string[] = [`# Build sheet — ${title}`, '', `Made from the script as written, ${generated}. Everything below is the document's own words and structure.`];
+  if (!parts.length) {
+    out.push('', 'Nothing written yet.', '');
+    return out.join('\n');
+  }
+  const inPart = (p: GamePart, kind: GameBeat['kind']): number => p.beats.filter((b) => b.kind === kind).length;
+
+  out.push('', '## Structure', '');
+  for (const p of parts) {
+    out.push(`- ${p.title} — ${counted(inPart(p, 'line'), 'line', 'lines')}, ${counted(inPart(p, 'choice'), 'choice', 'choices')}, ${counted(inPart(p, 'jump'), 'jump', 'jumps')}`);
+  }
+
+  const cast = new Map<string, { lines: number; choices: number }>();
+  for (const p of parts) {
+    for (const b of p.beats) {
+      if (b.kind === 'line' && b.speaker) {
+        const c = cast.get(b.speaker) ?? { lines: 0, choices: 0 };
+        c.lines += 1;
+        cast.set(b.speaker, c);
+      }
+      if (b.kind === 'choice') {
+        const c = cast.get('PLAYER') ?? { lines: 0, choices: 0 };
+        c.choices += 1;
+        cast.set('PLAYER', c);
+      }
+    }
+  }
+  if (cast.size) {
+    out.push('', '## Cast', '');
+    for (const [name, c] of cast) {
+      out.push(name === 'PLAYER' ? `- PLAYER — ${counted(c.choices, 'choice', 'choices')}` : `- ${name} — ${counted(c.lines, 'line', 'lines')}`);
+    }
+  }
+
+  out.push('', '## The script');
+  for (const p of parts) {
+    out.push('', `### ${p.title}`);
+    let choosing = false;
+    for (const b of p.beats) {
+      if (b.kind === 'choice') {
+        if (!choosing) {
+          out.push('', 'Player chooses:');
+          choosing = true;
+        }
+        out.push(`- ${b.text}`);
+        continue;
+      }
+      choosing = false;
+      if (b.kind === 'line') out.push('', b.speaker ? `${b.speaker}: ${b.text}` : b.text);
+      else if (b.kind === 'jump') out.push('', `-> ${b.text}`);
+      else out.push('', b.text);
+    }
+  }
+
+  const jumps = parts.flatMap((p) => p.beats.filter((b) => b.kind === 'jump').map((b) => ({ from: p.title, to: b.text })));
+  if (jumps.length) {
+    out.push('', '## Jumps', '');
+    for (const j of jumps) out.push(`- ${j.from} -> ${j.to}`);
+  }
+  out.push('');
+  return out.join('\n');
 }
