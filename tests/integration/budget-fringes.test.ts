@@ -158,7 +158,11 @@ describe('a fringe is attributed to the person adding it (20261127000200)', () =
     expect(forged.error).not.toBeNull();
     const own = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Own', percent: 5, created_by: cast.jordan.id });
     expect(own.error).toBeNull();
-    const none = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Unsigned', percent: 5 });
+    const none = await cast.jordan.client.from('budget_fringes').insert({ project_id: projectId, name: 'Unsigned', percent: 5 }).select('id').single();
     expect(none.error).toBeNull();
+    // An update cannot hand the authorship to someone else either.
+    await cast.jordan.client.from('budget_fringes').update({ created_by: cast.sam.id }).eq('id', none.data!.id);
+    const after = await cast.sam.client.from('budget_fringes').select('created_by').eq('id', none.data!.id).single();
+    expect(after.data?.created_by).not.toBe(cast.sam.id);
   });
 });

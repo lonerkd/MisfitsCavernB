@@ -204,8 +204,10 @@ describe('mergeScriptTexts', () => {
     expect(mergeScriptTexts('A B', once, 'A X B')).toBe(once);
   });
 
-  it('does not write a column insertion twice when this side\'s insertion at that spot already contains it', () => {
-    expect(mergeScriptTexts('A B', 'A X Y B', 'A X B')).toBe('A X Y B');
+  it('keeps a different short insertion at the same spot even when it is a substring of this side\'s (no silent loss)', () => {
+    const merged = mergeScriptTexts('A B', 'A INT. ROOF B', 'A I B');
+    expect(merged).toContain('INT. ROOF');
+    expect(merged.split('I').length - 1).toBeGreaterThanOrEqual(2); // the column's own "I" is still there too
   });
 
   it('still folds in a different insertion at the same spot', () => {

@@ -87,3 +87,9 @@ DROP POLICY "budget fringes add" ON public.budget_fringes;
 CREATE POLICY "budget fringes add" ON public.budget_fringes FOR INSERT TO authenticated
   WITH CHECK (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write')
               AND (created_by IS NULL OR created_by = (select auth.uid())));
+-- ...and an update cannot move the authorship onto someone else either (insert with none, then set another person).
+DROP POLICY "budget fringes change" ON public.budget_fringes;
+CREATE POLICY "budget fringes change" ON public.budget_fringes FOR UPDATE TO authenticated
+  USING (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write'))
+  WITH CHECK (internal.can_shape_project(project_id) AND internal.has_capability(project_id, 'budget.write')
+              AND (created_by IS NULL OR created_by = (select auth.uid())));

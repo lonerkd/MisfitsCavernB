@@ -283,9 +283,10 @@ export function mergeScriptTexts(base: string, ours: string, theirs: string): st
     ...ourHunks.map((hunk) => ({ ...hunk, ours: true })),
     ...textHunks(base, theirs)
       .filter((hunk) => !ourHunks.some((our) => clashes(hunk, our)))
-      // Words the column added at a spot where this side already holds them (an earlier reconcile merged them in, or both
-      // typed the same beat) are not written a second time: an insertion at the same place whose text this side's insertion contains.
-      .filter((hunk) => !ourHunks.some((our) => our.start === hunk.start && our.end === hunk.end && hunk.replacement !== '' && our.replacement.includes(hunk.replacement)))
+      // Words the column added at a spot where this side already holds exactly the same words (an earlier reconcile merged them in,
+      // or both typed the same beat) are not written a second time. Exact equality only: a different edit that happens to be a
+      // substring of ours (the column's "I" against our "INT. ROOF") is someone else's work and stays.
+      .filter((hunk) => !ourHunks.some((our) => our.start === hunk.start && our.end === hunk.end && hunk.replacement !== '' && our.replacement === hunk.replacement))
       .map((hunk) => ({ ...hunk, ours: false })),
   ];
   // In base order; at one spot, words only added come before a stretch being rewritten, and this

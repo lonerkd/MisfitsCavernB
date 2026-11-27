@@ -110,6 +110,7 @@ Eight read-only reviewers read every code merge since 1 November (docs excluded)
 - **Held-push worker runs about 96 invocations a night for a person in quiet hours** (`20261123000100`, `lib/push/dispatch.ts`): store a `release_after` and select only due rows (RULES 9, M).
 - **`lib/scriptos/array-diff.ts` copies the whole frontier per Myers step** (about 50 MB transient on a whole-draft rewrite): store the window only, or lower `MAX_EDITS`.
 - **`format-export.ts` `proseArticleDoc` drops any later paragraph that repeats the lead's text**: remove only the lead's own block.
+- **Scene gutter cost line can overflow 48 px** (`components/editor/SceneGutter.tsx`): a scene costing $1,000,000 or more is wider than the box and runs into the script column; abbreviate (`$1.2M`) and test `gutterLabel`.
 - **Look in a browser:** the Capture button beside the dock handle (35db44a); the Rainbow theme's cost on a phone (`--mc-hue` animates on the root element) and its contrast, which nobody has measured.
 - **Owner:** the CourtListener value in `.perch/mcp.json` is still in public git history (Perch's own token, RULES 6 forbids rewriting history): confirm it was reported for rotation.
 
