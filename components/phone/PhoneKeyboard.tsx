@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
-import { usePhoneLayout } from '@/lib/os/usePhone';
+import { useEffect, useState } from 'react';
+import { barAside, usePhoneLayout, type BarAside } from '@/lib/os/usePhone';
 
 /** Is this a thing you type into? */
 export const isTypable = (el: Element | null): boolean => {
@@ -44,14 +44,29 @@ export function scrollToReveal(field: { top: number; bottom: number }, visible: 
 export function PhoneKeyboard() {
   const phone = usePhoneLayout();
 
+  // Step-aside is led by focus, not by the measured keyboard (barAside): the covered height only exists once
+  // the keyboard has risen, and waiting for it dragged the bottom bar up with the rise before it dropped
+  // behind the keyboard — the drag-then-fall the owner filmed (Nov 26, 2026). The measurement still confirms
+  // and releases through the same machine.
+  const [aside, setAside] = useState<BarAside>('off');
+  useEffect(() => {
+    if (!phone.phone) return;
+    const read = () => setAside((prev) => barAside(prev, phone.keyboard, isTypable(document.activeElement)));
+    read();
+    document.addEventListener('focusin', read);
+    document.addEventListener('focusout', read);
+    return () => { document.removeEventListener('focusin', read); document.removeEventListener('focusout', read); };
+  }, [phone.phone, phone.keyboard]);
+
   useEffect(() => {
     const root = document.documentElement;
-    if (phone.typing) root.setAttribute('data-typing', 'true'); else root.removeAttribute('data-typing');
-    root.style.setProperty('--kb', phone.typing ? `${phone.keyboard}px` : '0px');
+    const typing = aside !== 'off';
+    if (typing) root.setAttribute('data-typing', 'true'); else root.removeAttribute('data-typing');
+    root.style.setProperty('--kb', typing ? `${phone.keyboard}px` : '0px');
     if (phone.phone) root.style.setProperty('--vvh', `${phone.height + phone.offset}px`);
     else root.style.removeProperty('--vvh');
     return () => { root.removeAttribute('data-typing'); root.style.removeProperty('--kb'); root.style.removeProperty('--vvh'); };
-  }, [phone.typing, phone.keyboard, phone.phone, phone.height, phone.offset]);
+  }, [aside, phone.keyboard, phone.phone, phone.height, phone.offset]);
 
   useEffect(() => {
     if (!phone.phone) return;
