@@ -202,6 +202,13 @@
 .dock[data-compact='true'] .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dock[data-compact='true'] .activity { min-width: 0; }
 .dock[data-compact='true'] .activityTitle, .dock[data-compact='true'] .activityDetail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+/* Collapsed, the compact island is ONE row — the pill it replaced was one row. The face and its inline
+   controls never wrap: the name truncates, the fields shrink, and Capture stays at the end of the row
+   instead of dropping to a centred second row over the page (the owner's editor shot, 2026-11-26, where
+   the + sat alone under "Winter Quarters — final · Scene 4/4" and the panel ate two rows of script).
+   Open (the deck up) is exempt: stacking is its shape. */
+.dock[data-compact='true']:not([data-island='open']) .main { flex-wrap: nowrap; }
+.dock[data-compact='true']:not([data-island='open']) .inline { flex-wrap: nowrap; overflow: hidden; }
 @media (max-width: 1000px) {
   .activity { min-width: 0; }
   .activityTitle, .activityDetail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
