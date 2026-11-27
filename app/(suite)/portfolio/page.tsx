@@ -17,6 +17,7 @@ import { ProtectedPage } from '@/lib/os';
 import { usePillStage } from '@/lib/os/PillContext';
 import { awaitOSUser } from '@/lib/os';
 import { videoEmbed } from '@/lib/studio/media-kind';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
 interface Video {
   id: string;
@@ -94,6 +95,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
         {video.category}
       </div>
 
+      {video.embedSrc && (
       <motion.div
         animate={{ scale: hover ? 1.1 : 1, opacity: hover ? 1 : 0.6 }}
         transition={{ duration: 0.3 }}
@@ -116,6 +118,7 @@ function VideoCard({ video, onClick, span }: { video: Video; onClick: (v: Video)
       >
         <Play size={16} fill={hover ? '#e8431a' : '#fff'} color={hover ? 'var(--accent)' : '#fff'} style={{ marginLeft: 2 }} />
       </motion.div>
+      )}
 
       <motion.div
         animate={{ y: hover ? 0 : 4 }}
@@ -265,6 +268,7 @@ export default function PortfolioPage() {
   const searchParams = useSearchParams();
   const [view, setView] = useState<'showcase' | 'distribution'>(searchParams.get('tab') === 'distribution' ? 'distribution' : 'showcase');
   const [festivals, setFestivals] = useState<FestivalEntry[]>([]);
+  const phone = usePhoneLayout().phone;
   const [campaigns, setCampaigns] = useState<CampaignEntry[]>([]);
 
   useEffect(() => {
@@ -458,12 +462,12 @@ export default function PortfolioPage() {
         ) : (
           <>
             <AnimatedSection>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4, marginBottom: 4 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: phone ? '1fr' : '1fr 1fr', gap: 4, marginBottom: 4 }}>
                 {lead.map(v => <VideoCard key={v.id} video={v} onClick={setActiveVideo} />)}
               </div>
             </AnimatedSection>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 4 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: phone ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: 4 }}>
               {rest.map((v, i) => (
                 <AnimatedSection key={v.id} delay={i * 0.08}>
                   <VideoCard video={v} onClick={setActiveVideo} />
