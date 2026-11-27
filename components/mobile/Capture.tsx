@@ -177,8 +177,33 @@ export function fromShare(q: URLSearchParams): CaptureStart | null {
 }
 
 export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: CaptureStart | null }) {
+  const [closing, setClosing] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<number | undefined>(undefined);
+
+  // Every way out goes through here: the sheet slides down into the island it came from, then the
+  // host unmounts it. It used to unmount on the spot — only a drag-close moved, because the finger
+  // carried it down before it vanished, while the X, the scrim and Escape cut instantly (the owner
+  // noticed, Nov 26, 2026). Now the slide is the close, on every path.
+  const requestClose = () => {
+    if (closing) return;
+    setClosing(true);
+    const sheet = sheetRef.current;
+    if (sheet) {
+      sheet.style.transition = 'transform 0.24s cubic-bezier(0.32, 0.72, 0.35, 1)';
+      sheet.style.transform = 'translateY(105%)';
+      sheet.style.pointerEvents = 'none';
+    }
+    const scrim = scrimRef.current;
+    if (scrim) { scrim.style.transition = 'opacity 0.24s ease'; scrim.style.opacity = '0'; }
+    const reduce = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    closeTimer.current = window.setTimeout(onClose, reduce ? 0 : 240);
+  };
+
   // On the overlay stack while open: the bars' back chevron closes Capture before it navigates anywhere.
-  useOverlayLayer(true, onClose);
+  useOverlayLayer(true, requestClose);
   const router = useRouter();
   const { toast } = useToast();
   const { userId } = useSession();
@@ -195,21 +220,24 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
   const photo = useRef<HTMLInputElement>(null), clip = useRef<HTMLInputElement>(null), files = useRef<HTMLInputElement>(null);
   const project = projects.find((p) => p.id === projectId) ?? null;
 
+  useEffect(() => () => { if (closeTimer.current) window.clearTimeout(closeTimer.current); }, []);
+
   useEffect(() => {
     closeRef.current?.focus();
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') requestClose(); };
     window.addEventListener('keydown', esc);
     const unlock = lockScroll();
     return () => { window.removeEventListener('keydown', esc); unlock(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   // Swipe down on the handle or the title to put it away — the same drag the More sheet has, from the first
   // pixel of movement (a sheet that will not move feels stuck; the owner said so, Nov 26). Pointer events, so
   // a finger and a mouse behave the same; a press on a button inside (Close) is left to the button.
-  const sheetRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; t: number } | null>(null);
   const pull = (e: React.PointerEvent) => Math.max(0, e.clientY - (drag.current?.y ?? e.clientY));
   const onDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (closing) return;
     if ((e.target as HTMLElement).closest('button')) return;
     drag.current = { y: e.clientY, t: e.timeStamp };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -222,7 +250,7 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
     const d = drag.current;
     drag.current = null;
     if (!d || !sheetRef.current) return;
-    if (shouldDismiss(Math.max(0, e.clientY - d.y), e.timeStamp - d.t)) { onClose(); return; }
+    if (shouldDismiss(Math.max(0, e.clientY - d.y), e.timeStamp - d.t)) { requestClose(); return; }
     sheetRef.current.style.transition = 'transform 0.2s ease';
     sheetRef.current.style.transform = '';
   };
@@ -252,13 +280,13 @@ export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: 
 
   return createPortal(
     <>
-      <div className={m.scrim} onClick={onClose} aria-hidden />
+      <div ref={scrimRef} className={m.scrim} onClick={requestClose} aria-hidden />
       <div ref={sheetRef} className={m.sheet} role="dialog" aria-modal="true" aria-labelledby="mc-capture-title">
         <div className={m.dragZone} onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} data-testid="sheet-drag">
           <div className={m.grip} aria-hidden />
           <div className={m.sheetHead}>
             <h2 id="mc-capture-title" className={m.sheetTitle}>Capture</h2>
-            <button ref={closeRef} type="button" className={m.close} onClick={onClose} aria-label="Close"><X size={18} aria-hidden /></button>
+            <button ref={closeRef} type="button" className={m.close} onClick={requestClose} aria-label="Close"><X size={18} aria-hidden /></button>
           </div>
         </div>
 
