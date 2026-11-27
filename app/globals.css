@@ -276,6 +276,13 @@ body.custom-cursor-active * {
   .mc-jobs-filter > button { width: auto !important; flex-shrink: 0; white-space: nowrap; gap: 8px; min-height: 40px; margin: 0 !important; }
 }
 
+/* A tap-out scrim behind the Lounge's side panels (search, pinned, thread): phones only — on a desk the
+   panels sit beside the conversation with their own close buttons and no scrim. */
+.mc-lounge-backdrop { display: none; }
+@media (max-width: 820px), (pointer: coarse) and (max-height: 500px) {
+  .mc-lounge-backdrop { display: block; position: fixed; inset: 0; z-index: 199; background: rgba(0,0,0,0.35); }
+}
+
 /* Lounge on a phone: one pane at a time — the list (channels, then people)
    or the conversation, full width, the composer above the tab bar. A phone held sideways (wider than 760 px, under 500 px tall) gets
    the same panes: the three desk columns left it a message column about 300 px wide and 150 px tall. */

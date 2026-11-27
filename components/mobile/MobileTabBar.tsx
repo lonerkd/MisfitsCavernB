@@ -29,7 +29,8 @@ import m from './mobile.module.css';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
-import { keyboardUp, usePhoneLayout } from '@/lib/os/usePhone';
+import { barAside, usePhoneLayout, type BarAside } from '@/lib/os/usePhone';
+import { closeTopOverlay } from '@/lib/os/overlayStack';
 import { shouldDismiss } from './sheetDrag';
 import { lockScroll } from '@/lib/ui/scrollLock';
 
@@ -179,23 +180,25 @@ function MoreSheet({ onClose, unread }: { onClose: () => void; unread: number })
 export default function MobileTabBar() {
   const pathname = usePathname();
   const { status } = useSession();
-  // The same word as every other part of the phone layout (PhoneKeyboard measures the real keyboard through visualViewport), not a
-  // second guess from which element has focus.
-  // It steps aside only for a field that has focus plus a keyboard-sized gap, with hysteresis (keyboardUp), so scrolling
-  // (the browser chrome resizing the visible area) cannot flip it half-way.
+  // The pill steps aside for the keyboard, led by focus (barAside): the moment a field takes focus the pill is
+  // already going, instead of riding the keyboard's rise up the screen and dropping behind it once the covered
+  // height passed a threshold — the drag-then-fall the owner filmed (Nov 26, 2026). PhoneKeyboard runs the same
+  // machine for the island and the rooms; the measured height still confirms and releases, so browser chrome
+  // resizing while the page scrolls can never flip it half-way.
   const covered = usePhoneLayout().keyboard;
-  const [keyboard, setKeyboard] = useState(false);
+  const [aside, setAside] = useState<BarAside>('off');
   useEffect(() => {
     const read = () => {
       const a = document.activeElement as HTMLElement | null;
       const editable = !!a && (a.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName));
-      setKeyboard((prev) => keyboardUp(prev, covered, editable));
+      setAside((prev) => barAside(prev, covered, editable));
     };
     read();
     document.addEventListener('focusin', read);
     document.addEventListener('focusout', read);
     return () => { document.removeEventListener('focusin', read); document.removeEventListener('focusout', read); };
   }, [covered]);
+  const keyboard = aside !== 'off';
   const [more, setMore] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const [start, setStart] = useState<CaptureStart | null>(null);
@@ -249,7 +252,7 @@ export default function MobileTabBar() {
       <nav className={`${m.pill} ${keyboard ? m.hidden : ''}`} aria-label="Suite" data-mobile-tabbar data-keyboard={keyboard ? 'up' : 'down'}
         aria-hidden={keyboard || undefined} inert={keyboard}>
         {route.back && (
-          <Link href={route.back.href} className={m.pillBack} aria-label={`Back to ${route.back.label}`}><ChevronLeft size={20} aria-hidden /></Link>
+          <Link href={route.back.href} className={m.pillBack} aria-label={`Back to ${route.back.label}`} onClick={(e) => { if (closeTopOverlay()) e.preventDefault(); }}><ChevronLeft size={20} aria-hidden /></Link>
         )}
         <button type="button" className={m.pillMain} aria-expanded={more} aria-haspopup="dialog" onClick={() => setMore(true)}
           aria-label={`Menu. ${[activeProject?.title, place, condition.label].filter(Boolean).join(' ')}${unread ? `, ${unread} unread` : ''}`}>
