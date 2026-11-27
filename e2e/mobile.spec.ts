@@ -4,9 +4,10 @@ import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support
 import type { Page } from '@playwright/test';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-// The suite on a phone, in a real browser against a local stack: the tab bar
-// replaces the dock, no page scrolls sideways, More reaches every tool and the
-// active project, Today shows the day on set and lets you tick off your tasks,
+// The suite on a phone, in a real browser against a local stack: the island
+// (the compact dock) is the phone's surface, no page scrolls sideways, its
+// deck reaches every tool and the project to work on, Today shows the day on
+// set and lets you tick off your tasks,
 // and the Lounge is list → conversation → back, reachable by link.
 // Opt-in: E2E_LOCAL_STACK=1.
 const PASSWORD = randomUUID();
@@ -63,7 +64,7 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await admin.from('projects').delete().eq('id', projectId);
   });
 
-  test('tab bar, Today, More, and nothing scrolls sideways', async ({ browser }) => {
+  test('the island, Today, and nothing scrolls sideways', async ({ browser }) => {
     test.setTimeout(180_000);
     const ctx = await browser.newContext(PHONE);
     const page = await ctx.newPage();
@@ -71,9 +72,9 @@ test.describe('The suite on a phone (local Supabase)', () => {
 
     // Today: the day on set with the way there, and the task — ticked off here.
     await page.goto('/community');
-    const tabs = page.locator('[data-mobile-tabbar]');
-    await expect(tabs).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('nav.mc-dock')).toBeHidden();
+    const dock = page.locator('nav.mc-dock');
+    await expect(dock).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-mobile-tabbar]')).toBeHidden();
     const day = page.getByRole('article', { name: new RegExp(`Tidewater ${TAG}, day 2, Today`) });
     await expect(day).toContainText('7:30', { timeout: 20_000 });
     await expect(day.getByRole('link', { name: /12 Harbour Rd/ })).toHaveAttribute('href', /maps\.google\.com/);
@@ -82,14 +83,15 @@ test.describe('The suite on a phone (local Supabase)', () => {
     const violations = await axeViolations(page);
     expect(violations, violations.join('\n')).toEqual([]);
 
-    // The menu: the places, every tool, and the project to work on.
-    await tabs.getByRole('button', { name: /^Menu/ }).click();
-    const sheet = page.getByRole('dialog', { name: 'Everything' });
-    await expect(sheet.getByRole('link', { name: 'Studio' })).toBeVisible();
-    await expect(sheet.getByRole('navigation', { name: 'Places' }).getByRole('link', { name: 'Lounge' })).toBeVisible();
-    await expect(sheet.getByRole('radio', { name: new RegExp(`Tidewater ${TAG}`) })).toBeVisible();
-    await sheet.getByRole('button', { name: 'Close' }).click();
-    await expect(sheet).toBeHidden();
+    // The deck: tap the island open — the suite, and the project to work on.
+    await dock.getByRole('button', { name: /^Open the island/ }).click();
+    await expect(dock.getByRole('link', { name: 'Studio' })).toBeVisible();
+    await expect(dock.getByRole('link', { name: 'Lounge' })).toBeVisible();
+    await dock.getByRole('button', { name: 'Switch project' }).click();
+    await expect(dock.getByRole('option', { name: new RegExp(`Tidewater ${TAG}`) })).toBeVisible();
+    await dock.getByRole('option', { name: new RegExp(`Tidewater ${TAG}`) }).click();
+    await dock.getByRole('button', { name: 'Close the island' }).click();
+    await expect(dock.getByRole('link', { name: 'Studio' })).toBeHidden();
 
     // A long project name is what pushed the Lounge header off the screen and
     // wrapped the editor's status bar onto three lines: check with one.
@@ -151,9 +153,9 @@ test.describe('The suite on a phone (local Supabase)', () => {
     await offer.getByRole('button', { name: /project page/ }).click();
     await page.waitForURL(`**/projects/${projectId}`);
 
-    // Capture a note into the project, from the tab bar.
+    // Capture a note into the project, from the island.
     await page.goto('/community');
-    await page.locator('[data-mobile-tabbar]').getByRole('button', { name: /Capture/ }).click();
+    await page.locator('nav.mc-dock').getByRole('button', { name: /Capture/ }).click();
     const sheet = page.getByRole('dialog', { name: 'Capture' });
     await sheet.getByLabel('Project to capture into').selectOption(projectId);
     await sheet.getByRole('button', { name: 'Note' }).click();
