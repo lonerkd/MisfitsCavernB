@@ -177,8 +177,37 @@
 .slot[data-tip]:hover::after, .slot[data-tip]:focus-within::after { opacity: 1; transform: translate(-50%, 0); }
 .slot[data-open='true']::after { display: none; }
 
-/* Phones (and any touch device) get the tab bar's pill; a narrow window with a mouse keeps the dock when island_v2 is on. */
+/* With island_v2 on, the island is the phone's surface too (owner, 2026-11-26);
+   the tab bar's pill remains only where the flag is off. */
 @media (max-width: 760px) { .dock:not([data-compact='true']) { display: none; } }
+
+/* Capture beside the island on a phone: the pill's round button, same dress. */
+.captureBtn {
+  position: relative; flex: none; width: 48px; height: 48px; margin-left: 6px; border: 0; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; background: var(--fg); color: var(--bg); -webkit-tap-highlight-color: transparent;
+}
+.captureBtn:active { transform: scale(0.95); }
+.captureBtn:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.captureWaiting { position: absolute; top: -4px; right: -4px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; background: var(--limit); color: var(--on-accent); font: 800 var(--text-xs)/20px var(--ui); text-align: center; border: 2px solid var(--bg); }
+
+/* The compact dock fits a phone in both orientations: desk furniture (key
+   badges, the Caps hints row) goes away, the deck wraps instead of clipping,
+   and long names truncate before anything can run off the edge — the failure
+   in the owner's landscape shot of 2026-11-26, where the bell, the profile
+   and Sign Out slid past the bar's end. */
+.dock[data-compact='true'] .hints { display: none; }
+.dock[data-compact='true'] .key { display: none; }
+.dock[data-compact='true'] .nav { flex-wrap: wrap; }
+.dock[data-compact='true'] .handle { min-width: 0; }
+.dock[data-compact='true'] .title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dock[data-compact='true'] .activity { min-width: 0; }
+.dock[data-compact='true'] .activityTitle, .dock[data-compact='true'] .activityDetail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+@media (max-width: 1000px) {
+  .activity { min-width: 0; }
+  .activityTitle, .activityDetail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .field { min-width: 0; max-width: 34vw; }
+  .field > * { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
 
 .condition { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(var(--ink-rgb), 0.08); color: var(--fg); white-space: nowrap; }
 .condition[data-kind='offline'] { background: var(--limit, #b3261e); color: var(--on-accent); }

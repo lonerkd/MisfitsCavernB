@@ -9,8 +9,8 @@ describe('islandSurface', () => {
     expect(islandSurface({ v2: true, narrow: true, finePointer: true })).toBe('compact-dock');
     expect(islandSurface({ v2: false, narrow: true, finePointer: true })).toBe('pill');
   });
-  it('a narrow touch device keeps the pill whatever the flag says', () => {
-    expect(islandSurface({ v2: true, narrow: true, finePointer: false })).toBe('pill');
+  it('a narrow touch device gets the compact dock when island_v2 is on, and keeps the pill when it is off', () => {
+    expect(islandSurface({ v2: true, narrow: true, finePointer: false })).toBe('compact-dock');
     expect(islandSurface({ v2: false, narrow: true, finePointer: false })).toBe('pill');
   });
 });
