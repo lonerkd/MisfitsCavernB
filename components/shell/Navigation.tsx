@@ -156,7 +156,7 @@ export default function Navigation() {
             })}
           </div>
 
-          {!isLoading && !isGuest && <NotificationBell />}
+          {!isLoading && !isGuest && <NotificationBell placement="down" />}
 
           {isLoading ? null : !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>
