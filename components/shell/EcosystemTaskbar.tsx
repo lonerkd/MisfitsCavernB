@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
 import { useProject, useSession } from '@/lib/os';
+import { closeTopOverlay } from '@/lib/os/overlayStack';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { useTransientContext } from '@/lib/island/transientContext';
@@ -678,6 +679,8 @@ export default function EcosystemTaskbar() {
                 className={s.btn}
                 aria-label={`Back to ${backPlan.kind === 'history' ? islandRoute(backPlan.path).title : route.back.label}`}
                 onClick={(e) => {
+                  // A layer over the page (the Lounge's search, Capture) is where he just was: back closes it first.
+                  if (closeTopOverlay()) { e.preventDefault(); return; }
                   // Back is where you just were; the parent link is only for when there is no earlier page in the app.
                   if (backPlan.kind !== 'history' || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                   e.preventDefault();

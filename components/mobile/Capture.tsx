@@ -7,6 +7,7 @@
 // and goes up by itself when the connection is back.
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useOverlayLayer } from '@/lib/os/overlayStack';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { Camera, Video, Mic, StickyNote, Link2, Upload, X, Square, CloudOff, RotateCw, Trash2, Check } from 'lucide-react';
@@ -175,6 +176,8 @@ export function fromShare(q: URLSearchParams): CaptureStart | null {
 }
 
 export function CaptureSheet({ onClose, start }: { onClose: () => void; start?: CaptureStart | null }) {
+  // On the overlay stack while open: the bars' back chevron closes Capture before it navigates anywhere.
+  useOverlayLayer(true, onClose);
   const router = useRouter();
   const { toast } = useToast();
   const { userId } = useSession();
