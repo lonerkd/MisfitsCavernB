@@ -2,8 +2,13 @@
 
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { gutterLabel, type GutterItem } from '@/lib/film/gutter';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 
-/** Narrower than this the script has no left margin to spare; the scene card carries it instead. */
+/** Narrower than this the script has no left margin to spare; the scene card carries it instead.
+ *  A phone never has the margin, at any width: a landscape phone's layer passes this gate while its
+ *  text inset is still a phone inset, and the labels landed on the script (owner's shots, Nov 26, 2026).
+ *  On a phone the write view trades the margin read for a clean page — shoot days live in the Studio's
+ *  scenes and breakdown, where they are canonical. */
 const MIN_WIDTH = 720;
 
 /**
@@ -21,6 +26,7 @@ export function SceneGutter({ items, highlightRef, textareaRef, content }: {
   const [tops, setTops] = useState<Map<number, number>>(new Map());
   const [scroll, setScroll] = useState(0);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const phone = usePhoneLayout().phone;
 
   const measure = useCallback(() => {
     const layer = highlightRef.current;
@@ -47,7 +53,7 @@ export function SceneGutter({ items, highlightRef, textareaRef, content }: {
     return () => { ta.removeEventListener('scroll', onScroll); ro.disconnect(); };
   }, [textareaRef, highlightRef, measure]);
 
-  if (!items.length || (size.width && size.width < MIN_WIDTH)) return null;
+  if (!items.length || phone || (size.width && size.width < MIN_WIDTH)) return null;
   return (
     <div aria-label="Story time, shoot day and cost by scene" role="group" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 5 }}>
       {items.map((it) => {
