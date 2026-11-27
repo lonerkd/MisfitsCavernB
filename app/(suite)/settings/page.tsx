@@ -21,6 +21,7 @@ import { CalendarFeed } from '@/components/settings/CalendarFeed';
 import { PUSH_HINT, usePushSetting } from '@/components/settings/usePushSetting';
 import { ISLAND_STATE_LABELS, readIslandPrefs, writeIslandPrefs } from '@/lib/island/prefs';
 import { ISLAND_SCALE_MAX, ISLAND_SCALE_MIN, ISLAND_SCALE_STEP, readIslandScale, writeIslandScale } from '@/lib/island/scale';
+import { GRAIN_AMOUNT_MAX, GRAIN_AMOUNT_MIN, GRAIN_AMOUNT_STEP, GRAIN_SPEED_MAX, GRAIN_SPEED_MIN, GRAIN_SPEED_STEP, readGrainAmount, readGrainSpeed, writeGrainAmount, writeGrainSpeed } from '@/lib/ui/grain';
 
 const PREF_KEYS = {
   cursor: 'mc_custom_cursor',
@@ -94,6 +95,8 @@ export default function SettingsPage() {
   const [cursor, setCursor] = useState(() => getPref(PREF_KEYS.cursor, true));
   const [motion, setMotion] = useState(() => getPref(PREF_KEYS.motion, false));
   const [islandScale, setIslandScale] = useState(readIslandScale);
+  const [grainAmount, setGrainAmount] = useState(readGrainAmount);
+  const [grainSpeed, setGrainSpeed] = useState(readGrainSpeed);
   const [islandStates, setIslandStates] = useState(readIslandPrefs);
   const [notifyReplies, setNotifyReplies] = useState(true);
   const [notifyJobs, setNotifyJobs] = useState(true);
@@ -159,6 +162,8 @@ export default function SettingsPage() {
     window.dispatchEvent(new Event(MOTION_PREF_EVENT));
   };
   const setIslandScalePref = (v: number) => setIslandScale(writeIslandScale(v));
+  const setGrainAmountPref = (v: number) => setGrainAmount(writeGrainAmount(v));
+  const setGrainSpeedPref = (v: number) => setGrainSpeed(writeGrainSpeed(v));
 
   const changeEmail = async () => {
     if (!newEmail || newEmail === user?.email) return;
@@ -290,6 +295,36 @@ export default function SettingsPage() {
                 style={{ width: 120, accentColor: 'var(--accent)' }}
               />
               <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{islandScale.toFixed(2)}x</span>
+            </div>
+          } />
+          <Row label="Film grain" hint="How much grain sits over everything, on this device. It changes as you drag — all the way down, it's gone." control={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="range"
+                aria-label="Film grain amount"
+                min={GRAIN_AMOUNT_MIN}
+                max={GRAIN_AMOUNT_MAX}
+                step={GRAIN_AMOUNT_STEP}
+                value={grainAmount}
+                onChange={e => setGrainAmountPref(parseFloat(e.target.value))}
+                style={{ width: 120, accentColor: 'var(--accent)' }}
+              />
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{Math.round((grainAmount / GRAIN_AMOUNT_MAX) * 100)}%</span>
+            </div>
+          } />
+          <Row label="Film grain speed" hint="How fast the grain dances, on this device. It changes as you drag." control={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <input
+                type="range"
+                aria-label="Film grain speed"
+                min={GRAIN_SPEED_MIN}
+                max={GRAIN_SPEED_MAX}
+                step={GRAIN_SPEED_STEP}
+                value={grainSpeed}
+                onChange={e => setGrainSpeedPref(parseFloat(e.target.value))}
+                style={{ width: 120, accentColor: 'var(--accent)' }}
+              />
+              <span style={{ fontSize: 11, fontFamily: 'var(--mono)', color: 'var(--accent)', minWidth: 36, textAlign: 'right' }}>{grainSpeed.toFixed(2)}x</span>
             </div>
           } />
           {ISLAND_STATE_LABELS.map(({ key, label, hint }) => (
