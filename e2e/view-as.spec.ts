@@ -35,7 +35,8 @@ test.describe.serial('View as (local Supabase)', () => {
     const group = page.getByRole('group', { name: 'View this project as' });
 
     await group.getByRole('button', { name: 'Crew' }).click();
-    await expect(page.getByRole('status')).toContainText('Previewing as a crew member');
+    // Scoped by its text: the island also carries a (visually hidden) status live region on every page.
+    await expect(page.getByRole('status').filter({ hasText: 'Previewing as a crew member' })).toContainText('Previewing as a crew member');
     await expect(logline).toHaveCount(0); // crew read it, they do not edit it
     await expect(page.getByText('A logline.')).toBeVisible();
 

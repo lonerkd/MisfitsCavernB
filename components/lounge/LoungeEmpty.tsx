@@ -20,7 +20,7 @@ export function LoungeWelcome() {
       style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px clamp(12px, 3vw, 24px)', background: 'var(--accent-dim)', borderBottom: '1px solid rgba(var(--ink-rgb), 0.06)', flexShrink: 0 }}>
       <BookOpen size={16} aria-hidden color="var(--accent)" style={{ flexShrink: 0, marginTop: 2 }} />
       <p style={{ ...mono, fontSize: 12, color: 'var(--fg)', margin: 0, flex: 1, minWidth: 0 }}>
-        <strong>New here?</strong> The Lounge is where your crew talks and drops into voice. <Link href="/hub" style={{ color: 'var(--fg-strong)', textDecoration: 'underline' }}>What’s new</Link> has the latest from The Cavern, and <Link href="/hub" style={{ color: 'var(--fg-strong)', textDecoration: 'underline' }}>Learn</Link> has guides for each craft.
+        <strong>New here?</strong> The Lounge is where your crew talks and drops into voice. <Link href="/#updates" style={{ color: 'var(--fg-strong)', textDecoration: 'underline' }}>What’s new</Link> has the latest from The Cavern, and <Link href="/#updates" style={{ color: 'var(--fg-strong)', textDecoration: 'underline' }}>Learn</Link> has guides for each craft.
       </p>
       <button type="button" onClick={() => writeDeviceValue(WELCOME_KEY, '1')} aria-label="Got it, hide this welcome"
         style={{ ...button, minHeight: 32, padding: '4px 10px', background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.14)', color: 'var(--fg-muted)', flexShrink: 0 }}>
@@ -49,7 +49,7 @@ export function PaneEmptyState({ l }: { l: Lounge }) {
           ))}
         </dl>
         <div style={{ marginTop: 20 }}>
-          <Link href="/hub" style={{ ...button, background: 'var(--accent)', color: 'var(--on-accent)' }}><BookOpen size={13} aria-hidden /> Open Learn</Link>
+          <Link href="/#updates" style={{ ...button, background: 'var(--accent)', color: 'var(--on-accent)' }}><BookOpen size={13} aria-hidden /> Open Learn</Link>
         </div>
       </div>
     );

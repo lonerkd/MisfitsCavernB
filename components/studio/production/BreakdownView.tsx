@@ -37,7 +37,7 @@ import v from './breakdownView.module.css';
 import { BriefHints } from '@/components/brief/BriefHints';
 
 export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: string; username: string }>; onNavigate?: (view: string) => void }) {
-  const { project, scenes, scriptId, isOwner, castOf: castOfScene } = useStudio();
+  const { project, scenes, scriptId, isOwner, castOf: castOfScene, doubtfulSceneOrdinals } = useStudio();
   const { refreshProject } = useProject();
   const { toast } = useToast();
   const bd = useBreakdown(project.id);
@@ -164,6 +164,17 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
     if (!ok) toast('Could not open the print dialog.', 'error');
   };
 
+  // The group-by tabs stand on their own const: with nothing tagged yet they are also shown over the empty
+  // state, because the By scene sheets (and their doubtful-read notes) must stay reachable before anything
+  // is tagged — a doubtful scene is exactly the one whose tags may all be missing.
+  const groupTabs = (
+    <div className={s.chips} role="tablist" aria-label="Group by">
+      <button type="button" role="tab" aria-selected={mode === 'category'} className={cx(s.chip, mode === 'category' && s.chipOn)} onClick={() => setMode('category')}>By category</button>
+      <button type="button" role="tab" aria-selected={mode === 'scene'} className={cx(s.chip, mode === 'scene' && s.chipOn)} onClick={() => setMode('scene')}>By scene</button>
+      <button type="button" role="tab" aria-selected={mode === 'day'} className={cx(s.chip, mode === 'day' && s.chipOn)} onClick={() => setMode('day')}>Cost by day</button>
+    </div>
+  );
+
   if (bd.status === 'loading' && !categories.length) {
     return <div className="skeleton" style={{ height: 240, borderRadius: 14 }} role="status" aria-busy="true" aria-label="Loading the breakdown" />;
   }
@@ -186,21 +197,20 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
 
       <BriefHints projectId={project.id} projectTitle={project.title} accent={project.accent_color} ids={['breakdown']} style={{ marginBottom: 16 }} />
 
-      {elements.length === 0 ? (
-        <EmptyState
-          icon={<Tags size={26} />}
-          title="Nothing broken down yet"
-          subtitle="Tag what each scene needs in the script (Ctrl+Shift+B)."
-          action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Break down the script</Link> : undefined}
-        />
+      {elements.length === 0 && mode === 'category' ? (
+        <>
+          <div className={v.filters}>{groupTabs}</div>
+          <EmptyState
+            icon={<Tags size={26} />}
+            title="Nothing broken down yet"
+            subtitle="Tag what each scene needs in the script (Ctrl+Shift+B)."
+            action={scriptId ? <Link href={`/editor?script=${scriptId}`} className={s.btnPrimary}><PenLine size={12} /> Break down the script</Link> : undefined}
+          />
+        </>
       ) : (
         <>
           <div className={v.filters}>
-            <div className={s.chips} role="tablist" aria-label="Group by">
-              <button type="button" role="tab" aria-selected={mode === 'category'} className={cx(s.chip, mode === 'category' && s.chipOn)} onClick={() => setMode('category')}>By category</button>
-              <button type="button" role="tab" aria-selected={mode === 'scene'} className={cx(s.chip, mode === 'scene' && s.chipOn)} onClick={() => setMode('scene')}>By scene</button>
-              <button type="button" role="tab" aria-selected={mode === 'day'} className={cx(s.chip, mode === 'day' && s.chipOn)} onClick={() => setMode('day')}>Cost by day</button>
-            </div>
+            {groupTabs}
             <div className={s.chips} role="group" aria-label="Status">
               {(['all', ...ELEMENT_STATUSES] as const).map((st) => (
                 <button key={st} type="button" aria-pressed={status === st} className={cx(s.chip, status === st && s.chipOn)} onClick={() => setStatus(st)}>
@@ -296,6 +306,9 @@ export function BreakdownView({ crew, onNavigate }: { crew: Array<{ user_id: str
                         <span className={v.sheetHeading}>{sc.heading ?? sc.title}</span>
                         <span className={v.sheetMeta}>{STRIP_LABEL[stripKind(sc)]} · {pages(eighthsOf(sc.est_duration))} pp · Day {sc.shoot_day ?? 1} · {money(sceneCost.get(sc.id)?.amount ?? 0)}</span>
                       </div>
+                      {sc.ordinal != null && doubtfulSceneOrdinals.has(sc.ordinal) && (
+                        <p className={v.empty} role="note">The script read for this scene is doubtful, so what is tagged here may be off. Review it in the editor (Doubtful reads).</p>
+                      )}
                       {boxes.length === 0 ? <p className={v.empty}>Nothing tagged in this scene.</p> : (
                         <div className={v.boxes}>
                           {boxes.map(({ c, items }) => (

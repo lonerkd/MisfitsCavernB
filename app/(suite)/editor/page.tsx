@@ -1,18 +1,18 @@
 'use client';
 
-import { exportChoicesFor } from '@/lib/scriptos/export';
+import { exportChoicesFor, exportChoiceLabel } from '@/lib/scriptos/export';
 import { matchChord } from '@/lib/os/chords';
 import { flushSync } from 'react-dom';
 import React, { useCallback, useDeferredValue, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Users, Minimize, X } from 'lucide-react';
+import { Minimize } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { renameCharacterInText, renamePlaceInText, validCharacterName, validPlaceName } from '@/lib/scriptos/rename';
-import { renameLocationRecord } from '@/lib/film/rename-location';
+import { renameLocationRecord, placeNames } from '@/lib/film/rename-location';
 import { renameCharacterRow } from '@/lib/film/rename-character';
 import { readingFormat } from '@/lib/scriptos/reading-format';
-import { saveScript, getAllScripts, getScript, createNewScript, type StoredScript } from '@/lib/scriptos/storage';
+import { createNewScript, type StoredScript } from '@/lib/scriptos/storage';
 import { useScriptImport, useScriptExport } from '@/components/editor/useScriptFiles';
 import { toggleDualCaret } from '@/lib/scriptos/dual';
 import { scenePositions as positionsOfScenes, reorderScenes as moveScene, filterScenes, sceneWordCounts as countSceneWords, sceneCharacters as speakersByScene, sceneAtCaret, stepScene, actStructure as actsFromWords } from '@/lib/scriptos/sceneviews';
@@ -25,19 +25,16 @@ import { caretCoords } from '@/components/editor/caretCoords';
 import { canonicalizeFountain } from '@/lib/scriptos/fountain-export';
 import { getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
-import { loadTitlePage, saveTitlePage, getDefaultTitlePage, withScriptTitle, type TitlePage } from '@/lib/scriptos/titlepage';
+import { saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
 import { validateScript, type LintIssue } from '@/lib/scriptos/validator';
-import { loadCharacterProfiles, saveCharacterProfiles, mergeProfiles, type CharacterProfile } from '@/lib/scriptos/bible';
+import type { CharacterProfile } from '@/lib/scriptos/bible';
 import type { ScriptLine, Scene as ParsedScene } from '@/lib/scriptos/types';
 import { useToast } from '@/components/ui/Toast';
 import { useScriptSync } from '@/lib/scriptos/sync';
 import { useProject } from '@/lib/os';
 import { useSpotify } from '@/lib/os/SpotifyContext';
 import { audioRefUrl, listAudioRefs } from '@/lib/supabase/audio';
-import { createProjectScript, latestScriptId } from '@/lib/supabase/scripts';
 import { useOSGate } from '@/lib/os';
-import { logAuditAction } from '@/lib/supabase/audit';
-import { defaultScriptFormat, findFormat, loadFormats } from '@/lib/formats/formats';
 import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { timeCharacters, timeScript, lineAtPage } from '@/lib/scriptos/timing';
 import { useBriefAnswer, useCanShape } from '@/lib/brief';
@@ -45,12 +42,10 @@ import { useProjectProgress } from '@/lib/hooks/useProjectProgress';
 import { toolState, type ToolId } from '@/lib/os/progress';
 import { usePillStage } from '@/lib/os/PillContext';
 import { FindReplaceBar, GoToSceneModal } from '@/components/editor/EditorModals';
-import { Input } from '@/components/ui/Input';
-import { Textarea } from '@/components/ui/Textarea';
 import { BoardView, OutlineView } from '@/components/editor/EditorCenterViews';
 import { ScriptAnalytics } from '@/components/editor/ScriptAnalytics';
 import { scriptKnowledge } from '@/lib/scriptos/knowledge';
-import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
+import { getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 import { EditorRightPanels, type RightPanelTab } from '@/components/editor/EditorSidePanels';
 import { useScriptAnnotations } from '@/components/editor/useScriptAnnotations';
 import { useScriptCasting } from '@/components/editor/useScriptCasting';
@@ -59,8 +54,6 @@ import { useTableRead } from '@/components/editor/useTableRead';
 import { SoundPanel } from '@/components/editor/SoundPanel';
 import { StoryInterview } from '@/components/story/StoryInterview';
 import { skeletonFountain, type SkeletonScene } from '@/lib/story/interview';
-import { RelationshipMap } from '@/components/characters/RelationshipMap';
-import type { Relationship } from '@/lib/characters/depth';
 import { SceneMusic } from '@/components/editor/SceneMusic';
 import { isTableReadSupported } from '@/lib/scriptos/tableRead';
 import { SceneReferencesPanel } from '@/components/editor/SceneReferencesPanel';
@@ -80,12 +73,11 @@ import { EditorErrorBoundary } from '@/components/editor/EditorErrorBoundary';
 
 // The revision diff (and its diff library) loads the first time it's opened.
 const DiffModal = dynamic(() => import('@/components/editor/DiffModal').then((m) => m.DiffModal), { ssr: false });
-const CharacterWarnings = dynamic(() => import('@/components/editor/CharacterWarnings').then((m) => m.CharacterWarnings), { ssr: false });
 const CompareVersions = dynamic(() => import('@/components/editor/CompareVersions').then((m) => m.CompareVersions), { ssr: false });
 import { EditorHeader } from '@/components/editor/EditorHeader';
 import { WriteView } from '@/components/editor/WriteView';
 import { WriteFooter } from '@/components/editor/WriteFooter';
-import { PhoneSyncLine, SyncStatusChip } from '@/components/editor/SyncStatusChip';
+import { PhoneSyncLine } from '@/components/editor/SyncStatusChip';
 import { PreviewView } from '@/components/editor/PreviewView';
 import type { EditorCtx } from '@/components/editor/editorCtx';
 import { useCanShareScript } from '@/components/editor/ShareScriptButton';
@@ -96,7 +88,6 @@ import { costByScene } from '@/lib/breakdown';
 import { contextFromProject } from '@/lib/scriptos/context';
 import { previousDraftUse } from '@/lib/scriptos/previous-draft';
 import { latestRevision, withPreviousDraft } from '@/lib/scriptos/reading-context';
-import { NotCharacterButton, RejectedNames } from '@/components/editor/ReadingCorrections';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
 import { LineOverrideButton } from '@/components/editor/LineOverrideButton';
 import { doubtfulReads } from '@/lib/scriptos/review';
@@ -108,7 +99,12 @@ import { useActivity } from '@/lib/island/activities';
 import { sprintActivity } from '@/lib/island/sprintActivity';
 import { useCharacters, useReadingCorrections, useProjectLocations, useLineOverrides, useReadingMemory, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
-import { awaitOSUser, osState } from '@/lib/os';
+import { useScriptOpening } from '@/components/editor/useScriptOpening';
+import { useScriptSaving } from '@/components/editor/useScriptSaving';
+import { CharacterBibleModal } from '@/components/editor/CharacterBibleModal';
+import { TitlePageModal } from '@/components/editor/TitlePageModal';
+import { EditorStatusBar } from '@/components/editor/EditorStatusBar';
+import { AutocompleteMenu } from '@/components/editor/AutocompleteMenu';
 
 import {
   PRINT_COLORS, TEMPLATES, PLACEHOLDER, TRANSITIONS, ELEMENT_STATUS,
@@ -247,11 +243,8 @@ export default function EditorPage() {
   // Picking a scene or a view on a phone puts the sheet away.
   const closeSheet = () => setSheet(null);
   const [showFormatMenu, setShowFormatMenu] = useState(false);
-  const [saving, setSaving] = useState(false);
-  // True while the latest save is only on this device (server unreachable);
-  // storage retries it automatically. Drives the status bar + a one-time toast.
-  const [syncPending, setSyncPending] = useState(false);
-  const warnedUnsyncedRef = useRef(false);
+  // Autosave, Save now, and the on-device-only sync state (components/editor/useScriptSaving).
+  const { saving, syncPending, handleSave } = useScriptSaving({ currentScript, content, setCurrentScript, toast, toastRef });
   const [activeView, setActiveView] = useState<'write' | 'preview' | 'board' | 'outline'>('write');
   const [focusMode, setFocusMode] = useState(false);
   const [sceneFilter, setSceneFilter] = useState<'all' | 'int' | 'ext' | 'day' | 'night'>('all');
@@ -276,12 +269,10 @@ export default function EditorPage() {
   const [showTitleEditor, setShowTitleEditor] = useState(false);
   const [showSceneNumbers, setShowSceneNumbers] = useState(true);
   const [charProfiles, setCharProfiles] = useState<CharacterProfile[]>([]);
-  const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [showCharBible, setShowCharBible] = useState(false);
 
   const [sessionStartWords, setSessionStartWords] = useState(0);
   const [showStoryInterview, setShowStoryInterview] = useState(false);
-  const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [showGoToScene, setShowGoToScene] = useState(false);
   const [goToSceneNum, setGoToSceneNum] = useState('');
   const [showCompare, setShowCompare] = useState(false);
@@ -296,110 +287,9 @@ export default function EditorPage() {
   const [cursorLine, setCursorLine] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleLoadScript = useCallback((script: StoredScript) => {
-    setCurrentScript(script);
-    setContent(script.content || '');
-    loadTitlePage(script.id).then((tp) => setTitlePage(withScriptTitle(tp, script.title)));
-    loadCharacterProfiles(script.id).then(setCharProfiles);
-    setSessionStartWords((script.content || '').split(/\s+/).filter(Boolean).length);
-    setActiveView('write');
-  }, [setActiveView]);
-
-  // Which script opens: ?script=<id> (links from the Studio) wins; otherwise
-  // the active project's script (the effect below); otherwise the writer's
-  // latest. Every path goes through getScript/getAllScripts, which prefer
-  // unsynced local edits over the server copy.
-  // Read synchronously so the project effect (which runs first) can't race it.
-  const linkedScriptId = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('script') : null);
-  const projectAtLink = useRef<string | null>(null);
-  const currentScriptRef = useRef<StoredScript | null>(null);
-  useLayoutEffect(() => { currentScriptRef.current = currentScript; });
-
-  /** Open a project's most recent script (creating one if it has none). */
-  const openProjectScript = useCallback(async (project: { id: string; title: string; type?: string; settings?: { defaultScriptFormat?: string } }, isCancelled: () => boolean = () => false) => {
-    // A failed lookup is not "this project has no script": creating one then
-    // would give the project a second, empty screenplay.
-    let id: string | null;
-    try { id = await latestScriptId(project.id); }
-    catch (e) {
-      console.error('Could not look up the project’s script:', e);
-      toastRef.current('Couldn’t open this project’s script — check your connection and try again.', 'error');
-      return false;
-    }
-    if (!id) {
-      const uid = (await awaitOSUser())?.id ?? null;
-      const format = findFormat(await loadFormats().catch(() => []), project.type);
-      const created = await createProjectScript({ projectId: project.id, title: project.title, format: defaultScriptFormat(format, project.settings?.defaultScriptFormat), userId: uid })
-        .catch((e) => { console.error('Could not start the project’s script:', e); return null; });
-      id = created?.id ?? null;
-      if (created && uid) logAuditAction(uid, 'script_created', 'script', created.id, { title: created.title, project_id: project.id });
-    }
-    if (isCancelled() || !id || currentScriptRef.current?.id === id) return false;
-    // getScript prefers unsynced local edits — never open a stale server copy.
-    const script = await getScript(id);
-    if (isCancelled() || !script) return false;
-    handleLoadScript(script);
-    return true;
-  }, [handleLoadScript]);
-
-  // Runs once: open the linked script, else the latest, else a fresh one.
-  const loadScript = useEffectEvent((s: StoredScript) => handleLoadScript(s));
-  const openScriptFor = useEffectEvent((p: Parameters<typeof openProjectScript>[0]) => openProjectScript(p));
-  useEffect(() => {
-    const init = async () => {
-      const all = await getAllScripts();
-      setScripts(all);
-      const wanted = linkedScriptId.current;
-      if (wanted) {
-        const linked = await getScript(wanted);
-        if (linked) { loadScript(linked); return; }
-        linkedScriptId.current = null;
-        toastRef.current('That script couldn’t be opened — it may have been deleted, or it isn’t shared with you.', 'error');
-        const project = osState().project.active;
-        if (project && (await openScriptFor(project))) return;
-      }
-      if (osState().project.active?.id) return; // the project effect below opens its script
-      if (currentScriptRef.current) return;
-      if (all.length > 0) {
-        const latest = all[0];
-        setCurrentScript(latest);
-        setContent(latest.content || '');
-        loadTitlePage(latest.id).then((tp) => setTitlePage(withScriptTitle(tp, latest.title)));
-        loadCharacterProfiles(latest.id).then(setCharProfiles);
-        setSessionStartWords((latest.content || '').split(/\s+/).filter(Boolean).length);
-      } else {
-        const fresh = await createNewScript('My First Screenplay');
-        if (fresh) {
-          setCurrentScript(fresh);
-          setScripts([fresh]);
-          setContent('');
-          setSessionStartWords(0);
-        } else {
-          // Without a script, autosave has nothing to write to — say so rather
-          // than letting the writer type into a buffer that is never saved.
-          toastRef.current('Could not open a script — your writing will not be saved. Reload to try again.', 'error');
-        }
-      }
-    };
-    void init();
-  }, []);
-
-  // A script opened by link stays open while the session's project loads;
-  // switching to a different project afterwards opens that project's script.
-  const followProject = useEffectEvent(() => {
-    if (!activeProject?.id) return;
-    if (linkedScriptId.current) {
-      if (projectAtLink.current === null || projectAtLink.current === activeProject.id) { projectAtLink.current = activeProject.id; return; }
-      linkedScriptId.current = null;
-    }
-    if (currentScriptRef.current?.project_id === activeProject.id) return;
-    let cancelled = false;
-    openProjectScript(activeProject, () => cancelled)
-      .then((opened) => { if (opened) toast(`Editing “${activeProject.title}” screenplay`, 'info'); })
-      .catch((e) => console.error('Failed to load project script:', e));
-    return () => { cancelled = true; };
-  });
-  useEffect(() => followProject(), [activeProject?.id]);
+  // Which script opens, and following the session's project to its script
+  // (components/editor/useScriptOpening).
+  useScriptOpening({ currentScript, activeProject, setCurrentScript, setContent, setScripts, setTitlePage, setCharProfiles, setSessionStartWords, setActiveView, toast, toastRef });
 
   useEffect(() => {
     if (!currentScript) return;
@@ -430,44 +320,10 @@ export default function EditorPage() {
     }
   }, [content, typewriterMode, activeView]);
 
-
-  useEffect(() => {
-    if (!currentScript) return;
-    const timer = setTimeout(async () => {
-      setSaving(true);
-      const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
-      setSaving(false);
-      const pending = !saved || !!saved.syncPending;
-      setSyncPending(pending);
-      if (pending && !warnedUnsyncedRef.current) {
-        warnedUnsyncedRef.current = true;
-        toastRef.current("Can't reach the server — your writing is saved on this device and will sync automatically.", 'error');
-      } else if (!pending) {
-        warnedUnsyncedRef.current = false;
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [content, currentScript]);
-
   // The writing loop: words typed today, the streak, sprints (lib/writing).
   const writing = useWritingLoop(sessionUser?.id ?? null);
   const sprint = useSprint(writing, toast);
   useActivity(sprintActivity(sprint)); // a running sprint is held on the island, with pause and reset
-
-  const handleSave = useCallback(async () => {
-    if (!currentScript) return;
-    setSaving(true);
-    const saved = await saveScript({ id: currentScript.id, title: currentScript.title, content });
-    if (saved) {
-      setCurrentScript(saved);
-      setSyncPending(!!saved.syncPending);
-      if (saved.syncPending) toast('Saved on this device — it will sync when the server is reachable.', 'error');
-      else toast('Screenplay saved to cloud.', 'success');
-    } else {
-      toast('Could not save — you appear to be signed out.', 'error');
-    }
-    setSaving(false);
-  }, [currentScript, content, toast]);
 
   const handleExport = useScriptExport({ currentScript, content, titlePage, toast, onDone: () => setShowFormatMenu(false) });
 
@@ -559,12 +415,17 @@ export default function EditorPage() {
     if (next === from.trim().toUpperCase()) return null;
     const out = renamePlaceInText(content, lines, from, next);
     if (out.changed === 0) return `No scene heading for ${from} was found to rename.`;
+    let chose: { existing: string; leftBehind: string | null } | null = null;
     if (currentScript?.project_id) {
-      const problem = await renameLocationRecord(currentScript.project_id, from, next);
-      if (problem) return problem;
+      const res = await renameLocationRecord(currentScript.project_id, from, next);
+      if ('problem' in res) return res.problem;
+      if (res.change.action === 'choose') chose = res.change;
     }
     setContent(out.text);
-    toast(`${from} is now ${next} (${out.changed} ${out.changed === 1 ? 'heading' : 'headings'})`, 'success');
+    const n = `${out.changed} ${out.changed === 1 ? 'heading' : 'headings'}`;
+    toast(chose
+      ? `${from} is now ${chose.existing} (${n}).${chose.leftBehind ? ` The record “${chose.leftBehind}” is still in Locations: merge or delete it there.` : ''}`
+      : `${from} is now ${next} (${n})`, 'success');
     return null;
   };
 
@@ -1088,6 +949,7 @@ export default function EditorPage() {
       <EditorRightPanels
         onRenameCharacter={renameCharacter}
         onRenamePlace={renamePlace}
+        loadPlaceNames={() => (currentScript?.project_id ? placeNames(currentScript.project_id) : Promise.resolve([]))}
         showBreakdown={tools.breakdown}
         currentStory={gutter.find((g) => g.line === parsedScenes[currentSceneIdx]?.startIndex) ?? null}
         rightPanel={rightPanel} setRightPanel={setRightPanel}
@@ -1324,135 +1186,17 @@ export default function EditorPage() {
         />
       )}
 
-      {showAutocomplete && autocompleteItems.length > 0 && (
-        <div style={{
-          position: 'fixed', top: cursorPos.top, left: cursorPos.left,
-          background: 'var(--bg-3)', border: '1px solid rgba(var(--ink-rgb), 0.12)',
-          borderRadius: 8, padding: 4, zIndex: 1000, boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-          maxHeight: 200, overflowY: 'auto', minWidth: 160
-        }}>
-          {autocompleteItems.map((item, idx) => (
-            <div
-              key={idx}
-              onMouseDown={(e) => { e.preventDefault(); acceptAutocomplete(item); }}
-              onMouseEnter={() => setAutocompleteIdx(idx)}
-              style={{ padding: '6px 12px', fontSize: 12, color: idx === autocompleteIdx ? 'var(--fg-strong)' : 'var(--fg-muted)', background: idx === autocompleteIdx ? 'rgba(var(--ink-rgb), 0.08)' : 'transparent', borderRadius: 4, cursor: 'pointer', fontFamily: 'var(--script)', letterSpacing: 0.5 }}
-            >
-              {item}
-            </div>
-          ))}
-          <div style={{ padding: '4px 12px 2px', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)', letterSpacing: 'var(--caps-track)' }}>↑↓ navigate · ⏎/⇥ accept · esc</div>
-        </div>
-      )}
+      <AutocompleteMenu open={showAutocomplete} items={autocompleteItems} activeIdx={autocompleteIdx} pos={cursorPos} onPick={acceptAutocomplete} onHover={setAutocompleteIdx} />
 
-      <AnimatePresence>
-        {showTitleEditor && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowTitleEditor(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 480, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0 }}>Title Page</h2>
-                <button aria-label="Close" onClick={() => setShowTitleEditor(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              {(['title', 'credit', 'author', 'source', 'draftDate', 'contact', 'copyright', 'notes'] as const).map(field => (
-                <Input
-                  key={field}
-                  label={field.replace(/([A-Z])/g, ' $1').trim()}
-                  value={titlePage[field]}
-                  onChange={e => handleTitlePageChange(field, e.target.value)}
-                />
-              ))}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <TitlePageModal open={showTitleEditor} onClose={() => setShowTitleEditor(false)} titlePage={titlePage} onChange={handleTitlePageChange} />
 
-      <AnimatePresence>
-        {showCharBible && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }} onClick={() => setShowCharBible(false)}>
-            <motion.div initial={{ scale: 0.94, opacity: 0, y: 12 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.94, opacity: 0, y: 12 }} transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', backdropFilter: 'blur(32px)', border: '1px solid rgba(var(--ink-rgb), 0.09)', borderRadius: 20, padding: 32, width: 680, maxWidth: '100%', maxHeight: '100%', overflowY: 'auto', boxShadow: '0 32px 80px rgba(0,0,0,0.7)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--fg-strong)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}><Users size={20} /> Character Bible</h2>
-                <button aria-label="Close" onClick={() => setShowCharBible(false)} style={{ background: 'transparent', border: 'none', color: 'var(--fg-dim)', cursor: 'pointer' }}><X size={18} /></button>
-              </div>
-              {chars.length === 0 ? (
-                <div style={{ color: 'var(--fg-muted)', fontStyle: 'italic', textAlign: 'center', padding: 40 }}>No characters detected yet. Start writing dialogue!</div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {chars.map((name, i) => {
-                    const profile = charProfiles.find(p => p.name.toUpperCase() === name.toUpperCase());
-                    const isSelected = selectedCharProfile === name;
-                    const stat = charStats.find(cs => cs.name === name);
-                    const cast = castings[name.toUpperCase()];
-                    return (
-                      <div key={name} style={{ background: 'rgba(var(--ink-rgb), 0.02)', border: `1px solid ${isSelected ? 'rgba(var(--ink-rgb), 0.2)' : 'rgba(var(--ink-rgb), 0.06)'}`, borderRadius: 8, overflow: 'hidden' }}>
-                        <button onClick={() => setSelectedCharProfile(isSelected ? null : name)} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--fg-strong)' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <div style={{ width: 8, height: 8, borderRadius: '50%', background: CARD_COLORS[i % CARD_COLORS.length] }} />
-                            <span style={{ fontSize: 13, fontWeight: 700 }}>{name}</span>
-                            {cast?.username && (
-                              <span style={{ fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--ok)', background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 4, padding: '1px 6px' }}>
-                                Playing: {cast.username}
-                              </span>
-                            )}
-                          </div>
-                          <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{stat ? `${stat.dialogueLines} lines · ${stat.scenesIn.length} scenes` : ''}</span>
-                        </button>
-                        {isSelected && (
-                          <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                            <div>
-                              <label style={{ display: 'block', fontSize: 11, color: 'var(--fg-muted)', textTransform: 'var(--caps)', letterSpacing: 'var(--caps-track)', marginBottom: 4 }}>Cast as</label>
-                              <select
-                                aria-label="Cast as"
-                                value={cast?.crew_user_id || ''}
-                                onChange={e => handleCastCharacter(nameToId.get(name.toUpperCase()) ?? name, name, e.target.value)}
-                                disabled={projectCrew.length === 0}
-                                style={{ width: '100%', background: 'rgba(var(--ink-rgb), 0.03)', border: '1px solid rgba(var(--ink-rgb), 0.08)', borderRadius: 8, padding: '6px 10px', color: 'var(--fg-muted)', fontSize: 12, outline: 'none' }}
-                              >
-                                <option value="">— Not cast —</option>
-                                {projectCrew.map(m => (
-                                  <option key={m.user_id} value={m.user_id}>{m.username || m.user_id}</option>
-                                ))}
-                              </select>
-                              {projectCrew.length === 0 && (
-                                <div style={{ fontSize: 11, color: 'var(--fg-dim)', marginTop: 4, fontStyle: 'italic' }}>No crew on this project yet — hire from the Jobs board or add crew in Studio.</div>
-                              )}
-                            </div>
-                            {(['description', 'backstory', 'motivation', 'arc', 'notes'] as const).map(field => (
-                              <Textarea
-                                key={field}
-                                label={field}
-                                value={profile?.[field] || ''}
-                                rows={2}
-                                onChange={e => {
-                                  const updated = mergeProfiles(chars, charProfiles);
-                                  const idx = updated.findIndex(p => p.name.toUpperCase() === name.toUpperCase());
-                                  if (idx >= 0) updated[idx] = { ...updated[idx], [field]: e.target.value };
-                                  setCharProfiles(updated);
-                                  if (currentScript) saveCharacterProfiles(currentScript.id, updated);
-                                }}
-                              />
-                            ))}
-                            {currentScript?.project_id && <NotCharacterButton projectId={currentScript.project_id} name={name} onSaved={corrections.upsertLocal} />}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <CharacterWarnings
-                lines={lines} scenes={parsedScenes} rejectedNames={corrections.rows.filter((r) => r.kind === 'not_character').map((r) => r.name)}
-                storageKey={currentScript?.id ?? ''} onJump={(line) => { setShowCharBible(false); jumpToLine(line); }}
-              />
-              <div style={{ marginTop: 16 }}>
-                <h3 style={{ fontSize: 13, fontWeight: 700, color: 'var(--fg-strong)', margin: '0 0 8px' }}>Relationships</h3>
-                <RelationshipMap relationships={relationships} onChange={setRelationships} />
-              </div>
-              {currentScript?.project_id && <RejectedNames rows={corrections.rows.filter((r) => r.kind === 'not_character')} onRemoved={(id) => { corrections.removeLocal(id); refreshWriterMemory(); }} />}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <CharacterBibleModal
+        open={showCharBible} onClose={() => setShowCharBible(false)}
+        chars={chars} charProfiles={charProfiles} setCharProfiles={setCharProfiles} charStats={charStats}
+        castings={castings} projectCrew={projectCrew} nameToId={nameToId} onCastCharacter={handleCastCharacter}
+        currentScript={currentScript} corrections={corrections} onRefreshWriterMemory={refreshWriterMemory}
+        lines={lines} scenes={parsedScenes} onJumpToLine={jumpToLine}
+      />
 
       <EditorErrorBoundary onCrash={() => {
         try { localStorage.setItem(`mc_crash_backup_${currentScript?.id || 'draft'}`, content); } catch {}
@@ -1502,69 +1246,11 @@ export default function EditorPage() {
         </AnimatePresence>
       </EditorErrorBoundary>
 
-      <div data-testid="editor-status" style={{
-        height: 26,
-        overflow: 'hidden',
-        background: 'var(--surface)',
-        backdropFilter: 'blur(12px)',
-        borderTop: '1px solid rgba(var(--ink-rgb), 0.04)',
-        display: isMobile && phone.typing ? 'none' : 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 clamp(12px, 4vw, 20px)',
-        paddingBottom: 'env(safe-area-inset-bottom)', boxSizing: 'content-box',
-        fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)',
-        color: 'var(--fg-dim)',
-        zIndex: 50, flexShrink: 0,
-      }}>
-        {/* One line at every width: the title gives way (ellipsis), the counts don't wrap. */}
-        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 20px)', alignItems: 'center', minWidth: 0, flex: 1, whiteSpace: 'nowrap' }}>
-          <span title={currentScript?.title || 'Untitled'} style={{ color: 'var(--fg-muted)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentScript?.title || 'Untitled'}</span>
-          <span style={{
-            flexShrink: 0,
-            padding: '1px 7px', borderRadius: 4,
-            background: revisionMode ? 'rgba(99,102,241,0.12)' : 'rgba(var(--ink-rgb), 0.04)',
-            color: revisionMode ? 'var(--violet)' : 'var(--fg-dim)',
-            letterSpacing: 'var(--caps-track)',
-          }}>
-            {revisionMode ? 'REVISION' : 'DRAFT'}
-          </span>
-          {(sprint.active || sprint.running) && (
-            <span style={{ color: 'var(--violet)', letterSpacing: 'var(--caps-track)' }}>
-              ◉ {Math.floor(sprint.left / 60).toString().padStart(2, '0')}:{(sprint.left % 60).toString().padStart(2, '0')} · {sprint.words}w
-            </span>
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 20px)', alignItems: 'center', flexShrink: 0, whiteSpace: 'nowrap', marginLeft: 12 }}>
-          <span>{pageEst} pg</span>
-          <span className="mc-hide-phone">{scenesList.length} sc</span>
-          <span>{wordCount.toLocaleString()} wds</span>
-          {collaborators.length > 0 && (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }} title={collaborators.map(c => `${c.username}${c.line ? ` · line ${c.line}` : ''}`).join('\n')}>
-              <span style={{ display: 'flex' }}>
-                {collaborators.slice(0, 4).map((c, i) => (
-                  <span key={c.userId} style={{ width: 16, height: 16, borderRadius: '50%', background: c.color, color: '#000', fontSize: 'max(8px, var(--mc-min-font, 0px))', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #0a0a0a', marginLeft: i === 0 ? 0 : -5, textTransform: 'var(--caps)' }}>
-                    {c.username.charAt(0)}
-                  </span>
-                ))}
-              </span>
-              <span style={{ color: 'var(--fg-muted)', fontSize: 11 }}>{collaborators.length} editing</span>
-            </span>
-          )}
-          <SyncStatusChip />
-          <span style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            color: isSyncing ? 'var(--violet)' : 'var(--ok)',
-          }}>
-            <span style={{
-              width: 5, height: 5, borderRadius: '50%',
-              background: isSyncing ? 'var(--violet)' : 'var(--ok)',
-              animation: isSyncing ? 'pulse 1.5s ease-in-out infinite' : 'none',
-              display: 'inline-block',
-            }} />
-            {isSyncing ? 'Syncing' : 'Synced'}
-          </span>
-        </div>
-      </div>
+      <EditorStatusBar
+        title={currentScript?.title || 'Untitled'} revisionMode={revisionMode} sprint={sprint}
+        pageEst={pageEst} sceneCount={scenesList.length} wordCount={wordCount}
+        collaborators={collaborators} isSyncing={isSyncing} hidden={isMobile && phone.typing}
+      />
 
       {isMobile && !focusMode && activeView === 'write' && phone.typing && !phone.landscape && <PhoneSyncLine bottom={phone.keyboard + (phone.landscape ? 48 : 60)} />}
       {isMobile && !focusMode && activeView === 'write' && phone.typing && (
@@ -1596,7 +1282,7 @@ export default function EditorPage() {
                 { label: 'Find and replace', run: () => setShowFindReplace(true) },
                 { label: 'Character bible', run: () => setShowCharBible(true) },
                 { label: 'Focus mode', run: () => setFocusMode(true) },
-                ...exportChoicesFor(currentScript?.format).map((fmt) => ({ label: `Export ${fmt === 'txt' ? 'text' : fmt.toUpperCase()}`, run: () => handleExport(fmt) })),
+                ...exportChoicesFor(currentScript?.format).map((fmt) => ({ label: `Export ${exportChoiceLabel(fmt)}`, run: () => handleExport(fmt) })),
               ].map((a) => (
                 <button key={a.label} type="button" onClick={() => { closeSheet(); a.run(); }}
                   style={{ minHeight: 48, textAlign: 'left', padding: '0 16px', borderRadius: 14, fontSize: 16, cursor: 'pointer', border: '1px solid rgba(var(--ink-rgb), 0.12)', background: 'transparent', color: 'var(--fg)' }}>{a.label}</button>

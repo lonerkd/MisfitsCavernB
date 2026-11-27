@@ -3,13 +3,18 @@
 import { Send, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { Lounge } from '@/components/lounge/useLounge';
+import { useOverlayLayer } from '@/lib/os/overlayStack';
 
 export function ThreadPanel({ l }: { l: Lounge }) {
   const { threadParent, setThreadParent, threadInput, setThreadInput, currentUser, threadReplies, handleThreadSend } = l;
   const reduce = useReducedMotion();
+  // On the overlay stack while open: the bars' back chevron closes the thread before it navigates anywhere.
+  useOverlayLayer(!!threadParent, () => setThreadParent(null));
   if (!threadParent) return null;
   return (
-    <motion.div
+    <>
+      <div aria-hidden className="mc-lounge-backdrop" onClick={() => setThreadParent(null)} />
+      <motion.div
       className="mc-lounge-thread-panel"
       initial={{ x: reduce ? 0 : 380 }} animate={{ x: 0 }} exit={{ x: reduce ? 0 : 380 }} transition={{ duration: reduce ? 0 : 0.25, ease: [0.16, 1, 0.3, 1] }}
       style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(94vw, 380px)', background: 'var(--surface)', borderLeft: '1px solid rgba(var(--ink-rgb), 0.08)', backdropFilter: 'blur(24px)', zIndex: 200, display: 'flex', flexDirection: 'column', boxShadow: '-20px 0 60px rgba(0,0,0,0.6)' }}
@@ -41,5 +46,6 @@ export function ThreadPanel({ l }: { l: Lounge }) {
         <button onClick={handleThreadSend} aria-label="Send message" style={{ padding: '10px 14px', background: threadInput.trim() ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.05)', border: 'none', color: threadInput.trim() ? 'var(--bg)' : 'var(--fg-muted)', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Send size={13} /></button>
       </div>
     </motion.div>
+    </>
   );
 }

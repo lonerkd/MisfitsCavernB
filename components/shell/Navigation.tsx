@@ -8,10 +8,10 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu } from 'lucide-react';
 import { useCurrentUser, useAuthState, useAuthActions } from '@/lib/os';
+import { usePhoneLayout } from '@/lib/os/usePhone';
 import NotificationBell from './NotificationBell';
 
 const NAV_LINKS = [
-  { label: 'Community', href: '/community' },
   { label: 'Editor',    href: '/editor'    },
   { label: 'Studio',    href: '/studio'    },
   { label: 'Lounge',    href: '/lounge'    },
@@ -22,6 +22,7 @@ const NAV_LINKS = [
 export default function Navigation() {
   const pathname = usePathname();
   const router = useRouter();
+  const phone = usePhoneLayout().phone;
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const { user, isGuest } = useCurrentUser();
@@ -53,7 +54,17 @@ export default function Navigation() {
           top: 0,
           left: 0,
           width: '100%',
-          padding: scrolled ? '12px 28px' : '18px 28px',
+          // The bar is fixed to the viewport top, so on a phone the status-bar
+          // clock overlays its row. The safe-top inset is what clears the clock —
+          // and on a phone the bar stays SLIM around it: 6px of air above the row,
+          // a short pad below, the mark tucked into the top-left corner (owner's
+          // edit, Nov 26). Mobile screen is the scarce resource: clearance comes
+          // from the inset, never from growing the bar. Desktop keeps its airier
+          // pads, where the inset is 0.
+          paddingTop: phone ? 'calc(6px + var(--mc-safe-top, 0px))' : `calc(${scrolled ? 12 : 18}px + var(--mc-safe-top, 0px))`,
+          paddingRight: 28,
+          paddingBottom: phone ? (scrolled ? 6 : 8) : (scrolled ? 12 : 18),
+          paddingLeft: 28,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -145,7 +156,7 @@ export default function Navigation() {
             })}
           </div>
 
-          {!isLoading && !isGuest && <NotificationBell />}
+          {!isLoading && !isGuest && <NotificationBell placement="down" />}
 
           {isLoading ? null : !isGuest ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 10 }}>

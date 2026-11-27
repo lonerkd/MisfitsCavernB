@@ -8,11 +8,12 @@
 
 import React, { useEffect, useEffectEvent, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2, Globe } from 'lucide-react';
+import { Home, FileText, LayoutGrid, MessageSquare, Briefcase, FolderOpen, User, Settings, Search, Check, Columns2, Compass, ChevronLeft, Undo2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { splitHref } from '@/lib/split/pane';
-import { useProject } from '@/lib/os';
+import { useProject, useSession } from '@/lib/os';
+import { closeTopOverlay } from '@/lib/os/overlayStack';
 import { usePill } from '@/lib/os/PillContext';
 import { getProjectModules, type EcosystemModules } from '@/lib/types/settings';
 import { useTransientContext } from '@/lib/island/transientContext';
@@ -38,11 +39,13 @@ import s from '../island/island.module.css';
 import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import { useOnChange } from '@/lib/hooks/useOnChange';
 import { useHubUnread } from '@/components/hub/useHubUnread';
+import { CaptureSheet, fromShare, useOutbox, type CaptureStart } from '@/components/mobile/Capture';
+import { useLocationSearch } from '@/lib/hooks/useSearchParam';
 
 const GlobalAudioWidget = dynamic(() => import('@/components/shell/GlobalAudioWidget'), { ssr: false });
 
 const APPS: { id: IslandApp; name: string; icon: typeof Home; path: string; color: string; module?: keyof EcosystemModules }[] = [
-  { id: 'home',      name: 'Community', icon: Home,          path: '/community', color: 'var(--accent)' },
+  { id: 'home',      name: 'Home',      icon: Home,          path: '/'         , color: 'var(--accent)' },
   { id: 'editor',    name: 'ScriptOS',  icon: FileText,      path: '/editor',    color: 'var(--accent)', module: 'scriptos' },
   { id: 'studio',    name: 'Studio',    icon: LayoutGrid,    path: '/studio',    color: 'var(--violet)', module: 'studio' },
   { id: 'lounge',    name: 'Lounge',    icon: MessageSquare, path: '/lounge',    color: 'var(--ok)', module: 'lounge' },
@@ -69,28 +72,30 @@ interface Control {
   run: () => void;
 }
 
-function ProjectSwitcher({ onClose, highlight = -1 }: { onClose: () => void; highlight?: number }) {
+function ProjectSwitcher({ onClose, highlight = -1, compact = false }: { onClose: () => void; highlight?: number; compact?: boolean }) {
   const { projects, activeProject, setActiveProject } = useProject();
   const router = useRouter();
+  // On a phone the list spans the screen above the island, like the bell's panel — centred on its button
+  // it ran off the left edge whenever the button sat left of centre (the owner's shots, Nov 26, 2026).
+  // --island-room is the island's own measure of the space over it; the bottom lands just above its top.
+  const fit: React.CSSProperties = compact
+    ? { position: 'fixed', left: 12, right: 12, bottom: 'calc(100dvh - var(--island-room, 70vh) - 14px)', width: 'auto', marginBottom: 0 }
+    : { position: 'absolute', bottom: '100%', left: '50%', width: 220, marginBottom: 14 };
   return (
     <motion.div
       role="listbox" aria-label="Projects"
       // x centres it over its button (a CSS transform here would be overwritten by the animation).
-      initial={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
-      exit={{ opacity: 0, x: '-50%', y: 10, scale: 0.95 }}
+      initial={{ opacity: 0, x: compact ? 0 : '-50%', y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, x: compact ? 0 : '-50%', y: 0, scale: 1 }}
+      exit={{ opacity: 0, x: compact ? 0 : '-50%', y: 10, scale: 0.95 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        position: 'absolute',
-        bottom: '100%',
-        left: '50%',
-        marginBottom: 14,
+        ...fit,
         background: 'var(--surface)',
         backdropFilter: 'blur(28px)',
         border: '1px solid rgba(var(--ink-rgb), 0.08)',
         borderRadius: 14,
         padding: 10,
-        width: 220,
         maxHeight: 'min(60vh, 420px, var(--island-room, 60vh))',
         overflowY: 'auto',
         boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
@@ -195,6 +200,29 @@ export default function EcosystemTaskbar() {
   // 0 where there is no island (phones use the tab bar).
   const dockRef = useRef<HTMLElement>(null);
   const surface = useIslandSurface();
+  const compact = surface === 'compact-dock';
+
+  // On a phone the island carries Capture beside it — the one thing people do
+  // on set, a single tap away (it lived on the tab bar's pill before the
+  // island took over the phone). The share sheet and the home-screen shortcut
+  // land here too: what another app shared opens Capture with it, once.
+  const { status } = useSession();
+  const [capturing, setCapturing] = useState(false);
+  const [captureStart, setCaptureStart] = useState<CaptureStart | null>(null);
+  const waiting = useOutbox().length;
+  const search = useLocationSearch();
+  const shared = useMemo(() => (compact && status === 'authed' && (pathname === '/' || pathname === '/community') ? fromShare(new URLSearchParams(search)) : null), [compact, status, pathname, search]);
+  const sharedKey = shared ? search : '';
+  const [handledShare, setHandledShare] = useState('');
+  if (sharedKey && shared && sharedKey !== handledShare) {
+    setHandledShare(sharedKey);
+    setCaptureStart(shared);
+    setCapturing(true);
+  } else if (!sharedKey && handledShare) {
+    setHandledShare('');
+  }
+  useEffect(() => { if (sharedKey) history.replaceState(history.state, '', '/'); }, [sharedKey]);
+  useOnChange(pathname, () => setCapturing(false));
   // Its size is this device's choice (Settings › Island size); it follows the slider as it moves.
   const [scale, setScale] = useState(1);
   useEffect(() => {
@@ -621,7 +649,7 @@ export default function EcosystemTaskbar() {
                 {keys && <Key>P</Key>}
               </button>
               <AnimatePresence>
-                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} highlight={keys ? projIdx : -1} />}
+                {projectsOpen && <ProjectSwitcher onClose={() => setProjectsOpen(false)} highlight={keys ? projIdx : -1} compact={compact} />}
               </AnimatePresence>
             </span>
 
@@ -633,12 +661,11 @@ export default function EcosystemTaskbar() {
             {([
               { id: 'profile', name: 'Profile', icon: User, path: '/profile' },
               { id: 'settings', name: 'Settings', icon: Settings, path: '/settings' },
-              { id: 'front', name: 'Front page', icon: Globe, path: '/' },
             ] as const).map(item => {
               const Icon = item.icon;
               return (
                 <span key={item.id} className={s.slot} data-tip={item.name}>
-                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={(item.path === '/' ? pathname === '/' : pathname.startsWith(item.path)) ? 'page' : undefined}>
+                  <Link href={item.path} prefetch={false} className={s.btn} aria-label={item.name} aria-current={pathname.startsWith(item.path) ? 'page' : undefined}>
                     <Icon size={19} strokeWidth={1.5} aria-hidden />
                   </Link>
                 </span>
@@ -654,6 +681,8 @@ export default function EcosystemTaskbar() {
                 className={s.btn}
                 aria-label={`Back to ${backPlan.kind === 'history' ? islandRoute(backPlan.path).title : route.back.label}`}
                 onClick={(e) => {
+                  // A layer over the page (the Lounge's search, Capture) is where he just was: back closes it first.
+                  if (closeTopOverlay()) { e.preventDefault(); return; }
                   // Back is where you just were; the parent link is only for when there is no earlier page in the app.
                   if (backPlan.kind !== 'history' || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
                   e.preventDefault();
@@ -705,6 +734,13 @@ export default function EcosystemTaskbar() {
               </motion.div>
             )}
 
+            {/* Capture, beside the island on a phone — the pill's button, moved here with the surface. */}
+            {compact && (
+              <button type="button" className={s.captureBtn} aria-haspopup="dialog" aria-expanded={capturing} aria-label="Capture" onClick={() => { setCaptureStart(null); setCapturing(true); }}>
+                <Plus size={22} strokeWidth={2} aria-hidden />
+                {waiting > 0 && <span className={s.captureWaiting}>{waiting}</span>}
+              </button>
+            )}
           </motion.div>
 
           {mode === 'caps' && (
@@ -719,6 +755,7 @@ export default function EcosystemTaskbar() {
           )}
         </motion.div>
       </motion.div>
+      {capturing && compact && <CaptureSheet start={captureStart} onClose={() => setCapturing(false)} />}
     </nav>
   );
 }

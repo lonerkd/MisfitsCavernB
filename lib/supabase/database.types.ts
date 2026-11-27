@@ -976,6 +976,7 @@ export type Database = {
       };
       casting_candidates: {
         Row: {
+          character_id: string | null;
           character_name: string;
           created_at: string;
           created_by: string | null;
@@ -989,6 +990,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          character_id?: string | null;
           character_name: string;
           created_at?: string;
           created_by?: string | null;
@@ -1001,6 +1003,7 @@ export type Database = {
           user_id?: string | null;
         };
         Update: {
+          character_id?: string | null;
           character_name?: string;
           created_at?: string;
           created_by?: string | null;
@@ -1013,6 +1016,13 @@ export type Database = {
           user_id?: string | null;
         };
         Relationships: [
+          {
+            foreignKeyName: "casting_candidates_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "casting_candidates_project_id_fkey";
             columns: ["project_id"];
@@ -1060,6 +1070,7 @@ export type Database = {
       };
       casting_notes: {
         Row: {
+          character_id: string | null;
           character_name: string;
           created_at: string;
           created_by: string | null;
@@ -1069,6 +1080,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          character_id?: string | null;
           character_name: string;
           created_at?: string;
           created_by?: string | null;
@@ -1077,6 +1089,7 @@ export type Database = {
           project_id: string;
         };
         Update: {
+          character_id?: string | null;
           character_name?: string;
           created_at?: string;
           created_by?: string | null;
@@ -1085,6 +1098,13 @@ export type Database = {
           project_id?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "casting_notes_character_fkey";
+            columns: ["character_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "characters";
+            referencedColumns: ["id", "project_id"];
+          },
           {
             foreignKeyName: "casting_notes_project_id_fkey";
             columns: ["project_id"];
@@ -1492,6 +1512,36 @@ export type Database = {
             columns: ["user_id"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      context_notices: {
+        Row: {
+          key: string;
+          kind: string;
+          notified_at: string;
+          project_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          key: string;
+          kind: string;
+          notified_at?: string;
+          project_id: string;
+        };
+        Update: {
+          key?: string;
+          kind?: string;
+          notified_at?: string;
+          project_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "context_notices_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
             referencedColumns: ["id"];
           },
         ];

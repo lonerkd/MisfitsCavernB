@@ -3,12 +3,16 @@ import * as Y from 'yjs';
 import {
   applyScriptText,
   applyScriptUpdate,
+  baselineClientIdFor,
   decodeScriptTextUpdate,
   encodeScriptTextUpdate,
   encodeScriptTextState,
   LOCAL_EDIT_ORIGIN,
   mapThroughDelta,
+  mergeScriptTexts,
   mergeServerIntoLocal,
+  rebaseSeededDoc,
+  reconcileScriptText,
   REMOTE_EDIT_ORIGIN,
   restoreScriptTextState,
   SCRIPT_TEXT_FIELD,
@@ -185,5 +189,161 @@ describe('mergeServerIntoLocal', () => {
     expect(mergeServerIntoLocal(offline.persisted, '')).toBeNull();
     expect(mergeServerIntoLocal(offline.persisted, '%%% not base64 %%%')).toBeNull();
     expect(mergeServerIntoLocal({ state: [1, 2, 3], baseContent: BASE }, server)).toBeNull();
+  });
+});
+
+describe('mergeScriptTexts', () => {
+  const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n';
+  const APPENDED = '\nINT. ROOF - DAY\n\nA beat pushed from the board.\n';
+
+  it('takes the server text whole when this side has not moved from the base', () => {
+    expect(mergeScriptTexts(BASE, BASE, BASE + APPENDED)).toBe(BASE + APPENDED);
+  });
+
+  it('keeps this side\'s text when the server column has not moved from the base', () => {
+    const ours = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up. Barely.\n';
+    expect(mergeScriptTexts(BASE, ours, BASE)).toBe(ours);
+  });
+
+  it('changes nothing when all three already agree', () => {
+    expect(mergeScriptTexts(BASE, BASE, BASE)).toBe(BASE);
+  });
+
+  it('folds in words appended after the base and keeps a local edit elsewhere', () => {
+    const ours = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up. Barely.\n';
+    const merged = mergeScriptTexts(BASE, ours, BASE + APPENDED);
+    expect(merged).toBe('INT. KITCHEN - NIGHT\n\nMAYA\nStill up. Barely.\n' + APPENDED);
+  });
+
+  it('keeps both sides\' words appended at the same end', () => {
+    const merged = mergeScriptTexts(BASE, BASE + '\nFrom the device.\n', BASE + APPENDED);
+    expect(merged).toContain('From the device.');
+    expect(merged).toContain('A beat pushed from the board.');
+    expect(merged.match(/Still up\./g)).toHaveLength(1);
+  });
+
+  it('lets the document win where both sides rewrote the same words', () => {
+    const ours = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill down.\n';
+    const theirs = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill out.\n';
+    expect(mergeScriptTexts(BASE, ours, theirs)).toBe(ours);
+  });
+});
+
+describe('reconcileScriptText', () => {
+  const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n';
+  const APPENDED = '\nINT. ROOF - DAY\n\nA beat pushed from the board.\n';
+
+  /** What a device saved before it closed: the shared document, and the server text it was built from. */
+  const savedDevice = (edit?: (text: Y.Text) => void) => {
+    const doc = new Y.Doc();
+    seedScriptText(doc, BASE);
+    if (edit) edit(doc.getText(SCRIPT_TEXT_FIELD));
+    const saved = encodeScriptTextState(doc, BASE);
+    doc.destroy();
+    return saved;
+  };
+
+  /** The shared state the server still holds: seeded from the base, as it was before the append. */
+  const serverState = () => {
+    const doc = new Y.Doc();
+    seedScriptText(doc, BASE);
+    const encoded = encodeScriptTextUpdate(doc);
+    doc.destroy();
+    return encoded;
+  };
+
+  it('folds a beat appended with no editor open into the restored document, so the save that follows keeps it', () => {
+    const saved = savedDevice();
+    const opened = new Y.Doc();
+    restoreScriptTextState(opened, saved);
+    // The setup also applies the server's stored shared state, which knows nothing of the append.
+    applyScriptUpdate(opened, decodeScriptTextUpdate(serverState())!);
+    expect(reconcileScriptText(opened, saved.baseContent, BASE + APPENDED)).toBe(true);
+    expect(opened.getText(SCRIPT_TEXT_FIELD).toString()).toBe(BASE + APPENDED);
+    opened.destroy();
+  });
+
+  it('keeps an offline edit and the appended beat together', () => {
+    const saved = savedDevice((t) => t.insert(t.toString().indexOf('Still up.') + 'Still up.'.length, ' Barely.'));
+    const opened = new Y.Doc();
+    restoreScriptTextState(opened, saved);
+    applyScriptUpdate(opened, decodeScriptTextUpdate(serverState())!);
+    expect(reconcileScriptText(opened, saved.baseContent, BASE + APPENDED)).toBe(true);
+    const text = opened.getText(SCRIPT_TEXT_FIELD).toString();
+    expect(text).toContain('Still up. Barely.');
+    expect(text).toContain('A beat pushed from the board.');
+    opened.destroy();
+  });
+
+  it('changes nothing when the column holds nothing the document lacks', () => {
+    const saved = savedDevice((t) => t.insert(t.length, '\nFrom the device.\n'));
+    const opened = new Y.Doc();
+    restoreScriptTextState(opened, saved);
+    expect(reconcileScriptText(opened, saved.baseContent, BASE)).toBe(false);
+    expect(reconcileScriptText(opened, saved.baseContent, opened.getText(SCRIPT_TEXT_FIELD).toString())).toBe(false);
+    expect(opened.getText(SCRIPT_TEXT_FIELD).toString()).toContain('From the device.');
+    opened.destroy();
+  });
+});
+
+describe('seed identity (BACKLOG 3.33 leftover (i): seeds must not collide)', () => {
+  const V1 = 'INT. HOUSE - DAY\n\nAlice enters.';
+  const V2 = 'INT. HOUSE - DAY\n\nAlicia enters.'; // a content-only write changed the text between two loads
+
+  it('derives the baseline client id from the seeded words', () => {
+    expect(baselineClientIdFor(V1)).toBe(baselineClientIdFor(V1));
+    expect(baselineClientIdFor(V1)).not.toBe(baselineClientIdFor(V2));
+    expect(baselineClientIdFor('')).not.toBe(baselineClientIdFor(V1));
+  });
+
+  it('two windows seeding the same words still merge cleanly, with no duplication', () => {
+    const a = createDoc(V1);
+    const b = createDoc(V1);
+    Y.applyUpdate(b.doc, Y.encodeStateAsUpdate(a.doc));
+    expect(b.text.toString()).toBe(V1);
+    a.doc.destroy();
+    b.doc.destroy();
+  });
+
+  it('a window that seeded older words rebases onto the server state instead of merging two baselines', () => {
+    const server = createDoc(V2);
+    server.text.insert(server.text.length, '\n\nBob smiles.');
+    const serverUpdate = Y.encodeStateAsUpdate(server.doc);
+
+    const opened = createDoc(V1); // seeded before the content-only write landed; no edits of its own yet
+    expect(rebaseSeededDoc(opened.doc, V1, serverUpdate)).toBe(true);
+    expect(opened.text.toString()).toBe(server.text.toString());
+    server.doc.destroy();
+    opened.doc.destroy();
+  });
+
+  it('the rebase makes the two windows converge exactly (the old fixed id silently garbled this)', () => {
+    const a = createDoc(V1);
+    const b = createDoc(V2);
+    expect(rebaseSeededDoc(b.doc, V2, Y.encodeStateAsUpdate(a.doc))).toBe(true);
+    Y.applyUpdate(a.doc, Y.encodeStateAsUpdate(b.doc));
+    expect(a.text.toString()).toBe(V1);
+    expect(b.text.toString()).toBe(V1);
+    a.doc.destroy();
+    b.doc.destroy();
+  });
+
+  it('refuses to rebase over edits the window made since seeding', () => {
+    const server = createDoc(V2);
+    const opened = createDoc(V1);
+    opened.text.insert(0, 'OWN ');
+    expect(rebaseSeededDoc(opened.doc, V1, Y.encodeStateAsUpdate(server.doc))).toBe(false);
+    expect(opened.text.toString()).toBe(`OWN ${V1}`);
+    server.doc.destroy();
+    opened.doc.destroy();
+  });
+
+  it('does nothing when the server state holds the same words that were seeded', () => {
+    const server = createDoc(V1);
+    const opened = createDoc(V1);
+    expect(rebaseSeededDoc(opened.doc, V1, Y.encodeStateAsUpdate(server.doc))).toBe(false);
+    expect(opened.text.toString()).toBe(V1);
+    server.doc.destroy();
+    opened.doc.destroy();
   });
 });

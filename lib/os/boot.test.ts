@@ -170,6 +170,28 @@ describe('bootOS — every page opens signed in without waiting on the network',
     await vi.waitFor(() => expect(state().session.status).toBe('anon'));
   });
 
+  it('does not sign out a fresh sign-in when the stale session boot adopted is rejected', async () => {
+    // Boot adopts a stale stored session (token A) and starts its background
+    // check; before the check lands, the user signs in again and the live
+    // session is a different one (token B). The stale session's rejection
+    // must not demote the fresh one — that demotion is what stranded the
+    // sign-in page: authed in the browser, anon in the store, no redirect.
+    const stale = { data: { session: { user: USER, access_token: 'token-a' } }, error: null };
+    const fresh = { data: { session: { user: USER, access_token: 'token-b' } }, error: null };
+    auth.getSession.mockResolvedValueOnce(stale).mockResolvedValue(fresh);
+    auth.getUser.mockResolvedValue({ data: { user: null }, error: Object.assign(new Error('invalid JWT'), { status: 401 }) });
+    profileLookup.mockResolvedValue({ data: { id: USER.id, username: 'sam' }, error: null });
+    const { bootOS, state } = await freshBoot();
+
+    await bootOS();
+    // The guard re-reads the live session before deciding; let it settle.
+    await vi.waitFor(() => expect(auth.getSession).toHaveBeenCalledTimes(2));
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(state().session.status).toBe('authed');
+    expect(state().session.userId).toBe(USER.id);
+  });
+
   it('is anon when there is no stored session', async () => {
     auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
     const { bootOS, state } = await freshBoot();

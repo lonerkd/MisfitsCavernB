@@ -128,4 +128,18 @@ export function callFor(snap: CallSheetSnapshot, userId: string, castAs: string[
   return hit ? { ...hit[1], as: role } : null;
 }
 
+/** Who an issued call is for, as the panel files it: a crew member, or a character (by id, with its name as the label). */
+export type IssuedCallTarget = { crew_user_id: string } | { character_id: string; character_name: string };
+
+/**
+ * One target's entry in an issued snapshot. A cast call is read by character
+ * id first (`cast_by_id`, filed when the sheet was issued): a character
+ * renamed since still finds its call. A sheet issued before `cast_by_id`
+ * existed has none, so it falls back to the name filing.
+ */
+export function issuedCallFor(snap: CallSheetSnapshot, target: IssuedCallTarget): CallEntry & { name?: string | null } | undefined {
+  if ('crew_user_id' in target) return snap.calls[target.crew_user_id];
+  return snap.cast_by_id?.[target.character_id] ?? snap.cast_calls[target.character_name];
+}
+
 export const hhmm = (t: string | null | undefined) => (t ? t.slice(0, 5) : '');

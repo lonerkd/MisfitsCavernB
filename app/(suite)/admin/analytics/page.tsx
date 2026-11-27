@@ -99,7 +99,7 @@ export default function AdminAnalyticsPage() {
               ANALYTICS
             </h1>
           </div>
-          <Link href="/community" style={{ color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 11 }}>
+          <Link href="/" style={{ color: 'var(--fg-muted)', textDecoration: 'none', fontSize: 11 }}>
             ← BACK TO COMMUNITY
           </Link>
         </header>

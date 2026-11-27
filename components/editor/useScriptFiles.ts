@@ -92,6 +92,28 @@ export function useScriptExport({ currentScript, content, titlePage, toast, onDo
     } else if (format === 'pdf') {
       toast('Generating PDF...', 'info');
       exportScriptAsPdf({ ...currentScript, content }, titlePage).catch(() => toast('Could not make the PDF — check your connection and try again.', 'error'));
+    } else if (format === 'publish' || format === 'build' || format === 'md' || format === 'html') {
+      // The publish step (BACKLOG 3.51): a video script's publish package, a game script's build sheet,
+      // or an article's publish-ready file.
+      void (async () => {
+        try {
+          const fe = await import('@/lib/scriptos/format-export');
+          const { downloadText } = await import('@/lib/print/download');
+          const s = { ...currentScript, content };
+          const base = currentScript.title.replace(/[^a-z0-9]/gi, '_');
+          const generated = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+          const ok = format === 'publish'
+            ? downloadText(`${base}-publish.md`, fe.videoPublishPackage(s, generated), 'text/markdown')
+            : format === 'build'
+              ? downloadText(`${base}-build.md`, fe.gameBuildSheet(s, generated), 'text/markdown')
+              : format === 'md'
+                ? downloadText(`${base}.md`, fe.proseMarkdown(s, titlePage?.title), 'text/markdown')
+                : downloadText(`${base}.html`, fe.proseHtml(s, generated, titlePage?.title), 'text/html');
+          toast(ok ? (format === 'publish' ? 'Publish package saved as .md' : format === 'build' ? 'Build sheet saved as .md' : `Exported as .${format}`) : 'Could not save the file here.', ok ? 'success' : 'error');
+        } catch {
+          toast('Could not make that file — check your connection and try again.', 'error');
+        }
+      })();
     } else {
       exportScriptAsText({ ...currentScript, content }, 'txt');
       toast('Exported as .txt', 'success');

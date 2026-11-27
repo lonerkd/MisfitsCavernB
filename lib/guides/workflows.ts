@@ -143,6 +143,27 @@ export const WORKFLOWS: Workflow[] = [
     },
   },
   {
+    id: 'advertising', label: 'Advertising copy', blurb: 'A client’s brief, concepts, the copy, sign-off and every variant delivered.',
+    steps: ['client-brief', 'references', 'beats', 'script', 'draft', 'rewrite', 'approval', 'notes', 'notes-resolved', 'artwork', 'deliverables', 'share', 'portfolio'],
+    overrides: {
+      beats: { title: 'Work up the concepts', text: { do: 'Sketch three or four routes to the same brief before writing any of them out.' } },
+      script: { title: 'Write the copy', text: { do: 'Write the winning route in the copy format: headline, body, call to action.' } },
+      approval: { text: { do: 'Get the client’s sign-off on the copy before anything is produced from it.' } },
+      deliverables: { text: { do: 'Every variant the brief asks for — lengths, ratios and formats — checked against it.' } },
+      share: { title: 'Share with the client' },
+    },
+  },
+  {
+    id: 'copywriting', label: 'Copywriting', blurb: 'The brief, the draft, the client’s notes, sign-off and handover.',
+    steps: ['logline', 'brief', 'references', 'beats', 'script', 'draft', 'rewrite', 'approval', 'notes', 'notes-resolved', 'artwork', 'share', 'portfolio'],
+    overrides: {
+      logline: { title: 'Say what the piece must do', text: { do: 'One sentence: the reader, the point, and the action it should cause.' } },
+      script: { title: 'Write the copy', text: { do: 'Write in the copy format: headline, body, call to action.' } },
+      approval: { text: { do: 'Get the client’s sign-off before the copy ships.' } },
+      share: { title: 'Hand it over', text: { do: 'Send the final copy and share its page.' } },
+    },
+  },
+  {
     id: 'game', label: 'Video game', blurb: 'Story and dialogue for a game: concept, design, build, polish, release.',
     steps: ['logline', 'brief', 'references', 'characters', 'beats', 'script', 'draft', 'table-read', 'rewrite', 'notes', 'notes-resolved', 'music', 'artwork', 'share', 'release-plan', 'portfolio'],
     overrides: {
@@ -169,6 +190,8 @@ export function pickWorkflow(format: string | null | undefined, experience: Expe
       : f === 'documentary' ? 'documentary'
       : f === 'podcast' ? 'podcast'
       : f === 'commercial' ? 'commercial'
+      : f === 'advertising' ? 'advertising'
+      : f === 'copywriting' ? 'copywriting'
       : f === 'youtube' ? 'youtube'
       : f.includes('blog') || f.includes('newsletter') || f === 'article' ? 'blog'
       : f === 'video game' || f === 'game' ? 'game'

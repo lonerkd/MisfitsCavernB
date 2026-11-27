@@ -62,12 +62,22 @@ export function usePhoneLayout(): PhoneState {
 
 const KEYBOARD_GONE = 60;
 
+/** The bottom bar's step-aside for the keyboard: at rest, rising with a fresh focus, or confirmed up. */
+export type BarAside = 'off' | 'rising' | 'up';
+
 /**
- * Pure: should the phone's pill step aside for the keyboard? Only when something editable has focus AND the visible area is
- * shorter by a keyboard's height; it returns when that stops being true, with a gap between the two (120 / 60 px) so the
- * browser chrome growing and shrinking while the page scrolls can never flip it on and off.
+ * Pure: the step-aside as a small state machine, shared by the pill, the island (through `data-typing`) and the
+ * rooms that resize around the keyboard. Focus leads: the moment a field takes focus the bar steps aside
+ * ('rising'), before the keyboard has moved — measuring the covered height alone made the bar ride up with the
+ * keyboard's rise and only drop once the rise passed 120 px, the drag-then-fall the owner filmed (Nov 26, 2026).
+ * The measurement confirms ('up' past a keyboard's height) and releases: once the keyboard has mostly gone
+ * (under 60 px) the bar returns even if the field keeps focus, and blur always releases. Browser chrome growing
+ * and shrinking while the page scrolls can never flip it: without focus it is always 'off'.
  */
-export function keyboardUp(prev: boolean, covered: number, editableFocused: boolean): boolean {
-  if (!editableFocused) return false;
-  return prev ? covered > KEYBOARD_GONE : covered > KEYBOARD_MIN;
+export function barAside(prev: BarAside, covered: number, editableFocused: boolean): BarAside {
+  if (!editableFocused) return 'off';
+  // Focus with the keyboard already measured up (a fast rise, a field tapped while it was up) lands in 'up'.
+  if (prev === 'off') return covered > KEYBOARD_MIN ? 'up' : 'rising';
+  if (prev === 'rising') return covered > KEYBOARD_MIN ? 'up' : 'rising';
+  return covered > KEYBOARD_GONE ? 'up' : 'off';
 }

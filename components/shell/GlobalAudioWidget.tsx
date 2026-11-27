@@ -9,6 +9,7 @@ import { useCavern } from '@/lib/cavern/CavernContext';
 import { useToast } from '@/components/ui/Toast';
 import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { useIslandPopover } from '@/lib/island/popover';
+import { useIslandSurface } from '@/lib/island/useIslandSurface';
 import s from '../island/island.module.css';
 
 /**
@@ -21,6 +22,12 @@ export default function GlobalAudioWidget() {
   const [expanded, setExpanded] = useState(false);
   const cavern = useCavern();
   const { rootRef, buttonRef } = useIslandPopover<HTMLSpanElement>('sound', expanded, () => setExpanded(false));
+  // On a phone the player spans the screen above the island, like the bell's panel — anchored to its
+  // button it ran off the left edge (the owner's shots, Nov 26, 2026). See NotificationBell's panelFit.
+  const compact = useIslandSurface() === 'compact-dock';
+  const panelFit: React.CSSProperties = compact
+    ? { position: 'fixed', left: 12, right: 12, bottom: 'calc(100dvh - var(--island-room, 70vh) - 14px)', width: 'auto' }
+    : { position: 'absolute', bottom: 'calc(100% + 14px)', right: 0, width: 300 };
 
   if (!isAuthenticated) {
     return (
@@ -61,8 +68,8 @@ export default function GlobalAudioWidget() {
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             data-island-popover="sound"
             style={{
-              position: 'absolute', bottom: 'calc(100% + 14px)', right: 0,
-              width: 300, background: 'var(--surface)',
+              ...panelFit,
+              background: 'var(--surface)',
               border: '1px solid rgba(var(--ink-rgb), 0.1)', borderRadius: 14,
               boxShadow: '0 24px 60px rgba(0,0,0,0.8)',
               overflow: 'hidden auto', maxHeight: 'var(--island-room, 70vh)', backdropFilter: 'blur(30px)',

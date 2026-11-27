@@ -4,10 +4,17 @@
   min-height: 100vh;
 }
 
-.bar {
+/* The bar and the tab strip stick as ONE unit. They used to be two separate
+   sticky elements (top: 0 and top: 58px); on the owner's phone the tab pill
+   rode up over the project picker (Nov 26, 2026) — two independent sticky
+   offsets can drift apart in some scroll/zoom states, one wrapper cannot. */
+.stickyHead {
   position: sticky;
   top: 0;
   z-index: 100;
+}
+
+.bar {
   height: 58px;
   padding: 0 24px;
   display: flex;
@@ -55,9 +62,6 @@
 .projectPicker option { background: var(--bg-2); color: var(--fg); }
 
 .tabs {
-  position: sticky;
-  top: 58px;
-  z-index: 90;
   display: flex;
   justify-content: center;
   padding: 8px 16px;
@@ -127,7 +131,10 @@
 
 @media (max-width: 640px) {
   .bar { padding: 0 14px; }
-  .projectPicker select { max-width: min(56vw, 240px); }
+  /* 16px is iOS Safari's focus-zoom floor: a smaller font on a focusable
+     control zooms the page when tapped, which then breaks every sticky and
+     100dvh measurement on the screen. */
+  .projectPicker select { max-width: min(56vw, 240px); font-size: 16px; }
   .tabs { justify-content: flex-start; }
 }
 .tabLoading { min-height: 40vh; display: grid; place-items: center; }

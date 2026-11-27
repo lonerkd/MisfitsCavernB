@@ -9,7 +9,7 @@
 //   FROSTED=1 THEME=slate npm run theme:scan  the frosted mode over that theme (translucent surfaces: stacked and measured like any other)
 //   PHONE=1 npm run theme:scan               at phone width
 //   SCAN_EMAIL=… SCAN_PASSWORD=… npm run theme:scan   another local account than the demo one
-//   npm run theme:scan -- /jobs /community       only these routes
+//   npm run theme:scan -- /jobs /                only these routes
 //   npm run theme:scan -- --states               what opens on a click or is not there: the job modal, notifications, search, the island (the menu sheet with PHONE=1), empty searches, a 404, the New Project and New channel dialogs, Delete account
 //
 // Needs the local stack and the demo account (npm run stack:up -- build, then npm run bible:shots once). Local only.
@@ -27,7 +27,7 @@ const FROSTED = process.env.FROSTED === '1';
 const PHONE = !!process.env.PHONE;
 const MIN = Number(process.env.MIN_CONTRAST || 3);
 const DEFAULT_ROUTES = [
-  '/community', '/projects', '/jobs', '/lounge', '/settings', '/profile', '/crew', '/portfolio', '/editor',
+  '/', '/projects', '/jobs', '/lounge', '/settings', '/profile', '/crew', '/portfolio', '/editor',
   '/admin', '/admin/users', '/admin/audit-logs',
   '/studio?tab=overview', '/studio?tab=library', '/studio?tab=scenes', '/studio?tab=post', '/studio?tab=pitch', '/studio?tab=share',
   ...['story', 'breakdown', 'readiness', 'locations', 'continuity', 'money', 'paperwork', 'schedule', 'onset', 'crew'].map((v) => `/studio?tab=production&view=${v}`),
@@ -129,18 +129,18 @@ const STATES = [
     await page.getByRole('textbox', { name: /Position Title/i }).fill('Gaffer for a two-day shoot', { timeout: 8000 });
   } },
   // Desktop only: the phone's menu sheet has Updates, a link to a section of the page, not a panel.
-  { name: '/community › Notifications panel', route: '/community', desktopOnly: true, open: async () => {
+  { name: '/ › Notifications panel', route: '/', desktopOnly: true, open: async () => {
     const bell = page.getByRole('button', { name: /^Notifications/i }).first();
     // The bell lives in the island's dock (the phone's menu sheet has it as Updates): open that first when it is not on show.
     if (!(await bell.isVisible().catch(() => false))) await page.getByRole('button', { name: PHONE ? /^Menu\./ : /^Open the island/ }).first().click({ timeout: 8000 });
     await bell.click({ timeout: 8000 });
   } },
-  { name: '/community › Search everything', route: '/community', open: async () => {
+  { name: '/ › Search everything', route: '/', open: async () => {
     const search = page.getByRole('button', { name: 'Search everything' }).first();
     if (await search.isVisible().catch(() => false)) await search.click({ timeout: 8000 });
     else await page.keyboard.press('Control+k');
   } },
-  { name: PHONE ? '/community › the menu sheet' : '/community › the island, open', route: '/community', open: async () => {
+  { name: PHONE ? '/ › the menu sheet' : '/ › the island, open', route: '/', open: async () => {
     await page.getByRole('button', { name: PHONE ? /^Menu\./ : /^Open the island/ }).first().click({ timeout: 8000 });
   } },
   // Empty and error states: what a screen says when there is nothing to show or nothing there.

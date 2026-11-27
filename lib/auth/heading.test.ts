@@ -6,4 +6,8 @@ describe('authHeading', () => {
     const titles = (['signin', 'signup', 'forgot'] as const).map((m) => authHeading(m).join(' '));
     expect(new Set(titles).size).toBe(3);
   });
+
+  it('sign-up reads WELCOME over CAVERN — the lower line stays (owner, Nov 26 2026)', () => {
+    expect(authHeading('signup')).toEqual(['WELCOME', 'CAVERN']);
+  });
 });

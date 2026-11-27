@@ -13,7 +13,7 @@ import { ShareScriptButton } from './ShareScriptButton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { parseScript } from '@/lib/scriptos/parser';
 import { saveScript, getAllScripts, createNewScript, importScriptFromText, type StoredScript } from '@/lib/scriptos/storage';
-import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf, exportChoicesFor } from '@/lib/scriptos/export';
+import { exportScriptAsText, exportScriptAsFdx, exportScriptAsPdf, exportChoicesFor, exportChoiceLabel } from '@/lib/scriptos/export';
 import { REVISION_COLORS, getRevisions, createRevision, fetchRevisionsDB, createRevisionDB, type Revision } from '@/lib/scriptos/revisions';
 import { analyzeCharacters, type CharacterStats } from '@/lib/scriptos/characters';
 import { loadTitlePage, saveTitlePage, getDefaultTitlePage, type TitlePage } from '@/lib/scriptos/titlepage';
@@ -68,7 +68,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <Link href="/community" aria-label="Back to Community" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
+            <Link href="/" aria-label="Back to home" style={{ color: 'var(--fg-muted)', transition: 'color 0.2s' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--fg)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--fg-muted)')}>
               <ArrowLeft size={18} />
@@ -249,7 +249,7 @@ export function EditorHeader({ ctx }: { ctx: EditorCtx }) {
                     }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--ink-rgb), 0.05)'; e.currentTarget.style.color = 'var(--fg)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--fg-muted)'; }}>
-                      .{fmt.toUpperCase()}
+                      {exportChoiceLabel(fmt)}
                     </button>
                   ))}
                   <div style={{ height: 1, background: 'rgba(var(--ink-rgb), 0.08)', margin: '4px 6px' }} />

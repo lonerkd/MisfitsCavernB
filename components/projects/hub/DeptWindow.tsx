@@ -234,3 +234,20 @@ export function PortfolioPreview({ pieces }: { pieces: { id: string; title: stri
     </div>
   );
 }
+
+export function DistributionPreview({ submitted, accepted, campaigns }: { submitted: number; accepted: number; campaigns: number }) {
+  return (
+    <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {[
+        { label: 'Festival submissions', value: String(submitted) },
+        { label: 'Accepted', value: String(accepted) },
+        { label: 'Campaigns planned', value: String(campaigns) },
+      ].map(({ label, value }) => (
+        <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-dim)' }}>{label}</span>
+          <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>{value}</span>
+        </div>
+      ))}
+    </div>
+  );
+}

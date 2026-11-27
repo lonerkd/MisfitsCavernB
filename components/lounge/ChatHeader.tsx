@@ -11,15 +11,15 @@ export function ChatHeader({ l }: { l: Lounge }) {
          <button type="button" className="mc-phone-only mc-lounge-back" onClick={() => { setThreadParent(null); setPane('list'); }} aria-label="Back to channels and people"><ChevronLeft size={20} aria-hidden /></button>
          {dmTarget ? (
            <>
-             <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999 }}>DIRECT</span>
-             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)' }}>@{dmTarget.name}</span>
+             <span style={{ fontSize: 'max(8px, var(--mc-min-font, 0px))', color: 'var(--ok)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(16,185,129,0.12)', padding: '2px 7px', borderRadius: 9999, flexShrink: 0 }}>DIRECT</span>
+             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{dmTarget.name}</span>
              {onlineIds.has(dmTarget.id) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00cc66', boxShadow: '0 0 8px rgba(0,204,102,0.8)' }} />}
            </>
          ) : activeChannel ? (
            <>
              {activeChannel.is_private && <Lock size={12} color="var(--fg-dim)" />}
-             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)' }}>{activeChannel.type === 'voice' ? '🔊 ' : '#'}{activeChannel.name}</span>
-             {activeChannel.post_policy === 'managers' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--warn)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 9999 }}>ANNOUNCE</span>}
+             <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-strong)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeChannel.type === 'voice' ? '🔊 ' : '#'}{activeChannel.name}</span>
+             {activeChannel.post_policy === 'managers' && <span style={{ fontSize: 'max(7.5px, var(--mc-min-font, 0px))', color: 'var(--warn)', fontFamily: 'var(--mono)', letterSpacing: 'var(--caps-track)', background: 'rgba(245,158,11,0.12)', padding: '2px 6px', borderRadius: 9999, flexShrink: 0 }}>ANNOUNCE</span>}
            </>
          ) : (
            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--fg-dim)' }}>No channels</span>
@@ -28,7 +28,7 @@ export function ChatHeader({ l }: { l: Lounge }) {
          {/* The topic is one line or nothing on a phone: beside the name it wrapped into a tall column of its own. */}
          <span className="mc-lounge-topic" style={{ fontSize: 11, color: 'var(--fg-muted)', fontFamily: 'var(--mono)' }}>{activeChannel?.topic || `${messages.length} message${messages.length === 1 ? '' : 's'}`}</span>
        </div>
-       <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)' }}>
+       <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'var(--mono)', fontSize: 'max(9px, var(--mc-min-font, 0px))', color: 'var(--fg-muted)', flexShrink: 0 }}>
           {dmTarget ? (
             <button className="mc-hide-phone" onClick={() => setDmTarget(null)} style={{ background: 'transparent', border: '1px solid rgba(var(--ink-rgb), 0.12)', color: 'var(--fg-muted)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'var(--mono)', fontSize: 'max(8.5px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)' }}>← CHANNELS</button>
           ) : (

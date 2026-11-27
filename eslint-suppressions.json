@@ -78,9 +78,6 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 7
-    },
-    "no-restricted-syntax": {
-      "count": 4
     }
   },
   "app/(suite)/jobs/[id]/page.tsx": {
@@ -105,11 +102,6 @@
   "app/(suite)/opengraph-image.tsx": {
     "no-restricted-syntax": {
       "count": 4
-    }
-  },
-  "app/(suite)/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 2
     }
   },
   "app/(suite)/portfolio/manage/page.tsx": {
@@ -141,12 +133,6 @@
   },
   "app/(suite)/projects/[id]/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 4
-    },
-    "no-restricted-syntax": {
       "count": 1
     }
   },
@@ -218,11 +204,6 @@
   },
   "components/brief/BriefPanel.tsx": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "components/community/TheCavern.tsx": {
-    "no-restricted-syntax": {
       "count": 1
     }
   },
