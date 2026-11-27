@@ -1,6 +1,5 @@
 'use client';
 
-import { ViewAsBanner } from '@/components/projects/ViewAs';
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { usePhoneLayout } from '@/lib/os/usePhone';
@@ -47,7 +46,6 @@ export default function LoungePage() {
     <div ref={root} className="mc-lounge" style={{ background: 'var(--bg)', color: 'var(--fg)', height: 'calc(100dvh - var(--mc-safe-top))', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
       <h1 className="sr-only">Lounge{activeProject ? ` — ${activeProject.title}` : ''}</h1>
       <GrainOverlay />
-      {activeProject && <ViewAsBanner projectId={activeProject.id} />}
 
       <LoungeTopBar l={l} />
       <LoungeWelcome />

@@ -44,9 +44,12 @@ export async function getMyCapabilities(projectId: string): Promise<string[]> {
  * as a role (View as › Crew), it answers for that role instead, so every screen that follows a person's capabilities shows
  * what that role would see. The database still treats the owner as the owner: only the interface is previewed.
  */
-export function useMyCapabilities(projectId: string | null | undefined): { can: (key: string) => boolean; caps: ReadonlySet<string>; loading: boolean } {
+export function useMyCapabilities(projectId: string | null | undefined): { can: (key: string) => boolean; caps: ReadonlySet<string>; loading: boolean; error: boolean } {
   const [caps, setCaps] = useState<ReadonlySet<string>>(new Set());
   const [loading, setLoading] = useState(!!projectId);
+  // A failed read is not "holds nothing": error says the answer never arrived, so a surface can say
+  // it could not check instead of refusing the person as if the database had.
+  const [error, setError] = useState(false);
   const previewing = useViewAs(projectId) === 'crew';
   const role = useViewAsRole(projectId);
   const [catalog, setCatalog] = useState<CapabilityCatalog | null>(null);
@@ -57,19 +60,19 @@ export function useMyCapabilities(projectId: string | null | undefined): { can: 
     return () => { alive = false; };
   }, [previewing]);
   useEffect(() => {
-    if (!projectId) { queueMicrotask(() => { setCaps(new Set()); setLoading(false); }); return; }
+    if (!projectId) { queueMicrotask(() => { setCaps(new Set()); setLoading(false); setError(false); }); return; }
     let alive = true;
-    queueMicrotask(() => setLoading(true));
-    getMyCapabilities(projectId).then((c) => { if (alive) setCaps(new Set(c)); }).catch(() => { if (alive) setCaps(new Set()); }).finally(() => { if (alive) setLoading(false); });
+    queueMicrotask(() => { setLoading(true); setError(false); });
+    getMyCapabilities(projectId).then((c) => { if (alive) setCaps(new Set(c)); }).catch(() => { if (alive) { setCaps(new Set()); setError(true); } }).finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, [projectId]);
   return useMemo(() => {
     if (previewing) {
       const held = catalog ? resolveCapabilities(catalog.defs, { tier: role.tier, crafts: role.craft ? [role.craft] : [], overrides: {} }, catalog.templates) : new Set<string>();
-      return { caps: held, loading: !catalog, can: (key: string) => held.has(key) };
+      return { caps: held, loading: !catalog, error: false, can: (key: string) => held.has(key) };
     }
-    return { caps, loading, can: (key: string) => caps.has(key) };
-  }, [previewing, role, catalog, caps, loading]);
+    return { caps, loading, error, can: (key: string) => caps.has(key) };
+  }, [previewing, role, catalog, caps, loading, error]);
 }
 
 /**

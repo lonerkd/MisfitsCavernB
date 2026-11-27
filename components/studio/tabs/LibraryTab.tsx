@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useState } from 'react';
-import { Archive, Link2, Search, StickyNote } from 'lucide-react';
+import { Archive, LayoutGrid, Link2, Search, StickyNote } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import type { Media } from '@/lib/studio';
 import { useStudio } from '../StudioContext';
@@ -34,14 +34,26 @@ export function LibraryTab() {
   const dragging = useFileDrop((files) => void uploader.add(files), !openId && !finding);
 
   const count = media.rows.length;
+  // The tool header leads the page and the view switch sits under it (owner, Nov 27, 2026):
+  // the same anatomy on every tool page — header, then the sub-nav, then the work.
+  const viewChips = (
+    <div role="tablist" aria-label="Library views" style={{ display: 'flex', gap: 6, margin: '12px 0' }}>
+      {(['library', 'boards'] as const).map((v) => (
+        <button key={v} type="button" role="tab" aria-selected={view === v} className={s.btn} style={view === v ? { borderColor: 'var(--accent)' } : undefined} onClick={() => setView(v)}>{v === 'library' ? 'Library' : 'Mood boards'}</button>
+      ))}
+    </div>
+  );
   return (
     <section aria-labelledby="library-title">
-      <div role="tablist" aria-label="Library views" style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-        {(['library', 'boards'] as const).map((v) => (
-          <button key={v} type="button" role="tab" aria-selected={view === v} className={s.btn} style={view === v ? { borderColor: 'var(--accent)' } : undefined} onClick={() => setView(v)}>{v === 'library' ? 'Library' : 'Mood boards'}</button>
-        ))}
-      </div>
-      {view === 'boards' ? <BoardsPanel /> : (<>
+      {view === 'boards' ? (<>
+      <TabHeader
+        id="library-title"
+        title="Mood boards"
+        tool={{ icon: <LayoutGrid size={16} />, eyebrow: 'Studio', accent: project.accent_color, purpose: 'Boards for a character, a place, a tone or a palette — pulled from the library.' }}
+      />
+      {viewChips}
+      <BoardsPanel />
+      </>) : (<>
       <TabHeader
         id="library-title"
         title="References & Media"
@@ -61,6 +73,7 @@ export function LibraryTab() {
           </>
         }
       />
+      {viewChips}
       {adding && <AddLinkForm projectId={project.id} userId={userId} board={f.board} onAdded={onUploaded} onCancel={() => setAdding(false)} />}
       {writing && <AddNoteForm projectId={project.id} userId={userId} board={f.board} onAdded={onUploaded} onCancel={() => setWriting(false)} />}
       <UploadQueue queue={uploader.queue} onRetry={uploader.retry} onDismiss={uploader.dismiss} />
