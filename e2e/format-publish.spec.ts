@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { test, expect, stackEnabled, stackSkipReason, signInAs } from './support/stack';
 
-// BACKLOG 3.51 gap 2: the publishing step for the two non-screenplay formats. A YouTube creator exports a
+// BACKLOG 3.51 gap 2: the publishing step for the non-screenplay formats. A YouTube creator exports a
 // publish package built from the script's own words (title options, description, chapters, tags); a prose
-// writer exports the publish-ready Markdown file. Both are real downloads through the Export menu.
+// writer exports the publish-ready Markdown file; a game writer exports a build sheet (structure, cast,
+// the script and its jumps). All are real downloads through the Export menu.
 // Opt-in: E2E_LOCAL_STACK=1.
 const VIDEO = [
   'HOOK',
@@ -20,6 +21,18 @@ const PROSE = [
   'The best cuts are the ones nobody notices on the first watch.',
   '## Rhythm before polish',
   'Editors talk about rhythm the way drummers do, in counts and rests.',
+].join('\n');
+
+const GAME = [
+  'ACT 1: THE HARBOUR',
+  '[SET met_ines = false]',
+  'Fog sits on the water. A bell rings somewhere.',
+  'INES: You are late.',
+  '* Apologise',
+  '* Ask who she is',
+  '[IF met_ines]',
+  'INES: We have met.',
+  '-> act1_dock',
 ].join('\n');
 
 test.describe('Format publish exports (local Supabase)', () => {
@@ -72,5 +85,30 @@ test.describe('Format publish exports (local Supabase)', () => {
     expect(md).toContain('## Rhythm before polish');
     expect(md).toContain('The best cuts are the ones nobody notices on the first watch.');
     await expect(page.getByText('Exported as .md')).toBeVisible();
+  });
+
+  test('a game script exports a build sheet from its own structure', async ({ page, stack }) => {
+    test.setTimeout(120_000);
+    const owner = await stack.createUser({ label: 'gamepub' });
+    const project = await stack.createProject(owner, { title: `Gamepub ${stack.tag}`, status: 'pre-production' });
+    const script = (await stack.insert('scripts', { title: 'Harbour Bell', format: 'game-script', content: GAME, project_id: project.id, created_by: owner.id, last_edited_by: owner.id })).id;
+
+    await signInAs(page, owner);
+    await page.setViewportSize({ width: 1400, height: 900 });
+    await page.goto(`/editor?script=${script}`);
+    await expect(page.getByRole('textbox', { name: 'Script', exact: true })).toHaveValue(GAME, { timeout: 30_000 });
+
+    await page.getByRole('button', { name: /^Export/ }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('menu', { name: 'Export' }).getByRole('button', { name: /Build sheet/ }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/-build\.md$/);
+    const md = readFileSync((await download.path())!, 'utf8');
+    expect(md).toContain('# Build sheet — Harbour Bell');
+    expect(md).toContain('ACT 1: THE HARBOUR — 2 lines, 2 choices, 1 jump');
+    expect(md).toContain('INES: You are late.');
+    expect(md).toContain('ACT 1: THE HARBOUR -> act1_dock');
+    await expect(page.getByText('Build sheet saved as .md')).toBeVisible();
   });
 });
