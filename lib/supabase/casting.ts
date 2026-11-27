@@ -102,12 +102,28 @@ export async function listCastingHistory(projectId: string): Promise<CastingHist
   return data ?? [];
 }
 
-export interface CastingNote { id: string; note: string; created_at: string | null }
+export interface CastingNote { id: string; note: string; created_at: string | null; character_id: string | null }
 
-export async function listCastingNotes(projectId: string, characterName: string): Promise<CastingNote[]> {
+/**
+ * A character's notes: the ones linked to the character by id, plus the ones that carry the
+ * name but no link (a name no character could take, or a character since removed — the note
+ * was about that role, so it still reads under it). The name stays the label; the id is the key.
+ */
+export async function listCastingNotes(projectId: string, characterName: string, characterId?: string | null): Promise<CastingNote[]> {
+  const name = characterName.toUpperCase();
+  if (characterId && UUID.test(characterId)) {
+    const linked = await supabase.from('casting_notes').select('id, note, created_at, character_id')
+      .eq('project_id', projectId).eq('character_id', characterId);
+    if (linked.error) throw linked.error;
+    const unlinked = await supabase.from('casting_notes').select('id, note, created_at, character_id')
+      .eq('project_id', projectId).eq('character_name', name).is('character_id', null);
+    if (unlinked.error) throw unlinked.error;
+    return [...(linked.data ?? []), ...(unlinked.data ?? [])]
+      .sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+  }
   const { data, error } = await supabase
-    .from('casting_notes').select('id, note, created_at')
-    .eq('project_id', projectId).eq('character_name', characterName.toUpperCase())
+    .from('casting_notes').select('id, note, created_at, character_id')
+    .eq('project_id', projectId).eq('character_name', name)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
@@ -115,16 +131,21 @@ export async function listCastingNotes(projectId: string, characterName: string)
 
 export async function listAllCastingNotes(projectId: string): Promise<(CastingNote & { character_name: string })[]> {
   const { data, error } = await supabase
-    .from('casting_notes').select('id, note, created_at, character_name')
+    .from('casting_notes').select('id, note, created_at, character_name, character_id')
     .eq('project_id', projectId)
     .order('created_at', { ascending: false });
   if (error) throw error;
   return data ?? [];
 }
 
-export async function addCastingNote(projectId: string, characterName: string, note: string, userId: string) {
+export async function addCastingNote(projectId: string, characterName: string, note: string, userId: string, characterId?: string | null) {
   const { error } = await supabase
-    .from('casting_notes').insert({ project_id: projectId, character_name: characterName.toUpperCase(), note, created_by: userId });
+    .from('casting_notes').insert({
+      project_id: projectId, character_name: characterName.toUpperCase(), note, created_by: userId,
+      // A character not yet in the graph has no id: the casting_notes_link_character trigger finds or
+      // makes the row from the name. Sending the name as character_id fails the uuid column.
+      ...(characterId && UUID.test(characterId) ? { character_id: characterId } : {}),
+    });
   if (error) throw error;
 }
 
@@ -157,7 +178,7 @@ export async function cancelAudition(id: string) {
 
 export type CandidateStatus = 'shortlisted' | 'callback' | 'passed';
 export const CANDIDATE_STATUSES: CandidateStatus[] = ['shortlisted', 'callback', 'passed'];
-export interface CastingCandidate { id: string; name: string; status: CandidateStatus; reel_url: string | null; note: string | null; user_id: string | null }
+export interface CastingCandidate { id: string; name: string; status: CandidateStatus; reel_url: string | null; note: string | null; user_id: string | null; character_id: string | null }
 
 /** A reel link must be http(s); the table refuses anything else, so say so before the round trip. */
 export function cleanReelUrl(raw: string): string | null {
@@ -168,21 +189,35 @@ export function cleanReelUrl(raw: string): string | null {
   try { return new URL(url).href; } catch { throw new Error('That reel link is not a valid web address'); }
 }
 
-export async function listCandidates(projectId: string, characterName: string): Promise<CastingCandidate[]> {
+/** A role's shortlist, keyed the way listCastingNotes is: linked by character id, unlinked by name. */
+export async function listCandidates(projectId: string, characterName: string, characterId?: string | null): Promise<CastingCandidate[]> {
+  const name = characterName.toUpperCase();
+  if (characterId && UUID.test(characterId)) {
+    const linked = await supabase.from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_id, created_at')
+      .eq('project_id', projectId).eq('character_id', characterId);
+    if (linked.error) throw linked.error;
+    const unlinked = await supabase.from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_id, created_at')
+      .eq('project_id', projectId).eq('character_name', name).is('character_id', null);
+    if (unlinked.error) throw unlinked.error;
+    return [...(linked.data ?? []), ...(unlinked.data ?? [])]
+      .sort((a, b) => (a.created_at ?? '').localeCompare(b.created_at ?? '')) as CastingCandidate[];
+  }
   const { data, error } = await supabase
-    .from('casting_candidates').select('id, name, status, reel_url, note, user_id')
-    .eq('project_id', projectId).eq('character_name', characterName.toUpperCase())
+    .from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_id, created_at')
+    .eq('project_id', projectId).eq('character_name', name)
     .order('created_at');
   if (error) throw error;
   return (data ?? []) as CastingCandidate[];
 }
 
-export async function addCandidate(projectId: string, characterName: string, input: { name: string; reel_url?: string; note?: string; user_id?: string | null }, userId?: string) {
+export async function addCandidate(projectId: string, characterName: string, input: { name: string; reel_url?: string; note?: string; user_id?: string | null; character_id?: string | null }, userId?: string) {
   const name = input.name.trim();
   if (!name) throw new Error('Give the candidate a name');
   const { error } = await supabase.from('casting_candidates').insert({
     project_id: projectId, character_name: characterName.toUpperCase(), name,
     reel_url: cleanReelUrl(input.reel_url ?? ''), note: input.note?.trim() || null, user_id: input.user_id ?? null, created_by: userId ?? null,
+    // As with notes: no id yet, no problem — the casting_candidates_link_character trigger links by name.
+    ...(input.character_id && UUID.test(input.character_id) ? { character_id: input.character_id } : {}),
   });
   if (error) throw error;
 }
@@ -199,7 +234,7 @@ export async function deleteCandidate(id: string) {
 
 export async function listAllCandidates(projectId: string): Promise<Array<CastingCandidate & { character_name: string }>> {
   const { data, error } = await supabase
-    .from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_name')
+    .from('casting_candidates').select('id, name, status, reel_url, note, user_id, character_name, character_id')
     .eq('project_id', projectId).order('created_at');
   if (error) throw error;
   return (data ?? []) as Array<CastingCandidate & { character_name: string }>;

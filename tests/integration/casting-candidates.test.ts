@@ -43,3 +43,35 @@ describe('casting candidates', () => {
     expect((await table(anonClient()).select('*').eq('project_id', projectId)).data ?? []).toEqual([]);
   });
 });
+
+describe('casting candidates follow the character (20261126000100)', () => {
+  const character = async (name: string) => {
+    const { data } = await cast.sam.client.from('characters').select('id').eq('project_id', projectId).eq('name', name).single();
+    if (!data) throw new Error(`character ${name} not found`);
+    return data;
+  };
+
+  it('a candidate added by name is linked to the character, made if new', async () => {
+    const ins = await table(cast.sam.client).insert(row({ character_name: 'REX', name: 'Dee Okafor' })).select('character_id').single();
+    expect(ins.error).toBeNull();
+    const ch = await character('REX');
+    expect(ch?.id).toBeTruthy();
+    expect(ins.data.character_id).toBe(ch.id);
+  });
+
+  it('a rename carries the shortlist: the name follows, the link stays', async () => {
+    const ch = await character('REX');
+    expect((await cast.sam.client.from('characters').update({ name: 'REX ALDO' }).eq('id', ch.id)).error).toBeNull();
+    const { data } = await table(cast.sam.client).select('character_name, character_id').eq('project_id', projectId).eq('character_id', ch.id).single();
+    expect(data.character_name).toBe('REX ALDO');
+    expect(data.character_id).toBe(ch.id);
+  });
+
+  it('removing the character unlinks the candidate but keeps it', async () => {
+    const ch = await character('REX ALDO');
+    expect((await cast.sam.client.from('characters').delete().eq('id', ch.id)).error).toBeNull();
+    const { data } = await table(cast.sam.client).select('character_id').eq('project_id', projectId).eq('character_name', 'REX ALDO').single();
+    expect(data).not.toBeNull();
+    expect(data.character_id).toBeNull();
+  });
+});

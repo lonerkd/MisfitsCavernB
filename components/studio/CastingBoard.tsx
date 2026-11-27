@@ -80,10 +80,11 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   useEffect(() => {
     void listCastingHistory(projectId).then(setHistory, () => setHistory([]));
   }, [projectId, castings]);
+  const selectedId = useMemo(() => chars.find((c) => c.name === selected)?.id ?? null, [chars, selected]);
   useEffect(() => {
     if (!selected) return;
     let active = true;
-    void listCastingNotes(projectId, selected).then(
+    void listCastingNotes(projectId, selected, selectedId).then(
       (n) => { if (active) setNotes(n); },
       () => { if (active) setNotes([]); },
     );
@@ -92,7 +93,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
       () => { if (active) setAuditions([]); },
     );
     return () => { active = false; };
-  }, [projectId, selected, castings]);
+  }, [projectId, selected, selectedId, castings]);
   // The script's characters changed: keep the selection if it's still one of them.
   useOnChange(scriptChars, () => setSelected((prev) => (prev && chars.some((c) => c.name === prev) ? prev : chars[0]?.name ?? null)));
 
@@ -137,7 +138,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
   };
   const addNote = async () => {
     if (!selected || !noteDraft.trim()) return;
-    try { await addCastingNote(projectId, selected, noteDraft.trim(), userId); setNoteDraft(''); await loadCastings(); }
+    try { await addCastingNote(projectId, selected, noteDraft.trim(), userId, selectedId); setNoteDraft(''); await loadCastings(); }
     catch (e) { toast(e instanceof Error ? e.message : 'Could not add note', 'error'); }
   };
   const removeNote = async (id: string) => {
@@ -163,8 +164,8 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
       return {
         character: c.name,
         cast: castings[up]?.username ?? (castings[up] ? 'Crew member' : null),
-        candidates: sheetCands.filter((x) => x.character_name === up).map((x) => ({ name: x.name, status: x.status, reel: x.reel_url, note: x.note })),
-        notes: sheetNotes.filter((n) => n.character_name === up).map((n) => n.note),
+        candidates: sheetCands.filter((x) => (c.id && x.character_id ? x.character_id === c.id : x.character_name === up)).map((x) => ({ name: x.name, status: x.status, reel: x.reel_url, note: x.note })),
+        notes: sheetNotes.filter((n) => (c.id && n.character_id ? n.character_id === c.id : n.character_name === up)).map((n) => n.note),
       };
     }),
   });
@@ -295,7 +296,7 @@ export function CastingBoard({ crew }: { crew: CrewRow[] }) {
                   </div>
                 )}
 
-                <CandidateShortlist projectId={projectId} character={sel.name} userId={userId ?? null} canEdit={decides} crew={crew} onCast={(id) => void assign(id)} onChanged={() => setSheetTick((t) => t + 1)} />
+                <CandidateShortlist projectId={projectId} character={sel.name} characterId={sel.id ?? null} userId={userId ?? null} canEdit={decides} crew={crew} onCast={(id) => void assign(id)} onChanged={() => setSheetTick((t) => t + 1)} />
 
                 {crew.length > 0 && (
                   <div style={{ display: 'flex', gap: 6, marginBottom: 24 }}>
