@@ -9,6 +9,9 @@ describe('globals.css', () => {
   it('has no bare element rule that pads every <section>', () => {
     expect(css).not.toMatch(/^section\s*\{[^}]*padding/m);
   });
+  it('takes the native appearance off phone search fields so CSS owns their size', () => {
+    expect(css).toMatch(/input\[type="search"\] \{\s*-webkit-appearance: none; appearance: none; \}/);
+  });
   it('floors phone form controls at 16px so iOS never zooms into a field', () => {
     expect(css).toMatch(/input, textarea, select \{\s*font-size: 16px !important;/);
   });
