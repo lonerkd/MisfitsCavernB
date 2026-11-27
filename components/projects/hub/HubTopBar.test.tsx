@@ -1,16 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-
-vi.mock('@/lib/supabase/projects', () => ({
-  PROJECT_VISIBILITY: [
-    { id: 'private', label: 'Private', hint: '' },
-    { id: 'team', label: 'Team', hint: '' },
-    { id: 'link', label: 'Anyone with the link', hint: '' },
-    { id: 'public', label: 'Public', hint: '' },
-  ],
-}));
+import { describe, it, expect, afterEach } from 'vitest';
+import { render, screen, cleanup } from '@testing-library/react';
 
 import { HubTopBar } from './HubTopBar';
 
@@ -20,10 +11,6 @@ const base = {
   onlineCount: 0,
   tasks: 0,
   tasksDone: 0,
-  ownerView: false,
-  visibility: 'team' as const,
-  onVisibilityChange: vi.fn(),
-  onCopyShareLink: vi.fn(),
 };
 
 describe('HubTopBar', () => {
@@ -37,27 +24,8 @@ describe('HubTopBar', () => {
     expect(screen.getByText('3/5 tasks done')).toBeTruthy();
   });
 
-  it('gives the owner the visibility picker and fires changes', () => {
-    const onVisibilityChange = vi.fn();
-    render(<HubTopBar {...base} ownerView visibility="team" onVisibilityChange={onVisibilityChange} />);
-    const select = screen.getByLabelText('Project visibility') as HTMLSelectElement;
-    expect(select.value).toBe('team');
-    fireEvent.change(select, { target: { value: 'link' } });
-    expect(onVisibilityChange).toHaveBeenCalledWith('link');
-  });
-
-  it('shows the copy-link button only for link visibility, and it fires', () => {
-    const onCopyShareLink = vi.fn();
-    const { rerender } = render(<HubTopBar {...base} ownerView visibility="team" onCopyShareLink={onCopyShareLink} />);
-    expect(screen.queryByText('Copy link')).toBeNull();
-
-    rerender(<HubTopBar {...base} ownerView visibility="link" onCopyShareLink={onCopyShareLink} />);
-    fireEvent.click(screen.getByText('Copy link'));
-    expect(onCopyShareLink).toHaveBeenCalledTimes(1);
-  });
-
-  it('hides the picker from non-owners', () => {
-    render(<HubTopBar {...base} ownerView={false} visibility="link" />);
+  it('carries no owner controls — the visibility picker lives in the office section now', () => {
+    render(<HubTopBar {...base} onlineCount={1} tasks={2} tasksDone={1} />);
     expect(screen.queryByLabelText('Project visibility')).toBeNull();
     expect(screen.queryByText('Copy link')).toBeNull();
   });
