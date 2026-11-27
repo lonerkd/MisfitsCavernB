@@ -1,7 +1,9 @@
+import { PixelLoader } from '@/components/brand/PixelLoader';
 export default function JobsLoading() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--fg)', padding: '80px 24px 40px' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}><PixelLoader variant="twinkle" size={36} /></div>
         <div style={{ width: 160, height: 26, borderRadius: 8, background: 'rgba(var(--ink-rgb), 0.06)', marginBottom: 28 }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[...Array(5)].map((_, i) => (

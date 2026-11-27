@@ -1,3 +1,5 @@
+import { PixelLoader } from '@/components/brand/PixelLoader';
+
 export default function LoungeLoading() {
   return (
     <div
@@ -13,16 +15,7 @@ export default function LoungeLoading() {
         padding: 40,
       }}
     >
-      <div
-        style={{
-          width: 12,
-          height: 12,
-          borderRadius: '50%',
-          background: 'var(--lounge-color)',
-          boxShadow: '0 0 12px #10b981',
-          animation: 'pulse 1.5s ease-in-out infinite',
-        }}
-      />
+      <PixelLoader variant="twinkle" size={44} label="Entering the Lounge" />
       <div style={{ display: 'flex', gap: 16, width: '100%', maxWidth: 900 }}>
         <div
           style={{
@@ -79,12 +72,6 @@ export default function LoungeLoading() {
       >
         ENTERING LOUNGE...
       </span>
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.4; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.3); }
-        }
-      `}</style>
     </div>
   );
 }
