@@ -258,7 +258,7 @@ body.custom-cursor-active * {
 /* A project page on a phone. */
 @media (max-width: 760px) {
   .mc-project-top { padding: 0 8px 0 4px !important; gap: 8px; }
-  .mc-project-body { padding: 18px 16px 40px !important; }
+  .mc-project-body { padding: 18px 16px calc(var(--taskbar-height, 70px) + 32px) !important; }
   .mc-touch { min-width: 44px; min-height: 44px; align-items: center; justify-content: center; }
 }
 

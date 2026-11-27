@@ -123,7 +123,7 @@ export default function ProjectHubPage() {
         tasksDone={counts.tasksDone}
       />
 
-      <div className="mc-project-body" style={{ padding: '28px 28px 120px', position: 'relative', zIndex: 1 }}>
+      <div className="mc-project-body" style={{ padding: '28px 28px calc(var(--taskbar-height, 70px) + 44px)', position: 'relative', zIndex: 1 }}>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}
