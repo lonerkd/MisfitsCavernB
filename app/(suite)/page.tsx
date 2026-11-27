@@ -1,94 +1,29 @@
 'use client';
 
-import { DISCORD_INVITE } from '@/lib/community/discord';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase/client';
-import { listOpenJobTitles } from '@/lib/supabase/jobs';
-import { latestScriptEditedBy } from '@/lib/supabase/scripts';
-import { listRecentMediaTitles } from '@/lib/supabase/media';
-import { listRecentChannelMessages } from '@/lib/supabase/messages';
-import { tickerItems, showPeopleTotal } from '@/lib/home/ticker';
-import { getPlatformStats } from '@/lib/supabase/stats';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import GrainOverlay from '@/components/ui/GrainOverlay';
 import Navigation from '@/components/shell/Navigation';
-import AnimatedSection from '@/components/ui/AnimatedSection';
-import { Button } from '@/components/ui/Button';
-import { Mark3D } from '@/components/brand/Mark3D';
 import { useProject } from '@/lib/os';
-import { awaitOSUser } from '@/lib/os';
-import { Viewfinder } from '@/components/landing/Viewfinder';
 import { STAGES, PipelineStage, PipelineConnector } from '@/components/landing/Pipeline';
-import { ScriptOSPreview, StudioPreview, LoungePreview, PortfolioPreview } from '@/components/landing/Previews';
-import { ModuleTile } from '@/components/landing/ModuleTile';
 import { StatsTicker } from '@/components/landing/StatsTicker';
+import { Hero } from '@/components/landing/Hero';
+import { StatsSection } from '@/components/landing/StatsSection';
+import { ModuleGrid } from '@/components/landing/ModuleGrid';
+import { ClosingCta } from '@/components/landing/ClosingCta';
+import { useHomeData } from '@/components/home/useHomeData';
 import dynamic from 'next/dynamic';
-// Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them); the phone's picker only on a phone.
+// Your day and the rest of the signed-in home load only for a signed-in person (a guest never downloads them).
 const SignedInHome = dynamic(() => import('@/components/home/SignedInHome').then((m) => m.SignedInHome), { loading: () => null });
-const ModulePicker = dynamic(() => import('@/components/home/ModulePicker').then((m) => m.ModulePicker), { loading: () => null });
 import { usePhoneLayout } from '@/lib/os/usePhone';
 
 /* ─── Main page ───────────────────────────────────────────────────────────── */
-interface LiveData {
-  scriptLines: string[];
-  assets: { label: string; color: string }[];
-  messages: { from: string; text: string; mine: boolean }[];
-  latestScriptTitle: string | null;
-}
-interface PlatformStats { creators: number; scripts: number; projects: number; concepts: number }
 
 export default function Home() {
-  // null until the session is known, so a signed-in person never sees the signed-out page flash by.
-  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
-  const [stats, setStats] = useState<PlatformStats | null>(null);
-  const [live, setLive] = useState<LiveData>({ scriptLines: [], assets: [], messages: [], latestScriptTitle: null });
-  const [ticker, setTicker] = useState<string[]>([]);
-  const [works, setWorks] = useState<Array<{ title: string; year: number | null; category: string | null; accent: string | null }>>([]);
-
+  const { loggedIn, stats, live, ticker, works } = useHomeData();
   const { activeProject } = useProject();
   const { phone } = usePhoneLayout();
-
-  useEffect(() => {
-    const palette = ['#6366f1', '#10b981', '#e8431a', '#f59e0b', '#8b5cf6', '#06b6d4'];
-    // Public: platform totals, who's hiring, what was just published.
-    (async () => {
-      const [platformStats, jobsRes, worksRes] = await Promise.all([
-        getPlatformStats(),
-        listOpenJobTitles(4).catch(() => []),
-        supabase.rpc('get_recent_work', { p_limit: 3 }),
-      ]);
-      setStats({ creators: platformStats.users, scripts: platformStats.scripts, projects: platformStats.projects, concepts: platformStats.media });
-      const published = worksRes.data ?? [];
-      setWorks(published.map((w) => ({ title: w.title, year: w.year, category: w.category, accent: w.accent_color })));
-      setTicker(tickerItems(platformStats, jobsRes, published));
-    })().catch((err) => console.error('Home stats load failed:', err));
-
-    awaitOSUser().then(async (user) => {
-      setLoggedIn(!!user);
-      if (!user) return;
-
-      try {
-        // The landing page's live preview: each part shows what loaded.
-        const [script, recentMedia, recentMessages] = await Promise.all([
-          latestScriptEditedBy(user.id).catch(() => null),
-          listRecentMediaTitles(6).catch(() => []),
-          listRecentChannelMessages(4).catch(() => []),
-        ]);
-        const scriptLines = script?.content ? String(script.content).split('\n').map(s => s.trim()).filter(Boolean).slice(0, 11) : [];
-        const assets = recentMedia.map((a, i) => ({ label: a.title || 'Reference', color: palette[i % palette.length] }));
-        const messages = recentMessages.slice().reverse().map((m) => ({ from: m.username || 'Crew', text: m.content, mine: m.sender_id === user.id }));
-        setLive({
-          scriptLines,
-          assets,
-          messages,
-          latestScriptTitle: script?.title || null,
-        });
-      } catch (err) {
-        console.error('Home data load failed:', err);
-      }
-    }).catch(err => console.error('Auth check failed:', err));
-  }, []);
 
   const { scrollY } = useScroll();
   const springY = useSpring(scrollY, { stiffness: 50, damping: 18 });
@@ -100,129 +35,7 @@ export default function Home() {
       <GrainOverlay />
       <Navigation />
 
-      {/* ══════════════════════════════════════════════
-          HERO — cinematic full-screen
-      ══════════════════════════════════════════════ */}
-      <section style={{
-        // Signed out: the cinematic full-screen hero (100svh, as the front page always was).
-        // Signed in: no viewport fraction — the hero sizes to its content with the standard
-        // section padding, so Your day starts right under the mark at any screen height.
-        // (The 46svh first cut was a guess; the design system has no compact-hero fraction.)
-        minHeight: loggedIn ? undefined : '100svh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative',
-        overflow: 'hidden',
-        padding: loggedIn ? '48px 24px 40px' : '0 24px',
-      }}>
-        <div style={{
-          position: 'absolute',
-          width: '70vw',
-          height: '70vw',
-          maxWidth: 800,
-          maxHeight: 800,
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(232, 67, 26,0.10) 0%, transparent 65%)',
-          animation: 'orb-breathe 10s ease-in-out infinite',
-        }} />
-        <div style={{
-          position: 'absolute',
-          bottom: '10%', right: '5%',
-          width: '40vw', height: '40vw',
-          maxWidth: 'var(--w-form)', maxHeight: 500,
-          borderRadius: '50%',
-          pointerEvents: 'none',
-          background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 65%)',
-          animation: 'orb-breathe 14s ease-in-out 3s infinite',
-        }} />
-
-        <motion.div style={{ opacity: heroOpacity, y: heroY, position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
-
-        <h1 className="sr-only">The Cavern — the production suite for independent filmmakers</h1>
-          <motion.div
-            initial={{ opacity: 0, y: 40, filter: 'blur(16px)' }}
-            animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-            transition={{ duration: 1.3, ease: [0.16, 1, 0.3, 1] }}
-            style={{ position: 'relative', display: 'inline-block', padding: 8 }}
-          >
-            <Mark3D />
-            <Viewfinder size={22} color="rgba(232, 67, 26,0.45)" />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.4 }}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-              marginTop: 18,
-              fontFamily: 'var(--mono)',
-              fontSize: 'max(8.5px, var(--mc-min-font, 0px))',
-              letterSpacing: 'var(--caps-track)',
-              textTransform: 'var(--caps)',
-              color: 'var(--fg-dim)',
-            }}
-            aria-hidden
-          >
-            by Misfits Cavern
-          </motion.div>
-
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.55 }}
-            style={{
-              // --fg-dim is the 4.5:1 floor; a faded opacity fell below it.
-              color: 'var(--fg-dim)',
-              fontFamily: 'var(--serif)',
-              fontSize: 'clamp(1rem, 2.5vw, 1.3rem)',
-              fontStyle: 'italic',
-              fontWeight: 300,
-              letterSpacing: 'var(--caps-track)',
-              marginTop: 28,
-            }}
-          >
-            Script to Screen — one integrated studio.
-          </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.85, duration: 0.9 }}
-          >
-           <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 40 }}>
-            {loggedIn === null ? null : loggedIn ? (
-              <Button href={activeProject ? '/studio' : '/projects'} variant="solid" size="lg">
-                {activeProject ? `Open ${activeProject.title}` : 'Your projects'}
-              </Button>
-            ) : (
-              <>
-                <Button href="/auth" variant="solid" size="lg">Enter The Cavern</Button>
-                <Button href="/portfolio" variant="ghost" size="lg">View Work</Button>
-              </>
-            )}
-          </div>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.2 }}
-          transition={{ delay: 2 }}
-          style={{ position: 'absolute', bottom: 36, left: '50%', transform: 'translateX(-50%)' }}
-        >
-          <motion.div
-            animate={{ y: [0, 7, 0] }}
-            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}
-          >
-            <div style={{ width: 1, height: 36, background: 'linear-gradient(180deg, transparent, rgba(var(--fg-rgb), 0.4))' }} />
-          </motion.div>
-        </motion.div>
-      </section>
+      <Hero loggedIn={loggedIn} activeProjectTitle={activeProject?.title ?? null} heroOpacity={heroOpacity} heroY={heroY} />
 
       {/* The marketing story is for people who have not signed in: a signed-in person already knows it. */}
       {loggedIn === false && (<>
@@ -249,51 +62,7 @@ export default function Home() {
       {/* ══════════════════════════════════════════════
           LIVE STATS — real platform numbers
       ══════════════════════════════════════════════ */}
-      {!stats && (
-        <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
-            {[
-              { label: 'Creators', color: 'var(--ok)' },
-              { label: 'Screenplays', color: 'var(--accent)' },
-              { label: 'Productions', color: 'var(--violet)' },
-              { label: 'Concept Assets', color: 'var(--warn)' },
-            ].map((s, i) => (
-              <div key={s.label}
-                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
-                <motion.div
-                  animate={{ opacity: [0.15, 0.45, 0.15] }}
-                  transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut', delay: i * 0.15 }}
-                  style={{ height: 42, width: 80, margin: '0 auto', background: s.color, borderRadius: 8, filter: 'blur(4px)' }}
-                />
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {stats && (stats.creators + stats.scripts + stats.projects + stats.concepts) > 0 && (
-        <section style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 24px 60px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14 }}>
-            {[
-              { n: stats.creators, label: 'Creators', color: 'var(--ok)' },
-              { n: stats.scripts, label: 'Screenplays', color: 'var(--accent)' },
-              { n: stats.projects, label: 'Productions', color: 'var(--violet)' },
-              { n: stats.concepts, label: 'References & Media', color: 'var(--warn)' },
-            ].filter((s) => s.label !== 'Creators' || showPeopleTotal(s.n)).map((s, i) => (
-              <motion.div key={s.label}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.08, duration: 0.6 }}
-                style={{ textAlign: 'center', padding: '20px 12px', background: 'rgba(var(--ink-rgb), 0.02)', border: '1px solid rgba(var(--ink-rgb), 0.06)', borderRadius: 14 }}>
-                <div style={{ fontFamily: 'var(--display)', fontSize: '2.6rem', letterSpacing: '-0.02em', lineHeight: 1, color: s.color }}>{s.n.toLocaleString()}</div>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-dim)', marginTop: 8 }}>{s.label}</div>
-              </motion.div>
-            ))}
-          </div>
-        </section>
-      )}
+      <StatsSection stats={stats} />
 
       </>)}
 
@@ -308,120 +77,10 @@ export default function Home() {
           MODULE GRID — asymmetric layout
       ══════════════════════════════════════════════ */}
       {loggedIn !== null && (
-      <section aria-labelledby="home-parts" style={{ padding: loggedIn ? '8px 24px 80px' : '80px 24px 100px', maxWidth: 'var(--w-content)', margin: '0 auto' }}>
-        <h2 id="home-parts" className="sr-only">{loggedIn ? 'Jump back in' : 'The parts of the suite'}</h2>
-        {loggedIn && <p aria-hidden style={{ margin: '0 0 12px', fontFamily: 'var(--mono)', fontSize: 12, letterSpacing: 'var(--caps-track)', textTransform: 'var(--caps)', color: 'var(--fg-muted)' }}>Jump back in</p>}
-        {phone ? <ModulePicker loggedIn={!!loggedIn} data={{ scriptLines: live.scriptLines, assets: live.assets, messages: live.messages, works }} /> : (<>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-
-          <ModuleTile
-            title="ScriptOS"
-            tag="Screenplay Editor"
-            color="var(--accent)"
-            href="/editor"
-            index={0}
-            preview={
-              <div style={{ minHeight: 220 }}>
-                <div style={{
-                  padding: '10px 16px',
-                  borderBottom: '1px solid rgba(var(--ink-rgb), 0.04)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}>
-                  {['#ff5f57', '#febc2e', '#28c840'].map((c, i) => (
-                    <div key={i} style={{ width: 9, height: 9, borderRadius: '50%', background: c, opacity: 0.7 }} />
-                  ))}
-                  <span style={{ fontFamily: 'var(--mono)', fontSize: 'max(8px, var(--mc-min-font, 0px))', letterSpacing: 'var(--caps-track)', color: 'var(--fg-dim)', marginLeft: 6 }}>{live.latestScriptTitle ?? 'ScriptOS'}</span>
-                </div>
-                <ScriptOSPreview lines={live.scriptLines} caption={loggedIn ? 'Your latest script appears here' : 'Screenplay formatting as you type'} />
-              </div>
-            }
-          />
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <ModuleTile
-              title="Studio"
-              tag="Asset Hub"
-              color="var(--studio-color)"
-              href="/studio"
-              index={1}
-              preview={<StudioPreview items={live.assets} caption={loggedIn ? 'Your references and media appear here' : 'Every reference, clip and track in one library'} />}
-            />
-            <ModuleTile
-              title="Lounge"
-              tag="Crew Collaboration"
-              color="var(--ok)"
-              href="/lounge"
-              index={2}
-              preview={<LoungePreview messages={live.messages} caption={loggedIn ? 'Your crew channels appear here' : 'Channels and calls with your crew'} />}
-            />
-          </div>
-        </div>
-
-        <ModuleTile
-          title="Portfolio"
-          tag="Cinematic Showcase"
-          color="var(--warn)"
-          href="/portfolio"
-          index={3}
-          preview={<PortfolioPreview works={works} />}
-          style={{ minHeight: 0 }}
-        />
-        </>)}
-      </section>
+        <ModuleGrid loggedIn={loggedIn} phone={phone} live={live} works={works} />
       )}
 
-      {loggedIn === false && (<>
-      {/* ══════════════════════════════════════════════
-          CLOSING CTA
-      ══════════════════════════════════════════════ */}
-      <section style={{ padding: '100px 24px 160px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div style={{
-          position: 'absolute',
-          inset: 0,
-          background: 'radial-gradient(ellipse at 50% 60%, rgba(232, 67, 26,0.07) 0%, transparent 60%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'relative', zIndex: 2 }}>
-          <AnimatedSection>
-            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
-              <div style={{
-                width: 1,
-                height: 64,
-                background: 'linear-gradient(180deg, transparent, rgba(232, 67, 26,0.5))',
-              }} />
-            </div>
-
-            <div style={{
-              fontFamily: 'var(--display)',
-              fontSize: 'clamp(3rem, 14vw, 9rem)',
-              lineHeight: 0.88,
-              letterSpacing: -1,
-              marginBottom: 44,
-            }}>
-              BEGIN YOUR<br />
-              <span style={{ color: 'var(--accent)', textShadow: '0 0 80px rgba(232, 67, 26,0.2)' }}>FILM</span>
-            </div>
-
-            <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 16 }}>
-            <Button href="/auth" variant="solid" size="lg">
-              Start Writing
-            </Button>
-            {DISCORD_INVITE && (
-              <Button href={DISCORD_INVITE} variant="ghost" size="lg" external>
-                Join the Discord
-              </Button>
-            )}
-            <Button href="https://instagram.com/lonerkid" variant="ghost" size="lg" external>
-              Contact Crew
-            </Button>
-          </div>
-          </AnimatedSection>
-        </div>
-      </section>
-      </>)}
+      {loggedIn === false && <ClosingCta />}
 
 
       <footer style={{

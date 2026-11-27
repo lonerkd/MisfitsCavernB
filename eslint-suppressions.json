@@ -104,11 +104,6 @@
       "count": 4
     }
   },
-  "app/(suite)/page.tsx": {
-    "no-restricted-syntax": {
-      "count": 1
-    }
-  },
   "app/(suite)/portfolio/manage/page.tsx": {
     "@typescript-eslint/no-explicit-any": {
       "count": 5
