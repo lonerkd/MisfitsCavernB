@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, ArrowRight, CheckCircle2, ListChecks } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, ChevronDown, ListChecks } from 'lucide-react';
 import { placeHref } from '@/lib/os/progress';
 import type { BreakdownFocus as Focus, FocusAction, FocusItem } from '@/lib/studio/breakdown-focus';
 import { cx } from '../ui';
@@ -46,18 +46,24 @@ export function BreakdownFocus({ focus, projectId, onAction, readinessHref }: {
 }
 
 function FocusRow({ item, projectId, onAction }: { item: FocusItem; projectId: string; onAction: (a: FocusAction) => void }) {
+  // One line per item — kind, title, the way to fix it — with the numbers behind a tap. A blocker
+  // used to be a whole block (label, title, paragraph, button), so eleven of them were eleven
+  // screens of scroll (owner, Nov 26, 2026). The kind rides inside the line now, never in a
+  // column of its own, so nothing can render outside the card at any width.
+  const [open, setOpen] = useState(false);
   const label = <>{item.actionLabel} <ArrowRight size={11} aria-hidden /></>;
   const to = item.to;
   return (
     <li className={cx(v.focusRow, item.kind === 'blocker' && v.focusRowBlocker)} data-kind={item.kind}>
-      <span className={v.focusKind}>{item.kind === 'blocker' ? 'Blocking' : 'Next'}</span>
-      <div className={v.focusText}>
-        <div className={v.focusRowTitle}>{item.title}</div>
-        <div className={v.focusRowDetail}>{item.detail}</div>
-      </div>
+      <button type="button" className={v.focusToggle} aria-expanded={open} title={item.title} onClick={() => setOpen((x) => !x)}>
+        <span className={v.focusKind}>{item.kind === 'blocker' ? 'Blocking' : 'Next'}</span>
+        <span className={v.focusRowTitle}>{item.title}</span>
+        <ChevronDown size={13} aria-hidden className={open ? v.focusChevOpen : v.focusChev} />
+      </button>
       {'action' in to
         ? <button type="button" className={cx(s.btn, s.small)} onClick={() => onAction(to.action)}>{label}</button>
         : <Link href={placeHref(to.place, projectId)} className={cx(s.btn, s.small)}>{label}</Link>}
+      {open && <div className={v.focusRowDetail}>{item.detail}</div>}
     </li>
   );
 }
