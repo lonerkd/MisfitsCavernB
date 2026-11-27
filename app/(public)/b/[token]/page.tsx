@@ -12,6 +12,7 @@ import { publicClient } from '@/lib/supabase/public';
 import { createStudioApi } from '@/lib/studio/api';
 import type { SharedBoard, SharedBoardItem } from '@/lib/studio/boards';
 import { sharedSlides } from '@/lib/studio/board-slides';
+import { boardCardLine } from '@/lib/studio/board-preview';
 import SharedSlideshow from './SharedSlideshow';
 import s from './board.module.css';
 
@@ -36,14 +37,14 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const data = await load(token);
   if (!data) return { title: 'The Cavern', robots: { index: false } };
   const { board } = data;
-  const description = `A mood board from ${board.project_title}.`;
+  const description = `A mood board from ${board.project_title}: ${boardCardLine(board)}.`;
   return {
     title: `${board.name} — The Cavern`,
     description,
     // A link-shared board is unlisted.
     robots: { index: false, follow: false },
     openGraph: { title: board.name, description, type: 'website' },
-    twitter: { card: 'summary', title: board.name, description },
+    twitter: { card: 'summary_large_image', title: board.name, description },
   };
 }
 
@@ -72,6 +73,9 @@ function Card({ item, urls }: { item: SharedBoardItem; urls: Record<string, stri
     <div className={s.card} style={{ left: `${item.x}%`, top: `${item.y}%`, width: `${item.w}%`, zIndex: item.z + 1 }}>
       {body}
       {m && !item.note && m.title && <div className={s.caption}>{m.title}</div>}
+      {(item.pins ?? []).map((p, n) => (
+        <span key={p.id} className={s.pin} style={{ left: `${p.x}%`, top: `${p.y}%` }} title={p.text} tabIndex={0} role="note" aria-label={`Pin ${n + 1}: ${p.text}`}>{n + 1}</span>
+      ))}
     </div>
   );
 }
@@ -85,7 +89,7 @@ export default async function SharedBoardPage({ params }: { params: Promise<{ to
       <div className={s.missing} data-theme="default">
         <GrainOverlay />
         <div className={s.wordmark}>CAVERN</div>
-        <p className={s.eyebrow}>This board isn’t shared, or the link is wrong.</p>
+        <p className={s.eyebrow}>This board isn’t shared, the link has expired, or the link is wrong.</p>
         <Link href="/" className={s.back}>← The Cavern</Link>
       </div>
     );
@@ -104,6 +108,17 @@ export default async function SharedBoardPage({ params }: { params: Promise<{ to
         {board.items.length === 0 && <div className={s.empty}>Nothing on this board yet.</div>}
         {board.items.map((i) => <Card key={i.id} item={i} urls={urls} />)}
       </div>
+      {board.items.some((i) => (i.pins ?? []).length > 0) && (
+        <section className={s.pinNotes} aria-label="Pinned notes">
+          <h2 className={s.pinHead}>Pinned notes</h2>
+          {board.items.filter((i) => (i.pins ?? []).length > 0).map((i) => (
+            <div key={i.id}>
+              <h3 className={s.pinCard}>{i.note ? `Note: ${i.note.slice(0, 40)}` : i.media?.title || 'Untitled'}</h3>
+              <ol>{(i.pins ?? []).map((p, n) => <li key={p.id}><span>{n + 1}</span> {p.text}</li>)}</ol>
+            </div>
+          ))}
+        </section>
+      )}
       <footer className={s.footer}>Made in <Link href="/">The Cavern</Link></footer>
     </div>
   );

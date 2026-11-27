@@ -51,7 +51,7 @@ test.describe('Sharing a mood board (local Supabase)', () => {
       await page.getByRole('button', { name: /stop sharing|confirm|yes/i }).last().click();
       await expect(page.getByRole('button', { name: 'Make a link' })).toBeVisible({ timeout: 15_000 });
       await visitor.goto(path);
-      await expect(visitor.getByText(/isn.t shared, or the link is wrong/)).toBeVisible({ timeout: 30_000 });
+      await expect(visitor.getByText(/isn.t shared, the link has expired, or the link is wrong/)).toBeVisible({ timeout: 30_000 });
       await expect(visitor.getByText('Wet hair, always')).toHaveCount(0);
       await stranger.close();
     } finally { await owner.close(); await browser.close(); }

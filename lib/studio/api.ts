@@ -15,7 +15,7 @@ import { placeResolver } from '@/lib/film/places';
 import { planSceneSync, type ParsedSceneInput } from './scene-sync';
 import type { TranscriptLineDraft } from './transcript';
 import type { SharedBoard } from './boards';
-import { SIZES, clampPoint, isTemplate, nextSpot, templateSeed, type BoardTemplate } from './boards';
+import { SIZES, clampPoint, isBoardAccess, isTemplate, nextSpot, templateSeed, type BoardAccess, type BoardTemplate } from './boards';
 import { forgetReadingContext } from './reading-cache';
 import { classifyUrl, kindFromMime, safeFileName, titleFromFileName, uploadProblem } from './media-kind';
 
@@ -28,6 +28,7 @@ export type Shot = Tables<'shots'>;
 export type MoodBoard = Tables<'mood_boards'>;
 export type MoodBoardItem = Tables<'mood_board_items'>;
 export type MoodBoardShare = Tables<'mood_board_shares'>;
+export type MoodBoardPin = Tables<'mood_board_pins'>;
 export type CallSheet = Tables<'call_sheets'>;
 export type CallSheetCall = Tables<'call_sheet_calls'>;
 export type CallSheetAck = Tables<'call_sheet_acks'>;
@@ -741,8 +742,50 @@ export function createStudioApi(db: Client) {
   }
 
   async function deleteMoodBoard(id: string): Promise<void> {
-    const { error } = await db.from('mood_boards').delete().eq('id', id);
+    const { data, error } = await db.from('mood_boards').delete().eq('id', id).select('id');
     if (error) fail(error, 'Could not delete the board');
+    if (!data?.length) throw new StudioError('Could not delete the board: you may not edit it.');
+  }
+
+  /** Who sees and edits a board. Only people who shape the project may change it (the policy refuses anyone else). */
+  async function setBoardAccess(id: string, access: BoardAccess): Promise<MoodBoard> {
+    if (!isBoardAccess(access)) throw new StudioError('Pick who can see and edit the board.');
+    const { data, error } = await db.from('mood_boards').update({ access }).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not change who can edit the board');
+    return data;
+  }
+
+  async function listMoodBoardPins(projectId: string): Promise<MoodBoardPin[]> {
+    const { data, error } = await db.from('mood_board_pins').select('*').eq('project_id', projectId).order('created_at');
+    if (error) fail(error, 'Could not load the pins');
+    return data ?? [];
+  }
+
+  /** A note pinned to a spot (percent of the card) on a board card. */
+  async function addBoardPin(item: Pick<MoodBoardItem, 'id' | 'project_id'>, userId: string, spot: { x: number; y: number }, text: string): Promise<MoodBoardPin> {
+    const clean = text.trim();
+    if (!clean) throw new StudioError('Write what the pin says.');
+    if (clean.length > 500) throw new StudioError('Keep a pin under 500 characters.');
+    const { data, error } = await db.from('mood_board_pins').insert({ item_id: item.id, project_id: item.project_id, x: spot.x, y: spot.y, text: clean, created_by: userId }).select('*').single();
+    if (error) fail(error, 'Could not pin that');
+    return data;
+  }
+
+  async function updateBoardPin(id: string, patch: { text?: string; x?: number; y?: number }): Promise<MoodBoardPin> {
+    const next = { ...patch };
+    if (next.text !== undefined) {
+      next.text = next.text.trim();
+      if (!next.text || next.text.length > 500) throw new StudioError('A pin needs 1 to 500 characters.');
+    }
+    const { data, error } = await db.from('mood_board_pins').update(next).eq('id', id).select('*').single();
+    if (error) fail(error, 'Could not save the pin');
+    return data;
+  }
+
+  async function removeBoardPin(id: string): Promise<void> {
+    const { data, error } = await db.from('mood_board_pins').delete().eq('id', id).select('id');
+    if (error) fail(error, 'Could not remove the pin');
+    if (!data?.length) throw new StudioError('Could not remove the pin: you may not edit this board.');
   }
 
   /** Library items onto a board, each in the next free spot. */
@@ -792,9 +835,17 @@ export function createStudioApi(db: Client) {
     return data;
   }
 
-  async function shareBoard(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string): Promise<MoodBoardShare> {
-    const { data, error } = await db.from('mood_board_shares').insert({ board_id: board.id, project_id: board.project_id, created_by: userId }).select('*').single();
+  async function shareBoard(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, expiresAt: string | null = null): Promise<MoodBoardShare> {
+    const { data, error } = await db.from('mood_board_shares').insert({ board_id: board.id, project_id: board.project_id, created_by: userId, expires_at: expiresAt }).select('*').single();
     if (error) fail(error, 'Could not make the board link');
+    return data;
+  }
+
+  /** Set (an ISO time) or clear (null) when the link stops working. Throws if nothing changed (no right to, or no link). */
+  async function setBoardShareExpiry(boardId: string, expiresAt: string | null): Promise<MoodBoardShare> {
+    const { data, error } = await db.from('mood_board_shares').update({ expires_at: expiresAt }).eq('board_id', boardId).select('*').maybeSingle();
+    if (error) fail(error, 'Could not change when the link expires');
+    if (!data) throw new Error('Could not change when the link expires');
     return data;
   }
 
@@ -805,9 +856,9 @@ export function createStudioApi(db: Client) {
   }
 
   /** A new address: the old one stops working at once. */
-  async function newBoardLink(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string): Promise<MoodBoardShare> {
+  async function newBoardLink(board: Pick<MoodBoard, 'id' | 'project_id'>, userId: string, expiresAt: string | null = null): Promise<MoodBoardShare> {
     await closeBoardShare(board.id);
-    return shareBoard(board, userId);
+    return shareBoard(board, userId, expiresAt);
   }
 
   /** What a board's public link reads (anyone holding the token; null for a wrong or closed link). */
@@ -1250,7 +1301,7 @@ export function createStudioApi(db: Client) {
   }
 
   return {
-    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, getBoardShare, shareBoard, closeBoardShare, newBoardLink, getSharedBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
+    listMoodBoards, listMoodBoardItems, createMoodBoard, renameMoodBoard, deleteMoodBoard, setBoardAccess, listMoodBoardPins, addBoardPin, updateBoardPin, removeBoardPin, getBoardShare, shareBoard, closeBoardShare, setBoardShareExpiry, newBoardLink, getSharedBoard, addBoardMedia, addBoardNote, updateBoardItem, removeBoardItem,
     listMedia, addLink, addNote, addPins, uploadFile, updateMedia, deleteMedia, signedUrls,
     listScenes, listProjectScenes, syncScriptScenes, updateScene, updateSceneIf,
     listShots, addShot, updateShot, deleteShot, reorderShots, listShotNotes,

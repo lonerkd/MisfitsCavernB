@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clampPoint, dominantColours, nextSpot, templateSeed, isTemplate, TEMPLATE_INFO, BOARD_TEMPLATES } from './boards';
+import { clampPoint, dominantColours, nextSpot, templateSeed, isTemplate, TEMPLATE_INFO, BOARD_TEMPLATES, BOARD_ACCESS, BOARD_ACCESS_INFO, isBoardAccess, canEditBoard, pinPoint, numberPins, shareExpiryFromDays, shareExpiryState, SHARE_EXPIRY_CHOICES } from './boards';
 
 describe('mood board geometry', () => {
   it('keeps a card on the board', () => {
@@ -44,4 +44,57 @@ describe('dominantColours', () => {
     expect(out[1]).toMatch(/^#[0-9a-f]{4}f/i);
   });
   it('returns nothing for no pixels', () => { expect(dominantColours([])).toEqual([]); });
+});
+
+describe('board access', () => {
+  it('lets anyone edit an open board, and only people who shape the project edit the others', () => {
+    expect(canEditBoard('open', false)).toBe(true);
+    expect(canEditBoard('view', false)).toBe(false);
+    expect(canEditBoard('private', false)).toBe(false);
+    expect(canEditBoard('view', true)).toBe(true);
+    expect(canEditBoard('private', true)).toBe(true);
+  });
+  it('knows its three levels, each with a label and a sentence', () => {
+    for (const a of BOARD_ACCESS) { expect(isBoardAccess(a)).toBe(true); expect(BOARD_ACCESS_INFO[a].label).toBeTruthy(); expect(BOARD_ACCESS_INFO[a].blurb).toBeTruthy(); }
+    expect(isBoardAccess('everyone')).toBe(false);
+    expect(isBoardAccess(null)).toBe(false);
+  });
+});
+
+describe('pins', () => {
+  const rect = { left: 100, top: 50, width: 200, height: 100 };
+  it('turns a click into a percentage of the card, rounded to a tenth', () => {
+    expect(pinPoint(200, 100, rect)).toEqual({ x: 50, y: 50 });
+    expect(pinPoint(103, 51, rect)).toEqual({ x: 1.5, y: 1 });
+  });
+  it('keeps a pin inside the card, and survives a card with no size', () => {
+    expect(pinPoint(0, 0, rect)).toEqual({ x: 0, y: 0 });
+    expect(pinPoint(900, 900, rect)).toEqual({ x: 100, y: 100 });
+    expect(pinPoint(5, 5, { left: 0, top: 0, width: 0, height: 0 })).toEqual({ x: 50, y: 50 });
+  });
+  it('numbers pins oldest first, with a stable order for equal times', () => {
+    const out = numberPins([
+      { id: 'b', created_at: '2026-01-01T00:00:02Z' },
+      { id: 'c', created_at: '2026-01-01T00:00:01Z' },
+      { id: 'a', created_at: '2026-01-01T00:00:01Z' },
+    ]);
+    expect(out.map((p) => [p.id, p.n])).toEqual([['a', 1], ['c', 2], ['b', 3]]);
+  });
+});
+
+describe('share link expiry', () => {
+  const now = new Date('2026-11-27T12:00:00Z');
+  it('has no expiry for "never" and a moment N days on otherwise', () => {
+    expect(shareExpiryFromDays(null, now)).toBeNull();
+    expect(shareExpiryFromDays(7, now)).toBe('2026-12-04T12:00:00.000Z');
+    expect(SHARE_EXPIRY_CHOICES[0]).toEqual({ days: null, label: 'Never expires' });
+  });
+  it('reads a link as never, live or expired at a moment (an expiry exactly now is expired)', () => {
+    expect(shareExpiryState(null, now)).toBe('never');
+    expect(shareExpiryState(undefined, now)).toBe('never');
+    expect(shareExpiryState('2026-11-28T00:00:00Z', now)).toBe('live');
+    expect(shareExpiryState('2026-11-27T12:00:00Z', now)).toBe('expired');
+    expect(shareExpiryState('2026-11-01T00:00:00Z', now)).toBe('expired');
+    expect(shareExpiryState('not a date', now)).toBe('never');
+  });
 });

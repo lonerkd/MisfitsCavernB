@@ -2645,11 +2645,64 @@ export type Database = {
           },
         ];
       };
+      mood_board_pins: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          item_id: string;
+          project_id: string;
+          text: string;
+          updated_at: string;
+          x: number;
+          y: number;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          item_id: string;
+          project_id: string;
+          text: string;
+          updated_at?: string;
+          x: number;
+          y: number;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          item_id?: string;
+          project_id?: string;
+          text?: string;
+          updated_at?: string;
+          x?: number;
+          y?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "mood_board_pins_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "mood_board_pins_item_fkey";
+            columns: ["item_id", "project_id"];
+            isOneToOne: false;
+            referencedRelation: "mood_board_items";
+            referencedColumns: ["id", "project_id"];
+          },
+        ];
+      };
       mood_board_shares: {
         Row: {
           board_id: string;
           created_at: string;
           created_by: string | null;
+          expires_at: string | null;
           project_id: string;
           token: string;
         };
@@ -2658,6 +2711,7 @@ export type Database = {
           board_id: string;
           created_at?: string;
           created_by?: string | null;
+          expires_at?: string | null;
           project_id: string;
           token?: string;
         };
@@ -2665,6 +2719,7 @@ export type Database = {
           board_id?: string;
           created_at?: string;
           created_by?: string | null;
+          expires_at?: string | null;
           project_id?: string;
           token?: string;
         };
@@ -2687,6 +2742,7 @@ export type Database = {
       };
       mood_boards: {
         Row: {
+          access: string;
           created_at: string;
           created_by: string | null;
           id: string;
@@ -2697,6 +2753,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          access?: string;
           created_at?: string;
           created_by?: string | null;
           id?: string;
@@ -2706,6 +2763,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          access?: string;
           created_at?: string;
           created_by?: string | null;
           id?: string;
