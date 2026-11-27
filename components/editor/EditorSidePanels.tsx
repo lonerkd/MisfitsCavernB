@@ -1,6 +1,7 @@
 'use client';
 
 import { readable } from '@/lib/util/color';
+import { Lamp } from '@/components/ui/DiscSwitch';
 import React, { useState } from 'react';
 import type { LiveRows } from '@/lib/studio/live';
 import { addToStash, removeFromStash, type StashItem } from '@/lib/scriptos/stash';
@@ -14,7 +15,8 @@ import type { GutterItem } from '@/lib/film/gutter';
 const CHARACTER_COLOR = '#ffaa00';
 
 /** The rail's four sections: the scene (card, tools, breakdown, references), sound, the script (insights, history), notes. */
-/** A labelled on/off switch: a real button with state (role="switch"), 44 pt tall, the state drawn as well as announced. */
+/** A labelled on/off switch: a real button with state (role="switch"), 44 pt tall, the state drawn as well
+    as announced — drawn by the suite's one disc (components/ui/DiscSwitch), like every other on/off. */
 export function ViewToggle({ label, hint, on, set }: { label: string; hint?: string; on: boolean; set: (v: boolean) => void }) {
   return (
     <button type="button" role="switch" aria-checked={on} onClick={() => set(!on)}
@@ -23,9 +25,7 @@ export function ViewToggle({ label, hint, on, set }: { label: string; hint?: str
         <span style={{ fontSize: 13 }}>{label}</span>
         {hint && <span style={{ fontSize: 11, color: 'var(--fg-muted)' }}>{hint}</span>}
       </span>
-      <span aria-hidden style={{ flex: '0 0 auto', width: 44, height: 28, borderRadius: 14, position: 'relative', background: on ? 'var(--accent)' : 'rgba(var(--ink-rgb), 0.18)', transition: 'background 0.15s' }}>
-        <span style={{ position: 'absolute', top: 4, left: on ? 20 : 4, width: 20, height: 20, borderRadius: '50%', background: on ? 'var(--on-accent)' : 'var(--fg)', transition: 'left 0.15s' }} />
-      </span>
+      <Lamp on={on} />
     </button>
   );
 }

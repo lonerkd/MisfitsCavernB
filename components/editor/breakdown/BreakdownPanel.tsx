@@ -8,6 +8,7 @@ import { announceProgressChange } from '@/lib/supabase/progress';
 import { CategoryChips, catStyle } from '@/components/breakdown/CategoryChips';
 import { ElementCard, STATUS_LABEL, money } from '@/components/breakdown/ElementCard';
 import b from '@/components/breakdown/breakdown.module.css';
+import { Lamp } from '@/components/ui/DiscSwitch';
 import type { EditorBreakdown } from './useEditorBreakdown';
 
 /**
@@ -60,8 +61,8 @@ export function BreakdownPanel({ bd, projectId, sceneIdx, heading, speakingCast,
           <div className={b.eyebrow}>{sceneIdx >= 0 ? `Scene ${sceneIdx + 1} breakdown` : 'Breakdown'}</div>
           {heading && <div className={b.heading}>{heading}</div>}
         </div>
-        <button type="button" role="switch" aria-checked={bd.mode} className={`${b.switch} ${bd.mode ? b.switchOn : ''}`} onClick={() => bd.setMode(!bd.mode)} title="Highlight the breakdown in the script and tag by selecting text (Ctrl+Shift+B)">
-          <span className={b.track} aria-hidden /> Tag mode
+        <button type="button" role="switch" aria-checked={bd.mode} className={b.switch} onClick={() => bd.setMode(!bd.mode)} title="Highlight the breakdown in the script and tag by selecting text (Ctrl+Shift+B)">
+          <Lamp on={bd.mode} small /> Tag mode
         </button>
       </div>
 
