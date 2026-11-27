@@ -75,3 +75,26 @@ describe('casting candidates follow the character (20261126000100)', () => {
     expect(data.character_id).toBeNull();
   });
 });
+
+describe('casting candidates follow the casting.decide capability (20261127000200)', () => {
+  const grant = async (granted: boolean) => {
+    await cast.sam.client.from('crew_capability_overrides').delete().eq('project_id', projectId).eq('user_id', cast.jordan.id).eq('capability', 'casting.decide');
+    return cast.sam.client.from('crew_capability_overrides').insert({ project_id: projectId, user_id: cast.jordan.id, capability: 'casting.decide', granted });
+  };
+
+  it('crew granted casting.decide adds, updates and removes a candidate; once revoked they cannot', async () => {
+    expect((await grant(true)).error).toBeNull();
+    const ins = await table(cast.jordan.client).insert(row({ name: 'Granted Crew' })).select().single();
+    expect(ins.error).toBeNull();
+    const up = await table(cast.jordan.client).update({ status: 'callback' }).eq('id', ins.data.id).select().single();
+    expect(up.data.status).toBe('callback');
+    expect((await table(cast.jordan.client).delete().eq('id', ins.data.id)).error).toBeNull();
+
+    expect((await grant(false)).error).toBeNull();
+    expect((await table(cast.jordan.client).insert(row({ name: 'Revoked Crew' }))).error).not.toBeNull();
+  });
+
+  it('an outsider still cannot write, even with the project id', async () => {
+    expect((await table(cast.riley.client).insert(row({ name: 'Outsider' }))).error).not.toBeNull();
+  });
+});

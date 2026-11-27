@@ -62,10 +62,10 @@ test.describe('The island holds a voice call (local Supabase)', () => {
     try {
       await signInAs(page, { email: email, password: PASSWORD });
 
+      // The Lounge has no project picker (the island switches projects): choose it the way the app remembers it.
       await page.goto('/lounge');
-      const picker = page.getByLabel('Active project');
-      await picker.waitFor();
-      if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+      await page.evaluate((id) => localStorage.setItem('mc_active_project', id), projectId);
+      await page.goto('/lounge');
       await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
       await expect(island(page).getByText(/In voice/)).toHaveCount(0); // nothing running, nothing held
 

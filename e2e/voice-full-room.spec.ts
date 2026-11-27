@@ -46,10 +46,10 @@ test.describe('A full voice room (local Supabase)', () => {
         ctxs.push(ctx);
         const page = await ctx.newPage();
         await signInAs(page, { email: people[i].email, password: PASSWORD });
+        // The Lounge has no project picker (the island switches projects): choose it the way the app remembers it.
         await page.goto('/lounge');
-        const picker = page.getByLabel('Active project');
-        await picker.waitFor();
-        if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+        await page.evaluate((id) => localStorage.setItem('mc_active_project', id), projectId);
+        await page.goto('/lounge');
         await page.getByRole('button', { name: new RegExp(`^${room}`) }).first().click();
         pages.push(page);
       }

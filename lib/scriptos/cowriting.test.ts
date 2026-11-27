@@ -196,6 +196,26 @@ describe('mergeScriptTexts', () => {
   const BASE = 'INT. KITCHEN - NIGHT\n\nMAYA\nStill up.\n';
   const APPENDED = '\nINT. ROOF - DAY\n\nA beat pushed from the board.\n';
 
+  it('does not write the same words twice when this side already holds the column\'s insertion and also edited elsewhere', () => {
+    // The column gained "X " and the shared document already merged it in earlier; a local edit ("!") sits beside it.
+    expect(mergeScriptTexts('A B', 'A X B!', 'A X B')).toBe('A X B!');
+    // Opened again with the same stale base, the result is the same: merging is idempotent.
+    const once = mergeScriptTexts('A B', 'A X B!', 'A X B');
+    expect(mergeScriptTexts('A B', once, 'A X B')).toBe(once);
+  });
+
+  it('keeps a different short insertion at the same spot even when it is a substring of this side\'s (no silent loss)', () => {
+    const merged = mergeScriptTexts('A B', 'A INT. ROOF B', 'A I B');
+    expect(merged).toContain('INT. ROOF');
+    expect(merged.split('I').length - 1).toBeGreaterThanOrEqual(2); // the column's own "I" is still there too
+  });
+
+  it('still folds in a different insertion at the same spot', () => {
+    const merged = mergeScriptTexts('A B', 'A X B', 'A Y B');
+    expect(merged).toContain('X');
+    expect(merged).toContain('Y');
+  });
+
   it('takes the server text whole when this side has not moved from the base', () => {
     expect(mergeScriptTexts(BASE, BASE, BASE + APPENDED)).toBe(BASE + APPENDED);
   });

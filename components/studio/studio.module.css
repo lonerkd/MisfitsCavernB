@@ -331,11 +331,11 @@
   backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
   /* Full-bleed on a phone: keep clear of the notch, the Dynamic Island and the home indicator (landscape puts the camera cut-out on a side). */
-  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+  padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(max(24px, env(safe-area-inset-bottom)) + var(--taskbar-height, 0px)) max(24px, env(safe-area-inset-left));
 }
 .modal {
   width: min(1040px, 100%);
-  max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px - var(--taskbar-height, 0px));
   overflow: auto;
   background: var(--bg-2);
   border: 1px solid var(--border-2);

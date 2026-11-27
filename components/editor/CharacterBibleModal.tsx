@@ -1,4 +1,4 @@
-import React, { useState, type Dispatch, type SetStateAction } from 'react';
+import React, { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
 import dynamic from 'next/dynamic';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, X } from 'lucide-react';
@@ -40,6 +40,8 @@ export function CharacterBibleModal({ open, onClose, chars, charProfiles, setCha
 }) {
   const [selectedCharProfile, setSelectedCharProfile] = useState<string | null>(null);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
+  // One list per change of the rows, so the warnings below are not worked out again on every render of the open modal.
+  const rejectedNames = useMemo(() => corrections.rows.filter((r) => r.kind === 'not_character').map((r) => r.name), [corrections.rows]);
 
   return (
     <AnimatePresence>
@@ -117,7 +119,7 @@ export function CharacterBibleModal({ open, onClose, chars, charProfiles, setCha
               </div>
             )}
             <CharacterWarnings
-              lines={lines} scenes={scenes} rejectedNames={corrections.rows.filter((r) => r.kind === 'not_character').map((r) => r.name)}
+              lines={lines} scenes={scenes} rejectedNames={rejectedNames}
               storageKey={currentScript?.id ?? ''} onJump={(line) => { onClose(); onJumpToLine(line); }}
             />
             <div style={{ marginTop: 16 }}>

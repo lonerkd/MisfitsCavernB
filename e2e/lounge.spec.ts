@@ -52,10 +52,10 @@ test.describe('Lounge (local Supabase)', () => {
     test.setTimeout(120_000);
     await signInAs(page, { email: owner.email, password: PASSWORD });
 
+    // The Lounge has no project picker (the island switches projects): choose it the way the app remembers it, then open the Lounge.
     await page.goto('/lounge');
-    const picker = page.getByLabel('Active project');
-    await picker.waitFor();
-    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await page.evaluate((id) => localStorage.setItem('mc_active_project', id), projectId);
+    await page.goto('/lounge');
 
     // Elsewhere in the Lounge, the crew posts in the project channel: it lights up.
     await page.getByRole('button', { name: /^general/ }).first().click();
@@ -116,10 +116,10 @@ test.describe('Lounge (local Supabase)', () => {
 
     await signInAs(page, { email: owner.email, password: PASSWORD });
 
+    // The Lounge has no project picker (the island switches projects): choose it the way the app remembers it, then open the Lounge.
     await page.goto('/lounge');
-    const picker = page.getByLabel('Active project');
-    await picker.waitFor();
-    if ((await picker.inputValue()) !== projectId) await picker.selectOption(projectId);
+    await page.evaluate((id) => localStorage.setItem('mc_active_project', id), projectId);
+    await page.goto('/lounge');
     await expect(page.getByText(`Budget — Ferry hire ${TAG}`)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(`lcrew${TAG}`).filter({ visible: true }).first()).toBeVisible();
 
