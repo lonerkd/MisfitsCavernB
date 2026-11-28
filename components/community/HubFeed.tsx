@@ -58,7 +58,7 @@ export function HubFeed() {
 
   return (
     <div>
-        <p style={{ color: 'var(--fg-muted)', margin: '0 0 20px', maxWidth: '60ch' }}>News from Misfits Cavern: what has changed in The Cavern, and how to get the most from it.{isAdmin && <> <Link href="/admin/hub" style={{ color: 'var(--accent)' }}>Write a post</Link></>}</p>
+        <p style={{ color: 'var(--fg-muted)', margin: '0 0 20px', maxWidth: '60ch' }}>News from Misfits Cavern: what has changed in The Cavern, and how to get the most from it.{isAdmin && <> <Link href="/admin/hub" style={{ color: 'var(--accent)', textDecoration: 'underline' }}>Write a post</Link></>}</p>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
           <div role="tablist" aria-label="Section" style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
