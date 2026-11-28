@@ -5,7 +5,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
-import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem } from './api';
+import { createStudioApi, type Media, type SceneMedia, type SceneRow, type CharacterMedia, type Shot, type CallSheet, type ShootDay, type CallSheetCall, type CallSheetAck, type ProjectLocation, type StoryCharacter, type SceneState, type SceneCharacter, type ReadingCorrection, type Expense, type Timesheet, type ProjectDocument, type TranscriptLine, type PostCut, type PostNote, type PostItem, type SetLogRow, type MoodBoard, type MoodBoardItem, type MoodBoardPin } from './api';
 import { useLiveRows } from './live';
 import type { ParsedSceneInput } from './scene-sync';
 
@@ -69,6 +69,17 @@ export function useMoodBoardItems(projectId: string | null) {
     load: () => studio.listMoodBoardItems(projectId!),
     keyOf: (i) => String(i.id),
     sort: (a, b) => a.z - b.z || a.created_at.localeCompare(b.created_at),
+  });
+}
+
+export function useMoodBoardPins(projectId: string | null) {
+  return useLiveRows<MoodBoardPin>({
+    scope: projectId,
+    table: 'mood_board_pins',
+    filter: `project_id=eq.${projectId}`,
+    load: () => studio.listMoodBoardPins(projectId!),
+    keyOf: (p) => String(p.id),
+    sort: (a, b) => a.created_at.localeCompare(b.created_at),
   });
 }
 

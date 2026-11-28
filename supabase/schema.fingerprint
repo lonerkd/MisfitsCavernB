@@ -457,11 +457,22 @@ column mood_board_items.w real default 24 not null
 column mood_board_items.x real default 5 not null
 column mood_board_items.y real default 5 not null
 column mood_board_items.z integer default 0 not null
+column mood_board_pins.created_at timestamp with time zone default now() not null
+column mood_board_pins.created_by uuid default auth.uid()
+column mood_board_pins.id uuid default gen_random_uuid() not null
+column mood_board_pins.item_id uuid not null
+column mood_board_pins.project_id uuid not null
+column mood_board_pins.text text not null
+column mood_board_pins.updated_at timestamp with time zone default now() not null
+column mood_board_pins.x real not null
+column mood_board_pins.y real not null
 column mood_board_shares.board_id uuid not null
 column mood_board_shares.created_at timestamp with time zone default now() not null
 column mood_board_shares.created_by uuid default auth.uid()
+column mood_board_shares.expires_at timestamp with time zone
 column mood_board_shares.project_id uuid not null
 column mood_board_shares.token text default (replace((gen_random_uuid())::text, '-'::text, ''::text) || replace((gen_random_uuid())::text, '-'::text, ''::text)) not null
+column mood_boards.access text default 'open'::text not null
 column mood_boards.created_at timestamp with time zone default now() not null
 column mood_boards.created_by uuid default auth.uid()
 column mood_boards.id uuid default gen_random_uuid() not null
@@ -1355,6 +1366,7 @@ constraint messages.messages_receiver_id_fkey FOREIGN KEY (receiver_id) REFERENC
 constraint messages.messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES profiles(id) ON DELETE SET NULL
 constraint mood_board_items.mood_board_items_board_fkey FOREIGN KEY (board_id, project_id) REFERENCES mood_boards(id, project_id) ON DELETE CASCADE
 constraint mood_board_items.mood_board_items_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_board_items.mood_board_items_id_project_key UNIQUE (id, project_id)
 constraint mood_board_items.mood_board_items_media_fkey FOREIGN KEY (media_id, project_id) REFERENCES media(id, project_id) ON DELETE CASCADE
 constraint mood_board_items.mood_board_items_note_check CHECK (((note IS NULL) OR ((char_length(note) >= 1) AND (char_length(note) <= 1000))))
 constraint mood_board_items.mood_board_items_one_thing CHECK (((media_id IS NOT NULL) <> (note IS NOT NULL)))
@@ -1362,11 +1374,18 @@ constraint mood_board_items.mood_board_items_pkey PRIMARY KEY (id)
 constraint mood_board_items.mood_board_items_w_check CHECK (((w >= (5)::double precision) AND (w <= (100)::double precision)))
 constraint mood_board_items.mood_board_items_x_check CHECK (((x >= (0)::double precision) AND (x <= (100)::double precision)))
 constraint mood_board_items.mood_board_items_y_check CHECK (((y >= (0)::double precision) AND (y <= (100)::double precision)))
+constraint mood_board_pins.mood_board_pins_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
+constraint mood_board_pins.mood_board_pins_item_fkey FOREIGN KEY (item_id, project_id) REFERENCES mood_board_items(id, project_id) ON DELETE CASCADE
+constraint mood_board_pins.mood_board_pins_pkey PRIMARY KEY (id)
+constraint mood_board_pins.mood_board_pins_text_check CHECK (((char_length(btrim(text)) >= 1) AND (char_length(btrim(text)) <= 500)))
+constraint mood_board_pins.mood_board_pins_x_check CHECK (((x >= (0)::double precision) AND (x <= (100)::double precision)))
+constraint mood_board_pins.mood_board_pins_y_check CHECK (((y >= (0)::double precision) AND (y <= (100)::double precision)))
 constraint mood_board_shares.mood_board_shares_board_fkey FOREIGN KEY (board_id, project_id) REFERENCES mood_boards(id, project_id) ON DELETE CASCADE
 constraint mood_board_shares.mood_board_shares_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint mood_board_shares.mood_board_shares_pkey PRIMARY KEY (board_id)
 constraint mood_board_shares.mood_board_shares_token_check CHECK ((char_length(token) >= 32))
 constraint mood_board_shares.mood_board_shares_token_key UNIQUE (token)
+constraint mood_boards.mood_boards_access_check CHECK ((access = ANY (ARRAY['open'::text, 'view'::text, 'private'::text])))
 constraint mood_boards.mood_boards_created_by_fkey FOREIGN KEY (created_by) REFERENCES profiles(id) ON DELETE SET NULL
 constraint mood_boards.mood_boards_id_project_key UNIQUE (id, project_id)
 constraint mood_boards.mood_boards_name_check CHECK (((char_length(btrim(name)) >= 1) AND (char_length(btrim(name)) <= 120)))
@@ -1793,7 +1812,7 @@ function internal.hub_posts_touch() body=c072cc45379bf5457d16b3a473ea3cd5
 function internal.in_project_audience(pid uuid, aud text) body=0b751b6d12fe9b75547caadcf4a98d08
 function internal.is_project_creator(pid uuid) body=cde749e8dbf09f4c25357e28bd0271fe
 function internal.is_project_member(pid uuid) body=3ec152b6e40d467766b845bd2d662376
-function internal.is_shared_media_object(object_name text) body=fae9950a1d27428c430034f0c7338610
+function internal.is_shared_media_object(object_name text) body=66692bb8ad876a9b0deec051320ad75f
 function internal.is_suspended() body=96c2cea6c81dfd2b96d04837dbec793f
 function internal.item_versions_guard() body=2d51f206903da69aa24f7ab267e3e251
 function internal.item_versions_prepare() body=efe35c574679443d9a62c25bc31a7287
@@ -1807,6 +1826,7 @@ function internal.media_lifecycle_guard() body=3e399863bb6be99f8cecb601a5858d2d
 function internal.messages_delete_guard() body=0daf185c8fe7170640c124fd694841d1
 function internal.messages_insert_guard() body=a199ce816b7e724611389a9fd7731c13
 function internal.moderation_write_guard() body=8e8fdfe96bd4fc8687aa7192a1fe87cb
+function internal.mood_board_pins_keep_author() body=98d60fe389301b9520ac31888ba89a43
 function internal.mood_boards_touch() body=494194b90977a002843336ed8dec9f7f
 function internal.notes_guard() body=82d05cc6e3308cb72b8594b19c7b1f03
 function internal.notes_notify() body=769b18be18b40f50d6fcb3e1e8c704e1
@@ -1892,7 +1912,7 @@ function public.get_public_showcase(p_limit integer) body=d1fe377728dfc1500fab98
 function public.get_published_media(p_media_id uuid) body=452fedf24d2941407d4658e848bb6ede
 function public.get_recent_work(p_limit integer) body=c2b64fda478668ca6c5908e5a54ad4ca
 function public.get_review(p_token text) body=911a1941cb14915110ffeec34a9f9513
-function public.get_shared_board(p_token text) body=525fbd11adb4d9b8a5829f9f2974b6ec
+function public.get_shared_board(p_token text) body=c2882dc8f8a88e978759a3b573d8effe
 function public.get_shared_lookbook(p_token text) body=8adc76740d4aeb34df40f71bc1221ccf
 function public.get_shared_portfolio(p_token text) body=20bfafc95c398156cb1e5e1490894500
 function public.get_shared_project(p_token text) body=eb2fe3fedb6898a501f8e7bb1d42aac8
@@ -1998,6 +2018,7 @@ grant function internal.media_lifecycle_guard() postgres
 grant function internal.messages_delete_guard() postgres
 grant function internal.messages_insert_guard() postgres
 grant function internal.moderation_write_guard() postgres,service_role
+grant function internal.mood_board_pins_keep_author() postgres
 grant function internal.mood_boards_touch() postgres
 grant function internal.notes_guard() postgres
 grant function internal.notes_notify() postgres
@@ -2272,6 +2293,9 @@ index CREATE INDEX mood_board_items_board_idx ON public.mood_board_items USING b
 index CREATE INDEX mood_board_items_created_by_idx ON public.mood_board_items USING btree (created_by)
 index CREATE INDEX mood_board_items_media_idx ON public.mood_board_items USING btree (media_id, project_id)
 index CREATE INDEX mood_board_items_project_idx ON public.mood_board_items USING btree (project_id)
+index CREATE INDEX mood_board_pins_created_by_idx ON public.mood_board_pins USING btree (created_by)
+index CREATE INDEX mood_board_pins_item_idx ON public.mood_board_pins USING btree (item_id, project_id)
+index CREATE INDEX mood_board_pins_project_idx ON public.mood_board_pins USING btree (project_id)
 index CREATE INDEX mood_board_shares_board_fkey_idx ON public.mood_board_shares USING btree (board_id, project_id)
 index CREATE INDEX mood_board_shares_created_by_idx ON public.mood_board_shares USING btree (created_by)
 index CREATE INDEX mood_board_shares_project_idx ON public.mood_board_shares USING btree (project_id)
@@ -2487,7 +2511,9 @@ index CREATE UNIQUE INDEX media_id_project_key ON public.media USING btree (id, 
 index CREATE UNIQUE INDEX media_pkey ON public.media USING btree (id)
 index CREATE UNIQUE INDEX media_storage_path_key ON public.media USING btree (storage_path)
 index CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)
+index CREATE UNIQUE INDEX mood_board_items_id_project_key ON public.mood_board_items USING btree (id, project_id)
 index CREATE UNIQUE INDEX mood_board_items_pkey ON public.mood_board_items USING btree (id)
+index CREATE UNIQUE INDEX mood_board_pins_pkey ON public.mood_board_pins USING btree (id)
 index CREATE UNIQUE INDEX mood_board_shares_pkey ON public.mood_board_shares USING btree (board_id)
 index CREATE UNIQUE INDEX mood_board_shares_token_key ON public.mood_board_shares USING btree (token)
 index CREATE UNIQUE INDEX mood_boards_id_project_key ON public.mood_boards USING btree (id, project_id)
@@ -2728,17 +2754,22 @@ policy public.media "media view" PERMISSIVE SELECT to authenticated using intern
 policy public.messages "messages delete" PERMISSIVE DELETE to authenticated using ((hidden_at IS NULL) AND ((sender_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND can_manage_channel(channel_uuid)))) check -
 policy public.messages "messages read" PERMISSIVE SELECT to authenticated using ((sender_id = ( SELECT auth.uid() AS uid)) OR (receiver_id = ( SELECT auth.uid() AS uid)) OR ((channel_uuid IS NOT NULL) AND internal.can_view_channel(channel_uuid))) check -
 policy public.messages "messages send" PERMISSIVE INSERT to authenticated using - check ((sender_id = ( SELECT auth.uid() AS uid)) AND (((receiver_id IS NOT NULL) AND (channel_uuid IS NULL)) OR ((receiver_id IS NULL) AND (channel_uuid IS NOT NULL) AND can_post_channel(channel_uuid))) AND (COALESCE(reactions, '{}'::jsonb) = '{}'::jsonb) AND (NOT pinned) AND (pinned_by IS NULL) AND (edited_at IS NULL))
-policy public.mood_board_items "mood_board_items delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
-policy public.mood_board_items "mood_board_items insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
-policy public.mood_board_items "mood_board_items update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.mood_board_items "mood_board_items view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_board_items "mood_board_items delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM mood_boards b WHERE ((b.id = mood_board_items.board_id) AND (b.project_id = mood_board_items.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id)))))) check -
+policy public.mood_board_items "mood_board_items insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM mood_boards b WHERE ((b.id = mood_board_items.board_id) AND (b.project_id = mood_board_items.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id))))))
+policy public.mood_board_items "mood_board_items update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM mood_boards b WHERE ((b.id = mood_board_items.board_id) AND (b.project_id = mood_board_items.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id)))))) check (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM mood_boards b WHERE ((b.id = mood_board_items.board_id) AND (b.project_id = mood_board_items.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id))))))
+policy public.mood_board_items "mood_board_items view" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM mood_boards b WHERE ((b.id = mood_board_items.board_id) AND (b.project_id = mood_board_items.project_id))))) check -
+policy public.mood_board_pins "mood_board_pins delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM (mood_board_items i JOIN mood_boards b ON (((b.id = i.board_id) AND (b.project_id = i.project_id)))) WHERE ((i.id = mood_board_pins.item_id) AND (i.project_id = mood_board_pins.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id)))))) check -
+policy public.mood_board_pins "mood_board_pins insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1 FROM (mood_board_items i JOIN mood_boards b ON (((b.id = i.board_id) AND (b.project_id = i.project_id)))) WHERE ((i.id = mood_board_pins.item_id) AND (i.project_id = mood_board_pins.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id))))))
+policy public.mood_board_pins "mood_board_pins update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM (mood_board_items i JOIN mood_boards b ON (((b.id = i.board_id) AND (b.project_id = i.project_id)))) WHERE ((i.id = mood_board_pins.item_id) AND (i.project_id = mood_board_pins.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id)))))) check (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM (mood_board_items i JOIN mood_boards b ON (((b.id = i.board_id) AND (b.project_id = i.project_id)))) WHERE ((i.id = mood_board_pins.item_id) AND (i.project_id = mood_board_pins.project_id) AND ((b.access = 'open'::text) OR internal.can_shape_project(b.project_id))))))
+policy public.mood_board_pins "mood_board_pins view" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND (EXISTS ( SELECT 1 FROM mood_board_items i WHERE ((i.id = mood_board_pins.item_id) AND (i.project_id = mood_board_pins.project_id))))) check -
 policy public.mood_board_shares "mood_board_shares delete" PERMISSIVE DELETE to authenticated using internal.can_shape_project(project_id) check -
 policy public.mood_board_shares "mood_board_shares insert" PERMISSIVE INSERT to authenticated using - check (internal.can_shape_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
+policy public.mood_board_shares "mood_board_shares update" PERMISSIVE UPDATE to authenticated using internal.can_shape_project(project_id) check internal.can_shape_project(project_id)
 policy public.mood_board_shares "mood_board_shares view" PERMISSIVE SELECT to authenticated using internal.can_shape_project(project_id) check -
-policy public.mood_boards "mood_boards delete" PERMISSIVE DELETE to authenticated using internal.can_access_project(project_id) check -
-policy public.mood_boards "mood_boards insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)))
-policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticated using internal.can_access_project(project_id) check internal.can_access_project(project_id)
-policy public.mood_boards "mood_boards view" PERMISSIVE SELECT to authenticated using internal.can_access_project(project_id) check -
+policy public.mood_boards "mood_boards delete" PERMISSIVE DELETE to authenticated using (internal.can_access_project(project_id) AND ((access = 'open'::text) OR internal.can_shape_project(project_id))) check -
+policy public.mood_boards "mood_boards insert" PERMISSIVE INSERT to authenticated using - check (internal.can_access_project(project_id) AND (created_by = ( SELECT auth.uid() AS uid)) AND ((access = 'open'::text) OR internal.can_shape_project(project_id)))
+policy public.mood_boards "mood_boards update" PERMISSIVE UPDATE to authenticated using (internal.can_access_project(project_id) AND ((access = 'open'::text) OR internal.can_shape_project(project_id))) check (internal.can_access_project(project_id) AND ((access = 'open'::text) OR internal.can_shape_project(project_id)))
+policy public.mood_boards "mood_boards view" PERMISSIVE SELECT to authenticated using (internal.can_access_project(project_id) AND ((access <> 'private'::text) OR internal.can_shape_project(project_id))) check -
 policy public.notes "notes delete" PERMISSIVE DELETE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) OR ((scope = 'project'::text) AND internal.is_project_creator(project_id))) check -
 policy public.notes "notes insert" PERMISSIVE INSERT to authenticated using - check ((created_by = ( SELECT auth.uid() AS uid)) AND (((scope = 'private'::text) AND ((project_id IS NULL) OR internal.can_access_project(project_id)) AND ((script_id IS NULL) OR internal.can_access_script(script_id))) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id))))
 policy public.notes "notes update" PERMISSIVE UPDATE to authenticated using ((created_by = ( SELECT auth.uid() AS uid)) AND ((scope = 'private'::text) OR ((scope = 'project'::text) AND internal.can_access_project(project_id)) OR ((scope = 'writer'::text) AND internal.can_access_script(script_id)))) check (created_by = ( SELECT auth.uid() AS uid))
@@ -2932,6 +2963,7 @@ realtime public.links
 realtime public.media
 realtime public.messages
 realtime public.mood_board_items
+realtime public.mood_board_pins
 realtime public.mood_boards
 realtime public.notes
 realtime public.notifications
@@ -3013,6 +3045,7 @@ rls lounge_reads enabled=true forced=false
 rls media enabled=true forced=false
 rls messages enabled=true forced=false
 rls mood_board_items enabled=true forced=false
+rls mood_board_pins enabled=true forced=false
 rls mood_board_shares enabled=true forced=false
 rls mood_boards enabled=true forced=false
 rls notes enabled=true forced=false
@@ -3154,6 +3187,8 @@ trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.
 trigger CREATE TRIGGER moderation_write_guard BEFORE INSERT OR UPDATE ON public.support_cases FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
 trigger CREATE TRIGGER moderation_write_guard BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION internal.moderation_write_guard()
 trigger CREATE TRIGGER mood_board_items_touch BEFORE UPDATE ON public.mood_board_items FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
+trigger CREATE TRIGGER mood_board_pins_keep_author BEFORE UPDATE ON public.mood_board_pins FOR EACH ROW EXECUTE FUNCTION internal.mood_board_pins_keep_author()
+trigger CREATE TRIGGER mood_board_pins_touch BEFORE UPDATE ON public.mood_board_pins FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER mood_boards_touch BEFORE UPDATE ON public.mood_boards FOR EACH ROW EXECUTE FUNCTION internal.mood_boards_touch()
 trigger CREATE TRIGGER notes_guard BEFORE INSERT OR UPDATE ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_guard()
 trigger CREATE TRIGGER notes_notify AFTER INSERT ON public.notes FOR EACH ROW EXECUTE FUNCTION internal.notes_notify()

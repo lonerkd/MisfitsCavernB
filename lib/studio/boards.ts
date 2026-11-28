@@ -68,9 +68,56 @@ export function dominantColours(rgba: ArrayLike<number>, count = 5): string[] {
 /** What a board's share link shows: the board, its cards, and for a library item only what shows it. */
 export interface SharedBoardItem {
   id: string; x: number; y: number; w: number; z: number; note: string | null;
+  /** Annotation pins, oldest first (absent in a link read before pins existed). */
+  pins?: { id: string; x: number; y: number; text: string }[];
   media: { id: string; kind: string; title: string; storage_path: string | null; external_url: string | null; mime_type: string | null; width: number | null; height: number | null } | null;
 }
 export interface SharedBoard { name: string; template: BoardTemplate; project_title: string; items: SharedBoardItem[] }
 
 /** The address of a board's public page. */
 export const boardShareUrl = (origin: string, token: string) => `${origin.replace(/\/$/, '')}/b/${token}`;
+
+/** Who sees and edits a board (`mood_boards.access`, enforced by row security, not by this file). */
+export const BOARD_ACCESS = ['open', 'view', 'private'] as const;
+export type BoardAccess = (typeof BOARD_ACCESS)[number];
+export const BOARD_ACCESS_INFO: Record<BoardAccess, { label: string; blurb: string }> = {
+  open: { label: 'Everyone on the project edits', blurb: 'Everyone with access to the project sees and edits this board.' },
+  view: { label: 'Everyone sees, leads edit', blurb: 'Everyone on the project sees this board; only people who shape the project (owner, leads, contributors) edit it.' },
+  private: { label: 'Only leads', blurb: 'Only people who shape the project (owner, leads, contributors) see or edit this board. Others do not see it at all.' },
+};
+export const isBoardAccess = (v: unknown): v is BoardAccess => typeof v === 'string' && (BOARD_ACCESS as readonly string[]).includes(v);
+
+/** May this person edit the board's cards, pins and settings? (The database makes the same call.) */
+export const canEditBoard = (access: string, canShape: boolean): boolean => access === 'open' || canShape;
+
+/** A pin's spot on a card, in percent of the card, kept inside it and rounded to a tenth. */
+export function pinPoint(clientX: number, clientY: number, rect: { left: number; top: number; width: number; height: number }): { x: number; y: number } {
+  if (rect.width <= 0 || rect.height <= 0) return { x: 50, y: 50 };
+  const f = (v: number) => Math.round(Math.min(100, Math.max(0, v)) * 10) / 10;
+  return { x: f(((clientX - rect.left) / rect.width) * 100), y: f(((clientY - rect.top) / rect.height) * 100) };
+}
+
+/** Pins in their reading order (oldest first), each with the number the card and the list show for it. */
+export function numberPins<T extends { id: string; created_at: string }>(pins: readonly T[]): Array<T & { n: number }> {
+  return [...pins].sort((a, b) => a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)).map((p, i) => ({ ...p, n: i + 1 }));
+}
+
+/** How long a new share link lives, in days; null = it never expires. */
+export const SHARE_EXPIRY_CHOICES: { days: number | null; label: string }[] = [
+  { days: null, label: 'Never expires' },
+  { days: 1, label: 'Expires in 1 day' },
+  { days: 7, label: 'Expires in 7 days' },
+  { days: 30, label: 'Expires in 30 days' },
+];
+
+/** The moment a link set to live `days` days from `now` stops working (ISO), or null for no expiry. */
+export const shareExpiryFromDays = (days: number | null, now: Date): string | null =>
+  days == null ? null : new Date(now.getTime() + days * 86_400_000).toISOString();
+
+/** Is the link without expiry, live, or already dead at `now`? (The database makes the same call, with its own clock.) */
+export function shareExpiryState(expiresAt: string | null | undefined, now: Date): 'never' | 'live' | 'expired' {
+  if (!expiresAt) return 'never';
+  const t = Date.parse(expiresAt);
+  if (Number.isNaN(t)) return 'never';
+  return t > now.getTime() ? 'live' : 'expired';
+}

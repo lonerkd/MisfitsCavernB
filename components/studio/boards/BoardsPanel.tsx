@@ -7,15 +7,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { printHtmlString } from '@/lib/print/print';
 import dynamic from 'next/dynamic';
-import { ImagePlus, Link2, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid, Search, ChevronUp, ChevronDown, X, Presentation } from 'lucide-react';
+import { MapPin, ImagePlus, Link2, Palette, Printer, StickyNote, Trash2, ArrowUpToLine, LayoutGrid, Search, ChevronUp, ChevronDown, X, Presentation } from 'lucide-react';
 import EmptyState from '@/components/ui/EmptyState';
 import { useToast } from '@/components/ui/Toast';
 import { useConfirm } from '@/components/ui/Confirm';
 import { pushUndo, undoOrigin } from '@/lib/os/undo';
 import { useCanShape } from '@/lib/brief';
 import {
-  BOARD_TEMPLATES, SIZES, TEMPLATE_INFO, boardShareUrl, clampPoint, dominantColours, mediaSrc, studio, useMoodBoardItems, useMoodBoards, useSignedUrls,
-  type BoardTemplate, type MoodBoard, type MoodBoardItem, type MoodBoardShare,
+  BOARD_ACCESS, BOARD_ACCESS_INFO, BOARD_TEMPLATES, SHARE_EXPIRY_CHOICES, SIZES, TEMPLATE_INFO, boardShareUrl, canEditBoard, clampPoint, dominantColours, isBoardAccess, mediaSrc, numberPins, pinPoint,
+  shareExpiryFromDays, shareExpiryState, studio, useMoodBoardItems, useMoodBoardPins, useMoodBoards, useSignedUrls,
+  type BoardTemplate, type MoodBoard, type MoodBoardItem, type MoodBoardPin, type MoodBoardShare,
 } from '@/lib/studio';
 import { highlightSegments, matchCards, matchLabel, stepMatch } from '@/lib/studio/board-search';
 import { toSlides } from '@/lib/studio/board-slides';
@@ -64,6 +65,11 @@ export function BoardsPanel() {
   const confirm = useConfirm();
   const boards = useMoodBoards(project.id);
   const items = useMoodBoardItems(project.id);
+  const pins = useMoodBoardPins(project.id);
+  const [pinMode, setPinMode] = useState(false);
+  const [draftPin, setDraftPin] = useState<{ itemId: string; x: number; y: number; text: string } | null>(null);
+  const [pinEdit, setPinEdit] = useState<{ id: string; text: string } | null>(null);
+  const [expiryDays, setExpiryDays] = useState<number | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [picking, setPicking] = useState(false);
@@ -84,6 +90,15 @@ export function BoardsPanel() {
 
   const active: MoodBoard | undefined = boards.rows.find((r) => r.id === activeId) ?? boards.rows[0];
   const boardItems = useMemo(() => items.rows.filter((i) => i.board_id === active?.id), [items.rows, active?.id]);
+  const canEdit = active ? canEditBoard(active.access, canShape) : true;
+  const itemIds = useMemo(() => new Set(boardItems.map((i) => i.id)), [boardItems]);
+  const pinsByItem = useMemo(() => {
+    const m = new Map<string, Array<MoodBoardPin & { n: number }>>();
+    const byItem = new Map<string, MoodBoardPin[]>();
+    for (const p of pins.rows) if (itemIds.has(p.item_id)) byItem.set(p.item_id, [...(byItem.get(p.item_id) ?? []), p]);
+    for (const [id, list] of byItem) m.set(id, numberPins(list));
+    return m;
+  }, [pins.rows, itemIds]);
   const mediaById = useMemo(() => new Map(media.rows.map((m) => [m.id, m])), [media.rows]);
   const signed = useSignedUrls(boardItems.map((i) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m && (m.kind === 'image' || m.kind === 'video') ? m.storage_path : null; }));
   const srcOf = useCallback((i: MoodBoardItem) => { const m = i.media_id ? mediaById.get(i.media_id) : null; return m ? mediaSrc(m, signed) : null; }, [mediaById, signed]);
@@ -191,8 +206,36 @@ export function BoardsPanel() {
 
   const makeLink = async () => {
     if (!active) return;
-    const row = await run(() => studio.shareBoard(active, userId), 'Could not make the board link');
+    const row = await run(() => studio.shareBoard(active, userId, shareExpiryFromDays(expiryDays, new Date())), 'Could not make the board link');
     if (row) setShare({ boardId: active.id, row });
+  };
+  // Change when the existing link stops working: a number of days from now, or never.
+  const changeExpiry = async (value: string) => {
+    if (!active || !value) return;
+    const days = value === 'never' ? null : Number(value);
+    const row = await run(() => studio.setBoardShareExpiry(active.id, shareExpiryFromDays(days, new Date())), 'Could not change when the link expires');
+    if (row) { setShare({ boardId: active.id, row }); toast(days == null ? 'The link no longer expires' : 'The link expiry is set', 'success'); }
+  };
+  const changeAccess = async (value: string) => {
+    if (!active || !isBoardAccess(value) || value === active.access) return;
+    const row = await run(() => studio.setBoardAccess(active.id, value), 'Could not change who can edit the board');
+    if (row) { boards.upsertLocal(row); toast(BOARD_ACCESS_INFO[value].blurb, 'success'); }
+  };
+  const savePin = async () => {
+    if (!draftPin) return;
+    const item = items.rows.find((i) => i.id === draftPin.itemId);
+    if (!item) return;
+    const row = await run(() => studio.addBoardPin(item, userId, { x: draftPin.x, y: draftPin.y }, draftPin.text), 'Could not pin that');
+    if (row) { pins.upsertLocal(row); setDraftPin(null); setPinMode(false); }
+  };
+  const savePinEdit = async () => {
+    if (!pinEdit) return;
+    const { id, text } = pinEdit;
+    const row = await run(() => studio.updateBoardPin(id, { text }), 'Could not save the pin');
+    if (row) { pins.upsertLocal(row); setPinEdit(null); }
+  };
+  const removePin = async (id: string) => {
+    if (await run(() => studio.removeBoardPin(id).then(() => true), 'Could not remove the pin')) pins.removeLocal(id);
   };
   const stopSharing = async () => {
     if (!active) return;
@@ -201,8 +244,10 @@ export function BoardsPanel() {
   };
   const replaceLink = async () => {
     if (!active) return;
-    if (!(await confirm('Make a new link? The old one stops working at once, and anyone you sent it to will need the new one.'))) return;
-    const row = await run(() => studio.newBoardLink(active, userId), 'Could not make a new link');
+    // A new address keeps the old link's expiry (rotating a link that was set to end must not make a link that never ends).
+    const keepExpiry = currentShare?.expires_at ?? null;
+    if (!(await confirm(`Make a new link? The old one stops working at once, and anyone you sent it to will need the new one. ${keepExpiry ? 'The new link ends when the old one would have.' : 'The new link does not expire.'}`))) return;
+    const row = await run(() => studio.newBoardLink(active, userId, keepExpiry), 'Could not make a new link');
     if (row) setShare({ boardId: active.id, row });
   };
   const copyLink = async (token: string) => {
@@ -221,6 +266,15 @@ export function BoardsPanel() {
   const startDrag = (e: React.PointerEvent, item: MoodBoardItem) => {
     if (e.button !== 0 || editing) return;
     setSelectedId(item.id);
+    if (pinMode) {
+      // Pin mode: the click fixes a note to that spot on the card instead of dragging it.
+      if (!canEdit) return;
+      e.preventDefault();
+      const r = e.currentTarget.getBoundingClientRect();
+      setDraftPin({ itemId: item.id, ...pinPoint(e.clientX, e.clientY, r), text: '' });
+      return;
+    }
+    if (!canEdit) return;
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const startX = e.clientX, startY = e.clientY;
@@ -244,7 +298,9 @@ export function BoardsPanel() {
   };
 
   const onKey = (e: React.KeyboardEvent, item: MoodBoardItem) => {
-    if (editing) return;
+    // Keys pressed on something inside the card (a pin button) belong to it, not to the card: Backspace on a pin must not delete the card.
+    if (e.target !== e.currentTarget) return;
+    if (editing || !canEdit) return;
     const step = e.shiftKey ? 5 : 1;
     const d = e.key === 'ArrowLeft' ? [-step, 0] : e.key === 'ArrowRight' ? [step, 0] : e.key === 'ArrowUp' ? [0, -step] : e.key === 'ArrowDown' ? [0, step] : null;
     if (d) { e.preventDefault(); void save(item, clampPoint(item.x + d[0], item.y + d[1], item.w), 'Moved a card'); }
@@ -289,28 +345,64 @@ export function BoardsPanel() {
           {active && (
             <>
               <div className={b.bar}>
-                {renaming === active.id
+                {!canEdit ? null : renaming === active.id
                   ? <input className={`${s.input} ${b.grow}`} aria-label="Board name" autoFocus defaultValue={active.name} maxLength={120} onBlur={(e) => void rename(active, e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') setRenaming(null); }} />
                   : <button type="button" className={s.btn} onClick={() => setRenaming(active.id)}>Rename</button>}
-                <button type="button" className={s.btn} onClick={() => setPicking(true)}><ImagePlus size={12} /> Add from library</button>
-                <button type="button" className={s.btn} aria-expanded={noting} onClick={() => setNoting((v) => !v)}><StickyNote size={12} /> Add note</button>
+                {canEdit && <button type="button" className={s.btn} onClick={() => setPicking(true)}><ImagePlus size={12} /> Add from library</button>}
+                {canEdit && <button type="button" className={s.btn} aria-expanded={noting} onClick={() => setNoting((v) => !v)}><StickyNote size={12} /> Add note</button>}
+                {canEdit && boardItems.length > 0 && <button type="button" className={s.btn} aria-pressed={pinMode} onClick={() => { setPinMode((v) => !v); setDraftPin(null); }}><MapPin size={12} /> {pinMode ? 'Click a card to pin' : 'Pin a note'}</button>}
+                {canEdit && pinMode && <span className={s.hint}>Pins are shown on the board’s shared link, if it has one.</span>}
+                {canShape && (
+                  <select className={s.select} aria-label="Who can edit this board" value={active.access} onChange={(e) => void changeAccess(e.target.value)}>
+                    {BOARD_ACCESS.map((a) => <option key={a} value={a}>{BOARD_ACCESS_INFO[a].label}</option>)}
+                  </select>
+                )}
                 <button type="button" className={s.btn} onClick={() => setPresenting(true)} disabled={!slides.length}><Presentation size={12} /> Slideshow</button>
                 <button type="button" className={s.btn} onClick={print} disabled={!boardItems.length}><Printer size={12} /> Print / PDF</button>
                 {canShape && <button type="button" className={s.btn} aria-expanded={shareOpen} onClick={() => setShareOpen((v) => !v)}><Link2 size={12} /> Share link</button>}
-                <button type="button" className={s.btnDanger} onClick={() => void removeBoard(active)}><Trash2 size={12} /> Delete board</button>
+                {canEdit && <button type="button" className={s.btnDanger} onClick={() => void removeBoard(active)}><Trash2 size={12} /> Delete board</button>}
               </div>
+              {!canEdit && <p className={b.hint} role="status">{BOARD_ACCESS_INFO[active.access as keyof typeof BOARD_ACCESS_INFO]?.blurb ?? 'View only.'} You can look, search and present it.</p>}
+              {draftPin && (
+                <div className={b.bar} role="group" aria-label="New pin">
+                  <input className={`${s.input} ${b.grow}`} aria-label="Pin text" autoFocus maxLength={500} placeholder="What should they notice here?" value={draftPin.text}
+                    onChange={(e) => setDraftPin({ ...draftPin, text: e.target.value })}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void savePin(); } else if (e.key === 'Escape') { e.stopPropagation(); setDraftPin(null); } }} />
+                  <button type="button" className={s.btnPrimary} onClick={() => void savePin()} disabled={!draftPin.text.trim()}>Pin</button>
+                  <button type="button" className={s.btn} onClick={() => setDraftPin(null)}>Cancel</button>
+                </div>
+              )}
               {canShape && shareOpen && (
                 <div className={b.share} role="group" aria-label="Share this board">
-                  <p className={b.hint}>Anyone with the link can see this board: its cards, notes and the images on it. Not the rest of the library. You can stop it at any time.</p>
+                  <p className={b.hint}>Anyone with the link can see this board: its cards, notes, pins and the images on it. Not the rest of the library. You can stop it at any time, or let it expire.</p>
                   {currentShare === undefined ? <p className={b.hint}>Looking…</p> : currentShare ? (
-                    <div className={b.bar}>
-                      <input className={`${s.input} ${b.grow}`} aria-label="Board link" readOnly value={boardShareUrl(typeof window === 'undefined' ? '' : window.location.origin, currentShare.token)} onFocus={(e) => e.currentTarget.select()} />
-                      <button type="button" className={s.btnPrimary} onClick={() => void copyLink(currentShare.token)}>Copy link</button>
-                      <button type="button" className={s.btn} onClick={() => void replaceLink()}>New link</button>
-                      <button type="button" className={s.btnDanger} onClick={() => void stopSharing()}>Stop sharing</button>
-                    </div>
+                    <>
+                      <div className={b.bar}>
+                        <input className={`${s.input} ${b.grow}`} aria-label="Board link" readOnly value={boardShareUrl(typeof window === 'undefined' ? '' : window.location.origin, currentShare.token)} onFocus={(e) => e.currentTarget.select()} />
+                        <button type="button" className={s.btnPrimary} onClick={() => void copyLink(currentShare.token)}>Copy link</button>
+                        <button type="button" className={s.btn} onClick={() => void replaceLink()}>New link</button>
+                        <button type="button" className={s.btnDanger} onClick={() => void stopSharing()}>Stop sharing</button>
+                      </div>
+                      <div className={b.bar}>
+                        <p className={b.hint} role="status">
+                          {shareExpiryState(currentShare.expires_at, new Date()) === 'never' && 'This link does not expire.'}
+                          {shareExpiryState(currentShare.expires_at, new Date()) === 'live' && `This link stops working on ${new Date(currentShare.expires_at as string).toLocaleString()}.`}
+                          {shareExpiryState(currentShare.expires_at, new Date()) === 'expired' && 'This link has expired: anyone who opens it sees nothing. Set a new expiry, or make a new link.'}
+                        </p>
+                        <select className={s.select} aria-label="Change when the link expires" value="" onChange={(e) => void changeExpiry(e.target.value)}>
+                          <option value="">Change expiry…</option>
+                          <option value="never">Never expires</option>
+                          {SHARE_EXPIRY_CHOICES.filter((c) => c.days != null).map((c) => <option key={c.days} value={String(c.days)}>{c.label.replace('Expires', 'Expire')} from now</option>)}
+                        </select>
+                      </div>
+                    </>
                   ) : (
-                    <button type="button" className={s.btnPrimary} onClick={() => void makeLink()}>Make a link</button>
+                    <div className={b.bar}>
+                      <select className={s.select} aria-label="When the new link expires" value={expiryDays == null ? '' : String(expiryDays)} onChange={(e) => setExpiryDays(e.target.value ? Number(e.target.value) : null)}>
+                        {SHARE_EXPIRY_CHOICES.map((c) => <option key={String(c.days)} value={c.days == null ? '' : String(c.days)}>{c.label}</option>)}
+                      </select>
+                      <button type="button" className={s.btnPrimary} onClick={() => void makeLink()}>Make a link</button>
+                    </div>
                   )}
                 </div>
               )}
@@ -364,12 +456,40 @@ export function BoardsPanel() {
                           {why && !highlightSegments(m.title, query).some((p) => p.hit) &&<div className={b.why}><Hl text={why.text} query={query} /></div>}
                         </>
                       ) : <div className={b.noteText}>This library item was removed.</div>}
+                      {(pinsByItem.get(i.id) ?? []).map((p) => (
+                        <button key={p.id} type="button" className={b.pin} style={{ left: `${p.x}%`, top: `${p.y}%` }} title={p.text} aria-label={`Pin ${p.n}: ${p.text}`}
+                          onPointerDown={(e) => e.stopPropagation()} onClick={() => setSelectedId(i.id)}>{p.n}</button>
+                      ))}
+                      {draftPin?.itemId === i.id && <span className={`${b.pin} ${b.pinDraft}`} style={{ left: `${draftPin.x}%`, top: `${draftPin.y}%` }} aria-hidden>+</span>}
                     </div>
                   );
                 })}
               </div>
 
-              {selected && (
+              {selected && (pinsByItem.get(selected.id)?.length ?? 0) > 0 && (
+                <ol className={b.pinList} aria-label="Pins on the selected card">
+                  {(pinsByItem.get(selected.id) ?? []).map((p) => (
+                    <li key={p.id}>
+                      <span className={b.pinNum}>{p.n}</span>
+                      {pinEdit?.id === p.id ? (
+                        <>
+                          <input className={`${s.input} ${b.grow}`} aria-label={`Edit pin ${p.n}`} autoFocus maxLength={500} value={pinEdit.text}
+                            onChange={(e) => setPinEdit({ id: p.id, text: e.target.value })}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); void savePinEdit(); } else if (e.key === 'Escape') setPinEdit(null); }} />
+                          <button type="button" className={s.btnPrimary} onClick={() => void savePinEdit()} disabled={!pinEdit.text.trim()}>Save</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className={b.grow}>{p.text}</span>
+                          {canEdit && <button type="button" className={s.btn} onClick={() => setPinEdit({ id: p.id, text: p.text })}>Edit</button>}
+                          {canEdit && <button type="button" className={s.btnDanger} aria-label={`Remove pin ${p.n}`} onClick={() => void removePin(p.id)}><Trash2 size={12} /></button>}
+                        </>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {selected && canEdit && (
                 <div className={b.tools} role="toolbar" aria-label="Selected card">
                   {(Object.keys(SIZES) as Array<keyof typeof SIZES>).map((k) => (
                     <button key={k} type="button" className={s.btn} aria-pressed={selected.w === SIZES[k]} onClick={() => void save(selected, { w: SIZES[k], ...clampPoint(selected.x, selected.y, SIZES[k]) }, 'Resized a card')}>{k[0].toUpperCase() + k.slice(1)}</button>
