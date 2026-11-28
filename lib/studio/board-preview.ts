@@ -15,7 +15,8 @@ export function previewTiles(board: Pick<SharedBoard, 'items'>, max: number): st
   const out: string[] = [];
   for (const i of board.items) {
     const m = i.media;
-    if (m?.kind === 'image' && m.storage_path && !out.includes(m.storage_path)) out.push(m.storage_path);
+    // Only formats the preview renderer decodes (png, jpeg, gif): a webp, avif or heic tile would make the whole image fail, so such cards are left out.
+    if (m?.kind === 'image' && m.storage_path && /\.(png|jpe?g|gif)$/i.test(m.storage_path) && !out.includes(m.storage_path)) out.push(m.storage_path);
     if (out.length >= max) break;
   }
   return out;

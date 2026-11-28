@@ -39,6 +39,13 @@ test.describe('Mood board pins, access and expiry (local Supabase)', () => {
       await expect(page.getByRole('button', { name: /Pin 1: Keep this grain/ })).toBeVisible({ timeout: 15_000 });
       await page.screenshot({ path: process.env.SHOT_DIR ? `${process.env.SHOT_DIR}/board-pin.png` : undefined });
 
+      // Keys pressed on a pin belong to the pin: Backspace on it must not delete the card it sits on (or the pin).
+      await page.getByRole('button', { name: /Pin 1: Keep this grain/ }).focus();
+      await page.keyboard.press('Backspace');
+      await page.waitForTimeout(800);
+      expect((await stack.admin.from('mood_board_items').select('id').eq('board_id', boardId)).data?.length).toBe(1);
+      await expect(page.getByRole('button', { name: /Pin 1: Keep this grain/ })).toBeVisible();
+
       // Who may edit: "Everyone sees, leads edit" is saved on the board.
       await page.getByLabel('Who can edit this board').selectOption('view');
       await expect.poll(async () => (await stack.admin.from('mood_boards').select('access').eq('id', boardId).single()).data?.access, { timeout: 15_000 }).toBe('view');
@@ -50,6 +57,14 @@ test.describe('Mood board pins, access and expiry (local Supabase)', () => {
       const link = page.getByLabel('Board link');
       await expect(link).toBeVisible({ timeout: 15_000 });
       await expect(page.getByText(/This link stops working on/)).toBeVisible();
+      // A new address keeps the old link's expiry: rotating must not make a link that never ends.
+      const oldLink = await link.inputValue();
+      const before = (await stack.admin.from('mood_board_shares').select('expires_at').eq('board_id', boardId).single()).data?.expires_at;
+      expect(before).toBeTruthy();
+      await page.getByRole('button', { name: 'New link' }).click();
+      await page.getByRole('button', { name: 'CONFIRM' }).click();
+      await expect.poll(async () => (await stack.admin.from('mood_board_shares').select('expires_at').eq('board_id', boardId).single()).data?.expires_at, { timeout: 15_000 }).toBe(before);
+      await expect(link).not.toHaveValue(oldLink);
       const path = new URL(await link.inputValue()).pathname;
       await page.screenshot({ path: process.env.SHOT_DIR ? `${process.env.SHOT_DIR}/board-share-expiry.png` : undefined });
 

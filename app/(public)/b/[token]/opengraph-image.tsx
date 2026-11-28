@@ -20,8 +20,10 @@ export default async function Image({ params }: { params: Promise<{ token: strin
   if (db && board) {
     const paths = previewTiles(board, 4);
     if (paths.length) {
-      const { data } = await db.storage.from('project-media').createSignedUrls(paths, 600);
-      tiles = (data ?? []).filter((r) => r.signedUrl && !r.error).map((r) => r.signedUrl as string);
+      try {
+        const { data } = await db.storage.from('project-media').createSignedUrls(paths, 600);
+        tiles = (data ?? []).filter((r) => r.signedUrl && !r.error).map((r) => r.signedUrl as string);
+      } catch { /* no tiles: the plain card still shares */ }
     }
   }
   return new ImageResponse(

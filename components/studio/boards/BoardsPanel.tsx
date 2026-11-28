@@ -244,8 +244,10 @@ export function BoardsPanel() {
   };
   const replaceLink = async () => {
     if (!active) return;
-    if (!(await confirm('Make a new link? The old one stops working at once, and anyone you sent it to will need the new one.'))) return;
-    const row = await run(() => studio.newBoardLink(active, userId, shareExpiryFromDays(expiryDays, new Date())), 'Could not make a new link');
+    // A new address keeps the old link's expiry (rotating a link that was set to end must not make a link that never ends).
+    const keepExpiry = currentShare?.expires_at ?? null;
+    if (!(await confirm(`Make a new link? The old one stops working at once, and anyone you sent it to will need the new one. ${keepExpiry ? 'The new link ends when the old one would have.' : 'The new link does not expire.'}`))) return;
+    const row = await run(() => studio.newBoardLink(active, userId, keepExpiry), 'Could not make a new link');
     if (row) setShare({ boardId: active.id, row });
   };
   const copyLink = async (token: string) => {
@@ -296,6 +298,8 @@ export function BoardsPanel() {
   };
 
   const onKey = (e: React.KeyboardEvent, item: MoodBoardItem) => {
+    // Keys pressed on something inside the card (a pin button) belong to it, not to the card: Backspace on a pin must not delete the card.
+    if (e.target !== e.currentTarget) return;
     if (editing || !canEdit) return;
     const step = e.shiftKey ? 5 : 1;
     const d = e.key === 'ArrowLeft' ? [-step, 0] : e.key === 'ArrowRight' ? [step, 0] : e.key === 'ArrowUp' ? [0, -step] : e.key === 'ArrowDown' ? [0, step] : null;
@@ -347,6 +351,7 @@ export function BoardsPanel() {
                 {canEdit && <button type="button" className={s.btn} onClick={() => setPicking(true)}><ImagePlus size={12} /> Add from library</button>}
                 {canEdit && <button type="button" className={s.btn} aria-expanded={noting} onClick={() => setNoting((v) => !v)}><StickyNote size={12} /> Add note</button>}
                 {canEdit && boardItems.length > 0 && <button type="button" className={s.btn} aria-pressed={pinMode} onClick={() => { setPinMode((v) => !v); setDraftPin(null); }}><MapPin size={12} /> {pinMode ? 'Click a card to pin' : 'Pin a note'}</button>}
+                {canEdit && pinMode && <span className={s.hint}>Pins are shown on the board’s shared link, if it has one.</span>}
                 {canShape && (
                   <select className={s.select} aria-label="Who can edit this board" value={active.access} onChange={(e) => void changeAccess(e.target.value)}>
                     {BOARD_ACCESS.map((a) => <option key={a} value={a}>{BOARD_ACCESS_INFO[a].label}</option>)}

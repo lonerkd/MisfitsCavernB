@@ -21,4 +21,8 @@ describe('the link preview', () => {
     expect(previewTiles({ items }, 10)).toEqual(['p/a.png', 'p/e.png', 'p/f.png']);
     expect(previewTiles({ items: [] }, 4)).toEqual([]);
   });
+  it('leaves out formats the preview renderer cannot decode, so one webp or heic card never breaks the share card', () => {
+    const items = [img('a', 'p/a.webp'), img('b', 'p/b.HEIC'), img('c', 'p/c.avif'), img('d', 'p/d.JPG'), img('e', 'p/e.jpeg'), img('f', 'p/f.gif')];
+    expect(previewTiles({ items }, 10)).toEqual(['p/d.JPG', 'p/e.jpeg', 'p/f.gif']);
+  });
 });

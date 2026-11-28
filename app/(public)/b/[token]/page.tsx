@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
   const data = await load(token);
   if (!data) return { title: 'The Cavern', robots: { index: false } };
   const { board } = data;
-  const description = `A mood board from ${board.project_title}: ${boardCardLine(board)}.`;
+  const description = `A mood board: ${boardCardLine(board)}.`; // the line already ends with the project's title
   return {
     title: `${board.name} — The Cavern`,
     description,
