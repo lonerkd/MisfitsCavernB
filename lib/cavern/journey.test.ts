@@ -145,6 +145,13 @@ describe('the light and the pace', () => {
     expect(journeyPace(10, 8)).toBeLessThan(1);
     expect(journeyPace(40, 10)).toBe(0.55);
   });
+  it('pulls less hard while the person steers: the band narrows, the hands own the figure', () => {
+    expect(journeyPace(10, 40, true)).toBe(1.3);
+    expect(journeyPace(40, 10, true)).toBe(0.75);
+    expect(journeyPace(10, 10, true)).toBe(1);
+    expect(journeyPace(10, 20, true)).toBeLessThan(journeyPace(10, 20));
+    expect(journeyPace(20, 10, true)).toBeGreaterThan(journeyPace(20, 10));
+  });
   it('asks to be rebuilt only when far from where the song says', () => {
     expect(needsResync(0, RESYNC_DISTANCE - 1)).toBe(false);
     expect(needsResync(0, RESYNC_DISTANCE + 1)).toBe(true);

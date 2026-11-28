@@ -249,6 +249,8 @@
 }
 .island[data-mode='activity'] .handle { height: calc(46px * var(--island-scale)); }
 .activity { display: inline-flex; flex-direction: column; justify-content: center; gap: 1px; min-width: 0; line-height: 1.15; }
+.activityHead { display: inline-flex; align-items: center; gap: 6px; min-width: 0; max-width: 100%; }
+.activityHead .activityTitle { min-width: 0; }
 .activityTitle {
   font-family: var(--mono); font-size: var(--island-text); letter-spacing: var(--caps-track); text-transform: var(--caps);
   color: var(--fg); white-space: nowrap; max-width: 340px; overflow: hidden; text-overflow: ellipsis;

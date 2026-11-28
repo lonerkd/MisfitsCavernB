@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { PixelLoader } from '@/components/brand/PixelLoader';
 import type { Activity, ActivityTone } from '@/lib/island/activities';
 import s from './island.module.css';
 
@@ -19,9 +20,16 @@ export const ACTIVITY_TONE_COLOR: Record<ActivityTone, string> = {
  */
 export function ActivityLabel({ activity }: { activity: Activity }) {
   const pct = activity.progress === undefined ? null : Math.round(activity.progress * 100);
+  // Work in flight that cannot say how far along it is borrows the loader family's
+  // inline stamp (LD2): the brand mark in its 8-frame stepped spin, sized to the
+  // label's line. Work that can count uses the bar below instead — never both.
+  const inFlight = activity.tone === 'busy' && pct === null;
   return (
     <span className={s.activity} role={activity.kind === 'timer' ? undefined : 'status'}>
-      <span className={s.activityTitle}>{activity.title}</span>
+      <span className={s.activityHead}>
+        {inFlight && <PixelLoader variant="spin" size={14} label={`${activity.title} — in progress`} />}
+        <span className={s.activityTitle}>{activity.title}</span>
+      </span>
       {activity.detail && <span className={s.activityDetail}>{activity.detail}</span>}
       {pct !== null && (
         <span className={s.progress} role="progressbar" aria-label={`${activity.title} progress`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>

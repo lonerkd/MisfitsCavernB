@@ -94,9 +94,12 @@ export const originFor = (x: number, fraction: number, length: number) => x - fr
 
 /**
  * The speed multiplier that keeps the figure with the song: behind it, run to catch up (up to 1.7x); ahead of it, wait (down to 0.55x).
- * Steering still works inside that band, but the song decides where in the film the cave is.
+ * Steering still works inside that band, but the song decides where in the film the cave is. While the person is steering
+ * the band narrows (up to 1.3x, down to 0.75x, and gentler): the song still owns the map, but it stops dragging the figure
+ * at speeds the hands did not choose — the player owns the figure.
  */
-export function journeyPace(x: number, target: number): number {
+export function journeyPace(x: number, target: number, steering = false): number {
+  if (steering) return Math.min(1.3, Math.max(0.75, 1 + 0.15 * (target - x)));
   return Math.min(1.7, Math.max(0.55, 1 + 0.25 * (target - x)));
 }
 

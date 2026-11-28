@@ -48,6 +48,10 @@ export interface Cave {
   ceilingAt: (x: number) => number;
   floorAt: (x: number) => number;
   zoneAt: (x: number) => ZoneKind;
+  /** How far the sharpest ceiling tooth reaches at x, in screen heights (0 where the ceiling is smooth rock): what a rising head must not meet. */
+  ceilingToothAt: (x: number) => number;
+  /** How far the sharpest floor tooth rises at x, in screen heights (0 where the floor is smooth rock): what feet must not land on. */
+  floorToothAt: (x: number) => number;
 }
 
 function zoneIndex(x: number, seed: number) {
@@ -131,7 +135,10 @@ export function makeCave(seed: number, zones?: ZoneSegment[]): Cave {
     // Never close the passage: whatever the teeth do, there is always room to crouch through.
     return clamp(Math.min(base, floorAt(x) - MIN_CLEARANCE), 0.02, 0.9);
   };
-  return { floorAt, ceilingAt, zoneAt: (x) => segAt(x).kind };
+  // The teeth themselves, asked the same way the surfaces above are built, so the runner can tell a tooth from smooth rock.
+  const ceilingToothAt = (x: number) => teeth(x, seed + 41, 0.7, paramsAt(x, segAt).teeth * 2.4);
+  const floorToothAt = (x: number) => teeth(x, seed + 21, 0.9, paramsAt(x, segAt).floorTeeth);
+  return { floorAt, ceilingAt, zoneAt: (x) => segAt(x).kind, ceilingToothAt, floorToothAt };
 }
 
 /** Old cave until `from`, the new one after `from + length`, blended between: so a new song changes the cave out of sight, not with a pop. */
@@ -143,5 +150,7 @@ export function blendCaves(a: Cave, b: Cave, from: number, length: number): Cave
     // Both ceilings respect the minimum clearance against their own floors; the blend of two valid pairs is valid.
     ceilingAt: (x) => (x <= from ? a.ceilingAt(x) : x >= from + length ? b.ceilingAt(x) : mix(a.ceilingAt(x), b.ceilingAt(x), t(x))),
     zoneAt: (x) => (t(x) < 0.5 ? a.zoneAt(x) : b.zoneAt(x)),
+    ceilingToothAt: (x) => (x <= from ? a.ceilingToothAt(x) : x >= from + length ? b.ceilingToothAt(x) : mix(a.ceilingToothAt(x), b.ceilingToothAt(x), t(x))),
+    floorToothAt: (x) => (x <= from ? a.floorToothAt(x) : x >= from + length ? b.floorToothAt(x) : mix(a.floorToothAt(x), b.floorToothAt(x), t(x))),
   };
 }

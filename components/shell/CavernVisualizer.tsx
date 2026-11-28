@@ -5,13 +5,13 @@ import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Disc, Maximize2, Minimize2, Pause, PictureInPicture2, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import { useSpotify } from '@/lib/os/SpotifyContext';
-import { blendCaves, makeCave, seedOf, type Cave, type ZoneSegment } from '@/lib/cavern/cave';
+import { blendCaves, hash, makeCave, seedOf, type Cave, type ZoneSegment } from '@/lib/cavern/cave';
 import { journeyLength, journeyPace, journeyTarget, journeyTint, journeyZones, needsResync, originFor, songFraction, type Journey, type JourneyStatus } from '@/lib/cavern/journey';
 import { useJourney } from '@/lib/cavern/useJourney';
 import { asLight, dominantColour, WARM, type Rgb } from '@/lib/cavern/palette';
-import { guideInput, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
+import { guideInput, heightOf, isAuto, newRunner, NO_INPUT, stepRunner, type Input, type Runner } from '@/lib/cavern/runner';
 import { makeSpores, stepSpores, type Spore } from '@/lib/cavern/spores';
-import { drawScene, RUNNER_AT } from './cavernScene';
+import { BURST_LIFE, drawScene, RUNNER_AT, type BurstMote } from './cavernScene';
 import v from './visualizer.module.css';
 
 const mmss = (ms: number) => { const t = Math.floor(ms / 1000); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
@@ -35,7 +35,9 @@ interface Props {
  * removed on 2026-11-18: grey tiles falling down a square shaft, unrelated to the place.)
  * Steer with the arrow keys or WASD, or with the pointer: a mouse steers by **hovering** over the cave (no click, nothing is
  * captured, moving off it lets go), a finger by holding. Left alone for a few seconds it carries on by itself, and any input
- * hands it back without a jerk. There is no way to lose.
+ * hands it back without a jerk. It can die — teeth, a ceiling met at speed, a passage it did not duck for — whoever is
+ * steering, the autopilot included; a death is only a moment: the figure falls in a breath of spores and is back on the
+ * last safe ground, the song and the journey carrying on.
  *
  * It follows the player: the cave is seeded from the song (the same song, the same cave), the light takes the cover's colour, and it
  * slows to a stroll when the music pauses. Nothing on the screen explains any of this — no status lines, no narration, no
@@ -114,9 +116,11 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
     /** The journey's layout in the cave: the key it was built for, where the song's start sits in x, the sections as zones, and when it was last rebuilt. */
     jkey: string; origin: number; zones: ZoneSegment[] | undefined; resyncedAt: number;
     guide: Input | null; aimedAt: number; mouse: boolean; want: number; settleFrom: number | null;
+    /** A death's breath of spores, still drifting: the scene's motes, with the velocities only the loop needs. */
+    burst: (BurstMote & { vx: number; vy: number })[];
   }>({
     seed: seedOf(trackId), cave: makeCave(seedOf(trackId)), far: makeCave(seedOf(trackId) + 101), mid: makeCave(seedOf(trackId) + 202), runner: null,
-    tint: WARM, cover: WARM, jkey: '', origin: 0, zones: undefined, resyncedAt: -1e9, input: NO_INPUT, guide: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null,
+    tint: WARM, cover: WARM, jkey: '', origin: 0, zones: undefined, resyncedAt: -1e9, input: NO_INPUT, guide: null, aimedAt: 0, mouse: false, want: seedOf(trackId), settleFrom: null, burst: [],
   });
   useEffect(() => { world.current.want = seedOf(trackId); }, [trackId]);
 
@@ -236,11 +240,25 @@ export function CavernVisualizer({ onClose, onMinimise, onExpand, variant = 'ful
       energy += ((playing.current ? 1 : 0.15) - energy) * Math.min(1, dt * 1.5);
       t += dt * (0.25 + energy * 0.75);
       if (!reduce) {
-        W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin)) : 1);
+        // While the person steers, the journey's pace band narrows: the song owns the map, the hands own the figure.
+        W.runner = stepRunner(r0, dt, W.guide ?? W.input, W.cave, playing.current, jkey ? journeyPace(r0.x, journeyTarget(frac!, length, W.origin), !isAuto(r0)) : 1);
         spores = stepSpores(spores, W.cave, W.runner.x, AHEAD, dt, W.seed);
+        // A death just happened: a breath of spores off the figure where it fell, drifting and fading.
+        const r1 = W.runner;
+        if (r1.death && !r0.death) {
+          const n = r1.deaths * 131 + 17;
+          for (let i = 0; i < 16; i++) {
+            const a = hash(n + i, W.seed) * 6.283, sp = 0.15 + hash(n + i, W.seed + 1) * 0.55;
+            W.burst.push({ x: r1.x, y: r1.y - heightOf(r1) * 0.5, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 0.25, age: 0, size: 1 + hash(n + i, W.seed + 2) * 2 });
+          }
+        }
+        if (W.burst.length) {
+          for (const m of W.burst) { m.age += dt; m.x += m.vx * dt; m.y += m.vy * dt; m.vy += 0.3 * dt; }
+          W.burst = W.burst.filter((m) => m.age < BURST_LIFE);
+        }
       }
       const r = W.runner!;
-      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: 0, bass: 0, pulse: 0 });
+      drawScene(ctx, w, h, { cave: W.cave, far: W.far, mid: W.mid, runner: r, t, energy, tint: W.tint, spores, seed: W.seed, level: 0, bass: 0, pulse: 0, burst: W.burst });
       const tally = `${Math.round(r.x * 3).toLocaleString()} m in`;
       if (now - shown > 500) {
         shown = now;
