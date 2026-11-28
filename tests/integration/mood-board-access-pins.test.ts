@@ -110,6 +110,16 @@ describe('annotation pins', () => {
     expect((await sam.listMoodBoardPins(projectId)).some((p) => p.id === a.id)).toBe(false);
   });
 
+  it('a collaborator can edit someone else\'s pin, but the authorship never moves', async () => {
+    const sam = createStudioApi(cast.sam.client);
+    const a = await sam.addBoardPin({ id: itemId, project_id: projectId }, cast.sam.id, { x: 40, y: 40 }, 'Sam wrote this');
+    // Jordan edits the text and tries to take the authorship (or hand it to someone else).
+    await cast.jordan.client.from('mood_board_pins').update({ text: 'Jordan edited this', created_by: cast.jordan.id }).eq('id', a.id);
+    const after = await cast.sam.client.from('mood_board_pins').select('text, created_by').eq('id', a.id).single();
+    expect(after.data?.created_by).toBe(cast.sam.id);
+    await sam.removeBoardPin(a.id);
+  });
+
   it('pins die with their card and ride on the share link, oldest first', async () => {
     const sam = createStudioApi(cast.sam.client);
     const share = await sam.shareBoard({ id: boardId, project_id: projectId }, cast.sam.id);

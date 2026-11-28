@@ -94,3 +94,19 @@ AS $function$
 $function$;
 REVOKE ALL ON FUNCTION public.get_shared_board(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_shared_board(text) TO anon, authenticated, service_role;
+
+-- Who wrote a pin never changes: collaborators on an open board may edit each other's pins (the update policy), but an update
+-- cannot move the authorship onto someone else (review of 2026-11-27, as for budget fringes).
+CREATE FUNCTION internal.mood_board_pins_keep_author()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+begin
+  new.created_by := old.created_by;
+  return new;
+end;
+$function$;
+REVOKE ALL ON FUNCTION internal.mood_board_pins_keep_author() FROM PUBLIC, anon, authenticated;
+CREATE TRIGGER mood_board_pins_keep_author BEFORE UPDATE ON public.mood_board_pins
+  FOR EACH ROW EXECUTE FUNCTION internal.mood_board_pins_keep_author();
