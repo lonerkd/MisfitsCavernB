@@ -87,11 +87,18 @@ Storage; the production and staging projects are in `tools-and-access.md` §2) �
    changes).
 9. **The free tiers are the budget.** Vercel Hobby (10 GB deployment storage,
    100 deployments a day), Supabase free (2 projects), GitHub Actions minutes.
-   Every push is a preview deployment and every PR is CI, so keep both small:
-   batch commits instead of pushing each one, never push a change that cannot
-   affect the app, and do not add a workflow, job, shard or dependency without
-   removing one. When a limit is hit, the fix is fewer deployments or fewer
-   runs — not a bigger plan.
+   Every push is a preview deployment and every PR is CI, so **pushes are the
+   scarce resource**: batch related changes into one PR; verify fully locally
+   before the first push (typecheck, lint, tests, bible), so a PR takes **one
+   push to open and at most one refresh push, right before it merges**; keep
+   **2–3 PRs open** at a time and never chase a moving `main` with refresh
+   pushes — refresh once, at merge time. **A migration, an auth change or
+   anything risk-high rides solo, never in a pool** (one bad item stalls the
+   whole pool). Never push a change that cannot affect the app, and do not add
+   a workflow, job, shard or dependency without removing one. When a limit is
+   hit, the fix is fewer deployments or fewer runs — not a bigger plan. (The
+   cap was hit on 2026-11-15 and again on 2026-11-26, both times by many
+   parallel PRs pushed repeatedly.)
 10. **The governance is part of the system.** The rules, the CI checks, the
     hooks and the agent workflows are not furniture: when one is wasteful,
     wrong for the owner's setup, or behind the tools, improve it in the same PR
@@ -104,7 +111,7 @@ The owner wants this run semi-automated and affordable: **do not end a turn with
 
 1. **Pick the work yourself**, in this order: an open `nightly-review` or `e2e-red` issue; the owner's newest instruction; the launch gates (moderation 3.14, the email sender is owner-side); then `wishlist-ranking.md` order and the buildable slices in `backlog-detail.md`. A backlog entry that the code already contradicts is stale: fix the entry (in the same PR) and move on.
 2. **Delegate by size, cheapest that can do it.** **Haiku** for a narrow, fully specified job (one to three files, a sweep, a test file, a fixture, a render): the prompt names the files, the done-when and what to report. **Sonnet** for work that needs judgment (a migration with RLS, a redesign, a cross-cutting change). **You** for the migration apply, the merge, the browser look and any decision. Every agent works in its own worktree, commits locally, never pushes.
-3. **Review every diff yourself**, merge the agents' commits onto one branch, build and run the specs **once**, push **one PR per batch** (the Vercel deploy budget), merge it when the required checks are green, apply migrations to production then staging, run the drift check. A migration or a high-risk PR gets an independent reviewer (a fresh agent), not your own say-so.
+3. **Review every diff yourself**, merge the agents' commits onto one branch, build and run the specs **once**, push **one PR per batch** (rule 9's push discipline), merge it when the required checks are green, apply migrations to production then staging, run the drift check. A migration or a high-risk PR gets an independent reviewer (a fresh agent), not your own say-so.
 4. **Ask only for what is the owner's alone**: an outside service and its cost or keys, a change to auth settings or live data, a product call the owner has not made and the documents do not settle, a real-device check. Everything else: decide, say what you decided in the session note, move on. Report in a few lines (what shipped, what is not verified, what needs the owner).
 
 ## The change cycle
