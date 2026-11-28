@@ -13,6 +13,7 @@ import { postToSplit, useSplitMessages } from '@/lib/split/pane';
 import { readingFormat } from '@/lib/scriptos/reading-format';
 import { parseScript } from '@/lib/scriptos/parser';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { withSuitePriors } from '@/lib/scriptos/suite-priors';
 import { withPreviousDraft } from '@/lib/scriptos/reading-context';
 import { fetchLatestRevisionSnapshot } from '@/lib/studio/reading-context';
 import { castByScene, castIdsByScene, castIdsOfScene, castOfScene } from '@/lib/film/cast';
@@ -33,6 +34,7 @@ import {
   useReadingCorrections,
   useProjectLocations,
   useLineOverrides,
+  useSuitePriors,
   useProjectMedia,
   useProjectScripts,
   useProjectShots,
@@ -151,14 +153,17 @@ export function StudioProvider({ project, userId, onNavigate = noNav, children }
   const corrections = useReadingCorrections(projectId);
   const locations = useProjectLocations(projectId);
   const lineOverrides = useLineOverrides(scriptId);
+  // The suite's priors (the bible a person wrote, the breakdown's cast and things, the roles being cast): project data every member
+  // reads the same way, so the scene index stays one reading (lib/scriptos/suite-priors.ts).
+  const suitePriors = useSuitePriors(projectId, scriptId);
   // The shared scene index is built from PROJECT data only (the cast, the "not a character" list, the places, the forced line
   // types). A writer's private reading memory shapes what THEY see in the editor; it must never decide rows the whole crew shares,
   // or two people with different memories would keep overwriting each other's scenes.
-  const readContext = () => contextFromProject(
+  const readContext = () => withSuitePriors(contextFromProject(
     castings.rows, corrections.rows, undefined,
     lineOverrides.rows?.map((r: { line_index: number; forced_type: string; line_text?: string | null }) => ({ line_index: r.line_index, forced_type: r.forced_type, line_text: r.line_text })),
     locations.rows?.map((l: { name: string }) => ({ name: l.name })),
-  );
+  ), suitePriors.priors);
   const readContextRef = useRef(readContext());
   useLayoutEffect(() => { readContextRef.current = readContext(); });
   // The script's own reading rules (the same ones the editor uses), kept in a ref so the sync callback stays steady.

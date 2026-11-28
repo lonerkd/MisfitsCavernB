@@ -86,6 +86,7 @@ import { placeLineNotes } from '@/lib/studio/cutlines';
 import { sceneGutter } from '@/lib/film/gutter';
 import { costByScene } from '@/lib/breakdown';
 import { contextFromProject } from '@/lib/scriptos/context';
+import { suiteUse, withSuitePriors } from '@/lib/scriptos/suite-priors';
 import { previousDraftUse } from '@/lib/scriptos/previous-draft';
 import { latestRevision, withPreviousDraft } from '@/lib/scriptos/reading-context';
 import { DoubtfulReads } from '@/components/editor/DoubtfulReads';
@@ -97,7 +98,7 @@ import { typedWords, useWritingLoop } from '@/lib/writing';
 import { WritingLoopPanel, useSprint } from '@/components/editor/WritingLoop';
 import { useActivity } from '@/lib/island/activities';
 import { sprintActivity } from '@/lib/island/sprintActivity';
-import { useCharacters, useReadingCorrections, useProjectLocations, useLineOverrides, useReadingMemory, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
+import { useCharacters, useReadingCorrections, useProjectLocations, useLineOverrides, useReadingMemory, useSuitePriors, useSceneStates, useShootDays, type LineCutNote } from '@/lib/studio';
 
 import { useScriptOpening } from '@/components/editor/useScriptOpening';
 import { useScriptSaving } from '@/components/editor/useScriptSaving';
@@ -192,18 +193,21 @@ export default function EditorPage() {
   const locations = useProjectLocations(activeProject?.id ?? null);
   const lineOverrides = useLineOverrides(currentScript?.id ?? null);
   const { writerMemory, refresh: refreshWriterMemory } = useReadingMemory(sessionUser?.id ?? null);
+  // What the rest of the suite knows (the bible a person wrote, the breakdown's cast and things, the roles being cast): priors for
+  // the reader, under a person's own verdicts (lib/scriptos/suite-priors.ts). The Studio's sync reads with the same.
+  const suitePriors = useSuitePriors(currentScript?.project_id ?? null, currentScript?.id ?? null);
   // The previous draft: the script's latest locked revision. It is read once for this context and kept (reading-context.ts), so a
   // keystroke re-reads only the text being typed; a line the earlier draft read with confidence is likelier read that way again.
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const earlierText = useMemo(() => latestRevision(revisions)?.snapshot ?? null, [revisions]);
-  const readContext = useMemo(() => withPreviousDraft(contextFromProject(
+  const readContext = useMemo(() => withPreviousDraft(withSuitePriors(contextFromProject(
     Object.values(castings),
     corrections.rows,
     writerMemory,
     lineOverrides.rows.map((r: { line_index: number; forced_type: string; line_text?: string | null }) => ({ line_index: r.line_index, forced_type: r.forced_type, line_text: r.line_text })),
     locations.rows.map((l: { name: string }) => ({ name: l.name })),
     undefined, // previousDraftCues
-  ), earlierText, scriptFormat), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows, earlierText, scriptFormat]);
+  ), suitePriors.priors), earlierText, scriptFormat), [castings, corrections.rows, writerMemory, lineOverrides.rows, locations.rows, suitePriors.priors, earlierText, scriptFormat]);
   const { lines, parsedScenes, charStats, lintIssues } = useMemo(() => {
     if (!parseSource) return { lines: [] as ScriptLine[], parsedScenes: [] as ParsedScene[], charStats: [] as CharacterStats[], lintIssues: [] as LintIssue[] };
     const result = parseScript(parseSource, readingFormat(scriptFormat), undefined, { context: readContext });
@@ -217,6 +221,7 @@ export default function EditorPage() {
   const doubts = useMemo(() => doubtfulReads(lines), [lines]);
   const knowledge = useMemo(() => scriptKnowledge({ lines, scenes: parsedScenes }), [lines, parsedScenes]);
   const previousDraftUsed = useMemo(() => previousDraftUse(lines), [lines]);
+  const suiteUsed = useMemo(() => suiteUse(lines, readContext.suite), [lines, readContext.suite]);
   // The scene a line belongs to: the last heading at or above it.
   const sceneAtLine = useCallback((line: number) => {
     let ordinal = -1;
@@ -979,6 +984,8 @@ export default function EditorPage() {
             dialogueRatio={dialogueRatio} sceneWordCounts={sceneWordCounts} actStructure={actStructure}
             sceneCharMap={sceneCharMap} currentSceneIdx={currentSceneIdx} lintIssues={lintIssues}
             timing={timing} characterTiming={characterTiming} knowledge={knowledge} previousDraft={previousDraftUsed}
+            suite={suiteUsed} projectId={currentScript?.project_id ?? null} onCorrected={corrections.upsertLocal}
+            format={scriptFormat ?? null}
             onJumpToScene={jumpToScene}
             onReadFromScene={(i) => { const at = timing.scenes[i]?.start; if (at != null) { jumpToScene(i); startTableRead(at); } }}
             targetMinutes={typeof targetRuntime === 'number' ? targetRuntime : null}

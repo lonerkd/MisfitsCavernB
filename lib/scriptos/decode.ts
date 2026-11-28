@@ -29,6 +29,8 @@ export interface Evidence {
   opensWithKnownName?(text: string): boolean;
   /** A person said this name is not a character. */
   isRejectedName?(name: string): boolean;
+  /** The production named this as a thing (a prop, a costume, a vehicle ...: suite-priors.ts), so it is not a speaker. */
+  isKnownThing?(name: string): boolean;
 }
 
 export interface Observation {
@@ -53,13 +55,14 @@ export interface Observation {
   _isRejectedName?: boolean;
   _hasExtension?: boolean;
   _opensWithKnownName?: boolean;
+  _isKnownThing?: boolean;
   /** What the same line was read as in the previous draft (previous-draft.ts); only ever set on a free line. */
   prior?: State;
 }
 
 /** The weights. Lower cost is a better fit. Tuned on the corpus (lib/scriptos/corpus); change one, re-measure. */
 export interface Params {
-  cue: number; knownName: number; rejectedName: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
+  cue: number; knownName: number; rejectedName: number; knownThing: number; knownThingSpeech: number; extension: number; noSpeechUnder: number; cueSentence: number; cueLong: number;
   dialogue: number; dialogueCaps: number;
   action: number; actionProse: number; actionCaps: number; actionNamesSomeone: number;
   /** Grammar. */
@@ -73,7 +76,7 @@ export interface Params {
 }
 
 export const DEFAULT_PARAMS: Params = {
-  cue: 6, knownName: 12, rejectedName: 60, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
+  cue: 6, knownName: 12, rejectedName: 60, knownThing: 16, knownThingSpeech: 10, extension: 6, noSpeechUnder: 30, cueSentence: 25, cueLong: 15,
   dialogue: 4, dialogueCaps: 6,
   action: 10, actionProse: 8, actionCaps: 12, actionNamesSomeone: 5,
   dialogueOutsideSpeech: 45, parentheticalOutsideSpeech: 6, parentheticalAfterParenthetical: 10,
@@ -117,6 +120,9 @@ export function emission(o: Observation, ev: Evidence, p: Params, tight = false)
     if (o._isKnownName ?? ev.isKnownName(namePart)) character -= p.knownName;
     if (o._hasExtension ?? ev.hasExtension(upper)) character -= p.extension;
     if (o._isRejectedName ?? ev.isRejectedName?.(namePart)) character += p.rejectedName;
+    // A thing the production named (a breakdown prop, costume, vehicle ...): a prior against a cue, bounded (well under a
+    // person's rejection), so a script that makes it speak with an extension or a run of speech can still be read as one.
+    if (o._isKnownThing ?? ev.isKnownThing?.(namePart)) character += p.knownThing;
     // Nothing under it, or a scene heading or transition under it: nobody can be speaking.
     if (!o.next || ev.isHeading(o.next) || ev.isTransition(o.next.toUpperCase())) character += p.noSpeechUnder;
     if (sentenceEnd) character += p.cueSentence;
@@ -124,7 +130,9 @@ export function emission(o: Observation, ev: Evidence, p: Params, tight = false)
   }
 
   const strong = heading || isTransition || paren;
-  const dialogue = strong ? p.impossible : p.dialogue + ((o._isCaps ?? ev.isCaps(t)) ? p.dialogueCaps : 0) + (timeCard ? 4 : 0);
+  // A line that is nothing but a thing's name (no sentence around it) is not speech either: it is the object on the page.
+  const thingAlone = !sentenceEnd && !!(o._isKnownThing ?? ev.isKnownThing?.(namePart));
+  const dialogue = strong ? p.impossible : p.dialogue + ((o._isCaps ?? ev.isCaps(t)) ? p.dialogueCaps : 0) + (timeCard ? 4 : 0) + (thingAlone ? p.knownThingSpeech : 0);
 
   let action = p.action;
   if (heading || isTransition) action = 40;

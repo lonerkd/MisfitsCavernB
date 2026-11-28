@@ -32,6 +32,16 @@ export function previousDraftNote(reasoning: string): string {
   return was ? `the previous draft read it as ${was[1]}` : '';
 }
 
+/** What the rest of the suite says about a line, from the reader's reasoning (parser.ts explainFromSuite), or ''. */
+export function suiteNote(reasoning: string): string {
+  const known = /Known to the project: ([^;]+)/.exec(reasoning);
+  if (known) return `the project has it ${known[1]}`;
+  const disagree = /The breakdown lists (.+?) as ([^,;]+), but (?:the script has it speak (\d+) times|this line reads as its cue)/.exec(reasoning);
+  if (disagree) return `the breakdown lists it as ${disagree[2]}`;
+  const thing = /The breakdown lists (.+?) as ([^:;]+): not read as a speaker/.exec(reasoning);
+  return thing ? `the breakdown lists it as ${thing[2]}` : '';
+}
+
 export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit?: number } = {}): Doubt[] {
   const below = opts.below ?? 75;
   const limit = opts.limit ?? 12;
@@ -57,6 +67,8 @@ export function doubtfulReads(lines: ScriptLine[], opts: { below?: number; limit
     if (!why) continue;
     const history = previousDraftNote(l.reasoning ?? '');
     if (history) why = `${why} · ${history}`;
+    const suite = suiteNote(l.reasoning ?? '');
+    if (suite) why = `${why} · ${suite}`;
     const key = name ? `n:${name}` : `l:${l.index}`;
     if (seen.has(key)) continue;
     seen.add(key);

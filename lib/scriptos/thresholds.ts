@@ -350,6 +350,14 @@ export const THRESHOLDS = {
     value: 60,
     what: 'a caps "PLACE - TIME" line naming a place the project knows, read as action, is capped at this and offered as a scene heading missing INT./EXT. (the review asks; the reading is not changed)',
   },
+  suiteThingOutweighedHeads: {
+    value: 3,
+    what: 'a name the breakdown lists as a thing (a prop, a costume, a vehicle) that heads speech at least this many times is read as a speaker after all: the script outweighs the prior, and the reading says the two disagree',
+  },
+  suiteDisagreeConfidenceCap: {
+    value: 70,
+    what: 'a cue whose name the breakdown lists as a thing is capped at this, so the review asks a person to settle which it is',
+  },
   forcedActionConfidence: {
     value: 100,
     what: 'a line led by "!" is forced action (the syntax spells it out, so it is never in doubt)',

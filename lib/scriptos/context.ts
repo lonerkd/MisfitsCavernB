@@ -15,6 +15,7 @@
 
 import type { ParseContext, WriterMemory } from './parser';
 import type { PreviousDraft } from './previous-draft';
+import { priorKey, type SuitePerson } from './suite-priors';
 
 /** The characters people have cast (`character_castings.character_name`). */
 export function contextFromCastings(castings: ReadonlyArray<{ character_name: string }>, rejectedNames: readonly string[] = []): ParseContext {
@@ -38,7 +39,14 @@ export function contextFromProject(
 ): ParseContext {
   const confirmed = corrections.filter((c) => c.kind === 'character').map((c) => ({ character_name: c.name }));
   const projectContext = contextFromCastings([...castings, ...confirmed], corrections.filter((c) => c.kind === 'not_character').map((c) => c.name));
-  return contextWithMemory(projectContext, writerMemory, lineOverrides, places, previousDraftCues, previousDraft);
+  // Where each believed name came from, so an explanation can say it (suite-priors.ts adds the rest of the suite to this).
+  const people: SuitePerson[] = [];
+  const seen = new Set<string>();
+  for (const [list, source] of [[castings, 'cast'], [confirmed, 'confirmed']] as const) {
+    for (const c of list) { const name = priorKey(c.character_name); if (name && !seen.has(`${name}|${source}`)) { seen.add(`${name}|${source}`); people.push({ name, source }); } }
+  }
+  const withSources: ParseContext = people.length ? { ...projectContext, suite: { people, things: [], overruled: [] } } : projectContext;
+  return contextWithMemory(withSources, writerMemory, lineOverrides, places, previousDraftCues, previousDraft);
 }
 
 /** Places known to the project (`project_locations.name`). */
@@ -70,6 +78,7 @@ export function contextWithMemory(
     previousDraft: previousDraft ?? projectContext.previousDraft,
     writerMemory,
     lineOverrides,
+    ...(projectContext.suite ? { suite: projectContext.suite } : {}),
   };
 }
 
@@ -83,7 +92,12 @@ export function contextKey(context: ParseContext | undefined): string {
   // The previous draft and the places add to the key only when there are any, so a context without them keys as it always did.
   const draftKey = context.previousDraft ? `#d${context.previousDraft.lines.length}:${digest(context.previousDraft.lines.map((l) => `${l.type[0]}${l.text}`).join('\n'))}` : '';
   const placeKey = context.places?.length ? `#p${context.places.join('|')}` : '';
-  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}${draftKey}${placeKey}`;
+  // The suite's priors (suite-priors.ts): who vouched for each name, and the things. Only when there are any.
+  const suite = context.suite;
+  const suiteKey = suite && (suite.people.length || suite.things.length || suite.overruled.length)
+    ? `#s${digest(`${suite.people.map((p) => `${p.name}:${p.source}:${p.aliasOf ?? ''}`).join('|')}/${suite.things.map((t) => `${t.name}:${t.category}`).join('|')}/${suite.overruled.map((o) => `${o.name}:${o.said}:${o.because}`).join('|')}`)}`
+    : '';
+  return `${(context.characters ?? []).join('|')}#${(context.rejectedNames ?? []).join('|')}#${context.previousDraftCues?.length ?? 0}#${memKey}#${overrideKey}${draftKey}${placeKey}${suiteKey}`;
 }
 
 /** A short fingerprint of some text (FNV-1a), for keys that only need to notice a change. */

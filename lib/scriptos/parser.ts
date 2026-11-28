@@ -7,6 +7,7 @@ import type { ScriptLine, LineType, Scene, Character, ParseResult } from '@/lib/
 import { headingParts, readHeading } from './heading';
 import { eighthsOf } from './timing';
 import { decodeLabels, type Decoded, type Observation, type State } from './decode';
+import { PERSON_SOURCE_LABEL, type LineSuiteNote, type SuitePriors } from './suite-priors';
 
 /**
  * The "… TO BLACK / WHITE" family, which writers qualify in many ways (SMASH CUT TO BLACK, MATCH CUT TO WHITE,
@@ -135,6 +136,13 @@ export interface ParseContext {
   writerMemory?: WriterMemory;
   /** Per-project line overrides (L6): a person's correction on specific lines. */
   lineOverrides?: ReadonlyArray<{ line_index: number; forced_type: string; line_text?: string | null }>;
+  /**
+   * What the rest of the suite knows (lib/scriptos/suite-priors.ts): the names a person put into it as characters (the cast,
+   * the confirmed names, the character bible, the breakdown's Cast, the roles being cast), each with where it came from, and the
+   * things the production named (props, wardrobe, vehicles ...): a line that is only a thing's name is evidence against a cue.
+   * A rejected name is never believed from here, a believed name is never a thing, and a line override is fixed before any of it.
+   */
+  suite?: SuitePriors;
 }
 
 /** Per-writer private memory (L6 of the deep-brain plan). */
@@ -226,6 +234,12 @@ export class ScriptParser {
   private priorAt: Array<PriorType | undefined> = [];
   /** The project's known places, as comparable keys. */
   private placeKeys: Set<string> = new Set();
+  /** For each name the suite vouches for (suite-priors.ts), the sources as an explanation says them. */
+  private personSources: Map<string, string[]> = new Map();
+  /** The things the production named (a breakdown element in an object category), by name: the category's label. */
+  private thingOf: Map<string, string> = new Map();
+  /** Things the script has speak so often that its own evidence outweighs the prior: the category and how many heads. */
+  private outweighedThings: Map<string, { category: string; heads: number }> = new Map();
 
   constructor(text: string, format: ScriptFormat = 'screenplay', learnedNames: Set<string> = new Set(), options: ParseOptions = {}) {
     this.useDecoder = options.decoder ?? DECODER_DEFAULT;
@@ -251,6 +265,22 @@ export class ScriptParser {
     // Add previous draft cues to learned names
     if (this.previousDraftCues) {
       for (const cue of this.previousDraftCues) this.learnedNames.add(this.clean(cue.name).toUpperCase());
+    }
+    // The suite's priors. A person's word stands above them: a rejected name is not believed from the suite, and a name
+    // believed from anywhere is never a thing (suite-priors.ts withSuitePriors already applies both; this keeps it true
+    // for a context built another way).
+    const suite = options.context?.suite;
+    for (const person of suite?.people ?? []) {
+      const key = this.clean(person.name).toUpperCase();
+      if (!key || this.rejectedNames.has(key)) continue;
+      this.learnedNames.add(key);
+      const said = person.aliasOf ? `${PERSON_SOURCE_LABEL[person.source]} (the full name of ${person.aliasOf})` : PERSON_SOURCE_LABEL[person.source];
+      const was = this.personSources.get(key) ?? [];
+      if (!was.includes(said)) this.personSources.set(key, [...was, said]);
+    }
+    for (const thing of suite?.things ?? []) {
+      const key = this.clean(thing.name).toUpperCase();
+      if (key && !this.learnedNames.has(key) && !this.personSources.has(key)) this.thingOf.set(key, thing.category);
     }
     this.characterStats = new Map();
     this.elements = {
@@ -466,6 +496,7 @@ export class ScriptParser {
   }
 
   private preScanCharacters() {
+    const thingHeads = new Map<string, { thing: string; heads: number }>();
 
     this.learnedNames.forEach(name => {
       const cleanName = this.clean(name);
@@ -479,6 +510,7 @@ export class ScriptParser {
       const cleanName = this.clean(trim);
       if (this.rejectedNames.has(cleanName)) return;
       const words = cleanName.split(' ').filter(Boolean);
+      const thing = this.thingOf.size > 0 ? this.thingKey(cleanName) : null;
 
       if (words.length === 0 || words.length > THRESHOLDS.prescanCueMaxWords.value) return;
       if ((cleanName.match(/\p{L}/gu) ?? []).length < 1) return;
@@ -487,8 +519,19 @@ export class ScriptParser {
       const next = (this.rawLines[idx + 1] || '').trim();
       const followedBySpeech = next.length > 0 && (next.startsWith('(') || !this.isCaps(next));
       if (!followedBySpeech) return;
+      // A thing the production named is not counted as a speaker on its own shape: it heads speech too seldom to be one
+      // unless the script keeps making it speak (counted here, and decided below).
+      if (thing) { thingHeads.set(cleanName, { thing, heads: (thingHeads.get(cleanName)?.heads ?? 0) + 1 }); return; }
       this.characterStats.set(cleanName, (this.characterStats.get(cleanName) || 0) + 1);
     });
+    // The script's own evidence outweighs the prior when it has the "thing" head speech again and again (a character named
+    // after an object, a talking animal in the Vehicles & animals list): it is a cue, and the reading says the two disagree.
+    for (const [name, { thing, heads }] of thingHeads) {
+      if (heads < THRESHOLDS.suiteThingOutweighedHeads.value) continue;
+      this.outweighedThings.set(name.toUpperCase(), { category: this.thingOf.get(thing) ?? '', heads });
+      this.characterStats.set(name, heads);
+    }
+    for (const name of this.outweighedThings.keys()) { const thing = this.thingKey(name); if (thing) this.thingOf.delete(thing); }
   }
 
   /**
@@ -511,7 +554,7 @@ export class ScriptParser {
       const next = (this.rawLines[idx + 1] || '').trim();
       if (!next || this.isSceneHeading(next)) return;
       const name = this.clean(trim).toUpperCase();
-      if (!name || /[.!?]$/.test(trim) || this.rejectedNames.has(name)) return;
+      if (!name || /[.!?]$/.test(trim) || this.rejectedNames.has(name) || this.thingKey(name) !== null) return;
       if (KNOWLEDGE.SCENE_PREFIXES.has(name) || this.isTransitionText(name) || KNOWLEDGE.CAMERA_ANGLES.has(name) || KNOWLEDGE.TIME_OF_DAY.has(name)) return;
       // What is under it reads like speech (a sentence, or a parenthetical), not another bare label.
       if (!(next.startsWith('(') || /[\p{Ll}]/u.test(next) || /[.!?…,]$/.test(next))) return; // shouted speech ends like a sentence
@@ -758,6 +801,7 @@ export class ScriptParser {
         _looksUncasedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.looksLikeUncasedName(np, prevBlank, next) || (prevBlank && !!next && this.titleCaseCues.has(this.clean(np).toUpperCase())); })(),
         _isKnownName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.characterStats.has(this.clean(np)) || this.characterStats.has(this.clean(np).toUpperCase()) || (this.writerMemory?.confirmedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
         _isRejectedName: (() => { const np = trim.replace(/\s*\([^)]*\)\s*$/, '').trim(); return this.rejectedNames.has(this.clean(np)) || (this.writerMemory?.rejectedNames?.includes(this.clean(np).toUpperCase()) ?? false); })(),
+        _isKnownThing: this.thingOf.size > 0 && this.isKnownThing(trim.replace(/\s*\([^)]*\)\s*$/, '').trim()),
         _hasExtension: [...KNOWLEDGE.EXTENSIONS].some((e) => trim.toUpperCase().includes(e)),
         _opensWithKnownName: this.opensWithKnownName(trim),
         _isHeadingNext: next ? this.isSceneHeading(next) : false,
@@ -791,7 +835,21 @@ export class ScriptParser {
       isRejectedName: (n) => this.rejectedNames.has(this.clean(n)) || (this.writerMemory?.rejectedNames?.includes(this.clean(n).toUpperCase()) ?? false),
       hasExtension: (u) => [...KNOWLEDGE.EXTENSIONS].some((e) => u.includes(e)),
       opensWithKnownName: (t) => this.opensWithKnownName(t),
+      isKnownThing: (n) => this.isKnownThing(n),
     });
+  }
+
+  /** The line (its name part) is only the name of a thing the production named (suite-priors.ts). */
+  private isKnownThing(namePart: string): boolean {
+    return this.thingOf.size > 0 && this.thingKey(namePart) !== null;
+  }
+
+  /** The thing a line names, as the breakdown keeps it ("THE BRIEFCASE" is the element "Briefcase"), or null. */
+  private thingKey(namePart: string): string | null {
+    const key = this.clean(namePart).toUpperCase();
+    if (this.thingOf.has(key)) return key;
+    const bare = key.replace(/^(?:THE|A|AN|HIS|HER|THEIR|MY|YOUR|OUR) /, '');
+    return bare !== key && this.thingOf.has(bare) ? bare : null;
   }
 
   /** "Maya ducks.": the line opens with a name seen speaking and a lowercase word, not a comma ("Maya, wait."), so it narrates. */
@@ -823,6 +881,7 @@ export class ScriptParser {
         analysis.meta = { ...analysis.meta, previousDraftRead: prior };
       }
     }
+    this.explainFromSuite(analysis, trim);
     if (!this.placeKeys.size) return;
     if (analysis.type === 'slug') {
       const place = this.knownPlaceOf(this.stripScenePrefix(trim));
@@ -839,6 +898,43 @@ export class ScriptParser {
         analysis.meta = { ...analysis.meta, alternative: 'slug' };
       }
     }
+  }
+
+  /**
+   * What the suite's priors did to this line, said in the reasoning and kept on `meta.suite` (suite-priors.ts suiteUse counts
+   * them for the panel): a cue whose name the project knows says where from; a line that is only a thing's name and is not
+   * read as a cue says the production named it; a thing the script makes speak anyway is capped, so the review asks.
+   */
+  private explainFromSuite(analysis: { type: LineType; confidence: number; reasoning: string[]; meta?: Record<string, unknown> }, trim: string): void {
+    if (!this.personSources.size && !this.thingOf.size && !this.outweighedThings.size) return;
+    const namePart = trim.replace(/\s*\([^)]*\)\s*$/, '').replace(/\s*\^\s*$/, '').trim();
+    const note = (n: LineSuiteNote) => { analysis.meta = { ...analysis.meta, suite: n }; };
+    if (analysis.type === 'character') {
+      const name = this.clean(String(analysis.meta?.characterName ?? namePart)).toUpperCase();
+      const said = this.personSources.get(name);
+      const outweighed = this.outweighedThings.get(name);
+      const thingName = this.thingKey(name);
+      const thing = thingName === null ? undefined : this.thingOf.get(thingName);
+      if (said) {
+        analysis.reasoning = [...analysis.reasoning, `Known to the project: ${said.join(', ')}`];
+        note({ name, effect: 'for', said });
+      } else if (outweighed || thing !== undefined) {
+        // The project and the script disagree: neither wins quietly, a person should settle it.
+        const category = outweighed?.category ?? thing ?? '';
+        analysis.confidence = Math.min(analysis.confidence, THRESHOLDS.suiteDisagreeConfidenceCap.value);
+        analysis.reasoning = [...analysis.reasoning, outweighed
+          ? `The breakdown lists ${name} as ${category}, but the script has it speak ${outweighed.heads} times`
+          : `The breakdown lists ${name} as ${category}, but this line reads as its cue`];
+        analysis.meta = { ...analysis.meta, alternative: analysis.meta?.alternative ?? 'action' };
+        note({ name, effect: 'disagrees', said: [category] });
+      }
+      return;
+    }
+    const key = this.thingKey(namePart);
+    const category = key === null ? undefined : this.thingOf.get(key);
+    if (key === null || category === undefined || !this.isCaps(namePart) || /[.!?…]$/.test(namePart)) return;
+    analysis.reasoning = [...analysis.reasoning, `The breakdown lists ${key} as ${category}: not read as a speaker`];
+    note({ name: key, effect: 'against', said: [category] });
   }
 
   /** The known place a heading body (or a bare "PLACE - TIME" line) is set in, or null. */

@@ -8,6 +8,8 @@ import type { CharacterStats } from '@/lib/scriptos/characters';
 import type { LintIssue } from '@/lib/scriptos/validator';
 import { ScriptKnowledgePanel } from './ScriptKnowledgePanel';
 import type { ScriptKnowledge } from '@/lib/scriptos/knowledge';
+import type { SuiteUse } from '@/lib/scriptos/suite-priors';
+import type { ReadingCorrection } from '@/lib/studio';
 import { CARD_COLORS, getSceneType, sceneTypeColor } from '@/lib/scriptos/sceneVisuals';
 
 /**
@@ -20,7 +22,15 @@ export function ScriptAnalytics({
   currentScriptTitle, wordCount, pageEst, scenesList, uniqueLocations, chars,
   charStats, dialogueRatio, sceneWordCounts, actStructure, sceneCharMap,
   currentSceneIdx, lintIssues, timing, characterTiming, onJumpToScene, onReadFromScene, targetMinutes, briefHref, knowledge, previousDraft,
+  suite, projectId, onCorrected, format,
 }: {
+  /** What the rest of the suite added to the reading (suiteUse). */
+  suite?: SuiteUse;
+  /** The project, so a person can settle a name from the panel. */
+  projectId?: string | null;
+  onCorrected?: (row: ReadingCorrection) => void;
+  /** The script's own format (scripts.format). */
+  format?: string | null;
   /** What the reader has learned about the script: languages, years, layers, places. */
   knowledge?: ScriptKnowledge;
   /** How much of the reading came from the previous draft (previousDraftUse). */
@@ -68,7 +78,7 @@ export function ScriptAnalytics({
         ))}
       </div>
 
-      {knowledge && <ScriptKnowledgePanel knowledge={knowledge} previousDraft={previousDraft} />}
+      {knowledge && <ScriptKnowledgePanel knowledge={knowledge} previousDraft={previousDraft} suite={suite} projectId={projectId} onCorrected={onCorrected} format={format} />}
 
       <TimingPanel timing={timing} characters={characterTiming} currentSceneIdx={currentSceneIdx} onJump={onJumpToScene} onRead={onReadFromScene} targetMinutes={targetMinutes} briefHref={briefHref} />
 
