@@ -82,4 +82,28 @@ describe('drawing the cavern', () => {
       }
     }
   });
+
+  it('draws a death — the figure mid-fall and its breath of spores — with no NaN anywhere', () => {
+    const { ctx, calls } = fakeCtx();
+    const dead = { ...newRunner(cave), death: { cause: 'teeth' as const, t: 0.3 }, grounded: false, vy: 1 };
+    const burst = [
+      { x: dead.x, y: dead.y - 0.07, age: 0.2, size: 2 },
+      { x: dead.x + 0.1, y: dead.y - 0.02, age: 0.7, size: 1 },
+    ];
+    drawScene(ctx, 1280, 720, { ...scene(dead), burst });
+    expect(calls.some((c) => c.endsWith(':NaN'))).toBe(false);
+    expect(calls.filter((c) => c === 'fill').length).toBeGreaterThan(8);
+  });
+
+  it('crumples a dying figure: every joint stays finite, and the head sinks as the death plays out', () => {
+    for (const t of [0, 0.3, 0.9]) {
+      const p = poseOf({ ...newRunner(cave), death: { cause: 'head' as const, t } }, 1000, 600, 0);
+      for (const pt of [p.hip, p.neck, p.head, p.kneeA, p.footA, p.kneeB, p.footB, p.hand, p.lantern]) {
+        expect(Number.isFinite(pt[0]) && Number.isFinite(pt[1])).toBe(true);
+      }
+    }
+    const standing = poseOf(newRunner(cave), 1000, 600, 0);
+    const crumpled = poseOf({ ...newRunner(cave), death: { cause: 'head' as const, t: 0.9 } }, 1000, 600, 0);
+    expect(crumpled.head[1]).toBeGreaterThan(standing.head[1]);
+  });
 });

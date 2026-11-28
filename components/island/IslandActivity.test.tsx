@@ -34,6 +34,23 @@ describe('ActivityLabel', () => {
     expect(bar.getAttribute('aria-valuenow')).toBe('43');
     expect((bar.firstElementChild as HTMLElement).style.width).toBe('43%');
   });
+
+  it('borrows the loader stamp while work is in flight and cannot count (LD2)', () => {
+    const { container } = render(<ActivityLabel activity={activity({ tone: 'busy', title: 'Syncing 2 scripts…' })} />);
+    const stamp = screen.getByRole('progressbar', { name: 'Syncing 2 scripts… — in progress' });
+    expect(stamp.className).toContain('mc-pixel-spin');
+    expect(container.querySelector('.mc-pixel-orbit')).toBeNull();
+    expect(screen.getByText('Syncing 2 scripts…')).toBeTruthy();
+  });
+
+  it('the stamp stands down when the work can count, and for work not in flight', () => {
+    const { container, rerender } = render(<ActivityLabel activity={activity({ tone: 'busy', progress: 0.5 })} />);
+    expect(container.querySelector('.mc-pixel-spin')).toBeNull();
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('50');
+    rerender(<ActivityLabel activity={activity({ tone: 'warn' })} />);
+    expect(container.querySelector('.mc-pixel-spin')).toBeNull();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+  });
 });
 
 describe('ActivityControls', () => {

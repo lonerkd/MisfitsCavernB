@@ -5,8 +5,13 @@
 // whatever the theme: it is a room, not a page. The shadows are the brand's ink-blue (#040710), the light is the cover's colour.
 import { hash, type Cave } from '@/lib/cavern/cave';
 import type { Rgb } from '@/lib/cavern/palette';
-import { heightOf, type Runner } from '@/lib/cavern/runner';
+import { CROUCH_HEIGHT, DEATH_TIME, STAND_HEIGHT, type Runner } from '@/lib/cavern/runner';
 import type { Spore } from '@/lib/cavern/spores';
+
+/** One speck of a death's breath of spores: where it is in the cave (x in screen heights, y as a fraction), how long ago it was thrown, and its size. */
+export interface BurstMote { x: number; y: number; age: number; size: number }
+/** How long a burst mote lives before it has faded away, in seconds. */
+export const BURST_LIFE = 0.8;
 
 export interface SceneState {
   cave: Cave;
@@ -21,6 +26,8 @@ export interface SceneState {
   /** The light's colour (from the cover). */
   tint: Rgb;
   spores: Spore[];
+  /** The breath of spores a death threw off the figure, if one is still fading. */
+  burst?: BurstMote[];
   /** The song's seed: where the stalactites hang is part of the place, so the same song has the same formations. */
   seed?: number;
   /** What the cavern hears, when the person has shared audio (all 0..1; 0 when not listening): the loudness, the low end, and a pulse that is 1 on a beat and falls away. */
@@ -43,11 +50,12 @@ const FRONT_ROCK: Rgb = [3, 4, 10];
 
 interface Pose { feet: [number, number]; hip: [number, number]; neck: [number, number]; head: [number, number]; headR: number; kneeA: [number, number]; footA: [number, number]; kneeB: [number, number]; footB: [number, number]; elbowBack: [number, number]; handBack: [number, number]; shoulder: [number, number]; elbow: [number, number]; hand: [number, number]; lantern: [number, number]; unit: number }
 
-/** The figure's joints for this moment: a run cycle on the ground, a tuck in the air, folded low when crouching. */
+/** The figure's joints for this moment: a run cycle on the ground, a tuck in the air, folded low when crouching — and crumpling as a death plays out. */
 export function poseOf(r: Runner, w: number, h: number, t: number): Pose {
-  const H = heightOf(r) * h;
+  const crouch = r.death ? Math.max(r.crouch, Math.min(1, r.death.t / DEATH_TIME)) : r.crouch; // dying folds the figure up
+  const H = (STAND_HEIGHT + (CROUCH_HEIGHT - STAND_HEIGHT) * crouch) * h;
   const fx = w * RUNNER_AT, fy = r.y * h;
-  const lean = H * (0.1 + r.crouch * 0.16 + (r.grounded ? 0 : 0.04));
+  const lean = H * (0.1 + crouch * 0.16 + (r.grounded ? 0 : 0.04));
   const bob = r.grounded ? Math.abs(Math.sin(r.phase)) * H * 0.035 : 0;
   const hip: [number, number] = [fx, fy - H * 0.48 + bob];
   const neck: [number, number] = [fx + lean, hip[1] - H * 0.32];
@@ -55,7 +63,7 @@ export function poseOf(r: Runner, w: number, h: number, t: number): Pose {
   const thigh = H * 0.26, shin = H * 0.26;
   const leg = (p: number): { knee: [number, number]; foot: [number, number] } => {
     let a: number, b: number;
-    if (r.grounded) { a = Math.sin(p) * (0.85 + r.crouch * 0.2); b = a - (0.55 + 0.75 * Math.max(0, Math.sin(p + 1.4))); }
+    if (r.grounded) { a = Math.sin(p) * (0.85 + crouch * 0.2); b = a - (0.55 + 0.75 * Math.max(0, Math.sin(p + 1.4))); }
     else { a = p === r.phase ? 0.95 : -0.15; b = a - 1.2; } // in the air: one knee up, one trailing
     const knee: [number, number] = [hip[0] + Math.sin(a) * thigh, hip[1] + Math.cos(a) * thigh];
     return { knee, foot: [knee[0] + Math.sin(b) * shin, knee[1] + Math.cos(b) * shin] };
@@ -244,6 +252,14 @@ export function drawScene(ctx: CanvasRenderingContext2D, w: number, h: number, s
     ctx.fillStyle = rgba(tint, Math.min(1, (0.05 + near * 0.75) * (0.3 + energy * 0.7) + pulse * 0.2 * near));
     ctx.beginPath(); ctx.arc(px, py, p.size * (1 + near + pulse * 0.6 + level * 0.3), 0, 6.283); ctx.fill();
   }
+  // A death's breath of spores: bright specks thrown off the figure where it fell, swelling and fading as they drift.
+  for (const m of s.burst ?? []) {
+    const fade = Math.max(0, 1 - m.age / BURST_LIFE);
+    if (fade <= 0) continue;
+    const px = ((m.x - cam) * h) + w * RUNNER_AT, py = m.y * h;
+    ctx.fillStyle = rgba(tint, 0.85 * fade);
+    ctx.beginPath(); ctx.arc(px, py, m.size * (1 + m.age * 2), 0, 6.283); ctx.fill();
+  }
   ctx.globalCompositeOperation = 'source-over';
 
   drawTraveller(ctx, pose, r, t, tint, radius);
@@ -287,8 +303,16 @@ function limb(ctx: CanvasRenderingContext2D, a: Pt, b: Pt, wa: number, wb: numbe
   ctx.moveTo(b[0] + wb / 2, b[1]); ctx.arc(b[0], b[1], wb / 2, 0, 6.283);
 }
 
-/** The traveller: a dark silhouette (hood, cloak, boots) lit from the front by its own lantern, with the cloak streaming back as it speeds up. */
+/** The traveller: a dark silhouette (hood, cloak, boots) lit from the front by its own lantern, with the cloak streaming back as it speeds up. Dying, it topples backward around its feet and fades. */
 function drawTraveller(ctx: CanvasRenderingContext2D, p: Pose, r: Runner, t: number, tint: Rgb, radius: number): void {
+  const deathP = r.death ? Math.min(1, r.death.t / DEATH_TIME) : 0;
+  ctx.save();
+  if (deathP > 0) {
+    ctx.globalAlpha = 1 - deathP * 0.85;
+    ctx.translate(p.feet[0], p.feet[1]);
+    ctx.rotate(-deathP * 1.15);
+    ctx.translate(-p.feet[0], -p.feet[1]);
+  }
   const u = p.unit;
   const [lx, ly] = p.lantern;
   const tail = Math.min(1, r.speed / 1.4);
@@ -330,4 +354,5 @@ function drawTraveller(ctx: CanvasRenderingContext2D, p: Pose, r: Runner, t: num
   ctx.fillStyle = rgba(tint, 0.95); ctx.beginPath(); ctx.arc(lx, ly, u * 0.034, 0, 6.283); ctx.fill();
   ctx.fillStyle = 'rgba(255, 246, 224, 0.95)'; ctx.beginPath(); ctx.arc(lx, ly, u * 0.016, 0, 6.283); ctx.fill();
   ctx.globalCompositeOperation = 'source-over';
+  ctx.restore();
 }

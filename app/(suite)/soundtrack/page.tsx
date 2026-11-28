@@ -10,7 +10,6 @@ import { redirectToSpotifyAuth } from '@/lib/spotify/auth';
 import { searchSpotify, generateContextualSearchQuery } from '@/lib/spotify/search';
 import { SpotifyPreview } from '@/components/audio/SpotifyPreview';
 import { SoundDeck } from '@/components/audio/SoundDeck';
-import { ListenWithoutPremium } from '@/components/audio/ListenWithoutPremium';
 import { useProject, useOSGate } from '@/lib/os';
 import { HereLine } from '@/components/studio/HereLine';
 import { useCanShape } from '@/lib/brief';
@@ -166,7 +165,7 @@ function SoundtrackContent() {
         </div>
       </header>
 
-      {isAuthenticated ? (<><SoundDeck /><ListenWithoutPremium /></>) : null}
+      {isAuthenticated ? <SoundDeck projectId={activeProject?.id ?? null} /> : null}
 
       <div role="tablist" aria-label="Sound rooms" className={`flex ${phone ? 'gap-2 mb-4 overflow-x-auto' : 'gap-4 mb-8'} border-b border-[rgba(var(--ink-rgb),0.06)] pb-2`}>
         {SOUND_TABS.map(tab => (

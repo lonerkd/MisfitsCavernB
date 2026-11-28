@@ -6,6 +6,7 @@
 // UI's per-project check is useCanShape (lib/brief), which mirrors RLS.
 
 import React from 'react';
+import { PixelLoader } from '@/components/brand/PixelLoader';
 import { useOSStore } from './store';
 
 export type PageRequirement = 'signed-in' | 'admin';
@@ -20,9 +21,12 @@ export function ProtectedPage({ require, children, fallback }: ProtectedPageProp
   const session = useOSStore((s) => s.session);
 
   if (session.status === 'resolving') {
+    // The boot screen: while the session resolves, a gated page shows the loader
+    // family's full wait (LD2) — the pixel cavern mark with the star on its orbit,
+    // the same face as the root loading surface — never a bare text placeholder.
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-        <div style={{ fontFamily: 'var(--mono)', fontSize: 11, opacity: 0.5 }}>LOADING...</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg)' }}>
+        <PixelLoader variant="orbit" size={84} />
       </div>
     );
   }

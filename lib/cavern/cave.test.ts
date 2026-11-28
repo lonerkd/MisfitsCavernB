@@ -45,6 +45,24 @@ describe('the cave', () => {
     expect(worst).toBeLessThan(3);
     for (let x = 98; x < 108; x += 0.05) expect(mixed.floorAt(x) - mixed.ceilingAt(x)).toBeGreaterThanOrEqual(MIN_CLEARANCE - 1e-9);
   });
+
+  it('knows its teeth: the same questions get the same answers, teeth zones have teeth, and smooth zones have none', () => {
+    const a = makeCave(5), b = makeCave(5);
+    expect(xs.every((x) => a.floorToothAt(x) === b.floorToothAt(x) && a.ceilingToothAt(x) === b.ceilingToothAt(x))).toBe(true);
+    // somewhere in its teeth zones the cave grows real teeth, floor and ceiling both
+    expect(xs.some((x) => a.zoneAt(x) === 'teeth' && a.floorToothAt(x) > 0.03)).toBe(true);
+    expect(xs.some((x) => a.zoneAt(x) === 'teeth' && a.ceilingToothAt(x) > 0.03)).toBe(true);
+    // and where the cave grows none, the answers are none
+    expect(xs.some((x) => a.zoneAt(x) === 'crawl' && a.floorToothAt(x) === 0)).toBe(true);
+  });
+
+  it('blends its teeth too: the old cave\u2019s teeth before the blend, the new cave\u2019s after', () => {
+    const a = makeCave(1), b = makeCave(2), mixed = blendCaves(a, b, 100, 5);
+    expect(mixed.floorToothAt(99)).toBe(a.floorToothAt(99));
+    expect(mixed.ceilingToothAt(99)).toBe(a.ceilingToothAt(99));
+    expect(mixed.floorToothAt(106)).toBe(b.floorToothAt(106));
+    expect(mixed.ceilingToothAt(106)).toBe(b.ceilingToothAt(106));
+  });
 });
 
 describe('the numbers under it', () => {

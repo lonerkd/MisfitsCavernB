@@ -17,9 +17,13 @@ const show = (s: OSSession, require: 'signed-in' | 'admin') => {
 };
 
 describe('ProtectedPage', () => {
-  it('waits while the session resolves', () => {
+  it('waits while the session resolves — behind the boot screen', () => {
     show(session({ status: 'resolving' }), 'admin');
-    expect(screen.getByText('LOADING...')).toBeTruthy();
+    // The boot screen is the loader family's full wait (LD2): the pixel cavern
+    // mark with the star on its orbit, a named progressbar — not a text placeholder.
+    const boot = screen.getByRole('progressbar', { name: 'Loading' });
+    expect(boot.querySelector('.mc-pixel-orbit')).not.toBeNull();
+    expect(screen.queryByText('LOADING...')).toBeNull();
     expect(screen.queryByText('secret')).toBeNull();
   });
 
